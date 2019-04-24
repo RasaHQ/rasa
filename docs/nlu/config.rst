@@ -24,7 +24,7 @@ Server Configuration
 Running the server
 ------------------
 
-You can run a simple http server that handles requests using your model with:
+You can run a simple HTTP server that handles requests using your model with:
 
 .. code-block:: bash
 

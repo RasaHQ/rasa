@@ -83,7 +83,7 @@ a summary `report <http://scikit-learn.org/stable/modules/generated/sklearn
 
 .. code-block:: bash
 
-    $ curl -XPOST localhost:5000/evaluate?&model=model_XXXXXX -d @data/examples/rasa/demo-rasa.json | python -mjson.tool
+    $ curl -XPOST localhost:5000/evaluate?model=model_XXXXXX -d @data/examples/rasa/demo-rasa.json | python -mjson.tool
 
     {
         "intent_evaluation": {
