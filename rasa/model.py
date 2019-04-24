@@ -244,8 +244,9 @@ def _get_hashes_for_paths(
             for file in files:
                 full_path = os.path.join(root, file)
                 files += _get_hashes_for_paths(full_path, is_eligible)
+        files = sorted(files)
 
-    return sorted(files)
+    return files
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
