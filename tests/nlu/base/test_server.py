@@ -24,13 +24,18 @@ def app_without_model():
     return rasa.test_client
 
 
-@pytest.fixture
-async def app(tmpdir_factory, trained_nlu_model):
+@pytest.yield_fixture()
+async def data_router():
+    router = await create_data_router(NLU_MODEL_PATH)
+    yield router
+    del router
+
+
+@pytest.fixture()
+def app(tmpdir_factory, trained_nlu_model, data_router):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    router = await create_data_router(NLU_MODEL_PATH)
-
-    rasa = create_app(router, logfile=nlu_log_file)
+    rasa = create_app(data_router, logfile=nlu_log_file)
 
     return rasa.test_client
 
