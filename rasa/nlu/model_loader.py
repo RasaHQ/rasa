@@ -13,7 +13,7 @@ from rasa.model import get_latest_model
 from rasa.nlu import utils
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.components import ComponentBuilder
-from rasa.nlu.model import Interpreter, Metadata
+from rasa.nlu.model import Interpreter, Metadata, MODEL_NAME_PREFIX
 from rasa.nlu.utils import is_url
 from rasa.utils.endpoints import EndpointConfig
 from requests.exceptions import InvalidURL, RequestException
@@ -22,7 +22,6 @@ from requests.exceptions import InvalidURL, RequestException
 logger = logging.getLogger(__name__)
 
 
-MODEL_NAME_PREFIX = "nlu_"
 FALLBACK_MODEL_NAME = "fallback"
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes

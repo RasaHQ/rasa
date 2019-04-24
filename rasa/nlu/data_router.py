@@ -159,7 +159,7 @@ class DataRouter(object):
 
     async def load_model(self, model_path: Text):
         # model_path can point to a directory containing any number of tar.gz model
-        # files of to one specific model file. If it is pointing to a directory, the
+        # files or to one specific model file. If it is pointing to a directory, the
         # latest model in that directory is taken.
 
         if model_path is None:
