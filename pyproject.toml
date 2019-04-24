@@ -1,5 +1,6 @@
 [build-system]
 requires = ["setuptools"]
+build-backend = "setup"
 
 [tool.black]
 line-length = 88
