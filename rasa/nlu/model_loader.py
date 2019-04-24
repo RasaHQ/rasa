@@ -166,12 +166,10 @@ class NLUModel(object):
         model_name: Text,
         interpreter: Interpreter,
         model_path: Optional[Text] = None,
-        model_dir: Optional[Text] = None,
         fingerprint: Optional[Text] = None,
     ):
         self.name = model_name
         self.path = model_path
-        self.dir = model_dir
         self.interpreter = interpreter
         self.fingerprint = fingerprint
 
@@ -206,7 +204,6 @@ class NLUModel(object):
             self.interpreter = None
             self.name = None
             self.path = None
-            self.dir = None
             self.fingerprint = None
         finally:
             self._writer_lock.release()
@@ -239,6 +236,7 @@ class NLUModel(object):
         self._loader_lock.acquire()
         try:
             self.interpreter = interpreter_for_model(component_builder, model_dir)
+            self.path = model_dir
             self.name = model_name
             status = True
         finally:
@@ -268,7 +266,7 @@ class NLUModel(object):
         name = os.path.basename(model_archive)
         interpreter = interpreter_for_model(component_builder, model_path)
 
-        return NLUModel(name, interpreter, dir, model_path)
+        return NLUModel(name, interpreter, model_path)
 
     @staticmethod
     def load_from_remote_storage(
@@ -282,7 +280,7 @@ class NLUModel(object):
             p.retrieve(model_name, target_path)
             interpreter = interpreter_for_model(component_builder, target_path)
 
-            return NLUModel(model_name, interpreter)
+            return NLUModel(model_name, interpreter, target_path)
         else:
             raise RuntimeError("Unable to initialize persistor")
 

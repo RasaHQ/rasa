@@ -282,7 +282,7 @@ class DataRouter(object):
         loop = asyncio.get_event_loop()
         self._current_worker_processes += 1
         task = loop.run_in_executor(
-            self.pool, run_evaluation, data_file, self.nlu_model.interpreter
+            self.pool, run_evaluation, data_file, self.nlu_model.path
         )
 
         try:
