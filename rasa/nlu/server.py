@@ -376,7 +376,7 @@ def create_app(
 
     @app.put("/models")
     @requires_auth(app, token)
-    async def unload_model(request):
+    async def load_model(request):
         try:
             await data_router.load_model(request.args.get("model"))
             return response.json(None, status=204)

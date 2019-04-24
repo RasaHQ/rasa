@@ -116,9 +116,8 @@ async def _pull_model_and_fingerprint(
         return response.headers.get("ETag"), response.headers.get("filename")
     elif response.status_code == 404:
         logger.debug(
-            "Model server didn't find a model for our request. "
-            "Probably no one did train a model for the project "
-            "and tag combination yet."
+            "Model server didn't find a model for that request. "
+            "Probably no model trained with that name yet."
         )
         return None, None
     elif response.status_code != 200:
@@ -205,6 +204,10 @@ class NLUModel(object):
         self._writer_lock.acquire()
         try:
             self.interpreter = None
+            self.name = None
+            self.path = None
+            self.dir = None
+            self.fingerprint = None
         finally:
             self._writer_lock.release()
 
