@@ -122,7 +122,7 @@ If you are running this in your computer, leave out the ``!`` at the start.
 .. runnable::
    :description: nlu-train-nlu
 
-   !rasa train nlu -c nlu_config.yml --data nlu.md -o models --verbose
+   !rasa train nlu -c nlu_config.yml --u nlu.md -o models --verbose
 
 
 .. _tutorial_using_your_model:

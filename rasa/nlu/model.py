@@ -17,6 +17,8 @@ from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.utils import create_dir, write_json_to_file
 
+MODEL_NAME_PREFIX = "nlu_"
+
 logger = logging.getLogger(__name__)
 
 
@@ -214,7 +216,7 @@ class Trainer(object):
         if fixed_model_name:
             model_name = fixed_model_name
         else:
-            model_name = "nlu_" + timestamp
+            model_name = MODEL_NAME_PREFIX + timestamp
 
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)

@@ -74,7 +74,7 @@ async def _update_model_from_server(
         nlu_model.fingerprint = new_model_fingerprint
         nlu_model.update_model(component_builder, model_directory, model_name)
     else:
-        logger.debug("No new model found at URL {}".format(model_server.url))
+        logger.debug("No new model found at URL '{}'".format(model_server.url))
 
 
 def _get_remote_model_name(filename: Optional[Text]) -> Text:
@@ -130,7 +130,7 @@ async def _pull_model_and_fingerprint(
         return None, None
 
     rasa.utils.io.unarchive(await response.read(), model_directory)
-    logger.debug("Unzipped model to {}".format(os.path.abspath(model_directory)))
+    logger.debug("Unzipped model to '{}'".format(os.path.abspath(model_directory)))
 
     # get the new fingerprint and filename
     return response.headers.get("ETag"), response.headers.get("filename")

@@ -292,7 +292,7 @@ def create_app(
             new_fingerprint = model.model_fingerprint(config_file, nlu_data=nlu_data)
             model.create_package_rasa(path_to_model, output_path, new_fingerprint)
             logger.info(
-                "Your Rasa NLU model is trained and saved at '{}'.".format(output_path)
+                "Rasa NLU model trained and persisted to '{}'.".format(output_path)
             )
 
             await data_router.load_model(output_path)
@@ -326,8 +326,9 @@ def create_app(
         if model_name is not None:
             if not model_name.endswith(".tar.gz"):
                 model_name += ".tar.gz"
-            parent_dir = os.path.join(parent_dir, model_name)
-        output_path = create_output_path(parent_dir, prefix="nlu-")
+            output_path = os.path.join(parent_dir, model_name)
+        else:
+            output_path = create_output_path(parent_dir, prefix="nlu-")
         return output_path
 
     @app.post("/evaluate")

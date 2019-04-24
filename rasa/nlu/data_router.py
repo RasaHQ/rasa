@@ -165,7 +165,7 @@ class DataRouter(object):
 
     async def load_model(self, model_dir: Text):
         if model_dir is None:
-            logger.info("Could not load any model. Use fallback model.")
+            logger.warning("Could not load any model. Using fallback model.")
             self.nlu_model = NLUModel.fallback_model(self.component_builder)
             return
 
