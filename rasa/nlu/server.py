@@ -362,9 +362,17 @@ def create_app(
     @app.delete("/models")
     @requires_auth(app, token)
     async def unload_model(request):
+        model_path = request.args.get("model")
         try:
-            data_router.unload_model(request.args.get("model"))
+            data_router.unload_model(model_path)
             return response.json(None, status=204)
+        except InvalidModelError as e:
+            raise ErrorResponse(
+                404,
+                "ModelNotFound",
+                "Model '{}' not found.".format(model_path),
+                details={"error": str(e)},
+            )
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -377,9 +385,17 @@ def create_app(
     @app.put("/models")
     @requires_auth(app, token)
     async def load_model(request):
+        model_path = request.args.get("model")
         try:
-            await data_router.load_model(request.args.get("model"))
+            await data_router.load_model(model_path)
             return response.json(None, status=204)
+        except InvalidModelError as e:
+            raise ErrorResponse(
+                404,
+                "ModelNotFound",
+                "Model '{}' not found.".format(model_path),
+                details={"error": str(e)},
+            )
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(

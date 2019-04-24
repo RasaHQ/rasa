@@ -187,6 +187,11 @@ class DataRouter(object):
                     self.remote_storage, self.component_builder, model_dir
                 )
 
+            else:
+                raise InvalidModelError(
+                    "Model in '{}' could not be loaded.".format(model_dir)
+                )
+
             logger.debug("Loaded model '{}'".format(self.nlu_model.name))
 
         except Exception as e:

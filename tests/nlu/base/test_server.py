@@ -356,7 +356,7 @@ def test_unload_model_error(app):
     _, response = app.delete(request)
     rjs = response.json
     assert (
-        response.status == 500
+        response.status == 404
     ), "Model is not loaded and can therefore not be unloaded."
     assert rjs["details"]["error"] == "Model with name 'my_model' is not loaded."
 
