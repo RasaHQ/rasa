@@ -310,9 +310,9 @@ class SQLTrackerStore(TrackerStore):
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
     def keys(self) -> List[Text]:
-        """Collect all keys of the items stored in the database."""
-        # noinspection PyUnresolvedReferences
-        return self.SQLEvent.__table__.columns.keys()
+        sender_ids = self.session.query(
+            self.SQLEvent.sender_id).distinct().all()
+        return [sender_id for (sender_id,) in sender_ids]
 
     def retrieve(self, sender_id: Text) -> DialogueStateTracker:
         """Create a tracker from all previously stored events."""
