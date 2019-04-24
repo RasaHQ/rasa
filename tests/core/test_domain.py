@@ -1,5 +1,4 @@
 import json
-
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
