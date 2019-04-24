@@ -133,6 +133,10 @@ class Domain(object):
     and entities it can recognise"""
 
     @classmethod
+    def empty(cls) -> "Domain":
+        return cls({}, [], [], {}, [], [])
+
+    @classmethod
     def load(cls, path: Text) -> "Domain":
         if os.path.isfile(path):
             domain = cls.from_yaml(rasa.utils.io.read_file(path))
@@ -172,7 +176,7 @@ class Domain(object):
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
 
-        domain = None
+        domain = Domain.empty()
         for root, _, files in os.walk(path):
             for file in files:
                 full_path = os.path.join(root, file)
@@ -182,15 +186,12 @@ class Domain(object):
 
         return domain
 
-    def merge(self, domain: Optional["Domain"], override: bool = False) -> "Domain":
+    def merge(self, domain: "Domain", override: bool = False) -> "Domain":
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
         and merged. Single attributes will be taken from ``self`` unless
         override is `True`, in which case they are taken from ``domain``."""
-
-        if not domain:
-            return self
 
         domain_dict = domain.as_dict()
         combined = self.as_dict()
