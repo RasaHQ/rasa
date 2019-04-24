@@ -40,7 +40,7 @@ after_success:
 jobs:
   include:
   - stage: docs
-    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
+    if: fork = false AND branch = "0.15.x" # forked repository will skip building docs, only master & PRs to it
     install:
     - RASABASTER=rasabaster-0.7.18.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
@@ -81,7 +81,7 @@ jobs:
     - cd starter-pack-rasa-stack
     - python -m pytest tests/test_nlu.py
   - stage: trigger website rebuild
-    if: fork = false AND branch = "master" AND type != "pull_request"
+    if: fork = false AND branch = "0.15.x" AND type != "pull_request"
     script:
     - eval "$(ssh-agent -s)";
       touch nlu_docs_to_website_trigger_key;
