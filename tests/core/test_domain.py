@@ -1,8 +1,10 @@
 import json
+
 import pytest
+from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
-from rasa.core import training
+from rasa.core import training, utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot
@@ -288,3 +290,43 @@ templates:
 )
 def test_collect_intent_properties(intent_list, intent_properties):
     assert Domain.collect_intent_properties(intent_list) == intent_properties
+
+
+def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    root_domain = {"actions": ["utter_root", "utter_root2"]}
+    utils.dump_obj_as_yaml_to_file(root / "domain.yml", root_domain)
+
+    subdirectory_1 = root / "Skill 1"
+    subdirectory_1.mkdir()
+    skill_1_domain = {"actions": ["utter_skill_1"]}
+    utils.dump_obj_as_yaml_to_file(subdirectory_1 / "domain.yml", skill_1_domain)
+
+    subdirectory_2 = root / "Skill 2"
+    subdirectory_2.mkdir()
+    skill_2_domain = {"actions": ["utter_skill_2"]}
+    utils.dump_obj_as_yaml_to_file(subdirectory_2 / "domain.yml", skill_2_domain)
+
+    subsubdirectory = subdirectory_2 / "Skill 2-1"
+    subsubdirectory.mkdir()
+    skill_2_1_domain = {"actions": ["utter_subskill", "utter_root"]}
+    # Check if loading from `.yaml` also works
+    utils.dump_obj_as_yaml_to_file(subsubdirectory / "domain.yaml", skill_2_1_domain)
+
+    subsubdirectory_2 = subdirectory_2 / "Skill 2-2"
+    subsubdirectory_2.mkdir()
+    excluded_domain = {"actions": ["should not be loaded"]}
+    utils.dump_obj_as_yaml_to_file(
+        subsubdirectory_2 / "other_name.yaml", excluded_domain
+    )
+
+    actual = Domain.load(str(root))
+    expected = [
+        "utter_root",
+        "utter_root2",
+        "utter_skill_1",
+        "utter_skill_2",
+        "utter_subskill",
+    ]
+
+    assert set(actual.user_actions) == set(expected)

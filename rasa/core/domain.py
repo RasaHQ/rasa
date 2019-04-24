@@ -132,22 +132,27 @@ class Domain(object):
     and entities it can recognise"""
 
     @classmethod
-    def load(cls, filename):
-        if not os.path.isfile(filename):
+    def load(cls, path: Text) -> "Domain":
+        if os.path.isfile(path):
+            domain = cls.from_yaml(rasa.utils.io.read_file(path))
+        elif os.path.isdir(path):
+            domain = cls.from_directory(path)
+        else:
             raise Exception(
                 "Failed to load domain specification from '{}'. "
-                "File not found!".format(os.path.abspath(filename))
+                "File not found!".format(os.path.abspath(path))
             )
-        return cls.from_yaml(rasa.utils.io.read_file(filename))
+
+        return domain
 
     @classmethod
-    def from_yaml(cls, yaml):
+    def from_yaml(cls, yaml: Text) -> "Domain":
         cls.validate_domain_yaml(yaml)
         data = rasa.utils.io.read_yaml(yaml)
         return cls.from_dict(data)
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: Dict) -> "Domain":
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
@@ -162,12 +167,29 @@ class Domain(object):
             **additional_arguments
         )
 
-    def merge(self, domain: "Domain", override: bool = False) -> "Domain":
+    @classmethod
+    def from_directory(cls, path: Text) -> "Domain":
+        """Loads and merges multiple domain files recursively from a directory tree."""
+
+        domain = None
+        for root, _, files in os.walk(path):
+            for file in files:
+                if file in ["domain.yml", "domain.yaml"]:
+                    full_path = os.path.join(root, file)
+                    other = Domain.load(full_path)
+                    domain = other.merge(domain)
+
+        return domain
+
+    def merge(self, domain: Optional["Domain"], override: bool = False) -> "Domain":
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
         and merged. Single attributes will be taken from ``self`` unless
         override is `True`, in which case they are taken from ``domain``."""
+
+        if not domain:
+            return self
 
         domain_dict = domain.as_dict()
         combined = self.as_dict()
