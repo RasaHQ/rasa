@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import io
 import json
 
@@ -24,9 +25,17 @@ def app_without_model():
     return rasa.test_client
 
 
-@pytest.yield_fixture()
-async def data_router():
-    router = await create_data_router(NLU_MODEL_PATH)
+@pytest.fixture()
+def data_router():
+
+    loop = asyncio.get_event_loop()
+    if loop.is_closed():
+        loop = asyncio.new_event_loop()
+
+    router = loop.run_until_complete(create_data_router(NLU_MODEL_PATH))
+
+    loop.close()
+
     yield router
     del router
 
