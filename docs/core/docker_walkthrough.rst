@@ -394,7 +394,7 @@ your ``docker-compose.yml`` it should have the following content:
         - --endpoints
         - config/endpoints.yml
         - -u
-        - current/
+        - default/
     rasa_nlu:
       image: rasa/rasa_nlu:latest-spacy
       volumes:

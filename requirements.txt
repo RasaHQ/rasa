@@ -1,9 +1,9 @@
 ## Setup py requirements
 cloudpickle==0.6.1
-boto3==1.5.20
+boto3==1.9.96
 typing==3.6.6
 requests==2.20.0
-matplotlib==2.1.0
+matplotlib==2.2.4
 simplejson==3.13.2
 attrs==18.1.0
 jsonpickle==1.0.0
@@ -12,7 +12,7 @@ fakeredis==0.10.3
 pymongo==3.7.2
 numpy==1.16.0
 scipy==1.2.0
-tensorflow==1.12.0
+tensorflow==1.13.1
 apscheduler==3.5.3
 tqdm==4.29.1
 networkx==2.2
@@ -45,8 +45,6 @@ questionary==1.0.2
 python-socketio==3.1.1
 pydot==1.4.1
 async_generator==1.10
-keras-applications==1.0.6
-keras-preprocessing==1.0.5
 sqlalchemy~=1.2.17
 kafka-python==1.4.4
 sklearn-crfsuite==0.3.6

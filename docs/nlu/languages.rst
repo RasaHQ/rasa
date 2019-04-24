@@ -80,7 +80,7 @@ Pre-trained Word Vectors
 ------------------------
 
 With the ``pretrained_embeddings_spacy`` pipeline you can also load fastText vectors, which are available 
-for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md>`_.
+for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md>`_.
 
 
 =====================   =================================
