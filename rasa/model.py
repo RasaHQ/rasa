@@ -235,18 +235,18 @@ def _get_hashes_for_paths(
     """
     from rasa.core.utils import get_file_hash
 
-    files = []
+    hashes = []
     if path and os.path.isfile(path) and is_eligible(path):
-        files = [get_file_hash(path)]
+        hashes = [get_file_hash(path)]
     elif path and os.path.isdir(path):
         # walk recursively through file tree and get hashes of eligible files
         for root, _, files in os.walk(path):
             for file in files:
                 full_path = os.path.join(root, file)
-                files += _get_hashes_for_paths(full_path, is_eligible)
-        files = sorted(files)
+                hashes += _get_hashes_for_paths(full_path, is_eligible)
+        hashes = sorted(hashes)
 
-    return files
+    return hashes
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
