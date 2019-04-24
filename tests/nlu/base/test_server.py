@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import io
 import json
-import os
-import shutil
 
 import pytest
 import ruamel.yaml as yaml
