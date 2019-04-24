@@ -163,16 +163,20 @@ class DataRouter(object):
             )
             return None
 
-    async def load_model(self, model_dir: Text):
-        if model_dir is None:
+    async def load_model(self, model_path: Text):
+        # model_path can point to a directory containing any number of tar.gz model
+        # files of to one specific model file. If it is pointing to a directory, the
+        # latest model in that directory is taken.
+
+        if model_path is None:
             logger.warning("Could not load any model. Using fallback model.")
             self.nlu_model = NLUModel.fallback_model(self.component_builder)
             return
 
         try:
-            if os.path.exists(model_dir):
+            if os.path.exists(model_path):
                 self.nlu_model = NLUModel.load_local_model(
-                    model_dir, self.component_builder
+                    model_path, self.component_builder
                 )
 
             elif self.model_server is not None:
@@ -184,12 +188,12 @@ class DataRouter(object):
 
             elif self.remote_storage is not None:
                 self.nlu_model = NLUModel.load_from_remote_storage(
-                    self.remote_storage, self.component_builder, model_dir
+                    self.remote_storage, self.component_builder, model_path
                 )
 
             else:
                 raise InvalidModelError(
-                    "Model in '{}' could not be loaded.".format(model_dir)
+                    "Model in '{}' could not be loaded.".format(model_path)
                 )
 
             logger.debug("Loaded model '{}'".format(self.nlu_model.name))
