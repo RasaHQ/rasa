@@ -365,3 +365,19 @@ def test_unload_model(app):
     unload = "/models?model={}".format(NLU_MODEL_NAME)
     _, response = app.delete(unload)
     assert response.status == 204, "No Content"
+
+
+def test_status_after_unloading(app):
+    _, response = app.get("/status")
+    rjs = response.json
+    assert response.status == 200
+    assert rjs["loaded_model"] == NLU_MODEL_NAME
+
+    unload = "/models?model={}".format(NLU_MODEL_NAME)
+    _, response = app.delete(unload)
+    assert response.status == 204, "No Content"
+
+    _, response = app.get("/status")
+    rjs = response.json
+    assert response.status == 200
+    assert rjs["loaded_model"] is None
