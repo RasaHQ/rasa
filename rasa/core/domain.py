@@ -9,6 +9,7 @@ import pkg_resources
 from pykwalify.errors import SchemaError
 
 import rasa.utils.io
+from rasa import data
 from rasa.core import utils
 from rasa.core.actions import Action, action
 from rasa.core.constants import REQUESTED_SLOT
@@ -174,8 +175,8 @@ class Domain(object):
         domain = None
         for root, _, files in os.walk(path):
             for file in files:
-                if file in ["domain.yml", "domain.yaml"]:
-                    full_path = os.path.join(root, file)
+                full_path = os.path.join(root, file)
+                if data.is_domain_file(full_path):
                     other = Domain.load(full_path)
                     domain = other.merge(domain)
 

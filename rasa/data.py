@@ -86,7 +86,7 @@ def _find_core_nlu_files_in_directory(directory: Text) -> Tuple[Set[Text], Set[T
                 continue
 
             full_path = os.path.join(root, f)
-            if _is_nlu_file(full_path):
+            if is_nlu_file(full_path):
                 nlu_data_files.add(full_path)
             else:
                 story_files.add(full_path)
@@ -94,7 +94,7 @@ def _find_core_nlu_files_in_directory(directory: Text) -> Tuple[Set[Text], Set[T
     return story_files, nlu_data_files
 
 
-def _is_nlu_file(file_path: Text) -> bool:
+def is_nlu_file(file_path: Text) -> bool:
     with open(file_path, encoding="utf-8") as f:
         if file_path.endswith(".json"):
             content = f.read()
@@ -108,6 +108,16 @@ def _contains_nlu_pattern(text: Text) -> bool:
     nlu_pattern = r"\s*##\s*(intent|regex||synonym|lookup):"
 
     return re.match(nlu_pattern, text) is not None
+
+
+def is_story_file(file_path: Text) -> bool:
+    return file_path.endswith(".md") and not is_nlu_file(file_path)
+
+
+def is_domain_file(file_path: Text) -> bool:
+    file_name = os.path.basename(file_path)
+
+    return file_name in ["domain.yml", "domain.yaml"]
 
 
 def _copy_files_to_new_dir(files: Set[Text]) -> Text:

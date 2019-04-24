@@ -99,7 +99,7 @@ def test_is_nlu_file_with_json():
     with open(file, "w") as f:
         f.write(json.dumps(test))
 
-    assert data._is_nlu_file(file)
+    assert data.is_nlu_file(file)
 
 
 def test_is_not_nlu_file_with_json():
@@ -108,7 +108,7 @@ def test_is_not_nlu_file_with_json():
     with open(file, "w") as f:
         f.write('{"test": "a"}')
 
-    assert not data._is_nlu_file(file)
+    assert not data.is_nlu_file(file)
 
 
 @pytest.mark.parametrize(

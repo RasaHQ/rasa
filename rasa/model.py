@@ -5,8 +5,9 @@ import os
 import shutil
 import tarfile
 import tempfile
-from typing import Text, Tuple, Union, Optional, List, Dict, Any
+from typing import Text, Tuple, Union, Optional, List, Dict, Any, Callable
 
+from rasa import data
 from rasa.constants import DEFAULT_MODELS_PATH
 
 # Type alias for the fingerprint
@@ -212,26 +213,39 @@ def model_fingerprint(
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_hashes_for_paths(config_file),
-        FINGERPRINT_DOMAIN_KEY: _get_hashes_for_paths(domain_file),
-        FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
-        FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
+        FINGERPRINT_DOMAIN_KEY: _get_hashes_for_paths(domain_file, data.is_domain_file),
+        FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data, data.is_nlu_file),
+        FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories, data.is_story_file),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
     }
 
 
-def _get_hashes_for_paths(path: Text) -> List[Text]:
+def _get_hashes_for_paths(
+    path: Text, is_eligible: Callable[[Text], bool] = os.path.isfile
+) -> List[Text]:
+    """Gets the hashes for all files which are matched by the filter function.
+
+    Args:
+        path: Path to file or directory.
+        is_eligible: Function which returns `True` if the hash of this file is required.
+
+    Returns:
+        List of file hashes of the selected files.
+    """
     from rasa.core.utils import get_file_hash
 
     files = []
-    if path and os.path.isdir(path):
-        files = [
-            os.path.join(path, f) for f in os.listdir(path) if not f.startswith(".")
-        ]
-    elif path and os.path.isfile(path):
-        files = [path]
+    if path and os.path.isfile(path) and is_eligible(path):
+        files = [get_file_hash(path)]
+    elif path and os.path.isdir(path):
+        # walk recursively through file tree and get hashes of eligible files
+        for root, _, files in os.walk(path):
+            for file in files:
+                full_path = os.path.join(root, file)
+                files += _get_hashes_for_paths(full_path, is_eligible)
 
-    return sorted([get_file_hash(f) for f in files])
+    return sorted(files)
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
