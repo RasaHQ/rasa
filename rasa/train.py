@@ -8,7 +8,7 @@ from rasa import model, data
 from rasa.cli.utils import (
     create_output_path,
     print_success,
-    is_config_valid,
+    is_valid_config,
     print_warning,
 )
 from rasa.constants import (
@@ -225,7 +225,7 @@ def train_nlu(
 
 
 def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
-    if not is_config_valid(config, mandatory_keys):
+    if not is_valid_config(config, mandatory_keys):
         default = FALLBACK_CONFIG_PATH
         print_warning(
             "Invalid config found '{}'. You must define all mandatory parameters: "

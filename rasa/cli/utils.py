@@ -40,7 +40,7 @@ def get_validated_path(
     return current
 
 
-def is_config_valid(path: Text, mandatory_keys: List[Text]) -> bool:
+def is_valid_config(path: Text, mandatory_keys: List[Text]) -> bool:
     import rasa.utils.io
 
     config_data = rasa.utils.io.read_yaml_file(path)
