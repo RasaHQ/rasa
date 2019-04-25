@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import shutil
@@ -10,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import aiohttp
 
+import rasa
 from rasa.core import constants, jobs, training, utils
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -24,10 +24,9 @@ from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import LockCounter
 from rasa.nlu.utils import is_url
-import rasa
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -177,30 +176,28 @@ async def _pull_model_and_fingerprint(
                 # get the new fingerprint
                 return resp.headers.get("ETag")
 
-        except aiohttp.ClientResponseError as e:
-            logger.warning(
+        except aiohttp.ClientError as e:
+            logger.info(
                 "Tried to fetch model from server, but "
                 "couldn't reach server. We'll retry later... "
                 "Error: {}.".format(e)
             )
+
             return None
 
 
 async def _run_model_pulling_worker(
     model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
 ) -> None:
-    while True:
-        # noinspection PyBroadException
-        try:
-            await asyncio.sleep(wait_time_between_pulls)
-            await _update_model_from_server(model_server, agent)
-        except CancelledError:
-            logger.warning("Stopping model pulling (cancelled).")
-        except Exception:
-            logger.exception(
-                "An exception was raised while fetching "
-                "a model. Continuing anyways..."
-            )
+    # noinspection PyBroadException
+    try:
+        await _update_model_from_server(model_server, agent)
+    except CancelledError:
+        logger.warning("Stopping model pulling (cancelled).")
+    except Exception:
+        logger.exception(
+            "An exception was raised while fetching a model. Continuing anyways..."
+        )
 
 
 async def schedule_model_pulling(
@@ -790,5 +787,4 @@ class Agent(object):
         has_form_policy = self.policy_ensemble and any(
             isinstance(p, FormPolicy) for p in self.policy_ensemble.policies
         )
-
         return not self.domain or not self.domain.form_names or has_form_policy

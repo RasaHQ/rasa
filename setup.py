@@ -1,4 +1,3 @@
-import io
 import os
 
 from setuptools import setup, find_packages
@@ -74,11 +73,11 @@ install_requires = [
     "sanic-cors~=0.9.0",
     "sanic-jwt~=1.2",
     "aiohttp~=3.5",
-    "questionary>=1.0.1",
+    "questionary>=1.1.0",
     "python-socketio~=3.0",
     "pydot~=1.4",
     "async_generator~=1.10",
-    "sqlalchemy~=1.2",
+    "SQLAlchemy~=1.2.18",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
 ]
@@ -87,6 +86,7 @@ extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy<=2.0.18,>2.0"],
     "mitie": ["mitie"],
+    "sql": ["psycopg2~=2.8.2"],
 }
 
 setup(
