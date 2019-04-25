@@ -12,6 +12,7 @@ env:
   global:
   - BOTO_CONFIG=/dev/null
   - COVERALLS_PARALLEL=true
+  - PIP_USE_PEP517=false
 
 install:
   - sudo apt-get install graphviz graphviz-dev
