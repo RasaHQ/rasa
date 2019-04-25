@@ -41,10 +41,11 @@ sanic==18.12.0
 sanic-cors==0.9.7
 sanic-jwt==1.2.1
 aiohttp==3.5.4
-questionary==1.0.2
+questionary==1.1.0
 python-socketio==3.1.1
 pydot==1.4.1
 async_generator==1.10
-sqlalchemy~=1.2.17
+SQLAlchemy~=1.2.18
+psycopg2-binary==2.8.2
 kafka-python==1.4.4
 sklearn-crfsuite==0.3.6
