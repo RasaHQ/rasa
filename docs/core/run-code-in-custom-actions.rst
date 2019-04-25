@@ -137,18 +137,23 @@ events in :ref:`events`.
 Default Actions
 ---------------
 
-There are three default actions:
+There are four default actions:
 
 +-----------------------------+------------------------------------------------+
-| ``action_listen``           | stop predicting more actions and wait for user |
+| ``action_listen``           | Stop predicting more actions and wait for user |
 |                             | input                                          |
 +-----------------------------+------------------------------------------------+
-| ``action_restart``          | reset the whole conversation, usually triggered|
+| ``action_restart``          | Reset the whole conversation, usually triggered|
 |                             | by using ``/restart``                          |
 +-----------------------------+------------------------------------------------+
-| ``action_default_fallback`` | undoes the last user message (as if the user   |
+| ``action_default_fallback`` | Undoes the last user message (as if the user   |
 |                             | did not send it) and utters a message that the |
 |                             | bot did not understand. See :ref:`fallbacks`.  |
++-----------------------------+------------------------------------------------+
+|``action_back``              | Triggered by typing ``/back``. Undoes the last |
+|                             | user message (as if the user did not send it)  |
+|                             | and utters a message to the user if one is     |
+|                             | provided as ``utter_back`` in the domain.      |
 +-----------------------------+------------------------------------------------+
 
 All the default actions can be overwritten. To do so, add the action name
