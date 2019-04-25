@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- added arguments to set the file paths for interactive training
 - added quick reply representation for command-line output
 - added option to specify custom button type for Facebook buttons
 - added tracker store persisting trackers into a SQL database
@@ -52,4 +53,5 @@ Fixed
   in a parallel process, which prevents the currently loaded model unloading
 - added missing implementation of the ``keys()`` function for the Redis Tracker
   Store
+- ``rasa nlu test`` doesn't error anymore when a test file is passed with ``-u``
 - in interactive learning: only updates entity values if user changes annotation

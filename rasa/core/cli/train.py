@@ -40,6 +40,11 @@ def add_interactive_args(parser):
         action="store_true",
         help="retrain the model immediately based on feedback.",
     )
+    parser.add_argument(
+        "--nlu_data",
+        default=None,
+        help="Location where the nlu training data should be saved.",
+    )
 
     arguments.add_output_arg(
         parser, help_text="directory to persist the trained model in", required=False
