@@ -5,8 +5,19 @@ import typing
 from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
-from rasa.cli.utils import create_output_path, print_success
-from rasa.constants import DEFAULT_MODELS_PATH
+from rasa.cli.utils import (
+    create_output_path,
+    print_success,
+    is_config_valid,
+    print_warning,
+)
+from rasa.constants import (
+    DEFAULT_MODELS_PATH,
+    CONFIG_MANDATORY_KEYS,
+    CONFIG_MANDATORY_KEYS_CORE,
+    CONFIG_MANDATORY_KEYS_NLU,
+    FALLBACK_CONFIG_PATH,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Interpreter
@@ -20,6 +31,8 @@ def train(
     force_training: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS)
+
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
         train_async(domain, config, training_files, output, force_training, kwargs)
@@ -47,6 +60,7 @@ async def train_async(
     Returns:
         Path of the trained model archive.
     """
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS)
 
     train_path = tempfile.mkdtemp()
     old_model = model.get_latest_model(output)
@@ -112,6 +126,8 @@ def train_core(
     train_path: Optional[Text],
     kwargs: Optional[Dict],
 ) -> Optional[Text]:
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
+
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
         train_core_async(domain, config, stories, output, train_path, kwargs)
@@ -143,6 +159,8 @@ async def train_core_async(
 
     """
     import rasa.core.train
+
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -187,6 +205,8 @@ def train_nlu(
     """
     import rasa.nlu
 
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
+
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa.nlu.train(
         config, nlu_data, _train_path, project="", fixed_model_name="nlu"
@@ -202,3 +222,16 @@ def train_nlu(
         )
 
     return nlu_model
+
+
+def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
+    if not is_config_valid(config, mandatory_keys):
+        default = FALLBACK_CONFIG_PATH
+        print_warning(
+            "Invalid config found '{}'. You must define all mandatory parameters: "
+            "{}. Using fallback config '{}' instead."
+            "".format(config, ", ".join(mandatory_keys), default)
+        )
+        return default
+
+    return config

@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import aiohttp
 
+from rasa.constants import DEFAULT_DOMAIN_PATH
 from rasa.core import constants, jobs, training, utils
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -88,7 +89,7 @@ def _load_and_set_updated_model(
         interpreter = agent.interpreter
         core_model = model_directory
 
-    domain_path = os.path.join(os.path.abspath(core_model), "domain.yml")
+    domain_path = os.path.join(os.path.abspath(core_model), DEFAULT_DOMAIN_PATH)
     domain = Domain.load(domain_path)
 
     # noinspection PyBroadException
@@ -299,7 +300,7 @@ class Agent(object):
                 "instead.".format(path)
             )
 
-        domain = Domain.load(os.path.join(path, "domain.yml"))
+        domain = Domain.load(os.path.join(path, DEFAULT_DOMAIN_PATH))
         ensemble = PolicyEnsemble.load(path) if path else None
 
         # ensures the domain hasn't changed between test and train
@@ -674,7 +675,7 @@ class Agent(object):
         self._clear_model_directory(model_path)
 
         self.policy_ensemble.persist(model_path, dump_flattened_stories)
-        self.domain.persist(os.path.join(model_path, "domain.yml"))
+        self.domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
         self.domain.persist_specification(model_path)
 
         logger.info("Persisted model to '{}'".format(os.path.abspath(model_path)))

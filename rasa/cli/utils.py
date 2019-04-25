@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, Callable, Dict, Optional, Text
+from typing import Any, Callable, Dict, Optional, Text, List
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
@@ -38,6 +38,18 @@ def get_validated_path(
             cancel_cause_not_found(current, parameter, default)
 
     return current
+
+
+def is_config_valid(path: Text, mandatory_keys: List[Text]) -> bool:
+    import rasa.utils.io
+
+    config_data = rasa.utils.io.read_yaml_file(path)
+
+    for k in mandatory_keys:
+        if k not in config_data or config_data[k] is None:
+            return False
+
+    return True
 
 
 def cancel_cause_not_found(
