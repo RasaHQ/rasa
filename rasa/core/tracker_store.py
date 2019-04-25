@@ -362,6 +362,7 @@ class SQLTrackerStore(TrackerStore):
         """Create database `db` on `engine` if it does not exist."""
 
         import psycopg2
+
         conn = engine.connect()
 
         cursor = conn.connection.cursor()
