@@ -41,7 +41,7 @@ class TrackerStore(object):
             )
         elif store.type.lower() == "sql":
             return SQLTrackerStore(
-                domain=domain, event_broker=event_broker, **store.kwargs
+                domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
         else:
             return TrackerStore.load_tracker_from_module_string(domain, store)
@@ -287,7 +287,7 @@ class SQLTrackerStore(TrackerStore):
         self,
         domain: Optional[Domain] = None,
         dialect: Text = "sqlite",
-        url: Optional[Text] = None,
+        host: Optional[Text] = None,
         port: Optional[int] = None,
         db: Text = "rasa.db",
         username: Text = None,
@@ -303,7 +303,7 @@ class SQLTrackerStore(TrackerStore):
             dialect,
             username,
             password,
-            url,
+            host,
             port,
             database=login_db if login_db else db,
         )

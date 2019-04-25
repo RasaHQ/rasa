@@ -16,7 +16,7 @@ def add_subparser(
         "init", parents=parents, help="Create a new project from a initial_project"
     )
     scaffold_parser.add_argument(
-        "--no_prompt",
+        "--no_prompt", "--no-prompt",
         action="store_true",
         help="Automatic yes or default options to prompts and uppressed warnings",
     )
