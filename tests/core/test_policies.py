@@ -547,10 +547,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         return domain.action_names[index]
 
     @staticmethod
-    async def _get_tracker_after_reverts(events, dispatcher, domain):
+    async def _get_tracker_after_reverts(events, channel, nlg, domain):
         tracker = get_tracker(events)
         action = ActionRevertFallbackEvents()
-        events += await action.run(dispatcher, tracker, domain)
+        events += await action.run(channel, nlg, tracker, domain)
 
         return get_tracker(events)
 
@@ -561,7 +561,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
-    async def test_affirmation(self, default_dispatcher_collecting, default_domain):
+    async def test_affirmation(self, default_channel, default_nlg, default_domain):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("greet", 1),
@@ -574,7 +574,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         ]
 
         tracker = await self._get_tracker_after_reverts(
-            events, default_dispatcher_collecting, default_domain
+            events, default_channel, default_nlg, default_domain
         )
 
         assert "greet" == tracker.latest_message.parse_data["intent"]["name"]
@@ -596,7 +596,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_ASK_REPHRASE_NAME
 
     async def test_successful_rephrasing(
-        self, trained_policy, default_dispatcher_collecting, default_domain
+        self, trained_policy, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -610,7 +610,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         ]
 
         tracker = await self._get_tracker_after_reverts(
-            events, default_dispatcher_collecting, default_domain
+            events, default_channel, default_nlg, default_domain
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
@@ -633,7 +633,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
     async def test_affirmed_rephrasing(
-        self, trained_policy, default_dispatcher_collecting, default_domain
+        self, trained_policy, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -650,7 +650,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         ]
 
         tracker = await self._get_tracker_after_reverts(
-            events, default_dispatcher_collecting, default_domain
+            events, default_channel, default_nlg, default_domain
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
@@ -676,7 +676,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_FALLBACK_NAME
 
     async def test_rephrasing_instead_affirmation(
-        self, trained_policy, default_dispatcher_collecting, default_domain
+        self, trained_policy, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -690,7 +690,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         ]
 
         tracker = await self._get_tracker_after_reverts(
-            events, default_dispatcher_collecting, default_domain
+            events, default_channel, default_nlg, default_domain
         )
 
         assert "bye" == tracker.latest_message.parse_data["intent"]["name"]

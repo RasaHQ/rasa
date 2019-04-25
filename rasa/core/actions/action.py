@@ -25,8 +25,9 @@ from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
-    from rasa.core.processor import Dispatcher
     from rasa.core.domain import Domain
+    from rasa.core.nlg import NaturalLanguageGenerator
+    from rasa.core.channels.channel import OutputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -119,20 +120,22 @@ def actions_from_names(
     ]
 
 
-async def send_response(dispatcher, message: Dict[Text, Any]) -> None:
-    """Send a message to the output channel."""
-
-    bot_message = BotUttered(  # TODO: persist whole message here, how without breaking?
+def log_bot_message_on_tracker(
+    tracker: "DialogueStateTracker", message: Dict[Text, Any]
+) -> None:
+    """Add BotUttered event to the tracker."""
+    bot_message = BotUttered(
         text=message.get("text"),
         data={
             "elements": message.get("elements"),
+            "quick_replies": message.get("quick_replies"),
             "buttons": message.get("buttons"),
-            "attachment": message.get("image"),
+            "attachment": message.get("image") or message.get("attachment"),
+            "image": message.get("image"),
         },
     )
-
-    dispatcher.latest_bot_messages.append(bot_message)
-    await dispatcher.output_channel.send_response(dispatcher.sender_id, message)
+    logger.debug("Bot utterance '{}'".format(bot_message))
+    tracker.action_utterances.append(bot_message)
 
 
 class Action(object):
@@ -145,7 +148,8 @@ class Action(object):
 
     async def run(
         self,
-        dispatcher: "Dispatcher",
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List["Event"]:
@@ -153,9 +157,8 @@ class Action(object):
         Execute the side effects of this action.
 
         Args:
-            dispatcher (Dispatcher): the dispatcher keeps track of which ``nlg``
-                to use for response generation as well as the ``sender_id`` and
-                ``output_channel`` of the resulting message.
+            nlg: which ``nlg`` to use for response generation
+            output_channel: ``output_channel`` to which to send the resulting message.
             tracker (DialogueStateTracker): the state tracker for the current
                 user. You can access slot values using
                 ``tracker.get_slot(slot_name)`` and the most recent user
@@ -182,13 +185,11 @@ class ActionUtterTemplate(Action):
         self._name = name
         self.silent_fail = silent_fail
 
-    async def run(self, dispatcher, tracker, domain):
+    async def run(self, output_channel, nlg, tracker, domain):
         """Simple run implementation uttering a (hopefully defined) template."""
 
         template = self.name()
-        message = await dispatcher.nlg.generate(
-            template, tracker, dispatcher.output_channel.name()
-        )
+        message = await nlg.generate(template, tracker, output_channel.name())
         if message is None:
             if not self.silent_fail:
                 logger.error(
@@ -196,7 +197,8 @@ class ActionUtterTemplate(Action):
                 )
             return []
 
-        await send_response(dispatcher, message)
+        log_bot_message_on_tracker(tracker, message)
+        await output_channel.send_response(tracker.sender_id, message)
 
         return []
 
@@ -213,10 +215,10 @@ class ActionBack(Action):
     def name(self) -> Text:
         return ACTION_BACK_NAME
 
-    async def run(self, dispatcher, tracker, domain):  # ask Tom
+    async def run(self, output_channel, nlg, tracker, domain):  # ask Tom
         # only utter the template if it is available
         events = await ActionUtterTemplate("utter_back", silent_fail=True).run(
-            dispatcher, tracker, domain
+            output_channel, nlg, tracker, domain
         )
 
         return events + [UserUtteranceReverted(), UserUtteranceReverted()]
@@ -231,7 +233,7 @@ class ActionListen(Action):
     def name(self) -> Text:
         return ACTION_LISTEN_NAME
 
-    async def run(self, dispatcher, tracker, domain):
+    async def run(self, output_channel, nlg, tracker, domain):
         return []
 
 
@@ -243,12 +245,12 @@ class ActionRestart(Action):
     def name(self) -> Text:
         return ACTION_RESTART_NAME
 
-    async def run(self, dispatcher, tracker, domain):
+    async def run(self, output_channel, nlg, tracker, domain):
         from rasa.core.events import Restarted
 
         # only utter the template if it is available
         events = await ActionUtterTemplate("utter_restart", silent_fail=True).run(
-            dispatcher, tracker, domain
+            output_channel, nlg, tracker, domain
         )
 
         return events + [Restarted()]
@@ -261,11 +263,11 @@ class ActionDefaultFallback(Action):
     def name(self) -> Text:
         return ACTION_DEFAULT_FALLBACK_NAME
 
-    async def run(self, dispatcher, tracker, domain):
+    async def run(self, output_channel, nlg, tracker, domain):
         from rasa.core.events import UserUtteranceReverted
 
         events = await ActionUtterTemplate("utter_default", silent_fail=True).run(
-            dispatcher, tracker, domain
+            output_channel, nlg, tracker, domain
         )
 
         return events + [UserUtteranceReverted()]
@@ -277,7 +279,7 @@ class ActionDeactivateForm(Action):
     def name(self) -> Text:
         return ACTION_DEACTIVATE_FORM_NAME
 
-    async def run(self, dispatcher, tracker, domain):
+    async def run(self, output_channel, nlg, tracker, domain):
         from rasa.core.events import Form, SlotSet
 
         return [Form(None), SlotSet(REQUESTED_SLOT, None)]
@@ -344,23 +346,18 @@ class RemoteAction(Action):
     @staticmethod
     async def _utter_responses(
         responses: List[Dict[Text, Any]],
-        dispatcher: "Dispatcher",
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
     ) -> None:
-        """Use the responses generated by the action endpoint and utter them.
-
-        Uses the normal dispatcher to utter the responses from the action
-        endpoint."""
+        """Use the responses generated by the action endpoint and utter them."""
 
         for response in responses:
             if "template" in response:
                 kwargs = response.copy()
                 del kwargs["template"]
-                draft = await dispatcher.nlg.generate(
-                    response["template"],
-                    tracker,
-                    dispatcher.output_channel.name(),
-                    **kwargs
+                draft = await nlg.generate(
+                    response["template"], tracker, output_channel.name(), **kwargs
                 )
                 if not draft:
                     continue
@@ -376,9 +373,11 @@ class RemoteAction(Action):
                 del response["buttons"]
 
             draft.update(response)
-            await send_response(dispatcher, draft)
 
-    async def run(self, dispatcher, tracker, domain):
+            log_bot_message_on_tracker(tracker, draft)
+            await output_channel.send_response(tracker.sender_id, draft)
+
+    async def run(self, output_channel, nlg, tracker, domain):
         json_body = self._action_call_format(tracker, domain)
 
         if not self.action_endpoint:
@@ -402,7 +401,7 @@ class RemoteAction(Action):
 
             events_json = response.get("events", [])
             responses = response.get("responses", [])
-            await self._utter_responses(responses, dispatcher, tracker)
+            await self._utter_responses(responses, output_channel, nlg, tracker)
 
             evts = events.deserialise_events(events_json)
             return evts
@@ -473,7 +472,8 @@ class ActionRevertFallbackEvents(Action):
 
     async def run(
         self,
-        dispatcher: "Dispatcher",
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
@@ -553,7 +553,8 @@ class ActionDefaultAskAffirmation(Action):
 
     async def run(
         self,
-        dispatcher: "Dispatcher",
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
@@ -567,7 +568,9 @@ class ActionDefaultAskAffirmation(Action):
                 {"title": "No", "payload": "/{}".format(USER_INTENT_OUT_OF_SCOPE)},
             ],
         }
-        await send_response(dispatcher, message)
+
+        log_bot_message_on_tracker(tracker, message)
+        await output_channel.send_response(tracker.sender_id, message)
 
         return []
 
@@ -580,12 +583,13 @@ class ActionDefaultAskRephrase(Action):
 
     async def run(
         self,
-        dispatcher: "Dispatcher",
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
         events = await ActionUtterTemplate("utter_ask_rephrase", silent_fail=True).run(
-            dispatcher, tracker, domain
+            output_channel, nlg, tracker, domain
         )
 
         return events

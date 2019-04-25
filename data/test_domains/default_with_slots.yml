@@ -24,7 +24,7 @@ templates:
   utter_channel:
     - text: "this is a default channel"
     - text: "you're talking to me on slack!"  # if you define channel-specific utterances, the bot will pick
-      channel: slack                          # from those when talking on that specific channel
+      channel: "slack"                        # from those when talking on that specific channel
   utter_goodbye:
     - text: "goodbye 😢"   # multiple templates - bot will randomly pick one of them
     - text: "bye bye 😢"

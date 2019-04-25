@@ -16,6 +16,7 @@ Added
 - you can now choose actions previously created in the same session
 in ``interactive learning``
 - add formatter 'black'
+- channel-specific utterances via the "channel" key in utterance template
 
 
 Changed
@@ -31,6 +32,7 @@ Removed
 - removed possibility to execute ``python -m rasa_core.train`` etc. (e.g. scripts in ``rasa.core`` and ``rasa.nlu``).
   Use the CLI for rasa instead, e.g. ``rasa train core``.
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
+- removed Dispatcher class from core 
 
 Fixed
 -----

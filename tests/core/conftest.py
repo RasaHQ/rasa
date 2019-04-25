@@ -18,7 +18,7 @@ from rasa.core.policies.memoization import (
     MemoizationPolicy,
     Policy,
 )
-from rasa.core.processor import MessageProcessor, Dispatcher
+from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
@@ -124,9 +124,8 @@ def default_agent_path(default_agent, tmpdir_factory):
 
 
 @pytest.fixture
-def default_dispatcher_collecting(default_nlg):
-    bot = CollectingOutputChannel()
-    return Dispatcher("my-sender", bot, default_nlg)
+def default_channel():
+    return CollectingOutputChannel()
 
 
 @pytest.fixture
@@ -235,10 +234,7 @@ def default_nlg(default_domain):
 
 @pytest.fixture
 def default_tracker(default_domain):
-    import uuid
-
-    uid = str(uuid.uuid1())
-    return DialogueStateTracker(uid, default_domain.slots)
+    return DialogueStateTracker("my-sender", default_domain.slots)
 
 
 @pytest.fixture(scope="session")

@@ -7,7 +7,7 @@ import asyncio
 import rasa.utils.io
 from rasa.core.actions.action import ActionUtterTemplate
 from rasa.core import jobs
-from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.channels import UserMessage
 from rasa.core.events import (
     ReminderScheduled,
     ReminderCancelled,
@@ -16,7 +16,7 @@ from rasa.core.events import (
     BotUttered,
     Restarted,
 )
-from rasa.core.processor import MessageProcessor, Dispatcher
+from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.utils.endpoints import EndpointConfig
 
@@ -30,10 +30,14 @@ def loop():
     return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
-async def test_message_processor(default_processor):
-    out = CollectingOutputChannel()
-    await default_processor.handle_message(UserMessage('/greet{"name":"Core"}', out))
-    assert {"recipient_id": "default", "text": "hey there Core!"} == out.latest_output()
+async def test_message_processor(default_channel, default_processor):
+    await default_processor.handle_message(
+        UserMessage('/greet{"name":"Core"}', default_channel)
+    )
+    assert {
+        "recipient_id": "default",
+        "text": "hey there Core!",
+    } == default_channel.latest_output()
 
 
 async def test_message_id_logging(default_processor):
@@ -76,111 +80,118 @@ async def test_http_parsing():
         assert json_of_latest_request(r)["message_id"] == message.message_id
 
 
-async def test_reminder_scheduled(default_processor):
-    out = CollectingOutputChannel()
+async def test_reminder_scheduled(default_channel, default_processor):
     sender_id = uuid.uuid4().hex
 
-    d = Dispatcher(sender_id, out, default_processor.nlg)
-    r = ReminderScheduled("utter_greet", datetime.datetime.now())
-    t = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    reminder = ReminderScheduled("utter_greet", datetime.datetime.now())
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
-    t.update(UserUttered("test"))
-    t.update(ActionExecuted("action_reminder_reminder"))
-    t.update(r)
+    tracker.update(UserUttered("test"))
+    tracker.update(ActionExecuted("action_reminder_reminder"))
+    tracker.update(reminder)
 
-    default_processor.tracker_store.save(t)
-    await default_processor.handle_reminder(r, d)
+    default_processor.tracker_store.save(tracker)
+    await default_processor.handle_reminder(
+        reminder, sender_id, default_channel, default_processor.nlg
+    )
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
     assert t.events[-4] == UserUttered(None)
     assert t.events[-3] == ActionExecuted("utter_greet")
     assert t.events[-2] == BotUttered(
-        "hey there None!", {"elements": None, "buttons": None, "attachment": None}
+        "hey there None!",
+        {
+            "elements": None,
+            "buttons": None,
+            "quick_replies": None,
+            "attachment": None,
+            "image": None,
+        },
     )
     assert t.events[-1] == ActionExecuted("action_listen")
 
 
-async def test_reminder_aborted(default_processor):
-    out = CollectingOutputChannel()
+async def test_reminder_aborted(default_channel, default_processor):
     sender_id = uuid.uuid4().hex
 
-    d = Dispatcher(sender_id, out, default_processor.nlg)
-    r = ReminderScheduled(
+    reminder = ReminderScheduled(
         "utter_greet", datetime.datetime.now(), kill_on_user_message=True
     )
-    t = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
-    t.update(r)
-    t.update(UserUttered("test"))  # cancels the reminder
+    tracker.update(reminder)
+    tracker.update(UserUttered("test"))  # cancels the reminder
 
-    default_processor.tracker_store.save(t)
-    await default_processor.handle_reminder(r, d)
+    default_processor.tracker_store.save(tracker)
+    await default_processor.handle_reminder(
+        reminder, sender_id, default_channel, default_processor.nlg
+    )
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 3  # nothing should have been executed
 
 
-async def test_reminder_cancelled(default_processor):
-    out = CollectingOutputChannel()
+async def test_reminder_cancelled(default_channel, default_processor):
     sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
     trackers = []
     for sender_id in sender_ids:
-        t = default_processor.tracker_store.get_or_create_tracker(sender_id)
+        tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
-        t.update(UserUttered("test"))
-        t.update(ActionExecuted("action_reminder_reminder"))
-        t.update(
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_reminder_reminder"))
+        tracker.update(
             ReminderScheduled(
                 "utter_greet", datetime.datetime.now(), kill_on_user_message=True
             )
         )
-        trackers.append(t)
+        trackers.append(tracker)
 
     # cancel reminder for the first user
     trackers[0].update(ReminderCancelled("utter_greet"))
 
-    for i, t in enumerate(trackers):
-        default_processor.tracker_store.save(t)
-        d = Dispatcher(sender_id, out, default_processor.nlg)
-        await default_processor._schedule_reminders(t.events, t, d)
+    for tracker in trackers:
+        default_processor.tracker_store.save(tracker)
+        await default_processor._schedule_reminders(
+            tracker.events, tracker, default_channel, default_processor.nlg
+        )
     # check that the jobs were added
     assert len((await jobs.scheduler()).get_jobs()) == 2
 
-    for t in trackers:
-        await default_processor._cancel_reminders(t.events, t)
+    for tracker in trackers:
+        await default_processor._cancel_reminders(tracker.events, tracker)
     # check that only one job was removed
     assert len((await jobs.scheduler()).get_jobs()) == 1
 
     # execute the jobs
     await asyncio.sleep(3)
 
-    t = default_processor.tracker_store.retrieve(sender_ids[0])
+    tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
-    assert ActionExecuted("utter_greet") not in t.events
+    assert ActionExecuted("utter_greet") not in tracker_0.events
 
-    t = default_processor.tracker_store.retrieve(sender_ids[1])
+    tracker_1 = default_processor.tracker_store.retrieve(sender_ids[1])
     # there should be utter_greet action
-    assert ActionExecuted("utter_greet") in t.events
+    assert ActionExecuted("utter_greet") in tracker_1.events
 
 
-async def test_reminder_restart(default_processor: MessageProcessor):
-    out = CollectingOutputChannel()
+async def test_reminder_restart(default_channel, default_processor: MessageProcessor):
     sender_id = uuid.uuid4().hex
 
-    d = Dispatcher(sender_id, out, default_processor.nlg)
-    r = ReminderScheduled(
+    reminder = ReminderScheduled(
         "utter_greet", datetime.datetime.now(), kill_on_user_message=False
     )
-    t = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
-    t.update(r)
-    t.update(Restarted())  # cancels the reminder
-    t.update(UserUttered("test"))
+    tracker.update(reminder)
+    tracker.update(Restarted())  # cancels the reminder
+    tracker.update(UserUttered("test"))
 
-    default_processor.tracker_store.save(t)
-    await default_processor.handle_reminder(r, d)
+    default_processor.tracker_store.save(tracker)
+    await default_processor.handle_reminder(
+        reminder, sender_id, default_channel, default_processor.nlg
+    )
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
@@ -188,21 +199,24 @@ async def test_reminder_restart(default_processor: MessageProcessor):
 
 
 async def test_logging_of_bot_utterances_on_tracker(
-    default_processor, default_dispatcher_collecting, default_agent, default_domain
+    default_channel, default_nlg, default_agent, default_domain
 ):
     sender_id = "test_logging_of_bot_utterances_on_tracker"
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
+    assert tracker.action_utterances == []
+
     await ActionUtterTemplate("utter_goodbye").run(
-        default_dispatcher_collecting, tracker, default_domain
+        default_channel, default_nlg, tracker, default_domain
     )
     await ActionUtterTemplate("utter_channel").run(
-        default_dispatcher_collecting, tracker, default_domain
+        default_channel, default_nlg, tracker, default_domain
     )
 
-    assert len(default_dispatcher_collecting.latest_bot_messages) == 2
+    assert len(tracker.action_utterances) == 2
+    event_count = len(tracker.events)
 
-    default_processor.log_bot_utterances_on_tracker(
-        tracker, default_dispatcher_collecting
-    )
-    assert not default_dispatcher_collecting.latest_bot_messages
+    tracker.log_action_utterances_to_events()
+
+    assert len(tracker.action_utterances) == 0
+    assert len(tracker.events) == event_count + 2

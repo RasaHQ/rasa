@@ -11,7 +11,12 @@ from typing import Any, Callable, Dict, List, Optional, Text, Union
 import aiohttp
 
 from rasa.core import constants, jobs, training, utils
-from rasa.core.channels import InputChannel, OutputChannel, UserMessage
+from rasa.core.channels import (
+    InputChannel,
+    OutputChannel,
+    UserMessage,
+    CollectingOutputChannel,
+)
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
 from rasa.core.exceptions import AgentNotReady
@@ -20,7 +25,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies import FormPolicy, Policy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.processor import MessageProcessor, Dispatcher
+from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
@@ -402,7 +407,7 @@ class Agent(object):
         self,
         sender_id: Text,
         action: Text,
-        dispatcher: Dispatcher,
+        output_channel: CollectingOutputChannel,
         policy: Text,
         confidence: float,
     ) -> DialogueStateTracker:
@@ -410,7 +415,7 @@ class Agent(object):
 
         processor = self.create_processor()
         return await processor.execute_action(
-            sender_id, action, dispatcher, policy, confidence
+            sender_id, action, output_channel, self.nlg, policy, confidence
         )
 
     async def handle_text(
