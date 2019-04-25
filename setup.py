@@ -86,7 +86,7 @@ extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy<=2.0.18,>2.0"],
     "mitie": ["mitie"],
-    "sql": ["psycopg2~=2.8.2"]
+    "sql": ["psycopg2~=2.8.2"],
 }
 
 setup(

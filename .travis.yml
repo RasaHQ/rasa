@@ -12,6 +12,7 @@ env:
   global:
   - BOTO_CONFIG=/dev/null
   - COVERALLS_PARALLEL=true
+  - PIP_USE_PEP517=false
 
 install:
   - sudo apt-get install graphviz graphviz-dev
@@ -115,7 +116,7 @@ jobs:
     name: "Test Docs Core"
     install:
     - pip install -r requirements-docs.txt
-    - pip install -e .
+    - pip install -e .[sql]
     - pip list
     script:
       # be strict about warnings --> they will be treated as errors
