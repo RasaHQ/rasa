@@ -126,8 +126,6 @@ def train_core(
     train_path: Optional[Text],
     kwargs: Optional[Dict],
 ) -> Optional[Text]:
-    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
-
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
         train_core_async(domain, config, stories, output, train_path, kwargs)
