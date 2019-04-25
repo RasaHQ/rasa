@@ -19,7 +19,7 @@ install:
   - python -m pip install -U pip
   - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r requirements-dev.txt
-  - pip install -e . --no-use-pep517
+  - pip install -e .
   - pip install coveralls==1.3.0
   - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > jnk
   - python -m spacy link en_core_web_md en
