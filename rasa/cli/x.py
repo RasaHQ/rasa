@@ -2,11 +2,10 @@ import argparse
 import datetime
 import importlib.util
 import logging
-import os
 import signal
 import sys
 from multiprocessing import get_context
-from typing import List, Text, Dict, Any
+from typing import List, Text
 
 import rasa.utils.io
 import questionary
@@ -20,8 +19,10 @@ from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
 )
+from rasa.utils.common import read_global_config_value, write_global_config_value
 
 logger = logging.getLogger(__name__)
+
 
 # noinspection PyProtectedMember
 def add_subparser(
@@ -109,35 +110,14 @@ def start_event_service():
     p.start()
 
 
-def _write_config(global_config: Dict[Text, Any]) -> None:
-    """Read global Rasa configuration."""
-
-    os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
-
-    rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, global_config)
-
-
-def _read_config() -> Dict[Text, Any]:
-    """Read global Rasa configuration."""
-
-    if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
-        return {}
-
-    # noinspection PyBroadException
-    try:
-        return rasa.utils.io.read_yaml_file(GLOBAL_USER_CONFIG_PATH)
-    except Exception:
-        # if things go south we pretend there is no config
-        return {}
-
-
 def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
     """Make sure the user consents to any metrics collection."""
 
-    global_config = _read_config()
-
-    if "metrics" in global_config:
-        return global_config["metrics"].get("enabled", False)
+    try:
+        allow_metrics = read_global_config_value("metrics", unavailable_ok=False)
+        return allow_metrics.get("enabled", False)
+    except ValueError:
+        pass  # swallow the error and ask the user
 
     allow_metrics = (
         questionary.confirm(
@@ -156,8 +136,7 @@ def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
 
     if not args.no_prompt:
         date = datetime.datetime.now()
-        global_config["metrics"] = {"enabled": allow_metrics, "date": date}
-        _write_config(global_config)
+        write_global_config_value("metrics", {"enabled": allow_metrics, "date": date})
 
     return allow_metrics
 
