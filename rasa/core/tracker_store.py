@@ -4,8 +4,6 @@ import pickle
 from typing import Iterator, KeysView, List, Optional, Text
 
 import itertools
-import psycopg2
-import sqlalchemy
 
 # noinspection PyPep8Naming
 from time import sleep
@@ -295,6 +293,7 @@ class SQLTrackerStore(TrackerStore):
         event_broker: Optional[EventChannel] = None,
         login_db: Optional[Text] = None,
     ) -> None:
+        import sqlalchemy
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
@@ -362,6 +361,7 @@ class SQLTrackerStore(TrackerStore):
     def _create_database(engine: "Engine", db: Text):
         """Create database `db` on `engine` if it does not exist."""
 
+        import psycopg2
         conn = engine.connect()
 
         cursor = conn.connection.cursor()
