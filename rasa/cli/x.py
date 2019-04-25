@@ -16,8 +16,10 @@ import rasa.core.utils
 from rasa.cli.utils import print_success, get_validated_path
 
 from rasa.constants import (
-    GLOBAL_USER_CONFIG_PATH, DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_CREDENTIALS_PATH)
+    GLOBAL_USER_CONFIG_PATH,
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_CREDENTIALS_PATH,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,8 @@ def add_subparser(
     shell_parser = subparsers.add_parser("x", **x_parser_args)
 
     shell_parser.add_argument(
-        "--no_prompt", "--no-prompt",
+        "--no_prompt",
+        "--no-prompt",
         action="store_true",
         help="Automatic yes or default options to prompts and oppressed warnings",
     )
@@ -136,15 +139,20 @@ def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
     if "metrics" in global_config:
         return global_config["metrics"].get("enabled", False)
 
-    allow_metrics = questionary.confirm(
-        "Rasa will track a minimal amount of anonymized usage information "
-        "(like how often you use the 'train' button) to help us improve Rasa X. "
-        "None of your training data or conversations will ever be sent to Rasa. "
-        "Are you OK with Rasa collecting anonymized usage data?"
-    ).skip_if(args.no_prompt, default=True).ask()
+    allow_metrics = (
+        questionary.confirm(
+            "Rasa will track a minimal amount of anonymized usage information "
+            "(like how often you use the 'train' button) to help us improve Rasa X. "
+            "None of your training data or conversations will ever be sent to Rasa. "
+            "Are you OK with Rasa collecting anonymized usage data?"
+        )
+        .skip_if(args.no_prompt, default=True)
+        .ask()
+    )
 
-    print_success("Your decision has been stored into {}. "
-                  "".format(GLOBAL_USER_CONFIG_PATH))
+    print_success(
+        "Your decision has been stored into {}. " "".format(GLOBAL_USER_CONFIG_PATH)
+    )
 
     if not args.no_prompt:
         date = datetime.datetime.now()
@@ -281,6 +289,6 @@ def rasa_x(args: argparse.Namespace):
 
         start_core_for_local_platform(args, rasa_x_token=rasa_x_token)
 
-        main_local(args.project_path, args.data_path,
-                   token=rasa_x_token,
-                   metrics=metrics)
+        main_local(
+            args.project_path, args.data_path, token=rasa_x_token, metrics=metrics
+        )

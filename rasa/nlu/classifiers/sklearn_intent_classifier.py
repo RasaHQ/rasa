@@ -198,12 +198,11 @@ class SklearnIntentClassifier(Component):
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
         if self.clf:
-            utils.pycloud_pickle(os.path.join(model_dir, classifier_file_name),
-                                 self.clf)
-            utils.pycloud_pickle(os.path.join(model_dir, encoder_file_name),
-                                 self.le)
-        return {"classifier": classifier_file_name,
-                "encoder": encoder_file_name}
+            utils.pycloud_pickle(
+                os.path.join(model_dir, classifier_file_name), self.clf
+            )
+            utils.pycloud_pickle(os.path.join(model_dir, encoder_file_name), self.le)
+        return {"classifier": classifier_file_name, "encoder": encoder_file_name}
 
     @classmethod
     def load(

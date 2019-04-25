@@ -137,9 +137,11 @@ class CountVectorsFeaturizer(Featurizer):
                     "contain single letters only."
                 )
 
-    def __init__(self,
-                 component_config: Dict[Text, Any] = None,
-                 vectorizer: Optional["CountVectorsFeaturizer"] = None) -> None:
+    def __init__(
+        self,
+        component_config: Dict[Text, Any] = None,
+        vectorizer: Optional["CountVectorsFeaturizer"] = None,
+    ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
 
         super(CountVectorsFeaturizer, self).__init__(component_config)

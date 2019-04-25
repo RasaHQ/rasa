@@ -105,12 +105,9 @@ class NGramFeaturizer(Featurizer):
 
         file_name = file_name + ".json"
         featurizer_file = os.path.join(model_dir, file_name)
-        data = {"all_ngrams": self.all_ngrams,
-                "best_num_ngrams": self.best_num_ngrams}
+        data = {"all_ngrams": self.all_ngrams, "best_num_ngrams": self.best_num_ngrams}
 
-        write_json_to_file(
-            featurizer_file, data, separators=(",", ": ")
-        )
+        write_json_to_file(featurizer_file, data, separators=(",", ": "))
 
         return {"file": file_name}
 

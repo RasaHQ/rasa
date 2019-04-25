@@ -25,8 +25,10 @@ def read_endpoint_config(
     try:
         content = rasa.utils.io.read_yaml_file(filename)
     except FileNotFoundError:
-        logger.error("Failed to read endpoint configuration "
-                     "from {}. No such file.".format(os.path.abspath(filename)))
+        logger.error(
+            "Failed to read endpoint configuration "
+            "from {}. No such file.".format(os.path.abspath(filename))
+        )
 
     if endpoint_type in content:
         return EndpointConfig.from_dict(content[endpoint_type])
