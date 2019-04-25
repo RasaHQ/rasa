@@ -27,9 +27,13 @@ def get_validated_path(
 
     if current is None or current is not None and not os.path.exists(current):
         if default is not None and os.path.exists(default):
+            not_found = (
+                "'{}' not found.".format(current)
+                if current is not None
+                else "Parameter '{}' not set.".format(parameter)
+            )
             print_warning(
-                "'{}' not found. Using default location '{}' instead."
-                "".format(current, default)
+                "{} Using default location '{}' instead." "".format(not_found, default)
             )
             current = default
         elif none_is_valid:
