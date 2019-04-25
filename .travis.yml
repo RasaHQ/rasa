@@ -116,7 +116,7 @@ jobs:
     name: "Test Docs Core"
     install:
     - pip install -r requirements-docs.txt
-    - pip install -e .
+    - pip install -e .[sql]
     - pip list
     script:
       # be strict about warnings --> they will be treated as errors
