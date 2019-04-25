@@ -13,6 +13,7 @@ from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.utils import write_json_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +44,11 @@ class NGramFeaturizer(Featurizer):
         "min_intent_examples": 4,
     }
 
-    def __init__(self, component_config=None):
+    def __init__(self, component_config=None, all_ngrams=None, best_num_ngrams=None):
         super(NGramFeaturizer, self).__init__(component_config)
 
-        self.best_num_ngrams = None
-        self.all_ngrams = None
+        self.best_num_ngrams = best_num_ngrams
+        self.all_ngrams = all_ngrams
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -94,16 +95,23 @@ class NGramFeaturizer(Featurizer):
         featurizer_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(featurizer_file):
-            return utils.pycloud_unpickle(featurizer_file)
+            data = utils.read_json_file(featurizer_file)
+            return NGramFeaturizer(meta, data["all_ngrams"], data["best_num_ngrams"])
         else:
             return NGramFeaturizer(meta)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
-        file_name = file_name + ".pkl"
+        file_name = file_name + ".json"
         featurizer_file = os.path.join(model_dir, file_name)
-        utils.pycloud_pickle(featurizer_file, self)
+        data = {"all_ngrams": self.all_ngrams,
+                "best_num_ngrams": self.best_num_ngrams}
+
+        write_json_to_file(
+            featurizer_file, data, separators=(",", ": ")
+        )
+
         return {"file": file_name}
 
     def train_on_sentences(self, examples):

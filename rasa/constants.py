@@ -10,6 +10,6 @@ DEFAULT_DATA_PATH = "data"
 DEFAULT_RESULTS_PATH = "results"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
-MINIMUM_COMPATIBLE_VERSION = "0.15.0a6"
+MINIMUM_COMPATIBLE_VERSION = "1.0.0a2"
 
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/config.yml")

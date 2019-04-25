@@ -192,6 +192,19 @@ class SklearnIntentClassifier(Component):
         sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
         return sorted_indices, pred_result[:, sorted_indices]
 
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        """Persist this model into the passed directory."""
+
+        classifier_file_name = file_name + "_classifier.pkl"
+        encoder_file_name = file_name + "_encoder.pkl"
+        if self.clf:
+            utils.pycloud_pickle(os.path.join(model_dir, classifier_file_name),
+                                 self.clf)
+            utils.pycloud_pickle(os.path.join(model_dir, encoder_file_name),
+                                 self.le)
+        return {"classifier": classifier_file_name,
+                "encoder": encoder_file_name}
+
     @classmethod
     def load(
         cls,
@@ -202,18 +215,12 @@ class SklearnIntentClassifier(Component):
         **kwargs: Any
     ) -> "SklearnIntentClassifier":
 
-        file_name = meta.get("file")
-        classifier_file = os.path.join(model_dir, file_name)
+        classifier_file = os.path.join(model_dir, meta.get("classifier"))
+        encoder_file = os.path.join(model_dir, meta.get("encoder"))
 
         if os.path.exists(classifier_file):
-            return utils.pycloud_unpickle(classifier_file)
+            classifier = utils.pycloud_unpickle(classifier_file)
+            encoder = utils.pycloud_unpickle(encoder_file)
+            return cls(meta, classifier, encoder)
         else:
             return cls(meta)
-
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this model into the passed directory."""
-
-        file_name = file_name + ".pkl"
-        classifier_file = os.path.join(model_dir, file_name)
-        utils.pycloud_pickle(classifier_file, self)
-        return {"file": file_name}
