@@ -16,8 +16,11 @@ def test(
     nlu_data: Text,
     endpoints: Text = None,
     output: Text = DEFAULT_RESULTS_PATH,
-    kwargs: Optional[Dict] = Dict,
+    kwargs: Optional[Dict] = None,
 ):
+    if kwargs is None:
+        kwargs = {}
+
     test_core(model, stories, endpoints, output, **kwargs)
     test_nlu(model, nlu_data, kwargs)
 
@@ -28,7 +31,7 @@ def test_core(
     endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     model_path: Optional[Text] = None,
-    kwargs: Optional[Dict] = Dict,
+    kwargs: Optional[Dict] = None,
 ):
     import rasa.core.test
     import rasa.core.utils as core_utils
@@ -38,6 +41,9 @@ def test_core(
     from rasa.core.agent import Agent
 
     _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
+
+    if kwargs is None:
+        kwargs = {}
 
     if output:
         nlu_utils.create_dir(output)
@@ -56,10 +62,7 @@ def test_core(
 
             _agent = Agent.load(core_path, interpreter=_interpreter)
 
-            kwargs = minimal_kwargs(kwargs, rasa.core.test)
-
-            if "stories" in kwargs:
-                kwargs.pop("stories")
+            kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
 
             loop.run_until_complete(
                 rasa.core.test(stories, _agent, out_directory=output, **kwargs)
@@ -88,13 +91,7 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
-        kwargs = minimal_kwargs(kwargs, run_evaluation)
-
-        if "data_path" in kwargs:
-            kwargs.pop("data_path")
-        if "model" in kwargs:
-            kwargs.pop("model")
-
+        kwargs = minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
         run_evaluation(nlu_data, nlu_model, **kwargs)
 
 

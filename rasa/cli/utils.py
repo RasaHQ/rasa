@@ -113,12 +113,16 @@ def create_output_path(
         return os.path.join(output_path, file_name)
 
 
-def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
-    """Returns only the kwargs which are required by a function.
+def minimal_kwargs(
+    kwargs: Dict[Text, Any], func: Callable, exception_keys: Optional[List] = None
+) -> Dict[Text, Any]:
+    """Returns only the kwargs which are required by a function. Keys, contained in
+    the exception list, are not included.
 
     Args:
         kwargs: All available kwargs.
         func: The function which should be called.
+        exception_keys: Keys to exclude from the result.
 
     Returns:
         Subset of kwargs which are accepted by `func`.
@@ -126,9 +130,16 @@ def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
     """
     from rasa.utils.common import arguments_of
 
+    if exception_keys is None:
+        exception_keys = []
+
     possible_arguments = arguments_of(func)
 
-    return {k: v for k, v in kwargs.items() if k in possible_arguments}
+    return {
+        k: v
+        for k, v in kwargs.items()
+        if k in possible_arguments and k not in exception_keys
+    }
 
 
 def print_success(*args: Any):
