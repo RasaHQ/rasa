@@ -23,12 +23,12 @@ def test(
 
 
 def test_core(
-    model: Text,
-    stories: Text,
-    endpoints: Text = None,
+    model: Optional[Text] = None,
+    stories: Optional[Text] = None,
+    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
-    model_path: Text = None,
-    **kwargs: Dict
+    model_path: Optional[Text] = None,
+    kwargs: Optional[Dict] = Dict,
 ):
     import rasa.core.test
     import rasa.core.utils as core_utils
@@ -57,6 +57,10 @@ def test_core(
             _agent = Agent.load(core_path, interpreter=_interpreter)
 
             kwargs = minimal_kwargs(kwargs, rasa.core.test)
+
+            if "stories" in kwargs:
+                kwargs.pop("stories")
+
             loop.run_until_complete(
                 rasa.core.test(stories, _agent, out_directory=output, **kwargs)
             )

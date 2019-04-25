@@ -11,6 +11,7 @@ from rasa.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
+    DEFAULT_RESULTS_PATH,
 )
 from rasa.model import get_latest_model, get_model
 
@@ -172,26 +173,33 @@ def _add_nlu_subparser_arguments(parser: argparse.ArgumentParser):
 def test_core(args: argparse.Namespace, model_path: Optional[Text] = None) -> None:
     from rasa.test import test_core
 
-    args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
-    args.endpoints = get_validated_path(
+    model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
-    args.config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
-    args.stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
+    stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
+    stories = data.get_core_directory(stories)
+    out = get_validated_path(args.output, "output", DEFAULT_RESULTS_PATH)
 
-    args.stories = data.get_core_directory(args.stories)
-
-    test_core(model_path=model_path, **vars(args))
+    test_core(
+        model=model,
+        stories=stories,
+        endpoints=endpoints,
+        model_path=model_path,
+        output=out,
+        kwargs=vars(args),
+    )
 
 
 def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None) -> None:
     from rasa.test import test_nlu, test_nlu_with_cross_validation
 
     args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    model_path = model_path or args.model
+
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     if os.path.isdir(nlu_data):
         nlu_data = data.get_nlu_directory(nlu_data)
-    model_path = model_path or args.model
 
     if model_path:
         test_nlu(model_path, nlu_data, vars(args))
