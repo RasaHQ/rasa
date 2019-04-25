@@ -18,11 +18,11 @@ def train(
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
-    args: Optional[Dict] = None,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_async(domain, config, training_files, output, force_training, args)
+        train_async(domain, config, training_files, output, force_training, kwargs)
     )
 
 
@@ -32,7 +32,7 @@ async def train_async(
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
-    args: Optional[Dict] = None,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
@@ -42,7 +42,7 @@ async def train_async(
         training_files: Paths to the training data for Core and NLU.
         output: Output path.
         force_training: If `True` retrain model even if data has not changed.
-        args: Additional training parameters.
+        kwargs: Additional training parameters.
 
     Returns:
         Path of the trained model archive.
@@ -72,7 +72,7 @@ async def train_async(
 
     if force_training or retrain_core:
         await train_core_async(
-            domain, config, story_directory, output, train_path, args
+            domain, config, story_directory, output, train_path, kwargs
         )
     else:
         print (
@@ -109,11 +109,11 @@ def train_core(
     stories: Text,
     output: Text,
     train_path: Optional[Text],
-    args: Optional[Dict],
+    kwargs: Optional[Dict],
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_core_async(domain, config, stories, output, train_path, args)
+        train_core_async(domain, config, stories, output, train_path, kwargs)
     )
 
 
@@ -123,7 +123,7 @@ async def train_core_async(
     stories: Text,
     output: Text,
     train_path: Optional[Text] = None,
-    args: Optional[Dict] = None,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Core model.
 
@@ -134,7 +134,7 @@ async def train_core_async(
         output: Output path.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
-        args: Additional training parameters.
+        kwargs: Additional training parameters.
 
     Returns:
         If `train_path` is given it returns the path to the model archive,
@@ -151,7 +151,7 @@ async def train_core_async(
         stories_file=stories,
         output_path=os.path.join(_train_path, "core"),
         policy_config=config,
-        kwargs=args,
+        kwargs=kwargs,
     )
 
     if not train_path:
