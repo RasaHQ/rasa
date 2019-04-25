@@ -99,7 +99,7 @@ def _add_nlu_arguments(
         "-u",
         "--nlu",
         type=str,
-        default="data/nlu",
+        default=DEFAULT_DATA_PATH,
         help="file containing training/evaluation data",
     )
 
@@ -194,7 +194,7 @@ def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None) -> Non
     model_path = model_path or args.model
 
     if model_path:
-        test_nlu(nlu_data=nlu_data, **vars(args))
+        test_nlu(model_path, nlu_data, vars(args))
     else:
         print ("No model specified. Model will be trained using cross validation.")
         config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
@@ -207,4 +207,4 @@ def test(args: argparse.Namespace):
     unpacked_model = get_model(model_path)
 
     test_core(args, unpacked_model)
-    test_nlu(args, unpacked_model)
+    test_nlu(args, model_path)

@@ -784,10 +784,10 @@ def run_evaluation(
     data_path: Text,
     model_path: Text,
     report_folder: Text = None,
-    successes_filename: Text = None,
-    errors_filename: Text = "errors.json",
-    confmat_filename: Text = None,
-    intent_hist_filename: Text = None,
+    successes: Text = None,
+    errors: Text = "errors.json",
+    confmat: Text = None,
+    histogram: Text = None,
     component_builder: Text = None,
 ) -> Dict:  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
@@ -820,12 +820,7 @@ def run_evaluation(
 
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results,
-            report_folder,
-            successes_filename,
-            errors_filename,
-            confmat_filename,
-            intent_hist_filename,
+            intent_results, report_folder, successes, errors, confmat, histogram
         )
 
     if extractors:

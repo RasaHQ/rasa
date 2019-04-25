@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Text, Dict
+from typing import Text, Dict, Optional
 import os
 
 from rasa.constants import DEFAULT_RESULTS_PATH
@@ -16,10 +16,10 @@ def test(
     nlu_data: Text,
     endpoints: Text = None,
     output: Text = DEFAULT_RESULTS_PATH,
-    **kwargs
+    kwargs: Optional[Dict] = Dict,
 ):
     test_core(model, stories, endpoints, output, **kwargs)
-    test_nlu(model, nlu_data, **kwargs)
+    test_nlu(model, nlu_data, kwargs)
 
 
 def test_core(
@@ -77,13 +77,20 @@ def test_core(
         plot_curve(output, number_of_stories)
 
 
-def test_nlu(model: Text, nlu_data: Text, **kwargs: Dict):
+def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict]):
     from rasa.nlu.test import run_evaluation
 
     unpacked_model = get_model(model)
     nlu_model = os.path.join(unpacked_model, "nlu")
+
     if os.path.exists(nlu_model):
         kwargs = minimal_kwargs(kwargs, run_evaluation)
+
+        if "data_path" in kwargs:
+            kwargs.pop("data_path")
+        if "model" in kwargs:
+            kwargs.pop("model")
+
         run_evaluation(nlu_data, nlu_model, **kwargs)
 
 
