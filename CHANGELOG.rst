@@ -57,3 +57,4 @@ Fixed
 - in interactive learning: only updates entity values if user changes annotation
 - ``SQLTrackerStore.keys()`` now returns the distinct stored sender ids
   instead of the column names
+- ``rasa train core`` actually uses additional arguments, such as `augmentation`

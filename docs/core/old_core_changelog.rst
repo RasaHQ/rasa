@@ -200,7 +200,7 @@ Fixed
   dispatched messages using ``dispatcher.utter_custom_message``
 - re-added missing ``python-engineio`` dependency
 - fixed not working examples in ``examples/``
-- strip newlins from messages so you don't have something like "\n/restart\n"
+- strip newlines from messages so you don't have something like "\n/restart\n"
 - properly reload domain when using ``/model`` endpoint to upload new model
 - updated documentation for custom channels to use the ``credentials.yml``
 

@@ -111,8 +111,6 @@ def test_is_not_nlu_file_with_json():
     assert not data._is_nlu_file(file)
 
 
-@pytest.mark.parametrize(
-    "line", ["- example", "## story intent 1 + two" "##slots" "* entry"]
-)
+@pytest.mark.parametrize("line", ["- example", "## story intent 1 + two##slots* entry"])
 def test_not_contains_nlu_pattern(line):
     assert not data._contains_nlu_pattern(line)

@@ -15,8 +15,10 @@ venv
 .ipynb_checkpoints
 .ruby-version
 .tox
+.pytype
 dist/
 data/*
+pip-wheel-metadata
 !data/examples
 !data/test
 !data/README.md
