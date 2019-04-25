@@ -57,6 +57,7 @@ async def train_async(
     new_fingerprint = model.model_fingerprint(
         config, domain, nlu_data_directory, story_directory
     )
+
     if not force_training and old_model:
         unpacked = model.unpack_model(old_model)
         old_core, old_nlu = model.get_model_subdirectories(unpacked)

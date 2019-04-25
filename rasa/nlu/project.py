@@ -83,7 +83,7 @@ def _get_remote_model_name(filename: Optional[Text]) -> Text:
 
     remote server."""
     if filename is not None:  # use the filename header if present
-        return filename.strip(".zip")
+        return filename.strip(".tar.gz")
     else:  # or else use a timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         return MODEL_NAME_PREFIX + timestamp
