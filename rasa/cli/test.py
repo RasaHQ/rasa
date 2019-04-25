@@ -179,14 +179,15 @@ def test_core(args: argparse.Namespace, model_path: Optional[Text] = None) -> No
     )
     stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
     stories = data.get_core_directory(stories)
-    out = get_validated_path(args.output, "output", DEFAULT_RESULTS_PATH)
+    output = get_validated_path(args.output, "output", DEFAULT_RESULTS_PATH)
+    args.config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
     test_core(
         model=model,
         stories=stories,
         endpoints=endpoints,
         model_path=model_path,
-        output=out,
+        output=output,
         kwargs=vars(args),
     )
 
