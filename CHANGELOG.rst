@@ -27,6 +27,9 @@ Added
 - you can now choose actions previously created in the same session
 in ``interactive learning``
 - add formatter 'black'
+- support to load sub skills (domain, stories, nlu data)
+- support to select which sub skills to load through ``import`` section in
+  ``config.yml``
 
 
 Changed
