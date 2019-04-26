@@ -149,7 +149,7 @@ async def train_core_async(
     # normal (not compare) training
     core_model = await rasa.core.train(
         domain_file=domain,
-        stories_file=stories,
+        stories_file=data.get_core_directory(stories),
         output_path=os.path.join(_train_path, "core"),
         policy_config=config,
         kwargs=kwargs,
@@ -189,7 +189,7 @@ def train_nlu(
 
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa.nlu.train(
-        config, nlu_data, _train_path, project="", fixed_model_name="nlu"
+        config, data.get_nlu_directory(nlu_data), _train_path, project="", fixed_model_name="nlu"
     )
 
     if not train_path:
