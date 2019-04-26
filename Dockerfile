@@ -1,15 +1,23 @@
-FROM python:3.6-slim as builder
-# if this installation process changes, the enterprise container needs to be
-# updated as well
+# Create common base stage
+FROM python:3.6-slim as base
+
 WORKDIR /build
-COPY . .
-RUN python setup.py sdist bdist_wheel
-RUN find dist -maxdepth 1 -mindepth 1 -name '*.tar.gz' -print0 | xargs -0 -I {} mv {} rasa.tar.gz
 
-FROM python:3.6-slim
+# Create virtualenv to isolate builds
+RUN python -m venv /build
 
-SHELL ["/bin/bash", "-c"]
+# Make sure we use the virtualenv
+ENV PATH="/build/bin:$PATH"
 
+# Stage to build and install everything
+FROM base as builder
+
+# Copy only what we really need
+COPY README.md .
+COPY rasa ./rasa
+COPY setup.py .
+
+# Install all required build libraries
 RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
   build-essential \
@@ -24,26 +32,28 @@ RUN apt-get update -qq && \
   libffi-dev \
   libpng-dev \
   libpq-dev \
-  curl && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-  mkdir /install
+  curl
 
-WORKDIR /install
+# Install Rasa and its dependencies
+RUN pip install -e .[sql] && \
+    # Remove pip from virtualenv since we don't need it anymore
+    pip uninstall --yes pip
 
-# Copy as early as possible so we can cache ...
-COPY requirements.txt .
+# Runtime stage which uses the virtualenv which we built in the previous stage
+FROM base AS runner
 
-RUN pip install -r requirements.txt --no-cache-dir
+# Copy virtualenv from previous stage
+COPY --from=builder /build /build
 
-COPY --from=builder /build/rasa.tar.gz .
-RUN pip install ./rasa.tar.gz[sql]
-
-VOLUME ["/app"]
 WORKDIR /app
+
+# Make sure the default group has the same permissions as the owner
+RUN chmod -R g=u .
+
+# Don't run as root
+USER 1001
 
 EXPOSE 5005
 
 ENTRYPOINT ["rasa"]
-
 CMD ["--help"]
