@@ -106,7 +106,7 @@ def _find_core_nlu_files_in_directory(
                 continue
 
             full_path = os.path.join(root, f)
-            if is_nlu_file(full_path):
+            if _is_nlu_file(full_path):
                 nlu_data_files.add(full_path)
             else:
                 story_files.add(full_path)
@@ -114,7 +114,7 @@ def _find_core_nlu_files_in_directory(
     return story_files, nlu_data_files
 
 
-def is_nlu_file(file_path: Text) -> bool:
+def _is_nlu_file(file_path: Text) -> bool:
     with open(file_path, encoding="utf-8") as f:
         if file_path.endswith(".json"):
             content = f.read()
@@ -128,10 +128,6 @@ def _contains_nlu_pattern(text: Text) -> bool:
     nlu_pattern = r"\s*##\s*(intent|regex||synonym|lookup):"
 
     return re.match(nlu_pattern, text) is not None
-
-
-def is_story_file(file_path: Text) -> bool:
-    return file_path.endswith(".md") and not is_nlu_file(file_path)
 
 
 def is_domain_file(file_path: Text) -> bool:
