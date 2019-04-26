@@ -9,7 +9,6 @@ from rasa.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
-    from rasa.core.run import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +64,7 @@ async def train(
 ):
     from rasa.core.agent import Agent
     from rasa.core import config, utils
-    from rasa.core.run import AvailableEndpoints
+    from rasa.core.utils import AvailableEndpoints
 
     if not endpoints:
         endpoints = AvailableEndpoints()

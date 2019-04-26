@@ -63,7 +63,7 @@ def run(
             core_path,
             nlu_path,
             channel=channel,
-            credentials_file=credentials,
+            credentials=credentials,
             endpoints=_endpoints,
             **kwargs
         )

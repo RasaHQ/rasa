@@ -13,7 +13,18 @@ import zipfile
 from asyncio import Future
 from hashlib import md5, sha1
 from io import BytesIO as IOReader, StringIO
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Text,
+    Tuple,
+    Callable,
+    Awaitable,
+)
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -388,7 +399,7 @@ def float_arg(
         return arg
 
     try:
-        return float(arg)
+        return float(str(arg))
     except (ValueError, TypeError):
         logger.warning("Failed to convert '{}' to float.".format(arg))
         return default
@@ -588,12 +599,12 @@ class LockCounter(asyncio.Lock):
         super().__init__()
         self.wait_counter = 0
 
-    async def acquire(self) -> Any:
+    async def acquire(self) -> bool:
         """Acquire the lock, makes sure only one coroutine can retrieve it."""
 
         self.wait_counter += 1
         try:
-            return await super(LockCounter, self).acquire()
+            return await super(LockCounter, self).acquire()  # type: ignore
         finally:
             self.wait_counter -= 1
 
