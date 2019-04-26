@@ -14,7 +14,7 @@ def test(
     model: Text,
     stories: Text,
     nlu_data: Text,
-    endpoints: Text = None,
+    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
     kwargs: Optional[Dict] = None,
 ):
