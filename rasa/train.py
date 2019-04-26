@@ -8,8 +8,9 @@ from rasa import model, data
 from rasa.cli.utils import (
     create_output_path,
     print_success,
-    is_valid_config,
+    missing_config_keys,
     print_warning,
+    get_validated_path,
 )
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
@@ -222,14 +223,29 @@ def train_nlu(
     return nlu_model
 
 
-def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
-    if not is_valid_config(config, mandatory_keys):
-        default = FALLBACK_CONFIG_PATH
-        print_warning(
-            "Invalid config found '{}'. You must define all mandatory parameters: "
-            "{}. Using fallback config '{}' instead."
-            "".format(config, ", ".join(mandatory_keys), default)
-        )
-        return default
+def enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH):
+    import rasa.utils.io
 
-    return config
+    config_data = rasa.utils.io.read_yaml_file(config_path)
+    fallback_config_data = rasa.utils.io.read_yaml_file(FALLBACK_CONFIG_PATH)
+
+    for k in missing_keys:
+        config_data[k] = fallback_config_data[k]
+
+    rasa.utils.io.write_yaml_file(config_data, config_path)
+
+
+def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
+    config_path = get_validated_path(config, "config", FALLBACK_CONFIG_PATH)
+
+    missing_keys = missing_config_keys(config_path, mandatory_keys)
+
+    if missing_keys:
+        print_warning(
+            "Invalid config found '{}'. Missing mandatory parameters: "
+            "{}. Enrich config with fallback configuration from '{}'."
+            "".format(config, ", ".join(missing_keys), FALLBACK_CONFIG_PATH)
+        )
+        enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
+
+    return config_path

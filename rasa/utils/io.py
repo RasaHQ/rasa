@@ -120,3 +120,14 @@ def read_yaml_file(filename: Text) -> Dict[Text, Any]:
         filename: The path to the file which should be read.
     """
     return read_yaml(read_file(filename, "utf-8"))
+
+
+def write_yaml_file(data: Dict, filename: Text):
+    """Writes a yaml file.
+
+     Args:
+        data: The data to write.
+        filename: The path to the file which should be written.
+    """
+    with open(filename, "w") as outfile:
+        yaml.dump(data, outfile, default_flow_style=False)

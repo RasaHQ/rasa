@@ -112,7 +112,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
     import rasa
 
     domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
-    config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+    config = args.config or DEFAULT_CONFIG_PATH
 
     training_files = [
         get_validated_path(f, "data", DEFAULT_DATA_PATH) for f in args.data
@@ -148,7 +148,7 @@ def train_core(
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+        config = args.config or DEFAULT_CONFIG_PATH
 
         return train_core(
             args.domain,
@@ -172,7 +172,7 @@ def train_nlu(
 
     output = train_path or args.out
 
-    config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+    config = args.config or DEFAULT_CONFIG_PATH
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
 
     return train_nlu(config, nlu_data, output, train_path)
