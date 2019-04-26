@@ -59,5 +59,5 @@ Fixed
   Store
 - ``rasa nlu test`` doesn't error anymore when a test file is passed with ``-u``
 - in interactive learning: only updates entity values if user changes annotation
-- ``rasa train core`` actually uses additional arguments, such as ``augmentation`
+- ``rasa train core`` actually uses additional arguments, such as ``augmentation``
 - ``rasa test`` actually considers additional arguments, such as ``e2e``

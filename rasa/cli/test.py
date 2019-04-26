@@ -179,7 +179,7 @@ def test_core(args: argparse.Namespace, model_path: Optional[Text] = None) -> No
     )
     stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
     stories = data.get_core_directory(stories)
-    output = get_validated_path(args.output, "output", DEFAULT_RESULTS_PATH)
+    output = args.output or DEFAULT_RESULTS_PATH
     args.config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
     test_core(
@@ -195,8 +195,8 @@ def test_core(args: argparse.Namespace, model_path: Optional[Text] = None) -> No
 def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None) -> None:
     from rasa.test import test_nlu, test_nlu_with_cross_validation
 
-    args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
-    model_path = model_path or args.model
+    valid_model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    model_path = model_path or valid_model_path
 
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     if os.path.isdir(nlu_data):

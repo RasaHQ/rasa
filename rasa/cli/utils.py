@@ -27,13 +27,12 @@ def get_validated_path(
 
     if current is None or current is not None and not os.path.exists(current):
         if default is not None and os.path.exists(default):
-            not_found = (
-                "'{}' not found.".format(current)
-                if current is not None
-                else "Parameter '{}' not set.".format(parameter)
-            )
+            reason_str = "'{}' not found.".format(current)
+            if current is None:
+                reason_str = "Parameter '{}' not set.".format(parameter)
+
             print_warning(
-                "{} Using default location '{}' instead." "".format(not_found, default)
+                "{} Using default location '{}' instead." "".format(reason_str, default)
             )
             current = default
         elif none_is_valid:
@@ -114,7 +113,7 @@ def create_output_path(
 
 
 def minimal_kwargs(
-    kwargs: Dict[Text, Any], func: Callable, exception_keys: Optional[List] = None
+    kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
 ) -> Dict[Text, Any]:
     """Returns only the kwargs which are required by a function. Keys, contained in
     the exception list, are not included.
@@ -122,7 +121,7 @@ def minimal_kwargs(
     Args:
         kwargs: All available kwargs.
         func: The function which should be called.
-        exception_keys: Keys to exclude from the result.
+        excluded_keys: Keys to exclude from the result.
 
     Returns:
         Subset of kwargs which are accepted by `func`.
@@ -130,15 +129,14 @@ def minimal_kwargs(
     """
     from rasa.utils.common import arguments_of
 
-    if exception_keys is None:
-        exception_keys = []
+    excluded_keys = excluded_keys or []
 
     possible_arguments = arguments_of(func)
 
     return {
         k: v
         for k, v in kwargs.items()
-        if k in possible_arguments and k not in exception_keys
+        if k in possible_arguments and k not in excluded_keys
     }
 
 
