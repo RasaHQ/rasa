@@ -53,7 +53,7 @@ async def train_async(
     retrain_nlu = True
 
     skill_imports = SkillSelector.load(config, training_files)
-    print (skill_imports.imports)
+
     domain = Domain.load(domain, skill_imports)
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(

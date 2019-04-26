@@ -31,6 +31,8 @@ class SkillSelector:
             other = cls._load(path, base_directory)
             selector = selector.merge(other)
 
+        logger.debug("Selected skills: {}.".format(selector.imports))
+
         return selector
 
     @classmethod
@@ -86,7 +88,7 @@ class SkillSelector:
         return not self.imports
 
     def is_imported(self, path: Text) -> bool:
-        path = str(Path(path).absolute())
-        print (path)
-        print (self.is_empty() or any([i in path for i in self.imports]))
-        return self.is_empty() or any([i in path for i in self.imports])
+        absolute_path = Path(path).absolute()
+        absolute_path = str(absolute_path)
+
+        return self.is_empty() or any([i in absolute_path for i in self.imports])
