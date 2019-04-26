@@ -53,7 +53,7 @@ class SkillSelector:
     def _from_file(
         cls, path: Union[Text, Path], base_directory: Path
     ) -> "SkillSelector":
-        config = io_utils.read_yaml_file(str(path))
+        config = io_utils.read_yaml_file(path)
 
         return cls._from_dict(config, base_directory)
 
@@ -64,7 +64,7 @@ class SkillSelector:
         if imports is None:
             imports = []
 
-        imports = {os.path.join(str(base_directory), p) for p in imports}
+        imports = {str(base_directory / p) for p in imports}
 
         return cls(imports)
 

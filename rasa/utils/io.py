@@ -1,5 +1,4 @@
 import asyncio
-import io
 import logging
 import warnings
 from asyncio import AbstractEventLoop
@@ -109,7 +108,7 @@ def read_yaml(content: Text) -> Dict[Text, Any]:
 
 def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
     """Read text from a file."""
-    with io.open(filename, encoding=encoding) as f:
+    with open(filename, encoding=encoding) as f:
         return f.read()
 
 
