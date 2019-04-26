@@ -15,6 +15,7 @@ from rasa.core.actions import Action, action
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.core.trackers import SlotSet
+from rasa.multi_skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -137,11 +138,14 @@ class Domain(object):
         return cls({}, [], [], {}, [], [])
 
     @classmethod
-    def load(cls, path: Text) -> "Domain":
+    def load(
+        cls, path: Text, skill_imports: Optional[SkillSelector] = None
+    ) -> "Domain":
         if os.path.isfile(path):
             domain = cls.from_yaml(rasa.utils.io.read_file(path))
         elif os.path.isdir(path):
-            domain = cls.from_directory(path)
+            domain = cls.from_directory(path, skill_imports)
+
         else:
             raise Exception(
                 "Failed to load domain specification from '{}'. "
@@ -173,11 +177,17 @@ class Domain(object):
         )
 
     @classmethod
-    def from_directory(cls, path: Text) -> "Domain":
+    def from_directory(
+        cls, path: Text, skill_imports: Optional[SkillSelector] = None
+    ) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
 
         domain = Domain.empty()
+        skill_imports = skill_imports or SkillSelector.empty()
         for root, _, files in os.walk(path):
+            if not skill_imports.is_imported(root):
+                continue
+
             for file in files:
                 full_path = os.path.join(root, file)
                 if data.is_domain_file(full_path):
@@ -329,6 +339,10 @@ class Domain(object):
         self.store_entities_as_slots = store_entities_as_slots
 
         action.ensure_action_name_uniqueness(self.action_names)
+
+    def __hash__(self):
+        self_as_string = json.dumps(self.as_dict())
+        return utils.get_text_hash(self_as_string)
 
     @utils.lazyproperty
     def user_actions_and_forms(self):

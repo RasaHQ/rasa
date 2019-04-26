@@ -11,6 +11,8 @@ from rasa import data
 from rasa.constants import DEFAULT_MODELS_PATH
 
 # Type alias for the fingerprint
+from rasa.core.domain import Domain
+
 Fingerprint = Dict[Text, Union[Text, List[Text]]]
 
 logger = logging.getLogger(__name__)
@@ -191,7 +193,7 @@ def create_package_rasa(
 
 def model_fingerprint(
     config_file: Text,
-    domain_file: Optional[Text] = None,
+    domain: Optional[Union[Domain, Text]] = None,
     nlu_data: Optional[Text] = None,
     stories: Optional[Text] = None,
 ) -> Fingerprint:
@@ -200,7 +202,7 @@ def model_fingerprint(
 
     Args:
         config_file: Path to the configuration file.
-        domain_file: Path to the models domain file.
+        domain: Path to the models domain file.
         nlu_data: Path to the used NLU training data.
         stories: Path to the used story training data.
 
@@ -211,42 +213,33 @@ def model_fingerprint(
     import rasa
     import time
 
+    if isinstance(domain, Domain):
+        domain_hash = domain.__hash__()
+    else:
+        domain_hash = _get_hashes_for_paths(domain)
+
     return {
         FINGERPRINT_CONFIG_KEY: _get_hashes_for_paths(config_file),
-        FINGERPRINT_DOMAIN_KEY: _get_hashes_for_paths(domain_file, data.is_domain_file),
-        FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data, data.is_nlu_file),
-        FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories, data.is_story_file),
+        FINGERPRINT_DOMAIN_KEY: domain_hash,
+        FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
+        FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
     }
 
 
-def _get_hashes_for_paths(
-    path: Text, is_eligible: Callable[[Text], bool] = os.path.isfile
-) -> List[Text]:
-    """Gets the hashes for all files which are matched by the filter function.
-
-    Args:
-        path: Path to file or directory.
-        is_eligible: Function which returns `True` if the hash of this file is required.
-
-    Returns:
-        List of file hashes of the selected files.
-    """
+def _get_hashes_for_paths(path: Text) -> List[Text]:
     from rasa.core.utils import get_file_hash
 
-    hashes = []
-    if path and os.path.isfile(path) and is_eligible(path):
-        hashes = [get_file_hash(path)]
-    elif path and os.path.isdir(path):
-        # walk recursively through file tree and get hashes of eligible files
-        for root, _, files in os.walk(path):
-            for file in files:
-                full_path = os.path.join(root, file)
-                hashes += _get_hashes_for_paths(full_path, is_eligible)
-        hashes = sorted(hashes)
+    files = []
+    if path and os.path.isdir(path):
+        files = [
+            os.path.join(path, f) for f in os.listdir(path) if not f.startswith(".")
+        ]
+    elif path and os.path.isfile(path):
+        files = [path]
 
-    return hashes
+    return sorted([get_file_hash(f) for f in files])
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:

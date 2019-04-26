@@ -7,6 +7,8 @@ from typing import Text, Optional, List, Union
 from rasa import model, data
 from rasa.cli.utils import create_output_path, print_success
 from rasa.constants import DEFAULT_MODELS_PATH
+from rasa.core.domain import Domain
+from rasa.multi_skill import SkillSelector
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Interpreter
@@ -50,7 +52,13 @@ async def train_async(
     retrain_core = True
     retrain_nlu = True
 
-    story_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
+    skill_imports = SkillSelector.load(config, training_files)
+    print (skill_imports.imports)
+    domain = Domain.load(domain, skill_imports)
+
+    story_directory, nlu_data_directory = data.get_core_nlu_directories(
+        training_files, skill_imports
+    )
     new_fingerprint = model.model_fingerprint(
         config, domain, nlu_data_directory, story_directory
     )
@@ -108,7 +116,11 @@ def train_core(
 
 
 async def train_core_async(
-    domain: Text, config: Text, stories: Text, output: Text, train_path: Optional[Text]
+    domain: Union[Domain, Text],
+    config: Text,
+    stories: Text,
+    output: Text,
+    train_path: Optional[Text],
 ) -> Optional[Text]:
     """Trains a Core model.
 
@@ -129,6 +141,11 @@ async def train_core_async(
 
     _train_path = train_path or tempfile.mkdtemp()
 
+    if isinstance(Domain, Text) and not train_path:
+        skill_imports = SkillSelector.load(config, stories)
+        domain = Domain.load(domain, skill_imports)
+        stories = data.get_core_directory(stories, skill_imports)
+
     # normal (not compare) training
     core_model = await rasa.core.train(
         domain_file=domain,
@@ -139,7 +156,6 @@ async def train_core_async(
 
     if not train_path:
         # Only Core was trained.
-        stories = data.get_core_directory(stories)
         output_path = create_output_path(output, prefix="core-")
         new_fingerprint = model.model_fingerprint(config, domain, stories=stories)
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
@@ -169,13 +185,17 @@ def train_nlu(
     """
     import rasa.nlu
 
+    if not train_path:
+        skill_imports = SkillSelector.load(config)
+        nlu_data = data.get_nlu_directory(nlu_data, skill_imports)
+
     _train_path = train_path or tempfile.mkdtemp()
+
     _, nlu_model, _ = rasa.nlu.train(
         config, nlu_data, _train_path, project="", fixed_model_name="nlu"
     )
 
     if not train_path:
-        nlu_data = data.get_nlu_directory(nlu_data)
         output_path = create_output_path(output, prefix="nlu-")
         new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data)
         model.create_package_rasa(_train_path, output_path, new_fingerprint)

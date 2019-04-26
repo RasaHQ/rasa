@@ -5,6 +5,8 @@ import os
 import typing
 from typing import Dict, Optional, Text
 
+from rasa.core.domain import Domain
+
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.run import AvailableEndpoints
@@ -51,7 +53,7 @@ def create_argument_parser():
 
 
 async def train(
-    domain_file: Text,
+    domain_file: typing.Union[Domain, Text],
     stories_file: Text,
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,

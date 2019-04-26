@@ -6,7 +6,7 @@ import matplotlib
 import pytest
 
 import rasa.utils.io
-from rasa.core import server, train, utils
+from rasa.core import server, train
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, channel
 from rasa.core.dispatcher import Dispatcher
