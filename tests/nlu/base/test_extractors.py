@@ -216,7 +216,7 @@ def test_duckling_entity_extractor(component_builder):
     # Test dimension filtering includes only specified dimensions
     _config = RasaNLUModelConfig({"pipeline": [{"name": "DucklingHTTPExtractor"}]})
     _config.set_component_attr(0, dimensions=["number"], url="http://localhost:8000")
-    ducklingNumber = component_builder.create_component(
+    duckling_number = component_builder.create_component(
         _config.for_component(0), _config
     )
     httpretty.register_uri(
@@ -231,11 +231,14 @@ def test_duckling_entity_extractor(component_builder):
     )
 
     message = Message("Yesterday there were 5 people in a room")
-    ducklingNumber.process(message)
+    duckling_number.process(message)
     entities = message.get("entities")
+
     assert len(entities) == 1
     assert entities[0]["text"] == "5"
     assert entities[0]["value"] == 5
+
+    httpretty.disable()
 
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):
