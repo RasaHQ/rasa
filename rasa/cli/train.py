@@ -179,12 +179,14 @@ def train_nlu(
 
 
 def extract_additional_arguments(args: argparse.Namespace) -> typing.Dict:
-    arguments = {
-        "augmentation_factor": args.augmentation,
-        "dump_stories": args.dump_stories,
-        "debug_plots": args.debug_plots,
-    }
+    arguments = {}
 
+    if "augmentation_factor" in args:
+        arguments["augmentation_factor"] = args.augmentation
+    if "dump_stories" in args:
+        arguments["dump_stories"] = args.dump_stories
+    if "debug_plots" in args:
+        arguments["debug_plots"] = args.debug_plots
     if "percentages" in args:
         arguments["percentages"] = args.percentages
     if "runs" in args:
