@@ -35,7 +35,7 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
     subdirectory_3 = root / "Skill C"
     subdirectory_3.mkdir()
 
-    actual = SkillSelector.load(str(root / "config.yml"), [str(root)])
+    actual = SkillSelector.load(root / "config.yml", [root])
     expected = {
         os.path.join(str(skill_a_directory)),
         os.path.join(str(skill_b_directory)),
@@ -57,11 +57,11 @@ def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
     skill_b_directory.mkdir()
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", empty_config)
 
-    actual = SkillSelector.load(str(root / "config.yml"), [str(root)])
+    actual = SkillSelector.load(root / "config.yml", [root])
 
-    assert not actual.imports
+    assert actual.imports == {str(root)}
 
-    assert actual.is_imported("any path should be imported then")
+    assert actual.is_imported(root / "Skill C")
 
 
 @pytest.mark.parametrize("input_dict", [{}, {"imports": None}])
@@ -79,9 +79,9 @@ def test_load_if_skill_paths_are_files(tmpdir):
     other_file = tmpdir / "nlu.md"
     utils.dump_obj_as_yaml_to_file(other_file, ["list", "of", "names"])
 
-    actual = SkillSelector.load(config_path, str(other_file))
+    actual = SkillSelector.load(config_path, other_file)
 
-    assert not actual.imports
+    assert actual.is_imported(other_file)
 
 
 def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFactory):

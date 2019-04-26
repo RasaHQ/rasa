@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from typing import Text, List, Union, Set, Dict
 import os
 
@@ -21,9 +20,10 @@ class SkillSelector:
     def load(
         cls, config: Text, skill_paths: Union[Text, List[Text]]
     ) -> "SkillSelector":
-        config = Path(config)
         # All imports are by default relative to the root config file directory
-        base_directory = config.parent.absolute()
+        base_directory = os.path.dirname(config)
+        base_directory = os.path.abspath(base_directory)
+
         selector = cls._from_file(config, base_directory)
 
         if selector.is_empty():
@@ -34,8 +34,6 @@ class SkillSelector:
             skill_paths = [skill_paths]
 
         for path in skill_paths:
-            path = Path(path)
-
             other = cls._load(path, base_directory)
             selector = selector.merge(other)
 
@@ -44,23 +42,20 @@ class SkillSelector:
         return selector
 
     @classmethod
-    def _load(cls, path: Path, base_directory: Path) -> "SkillSelector":
-        if path.is_file():
+    def _load(cls, path: Text, base_directory: Text) -> "SkillSelector":
+        if os.path.isfile(path):
             return cls._from_file(path, base_directory)
-        elif path.is_dir():
+        elif os.path.isdir(path):
             return cls._from_directory(path, base_directory)
         else:
             logger.debug("No imports found. Importing everything.")
             return cls.empty()
 
     @classmethod
-    def _from_file(
-        cls, path: Union[Text, Path], base_directory: Path
-    ) -> "SkillSelector":
+    def _from_file(cls, path: Text, base_directory: Text) -> "SkillSelector":
 
-        if data.is_config_file(str(path)):
-            # `str()` can be dropped if Python 3.5 is dropped
-            config = io_utils.read_yaml_file(str(path))
+        if data.is_config_file(path):
+            config = io_utils.read_yaml_file(path)
 
             if isinstance(config, dict):
                 return cls._from_dict(config, base_directory)
@@ -68,20 +63,18 @@ class SkillSelector:
         return cls.empty()
 
     @classmethod
-    def _from_dict(cls, _dict: Dict, base_directory: Path) -> "SkillSelector":
+    def _from_dict(cls, _dict: Dict, base_directory: Text) -> "SkillSelector":
         imports = _dict.get("imports")
 
         if imports is None:
             imports = []
 
-        imports = {str(base_directory / p) for p in imports}
+        imports = {os.path.join(base_directory, p) for p in imports}
 
         return cls(imports)
 
     @classmethod
-    def _from_directory(
-        cls, path: Union[Text, Path], base_directory: Path
-    ) -> "SkillSelector":
+    def _from_directory(cls, path: Text, base_directory: Text) -> "SkillSelector":
         importer = cls.empty()
         for parent, _, files in os.walk(path):
             for file in files:
@@ -102,10 +95,9 @@ class SkillSelector:
         return not self.imports
 
     def is_imported(self, path: Text) -> bool:
-        absolute_path = Path(path).absolute()
-        absolute_path = str(absolute_path)
+        absolute_path = os.path.abspath(path)
 
         return self.is_empty() or any([i in absolute_path for i in self.imports])
 
     def add_import(self, path: Text) -> bool:
-        self.imports.add(str(path))
+        self.imports.add(path)
