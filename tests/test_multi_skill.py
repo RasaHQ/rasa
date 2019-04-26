@@ -84,6 +84,21 @@ def test_load_if_skill_paths_are_files(tmpdir):
     assert not actual.imports
 
 
+def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFactory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config_path = root / "config.yml"
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", {})
+
+    skill_a_directory = root / "Skill A"
+    skill_a_directory.mkdir()
+    skill_a_imports = {"imports": ["Skill B"]}
+    utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
+
+    actual = SkillSelector.load(config_path, [root])
+
+    assert actual.is_imported(skill_a_directory)
+
+
 @pytest.mark.parametrize(
     "input_path", ["A/A/A/B", "A/A/A", "A/B/A/A", "A/A/A/B/C/D/E.type"]
 )

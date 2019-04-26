@@ -26,6 +26,10 @@ class SkillSelector:
         base_directory = config.parent.absolute()
         selector = cls._from_file(config, base_directory)
 
+        if selector.is_empty():
+            # if the root selector is empty we import everything beneath
+            selector.add_import(base_directory)
+
         if not isinstance(skill_paths, list):
             skill_paths = [skill_paths]
 
@@ -101,3 +105,6 @@ class SkillSelector:
         absolute_path = str(absolute_path)
 
         return self.is_empty() or any([i in absolute_path for i in self.imports])
+
+    def add_import(self, path: Text) -> bool:
+        self.imports.add(str(path))
