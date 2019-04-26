@@ -154,7 +154,7 @@ async def train_core_async(
 
     _train_path = train_path or tempfile.mkdtemp()
 
-    if isinstance(Domain, Text) and not train_path:
+    if isinstance(Domain, Text) or not train_path:
         skill_imports = SkillSelector.load(config, stories)
         domain = Domain.load(domain, skill_imports)
         stories = data.get_core_directory(stories, skill_imports)
@@ -200,7 +200,7 @@ def train_nlu(
     import rasa.nlu
 
     if not train_path:
-        skill_imports = SkillSelector.load(config)
+        skill_imports = SkillSelector.load(config, nlu_data)
         nlu_data = data.get_nlu_directory(nlu_data, skill_imports)
 
     _train_path = train_path or tempfile.mkdtemp()

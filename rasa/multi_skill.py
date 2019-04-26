@@ -18,12 +18,16 @@ class SkillSelector:
         return cls(set())
 
     @classmethod
-    def load(cls, config: Text, skill_paths: List[Text]) -> "SkillSelector":
+    def load(
+        cls, config: Text, skill_paths: Union[Text, List[Text]]
+    ) -> "SkillSelector":
         config = Path(config)
-        # All imports are relative to the root config file directory
+        # All imports are by default relative to the root config file directory
         base_directory = config.parent.absolute()
-
         selector = cls._from_file(config, base_directory)
+
+        if not isinstance(skill_paths, list):
+            skill_paths = [skill_paths]
 
         for path in skill_paths:
             path = Path(path)
