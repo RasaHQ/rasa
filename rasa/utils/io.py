@@ -2,7 +2,7 @@ import asyncio
 import logging
 import warnings
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict
+from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
 
 
@@ -76,7 +76,7 @@ def replace_environment_variables():
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text) -> Dict[Text, Any]:
+def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses yaml from a text.
 
      Args:
@@ -112,7 +112,7 @@ def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
         return f.read()
 
 
-def read_yaml_file(filename: Text) -> Dict[Text, Any]:
+def read_yaml_file(filename: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
      Args:

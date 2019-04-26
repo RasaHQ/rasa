@@ -53,9 +53,14 @@ class SkillSelector:
     def _from_file(
         cls, path: Union[Text, Path], base_directory: Path
     ) -> "SkillSelector":
-        config = io_utils.read_yaml_file(path)
 
-        return cls._from_dict(config, base_directory)
+        if data.is_config_file(str(path)):
+            config = io_utils.read_yaml_file(path)
+
+            if isinstance(config, dict):
+                return cls._from_dict(config, base_directory)
+
+        return cls.empty()
 
     @classmethod
     def _from_dict(cls, _dict: Dict, base_directory: Path) -> "SkillSelector":

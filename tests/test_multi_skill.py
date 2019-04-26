@@ -71,6 +71,19 @@ def test_load_from_none(input_dict):
     assert actual.imports == set()
 
 
+def test_load_if_skill_paths_are_files(tmpdir):
+    empty_config = {}
+    config_path = tmpdir / "config.yml"
+    utils.dump_obj_as_yaml_to_file(config_path, empty_config)
+
+    other_file = tmpdir / "nlu.md"
+    utils.dump_obj_as_yaml_to_file(other_file, ["list", "of", "names"])
+
+    actual = SkillSelector.load(config_path, str(other_file))
+
+    assert not actual.imports
+
+
 @pytest.mark.parametrize(
     "input_path", ["A/A/A/B", "A/A/A", "A/B/A/A", "A/A/A/B/C/D/E.type"]
 )
