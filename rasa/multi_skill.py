@@ -59,7 +59,8 @@ class SkillSelector:
     ) -> "SkillSelector":
 
         if data.is_config_file(str(path)):
-            config = io_utils.read_yaml_file(path)
+            # `str()` can be dropped if Python 3.5 is dropped
+            config = io_utils.read_yaml_file(str(path))
 
             if isinstance(config, dict):
                 return cls._from_dict(config, base_directory)
