@@ -15,17 +15,26 @@ def add_subparser(
     scaffold_parser = subparsers.add_parser(
         "init", parents=parents, help="Create a new project from a initial_project"
     )
+    scaffold_parser.add_argument(
+        "--no_prompt",
+        "--no-prompt",
+        action="store_true",
+        help="Automatic yes or default options to prompts and uppressed warnings",
+    )
     scaffold_parser.set_defaults(func=run)
 
 
 def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
     import questionary
 
-    print_success("Your bot is ready to go!")
+    print_success("Finished creating project structure.")
+
     should_train = questionary.confirm(
         "Do you want me to train an initial model for the bot? 💪🏽"
-    ).ask()
+    ).skip_if(args.no_prompt, default=True)
+
     if should_train:
+        print_success("Training an initial model...")
         config = os.path.join(path, DEFAULT_CONFIG_PATH)
         training_files = os.path.join(path, DEFAULT_DATA_PATH)
         domain = os.path.join(path, DEFAULT_DOMAIN_PATH)
@@ -47,9 +56,13 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
     from rasa.core import constants
     import questionary
 
-    should_run = questionary.confirm(
-        "Do you want to speak to the trained bot on the command line? 🤖"
-    ).ask()
+    should_run = (
+        questionary.confirm(
+            "Do you want to speak to the trained bot on the command line? 🤖"
+        )
+        .skip_if(args.no_prompt, default=False)
+        .ask()
+    )
 
     if should_run:
         # provide defaults for command line arguments
@@ -139,11 +152,16 @@ def run(args: argparse.Namespace) -> None:
         "here: https://rasa.com/docs/core/quickstart \n\n"
         "Now let's start! 👇🏽\n"
     )
-    path = questionary.text(
-        "Please enter a folder path where I should create "
-        "the initial project [default: current directory]",
-        default=".",
-    ).ask()
+
+    path = (
+        questionary.text(
+            "Please enter a folder path where I should create "
+            "the initial project [default: current directory]",
+            default=".",
+        )
+        .skip_if(args.no_prompt, default=".")
+        .ask()
+    )
 
     if not os.path.isdir(path):
         _ask_create_path(path)
@@ -151,7 +169,7 @@ def run(args: argparse.Namespace) -> None:
     if path is None or not os.path.isdir(path):
         print_cancel()
 
-    if len(os.listdir(path)) > 0:
+    if not args.no_prompt and len(os.listdir(path)) > 0:
         _ask_overwrite(path)
 
     init_project(args, path)

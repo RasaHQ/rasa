@@ -2,7 +2,7 @@ import asyncio
 import os
 import tempfile
 import typing
-from typing import Text, Optional, List, Union
+from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
 from rasa.cli.utils import create_output_path, print_success
@@ -18,10 +18,11 @@ def train(
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_async(domain, config, training_files, output, force_training)
+        train_async(domain, config, training_files, output, force_training, kwargs)
     )
 
 
@@ -31,6 +32,7 @@ async def train_async(
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
@@ -40,6 +42,7 @@ async def train_async(
         training_files: Paths to the training data for Core and NLU.
         output: Output path.
         force_training: If `True` retrain model even if data has not changed.
+        kwargs: Additional training parameters.
 
     Returns:
         Path of the trained model archive.
@@ -54,6 +57,7 @@ async def train_async(
     new_fingerprint = model.model_fingerprint(
         config, domain, nlu_data_directory, story_directory
     )
+
     if not force_training and old_model:
         unpacked = model.unpack_model(old_model)
         old_core, old_nlu = model.get_model_subdirectories(unpacked)
@@ -68,7 +72,9 @@ async def train_async(
             retrain_nlu = not model.merge_model(old_nlu, target_path)
 
     if force_training or retrain_core:
-        await train_core_async(domain, config, story_directory, output, train_path)
+        await train_core_async(
+            domain, config, story_directory, output, train_path, kwargs
+        )
     else:
         print (
             "Dialogue data / configuration did not change. "
@@ -99,16 +105,26 @@ async def train_async(
 
 
 def train_core(
-    domain: Text, config: Text, stories: Text, output: Text, train_path: Optional[Text]
+    domain: Text,
+    config: Text,
+    stories: Text,
+    output: Text,
+    train_path: Optional[Text],
+    kwargs: Optional[Dict],
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_core_async(domain, config, stories, output, train_path)
+        train_core_async(domain, config, stories, output, train_path, kwargs)
     )
 
 
 async def train_core_async(
-    domain: Text, config: Text, stories: Text, output: Text, train_path: Optional[Text]
+    domain: Text,
+    config: Text,
+    stories: Text,
+    output: Text,
+    train_path: Optional[Text] = None,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Core model.
 
@@ -119,6 +135,7 @@ async def train_core_async(
         output: Output path.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
+        kwargs: Additional training parameters.
 
     Returns:
         If `train_path` is given it returns the path to the model archive,
@@ -135,6 +152,7 @@ async def train_core_async(
         stories_file=stories,
         output_path=os.path.join(_train_path, "core"),
         policy_config=config,
+        kwargs=kwargs,
     )
 
     if not train_path:

@@ -15,7 +15,9 @@ venv
 .ipynb_checkpoints
 .ruby-version
 .tox
+.pytype
 dist/
+pip-wheel-metadata
 docs/nlu/_build
 docs/_build
 server/
