@@ -181,7 +181,7 @@ def train_nlu(
 def extract_additional_arguments(args: argparse.Namespace) -> typing.Dict:
     arguments = {}
 
-    if "augmentation_factor" in args:
+    if "augmentation" in args:
         arguments["augmentation_factor"] = args.augmentation
     if "dump_stories" in args:
         arguments["dump_stories"] = args.dump_stories
