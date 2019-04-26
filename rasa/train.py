@@ -242,8 +242,8 @@ def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
 
     if missing_keys:
         print_warning(
-            "Invalid config found '{}'. Missing mandatory parameters: "
-            "{}. Enrich config with fallback configuration from '{}'."
+            "Configuration file '{}' is missing mandatory parameters: "
+            "{}. Filling missing parameters from fallback configuration file: '{}'."
             "".format(config, ", ".join(missing_keys), FALLBACK_CONFIG_PATH)
         )
         enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
