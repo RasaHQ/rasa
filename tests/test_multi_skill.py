@@ -35,13 +35,33 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
     subdirectory_3 = root / "Skill C"
     subdirectory_3.mkdir()
 
-    actual = SkillSelector.load([str(root)])
+    actual = SkillSelector.load(str(root / "config.yml"), [str(root)])
     expected = {
         os.path.join(str(skill_a_directory)),
         os.path.join(str(skill_b_directory)),
     }
 
     assert actual.imports == expected
+
+
+def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
+    empty_config = {}
+    root = tmpdir_factory.mktemp("Parent Bot")
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", empty_config)
+
+    skill_a_directory = root / "Skill A"
+    skill_a_directory.mkdir()
+    utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", empty_config)
+
+    skill_b_directory = root / "Skill B"
+    skill_b_directory.mkdir()
+    utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", empty_config)
+
+    actual = SkillSelector.load(str(root / "config.yml"), [str(root)])
+
+    assert not actual.imports
+
+    assert actual.is_imported("any path should be imported then")
 
 
 @pytest.mark.parametrize("input_dict", [{}, {"imports": None}])
@@ -51,7 +71,9 @@ def test_load_from_none(input_dict):
     assert actual.imports == set()
 
 
-@pytest.mark.parametrize("input_path", ["A/A/A/B", "A/A/A", "A/B/A/A"])
+@pytest.mark.parametrize(
+    "input_path", ["A/A/A/B", "A/A/A", "A/B/A/A", "A/A/A/B/C/D/E.type"]
+)
 def test_in_imports(input_path):
     importer = SkillSelector({"A/A/A", "A/B/A"})
 
