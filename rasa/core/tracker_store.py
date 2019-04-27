@@ -1,7 +1,7 @@
 import json
 import logging
 import pickle
-from typing import Iterator, KeysView, List, Optional, Text
+from typing import Iterator, KeysView, List, Optional, Text, Iterable
 
 import itertools
 
@@ -102,7 +102,7 @@ class TrackerStore(object):
             body.update(evt.as_dict())
             self.event_broker.publish(body)
 
-    def keys(self) -> List[Text]:
+    def keys(self) -> Iterable[Text]:
         raise NotImplementedError()
 
     @staticmethod
