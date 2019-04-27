@@ -3,7 +3,7 @@ from rasa.core.cli import arguments
 
 def add_evaluation_arguments(parser):
     parser.add_argument(
-        "-m", "--max_stories", type=int, help="maximum number of stories to test on"
+        "-m", "--max-stories", type=int, help="maximum number of stories to test on"
     )
     parser.add_argument(
         "-u",
@@ -32,7 +32,7 @@ def add_evaluation_arguments(parser):
         help="Configuration file for the connectors as a yml file",
     )
     parser.add_argument(
-        "--fail_on_prediction_errors",
+        "--fail-on-prediction-errors",
         action="store_true",
         help="If a prediction error is encountered, an exception "
         "is thrown. This can be used to validate stories during "

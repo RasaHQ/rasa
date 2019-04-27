@@ -54,7 +54,7 @@ By default the server will load all projects found
 under the ``path`` directory passed at run time.
 
 Rasa NLU naturally handles serving multiple apps, by default the server will load all projects found
-under the directory specified with ``--path`` option. unless you have provide ``--pre_load`` option
+under the directory specified with ``--path`` option. unless you have provide ``--pre-load`` option
 to load a specific project.
 
 .. code-block:: console
@@ -65,7 +65,7 @@ to load a specific project.
 .. code-block:: console
 
     $ # This will load only hotels project under projects/ directory
-    $ python -m rasa.nlu.server -c config.yaml --pre_load hotels --path projects/
+    $ python -m rasa.nlu.server -c config.yaml --pre-load hotels --path projects/
 
 
 The file structure under ``path directory`` is as follows:

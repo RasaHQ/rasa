@@ -11,7 +11,7 @@ def add_run_arguments(parser):
         help="port to run the server at",
     )
     server_arguments.add_argument(
-        "--auth_token",
+        "--auth-token",
         type=str,
         help="Enable token based authentication. Requests need to provide "
         "the token to be accepted.",
@@ -23,14 +23,14 @@ def add_run_arguments(parser):
         help="enable CORS for the passed origin. Use * to whitelist all origins",
     )
     server_arguments.add_argument(
-        "--enable_api",
+        "--enable-api",
         action="store_true",
         help="Start the web server api in addition to the input channel",
     )
 
     parser.add_argument(
         "-o",
-        "--log_file",
+        "--log-file",
         type=str,
         default="rasa_core.log",
         help="store log file in specified file",
@@ -52,15 +52,15 @@ def add_run_arguments(parser):
 
     jwt_auth = parser.add_argument_group("JWT Authentication")
     jwt_auth.add_argument(
-        "--jwt_secret",
+        "--jwt-secret",
         type=str,
         help="Public key for asymmetric JWT methods or shared secret"
         "for symmetric methods. Please also make sure to use "
-        "--jwt_method to select the method of the signature, "
+        "--jwt-method to select the method of the signature, "
         "otherwise this argument will be ignored.",
     )
     jwt_auth.add_argument(
-        "--jwt_method",
+        "--jwt-method",
         type=str,
         default="HS256",
         help="Method used for the signature of the JWT authentication payload.",

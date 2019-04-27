@@ -31,6 +31,7 @@ in ``interactive learning``
 
 Changed
 -------
+- renamed all CLI parameters containing any ``_`` to use dashes ``-`` instead (GNU standard)
 - renamed ``rasa_core`` package to ``rasa.core``
 - for interactive learning only include manually annotated and ner_crf entities in nlu export
 - made ``message_id`` an additional argument to ``interpreter.parse``
