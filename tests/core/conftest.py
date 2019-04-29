@@ -194,7 +194,10 @@ async def trained_stack_model(
     trained_stack_model_path = await train_async(
         domain=default_domain_path,
         config=default_stack_config,
-        training_files=[default_nlu_data, default_stories_file],
+        training_files=[
+            os.path.dirname(default_nlu_data),
+            os.path.dirname(default_stories_file),
+        ],
     )
 
     return trained_stack_model_path
