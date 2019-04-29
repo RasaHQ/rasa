@@ -11,6 +11,7 @@ from rasa.cli.utils import (
     missing_config_keys,
     print_warning,
     get_validated_path,
+    print_error,
 )
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
@@ -32,8 +33,6 @@ def train(
     force_training: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
-    config = get_valid_config(config, CONFIG_MANDATORY_KEYS)
-
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
         train_async(domain, config, training_files, output, force_training, kwargs)
@@ -73,6 +72,20 @@ async def train_async(
         config, domain, nlu_data_directory, story_directory
     )
 
+    if not os.listdir(story_directory):
+        print_error(
+            "No dialogue data given. Please provide dialogue and NLU data in order to "
+            "train a Rasa model."
+        )
+        return
+
+    if not os.listdir(nlu_data_directory):
+        print_error(
+            "No NLU data given. Please provide dialogue and NLU data in order to train "
+            "a Rasa model."
+        )
+        return
+
     if not force_training and old_model:
         unpacked = model.unpack_model(old_model)
         old_core, old_nlu = model.get_model_subdirectories(unpacked)
@@ -91,7 +104,7 @@ async def train_async(
             domain, config, story_directory, output, train_path, kwargs
         )
     else:
-        print (
+        print_warning(
             "Dialogue data / configuration did not change. "
             "No need to retrain dialogue model."
         )
@@ -99,19 +112,19 @@ async def train_async(
     if force_training or retrain_nlu:
         train_nlu(config, nlu_data_directory, output, train_path)
     else:
-        print ("NLU data / configuration did not change. No need to retrain NLU model.")
+        print_warning(
+            "NLU data / configuration did not change. No need to retrain NLU model."
+        )
 
     if retrain_core or retrain_nlu:
         output = create_output_path(output)
         model.create_package_rasa(train_path, output, new_fingerprint)
 
-        print ("Train path: '{}'.".format(train_path))
-
         print_success("Your bot is trained and ready to take for a spin!")
 
         return output
     else:
-        print (
+        print_success(
             "Nothing changed. You can use the old model stored at {}"
             "".format(os.path.abspath(old_model))
         )

@@ -41,10 +41,12 @@ def interactive(args: argparse.Namespace):
     args.finetune = False  # Don't support finetuning
 
     zipped_model = train.train(args)
-    model_path = model.unpack_model(zipped_model)
-    args.core, args.nlu = model.get_model_subdirectories(model_path)
-    stories_directory = data.get_core_directory(args.data)
 
-    do_interactive_learning(args, stories_directory)
+    if zipped_model:
+        model_path = model.unpack_model(zipped_model)
+        args.core, args.nlu = model.get_model_subdirectories(model_path)
+        stories_directory = data.get_core_directory(args.data)
 
-    shutil.rmtree(model_path)
+        do_interactive_learning(args, stories_directory)
+
+        shutil.rmtree(model_path)
