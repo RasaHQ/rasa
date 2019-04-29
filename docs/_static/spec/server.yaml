@@ -459,7 +459,7 @@ paths:
       summary: Evaluate stories
       description: >-
         Evaluates one or multiple stories against the currently
-        loaded stacked model.
+        loaded Rasa model.
       parameters:
       - $ref: '#/components/parameters/e2e'
       requestBody:
@@ -505,10 +505,7 @@ paths:
       - Model
       summary: Perform an intent evaluation
       description: >-
-        Evaluates NLU intents on a Rasa Stack model or Rasa NLU model.
-      parameters:
-      - $ref: '#/components/parameters/model_name'
-      - $ref: '#/components/parameters/model_type'
+        Evaluates NLU intents on a Rasa model.
       requestBody:
         required: true
         content:
@@ -582,15 +579,12 @@ paths:
       - JWT: []
       tags:
       - Model
-      summary: Parse a message using the stacked or NLU model.
+      summary: Parse a message using the Rasa model.
       description: >-
         Predicts the intent and entities of the message
         posted to this endpoint. No messages will be stored
         to a conversation and no action will be run. This will
         just retrieve the NLU parse results.
-      parameters:
-      - $ref: '#/components/parameters/model_name'
-      - $ref: '#/components/parameters/model_type'
       requestBody:
         required: true
         content:
@@ -633,8 +627,6 @@ paths:
         Upload a trained model to the server. The server
         will unzip the uploaded file and try to load the model.
         This will replace the previously loaded model.
-      parameters:
-      - $ref: '#/components/parameters/model_type'
       requestBody:
         content:
           multipart/form-data:
@@ -665,14 +657,9 @@ paths:
       summary: Unload a trained model
       description: >-
         Unload a trained model from the server.
-      parameters:
-      - $ref: '#/components/parameters/model_type'
-      - $ref: '#/components/parameters/model_name'
       responses:
         204:
           description: Could sucessfully unload model.
-        400:
-          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
@@ -725,23 +712,6 @@ components:
 
   parameters:
 
-    model_type:
-      in: query
-      name: model_type
-      description: Type of model
-      schema:
-        type: string
-        enum:
-          - NLU
-          - STACK
-      required: true
-    model_name:
-      in: query
-      name: model_name
-      description: Name of the model
-      schema:
-        type: string
-      required: false
     conversation_id:
       in: path
       name: conversation_id
