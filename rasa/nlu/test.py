@@ -10,6 +10,7 @@ from typing import List, Optional, Text, Union, Dict
 from tqdm import tqdm
 
 from rasa.nlu import config, training_data, utils
+from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
@@ -783,14 +784,27 @@ def remove_duckling_entities(entity_predictions):
 def run_evaluation(
     data_path: Text,
     model_path: Text,
-    report_folder: Text = None,
-    successes_filename: Text = None,
-    errors_filename: Text = "errors.json",
-    confmat_filename: Text = None,
-    intent_hist_filename: Text = None,
-    component_builder: Text = None,
+    report_folder: Optional[Text] = None,
+    successes: Optional[Text] = None,
+    errors: Optional[Text] = "errors.json",
+    confmat: Optional[Text] = None,
+    histogram: Optional[Text] = None,
+    component_builder: Optional[ComponentBuilder] = None,
 ) -> Dict:  # pragma: no cover
-    """Evaluate intent classification and entity extraction."""
+    """
+    Evaluate intent classification and entity extraction.
+
+    :param data_path: path to the test data
+    :param model: path to the model
+    :param report_folder: path to folder where reports are stored
+    :param successes: path to file that will contain success cases
+    :param errors: path to file that will contain error cases
+    :param confmat: path to file that will show the confusion matrix
+    :param histogram: path fo file that will show a histogram
+    :param component_builder: component builder
+
+    :return: dictionary containing evaluation results
+    """
 
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
@@ -820,12 +834,7 @@ def run_evaluation(
 
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results,
-            report_folder,
-            successes_filename,
-            errors_filename,
-            confmat_filename,
-            intent_hist_filename,
+            intent_results, report_folder, successes, errors, confmat, histogram
         )
 
     if extractors:
