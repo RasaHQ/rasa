@@ -1,13 +1,28 @@
 import asyncio
 import logging
-from typing import Text, Dict, Optional
+import tempfile
+from typing import Text, Dict, Optional, List
 import os
 
 from rasa.constants import DEFAULT_RESULTS_PATH
-from rasa.model import get_model, get_model_subdirectories
+from rasa.model import get_model, get_model_subdirectories, unpack_model
 from rasa.cli.utils import minimal_kwargs
 
 logger = logging.getLogger(__name__)
+
+
+def test_compare(models: List[Text], stories: Text, output: Text):
+    from rasa.core.test import compare, plot_curve
+    import rasa.core.utils as core_utils
+
+    model_directory = copy_models_to_compare(models)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(compare(model_directory, stories, output))
+
+    story_n_path = os.path.join(model_directory, "num_stories.json")
+    number_of_stories = core_utils.read_json_file(story_n_path)
+    plot_curve(output, number_of_stories)
 
 
 def test(
@@ -30,7 +45,6 @@ def test_core(
     stories: Optional[Text] = None,
     endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
-    model_path: Optional[Text] = None,
     kwargs: Optional[Dict] = None,
 ):
     import rasa.core.test
@@ -48,40 +62,24 @@ def test_core(
     if output:
         nlu_utils.create_dir(output)
 
-    if os.path.isfile(model):
-        model_path = get_model(model)
+    loop = asyncio.get_event_loop()
+    model_path = get_model(model)
+    core_path, nlu_path = get_model_subdirectories(model_path)
 
-    if model_path:
-        # Single model: Normal evaluation
-        loop = asyncio.get_event_loop()
-        model_path = get_model(model)
-        core_path, nlu_path = get_model_subdirectories(model_path)
+    if os.path.exists(core_path) and os.path.exists(nlu_path):
+        _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
 
-        if os.path.exists(core_path) and os.path.exists(nlu_path):
-            _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
+        _agent = Agent.load(core_path, interpreter=_interpreter)
 
-            _agent = Agent.load(core_path, interpreter=_interpreter)
+        kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
 
-            kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
-
-            loop.run_until_complete(
-                rasa.core.test(stories, _agent, out_directory=output, **kwargs)
-            )
-        else:
-            logger.warning(
-                "Not able to test. Make sure both models, core and "
-                "nlu, are available."
-            )
-
+        loop.run_until_complete(
+            rasa.core.test(stories, _agent, out_directory=output, **kwargs)
+        )
     else:
-        from rasa.core.test import compare, plot_curve
-
-        compare(model, stories, output)
-
-        story_n_path = os.path.join(model, "num_stories.json")
-
-        number_of_stories = core_utils.read_json_file(story_n_path)
-        plot_curve(output, number_of_stories)
+        logger.error(
+            "Not able to test. Make sure both models, core and " "nlu, are available."
+        )
 
 
 def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict]):
@@ -113,3 +111,15 @@ def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int = 3):
         logger.info("Entity evaluation results")
         nlu_test.return_entity_results(entity_results.train, "train")
         nlu_test.return_entity_results(entity_results.test, "test")
+
+
+def copy_models_to_compare(models: List[str]) -> Text:
+    models_dir = tempfile.mkdtemp()
+
+    for i, model in enumerate(models):
+        path = os.path.join(models_dir, "model_" + str(i))
+        unpack_model(model, path)
+
+    logger.debug("Unpacked models to compare to '{}'".format(models_dir))
+
+    return models_dir
