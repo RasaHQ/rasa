@@ -20,7 +20,7 @@ def from_endpoint_config(
     elif broker_config.type == "file":
         return FileProducer.from_endpoint_config(broker_config)
     elif broker_config.type == "kafka":
-        return FileProducer.from_endpoint_config(broker_config)
+        return KafkaProducer.from_endpoint_config(broker_config)
     else:
         return load_event_channel_from_module_string(broker_config)
 
