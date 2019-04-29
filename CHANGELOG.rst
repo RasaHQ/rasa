@@ -32,6 +32,7 @@ in ``interactive learning``
 
 Changed
 -------
+- renamed all CLI parameters containing any ``_`` to use dashes ``-`` instead (GNU standard)
 - renamed ``rasa_core`` package to ``rasa.core``
 - for interactive learning only include manually annotated and ner_crf entities in nlu export
 - made ``message_id`` an additional argument to ``interpreter.parse``
@@ -40,6 +41,9 @@ Changed
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 - removed ``--num_threads`` from run command (server will be asyncronous but
   running in a single thread)
+- removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be loaded by default)
+- changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
+- ``rasa train`` uses fallback config if an invalid config is given
 
 Removed
 -------
@@ -47,6 +51,7 @@ Removed
   Use the CLI for rasa instead, e.g. ``rasa train core``.
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
 - removed Dispatcher class from core 
+- removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.
 
 Fixed
 -----
@@ -57,4 +62,5 @@ Fixed
   Store
 - ``rasa nlu test`` doesn't error anymore when a test file is passed with ``-u``
 - in interactive learning: only updates entity values if user changes annotation
-- ``rasa train core`` actually uses additional arguments, such as `augmentation`
+- ``rasa train core`` actually uses additional arguments, such as ``augmentation``
+- ``rasa test`` actually considers additional arguments, such as ``e2e`` or ``successes``

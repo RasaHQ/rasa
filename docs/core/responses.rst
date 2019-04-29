@@ -61,7 +61,7 @@ and you can use this file like this:
 .. code-block:: bash
 
     $ rasa run core \
-       --enable_api \
+       --enable-api \
        -m examples/babi/models \
        -o out.log \
        --endpoints endpoints.yml
