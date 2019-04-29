@@ -233,6 +233,7 @@ def rasa_x(args: argparse.Namespace):
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
+    logging.getLogger("pika").setLevel(logging.WARNING)
     logging.getLogger("socketio").setLevel(logging.ERROR)
 
     if not args.loglevel == logging.DEBUG:
