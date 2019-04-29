@@ -5,10 +5,8 @@ import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.utils.io
+from rasa.constants import DEFAULT_CONFIG_PATH
 from rasa.nlu.utils import json_to_string
-
-# Describes where to search for the config file if no location is specified
-DEFAULT_CONFIG_LOCATION = "config.yml"
 
 DEFAULT_CONFIG = {"language": "en", "pipeline": [], "data": None}
 
@@ -23,8 +21,8 @@ class InvalidConfigError(ValueError):
 
 
 def load(filename: Optional[Text] = None, **kwargs: Any) -> "RasaNLUModelConfig":
-    if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
-        filename = DEFAULT_CONFIG_LOCATION
+    if filename is None and os.path.isfile(DEFAULT_CONFIG_PATH):
+        filename = DEFAULT_CONFIG_PATH
 
     if filename is not None:
         try:
@@ -55,13 +53,6 @@ def override_defaults(
     return cfg
 
 
-def make_path_absolute(path: Text) -> Text:
-    if path and not os.path.isabs(path):
-        return os.path.join(os.getcwd(), path)
-    else:
-        return path
-
-
 def component_config_from_pipeline(
     index: int,
     pipeline: List[Dict[Text, Any]],
@@ -81,8 +72,6 @@ def component_config_from_pipeline(
 
 
 class RasaNLUModelConfig(object):
-    DEFAULT_PROJECT_NAME = "default"
-
     def __init__(self, configuration_values=None):
         """Create a model configuration, optionally overridding
         defaults with a dictionary ``configuration_values``.

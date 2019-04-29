@@ -781,22 +781,19 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(
-    data_path,
-    model,
-    report_folder=None,
-    successes_filename=None,
-    errors_filename="errors.json",
-    confmat_filename=None,
-    intent_hist_filename=None,
-    component_builder=None,
+    data_path: Text,
+    model_path: Text,
+    report_folder: Text = None,
+    successes_filename: Text = None,
+    errors_filename: Text = "errors.json",
+    confmat_filename: Text = None,
+    intent_hist_filename: Text = None,
+    component_builder: Text = None,
 ) -> Dict:  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
 
     # get the metadata config from the package data
-    if isinstance(model, Interpreter):
-        interpreter = model
-    else:
-        interpreter = Interpreter.load(model, component_builder)
+    interpreter = Interpreter.load(model_path, component_builder)
     test_data = training_data.load_data(data_path, interpreter.model_metadata.language)
 
     extractors = get_entity_extractors(interpreter)

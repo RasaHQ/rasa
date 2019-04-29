@@ -1,3 +1,5 @@
+language: en
+
 pipeline:
   - name: "SpacyNLP"
   - name: "SpacyTokenizer"
@@ -5,3 +7,12 @@ pipeline:
   - name: "SklearnIntentClassifier"
   - name: "CRFEntityExtractor"
   - name: "EntitySynonymMapper"
+
+policies:
+  - name: MappingPolicy
+  - name: MemoizationPolicy
+    max_history: 3
+  - name: "examples.restaurantbot.policy.RestaurantPolicy"
+    batch_size: 100
+    epochs: 400
+    validation_split: 0.2

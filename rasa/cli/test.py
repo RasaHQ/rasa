@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 from typing import List, Optional, Text, Union
 
 from rasa import data
@@ -188,7 +189,8 @@ def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None) -> Non
 
     args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    nlu_data = data.get_nlu_directory(nlu_data)
+    if os.path.isdir(nlu_data):
+        nlu_data = data.get_nlu_directory(nlu_data)
     model_path = model_path or args.model
 
     if model_path:
