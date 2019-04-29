@@ -69,13 +69,10 @@ paths:
                 type: string
                 description: Welcome text of Rasa Server
               example: >-
-                Hello from Rasa: 0.12.0
+                Hello from Rasa: 1.0.0
 
   /version:
     get:
-      security:
-      - TokenAuth: []
-      - JWT: []
       tags:
       - Server Information
       summary: Version of Rasa
@@ -92,7 +89,7 @@ paths:
                   version:
                     type: string
                     description: >-
-                      Core version number
+                      Rasa version number
                   minimum_compatible_version:
                     type: string
                     description: >-
@@ -113,9 +110,9 @@ paths:
       - JWT: []
       tags:
       - Server Information
-      summary: Status of the currently loaded Rasa Core & NLU models
+      summary: Status of the currently loaded Rasa model
       description: >-
-        Information about the currently loaded Rasa Core & NLU models.
+        Information about the currently loaded Rasa model.
       responses:
         200:
           description: Success
