@@ -187,9 +187,5 @@ def extract_additional_arguments(args: argparse.Namespace) -> typing.Dict:
         arguments["dump_stories"] = args.dump_stories
     if "debug_plots" in args:
         arguments["debug_plots"] = args.debug_plots
-    if "percentages" in args:
-        arguments["percentages"] = args.percentages
-    if "runs" in args:
-        arguments["runs"] = args.runs
 
     return arguments
