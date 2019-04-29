@@ -138,12 +138,12 @@ class InMemoryTrackerStore(TrackerStore):
             logger.debug("Creating a new tracker for id '{}'.".format(sender_id))
             return None
 
-    def keys(self) -> KeysView[Text]:
+    def keys(self) -> Iterable[Text]:
         return self.store.keys()
 
 
 class RedisTrackerStore(TrackerStore):
-    def keys(self) -> List[Text]:
+    def keys(self) -> Iterable[Text]:
         return self.red.keys()
 
     def __init__(
@@ -257,7 +257,7 @@ class MongoTrackerStore(TrackerStore):
         else:
             return None
 
-    def keys(self) -> List[Text]:
+    def keys(self) -> Iterable[Text]:
         return [c["sender_id"] for c in self.conversations.find()]
 
 
@@ -380,7 +380,7 @@ class SQLTrackerStore(TrackerStore):
         cursor.close()
         conn.close()
 
-    def keys(self) -> List[Text]:
+    def keys(self) -> Iterable[Text]:
         sender_ids = self.session.query(self.SQLEvent.sender_id).distinct().all()
         return [sender_id for (sender_id,) in sender_ids]
 
