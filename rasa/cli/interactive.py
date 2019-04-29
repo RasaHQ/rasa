@@ -1,4 +1,5 @@
 import argparse
+import os
 import shutil
 from typing import List
 
@@ -9,6 +10,10 @@ from rasa import data, model
 
 
 # noinspection PyProtectedMember
+from rasa.cli.utils import get_validated_path, print_error
+from rasa.constants import DEFAULT_DATA_PATH
+
+
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
@@ -60,6 +65,17 @@ def interactive(args: argparse.Namespace):
     from rasa.core.train import do_interactive_learning
 
     args.finetune = False  # Don't support finetuning
+
+    training_files = [
+        get_validated_path(f, "data", DEFAULT_DATA_PATH) for f in args.data
+    ]
+    story_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
+
+    if not os.listdir(story_directory) or not os.listdir(nlu_data_directory):
+        print_error(
+            "Cannot train initial Rasa model. Please provide NLU data and Core data."
+        )
+        return
 
     zipped_model = train.train(args)
 

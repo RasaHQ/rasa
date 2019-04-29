@@ -72,19 +72,27 @@ async def train_async(
         config, domain, nlu_data_directory, story_directory
     )
 
-    if not os.listdir(story_directory):
+    dialogue_data_not_present = not os.listdir(story_directory)
+    nlu_data_not_present = not os.listdir(nlu_data_directory)
+
+    if dialogue_data_not_present and nlu_data_not_present:
         print_error(
-            "No dialogue data given. Please provide dialogue and NLU data in order to "
-            "train a Rasa model."
+            "No training data given. Please provide dialogue and NLU data in "
+            "order to train a Rasa model."
         )
         return
 
-    if not os.listdir(nlu_data_directory):
-        print_error(
-            "No NLU data given. Please provide dialogue and NLU data in order to train "
-            "a Rasa model."
+    if dialogue_data_not_present:
+        print_warning(
+            "No dialogue data present. Just a Rasa NLU model will be trained."
         )
-        return
+        return train_nlu(config, nlu_data_directory, output, None)
+
+    if nlu_data_not_present:
+        print_warning("No NLU data present. Just a Rasa Core model will be trained.")
+        return await train_core_async(
+            domain, config, story_directory, output, None, kwargs
+        )
 
     if not force_training and old_model:
         unpacked = model.unpack_model(old_model)
