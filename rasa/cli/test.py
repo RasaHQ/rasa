@@ -58,6 +58,8 @@ def add_subparser(
         _add_nlu_arguments(nlu_arguments)
     _add_nlu_subparser_arguments(test_nlu_parser)
 
+    _add_test_subparser_arguments(test_parser)
+
     test_core_parser.set_defaults(func=test_core)
     test_nlu_parser.set_defaults(func=test_nlu)
     test_parser.set_defaults(func=test)
@@ -159,6 +161,16 @@ def _add_nlu_arguments(
         required=False,
         default="confmat.png",
         help="output path for the confusion matrix plot",
+    )
+
+
+def _add_test_subparser_arguments(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=DEFAULT_MODELS_PATH,
+        help="Path to a pre-trained model. If directory is given, the latest model "
+        "in that directory will be used.",
     )
 
 
