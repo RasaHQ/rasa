@@ -594,7 +594,7 @@ def create_app(
         tmp_file = rasa.nlu.utils.create_temporary_file(request.body, mode="w+b")
         use_e2e = utils.bool_arg(request, "e2e", default=False)
         try:
-            evaluation = await test(tmp_file, app.agent, use_e2e=use_e2e)
+            evaluation = await test(tmp_file, app.agent, e2e=use_e2e)
             return response.json(evaluation)
         except ValueError as e:
             raise ErrorResponse(

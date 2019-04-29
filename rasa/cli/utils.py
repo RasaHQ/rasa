@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, Callable, Dict, Optional, Text
+from typing import Any, Callable, Dict, Optional, Text, List
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
@@ -27,9 +27,12 @@ def get_validated_path(
 
     if current is None or current is not None and not os.path.exists(current):
         if default is not None and os.path.exists(default):
+            reason_str = "'{}' not found.".format(current)
+            if current is None:
+                reason_str = "Parameter '{}' not set.".format(parameter)
+
             print_warning(
-                "'{}' not found. Using default location '{}' instead."
-                "".format(current, default)
+                "{} Using default location '{}' instead." "".format(reason_str, default)
             )
             current = default
         elif none_is_valid:
@@ -38,6 +41,17 @@ def get_validated_path(
             cancel_cause_not_found(current, parameter, default)
 
     return current
+
+
+def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List:
+    import rasa.utils.io
+
+    if not os.path.exists(path):
+        return mandatory_keys
+
+    config_data = rasa.utils.io.read_yaml_file(path)
+
+    return [k for k in mandatory_keys if k not in config_data or config_data[k] is None]
 
 
 def cancel_cause_not_found(
@@ -98,12 +112,16 @@ def create_output_path(
         return os.path.join(output_path, file_name)
 
 
-def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
-    """Returns only the kwargs which are required by a function.
+def minimal_kwargs(
+    kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
+) -> Dict[Text, Any]:
+    """Returns only the kwargs which are required by a function. Keys, contained in
+    the exception list, are not included.
 
     Args:
         kwargs: All available kwargs.
         func: The function which should be called.
+        excluded_keys: Keys to exclude from the result.
 
     Returns:
         Subset of kwargs which are accepted by `func`.
@@ -111,9 +129,15 @@ def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
     """
     from rasa.utils.common import arguments_of
 
+    excluded_keys = excluded_keys or []
+
     possible_arguments = arguments_of(func)
 
-    return {k: v for k, v in kwargs.items() if k in possible_arguments}
+    return {
+        k: v
+        for k, v in kwargs.items()
+        if k in possible_arguments and k not in excluded_keys
+    }
 
 
 def print_success(*args: Any):
