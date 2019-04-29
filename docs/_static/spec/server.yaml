@@ -96,12 +96,8 @@ paths:
                       Minimum version this Rasa version is
                       able to load models from
               example:
-                version: 0.12.0
-                minimum_compatible_version: 0.12.0
-        401:
-          $ref: '#/components/responses/401NotAuthenticated'
-        403:
-          $ref: '#/components/responses/403NotAuthorized'
+                version: 1.0.0
+                minimum_compatible_version: 1.0.0
 
   /status:
     get:
@@ -130,7 +126,7 @@ paths:
                 stories:
                   - b5facea681fd00bc7ecc6818c70d9639
                 trained_at: 1556527123.42784
-                version: 1.0.0a2
+                version: 1.0.0
                 model_name: 20190429-103105.tar.gz
         401:
           $ref: '#/components/responses/401NotAuthenticated'
@@ -791,7 +787,7 @@ components:
           - AFTER_RESTART
           - ALL
           - APPLIED
-          - AFTER_R
+          - NONE
     until:
       in: query
       name: until
