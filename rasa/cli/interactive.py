@@ -4,6 +4,7 @@ from typing import List
 
 import rasa.cli.run as run
 import rasa.cli.train as train
+import rasa.core.cli.train as core_cli
 from rasa import data, model
 
 
@@ -17,24 +18,23 @@ def add_subparser(
         parents=parents,
         help="Teach the bot with interactive learning",
     )
+
     run.add_run_arguments(interactive_parser)
     train.add_general_arguments(interactive_parser)
     train.add_domain_param(interactive_parser)
     train.add_joint_parser_arguments(interactive_parser)
     _add_interactive_arguments(interactive_parser)
+
     interactive_parser.set_defaults(func=interactive)
 
-    interactive_core_subparsers = interactive_parser.add_subparsers()
-    interactive_core_parser = interactive_core_subparsers.add_parser(
+    interactive_subparsers = interactive_parser.add_subparsers()
+    interactive_core_parser = interactive_subparsers.add_parser(
         "core",
         conflict_handler="resolve",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Train a Rasa Core model with interactive learning",
     )
-    interactive_core_parser.set_defaults(func=interactive_core)
-
-    import rasa.core.cli.train as core_cli
 
     train.add_domain_param(interactive_core_parser)
     core_cli.add_general_args(interactive_core_parser)
@@ -43,6 +43,8 @@ def add_subparser(
     run.add_run_arguments(interactive_core_parser)
     _add_interactive_arguments(interactive_core_parser)
     train.add_general_arguments(interactive_core_parser)
+
+    interactive_core_parser.set_defaults(func=interactive_core)
 
 
 def _add_interactive_arguments(parser: argparse.ArgumentParser):
