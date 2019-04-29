@@ -121,13 +121,17 @@ paths:
               schema:
                 type: object
               example:
-                  core:
-                    model_fingerprint: 4523wyfgr4q2
-                    is_ready: true
-                  nlu:
-                    max_worker_processes: 5
-                    current_worker_processes: 1
-                    loaded_model: restaurant_bot
+                config:
+                  - 7625d69d93053ac8520a544d0852c626
+                domain:
+                  - 229b51e41876bbcbbbfbeddf79548d5a
+                messages:
+                  - cf7eda7edcae128a75ee8c95d3bbd680
+                stories:
+                  - b5facea681fd00bc7ecc6818c70d9639
+                trained_at: 1556527123.42784
+                version: 1.0.0a2
+                model_name: 20190429-103105.tar.gz
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
@@ -400,16 +404,16 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /models/train:
+  /model/train:
     post:
       security:
       - TokenAuth: []
       - JWT: []
       tags:
       - Model
-      summary: Train a Rasa Stack model
+      summary: Train a Rasa model
       description: >-
-        Trains a Rasa Stack model. A stack model is a model combining a
+        Trains a Rasa model. A Rasa model is a model combining a
         trained dialogue model with an NLU model.
       requestBody:
         required: true
@@ -422,7 +426,7 @@ paths:
                 $ref: '#/components/examples/StackTrainingRequest'
       responses:
         200:
-          description: Zipped Rasa Stack model
+          description: Zipped Rasa model
           content:
             application/octet-stream:
               schema:
@@ -436,7 +440,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /models/train/nlu:
+  /model/train/nlu:
     post:
       security:
       - TokenAuth: []
@@ -473,7 +477,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /models/evaluate/stories:
+  /model/evaluate/stories:
     post:
       security:
       - TokenAuth: []
@@ -518,7 +522,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /models/evaluate/intents:
+  /model/evaluate/intents:
     post:
       security:
       - TokenAuth: []
@@ -556,7 +560,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /models/predict:
+  /model/predict:
     post:
       security:
       - TokenAuth: []
@@ -593,7 +597,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /models/parse:
+  /model/parse:
     post:
       security:
       - TokenAuth: []
@@ -637,7 +641,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /models:
+  /model:
     put:
       security:
       - TokenAuth: []
