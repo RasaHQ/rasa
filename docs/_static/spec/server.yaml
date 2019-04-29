@@ -413,61 +413,25 @@ paths:
       - Model
       summary: Train a Rasa model
       description: >-
-        Trains a Rasa model. A Rasa model is a model combining a
-        trained dialogue model with an NLU model.
+        Trains a Rasa model. Depending on the data given only a dialogue model,
+        only a NLU model, or a model combining a trained dialogue model with an
+        NLU model will be trained.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StackTrainingRequest'
+              $ref: '#/components/schemas/TrainingRequest'
             example:
-              StackTrainingRequest:
-                $ref: '#/components/examples/StackTrainingRequest'
+              TrainingRequest:
+                $ref: '#/components/examples/TrainingRequest'
       responses:
         200:
           description: Zipped Rasa model
           content:
             application/octet-stream:
               schema:
-                $ref: '#/components/schemas/StackTrainingResult'
-        400:
-          $ref: '#/components/responses/400BadRequest'
-        401:
-          $ref: '#/components/responses/401NotAuthenticated'
-        403:
-          $ref: '#/components/responses/403NotAuthorized'
-        500:
-          $ref: '#/components/responses/500ServerError'
-
-  /model/train/nlu:
-    post:
-      security:
-      - TokenAuth: []
-      - JWT: []
-      tags:
-      - Model
-      summary: Train a Rasa NLU model
-      description: >-
-        Train a Rasa NLU model.
-      parameters:
-      - $ref: '#/components/parameters/model_name'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NLUTrainingRequest'
-            example:
-              StackTrainingRequest:
-                $ref: '#/components/examples/NLUTrainingRequest'
-      responses:
-        200:
-          description: Zipped Rasa Stack model
-          content:
-            application/octet-stream:
-              schema:
-                $ref: '#/components/schemas/NLUTrainingResult'
+                $ref: '#/components/schemas/TrainingResult'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -1156,15 +1120,15 @@ components:
             Policy which predicted the most likely action
         tracker:
           $ref: '#/components/schemas/Tracker'
-    StackTrainingRequest:
+    TrainingRequest:
       type: object
       properties:
         domain:
           type: string
-          description: Rasa Core domain in plain text
+          description: Rasa domain in plain text
         config:
           type: string
-          description: Rasa Stack config in plain text
+          description: Rasa config in plain text
         nlu:
           type: string
           description: Rasa NLU training data in markdown format
@@ -1178,8 +1142,8 @@ components:
           type: boolean
           description: >-
             Force a model training even if the data has not changed
-      required: ["domain", "config", "nlu", "stories"]
-    StackTrainingResult:
+      required: ["domain", "config"]
+    TrainingResult:
       type: string
       format: binary
     IntentEvaluationRequest:
@@ -1321,21 +1285,6 @@ components:
         properties:
           use_entities:
             type: boolean
-    NLUTrainingRequest:
-      type: object
-      properties:
-        data:
-          type: object
-          description: Data for training
-        language:
-          type: string
-          description: Language of the data
-        pipeline:
-          type: string
-          description: Pipeline used for training
-    NLUTrainingResult:
-      type: string
-      format: binary
 
 
   examples:
@@ -1440,7 +1389,7 @@ components:
                   micro avg       1.00      1.00      1.00        70
                   macro avg       1.00      1.00      1.00        70
                   weighted avg    1.00      1.00      1.00        70
-    StackTrainingRequest:
+    TrainingRequest:
       value:
         config: >-
           # Configuration for Rasa NLU.
@@ -1506,13 +1455,3 @@ components:
           * mood_unhappy
         out: models
         force: false
-    NLUTrainingRequest:
-      value:
-        language: "en"
-        pipeline: "spacy_sklearn"
-        data:
-          rasa_nlu_data:
-            common_examples:
-              text: hey
-              intent: greet
-              entities: []
