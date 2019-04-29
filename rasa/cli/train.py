@@ -112,13 +112,20 @@ def train(args: argparse.Namespace) -> Optional[Text]:
     import rasa
 
     domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
-    config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+    config = args.config or DEFAULT_CONFIG_PATH
 
     training_files = [
         get_validated_path(f, "data", DEFAULT_DATA_PATH) for f in args.data
     ]
 
-    return rasa.train(domain, config, training_files, args.out, args.force)
+    return rasa.train(
+        domain,
+        config,
+        training_files,
+        args.out,
+        args.force,
+        extract_additional_arguments(args),
+    )
 
 
 def train_core(
@@ -141,9 +148,16 @@ def train_core(
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+        config = args.config or DEFAULT_CONFIG_PATH
 
-        return train_core(args.domain, config, stories, output, train_path)
+        return train_core(
+            args.domain,
+            config,
+            stories,
+            output,
+            train_path,
+            extract_additional_arguments(args),
+        )
     else:
         from rasa.core.train import do_compare_training
 
@@ -158,7 +172,24 @@ def train_nlu(
 
     output = train_path or args.out
 
-    config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+    config = args.config or DEFAULT_CONFIG_PATH
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
 
     return train_nlu(config, nlu_data, output, train_path)
+
+
+def extract_additional_arguments(args: argparse.Namespace) -> typing.Dict:
+    arguments = {}
+
+    if "augmentation" in args:
+        arguments["augmentation_factor"] = args.augmentation
+    if "dump_stories" in args:
+        arguments["dump_stories"] = args.dump_stories
+    if "debug_plots" in args:
+        arguments["debug_plots"] = args.debug_plots
+    if "percentages" in args:
+        arguments["percentages"] = args.percentages
+    if "runs" in args:
+        arguments["runs"] = args.runs
+
+    return arguments

@@ -37,7 +37,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt --no-cache-dir
 
 COPY --from=builder /build/rasa.tar.gz .
-RUN pip install ./rasa.tar.gz
+RUN pip install ./rasa.tar.gz[sql]
 
 VOLUME ["/app"]
 WORKDIR /app
