@@ -1,7 +1,7 @@
 import argparse
 import tempfile
 import typing
-from typing import List, Optional, Text
+from typing import List, Optional, Text, Dict
 
 from rasa.cli.default_arguments import (
     add_config_param,
@@ -178,7 +178,7 @@ def train_nlu(
     return train_nlu(config, nlu_data, output, train_path)
 
 
-def extract_additional_arguments(args: argparse.Namespace) -> typing.Dict:
+def extract_additional_arguments(args: argparse.Namespace) -> Dict:
     arguments = {}
 
     if "augmentation" in args:
