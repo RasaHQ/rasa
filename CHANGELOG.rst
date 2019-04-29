@@ -39,6 +39,7 @@ Changed
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 - removed ``--num_threads`` from run command (server will be asyncronous but
   running in a single thread)
+- ``rasa train`` uses fallback config if an invalid config is given
 
 Removed
 -------
