@@ -56,7 +56,7 @@ class NaturalLanguageInterpreter(object):
                 "You have configured an endpoint to use for "
                 "the NLU model. To use it, you need to "
                 "specify the model to use with "
-                "`--nlu project/model`."
+                "`--nlu model`."
             )
 
 
@@ -173,14 +173,10 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
 class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
     def __init__(
-        self,
-        model_name: Text = None,
-        endpoint: EndpointConfig = None,
-        project_name: Text = "default",
+        self, model_name: Text = None, endpoint: EndpointConfig = None
     ) -> None:
 
         self.model_name = model_name
-        self.project_name = project_name
 
         if endpoint:
             self.endpoint = endpoint
@@ -216,7 +212,6 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         params = {
             "token": self.endpoint.token,
             "model": self.model_name,
-            "project": self.project_name,
             "q": text,
             "message_id": message_id,
         }
@@ -265,7 +260,6 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         #   but where the interpreter does not add them
         if result:
             result["model"] = "current"
-            result["project"] = "default"
         return result
 
     def _load_interpreter(self):

@@ -39,6 +39,8 @@ Changed
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 - removed ``--num_threads`` from run command (server will be asyncronous but
   running in a single thread)
+- removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be loaded by default)
+- changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
 - ``rasa train`` uses fallback config if an invalid config is given
 
 Removed
@@ -46,6 +48,7 @@ Removed
 - removed possibility to execute ``python -m rasa_core.train`` etc. (e.g. scripts in ``rasa.core`` and ``rasa.nlu``).
   Use the CLI for rasa instead, e.g. ``rasa train core``.
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
+- removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.
 
 Fixed
 -----

@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import shutil
@@ -10,8 +9,9 @@ from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import aiohttp
 
+import rasa
 from rasa.constants import DEFAULT_DOMAIN_PATH
-from rasa.core import constants, jobs, training, utils
+from rasa.core import constants, jobs, training
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.dispatcher import Dispatcher
@@ -169,7 +169,7 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
-                utils.unarchive(await resp.read(), model_directory)
+                rasa.utils.io.unarchive(await resp.read(), model_directory)
                 logger.debug(
                     "Unzipped model to '{}'".format(os.path.abspath(model_directory))
                 )

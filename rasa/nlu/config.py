@@ -53,13 +53,6 @@ def override_defaults(
     return cfg
 
 
-def make_path_absolute(path: Text) -> Text:
-    if path and not os.path.isabs(path):
-        return os.path.join(os.getcwd(), path)
-    else:
-        return path
-
-
 def component_config_from_pipeline(
     index: int,
     pipeline: List[Dict[Text, Any]],
@@ -79,8 +72,6 @@ def component_config_from_pipeline(
 
 
 class RasaNLUModelConfig(object):
-    DEFAULT_PROJECT_NAME = "default"
-
     def __init__(self, configuration_values=None):
         """Create a model configuration, optionally overridding
         defaults with a dictionary ``configuration_values``.
