@@ -176,10 +176,19 @@ async def train_core_async(
 
     _train_path = train_path or tempfile.mkdtemp()
 
+    story_directory = data.get_core_directory(stories)
+
+    if not os.listdir(story_directory):
+        print_error(
+            "No dialogue data given. Please provide dialogue data in order to "
+            "train a Rasa Core model."
+        )
+        return
+
     # normal (not compare) training
     core_model = await rasa.core.train(
         domain_file=domain,
-        stories_file=data.get_core_directory(stories),
+        stories_file=story_directory,
         output_path=os.path.join(_train_path, "core"),
         policy_config=config,
         kwargs=kwargs,
@@ -187,9 +196,10 @@ async def train_core_async(
 
     if not train_path:
         # Only Core was trained.
-        stories = data.get_core_directory(stories)
         output_path = create_output_path(output, prefix="core-")
-        new_fingerprint = model.model_fingerprint(config, domain, stories=stories)
+        new_fingerprint = model.model_fingerprint(
+            config, domain, stories=story_directory
+        )
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
         print_success(
             "Your Rasa Core model is trained and saved at '{}'.".format(output_path)
@@ -219,16 +229,23 @@ def train_nlu(
 
     config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
-    nlu_data = data.get_nlu_directory(nlu_data)
+    nlu_data_directory = data.get_nlu_directory(nlu_data)
+
+    if not os.listdir(nlu_data_directory):
+        print_error(
+            "No NLU data given. Please provide NLU data in order to train "
+            "a Rasa NLU model."
+        )
+        return
 
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa.nlu.train(
-        config, nlu_data, _train_path, fixed_model_name="nlu"
+        config, nlu_data_directory, _train_path, fixed_model_name="nlu"
     )
 
     if not train_path:
         output_path = create_output_path(output, prefix="nlu-")
-        new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data)
+        new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data_directory)
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
         print_success(
             "Your Rasa NLU model is trained and saved at '{}'.".format(output_path)
