@@ -1,46 +1,36 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import io
-import os
 import json
-import tempfile
-import shutil
-import time
 
 import pytest
 import ruamel.yaml as yaml
 import tempfile
 
-
-from rasa.nlu.data_router import DataRouter
+from rasa.nlu.data_router import DataRouter, create_data_router
+from rasa.nlu.model_loader import FALLBACK_MODEL_NAME
 from rasa.nlu.server import create_app
 from tests.nlu import utilities
+from tests.nlu.conftest import NLU_MODEL_PATH, NLU_MODEL_NAME
 from tests.nlu.utilities import ResponseTest
 
 
-KEYWORD_PROJECT_NAME = "keywordproject"
-KEYWORD_MODEL_NAME = "keywordmodel"
-
-
 @pytest.fixture
-def app(tmpdir_factory, trained_nlu_model):
+def app_without_model():
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    temp_path = tmpdir_factory.mktemp("projects")
-    try:
-        shutil.copytree(
-            trained_nlu_model,
-            os.path.join(
-                temp_path.strpath,
-                "{}/{}".format(KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME),
-            ),
-        )
-    except FileExistsError:
-        pass
-
-    router = DataRouter(temp_path.strpath)
-
+    router = DataRouter()
     rasa = create_app(router, logfile=nlu_log_file)
+
+    return rasa.test_client
+
+
+@pytest.fixture()
+async def app(tmpdir_factory, trained_nlu_model):
+    _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
+
+    data_router = await create_data_router(NLU_MODEL_PATH)
+    rasa = create_app(data_router, logfile=nlu_log_file)
 
     return rasa.test_client
 
@@ -62,10 +52,10 @@ def test_root(app):
 def test_status(app):
     _, response = app.get("/status")
     rjs = response.json
-    assert response.status == 200 and "available_projects" in rjs
+    assert response.status == 200
+    assert "loaded_model" in rjs
     assert "current_worker_processes" in rjs
     assert "max_worker_processes" in rjs
-    assert KEYWORD_PROJECT_NAME in rjs["available_projects"]
 
 
 def test_version(app):
@@ -79,49 +69,37 @@ def test_version(app):
     "response_test",
     [
         ResponseTest(
-            "/parse?q=hello&model={}&project={}".format(
-                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
-            ),
+            "/parse?q=hello&model={}".format(NLU_MODEL_NAME),
             {
-                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": KEYWORD_MODEL_NAME,
+                "model": NLU_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
         ),
         ResponseTest(
-            "/parse?q=hello&model={}&project={}".format(
-                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
-            ),
+            "/parse?q=hello&model={}".format(NLU_MODEL_NAME),
             {
-                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": KEYWORD_MODEL_NAME,
+                "model": NLU_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
         ),
         ResponseTest(
-            "/parse?q=hello ńöñàśçií&model={}&project={}".format(
-                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
-            ),
+            "/parse?q=hello ńöñàśçií&model={}".format(NLU_MODEL_NAME),
             {
-                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": KEYWORD_MODEL_NAME,
+                "model": NLU_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello ńöñàśçií",
             },
         ),
         ResponseTest(
-            "/parse?q=&model={}&project={}".format(
-                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
-            ),
+            "/parse?q=&model={}".format(NLU_MODEL_NAME),
             {
-                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": KEYWORD_MODEL_NAME,
+                "model": NLU_MODEL_NAME,
                 "intent": {"confidence": 0.0, "name": None},
                 "text": "",
             },
@@ -132,10 +110,10 @@ def test_get_parse(app, response_test):
     _, response = app.get(response_test.endpoint)
     rjs = response.json
     assert response.status == 200
-    assert rjs == response_test.expected_response
-    assert all(
-        prop in rjs for prop in ["project", "entities", "intent", "text", "model"]
-    )
+    assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
+    assert rjs["entities"] == response_test.expected_response["entities"]
+    assert rjs["model"].startswith("nlu")
+    assert rjs["text"] == response_test.expected_response["text"]
 
 
 @pytest.mark.parametrize(
@@ -144,47 +122,32 @@ def test_get_parse(app, response_test):
         ResponseTest(
             "/parse",
             {
-                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": KEYWORD_MODEL_NAME,
+                "model": NLU_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
-            payload={
-                "q": "hello",
-                "project": KEYWORD_PROJECT_NAME,
-                "model": KEYWORD_MODEL_NAME,
-            },
+            payload={"q": "hello", "model": NLU_MODEL_NAME},
         ),
         ResponseTest(
             "/parse",
             {
-                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": KEYWORD_MODEL_NAME,
+                "model": NLU_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
-            payload={
-                "query": "hello",
-                "project": KEYWORD_PROJECT_NAME,
-                "model": KEYWORD_MODEL_NAME,
-            },
+            payload={"query": "hello", "model": NLU_MODEL_NAME},
         ),
         ResponseTest(
             "/parse",
             {
-                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": KEYWORD_MODEL_NAME,
+                "model": NLU_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello ńöñàśçií",
             },
-            payload={
-                "q": "hello ńöñàśçií",
-                "project": KEYWORD_PROJECT_NAME,
-                "model": KEYWORD_MODEL_NAME,
-            },
+            payload={"q": "hello ńöñàśçií", "model": NLU_MODEL_NAME},
         ),
     ],
 )
@@ -192,117 +155,229 @@ def test_post_parse(app, response_test):
     _, response = app.post(response_test.endpoint, json=response_test.payload)
     rjs = response.json
     assert response.status == 200
-    assert rjs == response_test.expected_response
-    assert all(
-        prop in rjs for prop in ["project", "entities", "intent", "text", "model"]
-    )
+    assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
+    assert rjs["entities"] == response_test.expected_response["entities"]
+    assert rjs["model"].startswith("nlu")
+    assert rjs["text"] == response_test.expected_response["text"]
 
 
-@utilities.slowtest
-def test_post_train(app, rasa_default_train_data):
-    _, response = app.post("/train", json=rasa_default_train_data)
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse?q=hello&model=some-model",
+            {
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+        ),
+        ResponseTest(
+            "/parse?query=hello&model=some-model",
+            {
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+        ),
+        ResponseTest(
+            "/parse?q=hello ńöñàśçií&model=some-model",
+            {
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello ńöñàśçií",
+            },
+        ),
+        ResponseTest(
+            "/parse?q=&model=abc",
+            {
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 0.0, "name": None},
+                "text": "",
+            },
+        ),
+    ],
+)
+def test_get_parse_use_fallback_model(app_without_model, response_test):
+    _, response = app_without_model.get(response_test.endpoint)
     rjs = response.json
-    assert response.status == 404, "A project name to train must be specified"
-    assert "details" in rjs
+    assert response.status == 200
+    assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
+    assert rjs["entities"] == response_test.expected_response["entities"]
+    assert rjs["model"] == FALLBACK_MODEL_NAME
+    assert rjs["text"] == response_test.expected_response["text"]
+
+
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"q": "hello", "model": "some-model"},
+        ),
+        ResponseTest(
+            "/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"query": "hello", "model": "some-model"},
+        ),
+        ResponseTest(
+            "/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello ńöñàśçií",
+            },
+            payload={"q": "hello ńöñàśçií", "model": "some-model"},
+        ),
+    ],
+)
+def test_post_parse_using_fallback_model(app, response_test):
+    _, response = app.post(response_test.endpoint, json=response_test.payload)
+    rjs = response.json
+    assert response.status == 200
+    assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
+    assert rjs["entities"] == response_test.expected_response["entities"]
+    assert rjs["model"] == FALLBACK_MODEL_NAME
+    assert rjs["text"] == response_test.expected_response["text"]
+    assert rjs["intent"]["name"] == response_test.expected_response["intent"]["name"]
 
 
 @utilities.slowtest
-def test_post_train_success(app, rasa_default_train_data):
-    import zipfile
+def test_post_train_success(app_without_model, rasa_default_train_data):
+    request = {
+        "language": "en",
+        "pipeline": "pretrained_embeddings_spacy",
+        "data": rasa_default_train_data,
+    }
 
-    model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
+    _, response = app_without_model.post("/train", json=request)
 
-    _, response = app.post("/train?project=test&model=test", json=model_config)
-
-    content = response.body
     assert response.status == 200
-    assert zipfile.ZipFile(io.BytesIO(content)).testzip() is None
+    assert response.content is not None
 
 
 @utilities.slowtest
 def test_post_train_internal_error(app, rasa_default_train_data):
     _, response = app.post(
-        "/train?project=test", json={"data": "dummy_data_for_triggering_an_error"}
+        "/train", json={"data": "dummy_data_for_triggering_an_error"}
     )
-    rjs = response.json
     assert response.status == 500, "The training data format is not valid"
 
 
 def test_model_hot_reloading(app, rasa_default_train_data):
-    query = "/parse?q=hello&project=my_keyword_model"
+    query = "/parse?q=hello&model=test-model"
+
+    # Model could not be found, fallback model was used instead
     _, response = app.get(query)
-    assert response.status == 404, "Project should not exist yet"
-    train_u = "/train?project=my_keyword_model"
-    model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
-    model_str = yaml.safe_dump(
-        model_config, default_flow_style=False, allow_unicode=True
-    )
+    assert response.status == 200
+    rjs = response.json
+    assert rjs["model"] == FALLBACK_MODEL_NAME
+
+    # Train a new model - model will be loaded automatically
+    train_u = "/train?model=test-model"
+    request = {
+        "language": "en",
+        "pipeline": "pretrained_embeddings_spacy",
+        "data": rasa_default_train_data,
+    }
+    model_str = yaml.safe_dump(request, default_flow_style=False, allow_unicode=True)
     _, response = app.post(
         train_u, headers={"Content-Type": "application/x-yml"}, data=model_str
     )
     assert response.status == 200, "Training should end successfully"
 
     _, response = app.post(
-        train_u,
-        headers={"Content-Type": "application/json"},
-        data=json.dumps(model_config),
+        train_u, headers={"Content-Type": "application/json"}, data=json.dumps(request)
     )
     assert response.status == 200, "Training should end successfully"
 
+    # Model should be there now
     _, response = app.get(query)
-    assert response.status == 200, "Project should now exist after it got trained"
+    assert response.status == 200, "Model should now exist after it got trained"
+    rjs = response.json
+    assert "test-model" in rjs["model"]
 
 
-def test_evaluate_invalid_project_error(app, rasa_default_train_data):
-    _, response = app.post(
-        "/evaluate", json=rasa_default_train_data, params={"project": "project123"}
-    )
+def test_evaluate_invalid_model_error(app, rasa_default_train_data):
+    _, response = app.post("/evaluate?model=not-existing", json=rasa_default_train_data)
 
     rjs = response.json
-    assert response.status == 500, "The project cannot be found"
+    assert response.status == 500
     assert "details" in rjs
-    assert rjs["details"]["error"] == "Project 'project123' could not be found."
+    assert rjs["details"]["error"] == "Model with name 'not-existing' is not loaded."
+
+
+def test_evaluate_unsupported_model_error(app_without_model, rasa_default_train_data):
+    _, response = app_without_model.post("/evaluate", json=rasa_default_train_data)
+
+    rjs = response.json
+    assert response.status == 500
+    assert "details" in rjs
+    assert rjs["details"]["error"] == "No model is loaded. Cannot evaluate."
 
 
 def test_evaluate_internal_error(app, rasa_default_train_data):
     _, response = app.post(
         "/evaluate", json={"data": "dummy_data_for_triggering_an_error"}
     )
-
     assert response.status == 500, "The training data format is not valid"
 
 
 def test_evaluate(app, rasa_default_train_data):
     _, response = app.post(
-        "/evaluate?project={}&model={}".format(
-            KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME
-        ),
-        json=rasa_default_train_data,
+        "/evaluate?model={}".format(NLU_MODEL_NAME), json=rasa_default_train_data
     )
 
     rjs = response.json
-    assert response.status == 200, "Evaluation should start"
     assert "intent_evaluation" in rjs
     assert "entity_evaluation" in rjs
     assert all(
         prop in rjs["intent_evaluation"]
         for prop in ["report", "predictions", "precision", "f1_score", "accuracy"]
     )
+    assert response.status == 200, "Evaluation should start"
 
 
 def test_unload_model_error(app):
-    project_err = "/models?project=my_project&model=my_model"
-    _, response = app.delete(project_err)
+    request = "/models?model=my_model"
+    _, response = app.delete(request)
     rjs = response.json
-    assert response.status == 500, "Project not found"
-    assert rjs["details"]["error"] == "Project my_project could not be found"
+    assert (
+        response.status == 404
+    ), "Model is not loaded and can therefore not be unloaded."
+    assert rjs["details"]["error"] == "Model with name 'my_model' is not loaded."
 
 
 def test_unload_model(app):
-    unload = "/models?model={}&project={}".format(
-        KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
-    )
+    unload = "/models?model={}".format(NLU_MODEL_NAME)
     _, response = app.delete(unload)
+    assert response.status == 204, "No Content"
+
+
+def test_status_after_unloading(app):
+    _, response = app.get("/status")
     rjs = response.json
-    assert response.status == 200, "Fallback model unloaded"
-    assert rjs == KEYWORD_MODEL_NAME
+    assert response.status == 200
+    assert rjs["loaded_model"] == NLU_MODEL_NAME
+
+    unload = "/models?model={}".format(NLU_MODEL_NAME)
+    _, response = app.delete(unload)
+    assert response.status == 204, "No Content"
+
+    _, response = app.get("/status")
+    rjs = response.json
+    assert response.status == 200
+    assert rjs["loaded_model"] is None

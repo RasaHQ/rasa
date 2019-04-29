@@ -50,9 +50,9 @@ If you've done this, you can see how well your model predicts the test cases usi
 
 .. code-block:: bash
 
-    python -m rasa.nlu.test \
+    rasa test nlu \
         --data data/examples/rasa/demo-rasa.json \
-        --model projects/default/model_20180323-145833
+        --model models/model_20180323-145833.tar.gz
 
 Where the ``--data`` argument points to your test data, and ``--model`` points to your trained model.
 
@@ -64,7 +64,7 @@ To do this, run the evaluation script with the ``--mode crossvalidation`` flag:
 
 .. code-block:: bash
 
-    python -m rasa.nlu.test \
+    rasa test nlu \
         --data data/examples/rasa/demo-rasa.json \
         --config sample_configs/config_pretrained_embeddings_spacy.yml \
         --mode crossvalidation
