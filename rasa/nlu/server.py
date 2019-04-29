@@ -365,6 +365,7 @@ def create_app(
         model_path = request.args.get("model")
         try:
             data_router.unload_model(model_path)
+            logger.debug("Successfully unload model '{}'.".format(model_path))
             return response.json(None, status=204)
         except InvalidModelError as e:
             raise ErrorResponse(
@@ -388,6 +389,7 @@ def create_app(
         model_path = request.args.get("model")
         try:
             await data_router.load_model(model_path)
+            logger.debug("Successfully load model '{}'.".format(model_path))
             return response.json(None, status=204)
         except InvalidModelError as e:
             raise ErrorResponse(
