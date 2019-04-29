@@ -186,7 +186,7 @@ async def train_core_async(
         return
 
     # normal (not compare) training
-    core_model = await rasa.core.train(
+    await rasa.core.train(
         domain_file=domain,
         stories_file=story_directory,
         output_path=os.path.join(_train_path, "core"),
@@ -205,12 +205,14 @@ async def train_core_async(
             "Your Rasa Core model is trained and saved at '{}'.".format(output_path)
         )
 
-    return core_model
+        return output_path
+
+    return _train_path
 
 
 def train_nlu(
     config: Text, nlu_data: Text, output: Text, train_path: Optional[Text]
-) -> Optional["Interpreter"]:
+) -> Optional[Text]:
     """Trains a NLU model.
 
     Args:
@@ -251,7 +253,9 @@ def train_nlu(
             "Your Rasa NLU model is trained and saved at '{}'.".format(output_path)
         )
 
-    return nlu_model
+        return output_path
+
+    return _train_path
 
 
 def enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH):
