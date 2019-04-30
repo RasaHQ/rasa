@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 from typing import Text, Tuple, Union, Optional, List, Dict, Any
 
+import rasa.utils.io
 from rasa.constants import DEFAULT_MODELS_PATH
 
 # Type alias for the fingerprint
@@ -245,14 +246,28 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     Returns:
         The fingerprint or an empty dict if no fingerprint was found.
     """
-    import rasa.core.utils
-
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
-        return rasa.core.utils.read_json_file(fingerprint_path)
+        return rasa.utils.io.read_json_file(fingerprint_path)
     else:
         return {}
+
+
+def fingerprint_of_model(model_path: Text) -> Fingerprint:
+    """Loads a persisted fingerprint.
+
+    Args:
+        model_path: Path to zipped model file containing the fingerprint.
+
+    Returns:
+        The fingerprint or an empty dict if no fingerprint was found.
+    """
+    if not model_path or not os.path.exists(model_path):
+        return {}
+
+    model_dir = unpack_model(model_path)
+    return fingerprint_from_path(model_dir)
 
 
 def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):

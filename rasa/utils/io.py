@@ -1,5 +1,6 @@
 import asyncio
 import io
+import json
 import logging
 import tarfile
 import tempfile
@@ -115,6 +116,12 @@ def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
     """Read text from a file."""
     with io.open(filename, encoding=encoding) as f:
         return f.read()
+
+
+def read_json_file(filename):
+    """Read json from a file"""
+    with open(filename) as f:
+        return json.load(f)
 
 
 def read_yaml_file(filename: Text) -> Dict[Text, Any]:

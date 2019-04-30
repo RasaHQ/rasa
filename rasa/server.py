@@ -21,6 +21,7 @@ from rasa.core.channels import UserMessage
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file
+from rasa.model import fingerprint_of_model
 from rasa.nlu.test import run_evaluation
 
 logger = logging.getLogger(__name__)
@@ -174,6 +175,7 @@ def _configure_logging(loglevel, logfile):
 
 
 def create_app(
+    model_file: Optional[Text] = None,
     agent: Optional["Agent"] = None,
     data_router: Optional["DataRouter"] = None,
     cors_origins: Union[Text, List[Text]] = "*",
@@ -183,7 +185,7 @@ def create_app(
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
 ):
-    """Class representing a Rasa Core HTTP server."""
+    """Class representing a Rasa HTTP server."""
 
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = 60 * 60
@@ -210,18 +212,7 @@ def create_app(
 
     app.agent = agent
     app.data_router = data_router
-    app.model_file = None
-
-    @app.listener("after_server_start")
-    async def warn_if_agent_is_unavailable(app, loop):
-        if not app.agent or not app.agent.is_ready():
-            logger.info(
-                "The loaded agent is not ready to be used yet "
-                "(e.g. only the NLU interpreter is configured, "
-                "but no Core model is loaded). This is NOT AN ISSUE "
-                "some endpoints are not available until the agent "
-                "is ready though."
-            )
+    app.model_file = model_file
 
     @app.exception(ErrorResponse)
     async def handle_error_response(request: Request, exception: ErrorResponse):
@@ -248,7 +239,12 @@ def create_app(
     async def status(request: Request):
         """respond with the model name and the fingerprint of that model."""
 
-        return response.json({"model_name": app.model_file, "fingerprint": "TODO"})
+        return response.json(
+            {
+                "model_name": app.model_file,
+                "fingerprint": fingerprint_of_model(app.model_file),
+            }
+        )
 
     @app.get("/conversations/<conversation_id>/tracker")
     @requires_auth(app, auth_token)
