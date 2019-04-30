@@ -123,13 +123,22 @@ def test_json_parse_reset():
 
 
 def test_json_parse_user():
+    # fmt: off
     # DOCS MARKER UserUttered
-    evt = {
-        "event": "user",
-        "text": "Hey",
-        "parse_data": {"intent": {"name": "greet", "confidence": 0.9}, "entities": []},
-    }
+    evt =  \
+        {
+          "event": "user",
+          "text": "Hey",
+          "parse_data": {
+            "intent": {
+              "name": "greet",
+              "confidence": 0.9
+            },
+            "entities": []
+          },
+        }
     # DOCS END
+    # fmt: on
     assert Event.from_parameters(evt) == UserUttered(
         "Hey",
         intent={"name": "greet", "confidence": 0.9},
@@ -153,15 +162,18 @@ def test_json_parse_rewind():
 
 
 def test_json_parse_reminder():
+    # fmt: off
     # DOCS MARKER ReminderScheduled
-    evt = {
-        "event": "reminder",
-        "action": "my_action",
-        "date_time": "2018-09-03T11:41:10.128172",
-        "name": "my_reminder",
-        "kill_on_user_msg": True,
-    }
+    evt =  \ 
+        {
+          "event": "reminder",
+          "action": "my_action",
+          "date_time": "2018-09-03T11:41:10.128172",
+          "name": "my_reminder",
+          "kill_on_user_msg": True,
+        }
     # DOCS END
+    # fmt: on
     assert Event.from_parameters(evt) == ReminderScheduled(
         "my_action",
         parser.parse("2018-09-03T11:41:10.128172"),
