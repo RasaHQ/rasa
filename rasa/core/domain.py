@@ -141,11 +141,19 @@ class Domain(object):
     def load(
         cls, path: Text, skill_imports: Optional[SkillSelector] = None
     ) -> "Domain":
+        if not skill_imports:
+            skill_imports = SkillSelector.empty()
+
+        path = os.path.abspath(path)
+
+        # If skill imports were done, let's load from the directory.
+        if os.path.isfile(path) and not skill_imports.is_empty():
+            path = os.path.dirname(path)
+
         if os.path.isfile(path):
-            domain = cls.from_yaml(rasa.utils.io.read_file(path))
+            domain = cls.from_file(path)
         elif os.path.isdir(path):
             domain = cls.from_directory(path, skill_imports)
-
         else:
             raise Exception(
                 "Failed to load domain specification from '{}'. "
@@ -153,6 +161,10 @@ class Domain(object):
             )
 
         return domain
+
+    @classmethod
+    def from_file(cls, path: Text) -> "Domain":
+        return cls.from_yaml(rasa.utils.io.read_file(path))
 
     @classmethod
     def from_yaml(cls, yaml: Text) -> "Domain":
@@ -184,6 +196,7 @@ class Domain(object):
 
         domain = Domain.empty()
         skill_imports = skill_imports or SkillSelector.empty()
+
         for root, _, files in os.walk(path):
             if not skill_imports.is_imported(root):
                 continue
@@ -191,7 +204,7 @@ class Domain(object):
             for file in files:
                 full_path = os.path.join(root, file)
                 if data.is_domain_file(full_path):
-                    other = Domain.load(full_path)
+                    other = Domain.from_file(full_path)
                     domain = other.merge(domain)
 
         return domain
@@ -611,6 +624,7 @@ class Domain(object):
 
         loaded_domain_spec = self.load_specification(path)
         states = loaded_domain_spec["states"]
+
         if states != self.input_states:
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))

@@ -9,8 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 class SkillSelector:
-    def __init__(self, imports: Set[Text]):
+    def __init__(self, imports: Set[Text], base_directory: Text = None):
         self.imports = imports
+        self.base_directory = base_directory
 
     @classmethod
     def empty(cls) -> "SkillSelector":
@@ -21,8 +22,8 @@ class SkillSelector:
         cls, config: Text, skill_paths: Union[Text, List[Text]]
     ) -> "SkillSelector":
         # All imports are by default relative to the root config file directory
+        config = os.path.abspath(config)
         base_directory = os.path.dirname(config)
-        base_directory = os.path.abspath(base_directory)
 
         selector = cls._from_file(config, base_directory)
 
@@ -71,7 +72,7 @@ class SkillSelector:
 
         imports = {os.path.join(base_directory, p) for p in imports}
 
-        return cls(imports)
+        return cls(imports, base_directory)
 
     @classmethod
     def _from_directory(cls, path: Text, base_directory: Text) -> "SkillSelector":
@@ -97,7 +98,15 @@ class SkillSelector:
     def is_imported(self, path: Text) -> bool:
         absolute_path = os.path.abspath(path)
 
-        return self.is_empty() or any([i in absolute_path for i in self.imports])
+        return (
+            self.is_empty()
+            or os.path.abspath(path) == self.base_directory
+            or (
+                os.path.isfile(absolute_path)
+                and os.path.abspath(os.path.dirname(path)) == self.base_directory
+            )
+            or any([i in absolute_path for i in self.imports])
+        )
 
     def add_import(self, path: Text) -> bool:
         self.imports.add(path)

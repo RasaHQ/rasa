@@ -72,7 +72,6 @@ async def train_async(
     retrain_nlu = True
 
     skill_imports = SkillSelector.load(config, training_files)
-
     domain = Domain.load(domain, skill_imports)
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
@@ -129,7 +128,7 @@ async def train_async(
 
 
 def train_core(
-    domain: Text,
+    domain: Union[Domain, Text],
     config: Text,
     stories: Text,
     output: Text,
@@ -172,7 +171,7 @@ async def train_core_async(
 
     _train_path = train_path or tempfile.mkdtemp()
 
-    if isinstance(Domain, Text) or not train_path:
+    if isinstance(Domain, str) or not train_path:
         skill_imports = SkillSelector.load(config, stories)
         domain = Domain.load(domain, skill_imports)
         stories = data.get_core_directory(stories, skill_imports)
@@ -221,8 +220,9 @@ def train_nlu(
 
     _train_path = train_path or tempfile.mkdtemp()
 
-    skill_imports = SkillSelector.load(config, nlu_data)
-    nlu_data = data.get_nlu_directory(nlu_data, skill_imports)
+    if not train_path:
+        skill_imports = SkillSelector.load(config, nlu_data)
+        nlu_data = data.get_nlu_directory(nlu_data, skill_imports)
 
     _, nlu_model, _ = rasa.nlu.train(
         config, nlu_data, _train_path, fixed_model_name="nlu"
