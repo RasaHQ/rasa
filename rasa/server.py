@@ -18,6 +18,7 @@ import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DEFAULT_MODELS_PATH
 from rasa.core import constants
 from rasa.core.channels import UserMessage
+from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file
@@ -241,30 +242,102 @@ def create_app(
 
         return response.json(
             {
-                "model_name": app.model_file,
+                "model_file": app.model_file,
                 "fingerprint": fingerprint_of_model(app.model_file),
             }
         )
 
     @app.get("/conversations/<conversation_id>/tracker")
     @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
-        pass
+        if not app.agent.tracker_store:
+            raise ErrorResponse(
+                409,
+                "Conflict",
+                "No tracker store available. Make sure to "
+                "configure a tracker store when starting "
+                "the server.",
+            )
+
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+
+        tracker = obtain_tracker_store(conversation_id)
+
+        until_time = rasa.utils.endpoints.float_arg(request, "until")
+        if until_time is not None:
+            tracker = tracker.travel_back_in_time(until_time)
+
+        state = tracker.current_state(verbosity)
+        return response.json(state)
 
     @app.post("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def append_event(request: Request, conversation_id: Text):
         """Append a list of events to the state of a conversation"""
-        pass
+        validate_request_body(
+            request,
+            "You must provide events in the request body in order to append them"
+            "to the state of a conversation.",
+        )
+
+        evt = Event.from_parameters(request.json)
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+
+        tracker = obtain_tracker_store(conversation_id)
+
+        if evt:
+            try:
+                tracker.update(evt)
+                app.agent.tracker_store.save(tracker)
+                return response.json(tracker.current_state(verbosity))
+            except Exception as e:
+                logger.debug(traceback.format_exc())
+                raise ErrorResponse(
+                    500,
+                    "ServerError",
+                    "An unexpected error occurred. Error: {}".format(e),
+                )
+
+        logger.warning(
+            "Append event called, but could not extract a valid event. "
+            "Request JSON: {}".format(request.json)
+        )
+        raise ErrorResponse(
+            400,
+            "BadRequest",
+            "Couldn't extract a proper event from the request body.",
+            {"parameter": "", "in": "body"},
+        )
 
     @app.put("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def replace_events(request: Request, conversation_id: Text):
         """Use a list of events to set a conversations tracker to a state."""
-        pass
+        validate_request_body(
+            request,
+            "You must provide events in the request body to set the sate of the "
+            "conversation tracker.",
+        )
+
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+
+        try:
+            tracker = DialogueStateTracker.from_dict(
+                conversation_id, request.json, app.agent.domain.slots
+            )
+
+            # will override an existing tracker with the same id!
+            app.agent.tracker_store.save(tracker)
+            return response.json(tracker.current_state(verbosity))
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+            )
 
     @app.get("/conversations/<conversation_id>/story")
     @requires_auth(app, auth_token)
@@ -295,6 +368,12 @@ def create_app(
     async def train(request: Request):
         """Train a Rasa Model."""
         from rasa.train import train_async
+
+        validate_request_body(
+            request,
+            "You must provide training data in the request body in order to "
+            "train your model.",
+        )
 
         rjs = request.json
 
@@ -355,13 +434,11 @@ def create_app(
     @ensure_loaded_agent(app)
     async def evaluate_stories(request: Request):
         """Evaluate stories against the currently loaded model."""
-        if not request.body:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "You must provide some stories in the request body in order to "
-                "evaluate your model.",
-            )
+        validate_request_body(
+            request,
+            "You must provide some stories in the request body in order to "
+            "evaluate your model.",
+        )
 
         stories = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
@@ -381,13 +458,11 @@ def create_app(
     @requires_auth(app, auth_token)
     async def evaluate_intents(request: Request):
         """Evaluate intents against a Rasa model."""
-        if not request.body:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "You must provide some nlu data in the request body in order to "
-                "evaluate your model.",
-            )
+        validate_request_body(
+            request,
+            "You must provide some nlu data in the request body in order to "
+            "evaluate your model.",
+        )
 
         nlu_data = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
         data_path = os.path.abspath(nlu_data)
@@ -485,5 +560,20 @@ def create_app(
                 "Make sure you've set the appropriate Accept "
                 "header.",
             )
+
+    def obtain_tracker_store(conversation_id):
+        tracker = app.agent.tracker_store.get_or_create_tracker(conversation_id)
+        if not tracker:
+            raise ErrorResponse(
+                409,
+                "Conflict",
+                "Could not retrieve tracker. Most likely "
+                "because there is no domain set on the agent.",
+            )
+        return tracker
+
+    def validate_request_body(request, error_message):
+        if not request.body:
+            raise ErrorResponse(400, "BadRequest", error_message)
 
     return app
