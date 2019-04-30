@@ -125,8 +125,7 @@ def test_json_parse_reset():
 def test_json_parse_user():
     # fmt: off
     # DOCS MARKER UserUttered
-    evt =  \
-        {
+    evt={
           "event": "user",
           "text": "Hey",
           "parse_data": {
@@ -164,8 +163,7 @@ def test_json_parse_rewind():
 def test_json_parse_reminder():
     # fmt: off
     # DOCS MARKER ReminderScheduled
-    evt =  \ 
-        {
+    evt={
           "event": "reminder",
           "action": "my_action",
           "date_time": "2018-09-03T11:41:10.128172",
