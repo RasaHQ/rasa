@@ -42,7 +42,7 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
-MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
+MOODBOT_MODEL_PATH = "examples/moodbot/models/core"
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
@@ -171,7 +171,7 @@ async def zipped_moodbot_model():
     if not os.path.isfile(policy_file):
         await trained_moodbot_path()
 
-    zip_path = zip_folder(MOODBOT_MODEL_PATH)
+    zip_path = zip_folder(os.path.dirname(MOODBOT_MODEL_PATH))
 
     return zip_path
 

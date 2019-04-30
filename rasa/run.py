@@ -88,7 +88,6 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     if os.path.exists(nlu_path):
         _interpreter = RasaNLUInterpreter(model_directory=nlu_path)
     else:
-        _interpreter = None
         logging.info("No NLU model found. Running without NLU.")
 
     _broker = broker.from_endpoint_config(_endpoints.event_broker)
@@ -102,4 +101,5 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
         generator=_endpoints.nlg,
         tracker_store=_tracker_store,
         action_endpoint=_endpoints.action,
+        interpreter=_interpreter,
     )

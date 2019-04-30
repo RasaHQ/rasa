@@ -161,7 +161,23 @@ def event_verbosity_parameter(request, default_verbosity):
         )
 
 
-# noinspection PyUnusedLocal
+def obtain_tracker_store(agent: "Agent", conversation_id: Text):
+    tracker = agent.tracker_store.get_or_create_tracker(conversation_id)
+    if not tracker:
+        raise ErrorResponse(
+            409,
+            "Conflict",
+            "Could not retrieve tracker. Most likely "
+            "because there is no domain set on the agent.",
+        )
+    return tracker
+
+
+def validate_request_body(request, error_message):
+    if not request.body:
+        raise ErrorResponse(400, "BadRequest", error_message)
+
+
 async def authenticate(request):
     raise exceptions.AuthenticationFailed(
         "Direct JWT authentication not supported. You should already have "
@@ -176,9 +192,7 @@ def _configure_logging(loglevel, logfile):
 
 
 def create_app(
-    model_file: Optional[Text] = None,
     agent: Optional["Agent"] = None,
-    data_router: Optional["DataRouter"] = None,
     cors_origins: Union[Text, List[Text]] = "*",
     loglevel: Text = "INFO",
     logfile: Optional[Text] = None,
@@ -212,8 +226,6 @@ def create_app(
         )
 
     app.agent = agent
-    app.data_router = data_router
-    app.model_file = model_file
 
     @app.exception(ErrorResponse)
     async def handle_error_response(request: Request, exception: ErrorResponse):
@@ -242,8 +254,8 @@ def create_app(
 
         return response.json(
             {
-                "model_file": app.model_file,
-                "fingerprint": fingerprint_of_model(app.model_file),
+                "model_file": app.agent.model_file,
+                "fingerprint": fingerprint_of_model(app.agent.model_file),
             }
         )
 
@@ -263,7 +275,7 @@ def create_app(
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
-        tracker = obtain_tracker_store(conversation_id)
+        tracker = obtain_tracker_store(app.agent, conversation_id)
 
         until_time = rasa.utils.endpoints.float_arg(request, "until")
         if until_time is not None:
@@ -286,7 +298,7 @@ def create_app(
         evt = Event.from_parameters(request.json)
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
-        tracker = obtain_tracker_store(conversation_id)
+        tracker = obtain_tracker_store(app.agent, conversation_id)
 
         if evt:
             try:
@@ -353,7 +365,7 @@ def create_app(
             )
 
         # retrieve tracker and set to requested state
-        tracker = obtain_tracker_store(conversation_id)
+        tracker = obtain_tracker_store(app.agent, conversation_id)
 
         until_time = rasa.utils.endpoints.float_arg(request, "until")
         if until_time is not None:
@@ -369,8 +381,7 @@ def create_app(
     async def execute_action(request: Request, conversation_id: Text):
         request_params = request.json
 
-        # TODO add params to swagger
-        action_to_execute = request_params.get("action")
+        action_to_execute = request_params.get("name")
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
 
@@ -387,7 +398,7 @@ def create_app(
                 500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
             )
 
-        tracker = obtain_tracker_store(conversation_id)
+        tracker = obtain_tracker_store(app.agent, conversation_id)
         state = tracker.current_state(verbosity)
         return response.json({"tracker": state, "messages": out.messages})
 
@@ -554,7 +565,7 @@ def create_app(
         data_path = os.path.abspath(nlu_data)
 
         try:
-            evaluation = run_evaluation(data_path, app.model_file)
+            evaluation = run_evaluation(data_path, app.agent.model_file)
             return response.json(evaluation)
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -569,19 +580,25 @@ def create_app(
     @ensure_loaded_agent(app)
     async def tracker_predict(request: Request):
         """ Given a list of events, predicts the next action"""
+        validate_request_body(
+            request,
+            "No events defined in request_body. Add events to request body in order to "
+            "predict the next action.",
+        )
 
         sender_id = UserMessage.DEFAULT_SENDER_ID
-        request_params = request.json
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+        request_params = request.json
 
         try:
             tracker = DialogueStateTracker.from_dict(
                 sender_id, request_params, app.agent.domain.slots
             )
         except Exception as e:
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 400,
-                "InvalidParameter",
+                "BadRequest",
                 "Supplied events are not valid. {}".format(e),
                 {"parameter": "", "in": "body"},
             )
@@ -608,7 +625,17 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def parse(request: Request):
-        pass
+        validate_request_body(
+            request,
+            "No text message defined in request_body. Add text message to request body "
+            "in order to obtain the intent and extracted entities.",
+        )
+
+        request_params = request.json
+        text = request_params.get("text")
+
+        parse_data = await app.agent.interpreter.parse(text)
+        return response.json(parse_data)
 
     @app.post("/model")
     @requires_auth(app, auth_token)
@@ -618,7 +645,12 @@ def create_app(
     @app.delete("/model")
     @requires_auth(app, auth_token)
     async def unload_model(request: Request):
-        pass
+        model_file = app.agent.model_file
+
+        app.agent = None
+
+        logger.debug("Successfully unload model '{}'.".format(model_file))
+        return response.json(None, status=204)
 
     @app.get("/domain")
     @requires_auth(app, auth_token)
@@ -646,20 +678,5 @@ def create_app(
                 "Make sure you've set the appropriate Accept "
                 "header.",
             )
-
-    def obtain_tracker_store(conversation_id):
-        tracker = app.agent.tracker_store.get_or_create_tracker(conversation_id)
-        if not tracker:
-            raise ErrorResponse(
-                409,
-                "Conflict",
-                "Could not retrieve tracker. Most likely "
-                "because there is no domain set on the agent.",
-            )
-        return tracker
-
-    def validate_request_body(request, error_message):
-        if not request.body:
-            raise ErrorResponse(400, "BadRequest", error_message)
 
     return app
