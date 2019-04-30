@@ -2,6 +2,7 @@ import asyncio
 import io
 import logging
 import tarfile
+import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
@@ -151,3 +152,18 @@ def write_yaml_file(data: Dict, filename: Text):
     """
     with open(filename, "w") as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
+
+
+def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
+    """Creates a tempfile.NamedTemporaryFile object for data.
+
+    mode defines NamedTemporaryFile's  mode parameter in py3."""
+
+    encoding = None if "b" in mode else "utf-8"
+    f = tempfile.NamedTemporaryFile(
+        mode=mode, suffix=suffix, delete=False, encoding=encoding
+    )
+    f.write(data)
+
+    f.close()
+    return f.name

@@ -168,3 +168,12 @@ class ClientResponseError(aiohttp.ClientError):
         self.message = message
         self.text = text
         super().__init__("{}, {}, body='{}'".format(status, message, text))
+
+
+def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a valid
+    boolean value. If not, `default` is returned."""
+
+    return request.args.get(name, str(default)).lower() == "true"

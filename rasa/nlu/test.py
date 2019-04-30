@@ -795,7 +795,7 @@ def run_evaluation(
     Evaluate intent classification and entity extraction.
 
     :param data_path: path to the test data
-    :param model: path to the model
+    :param model_path: path to the model
     :param report_folder: path to folder where reports are stored
     :param successes: path to file that will contain success cases
     :param errors: path to file that will contain error cases
