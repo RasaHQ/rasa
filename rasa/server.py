@@ -17,7 +17,7 @@ import rasa.utils.endpoints
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DEFAULT_MODELS_PATH
 from rasa.core import constants
-from rasa.core.channels import UserMessage
+from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
@@ -343,25 +343,111 @@ def create_app(
     @requires_auth(app, auth_token)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-        pass
+        if not app.agent.tracker_store:
+            raise ErrorResponse(
+                409,
+                "Conflict",
+                "No tracker store available. Make sure to "
+                "configure a tracker store when starting "
+                "the server.",
+            )
+
+        # retrieve tracker and set to requested state
+        tracker = obtain_tracker_store(conversation_id)
+
+        until_time = rasa.utils.endpoints.float_arg(request, "until")
+        if until_time is not None:
+            tracker = tracker.travel_back_in_time(until_time)
+
+        # dump and return tracker
+        state = tracker.export_stories(e2e=True)
+        return response.text(state)
 
     @app.post("/conversations/<conversation_id>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def execute_action(request: Request, conversation_id: Text):
-        pass
+        request_params = request.json
+
+        # TODO add params to swagger
+        action_to_execute = request_params.get("action")
+        policy = request_params.get("policy", None)
+        confidence = request_params.get("confidence", None)
+
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+
+        try:
+            out = CollectingOutputChannel()
+            await app.agent.execute_action(
+                conversation_id, action_to_execute, out, policy, confidence
+            )
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+            )
+
+        tracker = obtain_tracker_store(conversation_id)
+        state = tracker.current_state(verbosity)
+        return response.json({"tracker": state, "messages": out.messages})
 
     @app.post("/conversations/<conversation_id>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def predict(request: Request, conversation_id: Text):
-        pass
+        try:
+            # Fetches the appropriate bot response in a json format
+            responses = app.agent.predict_next(conversation_id)
+            responses["scores"] = sorted(
+                responses["scores"], key=lambda k: (-k["score"], k["action"])
+            )
+            return response.json(responses)
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+            )
 
     @app.post("/conversations/<conversation_id>/messages")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def add_message(request: Request, conversation_id: Text):
-        pass
+        validate_request_body(
+            request,
+            "No message defined in request body. Add a message to the request body in "
+            "order to add it to the tracker.",
+        )
+
+        request_params = request.json
+        message = (
+            request_params.get("message")
+            if "message" in request_params
+            else request_params.get("text")
+        )
+        sender = request_params.get("sender")
+        parse_data = request_params.get("parse_data")
+
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+
+        # TODO: implement for agent / bot
+        if sender != "user":
+            raise ErrorResponse(
+                400,
+                "BadRequest",
+                "Currently, only user messages can be passed to this endpoint. "
+                "Messages of sender '{}' cannot be handled.".format(sender),
+                {"parameter": "sender", "in": "body"},
+            )
+
+        try:
+            user_message = UserMessage(message, None, conversation_id, parse_data)
+            tracker = await app.agent.log_message(user_message)
+            return response.json(tracker.current_state(verbosity))
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+            )
 
     @app.post("/model/train")
     @requires_auth(app, auth_token)
