@@ -481,10 +481,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EvaluationResult'
+                $ref: '#/components/schemas/EvaluationStoriesResult'
               example:
                 PredictResult:
-                  $ref: '#/components/examples/EvaluationResult'
+                  $ref: '#/components/examples/EvaluationStoriesResult'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -505,23 +505,31 @@ paths:
       - Model
       summary: Perform an intent evaluation
       description: >-
-        Evaluates NLU intents on a Rasa model.
+        Evaluates intents against the currently loaded Rasa model.
       requestBody:
         required: true
         content:
-          application/octet-stream:
+          text/markdown:
             schema:
-              $ref: '#/components/schemas/IntentEvaluationRequest'
+              type: string
+            example: >-
+              ## intent:greet
+              - hey
+              - hello
+
+              ## intent:goodbye
+              - cu
+              - good by
       responses:
         200:
           description: Intent evaluation result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IntentEvaluationResult'
+                $ref: '#/components/schemas/EvaluationIntentsResult'
               example:
                 IntentEvaluation:
-                  $ref: '#/components/examples/IntentEvaluationResult'
+                  $ref: '#/components/examples/EvaluationIntentsResult'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -603,7 +611,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParseData'
+                $ref: '#/components/schemas/ParseResult'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -925,7 +933,7 @@ components:
           type: string
           description: Intent name
       required: ["confidence", "name"]
-    ParseData:
+    ParseResult:
       type: object
       properties:
         entites:
@@ -1045,7 +1053,7 @@ components:
           items:
             $ref: '#/components/schemas/Slot'
         latest_message:
-          $ref: '#/components/schemas/ParseData'
+          $ref: '#/components/schemas/ParseResult'
         latest_event_time:
           type: number
           description: Most recent event time
@@ -1145,10 +1153,7 @@ components:
     TrainingResult:
       type: string
       format: binary
-    IntentEvaluationRequest:
-      type: string
-      format: binary
-    IntentEvaluationResult:
+    EvaluationIntentsResult:
       type: object
       properties:
         intent_evaluattion:
@@ -1192,7 +1197,7 @@ components:
                   type: number
                 accuracy:
                   type: number
-    EvaluationResult:
+    EvaluationStoriesResult:
       type: object
       properties:
         actions:
@@ -1317,7 +1322,7 @@ components:
         policy: "policy_2_KerasPolicy"
         tracker:
           <<: *tracker-example
-    EvaluationResult:
+    EvaluationStoriesResult:
       value:
         accuracy: 0.9
         f1: 0.9333333333333333
@@ -1345,7 +1350,7 @@ components:
                     utter_on_it       1.00      0.50      0.67         2
 
                     avg / total       1.00      0.90      0.93        10
-    IntentEvaluationResult:
+    EvaluationIntentsResult:
           value:
             intent_evaluation:
               - accuracy: 0.19047619047619047
