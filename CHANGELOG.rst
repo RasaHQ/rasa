@@ -31,6 +31,7 @@ in ``interactive learning``
 
 Changed
 -------
+- renamed all CLI parameters containing any ``_`` to use dashes ``-`` instead (GNU standard)
 - renamed ``rasa_core`` package to ``rasa.core``
 - for interactive learning only include manually annotated and ner_crf entities in nlu export
 - made ``message_id`` an additional argument to ``interpreter.parse``
@@ -59,5 +60,7 @@ Fixed
   Store
 - ``rasa nlu test`` doesn't error anymore when a test file is passed with ``-u``
 - in interactive learning: only updates entity values if user changes annotation
+- ``SQLTrackerStore.keys()`` now returns the distinct stored sender ids
+  instead of the column names
 - ``rasa train core`` actually uses additional arguments, such as ``augmentation``
 - ``rasa test`` actually considers additional arguments, such as ``e2e`` or ``successes``
