@@ -205,9 +205,9 @@ async def schedule_model_pulling(
 
 async def load_agent(
     model_path: Text,
-    model_server: Optional[EndpointConfig],
-    wait_time_between_pulls: Optional[int],
-    remote_storage: Optional[Text],
+    model_server: Optional[EndpointConfig] = None,
+    wait_time_between_pulls: Optional[int] = None,
+    remote_storage: Optional[Text] = None,
 ):
     # model_path can point to a directory containing any number of tar.gz model
     # files or to one specific model file. If it is pointing to a directory, the

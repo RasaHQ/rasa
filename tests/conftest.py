@@ -1,11 +1,18 @@
 import pytest
 
 from rasa import server
-from rasa.core.agent import Agent
+from rasa.core import config
+from rasa.core.agent import Agent, load_agent
 from rasa.core.channels import RestInput, channel
 from rasa.core.policies import AugmentedMemoizationPolicy
 from rasa.train import train_async
-from tests.core.conftest import DEFAULT_STORIES_FILE
+from tests.core.conftest import (
+    DEFAULT_STORIES_FILE,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_STACK_CONFIG,
+    DEFAULT_NLU_DATA,
+)
+from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
 
 
 @pytest.fixture
@@ -23,13 +30,43 @@ async def default_agent(tmpdir_factory) -> Agent:
     return agent
 
 
+@pytest.fixture
+async def stack_agent(trained_rasa_model) -> Agent:
+    return await load_agent(trained_rasa_model, None, None, None)
+
+
+@pytest.fixture(scope="session")
+def default_domain_path():
+    return DEFAULT_DOMAIN_PATH
+
+
+@pytest.fixture(scope="session")
+def default_stories_file():
+    return DEFAULT_STORIES_FILE
+
+
+@pytest.fixture(scope="session")
+def default_stack_config():
+    return DEFAULT_STACK_CONFIG
+
+
+@pytest.fixture(scope="session")
+def default_nlu_data():
+    return DEFAULT_NLU_DATA
+
+
+@pytest.fixture(scope="session")
+def default_config():
+    return config.load(CONFIG_DEFAULTS_PATH)
+
+
 @pytest.fixture()
 async def trained_rasa_model(
     default_domain_path, default_config, default_nlu_data, default_stories_file
 ):
     trained_stack_model_path = await train_async(
         domain=default_domain_path,
-        config=default_config,
+        config=DEFAULT_STACK_CONFIG,
         training_files=[default_nlu_data, default_stories_file],
     )
 
@@ -37,8 +74,8 @@ async def trained_rasa_model(
 
 
 @pytest.fixture
-async def rasa_server(default_agent):
-    app = server.create_app(agent=default_agent)
+async def rasa_server(stack_agent):
+    app = server.create_app(agent=stack_agent)
     channel.register([RestInput()], app, "/webhooks/")
     return app
 

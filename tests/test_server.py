@@ -3,6 +3,8 @@ import pytest
 
 import rasa
 import rasa.constants
+from tests.nlu.conftest import NLU_MODEL_NAME
+from tests.nlu.utilities import ResponseTest
 
 
 @pytest.fixture
@@ -43,102 +45,47 @@ def test_status(rasa_app):
     assert response.status == 200
 
 
-#
-# @pytest.mark.parametrize(
-#     "response_test",
-#     [
-#         ResponseTest(
-#             "/parse?q=hello&model={}".format(NLU_MODEL_NAME),
-#             {
-#                 "entities": [],
-#                 "model": NLU_MODEL_NAME,
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello",
-#             },
-#         ),
-#         ResponseTest(
-#             "/parse?q=hello&model={}".format(NLU_MODEL_NAME),
-#             {
-#                 "entities": [],
-#                 "model": NLU_MODEL_NAME,
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello",
-#             },
-#         ),
-#         ResponseTest(
-#             "/parse?q=hello ńöñàśçií&model={}".format(NLU_MODEL_NAME),
-#             {
-#                 "entities": [],
-#                 "model": NLU_MODEL_NAME,
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello ńöñàśçií",
-#             },
-#         ),
-#         ResponseTest(
-#             "/parse?q=&model={}".format(NLU_MODEL_NAME),
-#             {
-#                 "entities": [],
-#                 "model": NLU_MODEL_NAME,
-#                 "intent": {"confidence": 0.0, "name": None},
-#                 "text": "",
-#             },
-#         ),
-#     ],
-# )
-# def test_get_parse(app, response_test):
-#     _, response = app.get(response_test.endpoint)
-#     rjs = response.json
-#     assert response.status == 200
-#     assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
-#     assert rjs["entities"] == response_test.expected_response["entities"]
-#     assert rjs["model"].startswith("nlu")
-#     assert rjs["text"] == response_test.expected_response["text"]
-#
-#
-# @pytest.mark.parametrize(
-#     "response_test",
-#     [
-#         ResponseTest(
-#             "/parse",
-#             {
-#                 "entities": [],
-#                 "model": NLU_MODEL_NAME,
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello",
-#             },
-#             payload={"q": "hello", "model": NLU_MODEL_NAME},
-#         ),
-#         ResponseTest(
-#             "/parse",
-#             {
-#                 "entities": [],
-#                 "model": NLU_MODEL_NAME,
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello",
-#             },
-#             payload={"query": "hello", "model": NLU_MODEL_NAME},
-#         ),
-#         ResponseTest(
-#             "/parse",
-#             {
-#                 "entities": [],
-#                 "model": NLU_MODEL_NAME,
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello ńöñàśçií",
-#             },
-#             payload={"q": "hello ńöñàśçií", "model": NLU_MODEL_NAME},
-#         ),
-#     ],
-# )
-# def test_post_parse(app, response_test):
-#     _, response = app.post(response_test.endpoint, json=response_test.payload)
-#     rjs = response.json
-#     assert response.status == 200
-#     assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
-#     assert rjs["entities"] == response_test.expected_response["entities"]
-#     assert rjs["model"].startswith("nlu")
-#     assert rjs["text"] == response_test.expected_response["text"]
-#
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/model/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"text": "hello"},
+        ),
+        ResponseTest(
+            "/model/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"text": "hello"},
+        ),
+        ResponseTest(
+            "/model/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello ńöñàśçií",
+            },
+            payload={"text": "hello ńöñàśçií"},
+        ),
+    ],
+)
+def test_post_parse(rasa_app, response_test):
+    _, response = rasa_app.post(response_test.endpoint, json=response_test.payload)
+    rjs = response.json
+    assert response.status == 200
+    assert all(prop in rjs for prop in ["entities", "intent", "text"])
+    assert rjs["entities"] == response_test.expected_response["entities"]
+    assert rjs["text"] == response_test.expected_response["text"]
+
+
 #
 # @pytest.mark.parametrize(
 #     "response_test",
