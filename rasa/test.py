@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Text, Dict
+from typing import Text, Dict, Optional
 import os
 
 from rasa.constants import DEFAULT_RESULTS_PATH
@@ -14,21 +14,24 @@ def test(
     model: Text,
     stories: Text,
     nlu_data: Text,
-    endpoints: Text = None,
+    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
-    **kwargs
+    kwargs: Optional[Dict] = None,
 ):
+    if kwargs is None:
+        kwargs = {}
+
     test_core(model, stories, endpoints, output, **kwargs)
-    test_nlu(model, nlu_data, **kwargs)
+    test_nlu(model, nlu_data, kwargs)
 
 
 def test_core(
-    model: Text,
-    stories: Text,
-    endpoints: Text = None,
+    model: Optional[Text] = None,
+    stories: Optional[Text] = None,
+    endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
-    model_path: Text = None,
-    **kwargs: Dict
+    model_path: Optional[Text] = None,
+    kwargs: Optional[Dict] = None,
 ):
     import rasa.core.test
     import rasa.core.utils as core_utils
@@ -38,6 +41,9 @@ def test_core(
     from rasa.core.agent import Agent
 
     _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
+
+    if kwargs is None:
+        kwargs = {}
 
     if output:
         nlu_utils.create_dir(output)
@@ -56,7 +62,8 @@ def test_core(
 
             _agent = Agent.load(core_path, interpreter=_interpreter)
 
-            kwargs = minimal_kwargs(kwargs, rasa.core.test)
+            kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
+
             loop.run_until_complete(
                 rasa.core.test(stories, _agent, out_directory=output, **kwargs)
             )
@@ -77,13 +84,14 @@ def test_core(
         plot_curve(output, number_of_stories)
 
 
-def test_nlu(model: Text, nlu_data: Text, **kwargs: Dict):
+def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict]):
     from rasa.nlu.test import run_evaluation
 
     unpacked_model = get_model(model)
     nlu_model = os.path.join(unpacked_model, "nlu")
+
     if os.path.exists(nlu_model):
-        kwargs = minimal_kwargs(kwargs, run_evaluation)
+        kwargs = minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
         run_evaluation(nlu_data, nlu_model, **kwargs)
 
 

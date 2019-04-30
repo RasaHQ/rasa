@@ -5,10 +5,23 @@ import typing
 from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
-from rasa.cli.utils import create_output_path, print_success
-from rasa.constants import DEFAULT_MODELS_PATH
 from rasa.core.domain import Domain
 from rasa.multi_skill import SkillSelector
+
+from rasa.cli.utils import (
+    create_output_path,
+    print_success,
+    missing_config_keys,
+    print_warning,
+    get_validated_path,
+)
+from rasa.constants import (
+    DEFAULT_MODELS_PATH,
+    CONFIG_MANDATORY_KEYS,
+    CONFIG_MANDATORY_KEYS_CORE,
+    CONFIG_MANDATORY_KEYS_NLU,
+    FALLBACK_CONFIG_PATH,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Interpreter
@@ -22,6 +35,8 @@ def train(
     force_training: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS)
+
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
         train_async(domain, config, training_files, output, force_training, kwargs)
@@ -49,6 +64,7 @@ async def train_async(
     Returns:
         Path of the trained model archive.
     """
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS)
 
     train_path = tempfile.mkdtemp()
     old_model = model.get_latest_model(output)
@@ -152,6 +168,8 @@ async def train_core_async(
     """
     import rasa.core.train
 
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
+
     _train_path = train_path or tempfile.mkdtemp()
 
     if isinstance(Domain, Text) or not train_path:
@@ -162,7 +180,7 @@ async def train_core_async(
     # normal (not compare) training
     core_model = await rasa.core.train(
         domain_file=domain,
-        stories_file=stories,
+        stories_file=data.get_core_directory(stories),
         output_path=os.path.join(_train_path, "core"),
         policy_config=config,
         kwargs=kwargs,
@@ -199,14 +217,15 @@ def train_nlu(
     """
     import rasa.nlu
 
-    if not train_path:
-        skill_imports = SkillSelector.load(config, nlu_data)
-        nlu_data = data.get_nlu_directory(nlu_data, skill_imports)
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
     _train_path = train_path or tempfile.mkdtemp()
 
+    skill_imports = SkillSelector.load(config, nlu_data)
+    nlu_data = data.get_nlu_directory(nlu_data, skill_imports)
+
     _, nlu_model, _ = rasa.nlu.train(
-        config, nlu_data, _train_path, project="", fixed_model_name="nlu"
+        config, nlu_data, _train_path, fixed_model_name="nlu"
     )
 
     if not train_path:
@@ -218,3 +237,31 @@ def train_nlu(
         )
 
     return nlu_model
+
+
+def enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH):
+    import rasa.utils.io
+
+    config_data = rasa.utils.io.read_yaml_file(config_path)
+    fallback_config_data = rasa.utils.io.read_yaml_file(FALLBACK_CONFIG_PATH)
+
+    for k in missing_keys:
+        config_data[k] = fallback_config_data[k]
+
+    rasa.utils.io.write_yaml_file(config_data, config_path)
+
+
+def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
+    config_path = get_validated_path(config, "config", FALLBACK_CONFIG_PATH)
+
+    missing_keys = missing_config_keys(config_path, mandatory_keys)
+
+    if missing_keys:
+        print_warning(
+            "Configuration file '{}' is missing mandatory parameters: "
+            "{}. Filling missing parameters from fallback configuration file: '{}'."
+            "".format(config, ", ".join(missing_keys), FALLBACK_CONFIG_PATH)
+        )
+        enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
+
+    return config_path

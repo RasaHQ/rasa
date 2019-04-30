@@ -103,7 +103,7 @@ jobs:
   - stage: test
     name: "Test CLI"
     script:
-    - timeout 2 time rasa --help
+    - timeout 3 time rasa --help
   - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "Stack starter pack"
