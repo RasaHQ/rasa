@@ -632,7 +632,7 @@ class ReminderCancelled(Event):
 class ActionReverted(Event):
     """Bot undoes its last action.
 
-    The bot everts everything until before the most recent action.
+    The bot reverts everything until before the most recent action.
     This includes the action itself, as well as any events that
     action created, like set slot events - the bot will now
     predict a new action using the state before the most recent
