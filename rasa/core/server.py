@@ -16,7 +16,7 @@ from sanic_jwt import Initialize, exceptions
 import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DEFAULT_MODELS_PATH
 from rasa.core import constants, utils
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.domain import Domain
@@ -258,7 +258,7 @@ def create_app(
     @app.listener("after_server_start")
     async def warn_if_agent_is_unavailable(app, loop):
         if not app.agent or not app.agent.is_ready():
-            logger.warning(
+            logger.info(
                 "The loaded agent is not ready to be used yet "
                 "(e.g. only the NLU interpreter is configured, "
                 "but no Core model is loaded). This is NOT AN ISSUE "
@@ -365,6 +365,7 @@ def create_app(
         tracker = DialogueStateTracker.from_dict(
             sender_id, request_params, app.agent.domain.slots
         )
+
         # will override an existing tracker with the same id!
         app.agent.tracker_store.save(tracker)
         return response.json(tracker.current_state(verbosity))
@@ -593,7 +594,7 @@ def create_app(
         tmp_file = rasa.nlu.utils.create_temporary_file(request.body, mode="w+b")
         use_e2e = utils.bool_arg(request, "e2e", default=False)
         try:
-            evaluation = await test(tmp_file, app.agent, use_e2e=use_e2e)
+            evaluation = await test(tmp_file, app.agent, e2e=use_e2e)
             return response.json(evaluation)
         except ValueError as e:
             raise ErrorResponse(
@@ -623,13 +624,13 @@ def create_app(
                 evaluation = run_evaluation(data_path, model_path)
                 return response.json(evaluation)
             except ValueError as e:
-                return ErrorResponse(
+                raise ErrorResponse(
                     400,
                     "FailedIntentEvaluation",
                     "Evaluation could not be created. Error: {}".format(e),
                 )
         else:
-            return ErrorResponse(
+            raise ErrorResponse(
                 400,
                 "FailedIntentEvaluation",
                 "NLU evaluation file could not be found. "
@@ -677,8 +678,8 @@ def create_app(
             model_path = await train_async(
                 domain=domain_path,
                 config=config_path,
-                training_files=[nlu_path, stories_path],
-                output=rjs.get("out", temp_dir),
+                training_files=temp_dir,
+                output=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
             )
 

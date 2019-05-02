@@ -1,9 +1,9 @@
 import asyncio
-from asyncio import Queue, CancelledError
-
 import inspect
 import json
 import logging
+from asyncio import Queue, CancelledError
+
 from sanic import Sanic, Blueprint, response
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 import uuid

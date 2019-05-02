@@ -122,10 +122,7 @@ If you are running this in your computer, leave out the ``!`` at the start.
 .. runnable::
    :description: nlu-train-nlu
 
-   !python -m rasa.nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
-
-
-We are also passing the ``--project current`` and ``--fixed_model_name nlu`` parameters, this means the model will be saved at ``./models/current/nlu`` relative to your working directory.
+   !rasa train nlu -c nlu_config.yml --u nlu.md -o models --verbose
 
 
 .. _tutorial_using_your_model:

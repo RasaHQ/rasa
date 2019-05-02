@@ -2,11 +2,23 @@ import asyncio
 import os
 import tempfile
 import typing
-from typing import Text, Optional, List, Union
+from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
-from rasa.cli.utils import create_output_path, print_success
-from rasa.constants import DEFAULT_MODELS_PATH
+from rasa.cli.utils import (
+    create_output_path,
+    print_success,
+    missing_config_keys,
+    print_warning,
+    get_validated_path,
+)
+from rasa.constants import (
+    DEFAULT_MODELS_PATH,
+    CONFIG_MANDATORY_KEYS,
+    CONFIG_MANDATORY_KEYS_CORE,
+    CONFIG_MANDATORY_KEYS_NLU,
+    FALLBACK_CONFIG_PATH,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Interpreter
@@ -18,10 +30,13 @@ def train(
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS)
+
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_async(domain, config, training_files, output, force_training)
+        train_async(domain, config, training_files, output, force_training, kwargs)
     )
 
 
@@ -31,6 +46,7 @@ async def train_async(
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
@@ -40,10 +56,12 @@ async def train_async(
         training_files: Paths to the training data for Core and NLU.
         output: Output path.
         force_training: If `True` retrain model even if data has not changed.
+        kwargs: Additional training parameters.
 
     Returns:
         Path of the trained model archive.
     """
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS)
 
     train_path = tempfile.mkdtemp()
     old_model = model.get_latest_model(output)
@@ -54,6 +72,7 @@ async def train_async(
     new_fingerprint = model.model_fingerprint(
         config, domain, nlu_data_directory, story_directory
     )
+
     if not force_training and old_model:
         unpacked = model.unpack_model(old_model)
         old_core, old_nlu = model.get_model_subdirectories(unpacked)
@@ -68,7 +87,9 @@ async def train_async(
             retrain_nlu = not model.merge_model(old_nlu, target_path)
 
     if force_training or retrain_core:
-        await train_core_async(domain, config, story_directory, output, train_path)
+        await train_core_async(
+            domain, config, story_directory, output, train_path, kwargs
+        )
     else:
         print (
             "Dialogue data / configuration did not change. "
@@ -99,16 +120,26 @@ async def train_async(
 
 
 def train_core(
-    domain: Text, config: Text, stories: Text, output: Text, train_path: Optional[Text]
+    domain: Text,
+    config: Text,
+    stories: Text,
+    output: Text,
+    train_path: Optional[Text],
+    kwargs: Optional[Dict],
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_core_async(domain, config, stories, output, train_path)
+        train_core_async(domain, config, stories, output, train_path, kwargs)
     )
 
 
 async def train_core_async(
-    domain: Text, config: Text, stories: Text, output: Text, train_path: Optional[Text]
+    domain: Text,
+    config: Text,
+    stories: Text,
+    output: Text,
+    train_path: Optional[Text] = None,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Core model.
 
@@ -119,6 +150,7 @@ async def train_core_async(
         output: Output path.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
+        kwargs: Additional training parameters.
 
     Returns:
         If `train_path` is given it returns the path to the model archive,
@@ -127,14 +159,17 @@ async def train_core_async(
     """
     import rasa.core.train
 
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
+
     _train_path = train_path or tempfile.mkdtemp()
 
     # normal (not compare) training
     core_model = await rasa.core.train(
         domain_file=domain,
-        stories_file=stories,
+        stories_file=data.get_core_directory(stories),
         output_path=os.path.join(_train_path, "core"),
         policy_config=config,
+        kwargs=kwargs,
     )
 
     if not train_path:
@@ -169,9 +204,11 @@ def train_nlu(
     """
     import rasa.nlu
 
+    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
+
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa.nlu.train(
-        config, nlu_data, _train_path, project="", fixed_model_name="nlu"
+        config, data.get_nlu_directory(nlu_data), _train_path, fixed_model_name="nlu"
     )
 
     if not train_path:
@@ -184,3 +221,31 @@ def train_nlu(
         )
 
     return nlu_model
+
+
+def enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH):
+    import rasa.utils.io
+
+    config_data = rasa.utils.io.read_yaml_file(config_path)
+    fallback_config_data = rasa.utils.io.read_yaml_file(FALLBACK_CONFIG_PATH)
+
+    for k in missing_keys:
+        config_data[k] = fallback_config_data[k]
+
+    rasa.utils.io.write_yaml_file(config_data, config_path)
+
+
+def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
+    config_path = get_validated_path(config, "config", FALLBACK_CONFIG_PATH)
+
+    missing_keys = missing_config_keys(config_path, mandatory_keys)
+
+    if missing_keys:
+        print_warning(
+            "Configuration file '{}' is missing mandatory parameters: "
+            "{}. Filling missing parameters from fallback configuration file: '{}'."
+            "".format(config, ", ".join(missing_keys), FALLBACK_CONFIG_PATH)
+        )
+        enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
+
+    return config_path

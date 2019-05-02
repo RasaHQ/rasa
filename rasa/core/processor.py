@@ -492,10 +492,8 @@ class MessageProcessor(object):
             tracker.update(e)
 
     def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        tracker = self.tracker_store.get_or_create_tracker(sender_id)
-        return tracker
+        return self.tracker_store.get_or_create_tracker(sender_id)
 
     def _save_tracker(self, tracker):
         self.tracker_store.save(tracker)
