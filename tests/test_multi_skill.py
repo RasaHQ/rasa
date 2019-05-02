@@ -25,7 +25,7 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
 
     skill_b_subskill_directory = skill_b_directory / "Skill B-1"
     skill_b_subskill_directory.mkdir()
-    skill_b_1_imports = {"imports": ["../Skill A"]}
+    skill_b_1_imports = {"imports": ["../../Skill A"]}
     # Check if loading from `.yaml` also works
     utils.dump_obj_as_yaml_to_file(
         skill_b_subskill_directory / "config.yaml", skill_b_1_imports
@@ -58,8 +58,6 @@ def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", empty_config)
 
     actual = SkillSelector.load(root / "config.yml", [root])
-
-    assert actual.imports == {str(root)}
 
     assert actual.is_imported(root / "Skill C")
 
@@ -96,7 +94,7 @@ def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFa
 
     actual = SkillSelector.load(config_path, [root])
 
-    assert actual.is_imported(skill_a_directory)
+    assert actual.is_imported(str(skill_a_directory))
 
 
 @pytest.mark.parametrize(

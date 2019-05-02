@@ -63,8 +63,7 @@ class SkillSelector:
     @classmethod
     def _from_file(cls, path: Text) -> "SkillSelector":
         path = os.path.abspath(path)
-
-        if data.is_config_file(path):
+        if data.is_config_file(path) and os.path.exists(path):
             config = io_utils.read_yaml_file(path)
 
             if isinstance(config, dict):
@@ -134,5 +133,4 @@ class SkillSelector:
         )
 
     def add_import(self, path: Text) -> bool:
-        if not self.is_imported(path):
-            self.imports.add(path)
+        self.imports.add(path)
