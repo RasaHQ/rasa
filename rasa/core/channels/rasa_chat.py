@@ -26,7 +26,7 @@ class RasaChatInput(RestInput):
         self.base_url = url
 
     async def _check_token(self, token):
-        url = "{}/user".format(self.base_url)
+        url = "{}/validate".format(self.base_url)
         headers = {"Authorization": token}
         logger.debug("Requesting user information from auth server {}.".format(url))
 
