@@ -206,13 +206,15 @@ def train_nlu(
 
     config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
+    if os.path.isdir(nlu_data):
+        nlu_data = data.get_nlu_directory(nlu_data)
+
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa.nlu.train(
-        config, data.get_nlu_directory(nlu_data), _train_path, fixed_model_name="nlu"
+        config, nlu_data, _train_path, fixed_model_name="nlu"
     )
 
     if not train_path:
-        nlu_data = data.get_nlu_directory(nlu_data)
         output_path = create_output_path(output, prefix="nlu-")
         new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data)
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
