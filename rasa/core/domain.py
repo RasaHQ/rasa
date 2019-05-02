@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import pkg_resources
 from pykwalify.errors import SchemaError
@@ -139,14 +139,29 @@ class Domain(object):
 
     @classmethod
     def load(
-        cls, path: Text, skill_imports: Optional[SkillSelector] = None
+        cls,
+        paths: Union[List[Text], Text],
+        skill_imports: Optional[SkillSelector] = None,
     ) -> "Domain":
         if not skill_imports:
             skill_imports = SkillSelector.empty()
 
+        if not skill_imports.is_empty():
+            paths = skill_imports.training_paths()
+        elif not isinstance(paths, list):
+            paths = [paths]
+
+        domain = Domain.empty()
+        for path in paths:
+            other = cls.from_path(path, skill_imports)
+            domain = domain.merge(other)
+
+        return domain
+
+    @classmethod
+    def from_path(cls, path: Text, skill_imports: Optional[SkillSelector]) -> "Domain":
         path = os.path.abspath(path)
 
-        # If skill imports were done, let's load from the directory.
         if os.path.isfile(path) and not skill_imports.is_empty():
             path = os.path.dirname(path)
 
@@ -228,7 +243,7 @@ class Domain(object):
             return a
 
         def merge_lists(l1, l2):
-            return list(set(l1 + l2))
+            return sorted(list(set(l1 + l2)))
 
         if override:
             for key, val in domain_dict["config"].items():

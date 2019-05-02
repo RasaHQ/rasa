@@ -15,17 +15,17 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
 
     skill_a_directory = root / "Skill A"
     skill_a_directory.mkdir()
-    skill_a_imports = {"imports": ["Skill B"]}
+    skill_a_imports = {"imports": ["../Skill B"]}
     utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
 
     skill_b_directory = root / "Skill B"
     skill_b_directory.mkdir()
-    skill_b_imports = {"some other": ["Skill C"]}
+    skill_b_imports = {"some other": ["../Skill C"]}
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
 
     skill_b_subskill_directory = skill_b_directory / "Skill B-1"
     skill_b_subskill_directory.mkdir()
-    skill_b_1_imports = {"imports": ["Skill A"]}
+    skill_b_1_imports = {"imports": ["../Skill A"]}
     # Check if loading from `.yaml` also works
     utils.dump_obj_as_yaml_to_file(
         skill_b_subskill_directory / "config.yaml", skill_b_1_imports
@@ -113,3 +113,16 @@ def test_not_in_imports(input_path):
     importer = SkillSelector({"A/A/A", "A/B/A"})
 
     assert not importer.is_imported(input_path)
+
+
+def test_merge():
+    selector1 = SkillSelector({"A", "B"})
+    selector2 = SkillSelector({"A/1", "B/C/D", "C"})
+
+    actual = selector1.merge(selector2)
+    assert actual.imports == {"A", "B", "C"}
+
+
+def test_training_paths():
+    selector = SkillSelector({"A", "B/C"}, "B")
+    assert selector.training_paths() == {"A", "B"}

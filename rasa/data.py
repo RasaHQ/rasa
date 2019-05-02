@@ -74,10 +74,12 @@ def _get_core_nlu_files(
 
     skill_imports = skill_imports or SkillSelector.empty()
 
-    if isinstance(directories, str):
+    if not skill_imports.is_empty():
+        directories = skill_imports.training_paths()
+    elif isinstance(directories, str):
         directories = [directories]
 
-    for directory in set(directories):
+    for directory in directories:
         if not directory:
             continue
 
