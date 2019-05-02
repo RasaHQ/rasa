@@ -22,7 +22,7 @@ from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file
-from rasa.model import fingerprint_of_model
+from rasa.model import fingerprint_of_model, get_model_subdirectories
 from rasa.nlu.test import run_evaluation
 
 logger = logging.getLogger(__name__)
@@ -254,8 +254,8 @@ def create_app(
 
         return response.json(
             {
-                "model_file": app.agent.model_file,
-                "fingerprint": fingerprint_of_model(app.agent.model_file),
+                "model_file": app.agent.model_directory,
+                "fingerprint": fingerprint_of_model(app.agent.model_directory),
             }
         )
 
@@ -353,6 +353,7 @@ def create_app(
 
     @app.get("/conversations/<conversation_id>/story")
     @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
         if not app.agent.tracker_store:
@@ -564,8 +565,14 @@ def create_app(
         nlu_data = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
         data_path = os.path.abspath(nlu_data)
 
+        if not os.path.exists(app.agent.model_directory):
+            raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
+
+        model_directory = app.agent.model_directory
+        _, nlu_model = get_model_subdirectories(model_directory)
+
         try:
-            evaluation = run_evaluation(data_path, app.agent.model_file)
+            evaluation = run_evaluation(data_path, nlu_model)
             return response.json(evaluation)
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -623,7 +630,6 @@ def create_app(
 
     @app.post("/model/parse")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
     async def parse(request: Request):
         validate_request_body(
             request,

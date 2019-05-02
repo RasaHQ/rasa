@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
+import os
+import tempfile
+
 import pytest
 
 import rasa
 import rasa.constants
+from rasa.model import unpack_model
+from tests import utilities
 from tests.nlu.conftest import NLU_MODEL_NAME
 from tests.nlu.utilities import ResponseTest
 
@@ -10,6 +15,16 @@ from tests.nlu.utilities import ResponseTest
 @pytest.fixture
 def rasa_app(rasa_server):
     return rasa_server.test_client
+
+
+@pytest.fixture
+def rasa_app_nlu(rasa_nlu_server):
+    return rasa_nlu_server.test_client
+
+
+@pytest.fixture
+def rasa_app_core(rasa_core_server):
+    return rasa_core_server.test_client
 
 
 @pytest.fixture
@@ -43,6 +58,8 @@ def test_version(rasa_app):
 def test_status(rasa_app):
     _, response = rasa_app.get("/status")
     assert response.status == 200
+    assert "fingerprint" in response.json
+    assert "model_file" in response.json
 
 
 @pytest.mark.parametrize(
@@ -86,123 +103,225 @@ def test_post_parse(rasa_app, response_test):
     assert rjs["text"] == response_test.expected_response["text"]
 
 
-#
-# @pytest.mark.parametrize(
-#     "response_test",
-#     [
-#         ResponseTest(
-#             "/parse?q=hello&model=some-model",
-#             {
-#                 "entities": [],
-#                 "model": "fallback",
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello",
-#             },
-#         ),
-#         ResponseTest(
-#             "/parse?query=hello&model=some-model",
-#             {
-#                 "entities": [],
-#                 "model": "fallback",
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello",
-#             },
-#         ),
-#         ResponseTest(
-#             "/parse?q=hello ńöñàśçií&model=some-model",
-#             {
-#                 "entities": [],
-#                 "model": "fallback",
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello ńöñàśçií",
-#             },
-#         ),
-#         ResponseTest(
-#             "/parse?q=&model=abc",
-#             {
-#                 "entities": [],
-#                 "model": "fallback",
-#                 "intent": {"confidence": 0.0, "name": None},
-#                 "text": "",
-#             },
-#         ),
-#     ],
-# )
-# def test_get_parse_use_fallback_model(app_without_model, response_test):
-#     _, response = app_without_model.get(response_test.endpoint)
-#     rjs = response.json
-#     assert response.status == 200
-#     assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
-#     assert rjs["entities"] == response_test.expected_response["entities"]
-#     assert rjs["model"] == FALLBACK_MODEL_NAME
-#     assert rjs["text"] == response_test.expected_response["text"]
-#
-#
-# @pytest.mark.parametrize(
-#     "response_test",
-#     [
-#         ResponseTest(
-#             "/parse",
-#             {
-#                 "entities": [],
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello",
-#             },
-#             payload={"q": "hello", "model": "some-model"},
-#         ),
-#         ResponseTest(
-#             "/parse",
-#             {
-#                 "entities": [],
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello",
-#             },
-#             payload={"query": "hello", "model": "some-model"},
-#         ),
-#         ResponseTest(
-#             "/parse",
-#             {
-#                 "entities": [],
-#                 "intent": {"confidence": 1.0, "name": "greet"},
-#                 "text": "hello ńöñàśçií",
-#             },
-#             payload={"q": "hello ńöñàśçií", "model": "some-model"},
-#         ),
-#     ],
-# )
-# def test_post_parse_using_fallback_model(app, response_test):
-#     _, response = app.post(response_test.endpoint, json=response_test.payload)
-#     rjs = response.json
-#     assert response.status == 200
-#     assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
-#     assert rjs["entities"] == response_test.expected_response["entities"]
-#     assert rjs["model"] == FALLBACK_MODEL_NAME
-#     assert rjs["text"] == response_test.expected_response["text"]
-#     assert rjs["intent"]["name"] == response_test.expected_response["intent"]["name"]
-#
-#
-# @utilities.slowtest
-# def test_post_train_success(app_without_model, rasa_default_train_data):
-#     request = {
-#         "language": "en",
-#         "pipeline": "pretrained_embeddings_spacy",
-#         "data": rasa_default_train_data,
-#     }
-#
-#     _, response = app_without_model.post("/train", json=request)
-#
-#     assert response.status == 200
-#     assert response.content is not None
-#
-#
-# @utilities.slowtest
-# def test_post_train_internal_error(app, rasa_default_train_data):
-#     _, response = app.post(
-#         "/train", json={"data": "dummy_data_for_triggering_an_error"}
-#     )
-#     assert response.status == 500, "The training data format is not valid"
-#
-#
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/model/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"text": "hello"},
+        ),
+        ResponseTest(
+            "/model/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"text": "hello"},
+        ),
+        ResponseTest(
+            "/model/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello ńöñàśçií",
+            },
+            payload={"text": "hello ńöñàśçií"},
+        ),
+    ],
+)
+def test_post_parse_without_interpreter(rasa_app_core, response_test):
+    _, response = rasa_app_core.post(response_test.endpoint, json=response_test.payload)
+    rjs = response.json
+    assert response.status == 200
+    assert all(prop in rjs for prop in ["entities", "intent", "text"])
+    assert rjs["entities"] == response_test.expected_response["entities"]
+    assert rjs["text"] == response_test.expected_response["text"]
+
+
+def test_post_train_stack_success(
+    rasa_app,
+    default_domain_path,
+    default_stories_file,
+    default_stack_config,
+    default_nlu_data,
+):
+    domain_file = open(default_domain_path)
+    config_file = open(default_stack_config)
+    stories_file = open(default_stories_file)
+    nlu_file = open(default_nlu_data)
+
+    payload = dict(
+        domain=domain_file.read(),
+        config=config_file.read(),
+        stories=stories_file.read(),
+        nlu=nlu_file.read(),
+    )
+
+    domain_file.close()
+    config_file.close()
+    stories_file.close()
+    nlu_file.close()
+
+    _, response = rasa_app.post("/model/train", json=payload)
+    assert response.status == 200
+
+    # save model to temporary file
+    tempdir = tempfile.mkdtemp()
+    model_path = os.path.join(tempdir, "model.tar.gz")
+    with open(model_path, "wb") as f:
+        f.write(response.body)
+
+    # unpack model and ensure fingerprint is present
+    model_path = unpack_model(model_path)
+    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
+
+
+def test_post_train_nlu_success(
+    rasa_app, default_stack_config, default_nlu_data, default_domain_path
+):
+    domain_file = open(default_domain_path)
+    config_file = open(default_stack_config)
+    nlu_file = open(default_nlu_data)
+
+    payload = dict(
+        domain=domain_file.read(), config=config_file.read(), nlu=nlu_file.read()
+    )
+
+    config_file.close()
+    nlu_file.close()
+
+    _, response = rasa_app.post("/model/train", json=payload)
+    assert response.status == 200
+
+    # save model to temporary file
+    tempdir = tempfile.mkdtemp()
+    model_path = os.path.join(tempdir, "model.tar.gz")
+    with open(model_path, "wb") as f:
+        f.write(response.body)
+
+    # unpack model and ensure fingerprint is present
+    model_path = unpack_model(model_path)
+    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
+
+
+def test_post_train_core_success(
+    rasa_app, default_stack_config, default_stories_file, default_domain_path
+):
+    domain_file = open(default_domain_path)
+    config_file = open(default_stack_config)
+    core_file = open(default_stories_file)
+
+    payload = dict(
+        domain=domain_file.read(), config=config_file.read(), nlu=core_file.read()
+    )
+
+    config_file.close()
+    core_file.close()
+
+    _, response = rasa_app.post("/model/train", json=payload)
+    assert response.status == 200
+
+    # save model to temporary file
+    tempdir = tempfile.mkdtemp()
+    model_path = os.path.join(tempdir, "model.tar.gz")
+    with open(model_path, "wb") as f:
+        f.write(response.body)
+
+    # unpack model and ensure fingerprint is present
+    model_path = unpack_model(model_path)
+    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
+
+
+def test_post_train_missing_config(rasa_app):
+    payload = dict(domain="domain data", config=None)
+
+    _, response = rasa_app.post("/model/train", json=payload)
+    assert response.status == 400
+
+
+def test_post_train_missing_training_data(rasa_app):
+    payload = dict(domain="domain data", config="config data")
+
+    _, response = rasa_app.post("/model/train", json=payload)
+    assert response.status == 400
+
+
+def test_post_train_internal_error(rasa_app):
+    payload = dict(domain="domain data", config="config data", nlu="nlu data")
+
+    _, response = rasa_app.post("/model/train", json=payload)
+    assert response.status == 500
+
+
+def test_evaluate(rasa_app, default_stories_file):
+    with open(default_stories_file, "r") as f:
+        stories = f.read()
+
+    _, response = rasa_app.post("/model/evaluate/stories", data=stories)
+
+    assert response.status == 200
+
+    js = response.json
+    assert set(js.keys()) == {
+        "report",
+        "precision",
+        "f1",
+        "accuracy",
+        "actions",
+        "in_training_data_fraction",
+        "is_end_to_end_evaluation",
+    }
+    assert not js["is_end_to_end_evaluation"]
+    assert set(js["actions"][0].keys()) == {
+        "action",
+        "predicted",
+        "confidence",
+        "policy",
+    }
+
+
+def test_end_to_end_evaluation(rasa_app, end_to_end_story_file):
+    with open(end_to_end_story_file, "r") as f:
+        stories = f.read()
+
+    _, response = rasa_app.post("/model/evaluate/stories", data=stories)
+
+    assert response.status == 200
+    js = response.json
+    assert set(js.keys()) == {
+        "report",
+        "precision",
+        "f1",
+        "accuracy",
+        "actions",
+        "in_training_data_fraction",
+        "is_end_to_end_evaluation",
+    }
+    assert js["is_end_to_end_evaluation"]
+    assert set(js["actions"][0].keys()) == {
+        "action",
+        "predicted",
+        "confidence",
+        "policy",
+    }
+
+
+def test_intent_evaluation(rasa_app, default_nlu_data):
+    with open(default_nlu_data, "r") as f:
+        nlu_data = f.read()
+
+    _, response = rasa_app.post("/model/evaluate/intents", data=nlu_data)
+
+    assert response.status == 200
+    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+
+
 # def test_model_hot_reloading(app, rasa_default_train_data):
 #     query = "/parse?q=hello&model=test-model"
 #
@@ -441,107 +560,6 @@ def test_post_parse(rasa_app, response_test):
 #     assert "myid" in content
 #
 #
-# def test_evaluate(app):
-#     with open(DEFAULT_STORIES_FILE, "r") as f:
-#         stories = f.read()
-#     _, response = app.post("/evaluate", data=stories)
-#     assert response.status == 200
-#     js = response.json
-#     assert set(js.keys()) == {
-#         "report",
-#         "precision",
-#         "f1",
-#         "accuracy",
-#         "actions",
-#         "in_training_data_fraction",
-#         "is_end_to_end_evaluation",
-#     }
-#     assert not js["is_end_to_end_evaluation"]
-#     assert set(js["actions"][0].keys()) == {
-#         "action",
-#         "predicted",
-#         "confidence",
-#         "policy",
-#     }
-#
-#
-# def test_stack_training(
-#     app,
-#     default_domain_path,
-#     default_stories_file,
-#     default_stack_config,
-#     default_nlu_data,
-# ):
-#     domain_file = open(default_domain_path)
-#     config_file = open(default_stack_config)
-#     stories_file = open(default_stories_file)
-#     nlu_file = open(default_nlu_data)
-#
-#     payload = dict(
-#         domain=domain_file.read(),
-#         config=config_file.read(),
-#         stories=stories_file.read(),
-#         nlu=nlu_file.read(),
-#     )
-#
-#     domain_file.close()
-#     config_file.close()
-#     stories_file.close()
-#     nlu_file.close()
-#
-#     _, response = app.post("/jobs", json=payload)
-#     assert response.status == 200
-#
-#     # save model to temporary file
-#     tempdir = tempfile.mkdtemp()
-#     model_path = os.path.join(tempdir, "model.tar.gz")
-#     with open(model_path, "wb") as f:
-#         f.write(response.body)
-#
-#     # unpack model and ensure fingerprint is present
-#     model_path = unpack_model(model_path)
-#     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
-#
-#
-# def test_intent_evaluation(app, default_nlu_data, trained_stack_model):
-#     with open(default_nlu_data, "r") as f:
-#         nlu_data = f.read()
-#
-#     # add evaluation data to model archive
-#     zipped_path = add_evaluation_file_to_model(
-#         trained_stack_model, nlu_data, data_format="md"
-#     )
-#
-#     # post zipped stack model with evaluation file
-#     with open(zipped_path, "r+b") as f:
-#         _, response = app.post("/intentEvaluation", data=f.read())
-#
-#     assert response.status == 200
-#     assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
-#
-#
-# def test_end_to_end_evaluation(app):
-#     with open(END_TO_END_STORY_FILE, "r") as f:
-#         stories = f.read()
-#     _, response = app.post("/evaluate?e2e=true", data=stories)
-#     assert response.status == 200
-#     js = response.json
-#     assert set(js.keys()) == {
-#         "report",
-#         "precision",
-#         "f1",
-#         "accuracy",
-#         "actions",
-#         "in_training_data_fraction",
-#         "is_end_to_end_evaluation",
-#     }
-#     assert js["is_end_to_end_evaluation"]
-#     assert set(js["actions"][0].keys()) == {
-#         "action",
-#         "predicted",
-#         "confidence",
-#         "policy",
-#     }
 #
 #
 # def test_list_conversations_with_jwt(secured_app):

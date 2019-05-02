@@ -35,6 +35,16 @@ async def stack_agent(trained_rasa_model) -> Agent:
     return await load_agent(trained_rasa_model, None, None, None)
 
 
+@pytest.fixture
+async def core_agent(trained_core_model) -> Agent:
+    return await load_agent(trained_core_model, None, None, None)
+
+
+@pytest.fixture
+async def nlu_agent(trained_nlu_model) -> Agent:
+    return await load_agent(trained_nlu_model, None, None, None)
+
+
 @pytest.fixture(scope="session")
 def default_domain_path():
     return DEFAULT_DOMAIN_PATH
@@ -73,9 +83,49 @@ async def trained_rasa_model(
     return trained_stack_model_path
 
 
+@pytest.fixture()
+async def trained_core_model(
+    default_domain_path, default_config, default_nlu_data, default_stories_file
+):
+    trained_core_model_path = await train_async(
+        domain=default_domain_path,
+        config=DEFAULT_STACK_CONFIG,
+        training_files=[default_stories_file],
+    )
+
+    return trained_core_model_path
+
+
+@pytest.fixture()
+async def trained_nlu_model(
+    default_domain_path, default_config, default_nlu_data, default_stories_file
+):
+    trained_nlu_model_path = await train_async(
+        domain=default_domain_path,
+        config=DEFAULT_STACK_CONFIG,
+        training_files=[default_nlu_data],
+    )
+
+    return trained_nlu_model_path
+
+
 @pytest.fixture
 async def rasa_server(stack_agent):
     app = server.create_app(agent=stack_agent)
+    channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
+async def rasa_core_server(core_agent):
+    app = server.create_app(agent=core_agent)
+    channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
+async def rasa_nlu_server(nlu_agent):
+    app = server.create_app(agent=nlu_agent)
     channel.register([RestInput()], app, "/webhooks/")
     return app
 

@@ -6,7 +6,7 @@ import matplotlib
 import pytest
 
 import rasa.utils.io
-from rasa.core import server, train, utils
+from rasa.core import train
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, channel
 from rasa.core.dispatcher import Dispatcher
@@ -102,6 +102,11 @@ def default_nlu_data():
 @pytest.fixture(scope="session")
 def default_domain():
     return Domain.load(DEFAULT_DOMAIN_PATH)
+
+
+@pytest.fixture(scope="session")
+def end_to_end_story_file():
+    return END_TO_END_STORY_FILE
 
 
 @pytest.fixture(scope="session")
@@ -214,20 +219,6 @@ async def prepared_agent(tmpdir_factory) -> Agent:
     agent.train(training_data)
     agent.persist(model_path)
     return agent
-
-
-@pytest.fixture
-async def core_server(prepared_agent):
-    app = server.create_app(prepared_agent)
-    channel.register([RestInput()], app, "/webhooks/")
-    return app
-
-
-@pytest.fixture
-async def core_server_secured(prepared_agent):
-    app = server.create_app(prepared_agent, auth_token="rasa", jwt_secret="core")
-    channel.register([RestInput()], app, "/webhooks/")
-    return app
 
 
 @pytest.fixture

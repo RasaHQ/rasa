@@ -23,6 +23,7 @@ async def parse(
         logger.warning("No NLU model passed, parsing messages using RegexInterpreter.")
         interpreter = RegexInterpreter()
 
+    # TODO
     agent = Agent.load(core_model_path, interpreter=interpreter)
 
     response = await agent.handle_text(text)

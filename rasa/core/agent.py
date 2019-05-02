@@ -80,12 +80,18 @@ def _load_and_set_updated_model(
     else:
         interpreter = RegexInterpreter()
 
-    domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
-    domain = Domain.load(domain_path)
+    domain = None
+    if os.path.exists(core_path):
+        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
+        domain = Domain.load(domain_path)
 
     try:
-        policy_ensemble = PolicyEnsemble.load(core_path)
-        agent.update_model(domain, policy_ensemble, fingerprint, interpreter)
+        policy_ensemble = None
+        if os.path.exists(core_path):
+            policy_ensemble = PolicyEnsemble.load(core_path)
+        agent.update_model(
+            domain, policy_ensemble, fingerprint, interpreter, model_directory
+        )
         logger.debug("Finished updating agent to new model.")
     except Exception:
         logger.exception(
@@ -246,11 +252,10 @@ class Agent(object):
         policies: Union[PolicyEnsemble, List[Policy], None] = None,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, "NLG", None] = None,
-        remote_storage: Optional[Text] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
-        model_file: Optional[Text] = None,
+        model_directory: Optional[Text] = None,
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -269,10 +274,9 @@ class Agent(object):
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
         self.action_endpoint = action_endpoint
         self.conversations_in_processing = {}
-        self.remote_storage = remote_storage
 
         self._set_fingerprint(fingerprint)
-        self.model_file = model_file
+        self.model_directory = model_directory
 
     def update_model(
         self,
@@ -280,6 +284,7 @@ class Agent(object):
         policy_ensemble: PolicyEnsemble,
         fingerprint: Optional[Text],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
+        model_directory: Optional[Text] = None,
     ) -> None:
         self.domain = domain
         self.policy_ensemble = policy_ensemble
@@ -294,40 +299,42 @@ class Agent(object):
         if hasattr(self.nlg, "templates"):
             self.nlg.templates = domain.templates or []
 
+        self.model_directory = model_directory
+
     @classmethod
     def load(
         cls,
-        path: Text,
+        unpacked_model_path: Text,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
-
-        if not path:
+        if not os.path.exists(unpacked_model_path) or not os.path.isdir(
+            unpacked_model_path
+        ):
             raise ValueError(
-                "You need to provide a valid directory where "
-                "to load the agent from when calling "
-                "`Agent.load`."
-            )
-
-        if os.path.isfile(path):
-            raise ValueError(
-                "You are trying to load a MODEL from a file "
+                "You are trying to load a MODEL from "
                 "('{}'), which is not possible. \n"
                 "The persisted path should be a directory "
-                "containing the various model files. \n\n"
+                "containing the various model files in the "
+                "sub-directories 'core' and 'nlu. \n\n"
                 "If you want to load training data instead of "
                 "a model, use `agent.load_data(...)` "
-                "instead.".format(path)
+                "instead.".format(unpacked_model_path)
             )
 
-        domain = Domain.load(os.path.join(path, DEFAULT_DOMAIN_PATH))
-        ensemble = PolicyEnsemble.load(path) if path else None
+        core_model, nlu_model = get_model_subdirectories(unpacked_model_path)
+
+        if not interpreter and os.path.exists(nlu_model):
+            interpreter = NaturalLanguageInterpreter.create(nlu_model)
+
+        domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
+        ensemble = PolicyEnsemble.load(core_model) if core_model else None
 
         # ensures the domain hasn't changed between test and train
-        domain.compare_with_specification(path)
+        domain.compare_with_specification(core_model)
 
         return cls(
             domain=domain,
@@ -336,15 +343,16 @@ class Agent(object):
             generator=generator,
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
+            model_directory=unpacked_model_path,
         )
+
+    def interpreter_loaded(self):
+        """Check if all necessary components are instantiated to use agent."""
+        return self.interpreter is not None
 
     def is_ready(self):
         """Check if all necessary components are instantiated to use agent."""
-        return (
-            self.interpreter is not None
-            and self.tracker_store is not None
-            and self.policy_ensemble is not None
-        )
+        return self.tracker_store is not None and self.policy_ensemble is not None
 
     async def handle_message(
         self,
@@ -459,10 +467,7 @@ class Agent(object):
 
             >>> from rasa.core.agent import Agent
             >>> from rasa.core.interpreter import RasaNLUInterpreter
-            >>> interpreter = RasaNLUInterpreter(
-            ... "examples/restaurantbot/models/nlu/current")
-            >>> agent = Agent.load("examples/restaurantbot/models/dialogue",
-            ... interpreter=interpreter)
+            >>> agent = Agent.load("examples/restaurantbot/models/current")
             >>> await agent.handle_text("hello")
             [u'how can I help you?']
 
@@ -692,6 +697,8 @@ class Agent(object):
     def persist(self, model_path: Text, dump_flattened_stories: bool = False) -> None:
         """Persists this agent into a directory for later loading and usage."""
 
+        model_path = os.path.join(model_path, "core")
+
         if not self.is_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
 
@@ -818,13 +825,8 @@ class Agent(object):
 
         working_directory = tempfile.mkdtemp()
         unpacked_model = unpack_model(model_archive, working_directory)
-        core_model, nlu_model = get_model_subdirectories(unpacked_model)
 
-        interpreter = None
-        if os.path.exists(nlu_model):
-            interpreter = NaturalLanguageInterpreter.create(nlu_model)
-
-        return Agent.load(core_model, interpreter=interpreter)
+        return Agent.load(unpacked_model)
 
     @staticmethod
     def load_from_remote_storage(remote_storage: Text, model_name: Text) -> "Agent":
@@ -835,9 +837,7 @@ class Agent(object):
             target_path = tempfile.mkdtemp()
             p.retrieve(model_name, target_path)
 
-            interpreter = NaturalLanguageInterpreter.create(target_path)
-
-            return Agent.load(target_path, interpreter=interpreter)
+            return Agent.load(target_path)
 
         return Agent()
 

@@ -69,8 +69,8 @@ def test_core(
     if os.path.exists(core_path) and os.path.exists(nlu_path):
         _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
 
-        _agent = Agent.load(core_path, interpreter=_interpreter)
-
+        _agent = Agent.load(model_path, interpreter=_interpreter)
+        
         kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
 
         loop.run_until_complete(

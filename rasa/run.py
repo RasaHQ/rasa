@@ -76,19 +76,11 @@ def run(
 
 
 def create_agent(model: Text, endpoints: Text = None) -> "Agent":
-    from rasa.core.interpreter import RasaNLUInterpreter
     from rasa.core.tracker_store import TrackerStore
     from rasa.core import broker
     from rasa.core.utils import AvailableEndpoints
 
-    core_path, nlu_path = get_model_subdirectories(model)
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
-
-    _interpreter = None
-    if os.path.exists(nlu_path):
-        _interpreter = RasaNLUInterpreter(model_directory=nlu_path)
-    else:
-        logging.info("No NLU model found. Running without NLU.")
 
     _broker = broker.from_endpoint_config(_endpoints.event_broker)
 
@@ -97,9 +89,8 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     )
 
     return Agent.load(
-        core_path,
+        model,
         generator=_endpoints.nlg,
         tracker_store=_tracker_store,
         action_endpoint=_endpoints.action,
-        interpreter=_interpreter,
     )
