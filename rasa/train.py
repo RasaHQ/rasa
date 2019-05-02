@@ -206,8 +206,7 @@ def train_nlu(
 
     config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
-    if os.path.isdir(nlu_data):
-        nlu_data = data.get_nlu_directory(nlu_data)
+    nlu_data = data.get_nlu_directory(nlu_data)
 
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa.nlu.train(

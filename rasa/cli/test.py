@@ -199,8 +199,7 @@ def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None) -> Non
     model_path = model_path or valid_model_path
 
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    if os.path.isdir(nlu_data):
-        nlu_data = data.get_nlu_directory(nlu_data)
+    nlu_data = data.get_nlu_directory(nlu_data)
 
     if model_path:
         test_nlu(model_path, nlu_data, vars(args))
