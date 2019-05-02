@@ -254,22 +254,6 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
         return {}
 
 
-def fingerprint_of_model(model_path: Text) -> Fingerprint:
-    """Loads a persisted fingerprint.
-
-    Args:
-        model_path: Path to zipped model file containing the fingerprint.
-
-    Returns:
-        The fingerprint or an empty dict if no fingerprint was found.
-    """
-    if not model_path or not os.path.exists(model_path):
-        return {}
-
-    model_dir = unpack_model(model_path)
-    return fingerprint_from_path(model_dir)
-
-
 def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
     """Persists a model fingerprint.
 

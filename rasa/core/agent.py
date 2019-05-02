@@ -346,13 +346,13 @@ class Agent(object):
             model_directory=unpacked_model_path,
         )
 
-    def interpreter_loaded(self):
-        """Check if all necessary components are instantiated to use agent."""
-        return self.interpreter is not None
-
     def is_ready(self):
         """Check if all necessary components are instantiated to use agent."""
-        return self.tracker_store is not None and self.policy_ensemble is not None
+        return (
+            self.tracker_store is not None
+            and self.policy_ensemble is not None
+            and self.interpreter is not None
+        )
 
     async def handle_message(
         self,
@@ -702,6 +702,7 @@ class Agent(object):
         if not self.is_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
 
+        # TODO
         self._clear_model_directory(model_path)
 
         self.policy_ensemble.persist(model_path, dump_flattened_stories)

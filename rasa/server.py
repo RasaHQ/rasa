@@ -22,7 +22,7 @@ from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file
-from rasa.model import fingerprint_of_model, get_model_subdirectories
+from rasa.model import get_model_subdirectories, fingerprint_from_path
 from rasa.nlu.test import run_evaluation
 
 logger = logging.getLogger(__name__)
@@ -255,7 +255,7 @@ def create_app(
         return response.json(
             {
                 "model_file": app.agent.model_directory,
-                "fingerprint": fingerprint_of_model(app.agent.model_directory),
+                "fingerprint": fingerprint_from_path(app.agent.model_directory),
             }
         )
 
