@@ -28,6 +28,13 @@ def test_get_nlu_directory(project):
     assert nlu_files[0].endswith("nlu.md")
 
 
+def test_get_nlu_file(project):
+    data_file = os.path.join(project, "data/nlu.md")
+    nlu_directory = data.get_nlu_directory(data_file)
+
+    assert os.listdir(nlu_directory) == ["nlu.md"]
+
+
 def test_get_core_nlu_directories(project):
     data_dir = os.path.join(project, "data")
     core_directory, nlu_directory = data.get_core_nlu_directories([data_dir])
