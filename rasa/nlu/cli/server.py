@@ -10,18 +10,6 @@ def add_server_arguments(parser):
         "-P", "--port", type=int, default=5000, help="port on which to run server"
     )
     parser.add_argument(
-        "--pre_load",
-        nargs="+",
-        default=[],
-        help="Preload models into memory before starting the "
-        "server. \nIf given `all` as input all the models "
-        "will be loaded.\nElse you can specify a list of "
-        "specific project names.\nEg: python -m "
-        "rasa.nlu.server --pre_load project1 "
-        "--path projects "
-        "-c config.yaml",
-    )
-    parser.add_argument(
         "-t",
         "--token",
         help="auth token. If set, reject requests which don't "
@@ -45,7 +33,7 @@ def add_server_arguments(parser):
     )
 
     parser.add_argument(
-        "--max_training_processes",
+        "--max-training-processes",
         type=int,
         default=1,
         help="Number of processes used to handle training "
@@ -57,13 +45,13 @@ def add_server_arguments(parser):
         "--endpoints", help="Configuration file for the model server as a yaml file"
     )
     parser.add_argument(
-        "--wait_time_between_pulls",
+        "--wait-time-between-pulls",
         type=int,
         default=10,
         help="Wait time in seconds between NLU model server queries.",
     )
     parser.add_argument(
-        "--response_log",
+        "--response-log",
         help="Directory where logs will be saved "
         "(containing queries and responses)."
         "If set to ``null`` logging will be disabled.",

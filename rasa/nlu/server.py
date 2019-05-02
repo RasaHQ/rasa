@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import os
+import traceback
 from functools import wraps
 from inspect import isawaitable
 from sanic import Sanic, response
@@ -13,11 +14,15 @@ import rasa
 import rasa.utils.io
 import rasa.utils.common
 import rasa.utils.endpoints
-from rasa.nlu import config, utils, constants
+from rasa import model, data
+from rasa.cli.utils import create_output_path
+
+from rasa.nlu import utils, constants
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.data_router import DataRouter, InvalidProjectError, MaxWorkerProcessError
+from rasa.nlu.data_router import DataRouter, MaxWorkerProcessError, create_data_router
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.nlu.model import InvalidModelError
 from rasa.nlu.train import TrainingException
 from rasa.nlu.utils import read_endpoints
 
@@ -130,25 +135,18 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
     return decorator
 
 
-def dump_to_data_file(data):
+def dump_to_data_file(data, suffix="_training_data"):
     if isinstance(data, str):
         data_string = data
     else:
         data_string = utils.json_to_string(data)
 
-    return utils.create_temporary_file(data_string, "_training_data")
+    return utils.create_temporary_file(data_string, suffix)
 
 
 def _configure_logging(loglevel, logfile):
     logging.basicConfig(filename=logfile, level=loglevel)
     logging.captureWarnings(True)
-
-
-def _load_default_config(path: Optional[Text]) -> Dict:
-    if path:
-        return config.load(path).as_dict()
-    else:
-        return {}
 
 
 # configure async loop logging
@@ -181,16 +179,16 @@ def create_app(
         """Main Rasa route to check if the server is online."""
         return response.text("Hello from Rasa NLU: " + rasa.__version__)
 
-    async def parse_response(request_params):
+    def parse_response(request_params):
         data = data_router.extract(request_params)
         try:
-            return response.json(await data_router.parse(data), status=200)
-        except InvalidProjectError as e:
+            return response.json(data_router.parse(data), status=200)
+        except InvalidModelError as e:
             raise ErrorResponse(
-                404, "InvalidProject", "Project is invalid.", details={"error": str(e)}
+                404, "InvalidModel", "Model is invalid.", details={"error": str(e)}
             )
         except Exception as e:
-            logger.exception(e)
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
@@ -206,7 +204,7 @@ def create_app(
         if "q" not in request_params:
             request_params["q"] = request_params.pop("query", "")
 
-        return await parse_response(request_params)
+        return parse_response(request_params)
 
     @app.post("/parse")
     @requires_auth(app, token)
@@ -221,13 +219,13 @@ def create_app(
                 404, "MessageNotFound", "Invalid parse parameter specified."
             )
         else:
-            return await parse_response(request_params)
+
+            return parse_response(request_params)
 
     @app.get("/version")
     @requires_auth(app, token)
     async def version(request):
         """Returns the Rasa server's version"""
-
         return response.json(
             {
                 "version": rasa.__version__,
@@ -265,14 +263,13 @@ def create_app(
     @app.post("/train")
     @requires_auth(app, token)
     async def train(request):
-        # if not set will use the default project name, e.g. "default"
-        project = request.args.get("project", None)
         # if set will not generate a model name but use the passed one
         model_name = request.args.get("model", None)
 
         try:
-            model_config, data = extract_data_and_config(request)
+            model_config, data_dict = extract_data_and_config(request)
         except Exception as e:
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
@@ -280,14 +277,71 @@ def create_app(
                 details={"error": str(e)},
             )
 
-        data_file = dump_to_data_file(data)
+        data_file = dump_to_data_file(data_dict)
+        config_file = dump_to_data_file(model_config, "_config")
 
         try:
             path_to_model = await data_router.start_train_process(
-                data_file, project, RasaNLUModelConfig(model_config), model_name
+                data_file, RasaNLUModelConfig(model_config), model_name
             )
-            zipped_path = utils.zip_folder(path_to_model)
-            return await response.file(zipped_path)
+
+            # store trained model as tar.gz file
+            output_path = create_model_path(model_name, path_to_model)
+
+            nlu_data = data.get_nlu_directory(data_file)
+            new_fingerprint = model.model_fingerprint(config_file, nlu_data=nlu_data)
+            model.create_package_rasa(path_to_model, output_path, new_fingerprint)
+            logger.info(
+                "Rasa NLU model trained and persisted to '{}'.".format(output_path)
+            )
+
+            await data_router.load_model(output_path)
+
+            return await response.file(output_path)
+        except MaxWorkerProcessError as e:
+            raise ErrorResponse(
+                403,
+                "NoFreeProcess",
+                "No process available for training.",
+                details={"error": str(e)},
+            )
+        except InvalidModelError as e:
+            raise ErrorResponse(
+                404,
+                "ModelNotFound",
+                "Model '{}' not found.".format(model_name),
+                details={"error": str(e)},
+            )
+        except TrainingException as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500,
+                "ServerError",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
+
+    def create_model_path(model_name, path_to_model):
+        parent_dir = os.path.abspath(os.path.join(path_to_model, os.pardir))
+        if model_name is not None:
+            if not model_name.endswith(".tar.gz"):
+                model_name += ".tar.gz"
+            output_path = os.path.join(parent_dir, model_name)
+        else:
+            output_path = create_output_path(parent_dir, prefix="nlu-")
+        return output_path
+
+    @app.post("/evaluate")
+    @requires_auth(app, token)
+    async def evaluate(request):
+        import traceback
+
+        data_string = request.body.decode("utf-8", "strict")
+        data_file = dump_to_data_file(data_string)
+
+        try:
+            payload = await data_router.evaluate(data_file, request.args.get("model"))
+            return response.json(payload)
 
         except MaxWorkerProcessError as e:
             raise ErrorResponse(
@@ -296,40 +350,8 @@ def create_app(
                 "No process available for training.",
                 details={"error": str(e)},
             )
-        except InvalidProjectError as e:
-            raise ErrorResponse(
-                404,
-                "ProjectNotFound",
-                "Project '{}' not found.".format(project),
-                details={"error": str(e)},
-            )
-        except TrainingException as e:
-            raise ErrorResponse(
-                500,
-                "ServerError",
-                "An unexpected error occurred.",
-                details={"error": str(e)},
-            )
-
-    @app.post("/evaluate")
-    @requires_auth(app, token)
-    async def evaluate(request):
-        data_string = request.body.decode("utf-8", "strict")
-
-        try:
-            payload = await data_router.evaluate(
-                data_string, request.args.get("project"), request.args.get("model")
-            )
-            return response.json(payload)
-
-        except MaxWorkerProcessError as e:
-            raise ErrorResponse(
-                403,
-                "Forbidden",
-                "No process available for training.",
-                details={"error": str(e)},
-            )
         except Exception as e:
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
@@ -340,14 +362,44 @@ def create_app(
     @app.delete("/models")
     @requires_auth(app, token)
     async def unload_model(request):
+        model_path = request.args.get("model")
         try:
-            payload = await data_router.unload_model(
-                request.args.get("project", RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
-                request.args.get("model"),
+            data_router.unload_model(model_path)
+            logger.debug("Successfully unload model '{}'.".format(model_path))
+            return response.json(None, status=204)
+        except InvalidModelError as e:
+            raise ErrorResponse(
+                404,
+                "ModelNotFound",
+                "Model '{}' not found.".format(model_path),
+                details={"error": str(e)},
             )
-            return response.json(payload)
         except Exception as e:
-            logger.exception(e)
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500,
+                "ServerError",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
+
+    @app.put("/models")
+    @requires_auth(app, token)
+    async def load_model(request):
+        model_path = request.args.get("model")
+        try:
+            await data_router.load_model(model_path)
+            logger.debug("Successfully load model '{}'.".format(model_path))
+            return response.json(None, status=204)
+        except InvalidModelError as e:
+            raise ErrorResponse(
+                404,
+                "ModelNotFound",
+                "Model '{}' not found.".format(model_path),
+                details={"error": str(e)},
+            )
+        except Exception as e:
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
@@ -375,25 +427,25 @@ def get_token(_clitoken: str) -> str:
 
 
 def main(args):
-    pre_load = args.pre_load
-
     _endpoints = read_endpoints(args.endpoints)
 
-    router = DataRouter(
-        args.path,
-        args.max_training_processes,
-        args.response_log,
-        args.emulate,
-        args.storage,
-        model_server=_endpoints.model,
-        wait_time_between_pulls=args.wait_time_between_pulls,
+    loop = asyncio.get_event_loop()
+    if loop.is_closed():
+        loop = asyncio.new_event_loop()
+
+    router = loop.run_until_complete(
+        create_data_router(
+            args.model,
+            args.max_training_processes,
+            args.response_log,
+            args.emulate,
+            args.storage,
+            model_server=_endpoints.model,
+            wait_time_between_pulls=args.wait_time_between_pulls,
+        )
     )
 
-    if pre_load:
-        logger.debug("Preloading....")
-        if "all" in pre_load:
-            pre_load = router.project_store.keys()
-        router._pre_load(pre_load)
+    loop.close()
 
     rasa = create_app(
         router, args.loglevel, args.write, get_token(args.token), args.cors

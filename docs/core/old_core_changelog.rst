@@ -6,26 +6,16 @@ Core Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-.. _master-release:
-
-[Unreleased 0.14.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. note:: This version is not yet released and is under active development.
+[0.14.0] - 2019-04-23
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- added quick reply representation for command-line output
-- added option to specify custom button type for Facebook buttons
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
-- `MappingPolicy` which can be used to directly map an intent to an action
-  by adding the `triggers` keyword to an intent in the domain.
-- added tracker store persisting trackers into a SQL database
-  (``SQLTrackerStore``)
 - documentation about early deactivation of a form in validation
-- Added max_event_history in tracker_store to set this value in
-  ``DialogueStateTracker``
+- Added max_event_history in tracker_store to set this value in DialogueStateTracker
 - utility functions for colored logging
 - open webbrowser when visualizing stories
 - added ``/parse`` endpoint to query for NLU results
@@ -34,22 +24,18 @@ Added
 - added ability to use multiple env vars per line in yaml files
 - added ``priority`` property of policies to influence best policy in
   the case of equal confidence
-- added rasa command line interface and API
-- Rasa Stack HTTP training endpoint at ``POST /jobs``. This endpoint
-  will train a combined Rasa Core and NLU model
+- **support for python 3.7**
 - ``Tracker.active_form`` now includes ``trigger_message`` attribute to allow
   access to message triggering the form
-- ``ReminderCancelled(action_name)`` event to cancel given action_name reminder
-  for current user
-- Rasa Stack HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
-  This endpoints performs an intent evaluation of a Rasa Stack model
+- ``MappingPolicy`` which can be used to directly map an intent to an action
+  by adding the ``maps_to`` keyword to an intent in the domain.
+- default action ``action_back``, which when triggered with ``/back`` allows
+  the user to undo their previous message
 
 Changed
 -------
-- renamed ``rasa_core`` package to ``rasa.core``
 - starter packs are now tested in parallel with the unittests,
   and only on master and branches ending in ``.x`` (i.e. new version releases)
-- for interactive learning only include manually annotated and ner_crf entities in nlu export
 - renamed ``train_dialogue_model`` to ``train``
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``
 - ``event_broker.publish`` receives the event as a dict instead of text
@@ -58,12 +44,13 @@ Changed
 - renamed ``policy_metadata.json`` to ``metadata.json`` for persisted models
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
-- made ``message_id`` an additional argument to ``interpreter.parse``
-- now randomly created augmented stories are subsampled during training
-  and marked, so that memo policies can ignore them
-- changed payloads from "text" to "message" in documentation files
+- now randomly created augmented stories are subsampled during training and marked,
+  so that memo policies can ignore them
+- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst,
+  rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
 - dialogue files in ``/data/test_dialogues`` were updated with conversations
   from the bots in ``/examples``
+- updated to tensorflow 1.13
 
 Removed
 -------
@@ -75,7 +62,28 @@ Fixed
   storyline is saved (not just the last)
 - Handles slot names which contain characters that are invalid as python
   variable name (e.g. dot) in a template
-- in interactive learning: only updates entity values if user changes annotation
+
+[0.13.8] - 2019-04-16
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Message parse data no longer passed to graph node label in interactive
+  learning visualization
+
+[0.13.7] - 2019-04-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process form actions in end-to-end evaluations
+
+[0.13.6] - 2019-03-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process intent messages in end-to-end evaluations
 
 [Unreleased 0.13.8.aX]
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -192,7 +200,7 @@ Fixed
   dispatched messages using ``dispatcher.utter_custom_message``
 - re-added missing ``python-engineio`` dependency
 - fixed not working examples in ``examples/``
-- strip newlins from messages so you don't have something like "\n/restart\n"
+- strip newlines from messages so you don't have something like "\n/restart\n"
 - properly reload domain when using ``/model`` endpoint to upload new model
 - updated documentation for custom channels to use the ``credentials.yml``
 

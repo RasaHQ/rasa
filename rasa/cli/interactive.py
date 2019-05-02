@@ -28,7 +28,7 @@ def add_subparser(
 
 def _add_interactive_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "--skip_visualization",
+        "--skip-visualization",
         default=False,
         action="store_true",
         help="Disables plotting the visualization during interactive learning",
