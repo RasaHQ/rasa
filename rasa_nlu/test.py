@@ -741,7 +741,7 @@ def run_evaluation(data_path, model,
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
     else:
-        intent_targets = [None] * test_data.training_examples
+        intent_targets = [None] * len(test_data.training_examples)
 
     intent_results, entity_predictions, tokens = get_predictions(
         interpreter, test_data, intent_targets)
