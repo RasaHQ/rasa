@@ -19,8 +19,8 @@ def get_core_directory(
 
     Args:
         directories: List of paths to directories containing training files.
-        skill_imports: `SkillImporter` instance which determines whether files in
-                       this directory are part of the imported skills.
+        skill_imports: `SkillSelector` instance which determines which files should
+                       be loaded.
     Returns:
         Path to temporary directory containing all found Core training files.
     """
@@ -35,8 +35,8 @@ def get_nlu_directory(
 
     Args:
         directories: List of paths to directories containing training files.
-        skill_imports: `SkillImporter` instance which determines whether files in
-                       this directory are part of the imported skills.
+        skill_imports: `SkillSelector` instance which determines which files should
+                       be loaded.
     Returns:
         Path to temporary directory containing all found NLU training files.
     """
@@ -51,8 +51,8 @@ def get_core_nlu_directories(
 
     Args:
         directories: List of paths to directories containing training files.
-        skill_imports: `SkillImporter` instance which determines whether files in
-                       this directory are part of the imported skills.
+        skill_imports: `SkillSelector` instance which determines which files should
+                       be loaded.
 
     Returns:
         Path to directory containing the Core files and path to directory

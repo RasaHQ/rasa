@@ -21,6 +21,15 @@ class SkillSelector:
     def load(
         cls, config: Text, skill_paths: Union[Text, List[Text]]
     ) -> "SkillSelector":
+        """
+        Loads the specification from the config files.
+        Args:
+            config: Path to the root configuration file in the project directory.
+            skill_paths: Paths which should be searched for further configuration files.
+
+        Returns:
+            `SkillSelector` which specifies the loaded skills.
+        """
         # All imports are by default relative to the root config file directory
         config = os.path.abspath(config)
         selector = cls._from_file(config)
@@ -97,11 +106,21 @@ class SkillSelector:
         return not self.imports
 
     def training_paths(self) -> Set[Text]:
+        """Returns the paths which should be searched for training data."""
+
         # only include extra paths if they are not part of the current project directory
         training_paths = {i for i in self.imports if self.project_directory not in i}
         return training_paths | {self.project_directory}
 
     def is_imported(self, path: Text) -> bool:
+        """
+        Checks whether a path is imported by a skill.
+        Args:
+            path: File or directory path which should be checked.
+
+        Returns:
+            `True` if path is imported by a skill, `False` if not.
+        """
         absolute_path = os.path.abspath(path)
 
         return (
@@ -115,4 +134,5 @@ class SkillSelector:
         )
 
     def add_import(self, path: Text) -> bool:
-        self.imports.add(path)
+        if not self.is_imported(path):
+            self.imports.add(path)

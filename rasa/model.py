@@ -5,9 +5,8 @@ import os
 import shutil
 import tarfile
 import tempfile
-from typing import Text, Tuple, Union, Optional, List, Dict, Any, Callable
+from typing import Text, Tuple, Union, Optional, List, Dict, Any
 
-from rasa import data
 from rasa.constants import DEFAULT_MODELS_PATH
 
 # Type alias for the fingerprint

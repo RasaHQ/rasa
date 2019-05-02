@@ -143,8 +143,7 @@ class Domain(object):
         paths: Union[List[Text], Text],
         skill_imports: Optional[SkillSelector] = None,
     ) -> "Domain":
-        if not skill_imports:
-            skill_imports = SkillSelector.empty()
+        skill_imports = skill_imports or SkillSelector.empty()
 
         if not skill_imports.is_empty():
             paths = skill_imports.training_paths()
@@ -159,7 +158,7 @@ class Domain(object):
         return domain
 
     @classmethod
-    def from_path(cls, path: Text, skill_imports: Optional[SkillSelector]) -> "Domain":
+    def from_path(cls, path: Text, skill_imports: SkillSelector) -> "Domain":
         path = os.path.abspath(path)
 
         if os.path.isfile(path) and not skill_imports.is_empty():
