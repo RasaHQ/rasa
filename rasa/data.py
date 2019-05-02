@@ -54,9 +54,7 @@ def get_core_nlu_directories(paths: Union[Text, List[Text]]) -> Tuple[Text, Text
     return story_directory, nlu_directory
 
 
-def _get_core_nlu_files(
-    paths: Union[Text, List[Text]]
-) -> Tuple[Set[Text], Set[Text]]:
+def _get_core_nlu_files(paths: Union[Text, List[Text]]) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
 
