@@ -65,7 +65,7 @@ def _get_core_nlu_files(paths: Union[Text, List[Text]]) -> Tuple[Set[Text], Set[
         if not path:
             continue
 
-        if os.path.isfile(path):
+        if _is_valid_filetype(path):
             if _is_nlu_file(path):
                 nlu_data_files.add(os.path.abspath(path))
             else:
@@ -86,7 +86,7 @@ def _find_core_nlu_files_in_directory(directory: Text) -> Tuple[Set[Text], Set[T
     nlu_data_files = set()
     for root, _, files in os.walk(directory):
         for f in files:
-            if not f.endswith(".json") and not f.endswith(".md"):
+            if not _is_valid_filetype(f):
                 continue
 
             full_path = os.path.join(root, f)
@@ -96,6 +96,13 @@ def _find_core_nlu_files_in_directory(directory: Text) -> Tuple[Set[Text], Set[T
                 story_files.add(full_path)
 
     return story_files, nlu_data_files
+
+
+def _is_valid_filetype(path: Text) -> bool:
+    is_file = os.path.isfile(path)
+    is_datafile = path.endswith(".json") or path.endswith(".md")
+
+    return is_file and is_datafile
 
 
 def _is_nlu_file(file_path: Text) -> bool:
