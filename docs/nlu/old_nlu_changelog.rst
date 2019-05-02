@@ -6,6 +6,13 @@ NLU Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
+[0.15.1] - Unreleased
+^^^^^^^^^^^^^^^^^^^^^
+
+ Fixed
+-----
+- fixed bug in rasa_nlu.test script that appeared if no intent classifier was present
+
 [0.15.0] - 2019-04-23
 ^^^^^^^^^^^^^^^^^^^^^
 
