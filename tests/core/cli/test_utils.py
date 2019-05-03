@@ -14,7 +14,7 @@ from rasa.cli.utils import (
     [
         ["rasa", "run"],
         ["rasa", "run", "core"],
-        ["rasa", "test", "nlu", "--param", "xy"],
+        ["rasa", "interactive", "nlu", "--param", "xy"],
     ],
 )
 def test_parse_last_positional_argument_as_model_path(argv):
