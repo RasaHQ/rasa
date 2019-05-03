@@ -21,7 +21,7 @@ from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
 )
 from rasa.core import constants
-from rasa.core.agent import load_agent
+from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
 from rasa.core.test import test
@@ -688,9 +688,9 @@ def create_app(
     @app.delete("/model")
     @requires_auth(app, auth_token)
     async def unload_model(request: Request):
-        model_file = app.agent.model_file
+        model_file = app.agent.model_directory
 
-        app.agent = None
+        app.agent = Agent()
 
         logger.debug("Successfully unload model '{}'.".format(model_file))
         return response.json(None, status=204)

@@ -85,6 +85,11 @@ def test_status(rasa_app):
     assert "model_file" in response.json
 
 
+def test_status_secured(rasa_secured_app):
+    _, response = rasa_secured_app.get("/status")
+    assert response.status == 401
+
+
 @pytest.mark.parametrize(
     "response_test",
     [
@@ -117,13 +122,14 @@ def test_status(rasa_app):
         ),
     ],
 )
-def test_post_parse(rasa_app, response_test):
+def test_parse(rasa_app, response_test):
     _, response = rasa_app.post(response_test.endpoint, json=response_test.payload)
     rjs = response.json
     assert response.status == 200
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
     assert rjs["entities"] == response_test.expected_response["entities"]
     assert rjs["text"] == response_test.expected_response["text"]
+    assert rjs["intent"] == response_test.expected_response["intent"]
 
 
 @pytest.mark.parametrize(
@@ -158,16 +164,14 @@ def test_post_parse(rasa_app, response_test):
         ),
     ],
 )
-def test_post_parse_without_interpreter(rasa_app_core, response_test):
+def test_parse_without_interpreter(rasa_app_core, response_test):
     _, response = rasa_app_core.post(response_test.endpoint, json=response_test.payload)
     rjs = response.json
     assert response.status == 200
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
-    assert rjs["entities"] == response_test.expected_response["entities"]
-    assert rjs["text"] == response_test.expected_response["text"]
 
 
-def test_post_train_stack_success(
+def test_train_stack_success(
     rasa_app,
     default_domain_path,
     default_stories_file,
@@ -205,7 +209,7 @@ def test_post_train_stack_success(
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
-def test_post_train_nlu_success(
+def test_train_nlu_success(
     rasa_app, default_stack_config, default_nlu_data, default_domain_path
 ):
     domain_file = open(default_domain_path)
@@ -233,7 +237,7 @@ def test_post_train_nlu_success(
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
-def test_post_train_core_success(
+def test_train_core_success(
     rasa_app, default_stack_config, default_stories_file, default_domain_path
 ):
     domain_file = open(default_domain_path)
@@ -261,28 +265,28 @@ def test_post_train_core_success(
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
-def test_post_train_missing_config(rasa_app):
+def test_train_missing_config(rasa_app):
     payload = dict(domain="domain data", config=None)
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 400
 
 
-def test_post_train_missing_training_data(rasa_app):
+def test_train_missing_training_data(rasa_app):
     payload = dict(domain="domain data", config="config data")
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 400
 
 
-def test_post_train_internal_error(rasa_app):
+def test_train_internal_error(rasa_app):
     payload = dict(domain="domain data", config="config data", nlu="nlu data")
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 500
 
 
-def test_evaluate(rasa_app, default_stories_file):
+def test_evaluate_stories(rasa_app, default_stories_file):
     with open(default_stories_file, "r") as f:
         stories = f.read()
 
@@ -309,7 +313,16 @@ def test_evaluate(rasa_app, default_stories_file):
     }
 
 
-def test_end_to_end_evaluation(rasa_app, end_to_end_story_file):
+def test_evaluate_stories_not_ready_agent(rasa_app_nlu, default_stories_file):
+    with open(default_stories_file, "r") as f:
+        stories = f.read()
+
+    _, response = rasa_app_nlu.post("/model/evaluate/stories", data=stories)
+
+    assert response.status == 409
+
+
+def test_evaluate_stories_end_to_end(rasa_app, end_to_end_story_file):
     with open(end_to_end_story_file, "r") as f:
         stories = f.read()
 
@@ -335,7 +348,7 @@ def test_end_to_end_evaluation(rasa_app, end_to_end_story_file):
     }
 
 
-def test_intent_evaluation(rasa_app, default_nlu_data):
+def test_evaluate_intent(rasa_app, default_nlu_data):
     with open(default_nlu_data, "r") as f:
         nlu_data = f.read()
 
@@ -343,20 +356,6 @@ def test_intent_evaluation(rasa_app, default_nlu_data):
 
     assert response.status == 200
     assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
-
-
-def test_parse(rasa_app):
-    data = json.dumps({"text": "Hello Rasa!"})
-    _, response = rasa_app.post(
-        "/model/parse", data=data, headers={"Content-Type": "application/json"}
-    )
-    content = response.json
-    assert response.status == 200
-    assert content == {
-        "intent": {"name": "greet", "confidence": 1.0},
-        "entities": [],
-        "text": "Hello Rasa!",
-    }
 
 
 def test_predict(rasa_app):
@@ -388,110 +387,9 @@ def test_predict(rasa_app):
     assert "policy" in content
 
 
-# def test_model_hot_reloading(app, rasa_default_train_data):
-#     query = "/parse?q=hello&model=test-model"
-#
-#     # Model could not be found, fallback model was used instead
-#     _, response = app.get(query)
-#     assert response.status == 200
-#     rjs = response.json
-#     assert rjs["model"] == FALLBACK_MODEL_NAME
-#
-#     # Train a new model - model will be loaded automatically
-#     train_u = "/train?model=test-model"
-#     request = {
-#         "language": "en",
-#         "pipeline": "pretrained_embeddings_spacy",
-#         "data": rasa_default_train_data,
-#     }
-#     model_str = yaml.safe_dump(request, default_flow_style=False, allow_unicode=True)
-#     _, response = app.post(
-#         train_u, headers={"Content-Type": "application/x-yml"}, data=model_str
-#     )
-#     assert response.status == 200, "Training should end successfully"
-#
-#     _, response = app.post(
-#         train_u, headers={"Content-Type": "application/json"}, data=json.dumps(request)
-#     )
-#     assert response.status == 200, "Training should end successfully"
-#
-#     # Model should be there now
-#     _, response = app.get(query)
-#     assert response.status == 200, "Model should now exist after it got trained"
-#     rjs = response.json
-#     assert "test-model" in rjs["model"]
-#
-#
-# def test_evaluate_invalid_model_error(app, rasa_default_train_data):
-#     _, response = app.post("/evaluate?model=not-existing", json=rasa_default_train_data)
-#
-#     rjs = response.json
-#     assert response.status == 500
-#     assert "details" in rjs
-#     assert rjs["details"]["error"] == "Model with name 'not-existing' is not loaded."
-#
-#
-# def test_evaluate_unsupported_model_error(app_without_model, rasa_default_train_data):
-#     _, response = app_without_model.post("/evaluate", json=rasa_default_train_data)
-#
-#     rjs = response.json
-#     assert response.status == 500
-#     assert "details" in rjs
-#     assert rjs["details"]["error"] == "No model is loaded. Cannot evaluate."
-#
-#
-# def test_evaluate_internal_error(app, rasa_default_train_data):
-#     _, response = app.post(
-#         "/evaluate", json={"data": "dummy_data_for_triggering_an_error"}
-#     )
-#     assert response.status == 500, "The training data format is not valid"
-#
-#
-# def test_evaluate(app, rasa_default_train_data):
-#     _, response = app.post(
-#         "/evaluate?model={}".format(NLU_MODEL_NAME), json=rasa_default_train_data
-#     )
-#
-#     rjs = response.json
-#     assert "intent_evaluation" in rjs
-#     assert "entity_evaluation" in rjs
-#     assert all(
-#         prop in rjs["intent_evaluation"]
-#         for prop in ["report", "predictions", "precision", "f1_score", "accuracy"]
-#     )
-#     assert response.status == 200, "Evaluation should start"
-#
-#
-# def test_unload_model_error(app):
-#     request = "/models?model=my_model"
-#     _, response = app.delete(request)
-#     rjs = response.json
-#     assert (
-#         response.status == 404
-#     ), "Model is not loaded and can therefore not be unloaded."
-#     assert rjs["details"]["error"] == "Model with name 'my_model' is not loaded."
-#
-#
-# def test_unload_model(app):
-#     unload = "/models?model={}".format(NLU_MODEL_NAME)
-#     _, response = app.delete(unload)
-#     assert response.status == 204, "No Content"
-#
-#
-# def test_status_after_unloading(app):
-#     _, response = app.get("/status")
-#     rjs = response.json
-#     assert response.status == 200
-#     assert rjs["loaded_model"] == NLU_MODEL_NAME
-#
-#     unload = "/models?model={}".format(NLU_MODEL_NAME)
-#     _, response = app.delete(unload)
-#     assert response.status == 204, "No Content"
-#
-#     _, response = app.get("/status")
-#     rjs = response.json
-#     assert response.status == 200
-#     assert rjs["loaded_model"] is None
+def test_retrieve_tacker_not_ready_agent(rasa_app_nlu):
+    _, response = rasa_app_nlu.get("/conversations/test/tracker")
+    assert response.status == 409
 
 
 @freeze_time("2018-01-01")
@@ -637,3 +535,16 @@ def test_list_routes(default_agent):
         "unload_model",
         "get_domain",
     }
+
+
+def test_unload_model_error(rasa_app):
+    _, response = rasa_app.get("/status")
+    assert response.status == 200
+    assert "model_file" in response.json and response.json["model_file"] is not None
+
+    _, response = rasa_app.delete("/model")
+    assert response.status == 204
+
+    _, response = rasa_app.get("/status")
+    assert response.status == 200
+    assert "model_file" in response.json and response.json["model_file"] is None
