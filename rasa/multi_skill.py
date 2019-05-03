@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class SkillSelector:
-    def __init__(self, imports: Set[Text], project_directory: Text = None):
+    def __init__(self, imports: Set[Text], project_directory: Text = os.getcwd()):
         self.imports = imports
         self.project_directory = project_directory
 
@@ -32,7 +32,7 @@ class SkillSelector:
         """
         # All imports are by default relative to the root config file directory
         config = os.path.abspath(config)
-        selector = cls._from_file(config)
+        selector = cls._from_file(config, cls.empty())
 
         if selector.is_empty():
             # if the root selector is empty we import everything beneath
@@ -43,63 +43,76 @@ class SkillSelector:
             skill_paths = [skill_paths]
 
         for path in skill_paths:
-            other = cls._from_path(path)
-            selector = selector.merge(other)
+            selector = cls._from_path(path, selector)
 
         logger.debug("Selected skills: {}.".format(selector.imports))
 
         return selector
 
     @classmethod
-    def _from_path(cls, path: Text) -> "SkillSelector":
+    def _from_path(cls, path: Text, skill_selector: "SkillSelector") -> "SkillSelector":
         if os.path.isfile(path):
-            return cls._from_file(path)
+            return cls._from_file(path, skill_selector)
         elif os.path.isdir(path):
-            return cls._from_directory(path)
+            return cls._from_directory(path, skill_selector)
         else:
             logger.debug("No imports found. Importing everything.")
             return cls.empty()
 
     @classmethod
-    def _from_file(cls, path: Text) -> "SkillSelector":
+    def _from_file(cls, path: Text, selector) -> "SkillSelector":
         path = os.path.abspath(path)
         if data.is_config_file(path) and os.path.exists(path):
             config = io_utils.read_yaml_file(path)
 
             if isinstance(config, dict):
                 parent_directory = os.path.dirname(path)
-                return cls._from_dict(config, parent_directory)
+                return cls._from_dict(config, parent_directory, selector)
 
         return cls.empty()
 
     @classmethod
-    def _from_dict(cls, _dict: Dict, parent_directory: Text) -> "SkillSelector":
+    def _from_dict(
+        cls, _dict: Dict, parent_directory: Text, skill_selector: "SkillSelector"
+    ) -> "SkillSelector":
         imports = _dict.get("imports") or []
         imports = {os.path.join(parent_directory, i) for i in imports}
         # clean out relative paths
         imports = {os.path.abspath(i) for i in imports}
 
-        return cls(imports, parent_directory)
+        import_candidates = [p for p in imports if not skill_selector.is_imported(p)]
+
+        new = cls(imports, parent_directory)
+        skill_selector = skill_selector.merge(new)
+
+        # import config files from paths which have not been processed so far
+        for p in import_candidates:
+            other = cls._from_path(p, skill_selector)
+            skill_selector = skill_selector.merge(other)
+
+        return skill_selector
 
     @classmethod
-    def _from_directory(cls, path: Text) -> "SkillSelector":
-        importer = cls.empty()
+    def _from_directory(
+        cls, path: Text, skill_selector: "SkillSelector"
+    ) -> "SkillSelector":
         for parent, _, files in os.walk(path):
             for file in files:
                 full_path = os.path.join(parent, file)
 
-                if data.is_config_file(full_path) and importer.is_imported(full_path):
-                    other = cls._from_file(full_path)
-                    importer = importer.merge(other)
+                if data.is_config_file(full_path) and skill_selector.is_imported(
+                    full_path
+                ):
+                    skill_selector = cls._from_file(full_path, skill_selector)
 
-        return importer
+        return skill_selector
 
     def merge(self, other: "SkillSelector") -> "SkillSelector":
-        self.imports |= {
+        imports = self.imports | {
             i for i in other.imports if not self.is_imported(i) or self.is_empty()
         }
 
-        return self
+        return SkillSelector(imports, self.project_directory)
 
     def is_empty(self) -> bool:
         return not self.imports

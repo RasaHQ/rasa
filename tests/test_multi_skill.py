@@ -64,7 +64,7 @@ def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
 
 @pytest.mark.parametrize("input_dict", [{}, {"imports": None}])
 def test_load_from_none(input_dict):
-    actual = SkillSelector._from_dict(input_dict, Path("."))
+    actual = SkillSelector._from_dict(input_dict, Path("."), SkillSelector.empty())
 
     assert actual.imports == set()
 
