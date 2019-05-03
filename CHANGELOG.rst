@@ -16,7 +16,9 @@ Added
 - you can now choose actions previously created in the same session
 in ``interactive learning``
 - add formatter 'black'
-- channel-specific utterances via the "channel" key in utterance template
+- channel-specific utterances via the ``- "channel":`` key in utterance templates
+- arbitrary json messages via the ``- "custom":`` key in utterance templates and
+  via ``utter_custom_json()`` method in custom actions
 
 
 Changed
@@ -26,13 +28,14 @@ Changed
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 - removed ``--num_threads`` from run command (server will be asyncronous but
   running in a single thread)
+- ``utter_custom_message()`` method in rasa_core_sdk has been renamed to ``utter_elements()``
 
 Removed
 -------
 - removed possibility to execute ``python -m rasa_core.train`` etc. (e.g. scripts in ``rasa.core`` and ``rasa.nlu``).
   Use the CLI for rasa instead, e.g. ``rasa train core``.
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
-- removed Dispatcher class from core 
+- removed Dispatcher class from core
 
 Fixed
 -----

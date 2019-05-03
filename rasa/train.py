@@ -167,7 +167,7 @@ def train_nlu(
         otherwise the path to the directory with the trained model files.
 
     """
-    import rasa.nlu
+    import rasa.nlu.train
 
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa.nlu.train(

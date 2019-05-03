@@ -268,14 +268,21 @@ class Domain(object):
                 # options we will always create a dict out of them
                 if isinstance(t, str):
                     validated_variations.append({"text": t})
-                elif "text" not in t:
+                elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(
-                        "Utter template '{}' needs to contain"
-                        "'- text: ' attribute to be a proper"
+                        "Utter template '{}' needs to contain either "
+                        "'- text: '  or '- custom: ' attribute to be a proper "
                         "template".format(template_key)
                     )
                 else:
+                    if "custom" in t and len(t) > 1:
+                        logger.warning(
+                            "All attributes other than '- custom: ' in template '{}' will be ignored".format(
+                                template_key
+                            )
+                        )
                     validated_variations.append(t)
+
             templates[template_key] = validated_variations
         return templates
 

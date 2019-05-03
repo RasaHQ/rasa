@@ -34,14 +34,20 @@ def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
             rasa.cli.utils.print_color(button_to_string(button, idx), color)
 
     if "elements" in message:
+        rasa.cli.utils.print_color("Elements:", color)
         for idx, element in enumerate(message.get("elements")):
-            element_str = "Elements:\n" + element_to_string(element, idx)
-            rasa.cli.utils.print_color(element_str, color)
+            rasa.cli.utils.print_color(element_to_string(element, idx), color)
 
     if "quick_replies" in message:
+        rasa.cli.utils.print_color("Quick Replies:", color)
         for idx, element in enumerate(message.get("quick_replies")):
-            element_str = "Quick Replies:\n" + button_to_string(element, idx)
-            rasa.cli.utils.print_color(element_str, color)
+            rasa.cli.utils.print_color(button_to_string(element, idx), color)
+
+    if "custom" in message:
+        rasa.cli.utils.print_color("Custom json:", color)
+        return rasa.cli.utils.print_color(
+            json.dumps(message.get("custom"), indent=2), color
+        )
 
 
 def get_cmd_input():
