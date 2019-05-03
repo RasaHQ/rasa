@@ -169,6 +169,17 @@ To start a server running your Rasa model, run:
 
 See the Rasa HTTP API docs for detailed documentation of all the endpoints.
 
+.. _run-action-server:
+
+Start an Action Server
+~~~~~~~~~~~~~~~~~~~~~~
+
+To run your server run
+
+.. code:: bash
+
+   rasa run actions
+
 Start an NLU Server
 ~~~~~~~~~~~~~~~~~~~
 

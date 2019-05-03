@@ -6,29 +6,10 @@
 Running the Server
 ==================
 
-.. warning::
-
-    To protect your conversational data, make sure to secure the server.
-    Either by restricting access to the server (e.g. using firewalls) or
-    by enabling one of the authentication methods: :ref:`server_security`.
-
-.. note::
-
-    Before you can use the server, you need to define a domain, create training
-    data, and train a model. You can then use the trained model!
-    See :ref:`quickstart` for an introduction.
-
-    If you are looking for documentation on how to run custom actions -
-    head over to :ref:`customactions`.
-
-
-The HTTP api exists to make it easy for python and non-python
-projects to interact with Rasa Core. The API allows you to modify
-the trackers.
 
 
 .. contents::
-
+   :local:
 
 Running the HTTP server
 -----------------------
@@ -38,7 +19,7 @@ models with:
 
 .. code-block:: bash
 
-    $ rasa run core \
+    rasa run core \
         --enable-api \
         -m models \
         -o out.log
@@ -50,11 +31,19 @@ The different parameters are:
   and Rasa NLU model.
 - ``-o``, which is the path to the log file.
 
+
+.. warning::
+
+    Make sure to secure your server, either by restricting access to the server (e.g. using firewalls) or
+    by enabling one of the authentication methods: :ref:`server_security`.
+
+
 .. note::
 
-  If you are using custom actions - make sure to pass in the endpoint
-  configuration for your action server as well using
-  ``--endpoints endpoints.yml``.
+    If you are using custom actions - make sure your action server is 
+    running (see :ref:`run-action-server`). If your actions are running
+    on a different machine, or you aren't using the Rasa SDk, make sure
+    to update your ``endpoints.yml`` file.
 
 Events
 ------

@@ -26,8 +26,8 @@ Understand messages, hold conversations, and connect to messaging channels and A
    architecture
    channels
    evaluating-models
-   cloud-storage
    server
+   cloud-storage
 
 .. toctree::
    :maxdepth: 1
