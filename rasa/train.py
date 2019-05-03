@@ -71,7 +71,7 @@ async def train_async(
     retrain_core = True
     retrain_nlu = True
 
-    skill_imports = SkillSelector.load(config, training_files)
+    skill_imports = SkillSelector.load(config)
     domain = Domain.load(domain, skill_imports)
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
@@ -172,7 +172,7 @@ async def train_core_async(
     _train_path = train_path or tempfile.mkdtemp()
 
     if isinstance(Domain, str) or not train_path:
-        skill_imports = SkillSelector.load(config, stories)
+        skill_imports = SkillSelector.load(config)
         domain = Domain.load(domain, skill_imports)
         stories = data.get_core_directory(stories, skill_imports)
 
@@ -225,7 +225,7 @@ def train_nlu(
     if not train_path:
         # Training is not part of the stack model training, hence we have to load the
         # nlu data first
-        skill_imports = SkillSelector.load(config, nlu_data)
+        skill_imports = SkillSelector.load(config)
         nlu_data = data.get_nlu_directory(nlu_data, skill_imports)
 
     _, nlu_model, _ = rasa.nlu.train(

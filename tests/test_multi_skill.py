@@ -151,16 +151,3 @@ def test_import_outside_project_directory(tmpdir_factory):
     actual = SkillSelector.load(skill_a_directory / "config.yml")
 
     assert actual._imports == {str(skill_b_directory), str(root / "Skill C")}
-
-
-def test_use_training_paths_if_empty(tmpdir_factory):
-    root = tmpdir_factory.mktemp("Parent Bot")
-    empty_imports = {}
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", empty_imports)
-
-    training_paths = ["A", "B"]
-
-    actual = SkillSelector.load(str(root / "config.yml"), training_paths)
-
-    assert actual._imports == set(training_paths)
-    assert actual.training_paths() == set(training_paths + [str(root)])

@@ -14,33 +14,23 @@ class SkillSelector:
         self._project_directory = project_directory
 
     @classmethod
-    def empty(cls, project_directory: Text = None) -> "SkillSelector":
-        return cls(set(), project_directory)
+    def empty(cls) -> "SkillSelector":
+        return cls(set())
 
     @classmethod
-    def load(
-        cls, config: Text, training_paths: Optional[Union[Text, List[Text]]] = None
-    ) -> "SkillSelector":
+    def load(cls, config: Text) -> "SkillSelector":
         """
         Loads the specification from the config files.
         Args:
             config: Path to the root configuration file in the project directory.
-            training_paths: Paths which should be searched for further configuration files.
 
         Returns:
             `SkillSelector` which specifies the loaded skills.
         """
         # All imports are by default relative to the root config file directory
         config = os.path.abspath(config)
-        selector = cls._from_file(config, cls.empty(os.path.dirname(config)))
-
-        if selector.is_empty():
-            training_paths = training_paths or []
-            if not isinstance(training_paths, list):
-                training_paths = [training_paths]
-
-            for path in training_paths:
-                selector.add_import(path)
+        selector = cls(set(), os.path.dirname(config))
+        selector = cls._from_file(config, selector)
 
         logger.debug("Selected skills: {}.".format(selector._imports))
 
