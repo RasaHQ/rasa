@@ -41,7 +41,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
 
             if templates.get("channel_templates"):
                 return np.random.choice(templates["channel_templates"])
-            else:
+            elif templates.get("defualt_templates"):
                 return np.random.choice(templates["default_templates"])
         else:
             return None

@@ -215,7 +215,7 @@ class ActionBack(Action):
     def name(self) -> Text:
         return ACTION_BACK_NAME
 
-    async def run(self, output_channel, nlg, tracker, domain):  # ask Tom
+    async def run(self, output_channel, nlg, tracker, domain):
         # only utter the template if it is available
         events = await ActionUtterTemplate("utter_back", silent_fail=True).run(
             output_channel, nlg, tracker, domain
