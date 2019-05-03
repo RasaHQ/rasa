@@ -86,10 +86,11 @@ def _find_core_nlu_files_in_directory(directory: Text) -> Tuple[Set[Text], Set[T
     nlu_data_files = set()
     for root, _, files in os.walk(directory):
         for f in files:
-            if not _is_valid_filetype(f):
+            full_path = os.path.join(root, f)
+
+            if not _is_valid_filetype(full_path):
                 continue
 
-            full_path = os.path.join(root, f)
             if _is_nlu_file(full_path):
                 nlu_data_files.add(full_path)
             else:
