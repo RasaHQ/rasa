@@ -1,0 +1,9 @@
+name: human handoff
+examples:
+  - 
+    - let me speak to a human
+    - ( let me put you in touch with someone.
+  - 
+    - I want to cancel
+    - ( I'm afraid I can't help you with that.
+    - ( let me put you in touch with someone.

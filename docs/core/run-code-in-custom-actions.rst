@@ -1,7 +1,7 @@
 :desc: Read more about how to run custom actions and code with open source Rasa
        Stack to integrate your contextual Assistant in your processes and databases. 
 
-.. _actions:
+.. _custom-actions:
 
 Actions
 =======
@@ -37,8 +37,6 @@ See :ref:`responses` for more details.
 If you use an external NLG service, you don't need to specify the
 templates in the domain, but you still need to add the utterance names
 to the actions list of the domain.
-
-.. _customactions:
 
 Custom Actions
 --------------
@@ -132,28 +130,23 @@ Details of the ``run`` method:
 
 There is an example of a ``SlotSet`` event
 :ref:`below <custom_action_example>`, and a full list of possible
-events in :ref:`events`.
+events in :ref:`events-classes`.
 
 Default Actions
 ---------------
 
-There are four default actions:
+There are three default actions:
 
 +-----------------------------+------------------------------------------------+
-| ``action_listen``           | Stop predicting more actions and wait for user |
+| ``action_listen``           | stop predicting more actions and wait for user |
 |                             | input                                          |
 +-----------------------------+------------------------------------------------+
-| ``action_restart``          | Reset the whole conversation, usually triggered|
+| ``action_restart``          | reset the whole conversation, usually triggered|
 |                             | by using ``/restart``                          |
 +-----------------------------+------------------------------------------------+
-| ``action_default_fallback`` | Undoes the last user message (as if the user   |
+| ``action_default_fallback`` | undoes the last user message (as if the user   |
 |                             | did not send it) and utters a message that the |
 |                             | bot did not understand. See :ref:`fallbacks`.  |
-+-----------------------------+------------------------------------------------+
-|``action_back``              | Triggered by typing ``/back``. Undoes the last |
-|                             | user message (as if the user did not send it)  |
-|                             | and utters a message to the user if one is     |
-|                             | provided as ``utter_back`` in the domain.      |
 +-----------------------------+------------------------------------------------+
 
 All the default actions can be overwritten. To do so, add the action name
@@ -189,4 +182,3 @@ Documentation of the action server API as
 .. apidoc::
    :path: ../_static/spec/action_server.yml
 
-.. include:: feedback.inc

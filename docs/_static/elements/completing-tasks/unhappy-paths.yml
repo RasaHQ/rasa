@@ -1,0 +1,14 @@
+name: unhappy paths
+examples:
+  - 
+    - ( what's your email address?
+    - no.
+    - ( I will need your email address in order to create an account.
+    - ( what's your email address?
+  - 
+    - ( what's your email address?
+    - work@example.com
+    - ( thanks, and your phone number?
+    - no wait, please use personal@example.com
+    - ( ok, I'll use that email.
+    - ( thanks, and your phone number?

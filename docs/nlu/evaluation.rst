@@ -1,45 +1,7 @@
-:desc: Evaluate and validate your machine learning models for open source
-       library Rasa NLU to improve intent recognition and entity extraction. 
+.. _nlu-evaluation:
 
-.. _section_evaluation:
-
-Evaluating and Improving Models
-===============================
-
-Improving your models from feedback
------------------------------------
-
-Once you have a version of your bot running, the Rasa NLU server will log
-every request made to the ``/parse`` endpoint to a file. By default
-these are saved in the folder ``logs``.
-
-
-.. code-block:: javascript
-
-   {
-     "user_input":{
-       "entities":[]   ],
-       "intent":{
-         "confidence":0.32584617693743012,
-         "name":"restaurant_search"
-       },
-       "text":"nice thai places",
-       "intent_ranking":[ ... ]
-     },
-     ...
-     "model":"default",
-     "log_time":1504092543.036279
-   }
-
-
-The things your users say are the best source of training data for refining your models.
-Of course your model won't be perfect, so you will have to manually go through
-each of these predictions and correct any mistakes before adding them to your training data.
-In this case, the entity 'thai' was not picked up as a cuisine.
-
-
-Evaluating Models
------------------
+Evaluating NLU Models
+=====================
 
 How is your model performing? Do you have enough data? Are your intents and entities well-designed?
 
@@ -47,37 +9,25 @@ Rasa NLU has an ``test`` mode which helps you answer these questions.
 A standard technique in machine learning is to keep some data separate as a *test set*.
 If you've done this, you can see how well your model predicts the test cases using this command:
 
+To evaluate your model against test data, run:
 
-.. code-block:: bash
+.. code-block:: shell
 
-    rasa test nlu \
-        --data data/examples/rasa/demo-rasa.json \
-        --model models/model_20180323-145833.tar.gz
-
-Where the ``--data`` argument points to your test data, and ``--model`` points to your trained model.
+   rasa test nlu
 
 
 If you don't have a separate test set, you can
 still estimate how well your model generalises using cross-validation.
-To do this, run the evaluation script with the ``--mode crossvalidation`` flag:
+To do this, add the ``--mode crossvalidation`` flag:
 
+.. code-block:: shell
 
-.. code-block:: bash
-
-    rasa test nlu \
-        --data data/examples/rasa/demo-rasa.json \
-        --config sample_configs/config_pretrained_embeddings_spacy.yml \
-        --mode crossvalidation
-
-
-You cannot specify a model in this mode because
-a new model will be trained on part of the data
-for every cross-validation fold.
-
+   rasa test nlu --mode crossvalidation
 
 
 Intent Classification
----------------------
+^^^^^^^^^^^^^^^^^^^^^
+
 The evaluation script will produce a report, confusion matrix
 and confidence histogram for your model.
 
@@ -111,7 +61,7 @@ to the left of the plot.
     multiple tokens. A whitespace tokenizer would not work in this case.
 
 Entity Extraction
------------------
+^^^^^^^^^^^^^^^^^
 
 The ``CRFEntityExtractor`` is the only entity extractor which you train using your own data,
 and so is the only one which will be evaluated. If you use the spaCy or duckling
@@ -123,6 +73,7 @@ Rasa NLU will report recall, precision, and f1 measure for each entity type that
 
 Entity Scoring
 ^^^^^^^^^^^^^^
+
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILOU tags, but only the
 entity type tags on a per token basis. For location entity like "near Alexanderplatz" we
 expect the labels ``LOC LOC`` instead of the BILOU-based ``B-LOC L-LOC``. Our approach is more lenient
@@ -147,19 +98,3 @@ near [Alexanderplatz](loc) [tonight](time)          O   loc time (2)          O 
 ==================================================  ========================  ===========================
 
 
-Evaluation Parameters
----------------------
-
-There are a number of parameters you can pass to the evaluation script. To see all options,
-run:
-
-.. code-block:: bash
-
-    $ rasa test nlu --help
-
-Which will produce the following output:
-
-.. program-output:: rasa test nlu --help
-
-
-.. include:: feedback.inc

@@ -1,0 +1,8 @@
+name: simple questions
+examples:
+  - 
+    - what's your email address?
+    - ( it's contact@example.com
+  - 
+    - do you have a loyalty program?
+    - ( unfortunately we don't

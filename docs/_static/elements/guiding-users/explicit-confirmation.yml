@@ -1,0 +1,7 @@
+name: explicit confirmation
+examples:
+  - 
+    - I just moved
+    - ( I'm not sure I understood you correctly. Do you mean ...
+    - ^ I want to cancel my contract
+    - ^ I want to update my personal details

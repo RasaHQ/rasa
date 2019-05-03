@@ -1,0 +1,8 @@
+name: getting user feedback
+examples:
+  - 
+    - ( Was that helpful?
+    - no.
+    - ( Thanks. Why wasnt I able to help?
+    - ^ you didn't understand me correctly
+    - ^ you understood me, but your answers weren't very helpful.

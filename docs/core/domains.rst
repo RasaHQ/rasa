@@ -14,7 +14,8 @@ for the things your bot can say.
 
 As an example, the ``DefaultDomain`` has the following yaml definition:
 
-.. literalinclude:: ../../data/test_domains/default_with_slots.yml
+                    
+.. literalinclude:: ../../../rasa/cli/initial_project/domain.yml
    :language: yaml
 
 **What does this mean?**
@@ -37,7 +38,7 @@ defined like this:
                - high
 
 
-:ref:`Here <slot_types>` is the full list of slot types defined by
+:ref:`Here <slot-classes>` is the full list of slot types defined by
 Rasa Core, along with syntax for including them in your domain file.
 
 
@@ -48,10 +49,7 @@ For example, an ``action`` can:
 * make an external API call
 * query a database
 
-see :ref:`actions`
-
-For a more complete example domain, check the :doc:`quickstart`.
-
+see :ref:`customactions` .
 
 Custom Actions and Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -232,4 +230,3 @@ featurized as normal.
     suggest you make the slots with the same name of type ``unfeaturized``
 
 
-.. include:: feedback.inc

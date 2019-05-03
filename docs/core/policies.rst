@@ -7,44 +7,16 @@ Training and Policies
 =====================
 
 .. contents::
-
-
-Training
---------
-
-Rasa Core works by creating training data from your stories and
-training a model on that data.
-
-You can run training from the command line like in the :ref:`quickstart`:
-
-
-.. code-block:: bash
-
-   rasa train core -d domain.yml -s data/stories.md \
-     -o models -c config.yml
-
-Or by creating an agent and running the train method yourself:
-
-.. testcode::
-
-   from rasa.core.agent import Agent
-
-   agent = Agent()
-   data = agent.load_data("stories.md")
-   agent.train(data)
-
-
-Training Script Options
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. program-output:: rasa train core --help
+   :local:
 
 
 Data Augmentation
 ^^^^^^^^^^^^^^^^^
 
-By default, Rasa Core will create longer stories by randomly glueing together
-the ones in your stories file. This is because if you have stories like:
+When you train a model, by default Rasa Core will create 
+longer stories by randomly gluing together
+the ones in your stories files.
+This is because if you have stories like:
 
 .. code-block:: story
 
@@ -64,11 +36,11 @@ what happened before.
 You can alter this behaviour with the ``--augmentation`` flag.
 ``--augmentation 0`` disables this behavior.
 
-In python, you can pass the ``augmentation_factor`` argument to the
-``Agent.load_data`` method.
 
-Policies
---------
+.. _policy_file:
+
+Configuring Policies
+^^^^^^^^^^^^^^^^^^^^
 
 The :class:`rasa.core.policies.Policy` class decides which action to take
 at every step in the conversation.
@@ -79,18 +51,11 @@ every turn, the policy which predicts the next action with the
 highest confidence will be used. If two policies predict with equal
 confidence, the policy with the higher priority will be used.
 
-Configuration of Policies
-^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _policy_file:
-
-Configuring policies using a configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you are using the training script, you must set the policies you would like
-the Core model to use in a YAML file.
-
-For example:
+Your project's ``config.yml`` file takes a ``policies`` key
+which you can use to customize the policies your assistant uses.
+In the example below, the last two lines show how to use a custom
+policy class and pass arguments to it.
 
 .. code-block:: yaml
 
@@ -110,26 +75,9 @@ For example:
     - name: "path.to.your.policy.class"
       arg1: "..."
 
-Pass the YAML file's name to the train script using the ``--config``
-argument (or just ``-c``). There is a default config file you can use to
-get started in ``default_config.yml``, which is already implemented
-as the provided ``policies.yml`` file in the starter pack.
-
-
-.. _default_config:
-
-Default configuration
-~~~~~~~~~~~~~~~~~~~~~
-
-By default, we try to provide you with a good set of configuration values
-and policies that suit most people. But you are encouraged to modify
-these to your needs:
-
-.. literalinclude:: ../../rasa/core/default_config.yml
-
 
 Max History
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 One important hyperparameter for Rasa Core policies is the ``max_history``.
 This controls how much dialogue history the model looks at to decide which
@@ -142,7 +90,7 @@ in the policy configuration yaml file.
 
     Only the ``MaxHistoryTrackerFeaturizer`` uses a max history,
     whereas the ``FullDialogueTrackerFeaturizer`` always looks at
-    the full conversation history.
+    the full conversation history. See :ref:`featurization` for details.
 
 As an example, let's say you have an ``out_of_scope`` intent which
 describes off-topic user messages. If your bot sees this intent multiple
@@ -159,40 +107,13 @@ with. So your story might look like this:
       - utter_help_message
 
 For Rasa Core to learn this pattern, the ``max_history``
-has to be `at least` ``3``.
+has to be `at least` 3.
 
 If you increase your ``max_history``, your model will become bigger and
 training will take longer. If you have some information that should
 affect the dialogue very far into the future, you should store it as a
 slot. Slot information is always available for every featurizer.
 
-
-Configuring policies in code
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can load a policy configuration file named ``"policies.yml"`` from your
-code like so:
-
-.. code-block:: python
-
-    from rasa.core import config as policy_config
-    from rasa.core.agent import Agent
-
-    policies = policy_config.load("policies.yml")
-    agent = Agent("domain.yml", policies=policies)
-
-
-Alternatively, you can pass a list of policies directly
-when you create an agent:
-
-.. code-block:: python
-
-   from rasa.core.policies.memoization import MemoizationPolicy
-   from rasa.core.policies.keras_policy import KerasPolicy
-   from rasa.core.agent import Agent
-
-   agent = Agent("domain.yml",
-                 policies=[MemoizationPolicy(), KerasPolicy()])
 
 Keras Policy
 ^^^^^^^^^^^^
@@ -203,12 +124,14 @@ The default architecture is based on an LSTM, but you can override the
 ``KerasPolicy.model_architecture`` method to implement your own architecture.
 
 
-.. literalinclude:: ../../rasa/core/policies/keras_policy.py
+.. literalinclude:: ../../../rasa/core/policies/keras_policy.py
+   :dedent: 4
    :pyobject: KerasPolicy.model_architecture
 
 and the training is run here:
 
-.. literalinclude:: ../../rasa/core/policies/keras_policy.py
+.. literalinclude:: ../../../rasa/core/policies/keras_policy.py
+   :dedent: 4
    :pyobject: KerasPolicy.train
 
 You can implement the model of your choice by overriding these methods,
@@ -387,7 +310,8 @@ It is recommended to use
     These parameters can be specified in the policy configuration file.
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
-    .. literalinclude:: ../../rasa/core/policies/embedding_policy.py
+    .. literalinclude:: ../../../rasa/core/policies/embedding_policy.py
+       :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)
 
@@ -451,7 +375,7 @@ it will listen for the next message.
   by the sudden appearance of the predicted ``action_greet`` in
   the dialouge history.
 
-.. _fallback_policy:
+.. _fallback-policy:
 
 Fallback Policy
 ^^^^^^^^^^^^^^^
@@ -578,5 +502,3 @@ by trying to disambiguate the user input.
 
       You can include either the ``FallbackPolicy`` or the
       ``TwoStageFallbackPolicy`` in your configuration, but not both.
-
-.. include:: feedback.inc

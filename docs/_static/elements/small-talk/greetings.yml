@@ -1,0 +1,11 @@
+name: greetings
+examples:
+  - 
+    - hello
+    - ( hi, how are you?
+  - 
+    - how are you?
+    - ( I am well, and you?
+  - 
+    - goodbye
+    - ( bye bye!

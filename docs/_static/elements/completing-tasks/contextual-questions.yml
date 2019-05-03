@@ -1,0 +1,10 @@
+name: contextual questions
+examples:
+  - 
+    - ( what's your email address?
+    - why do you need to know that?
+    - ( I need your email so I can send you a confirmation
+  - 
+    - ( are you currently a premium customer?
+    - what do you mean?
+    - ( We have different memberships. Check your statement to see if you are a premium member.

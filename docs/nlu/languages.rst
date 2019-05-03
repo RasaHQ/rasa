@@ -64,14 +64,13 @@ in Norwegian, then your NLU data examples could look something like this:
     - På Gjensyn
     - Ses i morgen.
 
-Let's say you saved training examples as nlu_data.md and one of the pipeline configuration examples mentioned above as config.yml,
+Let's say you saved training examples as ``data/nlu.md`` and one of the 
+pipeline configuration examples mentioned above as ``config.yml``,
 then you can train the model by running:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ rasa train nlu \
-        --config config.yml \
-        --data nlu_data/
+    rasa train
 
 Once the training is finished, you can test your model's Norwegian language skills.
 
@@ -80,7 +79,7 @@ Pre-trained Word Vectors
 ------------------------
 
 With the ``pretrained_embeddings_spacy`` pipeline you can also load fastText vectors, which are available 
-for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md>`_.
+for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md>`_.
 
 
 =====================   =================================
@@ -97,15 +96,13 @@ MITIE          		english (``en``)
 Jieba-MITIE    		chinese (``zh``) :ref:`* <jieba>`
 =====================   =================================
 
-These languages can be set as part of the :ref:`section_configuration`.
+These languages can be set as part of the :ref:`model-configuration`.
 
 Adding a new language
 ---------------------
 We want to make the process of adding new languages as simple as possible to increase the number of
 supported languages. Nevertheless, to use a language you either need a trained word representation or
 you need to train that presentation on your own using a large corpus of text data in that language.
-
-These are the steps necessary to add a new language:
 
 Pretrained Embeddings
 ^^^^^^^^^^^^^^^^^^^^^
@@ -114,13 +111,15 @@ spaCy already provides a really good documentation page about `Adding languages 
 This will help you train a tokenizer and vocabulary for a new language in spaCy.
 
 As described in the documentation, you need to register your language using ``set_lang_class()`` which will
-allow Rasa NLU to load and use your new language by passing in your language identifier as the ``language`` :ref:`section_configuration` option.
+allow Rasa NLU to load and use your new language by passing in your language identifier as the ``language`` :ref:`model-configuration` option.
 
 MITIE
 ^^^^^
 
-1. Get a ~clean language corpus (a Wikipedia dump works) as a set of text files
-2. Build and run `MITIE Wordrep Tool`_ on your corpus. This can take several hours/days depending on your dataset and your workstation. You'll need something like 128GB of RAM for wordrep to run - yes that's alot: try to extend your swap.
+1. Get a clean language corpus (a Wikipedia dump works) as a set of text files
+2. Build and run `MITIE Wordrep Tool`_ on your corpus. 
+This can take several hours/days depending on your dataset and your workstation. 
+You'll need something like 128GB of RAM for wordrep to run - yes that's a lot: try to extend your swap.
 3. Set the path of your new ``total_word_feature_extractor.dat`` as value of the *mitie_file* parameter in ``config_mitie.json``
 
 .. _jieba:
@@ -141,10 +140,9 @@ into the tool for training. Close-domain corpus that best matches
 user case works best.
 
 A detailed instruction on how to train the model yourself can be found in
-A trained model from Chinese Wikipedia Dump and Baidu Baike can be `crownpku <https://github.com/crownpku>`_  's
+a trained model from Chinese Wikipedia dump and Baidu Baike can be `crownpku <https://github.com/crownpku>`_  's
 `blogpost <http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html>`_.
 
 .. _`MITIE Wordrep Tool`: https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep
 
 
-.. include:: feedback.inc

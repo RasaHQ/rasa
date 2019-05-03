@@ -1,7 +1,7 @@
 :desc: Stories are used to teach Rasa Stack real conversation designs to learn
        from providing the basis for a scalable machine learning dialogue management. 
 
-.. _stories:
+.. _stories-data-format:
 
 Story Data Format
 =================
@@ -109,4 +109,3 @@ it is probably better to restructure your domain and/or intents:
       - action_handle_affirmation
 
 
-.. include:: feedback.inc

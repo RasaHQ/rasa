@@ -2,9 +2,9 @@
        library Rasa Core to improve the dialogue management of your contextual
        AI Assistant. 
 
-.. _evaluation:
+.. _core-evaluation:
 
-Evaluating and Testing
+Evaluating Core Models
 ======================
 
 .. note::
@@ -21,8 +21,7 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    $ rasa test core --core models/dialogue \
-      --stories test_stories.md -o results
+    rasa test core --stories test_stories.md -o results
 
 
 This will print the failed stories to ``results/failed_stories.md``.
@@ -120,7 +119,6 @@ mode to evaluate the models you just trained:
 .. code-block:: bash
 
   $ rasa test core --stories stories_folder \
-    --core comparison_models \
     -o comparison_results
 
 This will evaluate each of the models on the training set, and plot some graphs
@@ -134,26 +132,3 @@ you.
 .. note::
     This training process can take a long time, so we'd suggest letting it run
     somewhere in the background where it can't be interrupted
-
-
-Evaluating stories over http
-----------------------------
-
-Rasa Core's server lets you to retrieve evaluations for the currently
-loaded model. Say your Rasa Core server is running locally on port 5005,
-and your story evaluation file is saved at ``eval_stories.md``. The command
-to post stories to the server for evaluation is this:
-
-.. code-block:: bash
-
-  $ curl --data-binary @eval_stories.md "localhost:5005/evaluate" | python -m json.tool
-
-If you would like to evaluate end-to-end stories
-(:ref:`docs <end_to_end_evaluation>`),
-you may do so by adding the ``e2e=true`` query parameter:
-
-.. code-block:: bash
-
-  $ curl --data-binary @eval_stories.md "localhost:5005/evaluate?e2e=true" | python -m json.tool
-
-.. include:: feedback.inc

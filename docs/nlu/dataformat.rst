@@ -1,7 +1,7 @@
 :desc: Read more about how to format training data with Rasa NLU for open
        source natural language processing.
 
-.. _section_dataformat:
+.. _nlu-data-format:
 
 Training Data Format
 ====================
@@ -20,7 +20,8 @@ Markdown Format
 Markdown is the easiest Rasa NLU format for humans to read and write.
 Examples are listed using the unordered
 list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
-Examples are grouped by intent, and entities are annotated as markdown links.
+Examples are grouped by intent, and entities are annotated as markdown links,
+e.g. ``[entity](entity name)``.
 
 .. code-block:: md
 
@@ -49,7 +50,11 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     path/to/currencies.txt
 
 The training data for Rasa NLU is structured into different parts:
-examples, synonyms, regex features, and lookup tables.
+
+- examples
+- synonyms
+- regex features and 
+- lookup tables
 
 Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
 However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up.
@@ -59,7 +64,7 @@ Lookup tables may be specified either directly as lists or as txt files containi
 JSON Format
 -----------
 
-The JSON format consist of a top-level object called ``rasa_nlu_data``, with the keys
+The JSON format consists of a top-level object called ``rasa_nlu_data``, with the keys
 ``common_examples``, ``entity_synonyms`` and ``regex_features``.
 The most important one is ``common_examples``.
 
@@ -79,36 +84,18 @@ examples in the ``common_examples`` array.
 Regex features are a tool to help the classifier detect entities or intents and improve the performance.
 
 
-Visualizing the Training Data
------------------------------
-
-If you're using the json format, it's always a good idea to `look` at your data before, during,
-and after training a model. Luckily, there's a
-`great tool <https://github.com/RasaHQ/rasa-nlu-trainer>`__
-for creating training data in rasa's format.
-- created by `@azazdeaz <https://github.com/azazdeaz>`_ -
-and it's also extremely helpful for inspecting and modifying existing data.
-`Rasa Platform <https://rasa.com/products/rasa-platform>`_ (Rasa's commercial product) also has
-a full-featured UI for annotating data.
-
-
-For the demo data the output should look like this:
-
-.. image:: _static/images/rasa_nlu_intent_gui.png
-
-
-If you use the json format it is **strongly** recommended that you view your training
-data in the GUI before training.
-
 Generating More Entity Examples
 -------------------------------
 
 It is sometimes helpful to generate a bunch of entity examples, for
 example if you have a database of restaurant names. There are a couple
-of great tools built by the community to help with that.
+of tools built by the community to help with that.
 
 You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL or `Tracy <https://yuukanoo.github.io/tracy>`__, a simple GUI to create training datasets for rasa.
 
+However, creating synthetic examples usually leads to overfitting,
+it is a better idea to use :ref:`lookup-tables` instead if you have a large number
+of entity values.
 
 
 Common Examples
@@ -116,11 +103,11 @@ Common Examples
 
 Common examples have three components: ``text``, ``intent``, and ``entities``. The first two are strings while the last one is an array.
 
- - The *text* is the search query; An example of what would be submitted for parsing. [required]
- - The *intent* is the intent that should be associated with the text. [optional]
- - The *entities* are specific parts of the text which need to be identified. [optional]
+ - The *text* is the user message [required]
+ - The *intent* is the intent that should be associated with the text [optional]
+ - The *entities* are specific parts of the text which need to be identified [optional]
 
-Entities are specified with a ``start`` and  ``end`` value, which together make a python
+Entities are specified with a ``start`` and  an ``end`` value, which together make a python
 style range to apply to the string, e.g. in the example below, with ``text="show me chinese
 restaurants"``, then ``text[8:15] == 'chinese'``. Entities can span multiple words, and in
 fact the ``value`` field does not have to correspond exactly to the substring in your example.
@@ -174,7 +161,7 @@ If you define entities as having the same value they will be treated as synonyms
       }
     ]
 
-as you can see, the entity ``city`` has the value ``New York City`` in both examples, even though the text in the first
+As you can see, the entity ``city`` has the value ``New York City`` in both examples, even though the text in the first
 example states ``NYC``. By defining the value attribute to be different from the value found in the text between start
 and end index of the entity, you can define a synonym. Whenever the same text will be found, the value will use the
 synonym instead of the actual text in the message.
@@ -241,11 +228,15 @@ for these extractors. Currently, all intent classifiers make use of available re
     recognize entities and related intents. Hence, you still need to provide intent & entity examples as part of your
     training data!
 
+.. _lookup-tables:
 
 Lookup Tables
 -------------
-Lookup tables in the form of external files or lists of elements may also be specified in the training data.  The externally supplied lookup tables must be in a newline-separated format.  For example, ``data/test/lookup_tables/plates.txt`` may contain
+Lookup tables in the form of external files or lists of elements may also be specified in the training data.  
+The externally supplied lookup tables must be in a newline-separated format.  
+For example, ``data/test/lookup_tables/plates.txt`` may contain
 
+# TODO: This is broken
 .. include:: ../../data/test/lookup_tables/plates.txt
 
 And can be loaded as:
@@ -278,43 +269,21 @@ Alternatively, lookup elements may be directly included as a list
         }
     }
 
-When lookup tables are supplied in training data, the contents are combined into a large, case-insensitive regex pattern that looks for exact matches in the training examples.  These regexes match over multiple tokens, so ``lettuce wrap`` would match ``get me a lettuce wrap ASAP`` as ``[0 0 0 1 1 0]``.  These regexes are processed identically to the regular regex patterns directly specified in the training data.
+When lookup tables are supplied in training data, the contents are combined 
+into a large, case-insensitive regex pattern that looks for exact matches in 
+the training examples. These regexes match over multiple tokens, so 
+``lettuce wrap`` would match ``get me a lettuce wrap ASAP`` as ``[0 0 0 1 1 0]``. 
+These regexes are processed identically to the regular regex patterns 
+directly specified in the training data.
 
 .. note::
     For lookup tables to be effective, there must be a few examples of matches in your training data.  Otherwise the model will not learn to use the lookup table match features.
 
+
 .. warning::
-    One must be careful with what kind of data is present in the lookup table.  For example if some of the elements are matched with commonly occuring words that are not the entity you wish to extract, this will limit the effectiveness of this method.  In fact, it might hurt the performance of entity recognition.  Therefore, try to use lookup tables only when you have a list of unambiguous phrases or tokens that you wish to match and make sure you filter out potentially problematic elements.
+    You have to be careful when you add data to the lookup table.
+    For example if there are false positives or other noise in the table,
+    this can hurt performance. So make sure your lookup tables contain
+    clean data.
 
 
-Organization
-------------
-
-The training data can either be stored in a single file or split into multiple files.
-This can make it easier to keep things organised, or to share data between projects.
-For example, if you have a restaurant bot which can also handle some basic smalltalk,
-you could have a folder called ``nlu_data``:
-
-.. code-block:: text
-
-   nlu_data/
-   ├── restaurants.md
-   ├── smalltalk.md
-
-To train a model with this data, pass the path to the directory to the train script:
-
-
-.. code-block:: console
-
-    $ rasa train nlu \
-        --config config.yml \
-        --data nlu_data/
-
-
-.. note::
-    Splitting the training data into multiple files currently only works for markdown and JSON data.
-    For other file formats you have to use the single-file approach. You also cannot mix markdown
-    and json
-
-
-.. include:: feedback.inc

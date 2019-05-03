@@ -121,5 +121,3 @@ policy configuration file.
         fallback_nlu_action_name: "action_default_fallback"
         deny_suggestion_intent_name: "out_of_scope"
 
-
-.. include:: feedback.inc

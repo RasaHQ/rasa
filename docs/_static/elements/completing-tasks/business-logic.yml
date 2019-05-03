@@ -1,0 +1,12 @@
+name: business logic
+examples:
+  - 
+    - I'd like to apply for a loan
+    - ( I'd love to help. Which state are you in?
+    - Alaska
+    - ( Unfortunately, we only operate in the continental U.S.
+  - 
+    - I'd like to apply for a loan
+    - ( I'd love to help. Which state are you in?
+    - California
+    - ( Thanks. Do you know what your credit score is?
