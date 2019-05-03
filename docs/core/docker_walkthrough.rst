@@ -251,7 +251,7 @@ the trained Rasa model:
   docker run \
     -v $(pwd):/app/project \
     -v $(pwd)/models/:/app/models \
-    rasa/rasa:latest-spacy \
+    rasa/rasa_nlu:latest-spacy \
     run \
       python3 -m rasa.train \
       -c config.yml \
