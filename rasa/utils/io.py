@@ -153,7 +153,10 @@ def write_yaml_file(data: Dict, filename: Text):
         yaml.dump(data, outfile, default_flow_style=False)
 
 
-def is_in_subdirectory(path: Text, potential_parent_directory: Text) -> True:
+def is_in_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+    if path is None or potential_parent_directory is None:
+        return False
+
     path = os.path.abspath(path)
     potential_parent_directory = os.path.abspath(potential_parent_directory)
 
