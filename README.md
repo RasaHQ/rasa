@@ -82,7 +82,7 @@ In general the process is rather simple:
 2. write your code, tests and documentation
 3. create a pull request describing your changes
 
-You pull request will be reviewed by a maintainer, who might get
+Your pull request will be reviewed by a maintainer, who might get
 back to you about any necessary changes or questions. You will
 also be asked to sign a
 [Contributor License Agreement](https://cla-assistant.io/RasaHQ/rasa).
