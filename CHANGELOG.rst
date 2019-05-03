@@ -29,6 +29,7 @@ in ``interactive learning``
 - add formatter 'black'
 - add ``rasa interactive core`` to command line interface
 - support for spaCy 2.1
+- a model for an agent can now also be loaded from a remote storage
 
 Changed
 -------
@@ -41,11 +42,14 @@ Changed
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 - removed ``--num_threads`` from run command (server will be asyncronous but
   running in a single thread)
-- removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be loaded by default)
+- removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be
+  loaded by default)
 - changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
 - ``rasa train`` uses fallback config if an invalid config is given
 - ``rasa test core`` compares multiple models if a list of model files is provided for the argument ``--model``
 - ``rasa train`` fails if either nlu or story data are missing
+- Merged rasa.core and rasa.nlu server into a single server. See swagger file in ``docs/_static/spec/server.yaml`` for
+  available endpoints.
 
 Removed
 -------
