@@ -14,7 +14,7 @@ class SkillSelector:
         self._project_directory = project_directory
 
     @classmethod
-    def empty(cls, project_directory: Text = os.getcwd()) -> "SkillSelector":
+    def empty(cls, project_directory: Text = None) -> "SkillSelector":
         return cls(set(), project_directory)
 
     @classmethod
