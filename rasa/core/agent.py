@@ -78,7 +78,9 @@ def _load_and_set_updated_model(
 
         interpreter = RasaNLUInterpreter(model_directory=nlu_path)
     else:
-        interpreter = RegexInterpreter()
+        interpreter = (
+            agent.interpreter if agent.interpreter is not None else RegexInterpreter()
+        )
 
     domain = None
     if os.path.exists(core_path):
@@ -210,7 +212,7 @@ async def schedule_model_pulling(
 
 
 async def load_agent(
-    model_path: Text,
+    model_path: Optional[Text] = None,
     model_server: Optional[EndpointConfig] = None,
     wait_time_between_pulls: Optional[int] = None,
     remote_storage: Optional[Text] = None,
@@ -219,11 +221,8 @@ async def load_agent(
     # files or to one specific model file. If it is pointing to a directory, the
     # latest model in that directory is taken.
 
-    if model_path is None:
-        raise ValueError("You need to provide a valid path in order to load an agent.")
-
     try:
-        if os.path.exists(model_path):
+        if model_path is not None and os.path.exists(model_path):
             return Agent.load_local_model(model_path)
 
         elif model_server is not None:
@@ -233,6 +232,9 @@ async def load_agent(
 
         elif remote_storage is not None:
             return Agent.load_from_remote_storage(remote_storage, model_path)
+
+        else:
+            logger.error("No valid configuration given to load agent.")
 
     except Exception as e:
         logger.error("Could not load model due to {}.".format(e))
@@ -319,7 +321,7 @@ class Agent(object):
                 "('{}'), which is not possible. \n"
                 "The persisted path should be a directory "
                 "containing the various model files in the "
-                "sub-directories 'core' and 'nlu. \n\n"
+                "sub-directories 'core' and 'nlu'. \n\n"
                 "If you want to load training data instead of "
                 "a model, use `agent.load_data(...)` "
                 "instead.".format(unpacked_model_path)

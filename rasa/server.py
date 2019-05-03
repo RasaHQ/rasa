@@ -15,8 +15,13 @@ import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DEFAULT_MODELS_PATH
+from rasa.constants import (
+    MINIMUM_COMPATIBLE_VERSION,
+    DEFAULT_MODELS_PATH,
+    DEFAULT_DOMAIN_PATH,
+)
 from rasa.core import constants
+from rasa.core.agent import load_agent
 from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
 from rasa.core.test import test
@@ -474,32 +479,14 @@ def create_app(
         )
 
         rjs = request.json
+        validate_request(rjs)
 
         # create a temporary directory to store config, domain and
         # training data
         temp_dir = tempfile.mkdtemp()
 
-        try:
-            config_path = os.path.join(temp_dir, "config.yml")
-            dump_obj_as_str_to_file(config_path, rjs["config"])
-
-            domain_path = os.path.join(temp_dir, "domain.yml")
-            dump_obj_as_str_to_file(domain_path, rjs["domain"])
-        except KeyError:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "The training request is missing a key. The required keys are "
-                "`config` and `domain`.",
-            )
-
-        if "nlu" not in rjs and "stories" not in rjs:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "To train a Rasa model you need to specify at least one type of "
-                "training data. Add `nlu` and/or `stories` to the request.",
-            )
+        config_path = os.path.join(temp_dir, "config.yml")
+        dump_obj_as_str_to_file(config_path, rjs["config"])
 
         if "nlu" in rjs:
             nlu_path = os.path.join(temp_dir, "nlu.md")
@@ -508,6 +495,11 @@ def create_app(
         if "stories" in rjs:
             stories_path = os.path.join(temp_dir, "stories.md")
             dump_obj_as_str_to_file(stories_path, rjs["stories"])
+
+        domain_path = DEFAULT_DOMAIN_PATH
+        if "domain" in rjs:
+            domain_path = os.path.join(temp_dir, "domain.yml")
+            dump_obj_as_str_to_file(domain_path, rjs["domain"])
 
         try:
             model_path = await train_async(
@@ -525,6 +517,30 @@ def create_app(
                 500,
                 "ServerError",
                 "An unexpected error occurred during training. Error: {}".format(e),
+            )
+
+    def validate_request(rjs):
+        if "config" not in rjs:
+            raise ErrorResponse(
+                400,
+                "BadRequest",
+                "The training request is missing the required key " "`config`.",
+            )
+
+        if "nlu" not in rjs and "stories" not in rjs:
+            raise ErrorResponse(
+                400,
+                "BadRequest",
+                "To train a Rasa model you need to specify at least one type of "
+                "training data. Add `nlu` and/or `stories` to the request.",
+            )
+
+        if "stories" in rjs and "domain" not in rjs:
+            raise ErrorResponse(
+                400,
+                "BadRequest",
+                "To train a Rasa model with story training data, you also need to "
+                "specify the `domain`.",
             )
 
     @app.post("/model/evaluate/stories")
@@ -643,10 +659,19 @@ def create_app(
         parse_data = await app.agent.interpreter.parse(text)
         return response.json(parse_data)
 
-    @app.post("/model")
+    @app.put("/model")
     @requires_auth(app, auth_token)
     async def load_model(request: Request):
-        pass
+        validate_request_body(request, "No path to model file defined in request_body.")
+
+        model_path = request.json.get("model_file")
+        model_server = request.json.get("model_server", None)
+        wait_time_between_pulls = request.json.get("wait_time_between_pulls", None)
+        remote_storage = request.json.get("remote_storage", None)
+
+        app.agent = load_agent(
+            model_path, model_server, wait_time_between_pulls, remote_storage
+        )
 
     @app.delete("/model")
     @requires_auth(app, auth_token)

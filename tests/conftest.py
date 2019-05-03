@@ -84,7 +84,7 @@ async def trained_rasa_model(
 ):
     clean_folder("models")
     trained_stack_model_path = await train_async(
-        domain=default_domain_path,
+        domain="data/test_domains/default.yml",
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_nlu_data, default_stories_file],
     )
