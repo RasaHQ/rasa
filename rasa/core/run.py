@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import logging
 from functools import partial
-from typing import List, Optional, Text
+from typing import List, Optional, Text, Union
 
 from sanic import Sanic
 from sanic_cors import CORS
@@ -10,26 +10,16 @@ from sanic_cors import CORS
 import rasa.core
 import rasa.core.cli.arguments
 import rasa.utils
+import rasa.utils.io
 from rasa.core import constants, utils, cli
+from rasa.core.agent import load_agent
 from rasa.core.channels import BUILTIN_CHANNELS, InputChannel, console
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
+from rasa.core.utils import AvailableEndpoints
+from rasa.model import get_model_subdirectories, get_model
 
 logger = logging.getLogger()  # get the root logger
-
-
-def create_argument_parser():
-    """Parse all the command line arguments for the run script."""
-
-    parser = argparse.ArgumentParser(description="starts the bot")
-    parser.add_argument(
-        "-d", "--core", required=True, type=str, help="core model to run"
-    )
-    parser.add_argument("-u", "--nlu", type=str, help="nlu model to run")
-
-    cli.arguments.add_logging_option_arguments(parser)
-    cli.run.add_run_arguments(parser)
-    return parser
 
 
 def create_http_input_channels(
@@ -69,14 +59,14 @@ def _create_single_channel(channel, credentials):
 
 
 def configure_app(
-    input_channels=None,
-    cors=None,
-    auth_token=None,
-    enable_api=True,
-    jwt_secret=None,
-    jwt_method=None,
-    route="/webhooks/",
-    port=None,
+    input_channels: List["InputChannel"] = None,
+    cors: Union[Text, List[Text]] = None,
+    auth_token: Optional[Text] = None,
+    enable_api: Optional[bool] = True,
+    jwt_secret: Optional[Text] = None,
+    jwt_method: Optional[Text] = None,
+    route: Optional[Text] = "/webhooks/",
+    port: Optional[Text] = None,
 ):
     """Run the agent."""
     from rasa.core import server
@@ -125,17 +115,18 @@ def configure_app(
 
 
 def serve_application(
-    core_model=None,
-    nlu_model=None,
-    channel=None,
-    port=constants.DEFAULT_SERVER_PORT,
-    credentials=None,
-    cors=None,
-    auth_token=None,
-    enable_api=True,
-    jwt_secret=None,
-    jwt_method=None,
-    endpoints=None,
+    model_path: Text = None,
+    channel: Optional[Text] = None,
+    port: Optional[int] = constants.DEFAULT_SERVER_PORT,
+    credentials: Optional[Text] = None,
+    cors: Union[Text, List[Text]] = None,
+    auth_token: Optional[Text] = None,
+    enable_api: Optional[bool] = True,
+    jwt_secret: Optional[Text] = None,
+    jwt_method: Optional[Text] = None,
+    endpoints: Optional[AvailableEndpoints] = None,
+    wait_time_between_pulls: Optional[int] = 100,
+    remote_storage: Optional[Text] = None,
 ):
     if not channel and not credentials:
         channel = "cmdline"
@@ -152,47 +143,57 @@ def serve_application(
     )
 
     app.register_listener(
-        partial(load_agent_on_start, core_model, endpoints, nlu_model),
+        partial(
+            load_agent_on_start,
+            model_path,
+            endpoints,
+            wait_time_between_pulls,
+            remote_storage,
+        ),
         "before_server_start",
     )
     app.run(host="0.0.0.0", port=port, access_log=logger.isEnabledFor(logging.DEBUG))
 
 
 # noinspection PyUnusedLocal
-async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
+async def load_agent_on_start(
+    model_path: Text,
+    endpoints: Optional[AvailableEndpoints],
+    wait_time_between_pulls: Optional[int],
+    remote_storage: Optional[Text],
+    app: Sanic,
+    loop: Text,
+):
     """Load an agent.
 
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments)."""
     from rasa.core import broker
-    from rasa.core.agent import Agent
 
-    _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+    try:
+        _, nlu_model = get_model_subdirectories(get_model(model_path))
+        _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+    except Exception:
+        logger.debug("Could not load interpreter from '{}'".format(model_path))
+        _interpreter = None
+
     _broker = broker.from_endpoint_config(endpoints.event_broker)
-
     _tracker_store = TrackerStore.find_tracker_store(
         None, endpoints.tracker_store, _broker
     )
 
-    if endpoints and endpoints.model:
-        from rasa.core import agent
+    model_server = endpoints.model if endpoints and endpoints.model else None
 
-        app.agent = Agent(
-            interpreter=_interpreter,
-            generator=endpoints.nlg,
-            tracker_store=_tracker_store,
-            action_endpoint=endpoints.action,
-        )
-
-        await agent.load_from_server(app.agent, model_server=endpoints.model)
-    else:
-        app.agent = Agent.load(
-            core_model,
-            interpreter=_interpreter,
-            generator=endpoints.nlg,
-            tracker_store=_tracker_store,
-            action_endpoint=endpoints.action,
-        )
+    app.agent = load_agent(
+        model_path,
+        model_server=model_server,
+        wait_time_between_pulls=wait_time_between_pulls,
+        remote_storage=remote_storage,
+        interpreter=_interpreter,
+        generator=endpoints.nlg,
+        tracker_store=_tracker_store,
+        action_endpoint=endpoints.action,
+    )
 
     return app.agent
 

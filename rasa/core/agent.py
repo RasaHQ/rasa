@@ -216,22 +216,42 @@ async def load_agent(
     model_server: Optional[EndpointConfig] = None,
     wait_time_between_pulls: Optional[int] = None,
     remote_storage: Optional[Text] = None,
+    interpreter: Optional[NaturalLanguageInterpreter] = None,
+    generator: Union[EndpointConfig, "NLG"] = None,
+    tracker_store: Optional["TrackerStore"] = None,
+    action_endpoint: Optional[EndpointConfig] = None,
 ):
-    # model_path can point to a directory containing any number of tar.gz model
-    # files or to one specific model file. If it is pointing to a directory, the
-    # latest model in that directory is taken.
-
     try:
         if model_path is not None and os.path.exists(model_path):
-            return Agent.load_local_model(model_path)
+            return Agent.load_local_model(
+                model_path,
+                interpreter=interpreter,
+                generator=generator,
+                tracker_store=tracker_store,
+                action_endpoint=action_endpoint,
+            )
 
         elif model_server is not None:
             return await load_from_server(
-                Agent(), model_server, wait_time_between_pulls
+                Agent(
+                    interpreter=interpreter,
+                    generator=generator,
+                    tracker_store=tracker_store,
+                    action_endpoint=action_endpoint,
+                ),
+                model_server,
+                wait_time_between_pulls,
             )
 
         elif remote_storage is not None:
-            return Agent.load_from_remote_storage(remote_storage, model_path)
+            return Agent.load_from_remote_storage(
+                remote_storage,
+                model_path,
+                interpreter=interpreter,
+                generator=generator,
+                tracker_store=tracker_store,
+                action_endpoint=action_endpoint,
+            )
 
         else:
             logger.error("No valid configuration given to load agent.")
@@ -816,23 +836,42 @@ class Agent(object):
             )
 
     @staticmethod
-    def load_local_model(dir: Text) -> "Agent":
-        if os.path.isfile(dir):
-            model_archive = dir
+    def load_local_model(
+        model_path: Text,
+        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        generator: Union[EndpointConfig, "NLG"] = None,
+        tracker_store: Optional["TrackerStore"] = None,
+        action_endpoint: Optional[EndpointConfig] = None,
+    ) -> "Agent":
+        if os.path.isfile(model_path):
+            model_archive = model_path
         else:
-            model_archive = get_latest_model(dir)
+            model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            logger.warning("Could not load local model in '{}'".format(dir))
+            logger.warning("Could not load local model in '{}'".format(model_path))
             return Agent()
 
         working_directory = tempfile.mkdtemp()
         unpacked_model = unpack_model(model_archive, working_directory)
 
-        return Agent.load(unpacked_model)
+        return Agent.load(
+            unpacked_model,
+            interpreter=interpreter,
+            generator=generator,
+            tracker_store=tracker_store,
+            action_endpoint=action_endpoint,
+        )
 
     @staticmethod
-    def load_from_remote_storage(remote_storage: Text, model_name: Text) -> "Agent":
+    def load_from_remote_storage(
+        remote_storage: Text,
+        model_name: Text,
+        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        generator: Union[EndpointConfig, "NLG"] = None,
+        tracker_store: Optional["TrackerStore"] = None,
+        action_endpoint: Optional[EndpointConfig] = None,
+    ) -> "Agent":
         from rasa.nlu.persistor import get_persistor
 
         p = get_persistor(remote_storage)
@@ -840,9 +879,20 @@ class Agent(object):
             target_path = tempfile.mkdtemp()
             p.retrieve(model_name, target_path)
 
-            return Agent.load(target_path)
+            return Agent.load(
+                target_path,
+                interpreter=interpreter,
+                generator=generator,
+                tracker_store=tracker_store,
+                action_endpoint=action_endpoint,
+            )
 
-        return Agent()
+        return Agent(
+            interpreter=interpreter,
+            generator=generator,
+            tracker_store=tracker_store,
+            action_endpoint=action_endpoint,
+        )
 
     def _is_form_policy_present(self) -> bool:
         """Check whether form policy is present and used."""

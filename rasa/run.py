@@ -60,8 +60,7 @@ def run(
     if os.path.exists(core_path):
         kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)
         rasa.core.run.serve_application(
-            core_path,
-            nlu_path,
+            model,
             channel=channel,
             credentials=credentials,
             endpoints=_endpoints,

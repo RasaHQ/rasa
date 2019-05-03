@@ -1,33 +1,20 @@
 import argparse
 import asyncio
 import logging
-from typing import Text, Optional
+from typing import Text
 
 import rasa.utils.io
 import rasa.train
 from examples.restaurantbot.policy import RestaurantPolicy
 from rasa.core.agent import Agent
-from rasa.core.interpreter import RasaNLUInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
-import os
 
 logger = logging.getLogger(__name__)
 
 
-async def parse(
-    text: Text, core_model_path: Text, nlu_model_path: Optional[Text] = None
-):
-    if nlu_model_path:
-        interpreter = RasaNLUInterpreter(nlu_model_path)
-    else:
-        logger.warning("No NLU model passed, parsing messages using RegexInterpreter.")
-        interpreter = RegexInterpreter()
-
-    if core_model_path.endswith("core"):
-        core_model_path = os.path.dirname(core_model_path)
-
-    agent = Agent.load(core_model_path, interpreter=interpreter)
+async def parse(text: Text, model_path: Text):
+    agent = Agent.load(model_path)
 
     response = await agent.handle_text(text)
 
@@ -94,10 +81,10 @@ if __name__ == "__main__":
     parse_parser = subparser.add_parser("parse", help="parse any text")
 
     parse_parser.add_argument(
-        "--nlu-model", default=None, help="Path to the nlu model."
-    )
-    parse_parser.add_argument(
-        "--core-model", default="models/core", help="Path to the core model."
+        "--model",
+        default=None,
+        help="Path to the model directory which contains "
+        "sub-folders for core and nlu models.",
     )
     parse_parser.add_argument("--text", default="hello", help="Text to parse.")
 
@@ -117,4 +104,4 @@ if __name__ == "__main__":
         elif args.model == "core":
             loop.run_until_complete(train_core())
     elif args.subparser_name == "parse":
-        loop.run_until_complete(parse(args.text, args.core_model, args.nlu_model))
+        loop.run_until_complete(parse(args.text, args.model))
