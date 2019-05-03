@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class SkillSelector:
-    def __init__(self, imports: Set[Text], project_directory: Text = os.getcwd()):
+    def __init__(self, imports: Set[Text], project_directory: Optional[Text] = None):
         self._imports = imports
         self._project_directory = project_directory
 
@@ -120,9 +120,16 @@ class SkillSelector:
         """Returns the paths which should be searched for training data."""
 
         # only include extra paths if they are not part of the current project directory
-        training_paths = {i for i in self._imports if self._project_directory not in i}
+        training_paths = {
+            i
+            for i in self._imports
+            if not self._project_directory or self._project_directory not in i
+        }
 
-        return training_paths | {self._project_directory}
+        if self._project_directory:
+            training_paths.add(self._project_directory)
+
+        return training_paths
 
     def is_imported(self, path: Text) -> bool:
         """

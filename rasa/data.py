@@ -88,7 +88,7 @@ def _get_core_nlu_files(
         if _is_valid_filetype(path) and skill_imports.is_imported(path):
             if _is_nlu_file(path):
                 nlu_data_files.add(os.path.abspath(path))
-            else:
+            elif _is_story_file(path):
                 story_files.add(os.path.abspath(path))
         else:
             new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
@@ -119,7 +119,7 @@ def _find_core_nlu_files_in_directory(
 
             if _is_nlu_file(full_path):
                 nlu_data_files.add(full_path)
-            else:
+            elif _is_story_file(full_path):
                 story_files.add(full_path)
 
     return story_files, nlu_data_files
@@ -146,6 +146,22 @@ def _contains_nlu_pattern(text: Text) -> bool:
     nlu_pattern = r"\s*##\s*(intent|regex||synonym|lookup):"
 
     return re.match(nlu_pattern, text) is not None
+
+
+def _is_story_file(file_path: Text) -> bool:
+    is_story_file = False
+
+    with open(file_path, encoding="utf-8") as f:
+        if file_path.endswith(".md"):
+            is_story_file = any(_contains_story_pattern(l) for l in f)
+
+    return is_story_file
+
+
+def _contains_story_pattern(text: Text) -> bool:
+    story_pattern = r".*##.+"
+
+    return re.match(story_pattern, text) is not None
 
 
 def is_domain_file(file_path: Text) -> bool:
