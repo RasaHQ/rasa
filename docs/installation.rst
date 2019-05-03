@@ -8,38 +8,40 @@ Installation
 ============
 
 
-Prerequisites
-~~~~~~~~~~~~~
-For windows
------------
+The recommended way to get started with Rasa is via ``pip``:
+
+.. copyable::
+
+    pip install rasax --extra-index-url https://pypi.rasa.com
+
+This will install both Rasa and Rasa X.
+If you don't want to use Rasa X, run ``pip install rasa`` instead.
+
+.. raw:: html
+
+     Unless you've already got numpy & scipy installed, we highly recommend that you install and use <a class="reference external" href="https://www.anaconda.com/download/" target="_blank">Anaconda</a>.
+
+
+If you want to use the development version of Rasa, you can get it from GitHub:
+
+.. code-block:: bash
+
+    git clone https://github.com/RasaHQ/rasa.git
+    cd rasa
+    pip install -r requirements.txt
+    pip install -e .
+
+
+Windows Prerequisites
+~~~~~~~~~~~~~~~~~~~~~
 
 Make sure the Microsoft VC++ Compiler is installed, so python can compile
 any dependencies. You can get the compiler from:
 https://visualstudio.microsoft.com/visual-cpp-build-tools/
 Download the installer and select VC++ Build tools in the list.
 
-Setting up Rasa NLU
-~~~~~~~~~~~~~~~~~~~
-
-Stable (Recommended)
---------------------
-The recommended way to install Rasa NLU is using pip which will install
-the latest stable version of Rasa NLU:
-
-.. copyable::
-
-    pip install rasa
-
-Latest (Most recent github)
----------------------------
-If you want to use the bleeding edge version you can get it from github:
-
-.. code-block:: bash
-
-    git clone https://github.com/RasaHQ/rasa_nlu.git
-    cd rasa_nlu
-    pip install -r requirements.txt
-    pip install -e .
+NLU Pipeline Dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Rasa NLU has different components for recognizing intents and entities,
 most of these will have some additional dependencies.
@@ -59,11 +61,7 @@ installed and tell you if any are missing.
 
     to install everything.
 
-
-Installing Pipeline Dependencies
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Section :ref:`section_pipeline` will help you choose which pipeline
+The page on :ref:`section_pipeline` will help you choose which pipeline
 you want to use.
 
 Great for getting started: pretrained embeddings from spaCy
