@@ -1,5 +1,5 @@
 import logging
-from typing import Text, List, Union, Set, Dict
+from typing import Text, List, Union, Set, Dict, Optional
 import os
 
 import rasa.utils.io as io_utils
@@ -14,36 +14,33 @@ class SkillSelector:
         self.project_directory = project_directory
 
     @classmethod
-    def empty(cls) -> "SkillSelector":
-        return cls(set())
+    def empty(cls, project_directory: Text = os.getcwd()) -> "SkillSelector":
+        return cls(set(), project_directory)
 
     @classmethod
     def load(
-        cls, config: Text, skill_paths: Union[Text, List[Text]]
+        cls, config: Text, training_paths: Optional[Union[Text, List[Text]]] = None
     ) -> "SkillSelector":
         """
         Loads the specification from the config files.
         Args:
             config: Path to the root configuration file in the project directory.
-            skill_paths: Paths which should be searched for further configuration files.
+            training_paths: Paths which should be searched for further configuration files.
 
         Returns:
             `SkillSelector` which specifies the loaded skills.
         """
         # All imports are by default relative to the root config file directory
         config = os.path.abspath(config)
-        selector = cls._from_file(config, cls.empty())
+        selector = cls._from_file(config, cls.empty(os.path.dirname(config)))
 
         if selector.is_empty():
-            # if the root selector is empty we import everything beneath
-            project_directory = os.path.dirname(config)
-            selector.add_import(project_directory)
+            training_paths = training_paths or []
+            if not isinstance(training_paths, list):
+                training_paths = [training_paths]
 
-        if not isinstance(skill_paths, list):
-            skill_paths = [skill_paths]
-
-        for path in skill_paths:
-            selector = cls._from_path(path, selector)
+            for path in training_paths:
+                selector.add_import(path)
 
         logger.debug("Selected skills: {}.".format(selector.imports))
 
@@ -60,14 +57,14 @@ class SkillSelector:
             return cls.empty()
 
     @classmethod
-    def _from_file(cls, path: Text, selector) -> "SkillSelector":
+    def _from_file(cls, path: Text, skill_selector: "SkillSelector") -> "SkillSelector":
         path = os.path.abspath(path)
         if data.is_config_file(path) and os.path.exists(path):
             config = io_utils.read_yaml_file(path)
 
             if isinstance(config, dict):
                 parent_directory = os.path.dirname(path)
-                return cls._from_dict(config, parent_directory, selector)
+                return cls._from_dict(config, parent_directory, skill_selector)
 
         return cls.empty()
 
@@ -79,9 +76,11 @@ class SkillSelector:
         imports = {os.path.join(parent_directory, i) for i in imports}
         # clean out relative paths
         imports = {os.path.abspath(i) for i in imports}
-
-        import_candidates = [p for p in imports if not skill_selector.is_imported(p)]
-
+        import_candidates = [
+            p
+            for p in imports
+            if skill_selector.is_empty() or not skill_selector.is_imported(p)
+        ]
         new = cls(imports, parent_directory)
         skill_selector = skill_selector.merge(new)
 
@@ -122,6 +121,7 @@ class SkillSelector:
 
         # only include extra paths if they are not part of the current project directory
         training_paths = {i for i in self.imports if self.project_directory not in i}
+
         return training_paths | {self.project_directory}
 
     def is_imported(self, path: Text) -> bool:

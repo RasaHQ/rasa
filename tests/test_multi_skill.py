@@ -35,7 +35,7 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
     subdirectory_3 = root / "Skill C"
     subdirectory_3.mkdir()
 
-    actual = SkillSelector.load(root / "config.yml", [root])
+    actual = SkillSelector.load(root / "config.yml")
     expected = {
         os.path.join(str(skill_a_directory)),
         os.path.join(str(skill_b_directory)),
@@ -57,7 +57,7 @@ def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
     skill_b_directory.mkdir()
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", empty_config)
 
-    actual = SkillSelector.load(root / "config.yml", [root])
+    actual = SkillSelector.load(root / "config.yml")
 
     assert actual.is_imported(root / "Skill C")
 
@@ -67,19 +67,6 @@ def test_load_from_none(input_dict):
     actual = SkillSelector._from_dict(input_dict, Path("."), SkillSelector.empty())
 
     assert actual.imports == set()
-
-
-def test_load_if_skill_paths_are_files(tmpdir):
-    empty_config = {}
-    config_path = tmpdir / "config.yml"
-    utils.dump_obj_as_yaml_to_file(config_path, empty_config)
-
-    other_file = tmpdir / "nlu.md"
-    utils.dump_obj_as_yaml_to_file(other_file, ["list", "of", "names"])
-
-    actual = SkillSelector.load(config_path, other_file)
-
-    assert actual.is_imported(other_file)
 
 
 def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFactory):
@@ -92,7 +79,7 @@ def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFa
     skill_a_imports = {"imports": ["Skill B"]}
     utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
 
-    actual = SkillSelector.load(config_path, [root])
+    actual = SkillSelector.load(config_path)
 
     assert actual.is_imported(str(skill_a_directory))
 
@@ -124,3 +111,56 @@ def test_merge():
 def test_training_paths():
     selector = SkillSelector({"A", "B/C"}, "B")
     assert selector.training_paths() == {"A", "B"}
+
+
+def test_cyclic_imports(tmpdir_factory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    skill_imports = {"imports": ["Skill A"]}
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", skill_imports)
+
+    skill_a_directory = root / "Skill A"
+    skill_a_directory.mkdir()
+    skill_a_imports = {"imports": ["../Skill B"]}
+    utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
+
+    skill_b_directory = root / "Skill B"
+    skill_b_directory.mkdir()
+    skill_b_imports = {"imports": ["../Skill A"]}
+    utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
+
+    actual = SkillSelector.load(root / "config.yml")
+
+    assert actual.imports == {str(skill_a_directory), str(skill_b_directory)}
+
+
+def test_import_outside_project_directory(tmpdir_factory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    skill_imports = {"imports": ["Skill A"]}
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", skill_imports)
+
+    skill_a_directory = root / "Skill A"
+    skill_a_directory.mkdir()
+    skill_a_imports = {"imports": ["../Skill B"]}
+    utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
+
+    skill_b_directory = root / "Skill B"
+    skill_b_directory.mkdir()
+    skill_b_imports = {"imports": ["../Skill C"]}
+    utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
+
+    actual = SkillSelector.load(skill_a_directory / "config.yml")
+
+    assert actual.imports == {str(skill_b_directory), str(root / "Skill C")}
+
+
+def test_use_training_paths_if_empty(tmpdir_factory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    empty_imports = {}
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", empty_imports)
+
+    training_paths = ["A", "B"]
+
+    actual = SkillSelector.load(str(root / "config.yml"), training_paths)
+
+    assert actual.imports == set(training_paths)
+    assert actual.training_paths() == set(training_paths + [str(root)])
