@@ -70,7 +70,7 @@ async def test_send_response(default_channel, default_tracker):
             "recipient_id": "my-sender",
             "some_random_arg": "value",
             "another_arg": "value2",
-        }
+        },
     }
 
 

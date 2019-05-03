@@ -107,7 +107,7 @@ async def test_reminder_scheduled(default_channel, default_processor):
             "quick_replies": None,
             "attachment": None,
             "image": None,
-            "custom": None
+            "custom": None,
         },
     )
     assert t.events[-1] == ActionExecuted("action_listen")
