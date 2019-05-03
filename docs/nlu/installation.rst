@@ -153,10 +153,4 @@ Let us know how you are getting on! If you have any questions
 about the starter-pack or using Rasa NLU in general, post your questions on
 the `Rasa Community Forum <https://forum.rasa.com>`_!
 
-`Rasa NLU starter-pack <https://github.com/RasaHQ/starter-pack-rasa-nlu>`_
-
-Let us know how you are getting on! If you have any questions about the starter-pack or
-using Rasa NLU in general, post your questions on `Rasa Community Forum <https://forum.rasa.com>`_!
-
-
 .. include:: feedback.inc

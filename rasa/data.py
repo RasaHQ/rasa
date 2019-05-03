@@ -13,44 +13,46 @@ logger = logging.getLogger(__name__)
 
 
 def get_core_directory(
-    directories: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
+    paths: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
 ) -> Text:
-    """Recursively collects all Core training files from a list of directories.
+    """Recursively collects all Core training files from a list of paths.
 
     Args:
-        directories: List of paths to directories containing training files.
+        paths: List of paths to training files or folders containing them.
         skill_imports: `SkillSelector` instance which determines which files should
                        be loaded.
+
     Returns:
         Path to temporary directory containing all found Core training files.
     """
-    core_files, _ = _get_core_nlu_files(directories, skill_imports)
+    core_files, _ = _get_core_nlu_files(paths, skill_imports)
     return _copy_files_to_new_dir(core_files)
 
 
 def get_nlu_directory(
-    directories: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
+    paths: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
 ) -> Text:
-    """Recursively collects all NLU training files from a list of directories.
+    """Recursively collects all NLU training files from a list of paths.
 
     Args:
-        directories: List of paths to directories containing training files.
+        paths: List of paths to training files or folders containing them.
         skill_imports: `SkillSelector` instance which determines which files should
                        be loaded.
+
     Returns:
         Path to temporary directory containing all found NLU training files.
     """
-    _, nlu_files = _get_core_nlu_files(directories, skill_imports)
+    _, nlu_files = _get_core_nlu_files(paths, skill_imports)
     return _copy_files_to_new_dir(nlu_files)
 
 
 def get_core_nlu_directories(
-    directories: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
+    paths: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
 ) -> Tuple[Text, Text]:
-    """Recursively collects all training files from a list of directories.
+    """Recursively collects all training files from a list of paths.
 
     Args:
-        directories: List of paths to directories containing training files.
+        paths: List of paths to training files or folders containing them.
         skill_imports: `SkillSelector` instance which determines which files should
                        be loaded.
 
@@ -58,7 +60,7 @@ def get_core_nlu_directories(
         Path to directory containing the Core files and path to directory
         containing the NLU training files.
     """
-    story_files, nlu_data_files = _get_core_nlu_files(directories, skill_imports)
+    story_files, nlu_data_files = _get_core_nlu_files(paths, skill_imports)
 
     story_directory = _copy_files_to_new_dir(story_files)
     nlu_directory = _copy_files_to_new_dir(nlu_data_files)
@@ -67,7 +69,7 @@ def get_core_nlu_directories(
 
 
 def _get_core_nlu_files(
-    directories: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
+    paths: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
 ) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
@@ -75,26 +77,32 @@ def _get_core_nlu_files(
     skill_imports = skill_imports or SkillSelector.empty()
 
     if not skill_imports.is_empty():
-        directories = skill_imports.training_paths()
-    elif isinstance(directories, str):
-        directories = [directories]
+        paths = skill_imports.training_paths()
+    elif isinstance(paths, str):
+        paths = [paths]
 
-    for directory in directories:
-        if not directory:
+    for path in set(paths):
+        if not path:
             continue
 
-        new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
-            directory, skill_imports
-        )
+        if _is_valid_filetype(path) and skill_imports.imports(path):
+            if _is_nlu_file(path):
+                nlu_data_files.add(os.path.abspath(path))
+            else:
+                story_files.add(os.path.abspath(path))
+        else:
+            new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
+                path, skill_imports
+            )
 
-        story_files.update(new_story_files)
-        nlu_data_files.update(new_nlu_data_files)
+            story_files.update(new_story_files)
+            nlu_data_files.update(new_nlu_data_files)
 
     return story_files, nlu_data_files
 
 
 def _find_core_nlu_files_in_directory(
-    directory: Text, skill_imports: Optional[SkillSelector] = None
+    directory: Text, skill_imports: SkillSelector
 ) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
@@ -104,16 +112,24 @@ def _find_core_nlu_files_in_directory(
             continue
 
         for f in files:
-            if not f.endswith(".json") and not f.endswith(".md"):
+            full_path = os.path.join(root, f)
+
+            if not _is_valid_filetype(full_path):
                 continue
 
-            full_path = os.path.join(root, f)
             if _is_nlu_file(full_path):
                 nlu_data_files.add(full_path)
             else:
                 story_files.add(full_path)
 
     return story_files, nlu_data_files
+
+
+def _is_valid_filetype(path: Text) -> bool:
+    is_file = os.path.isfile(path)
+    is_datafile = path.endswith(".json") or path.endswith(".md")
+
+    return is_file and is_datafile
 
 
 def _is_nlu_file(file_path: Text) -> bool:
