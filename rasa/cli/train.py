@@ -167,7 +167,7 @@ def train_core(
 
 def train_nlu(
     args: argparse.Namespace, train_path: Optional[Text] = None
-) -> Optional["Interpreter"]:
+) -> Optional[Text]:
     from rasa.train import train_nlu
 
     output = train_path or args.out

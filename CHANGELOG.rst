@@ -27,6 +27,7 @@ Added
 - you can now choose actions previously created in the same session
 in ``interactive learning``
 - add formatter 'black'
+- add ``rasa interactive core`` to command line interface
 
 
 Changed
@@ -43,7 +44,8 @@ Changed
 - removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be loaded by default)
 - changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
 - ``rasa train`` uses fallback config if an invalid config is given
-- ``rasa test core`` compares multiple models if a list of model files is provided for the argument ``--model`
+- ``rasa test core`` compares multiple models if a list of model files is provided for the argument ``--model``
+- ``rasa train`` fails if either nlu or story data are missing
 
 Removed
 -------
