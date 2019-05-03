@@ -697,12 +697,12 @@ class Agent(object):
     def persist(self, model_path: Text, dump_flattened_stories: bool = False) -> None:
         """Persists this agent into a directory for later loading and usage."""
 
-        model_path = os.path.join(model_path, "core")
-
         if not self.is_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
 
-        # TODO
+        if not model_path.endswith("core"):
+            model_path = os.path.join(model_path, "core")
+
         self._clear_model_directory(model_path)
 
         self.policy_ensemble.persist(model_path, dump_flattened_stories)

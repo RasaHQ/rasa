@@ -10,6 +10,7 @@ from rasa.core.agent import Agent
 from rasa.core.interpreter import RasaNLUInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,9 @@ async def parse(
         logger.warning("No NLU model passed, parsing messages using RegexInterpreter.")
         interpreter = RegexInterpreter()
 
-    # TODO
+    if core_model_path.endswith("core"):
+        core_model_path = os.path.dirname(core_model_path)
+
     agent = Agent.load(core_model_path, interpreter=interpreter)
 
     response = await agent.handle_text(text)

@@ -42,7 +42,7 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
-MOODBOT_MODEL_PATH = "examples/moodbot/models/core"
+MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
@@ -102,11 +102,6 @@ def default_nlu_data():
 @pytest.fixture(scope="session")
 def default_domain():
     return Domain.load(DEFAULT_DOMAIN_PATH)
-
-
-@pytest.fixture(scope="session")
-def end_to_end_story_file():
-    return END_TO_END_STORY_FILE
 
 
 @pytest.fixture(scope="session")
@@ -172,7 +167,7 @@ async def trained_moodbot_path():
 @pytest.fixture(scope="session")
 async def zipped_moodbot_model():
     # train moodbot if necessary
-    policy_file = os.path.join(MOODBOT_MODEL_PATH, "metadata.json")
+    policy_file = os.path.join(MOODBOT_MODEL_PATH, "core", "metadata.json")
     if not os.path.isfile(policy_file):
         await trained_moodbot_path()
 
@@ -183,13 +178,13 @@ async def zipped_moodbot_model():
 
 @pytest.fixture(scope="session")
 def moodbot_domain():
-    domain_path = os.path.join(MOODBOT_MODEL_PATH, "domain.yml")
+    domain_path = os.path.join(MOODBOT_MODEL_PATH, "core", "domain.yml")
     return Domain.load(domain_path)
 
 
 @pytest.fixture(scope="session")
 def moodbot_metadata():
-    return PolicyEnsemble.load_metadata(MOODBOT_MODEL_PATH)
+    return PolicyEnsemble.load_metadata(os.path.join(MOODBOT_MODEL_PATH, "core"))
 
 
 @pytest.fixture()

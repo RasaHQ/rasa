@@ -11,8 +11,11 @@ from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_STACK_CONFIG,
     DEFAULT_NLU_DATA,
+    END_TO_END_STORY_FILE,
 )
 from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
+
+DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
 
 @pytest.fixture
@@ -66,14 +69,20 @@ def default_nlu_data():
 
 
 @pytest.fixture(scope="session")
+def end_to_end_story_file():
+    return END_TO_END_STORY_FILE
+
+
+@pytest.fixture(scope="session")
 def default_config():
-    return config.load(CONFIG_DEFAULTS_PATH)
+    return config.load(DEFAULT_CONFIG_PATH)
 
 
 @pytest.fixture()
 async def trained_rasa_model(
     default_domain_path, default_config, default_nlu_data, default_stories_file
 ):
+    clean_folder("models")
     trained_stack_model_path = await train_async(
         domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
@@ -135,3 +144,12 @@ async def rasa_server_secured(default_agent):
     app = server.create_app(agent=default_agent, auth_token="rasa", jwt_secret="core")
     channel.register([RestInput()], app, "/webhooks/")
     return app
+
+
+def clean_folder(folder):
+    import os
+
+    if os.path.exists(folder):
+        import shutil
+
+        shutil.rmtree(folder)

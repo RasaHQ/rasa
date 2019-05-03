@@ -8,7 +8,7 @@ import rasa.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH
 from rasa.nlu.utils import json_to_string
 
-DEFAULT_CONFIG = {"language": "en", "pipeline": [], "policies": None}
+DEFAULT_CONFIG = {"language": "en", "pipeline": [], "data": None}
 
 logger = logging.getLogger(__name__)
 

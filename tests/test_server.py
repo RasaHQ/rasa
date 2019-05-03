@@ -290,7 +290,7 @@ def test_end_to_end_evaluation(rasa_app, end_to_end_story_file):
     with open(end_to_end_story_file, "r") as f:
         stories = f.read()
 
-    _, response = rasa_app.post("/model/evaluate/stories", data=stories)
+    _, response = rasa_app.post("/model/evaluate/stories?e2e=true", data=stories)
 
     assert response.status == 200
     js = response.json
