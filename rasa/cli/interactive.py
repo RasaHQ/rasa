@@ -10,7 +10,7 @@ from rasa import data, model
 
 
 # noinspection PyProtectedMember
-from rasa.cli.utils import get_validated_path, print_error
+from rasa.cli.utils import get_validated_path, print_error, print_warning
 from rasa.constants import DEFAULT_DATA_PATH
 
 
@@ -62,8 +62,6 @@ def _add_interactive_arguments(parser: argparse.ArgumentParser):
 
 
 def interactive(args: argparse.Namespace):
-    from rasa.core.train import do_interactive_learning
-
     args.finetune = False  # Don't support finetuning
 
     training_files = [
@@ -75,27 +73,25 @@ def interactive(args: argparse.Namespace):
         print_error(
             "Cannot train initial Rasa model. Please provide NLU data and Core data."
         )
-        return
+        exit(1)
 
     zipped_model = train.train(args)
 
-    if zipped_model:
-        model_path = model.unpack_model(zipped_model)
-        args.core, args.nlu = model.get_model_subdirectories(model_path)
-        stories_directory = data.get_core_directory(args.data)
-
-        do_interactive_learning(args, stories_directory)
-
-        shutil.rmtree(model_path)
+    perform_interactive_learning(args, zipped_model)
 
 
 def interactive_core(args: argparse.Namespace):
-    from rasa.core.train import do_interactive_learning
 
     args.finetune = False  # Don't support finetuning
 
     zipped_model = train.train_core(args)
 
+    perform_interactive_learning(args, zipped_model)
+
+
+def perform_interactive_learning(args, zipped_model):
+    from rasa.core.train import do_interactive_learning
+
     if zipped_model:
         model_path = model.unpack_model(zipped_model)
         args.core, args.nlu = model.get_model_subdirectories(model_path)
@@ -104,3 +100,5 @@ def interactive_core(args: argparse.Namespace):
         do_interactive_learning(args, stories_directory)
 
         shutil.rmtree(model_path)
+    else:
+        print_warning("No initial zipped trained model found.")
