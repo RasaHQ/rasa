@@ -195,9 +195,8 @@ def test_core(args: argparse.Namespace) -> None:
     output = args.output or DEFAULT_RESULTS_PATH
     args.config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
-    if not isinstance(args.model, list) or len(args.model) == 1:
-        if isinstance(args.model, list):
-            args.model = args.model[0]
+    if len(args.model) == 1:
+        args.model = args.model[0]
 
         model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 

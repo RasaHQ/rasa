@@ -117,8 +117,11 @@ def copy_models_to_compare(models: List[str]) -> Text:
     models_dir = tempfile.mkdtemp()
 
     for i, model in enumerate(models):
-        path = os.path.join(models_dir, "model_" + str(i))
-        unpack_model(model, path)
+        if os.path.exists(model) and os.path.isfile(model):
+            path = os.path.join(models_dir, "model_" + str(i))
+            unpack_model(model, path)
+        else:
+            logger.warning("Ignore '{}' as it is not a valid model file.".format(model))
 
     logger.debug("Unpacked models to compare to '{}'".format(models_dir))
 
