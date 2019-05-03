@@ -128,13 +128,13 @@ Your requests should have set a proper JWT header:
 
 
 Connecting a Tracker Store
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 To configure a tracker store within your endpoint configuration,
 please see :ref:`tracker_store`.
 
 Connecting an Event Broker
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 To configure an event broker within your endpoint configuration,
 please see :ref:`brokers`.
