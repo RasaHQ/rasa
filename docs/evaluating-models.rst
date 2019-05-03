@@ -6,6 +6,10 @@
 Evaluating Models
 =================
 
+.. note::
+   If you are looking to tune the hyperparameters of your NLU model,
+   check out this `tutorial <https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/>`_
+
 
 .. contents::
    :local:
@@ -60,7 +64,8 @@ To evaluate your model against test data, run:
 
 .. code-block:: shell
 
-   rasa test nlu
+   rasa test nlu --data test_set.md \
+     --model models/model_20180323-145833.tar.gz
 
 
 If you don't have a separate test set, you can
@@ -69,7 +74,11 @@ To do this, add the ``--mode crossvalidation`` flag:
 
 .. code-block:: shell
 
-   rasa test nlu --mode crossvalidation
+   rasa test nlu
+         --data data/nlu.md \
+         --config config.yml \
+         --mode crossvalidation
+
 
 
 Intent Classification

@@ -20,12 +20,14 @@ Understand messages, hold conversations, and connect to messaging channels and A
    :caption: User Guide
    :hidden:
 
+   installation
    project-structure
    command-line-interface
    architecture
    channels
    evaluating-models
-
+   cloud-storage
+   server
 
 .. toctree::
    :maxdepth: 1
@@ -57,6 +59,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
 .. toctree::
    :maxdepth: 1
    :caption: Dialogue Elements
+   :hidden:
 
    dialogue-elements/about
    dialogue-elements/small-talk
@@ -79,7 +82,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/tracker
    api/tracker-stores
    api/brokers
-   api/featurizer   
+   api/featurizer
 
 .. toctree:
    :maxdepth: 1

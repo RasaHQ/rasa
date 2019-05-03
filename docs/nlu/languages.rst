@@ -70,7 +70,9 @@ then you can train the model by running:
 
 .. code-block:: bash
 
-    rasa train
+    rasa train nlu \
+      --config config.yml
+      --data data/nlu.md
 
 Once the training is finished, you can test your model's Norwegian language skills.
 
@@ -79,7 +81,7 @@ Pre-trained Word Vectors
 ------------------------
 
 With the ``pretrained_embeddings_spacy`` pipeline you can also load fastText vectors, which are available 
-for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md>`_.
+for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md>`_.
 
 
 =====================   =================================

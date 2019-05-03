@@ -168,3 +168,13 @@ To start a server running your Rasa model, run:
    rasa run
 
 See the Rasa HTTP API docs for detailed documentation of all the endpoints.
+
+Start an NLU Server
+~~~~~~~~~~~~~~~~~~~
+
+.. code:: bash
+
+   rasa run nlu -m models
+
+The server will look for existing models under the folder defined by
+the ``-m`` parameter. By default the latest trained model will be loaded.
