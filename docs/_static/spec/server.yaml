@@ -382,7 +382,7 @@ paths:
                   enum:
                     - user
                 parse_data:
-                  $ref: '#/components/schemas/ParseData'
+                  $ref: '#/components/schemas/ParseResult'
               required: ["message", "sender"]
             example:
               sender: user
@@ -632,18 +632,12 @@ paths:
       - Model
       summary: Replace a trained model
       description: >-
-        Upload a trained model to the server. The server
-        will unzip the uploaded file and try to load the model.
-        This will replace the previously loaded model.
+        Updates the currently loaded model.
+        First, tries to load the model from the local storage system.
+        Secondly, tries to load the model from the provided model server configuration.
+        Last, tries to load the model from the provided remote storage.
       requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              properties:
-                model:
-                  description: Zipped model file
-                  type: string
-                  format: binary
+        $ref: '#/components/requestBodies/ModelRequest'
       responses:
         204:
           description: Could successfully replace model.
@@ -799,6 +793,31 @@ components:
           example:
             Events:
               $ref: '#/components/examples/Events'
+    ModelRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              model_file:
+                type: string
+                description: Path to model file
+                example: "/models/20190512.tar.gz"
+              model_server:
+                $ref: '#/components/schemas/EndpointConfig'
+              wait_time_between_pulls:
+                type: integer
+                description: Time to wait between pulls from model server
+                example: 10
+              remote_storage:
+                description: Name of remote storage system
+                type: string
+                example: "aws"
+                enum:
+                  - aws
+                  - gcs
+                  - azure
 
   responses:
 
@@ -1127,6 +1146,27 @@ components:
             Policy which predicted the most likely action
         tracker:
           $ref: '#/components/schemas/Tracker'
+    EndpointConfig:
+      type: object
+      properties:
+        url:
+          type: string
+          description: URL pointing to model
+        params:
+          type: object
+          description: Parameters of request
+        headers:
+          type: object
+          description: HTTP headers
+        basic_auth:
+          description: Basic authentification data
+          type: object
+        token:
+          description: Token
+          type: string
+        token_name:
+          description: Name of token
+          type: string
     TrainingRequest:
       type: object
       properties:
@@ -1149,7 +1189,7 @@ components:
           type: boolean
           description: >-
             Force a model training even if the data has not changed
-      required: ["domain", "config"]
+      required: ["config"]
     TrainingResult:
       type: string
       format: binary
