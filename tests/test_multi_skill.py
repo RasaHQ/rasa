@@ -41,7 +41,7 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
         os.path.join(str(skill_b_directory)),
     }
 
-    assert actual.imports == expected
+    assert actual._imports == expected
 
 
 def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
@@ -66,7 +66,7 @@ def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
 def test_load_from_none(input_dict):
     actual = SkillSelector._from_dict(input_dict, Path("."), SkillSelector.empty())
 
-    assert actual.imports == set()
+    assert actual._imports == set()
 
 
 def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFactory):
@@ -105,7 +105,7 @@ def test_merge():
     selector2 = SkillSelector({"A/1", "B/C/D", "C"})
 
     actual = selector1.merge(selector2)
-    assert actual.imports == {"A", "B", "C"}
+    assert actual._imports == {"A", "B", "C"}
 
 
 def test_training_paths():
@@ -130,7 +130,7 @@ def test_cyclic_imports(tmpdir_factory):
 
     actual = SkillSelector.load(root / "config.yml")
 
-    assert actual.imports == {str(skill_a_directory), str(skill_b_directory)}
+    assert actual._imports == {str(skill_a_directory), str(skill_b_directory)}
 
 
 def test_import_outside_project_directory(tmpdir_factory):
@@ -150,7 +150,7 @@ def test_import_outside_project_directory(tmpdir_factory):
 
     actual = SkillSelector.load(skill_a_directory / "config.yml")
 
-    assert actual.imports == {str(skill_b_directory), str(root / "Skill C")}
+    assert actual._imports == {str(skill_b_directory), str(root / "Skill C")}
 
 
 def test_use_training_paths_if_empty(tmpdir_factory):
@@ -162,5 +162,5 @@ def test_use_training_paths_if_empty(tmpdir_factory):
 
     actual = SkillSelector.load(str(root / "config.yml"), training_paths)
 
-    assert actual.imports == set(training_paths)
+    assert actual._imports == set(training_paths)
     assert actual.training_paths() == set(training_paths + [str(root)])

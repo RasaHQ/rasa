@@ -85,7 +85,7 @@ def _get_core_nlu_files(
         if not path:
             continue
 
-        if _is_valid_filetype(path) and skill_imports.imports(path):
+        if _is_valid_filetype(path) and skill_imports.is_imported(path):
             if _is_nlu_file(path):
                 nlu_data_files.add(os.path.abspath(path))
             else:

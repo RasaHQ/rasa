@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 class SkillSelector:
     def __init__(self, imports: Set[Text], project_directory: Text = os.getcwd()):
-        self.imports = imports
-        self.project_directory = project_directory
+        self._imports = imports
+        self._project_directory = project_directory
 
     @classmethod
     def empty(cls, project_directory: Text = os.getcwd()) -> "SkillSelector":
@@ -42,7 +42,7 @@ class SkillSelector:
             for path in training_paths:
                 selector.add_import(path)
 
-        logger.debug("Selected skills: {}.".format(selector.imports))
+        logger.debug("Selected skills: {}.".format(selector._imports))
 
         return selector
 
@@ -107,22 +107,22 @@ class SkillSelector:
         return skill_selector
 
     def merge(self, other: "SkillSelector") -> "SkillSelector":
-        imports = self.imports | {
-            i for i in other.imports if not self.is_imported(i) or self.is_empty()
+        imports = self._imports | {
+            i for i in other._imports if not self.is_imported(i) or self.is_empty()
         }
 
-        return SkillSelector(imports, self.project_directory)
+        return SkillSelector(imports, self._project_directory)
 
     def is_empty(self) -> bool:
-        return not self.imports
+        return not self._imports
 
     def training_paths(self) -> Set[Text]:
         """Returns the paths which should be searched for training data."""
 
         # only include extra paths if they are not part of the current project directory
-        training_paths = {i for i in self.imports if self.project_directory not in i}
+        training_paths = {i for i in self._imports if self._project_directory not in i}
 
-        return training_paths | {self.project_directory}
+        return training_paths | {self._project_directory}
 
     def is_imported(self, path: Text) -> bool:
         """
@@ -137,15 +137,15 @@ class SkillSelector:
 
         return (
             self.is_empty()
-            or os.path.abspath(path) == self.project_directory
+            or os.path.abspath(path) == self._project_directory
             or (
                 os.path.isfile(absolute_path)
-                and os.path.abspath(os.path.dirname(path)) == self.project_directory
+                and os.path.abspath(os.path.dirname(path)) == self._project_directory
             )
             or any(
-                [io_utils.is_in_subdirectory(absolute_path, i) for i in self.imports]
+                [io_utils.is_in_subdirectory(absolute_path, i) for i in self._imports]
             )
         )
 
     def add_import(self, path: Text) -> bool:
-        self.imports.add(path)
+        self._imports.add(path)
