@@ -352,11 +352,15 @@ class Agent(object):
         if not interpreter and os.path.exists(nlu_model):
             interpreter = NaturalLanguageInterpreter.create(nlu_model)
 
-        domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-        ensemble = PolicyEnsemble.load(core_model) if core_model else None
+        domain = None
+        ensemble = None
 
-        # ensures the domain hasn't changed between test and train
-        domain.compare_with_specification(core_model)
+        if os.path.exists(core_model):
+            domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
+            ensemble = PolicyEnsemble.load(core_model) if core_model else None
+
+            # ensures the domain hasn't changed between test and train
+            domain.compare_with_specification(core_model)
 
         return cls(
             domain=domain,

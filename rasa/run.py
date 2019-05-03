@@ -44,7 +44,6 @@ def run(
         )
         return
 
-    core_path, nlu_path = get_model_subdirectories(model_path)
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     if not connector and not credentials:
@@ -57,19 +56,10 @@ def run(
     else:
         channel = connector
 
-    if os.path.exists(core_path):
-        kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)
-        rasa.core.run.serve_application(
-            model,
-            channel=channel,
-            credentials=credentials,
-            endpoints=_endpoints,
-            **kwargs
-        )
-
-    # TODO: No core model was found, run only nlu server for now
-    elif os.path.exists(nlu_path):
-        rasa.nlu.run.run_cmdline(nlu_path)
+    kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)
+    rasa.core.run.serve_application(
+        model, channel=channel, credentials=credentials, endpoints=_endpoints, **kwargs
+    )
 
     shutil.rmtree(model_path)
 
