@@ -548,3 +548,7 @@ def test_unload_model_error(rasa_app):
     _, response = rasa_app.get("/status")
     assert response.status == 200
     assert "model_file" in response.json and response.json["model_file"] is None
+
+
+# TODO add test for loading model
+# TODO add test for getting domain
