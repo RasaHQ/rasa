@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import tarfile
 import warnings
 import zipfile
@@ -150,3 +151,10 @@ def write_yaml_file(data: Dict, filename: Text):
     """
     with open(filename, "w") as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
+
+
+def is_in_subdirectory(path: Text, potential_parent_directory: Text) -> True:
+    path = os.path.abspath(path)
+    potential_parent_directory = os.path.abspath(potential_parent_directory)
+
+    return potential_parent_directory in path

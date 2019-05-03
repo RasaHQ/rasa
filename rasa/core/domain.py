@@ -161,6 +161,7 @@ class Domain(object):
     def from_path(cls, path: Text, skill_imports: SkillSelector) -> "Domain":
         path = os.path.abspath(path)
 
+        # If skills were imported search the whole directory tree for domain files
         if os.path.isfile(path) and not skill_imports.is_empty():
             path = os.path.dirname(path)
 

@@ -221,6 +221,8 @@ def train_nlu(
     _train_path = train_path or tempfile.mkdtemp()
 
     if not train_path:
+        # Training is not part of the stack model training, hence we have to load the
+        # nlu data first
         skill_imports = SkillSelector.load(config, nlu_data)
         nlu_data = data.get_nlu_directory(nlu_data, skill_imports)
 

@@ -3,7 +3,7 @@ import asyncio
 import logging
 import os
 import typing
-from typing import Dict, Optional, Text
+from typing import Dict, Optional, Text, Union
 
 from rasa.core.domain import Domain
 
@@ -52,7 +52,7 @@ def create_argument_parser():
 
 
 async def train(
-    domain_file: typing.Union[Domain, Text],
+    domain_file: Union[Domain, Text],
     stories_file: Text,
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,

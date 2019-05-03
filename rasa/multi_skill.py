@@ -142,7 +142,9 @@ class SkillSelector:
                 os.path.isfile(absolute_path)
                 and os.path.abspath(os.path.dirname(path)) == self.project_directory
             )
-            or any([i in absolute_path for i in self.imports])
+            or any(
+                [io_utils.is_in_subdirectory(absolute_path, i) for i in self.imports]
+            )
         )
 
     def add_import(self, path: Text) -> bool:
