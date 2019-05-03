@@ -9,7 +9,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 [0.15.1] - Unreleased
 ^^^^^^^^^^^^^^^^^^^^^
 
- Fixed
+Fixed
 -----
 - fixed bug in rasa_nlu.test script that appeared if no intent classifier was present
 
