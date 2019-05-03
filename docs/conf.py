@@ -19,7 +19,8 @@ linkcheck_timeout = 5
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx.ext.autodoc",
+    'sphinx.ext.autodoc',
+    'sphinx_autodoc_typehints',
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",

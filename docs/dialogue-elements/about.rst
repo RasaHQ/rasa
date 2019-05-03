@@ -1,7 +1,7 @@
 .. _dialogue-elements:
 
-Dialogue Elements
-=================
+About
+=====
 
 Dialogue elements are common conversation patterns.
 We use three different levels of abstraction to discuss AI assistants.
@@ -27,10 +27,3 @@ issues and new features.
 .. image:: /_static/images/intents-user-goals-dialogue-elements.png
 
 
-
-.. toctree::
-   :hidden:
-
-   small-talk
-   completing-tasks
-   guiding-users

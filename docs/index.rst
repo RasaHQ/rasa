@@ -23,17 +23,8 @@ Understand messages, hold conversations, and connect to messaging channels and A
    project-structure
    command-line-interface
    architecture
-   messaging-and-voice-channels
+   channels
    evaluating-models
-
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Dialogue Elements
-
-   dialogue-elements/small-talk
-   dialogue-elements/completing-tasks
-   dialogue-elements/guiding-users
 
 
 .. toctree::
@@ -52,16 +43,25 @@ Understand messages, hold conversations, and connect to messaging channels and A
    :caption: Core
    :hidden:
 
-   core/domains
    core/stories
+   core/domains
    core/responses
    core/run-code-in-custom-actions
    core/policies
    core/slots
-   core/interactive-learning
    core/slot-filling
+   core/interactive-learning
    core/fallbacks
-   core/evaluation
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Dialogue Elements
+
+   dialogue-elements/about
+   dialogue-elements/small-talk
+   dialogue-elements/completing-tasks
+   dialogue-elements/guiding-users
 
 
 

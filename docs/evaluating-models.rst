@@ -1,13 +1,60 @@
+:desc: Evaluate and validate your machine learning models for open source
+       library Rasa Core to improve the dialogue management of your contextual
+       AI Assistant. 
+
+
+Evaluating Models
+=================
+
+
+.. contents::
+   :local:
+
+
+.. _end_to_end_evaluation:
+
+End-to-end evaluation
+---------------------
+
+Rasa lets you evaluate dialogues end-to-end, running through
+test conversations and making sure the NLU and Core predict the right things.
+
+To do this, you need some stories in the end-to-end format, 
+which includes both the NLU output and the original text.
+Here is an example:
+
+.. code-block:: story
+
+  ## end-to-end story 1
+  * greet: hello
+     - utter_ask_howcanhelp
+  * inform: show me [chinese](cuisine) restaurants
+     - utter_ask_location
+  * inform: in [Paris](location)
+     - utter_ask_price
+
+
+If you've saved end-to-end stories as a file called ``e2e_stories.md``,
+you can evaluate your model against them. To do this, run:
+
+.. code-block:: bash
+
+  $ rasa test --stories e2e_stories.md --e2e
+
+.. note::
+
+  Make sure your model file in ``models`` contains both models, ``core``
+  and ``nlu``. If it does not contain a ``nlu`` model, Rasa Core will load
+  the default ``RegexInterpreter``.
+
+
 .. _nlu-evaluation:
 
-Evaluating NLU Models
-=====================
+Evaluating an NLU Model
+-----------------------
 
-How is your model performing? Do you have enough data? Are your intents and entities well-designed?
-
-Rasa NLU has an ``test`` mode which helps you answer these questions.
 A standard technique in machine learning is to keep some data separate as a *test set*.
-If you've done this, you can see how well your model predicts the test cases using this command:
+If you've done this, you can see how well your NLU model predicts the test cases using this command:
 
 To evaluate your model against test data, run:
 
@@ -98,3 +145,74 @@ near [Alexanderplatz](loc) [tonight](time)          O   loc time (2)          O 
 ==================================================  ========================  ===========================
 
 
+.. _core-evaluation:
+
+Evaluating a Core Model
+-----------------------
+
+You can evaluate your trained model on a set of test stories
+by using the evaluate script:
+
+.. code-block:: bash
+
+    rasa test core --stories test_stories.md -o results
+
+
+This will print the failed stories to ``results/failed_stories.md``.
+We count any story as `failed` if at least one of the actions
+was predicted incorrectly.
+
+In addition, this will save a confusion matrix to a file called
+``results/story_confmat.pdf``. The confusion matrix shows, for each action in
+your domain, how often that action was predicted, and how often an
+incorrect action was predicted instead.
+
+The full list of options for the script is:
+
+.. program-output:: rasa test core --help
+
+Comparing Policies
+------------------
+
+To choose a specific policy, or to choose hyperparameters for a
+specific policy, you want to measure how well Rasa Core will `generalise`
+to conversations which it hasn't seen before. Especially in the beginning
+of a project, you do not have a lot of real conversations to use to train
+your bot, so you don't just want to throw some away to use as a test set.
+
+Rasa Core has some scripts to help you choose and fine-tune your policy.
+Once you are happy with it, you can then train your final policy on your
+full data set. To do this, you first have to train models for your different
+policies. Create two (or more) policy config files of the policies you want to
+compare (containing only one policy each), and then use the ``compare`` mode of
+the train script to train your models:
+
+.. code-block:: bash
+
+  $ rasa train core -c policy_config1.yml policy_config2.yml \
+    -d domain.yml -s stories_folder -o comparison_models --runs 3 --percentages \
+    0 5 25 50 70 90 95
+
+For each policy configuration provided, Rasa Core will be trained multiple times
+with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
+data. This is done for multiple runs, to ensure consistent results.
+
+Once this script has finished, you can now use the evaluate script in compare
+mode to evaluate the models you just trained:
+
+.. code-block:: bash
+
+  $ rasa test core --stories stories_folder \
+    -o comparison_results
+
+This will evaluate each of the models on the training set, and plot some graphs
+to show you which policy is best.  By evaluating on the full set of stories, you
+can measure how well Rasa Core is predicting the held-out stories.
+
+If you're not sure which policies to compare, we'd recommend trying out the
+``EmbeddingPolicy`` and the ``KerasPolicy`` to see which one works better for
+you.
+
+.. note::
+    This training process can take a long time, so we'd suggest letting it run
+    somewhere in the background where it can't be interrupted
