@@ -1,5 +1,7 @@
 :pagetype: full
 
+.. _http-api:
+
 HTTP API
 ========
 

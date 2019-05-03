@@ -24,6 +24,8 @@ models with:
         -m models \
         -o out.log
 
+All the endpoints this API exposes are documented in :ref:`http-api` .
+
 The different parameters are:
 
 - ``--enable-api``, enables this additional API
@@ -124,92 +126,6 @@ Your requests should have set a proper JWT header:
                      "wiaWF0IjoxNTE2MjM5MDIyfQ.qdrr2_a7Sd80gmCWjnDomO"
                      "Gl8eZFVfKXA6jhncgRn-I"
 
-Endpoint Configuration
-----------------------
-
-To connect Rasa Core to other endpoints, you can specify an endpoint
-configuration within a `YAML <https://en.wikipedia.org/wiki/YAML>`_ file.
-Then run Rasa Core with the flag
-``--endpoints <path to endpoint configuration.yml``.
-
-For example:
-
-.. code-block:: bash
-
-    rasa run core \
-        --m <core model> \
-        --endpoints <path to endpoint configuration>.yml
-
-.. note::
-    You can use environment variables within configuration files by specifying them with ``${name of environment variable}``.
-    These placeholders are then replaced by the value of the environment variable.
-
-
-Fetching Models From a Server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can also configure the http server to fetch models from another URL:
-
-.. code-block:: bash
-
-    $ rasa run core \
-        --enable-api \
-        -m models \
-        --endpoints my_endpoints.yaml \
-        -o out.log
-
-The model server is specified in the endpoint configuration
-(``my_endpoints.yaml``), where you specify the server URL Rasa Core
-regularly queries for zipped Rasa Core models:
-
-.. code-block:: yaml
-
-    models:
-      url: http://my-server.com/models/default_core@latest
-      wait_time_between_pulls:  10   # [optional](default: 100)
-
-.. note::
-
-    If you want to pull the model just once from the server, set
-    ``wait_time_between_pulls`` to ``None``.
-
-.. note::
-
-    Your model server must provide zipped Rasa Core models, and have
-    ``{"ETag": <model_hash_string>}`` as one of its headers. Core will
-    only download a new model if this model hash changed.
-
-Rasa Core sends requests to your model server with an ``If-None-Match``
-header that contains the current model hash. If your model server can
-provide a model with a different hash from the one you sent, it should send it
-in as a zip file with an ``ETag`` header containing the new hash. If not, Rasa
-Core expects an empty response with a ``204`` or ``304`` status code.
-
-An example request Rasa Core might make to your model server looks like this:
-
-.. code-block:: bash
-
-      $ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default_core@latest
-
-Connecting Rasa NLU
-~~~~~~~~~~~~~~~~~~~
-
-To connect Rasa Core with a NLU server, you have to add the connection details
-into your endpoint configuration file:
-
-.. code-block:: yaml
-
-    nlu:
-        url: "http://<your nlu host>:5000"
-        token: <token>  # [optional]
-        token_name: <name of the token> # [optional] (default: token)
-
-Then run Rasa Core with the ``--endpoints <path_to_your_endpoint_config>.yml``.
-For example:
-
-.. code-block:: bash
-
-    rasa run core -m models --endpoints endpoints.yml
 
 Connecting a Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
