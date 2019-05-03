@@ -52,7 +52,7 @@ async def train_core(
 
 
 def train_nlu(
-    config_file="config.yml", model_path="models/nlu", training_data_file="data/nlu.md"
+    config_file="config.yml", model_path="models", training_data_file="data/nlu.md"
 ):
     from rasa.nlu.training_data import load_data
     from rasa.nlu import config
@@ -64,7 +64,7 @@ def train_nlu(
 
     # Attention: trainer.persist stores the model and all meta data into a folder.
     # The folder itself is not zipped.
-    model_directory = trainer.persist(model_path)
+    model_directory = trainer.persist(model_path, fixed_model_name="nlu")
 
     logger.info("Model trained. Stored in '{}'.".format(model_directory))
 

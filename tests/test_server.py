@@ -9,7 +9,7 @@ from freezegun import freeze_time
 
 import rasa
 import rasa.constants
-from rasa.core import events
+from rasa.core import events, utils
 from rasa.core.events import Event, UserUttered, SlotSet, BotUttered
 from rasa.model import unpack_model
 from tests.nlu.utilities import ResponseTest
@@ -609,3 +609,31 @@ def test_get_tracker_with_jwt(rasa_secured_app):
         "/conversations/testuser/tracker", headers=jwt_header
     )
     assert response.status == 200
+
+
+def test_list_routes(default_agent):
+    from rasa import server
+
+    app = server.create_app(default_agent, auth_token=None)
+
+    routes = utils.list_routes(app)
+    assert set(routes.keys()) == {
+        "hello",
+        "version",
+        "status",
+        "retrieve_tracker",
+        "append_event",
+        "replace_events",
+        "retrieve_story",
+        "execute_action",
+        "predict",
+        "add_message",
+        "train",
+        "evaluate_stories",
+        "evaluate_intents",
+        "tracker_predict",
+        "parse",
+        "load_model",
+        "unload_model",
+        "get_domain",
+    }

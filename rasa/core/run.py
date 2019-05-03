@@ -69,7 +69,7 @@ def configure_app(
     port: Optional[Text] = None,
 ):
     """Run the agent."""
-    from rasa.core import server
+    from rasa import server
 
     if enable_api:
         app = server.create_app(
@@ -184,7 +184,7 @@ async def load_agent_on_start(
 
     model_server = endpoints.model if endpoints and endpoints.model else None
 
-    app.agent = load_agent(
+    app.agent = await load_agent(
         model_path,
         model_server=model_server,
         wait_time_between_pulls=wait_time_between_pulls,

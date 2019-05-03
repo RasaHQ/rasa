@@ -78,7 +78,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
     """Wraps a request handler with token authentication."""
 
     def decorator(f: Callable[[Any, Any, Any], Any]) -> Callable[[Any, Any], Any]:
-        def sender_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
+        def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
             argnames = rasa.utils.common.arguments_of(f)
 
             try:
@@ -101,8 +101,8 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
             if role == "admin":
                 return True
             elif role == "user":
-                sender_id = sender_id_from_args(args, kwargs)
-                return sender_id is not None and username == sender_id
+                conversation_id = conversation_id_from_args(args, kwargs)
+                return conversation_id is not None and username == conversation_id
             else:
                 return False
 
@@ -659,11 +659,17 @@ def create_app(
             "in order to obtain the intent and extracted entities.",
         )
 
-        request_params = request.json
-        text = request_params.get("text")
+        try:
+            request_params = request.json
+            text = request_params.get("text")
 
-        parse_data = await app.agent.interpreter.parse(text)
-        return response.json(parse_data)
+            parse_data = await app.agent.interpreter.parse(text)
+            return response.json(parse_data)
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+            )
 
     @app.put("/model")
     @requires_auth(app, auth_token)
