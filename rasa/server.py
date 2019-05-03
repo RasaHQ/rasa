@@ -82,9 +82,9 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
             argnames = rasa.utils.common.arguments_of(f)
 
             try:
-                sender_id_arg_idx = argnames.index("sender_id")
-                if "sender_id" in kwargs:  # try to fetch from kwargs first
-                    return kwargs["sender_id"]
+                sender_id_arg_idx = argnames.index("conversation_id")
+                if "conversation_id" in kwargs:  # try to fetch from kwargs first
+                    return kwargs["conversation_id"]
                 if sender_id_arg_idx < len(args):
                     return args[sender_id_arg_idx]
                 return None
@@ -626,23 +626,29 @@ def create_app(
                 {"parameter": "", "in": "body"},
             )
 
-        policy_ensemble = app.agent.policy_ensemble
-        probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-            tracker, app.agent.domain
-        )
+        try:
+            policy_ensemble = app.agent.policy_ensemble
+            probabilities, policy = policy_ensemble.probabilities_using_best_policy(
+                tracker, app.agent.domain
+            )
 
-        scores = [
-            {"action": a, "score": p}
-            for a, p in zip(app.agent.domain.action_names, probabilities)
-        ]
+            scores = [
+                {"action": a, "score": p}
+                for a, p in zip(app.agent.domain.action_names, probabilities)
+            ]
 
-        return response.json(
-            {
-                "scores": scores,
-                "policy": policy,
-                "tracker": tracker.current_state(verbosity),
-            }
-        )
+            return response.json(
+                {
+                    "scores": scores,
+                    "policy": policy,
+                    "tracker": tracker.current_state(verbosity),
+                }
+            )
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+            )
 
     @app.post("/model/parse")
     @requires_auth(app, auth_token)

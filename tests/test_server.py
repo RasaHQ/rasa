@@ -346,17 +346,16 @@ def test_intent_evaluation(rasa_app, default_nlu_data):
 
 
 def test_parse(rasa_app):
-    data = json.dumps({"text": """/greet{"name": "Rasa"}"""})
+    data = json.dumps({"text": "Hello Rasa!"})
     _, response = rasa_app.post(
         "/model/parse", data=data, headers={"Content-Type": "application/json"}
     )
     content = response.json
     assert response.status == 200
     assert content == {
-        "entities": [{"end": 22, "entity": "name", "start": 6, "value": "Rasa"}],
-        "intent": {"confidence": 1.0, "name": "greet"},
-        "intent_ranking": [{"confidence": 1.0, "name": "greet"}],
-        "text": '/greet{"name": "Rasa"}',
+        "intent": {"name": "greet", "confidence": 1.0},
+        "entities": [],
+        "text": "Hello Rasa!",
     }
 
 
@@ -384,12 +383,9 @@ def test_predict(rasa_app):
     )
     content = response.json
     assert response.status == 200
-    assert content == {
-        "entities": [{"end": 22, "entity": "name", "start": 6, "value": "Rasa"}],
-        "intent": {"confidence": 1.0, "name": "greet"},
-        "intent_ranking": [{"confidence": 1.0, "name": "greet"}],
-        "text": '/greet{"name": "Rasa"}',
-    }
+    assert "scores" in content
+    assert "tracker" in content
+    assert "policy" in content
 
 
 # def test_model_hot_reloading(app, rasa_default_train_data):
