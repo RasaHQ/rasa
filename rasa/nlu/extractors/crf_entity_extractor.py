@@ -81,7 +81,7 @@ class CRFEntityExtractor(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        ent_tagger: Optional[CRF] = None,
+        ent_tagger: Optional["CRF"] = None,
     ) -> None:
 
         super(CRFEntityExtractor, self).__init__(component_config)
