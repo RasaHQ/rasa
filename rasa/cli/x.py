@@ -43,7 +43,6 @@ def add_subparser(
     shell_parser = subparsers.add_parser("x", **x_parser_args)
 
     shell_parser.add_argument(
-        "--no_prompt",
         "--no-prompt",
         action="store_true",
         help="Automatic yes or default options to prompts and oppressed warnings",
@@ -55,7 +54,7 @@ def add_subparser(
         help="Run Rasa X in a production environment",
     )
 
-    shell_parser.add_argument("--auth_token", type=str, help="Rasa API auth token")
+    shell_parser.add_argument("--auth-token", type=str, help="Rasa API auth token")
 
     shell_parser.add_argument(
         "--nlg",
@@ -65,20 +64,20 @@ def add_subparser(
     )
 
     shell_parser.add_argument(
-        "--model_endpoint_url",
+        "--model-endpoint-url",
         type=str,
         default="http://localhost:5002/api/projects/default/models/tags/production",
         help="Rasa model endpoint URL",
     )
 
     shell_parser.add_argument(
-        "--project_path",
+        "--project-path",
         type=str,
         default=".",
         help="Path to the Rasa project directory",
     )
     shell_parser.add_argument(
-        "--data_path",
+        "--data-path",
         type=str,
         default="data",
         help=(

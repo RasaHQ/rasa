@@ -64,7 +64,7 @@ def add_subparser(
 def _add_split_args(parser: argparse.ArgumentParser) -> None:
     add_nlu_data_param(parser)
     parser.add_argument(
-        "--training_fraction",
+        "--training-fraction",
         type=float,
         default=0.8,
         help="Percentage of the data which should be the training data",

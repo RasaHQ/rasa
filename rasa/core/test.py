@@ -506,15 +506,15 @@ async def test(
     max_stories: Optional[int] = None,
     out_directory: Optional[Text] = None,
     fail_on_prediction_errors: bool = False,
-    use_e2e: bool = False,
+    e2e: bool = False,
 ):
     """Run the evaluation of the stories, optionally plot the results."""
     from rasa.nlu.test import get_evaluation_metrics
 
-    completed_trackers = await _generate_trackers(stories, agent, max_stories, use_e2e)
+    completed_trackers = await _generate_trackers(stories, agent, max_stories, e2e)
 
     story_evaluation, _ = collect_story_predictions(
-        completed_trackers, agent, fail_on_prediction_errors, use_e2e
+        completed_trackers, agent, fail_on_prediction_errors, e2e
     )
 
     evaluation_store = story_evaluation.evaluation_store
@@ -549,7 +549,7 @@ async def test(
         "accuracy": accuracy,
         "actions": story_evaluation.action_list,
         "in_training_data_fraction": story_evaluation.in_training_data_fraction,
-        "is_end_to_end_evaluation": use_e2e,
+        "is_end_to_end_evaluation": e2e,
     }
 
 
