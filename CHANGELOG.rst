@@ -27,10 +27,12 @@ Added
 - you can now choose actions previously created in the same session
 in ``interactive learning``
 - add formatter 'black'
+- add ``rasa interactive core`` to command line interface
 
 
 Changed
 -------
+- renamed all CLI parameters containing any ``_`` to use dashes ``-`` instead (GNU standard)
 - renamed ``rasa_core`` package to ``rasa.core``
 - for interactive learning only include manually annotated and ner_crf entities in nlu export
 - made ``message_id`` an additional argument to ``interpreter.parse``
@@ -42,6 +44,8 @@ Changed
 - removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be loaded by default)
 - changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
 - ``rasa train`` uses fallback config if an invalid config is given
+- ``rasa test core`` compares multiple models if a list of model files is provided for the argument ``--model``
+- ``rasa train`` fails if either nlu or story data are missing
 
 Removed
 -------
@@ -59,4 +63,7 @@ Fixed
   Store
 - ``rasa nlu test`` doesn't error anymore when a test file is passed with ``-u``
 - in interactive learning: only updates entity values if user changes annotation
-- ``rasa train core`` actually uses additional arguments, such as `augmentation`
+- ``SQLTrackerStore.keys()`` now returns the distinct stored sender ids
+  instead of the column names
+- ``rasa train core`` actually uses additional arguments, such as ``augmentation``
+- ``rasa test`` actually considers additional arguments, such as ``e2e`` or ``successes``

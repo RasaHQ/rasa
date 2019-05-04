@@ -36,7 +36,7 @@ def create_argument_parser():
         help="file that contains a dumped tracker state in json format",
     )
     parser.add_argument(
-        "--enable_api",
+        "--enable-api",
         action="store_true",
         help="Start the web server api in addition to the input channel",
     )

@@ -32,6 +32,26 @@ General
   ``rasa.nlu.test`` -> ``rasa test nlu``
   ``rasa.nlu.train`` -> ``rasa train nlu``
 
+- All script parameter names have been unified to follow the same schema.
+  Any underscores (``_``) in arguments have been replaced with dashes (``-``).
+  Due to change the following argument names changed:
+  ``--nlu_data`` -> ``--nlu-data``
+  ``--dump_stories`` -> ``--dump-stories``
+  ``--debug_plots`` -> ``--debug-plots``
+  ``--max_history`` -> ``--max-history``
+  ``--pre_load`` -> ``--pre-load``
+  ``--max_training_processes`` -> ``--max-training-processes``
+  ``--wait_time_between_pulls`` -> ``--wait-time-between-pulls``
+  ``--response_log`` -> ``--response-log``
+  ``--fail_on_prediction_errors`` -> ``--fail-on-prediction-errors``
+  ``--max_stories`` -> ``--max-stories``
+  ``--jwt_method`` -> ``--jwt-method``
+  ``--jwt_secret`` -> ``--jwt-secret``
+  ``--log_file`` -> ``--log-file``
+  ``--enable_api`` -> ``--enable-api``
+  ``--auth_token`` -> ``--auth-token``
+  ``--skip_visualization`` -> ``--skip-visualization``
+  ``--training_fraction`` -> ``--training-fraction``
 
 Script parameters
 ~~~~~~~~~~~~~~~~~

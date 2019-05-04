@@ -38,16 +38,13 @@ There's a lot more background information in this
 
 ---
 - **What do Rasa Core & NLU do? 🤔**
-  [Read About the Rasa](https://rasa.com/products/rasa-stack/)
+  [Read About Rasa](https://rasa.com/products/rasa-stack/)
 
 - **I'd like to read the detailed docs 🤓**
   [Read The Docs](https://rasa.com/docs)
 
 - **I'm ready to install Rasa! 🚀**
   [Installation](https://rasa.com/docs/core/installation/)
-
-- **I'm ready to start building! 🤖**
-  [Rasa starter-pack](https://github.com/RasaHQ/starter-pack-rasa-stack)
 
 - **I have a question ❓**
   [Rasa Community Forum](https://forum.rasa.com)
@@ -59,7 +56,7 @@ There's a lot more background information in this
 ## Where to get help
 
 There is extensive documentation at [Rasa Docs](https://rasa.com/docs). 
-Make sure to select the correct version to make sure you are looking at 
+Make sure to select the correct version so you are looking at 
 the docs for the version you installed.
 
 Please use [Rasa Community Forum](https://forum.rasa.com) for quick answers to
@@ -82,7 +79,7 @@ In general the process is rather simple:
 2. write your code, tests and documentation
 3. create a pull request describing your changes
 
-You pull request will be reviewed by a maintainer, who might get
+Your pull request will be reviewed by a maintainer, who might get
 back to you about any necessary changes or questions. You will
 also be asked to sign a
 [Contributor License Agreement](https://cla-assistant.io/RasaHQ/rasa).

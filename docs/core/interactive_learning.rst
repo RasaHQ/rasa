@@ -187,7 +187,7 @@ keep track of where you are.
 You can view the visualization at http://localhost:5005/visualization.html
 as soon as you've started interactive learning.
 
-To skip the visualization, pass ``--skip_visualization`` to the training
+To skip the visualization, pass ``--skip-visualization`` to the training
 script.
 
 .. image:: _static/images/interactive_learning_graph.gif

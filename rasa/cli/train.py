@@ -1,7 +1,7 @@
 import argparse
 import tempfile
 import typing
-from typing import List, Optional, Text
+from typing import List, Optional, Text, Dict
 
 from rasa.cli.default_arguments import (
     add_config_param,
@@ -167,7 +167,7 @@ def train_core(
 
 def train_nlu(
     args: argparse.Namespace, train_path: Optional[Text] = None
-) -> Optional["Interpreter"]:
+) -> Optional[Text]:
     from rasa.train import train_nlu
 
     output = train_path or args.out
@@ -178,7 +178,7 @@ def train_nlu(
     return train_nlu(config, nlu_data, output, train_path)
 
 
-def extract_additional_arguments(args: argparse.Namespace) -> typing.Dict:
+def extract_additional_arguments(args: argparse.Namespace) -> Dict:
     arguments = {}
 
     if "augmentation" in args:
@@ -187,9 +187,5 @@ def extract_additional_arguments(args: argparse.Namespace) -> typing.Dict:
         arguments["dump_stories"] = args.dump_stories
     if "debug_plots" in args:
         arguments["debug_plots"] = args.debug_plots
-    if "percentages" in args:
-        arguments["percentages"] = args.percentages
-    if "runs" in args:
-        arguments["runs"] = args.runs
 
     return arguments
