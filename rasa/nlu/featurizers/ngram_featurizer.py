@@ -369,7 +369,7 @@ class NGramFeaturizer(Featurizer):
         possible_ngrams = np.linspace(0, max_ngrams, 8)
         return np.unique(list(map(int, np.floor(possible_ngrams))))
 
-    def _cross_validation(self, examples, labels):
+    def _cross_validation(self, examples, labels) -> int:
         """Choose the best number of ngrams to include in bow.
 
         Given an intent classification problem and a set of ordered ngrams
@@ -407,7 +407,7 @@ class NGramFeaturizer(Featurizer):
 
             n_top = num_ngrams[np.argmax(scores)]
             logger.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))
-            return n_top
+            return n_top.item()
         else:
             warnings.warn(
                 "Can't cross-validate ngram featurizer. "
