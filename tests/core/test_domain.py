@@ -268,19 +268,19 @@ templates:
             {"greet": {"use_entities": False}, "goodbye": {"use_entities": True}},
         ),
         (
-            [{"greet": {"maps_to": "utter_goodbye"}}, "goodbye"],
+            [{"greet": {"triggers": "utter_goodbye"}}, "goodbye"],
             {
-                "greet": {"use_entities": True, "maps_to": "utter_goodbye"},
+                "greet": {"use_entities": True, "triggers": "utter_goodbye"},
                 "goodbye": {"use_entities": True},
             },
         ),
         (
             [
-                {"greet": {"maps_to": "utter_goodbye", "use_entities": False}},
+                {"greet": {"triggers": "utter_goodbye", "use_entities": False}},
                 {"goodbye": {"use_entities": False}},
             ],
             {
-                "greet": {"use_entities": False, "maps_to": "utter_goodbye"},
+                "greet": {"use_entities": False, "triggers": "utter_goodbye"},
                 "goodbye": {"use_entities": False},
             },
         ),
