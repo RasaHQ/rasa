@@ -27,6 +27,7 @@ Added
 - you can now choose actions previously created in the same session
 in ``interactive learning``
 - add formatter 'black'
+- support for spaCy 2.1 and 2.2
 
 
 Changed
