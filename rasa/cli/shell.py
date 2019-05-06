@@ -4,7 +4,6 @@ import os
 
 from typing import List
 
-import rasa.nlu.run
 import rasa.cli.run
 
 
@@ -12,9 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 # noinspection PyProtectedMember
-from rasa.cli.utils import get_validated_path
-from rasa.constants import DEFAULT_MODELS_PATH
-from rasa.model import get_model, get_model_subdirectories
 
 
 def add_subparser(
@@ -32,6 +28,10 @@ def add_subparser(
 
 
 def shell(args: argparse.Namespace):
+    from rasa.cli.utils import get_validated_path
+    from rasa.constants import DEFAULT_MODELS_PATH
+    from rasa.model import get_model, get_model_subdirectories
+
     args.connector = "cmdline"
 
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
@@ -46,6 +46,8 @@ def shell(args: argparse.Namespace):
     core_model, nlu_model = get_model_subdirectories(model_path)
 
     if not os.path.exists(core_model):
+        import rasa.nlu.run
+
         rasa.nlu.run.run_cmdline(nlu_model)
     else:
         rasa.cli.run.run(args)

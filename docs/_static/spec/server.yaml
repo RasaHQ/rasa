@@ -806,9 +806,6 @@ components:
                 example: "/models/20190512.tar.gz"
               model_server:
                 $ref: '#/components/schemas/EndpointConfig'
-              wait_time_between_pulls:
-                type: integer
-                description: Time to wait between pulls from model server
                 example: 10
               remote_storage:
                 description: Name of remote storage system
@@ -1167,6 +1164,9 @@ components:
         token_name:
           description: Name of token
           type: string
+        wait_time_between_pulls:
+          type: integer
+          description: Time to wait between pulls from model server
     TrainingRequest:
       type: object
       properties:

@@ -43,9 +43,7 @@ if typing.TYPE_CHECKING:
 
 
 async def load_from_server(
-    agent,
-    model_server: Optional[EndpointConfig] = None,
-    wait_time_between_pulls: Optional[int] = None,
+    agent, model_server: Optional[EndpointConfig] = None
 ) -> "Agent":
     """Load a persisted model from a server."""
 
@@ -57,9 +55,11 @@ async def load_from_server(
     # a model.
     await _update_model_from_server(model_server, agent)
 
+    wait_time_between_pulls = model_server.kwargs.get("wait_time_between_pulls", 100)
+
     if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
-        await schedule_model_pulling(model_server, wait_time_between_pulls, agent)
+        await schedule_model_pulling(model_server, int(wait_time_between_pulls), agent)
 
     return agent
 
@@ -214,7 +214,6 @@ async def schedule_model_pulling(
 async def load_agent(
     model_path: Optional[Text] = None,
     model_server: Optional[EndpointConfig] = None,
-    wait_time_between_pulls: Optional[int] = None,
     remote_storage: Optional[Text] = None,
     interpreter: Optional[NaturalLanguageInterpreter] = None,
     generator: Union[EndpointConfig, "NLG"] = None,
@@ -240,7 +239,6 @@ async def load_agent(
                     action_endpoint=action_endpoint,
                 ),
                 model_server,
-                wait_time_between_pulls,
             )
 
         elif remote_storage is not None:

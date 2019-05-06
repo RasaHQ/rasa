@@ -35,17 +35,17 @@ async def default_agent(tmpdir_factory) -> Agent:
 
 @pytest.fixture
 async def stack_agent(trained_rasa_model) -> Agent:
-    return await load_agent(trained_rasa_model, None, None, None)
+    return await load_agent(model_path=trained_rasa_model)
 
 
 @pytest.fixture
 async def core_agent(trained_core_model) -> Agent:
-    return await load_agent(trained_core_model, None, None, None)
+    return await load_agent(model_path=trained_core_model)
 
 
 @pytest.fixture
 async def nlu_agent(trained_nlu_model) -> Agent:
-    return await load_agent(trained_nlu_model, None, None, None)
+    return await load_agent(model_path=trained_nlu_model)
 
 
 @pytest.fixture(scope="session")

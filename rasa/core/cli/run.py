@@ -42,12 +42,6 @@ def add_run_arguments(parser):
         help="Start the web server api in addition to the input channel.",
     )
     server_arguments.add_argument(
-        "--wait-time-between-pulls",
-        type=int,
-        default=10,
-        help="Wait time in seconds between model server queries.",
-    )
-    server_arguments.add_argument(
         "--remote-storage",
         help="Set the remote location where models are stored. "
         "E.g. on AWS. If nothing is configured, the "

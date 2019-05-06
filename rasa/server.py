@@ -243,7 +243,7 @@ def create_app(
 
     @app.get("/version")
     async def version(request: Request):
-        """respond with the version number of the installed rasa core."""
+        """Respond with the version number of the installed Rasa."""
 
         return response.json(
             {
@@ -255,7 +255,7 @@ def create_app(
     @app.get("/status")
     @requires_auth(app, auth_token)
     async def status(request: Request):
-        """respond with the model name and the fingerprint of that model."""
+        """Respond with the model name and the fingerprint of that model."""
 
         return response.json(
             {
@@ -678,13 +678,10 @@ def create_app(
 
         model_path = request.json.get("model_file", None)
         model_server = request.json.get("model_server", None)
-        wait_time_between_pulls = request.json.get("wait_time_between_pulls", None)
         remote_storage = request.json.get("remote_storage", None)
 
         try:
-            agent = await load_agent(
-                model_path, model_server, wait_time_between_pulls, remote_storage
-            )
+            agent = await load_agent(model_path, model_server, remote_storage)
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(

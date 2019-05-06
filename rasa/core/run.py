@@ -143,13 +143,7 @@ def serve_application(
     )
 
     app.register_listener(
-        partial(
-            load_agent_on_start,
-            model_path,
-            endpoints,
-            wait_time_between_pulls,
-            remote_storage,
-        ),
+        partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
     app.run(host="0.0.0.0", port=port, access_log=logger.isEnabledFor(logging.DEBUG))
@@ -159,7 +153,6 @@ def serve_application(
 async def load_agent_on_start(
     model_path: Text,
     endpoints: Optional[AvailableEndpoints],
-    wait_time_between_pulls: Optional[int],
     remote_storage: Optional[Text],
     app: Sanic,
     loop: Text,
@@ -187,7 +180,6 @@ async def load_agent_on_start(
     app.agent = await load_agent(
         model_path,
         model_server=model_server,
-        wait_time_between_pulls=wait_time_between_pulls,
         remote_storage=remote_storage,
         interpreter=_interpreter,
         generator=endpoints.nlg,
