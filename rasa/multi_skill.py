@@ -49,7 +49,7 @@ class SkillSelector:
     @classmethod
     def _from_file(cls, path: Text, skill_selector: "SkillSelector") -> "SkillSelector":
         path = os.path.abspath(path)
-        if data.is_config_file(path) and os.path.exists(path):
+        if os.path.exists(path) and data.is_config_file(path):
             config = io_utils.read_yaml_file(path)
 
             if isinstance(config, dict):
@@ -134,7 +134,7 @@ class SkillSelector:
 
         return (
             self.is_empty()
-            or os.path.abspath(path) == self._project_directory
+            or absolute_path == self._project_directory
             or (
                 os.path.isfile(absolute_path)
                 and os.path.abspath(os.path.dirname(path)) == self._project_directory
