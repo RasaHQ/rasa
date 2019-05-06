@@ -31,6 +31,7 @@ in ``interactive learning``
 - arbitrary json messages via the ``- "custom":`` key in utterance templates and
   via ``utter_custom_json()`` method in custom actions
 - add ``rasa interactive core`` to command line interface
+- support for spaCy 2.1
 
 Changed
 -------
