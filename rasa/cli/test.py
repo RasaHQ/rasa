@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import tempfile
 from typing import List, Optional, Text, Union
 
 from rasa import data
@@ -13,7 +14,8 @@ from rasa.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
 )
-from rasa.model import get_latest_model, get_model
+from rasa.model import get_latest_model, get_model, unpack_model
+from rasa.test import test_compare
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +35,8 @@ def add_subparser(
     test_subparsers = test_parser.add_subparsers()
     test_core_parser = test_subparsers.add_parser(
         "core",
-        conflict_handler="resolve",
         parents=parents,
+        conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Test Rasa Core",
     )
@@ -56,6 +58,8 @@ def add_subparser(
         _add_nlu_arguments(nlu_arguments)
     _add_nlu_subparser_arguments(test_nlu_parser)
 
+    _add_test_subparser_arguments(test_parser)
+
     test_core_parser.set_defaults(func=test_core)
     test_nlu_parser.set_defaults(func=test_nlu)
     test_parser.set_defaults(func=test)
@@ -68,7 +72,6 @@ def _add_core_arguments(
     from rasa.core.cli.test import add_evaluation_arguments
 
     add_evaluation_arguments(parser)
-    add_model_param(parser, "Core")
     add_stories_param(parser, "test")
 
     parser.add_argument(
@@ -83,12 +86,13 @@ def _add_core_arguments(
 def _add_core_subparser_arguments(parser: argparse.ArgumentParser):
     default_path = get_latest_model(DEFAULT_MODELS_PATH)
     parser.add_argument(
-        "-m",
         "--model",
-        type=str,
-        default=default_path,
-        help="Path to a pre-trained model. If it is a directory all models "
-        "in this directory will be compared.",
+        nargs="+",
+        default=[default_path],
+        help="Path to a pre-trained model. If it is a 'tar.gz' file that model file "
+        "will be used. If it is a directory, the latest model in that directory "
+        "will be used. If multiple 'tar.gz' files are provided, all those models "
+        "will be compared.",
     )
 
 
@@ -160,6 +164,16 @@ def _add_nlu_arguments(
     )
 
 
+def _add_test_subparser_arguments(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=DEFAULT_MODELS_PATH,
+        help="Path to a pre-trained model. If directory is given, the latest model "
+        "in that directory will be used.",
+    )
+
+
 def _add_nlu_subparser_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--model",
@@ -170,10 +184,9 @@ def _add_nlu_subparser_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def test_core(args: argparse.Namespace, model_path: Optional[Text] = None) -> None:
+def test_core(args: argparse.Namespace) -> None:
     from rasa.test import test_core
 
-    model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
     endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
@@ -182,25 +195,30 @@ def test_core(args: argparse.Namespace, model_path: Optional[Text] = None) -> No
     output = args.output or DEFAULT_RESULTS_PATH
     args.config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
-    test_core(
-        model=model,
-        stories=stories,
-        endpoints=endpoints,
-        model_path=model_path,
-        output=output,
-        kwargs=vars(args),
-    )
+    if len(args.model) == 1:
+        args.model = args.model[0]
+
+        model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+
+        test_core(
+            model=model_path,
+            stories=stories,
+            endpoints=endpoints,
+            output=output,
+            kwargs=vars(args),
+        )
+
+    else:
+        test_compare(args.model, stories, output)
 
 
-def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None) -> None:
+def test_nlu(args: argparse.Namespace) -> None:
     from rasa.test import test_nlu, test_nlu_with_cross_validation
 
-    valid_model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
-    model_path = model_path or valid_model_path
+    model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    if os.path.isdir(nlu_data):
-        nlu_data = data.get_nlu_directory(nlu_data)
+    nlu_data = data.get_nlu_directory(nlu_data)
 
     if model_path:
         test_nlu(model_path, nlu_data, vars(args))
@@ -212,8 +230,5 @@ def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None) -> Non
 
 
 def test(args: argparse.Namespace):
-    model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
-    unpacked_model = get_model(model_path)
-
-    test_core(args, unpacked_model)
-    test_nlu(args, model_path)
+    test_core(args)
+    test_nlu(args)
