@@ -175,18 +175,18 @@ def obtain_tracker_store(agent: "Agent", conversation_id: Text) -> DialogueState
         raise ErrorResponse(
             409,
             "Conflict",
-            "Could not retrieve tracker. Most likely "
-            "because there is no domain set on the agent.",
+            "Could not retrieve tracker with id '{}'. Most likely "
+            "because there is no domain set on the agent.".format(conversation_id),
         )
     return tracker
 
 
-def validate_request_body(request, error_message):
+def validate_request_body(request: Request, error_message: Text):
     if not request.body:
         raise ErrorResponse(400, "BadRequest", error_message)
 
 
-async def authenticate(request):
+async def authenticate(request: Request):
     raise exceptions.AuthenticationFailed(
         "Direct JWT authentication not supported. You should already have "
         "a valid JWT from an authentication provider, Rasa will just make "
@@ -194,7 +194,7 @@ async def authenticate(request):
     )
 
 
-def _configure_logging(loglevel, logfile):
+def _configure_logging(loglevel: Text, logfile: Text):
     logging.basicConfig(filename=logfile, level=loglevel)
     logging.captureWarnings(True)
 
