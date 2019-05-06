@@ -15,12 +15,13 @@ The command line interface (CLI) gives you easy-to-remember commands for common 
 =========================  ===================================================================================
 Command                    Effect
 =========================  ===================================================================================
-``rasa init``              Creates a new project, with example training data, actions, and config files
-``rasa train``             Trains a model using your nlu data and stories, saves trained model in ``./models``
-``rasa shell``             Loads your trained model and lets you talk to your assistant on the command line
-``rasa interactive``       Starts an interactive learning session, to create new training data by chatting
-``rasa run``               Starts a server with your model loaded. See the HTTP API docs for details.
+``rasa init``              Creates a new project, with example training data, actions, and config files.
+``rasa run``               Starts a server with your model loaded. See the :ref:`http-api` docs for details.
 ``rasa run actions``       Starts an action server using the Rasa SDK.
+``rasa shell``             Loads your trained model and lets you talk to your assistant on the command line.
+``rasa train``             Trains a model using your nlu data and stories, saves trained model in ``./models``.
+``rasa interactive``       Starts an interactive learning session, to create new training data by chatting.
+``rasa test``              Tests a trained model using your test nlu data and stories.
 ``rasa -h``                Shows all available commands.
 =========================  ===================================================================================
 
@@ -65,6 +66,53 @@ To train a model, type ``rasa train``, to talk to your model on the command line
 to test your model type ``rasa test``. 
 
 
+Start a Server
+~~~~~~~~~~~~~~
+
+To start a server running your Rasa model, run:
+
+.. code:: bash
+
+   rasa run
+
+See the Rasa :ref:`http-api` docs for detailed documentation of all the endpoints.
+For more information on the additional parameters, see :ref:`_section_http``
+
+
+.. _run-action-server:
+
+Start an Action Server
+~~~~~~~~~~~~~~~~~~~~~~
+
+To run your action server run
+
+.. code:: bash
+
+   rasa run actions
+
+
+Talk to your Assistant
+~~~~~~~~~~~~~~~~~~~~~~
+
+To start a chat session with your assistant on the command line, run:
+
+.. code:: bash
+
+   rasa shell
+
+
+In case you just have a trained NLU model in the `models` directory, `rasa shell` allows
+you to obtain the intent and entities of any text you type on the command line.
+If your model includes a trained Core model, you can chat with your bot and see
+what he predicts as a next action.
+
+To increase the logging level for debugging, run:
+
+.. code:: bash
+
+   rasa shell --debug
+
+
 Train a Model
 ~~~~~~~~~~~~~
 
@@ -79,6 +127,21 @@ If you only want to train an NLU or a Core model,
 you can run ``rasa train nlu`` or ``rasa train core``.
 However, Rasa will automatically skip training core or nlu 
 if the training data and config haven't changed.
+
+
+Interactive Learning
+~~~~~~~~~~~~~~~~~~~~
+
+To start an interactive learning session with your assistant, run
+
+.. code:: bash
+
+   rasa interactive
+
+
+This command will initially train a Rasa model with the data located in `data`. After training the
+first initial model, the interactive learning session starts. However, training will be skipped if
+the training data and config haven't changed.
 
 
 Create a Train-Test Split
@@ -103,7 +166,9 @@ To convert nlu data from markdown to json (or back again), run:
 
    rasa data convert nlu -d data/nlu.md -o nlu.json -f json
 
+
 The flags are ``rasa data convert nlu -d <INPUT_FILE> -o <OUTPUT_FILE> -f <OUTPUT_FORMAT>``.
+
 
 Visualize your Stories
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -127,65 +192,3 @@ To evaluate your model on test data, run:
    rasa test
 
 Check out more details in :ref:`nlu-evaluation` and :ref:`core-evaluation` .
-
-
-Talk to your Assistant
-~~~~~~~~~~~~~~~~~~~~~~
-
-To start a chat session with your assistant, run:
-
-.. code:: bash
-
-   rasa shell
-
-Debugging your Assistant
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-To increase the logging level for debugging, run:
-
-.. code:: bash
-
-   rasa shell --debug
-
-
-Interactive Learning
-~~~~~~~~~~~~~~~~~~~~
-
-To start an interactive learning session with your assistant, run 
-
-.. code:: bash
-
-   rasa interactive
-
-
-Start a Server
-~~~~~~~~~~~~~~
-
-To start a server running your Rasa model, run:
-
-.. code:: bash
-
-   rasa run
-
-See the Rasa HTTP API docs for detailed documentation of all the endpoints.
-
-.. _run-action-server:
-
-Start an Action Server
-~~~~~~~~~~~~~~~~~~~~~~
-
-To run your server run
-
-.. code:: bash
-
-   rasa run actions
-
-Start an NLU Server
-~~~~~~~~~~~~~~~~~~~
-
-.. code:: bash
-
-   rasa run nlu -m models
-
-The server will look for existing models under the folder defined by
-the ``-m`` parameter. By default the latest trained model will be loaded.
