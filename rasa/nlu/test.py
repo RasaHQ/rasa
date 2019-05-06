@@ -10,6 +10,7 @@ from typing import List, Optional, Text, Union, Dict
 from tqdm import tqdm
 
 from rasa.nlu import config, training_data, utils
+from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
@@ -781,22 +782,32 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(
-    data_path,
-    model,
-    report_folder=None,
-    successes_filename=None,
-    errors_filename="errors.json",
-    confmat_filename=None,
-    intent_hist_filename=None,
-    component_builder=None,
+    data_path: Text,
+    model_path: Text,
+    report_folder: Optional[Text] = None,
+    successes: Optional[Text] = None,
+    errors: Optional[Text] = "errors.json",
+    confmat: Optional[Text] = None,
+    histogram: Optional[Text] = None,
+    component_builder: Optional[ComponentBuilder] = None,
 ) -> Dict:  # pragma: no cover
-    """Evaluate intent classification and entity extraction."""
+    """
+    Evaluate intent classification and entity extraction.
+
+    :param data_path: path to the test data
+    :param model: path to the model
+    :param report_folder: path to folder where reports are stored
+    :param successes: path to file that will contain success cases
+    :param errors: path to file that will contain error cases
+    :param confmat: path to file that will show the confusion matrix
+    :param histogram: path fo file that will show a histogram
+    :param component_builder: component builder
+
+    :return: dictionary containing evaluation results
+    """
 
     # get the metadata config from the package data
-    if isinstance(model, Interpreter):
-        interpreter = model
-    else:
-        interpreter = Interpreter.load(model, component_builder)
+    interpreter = Interpreter.load(model_path, component_builder)
     test_data = training_data.load_data(data_path, interpreter.model_metadata.language)
 
     extractors = get_entity_extractors(interpreter)
@@ -804,7 +815,7 @@ def run_evaluation(
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
     else:
-        intent_targets = [None] * test_data.training_examples
+        intent_targets = [None] * len(test_data.training_examples)
 
     intent_results, entity_predictions, tokens = get_predictions(
         interpreter, test_data, intent_targets
@@ -823,12 +834,7 @@ def run_evaluation(
 
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results,
-            report_folder,
-            successes_filename,
-            errors_filename,
-            confmat_filename,
-            intent_hist_filename,
+            intent_results, report_folder, successes, errors, confmat, histogram
         )
 
     if extractors:

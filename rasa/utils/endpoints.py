@@ -1,3 +1,6 @@
+import logging
+import os
+
 import aiohttp
 from typing import Any, Optional, Text, Dict
 
@@ -5,6 +8,9 @@ from sanic.request import Request
 
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
+
+
+logger = logging.getLogger(__name__)
 
 
 def read_endpoint_config(
@@ -16,7 +22,13 @@ def read_endpoint_config(
     if not filename:
         return None
 
-    content = rasa.utils.io.read_yaml_file(filename)
+    try:
+        content = rasa.utils.io.read_yaml_file(filename)
+    except FileNotFoundError:
+        logger.error(
+            "Failed to read endpoint configuration "
+            "from {}. No such file.".format(os.path.abspath(filename))
+        )
 
     if endpoint_type in content:
         return EndpointConfig.from_dict(content[endpoint_type])

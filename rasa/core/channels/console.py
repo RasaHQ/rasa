@@ -20,33 +20,35 @@ logger = logging.getLogger(__name__)
 
 def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
     if "text" in message:
-        rasa.cli.utils.print_color(message.get("text"), color)
+        rasa.cli.utils.print_color(message.get("text"), color=color)
 
     if "image" in message:
-        rasa.cli.utils.print_color("Image: " + message.get("image"), color)
+        rasa.cli.utils.print_color("Image: " + message.get("image"), color=color)
 
     if "attachment" in message:
-        rasa.cli.utils.print_color("Attachment: " + message.get("attachment"), color)
+        rasa.cli.utils.print_color(
+            "Attachment: " + message.get("attachment"), color=color
+        )
 
     if "buttons" in message:
-        rasa.cli.utils.print_color("Buttons:", color)
+        rasa.cli.utils.print_color("Buttons:", color=color)
         for idx, button in enumerate(message.get("buttons")):
-            rasa.cli.utils.print_color(button_to_string(button, idx), color)
+            rasa.cli.utils.print_color(button_to_string(button, idx), color=color)
 
     if "elements" in message:
-        rasa.cli.utils.print_color("Elements:", color)
+        rasa.cli.utils.print_color("Elements:", color=color)
         for idx, element in enumerate(message.get("elements")):
-            rasa.cli.utils.print_color(element_to_string(element, idx), color)
+            rasa.cli.utils.print_color(element_to_string(element, idx), color=color)
 
     if "quick_replies" in message:
         rasa.cli.utils.print_color("Quick Replies:", color)
         for idx, element in enumerate(message.get("quick_replies")):
-            rasa.cli.utils.print_color(button_to_string(element, idx), color)
+            rasa.cli.utils.print_color(button_to_string(element, idx), color=color)
 
     if "custom" in message:
-        rasa.cli.utils.print_color("Custom json:", color)
+        rasa.cli.utils.print_color("Custom json:", color=color)
         return rasa.cli.utils.print_color(
-            json.dumps(message.get("custom"), indent=2), color
+            json.dumps(message.get("custom"), indent=2), color=color
         )
 
 

@@ -294,7 +294,7 @@ def test_rocketchat_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@pytest.mark.filterwarnings("ignore:" "unclosed file.*:" "ResourceWarning")
+@pytest.mark.filterwarnings("ignore:unclosed file.*:ResourceWarning")
 def test_telegram_channel():
     # telegram channel will try to set a webhook, so we need to mock the api
     with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
@@ -336,7 +336,7 @@ def test_telegram_channel():
         httpretty.disable()
 
 
-@pytest.mark.filterwarnings("ignore:" "unclosed.*:" "ResourceWarning")
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 def test_handling_of_telegram_user_id():
     # telegram channel will try to set a webhook, so we need to mock the api
 
@@ -650,7 +650,7 @@ def test_slackbot_init_two_parameter():
 
 
 # Use monkeypatch for sending attachments, images and plain text.
-@pytest.mark.filterwarnings("ignore:" "unclosed.*:" "ResourceWarning")
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 async def test_slackbot_send_attachment_only():
     from rasa.core.channels.slack import SlackBot
 
@@ -711,7 +711,7 @@ async def test_slackbot_send_attachment_only():
     }
 
 
-@pytest.mark.filterwarnings("ignore:" "unclosed.*:" "ResourceWarning")
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 async def test_slackbot_send_attachment_withtext():
     from rasa.core.channels.slack import SlackBot
 
@@ -775,7 +775,7 @@ async def test_slackbot_send_attachment_withtext():
     }
 
 
-@pytest.mark.filterwarnings("ignore:" "unclosed.*:" "ResourceWarning")
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 async def test_slackbot_send_image_url():
     from rasa.core.channels.slack import SlackBot
 
@@ -805,7 +805,7 @@ async def test_slackbot_send_image_url():
     )
 
 
-@pytest.mark.filterwarnings("ignore:" "unclosed.*:" "ResourceWarning")
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 async def test_slackbot_send_text():
     from rasa.core.channels.slack import SlackBot
 
@@ -830,7 +830,7 @@ async def test_slackbot_send_text():
     }
 
 
-@pytest.mark.filterwarnings("ignore:" "unclosed.*:" "ResourceWarning")
+@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 def test_channel_inheritance():
     with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
         from rasa.core.channels import RestInput

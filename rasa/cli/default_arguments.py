@@ -1,7 +1,12 @@
 import argparse
 from typing import Text
 
-from rasa.constants import DEFAULT_DATA_PATH, DEFAULT_MODELS_PATH
+from rasa.constants import (
+    DEFAULT_DATA_PATH,
+    DEFAULT_MODELS_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CONFIG_PATH,
+)
 
 
 def add_model_param(parser: argparse.ArgumentParser, model_name: Text = "Rasa") -> None:
@@ -42,7 +47,7 @@ def add_domain_param(parser: argparse.ArgumentParser) -> None:
         "-d",
         "--domain",
         type=str,
-        default="domain.yml",
+        default=DEFAULT_DOMAIN_PATH,
         help="Domain specification (yml file)",
     )
 
@@ -52,6 +57,6 @@ def add_config_param(parser: argparse.ArgumentParser) -> None:
         "-c",
         "--config",
         type=str,
-        default="config.yml",
+        default=DEFAULT_CONFIG_PATH,
         help="The policy and NLU pipeline configuration of your bot.",
     )

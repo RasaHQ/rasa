@@ -7,6 +7,7 @@ import pytest
 
 import rasa.data as data
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
+from rasa.nlu.training_data import load_data
 
 
 def test_get_core_directory(project):
@@ -26,6 +27,19 @@ def test_get_nlu_directory(project):
 
     assert len(nlu_files) == 1
     assert nlu_files[0].endswith("nlu.md")
+
+
+def test_get_nlu_file(project):
+    data_file = os.path.join(project, "data/nlu.md")
+    nlu_directory = data.get_nlu_directory(data_file)
+
+    nlu_files = os.listdir(nlu_directory)
+
+    original = load_data(data_file)
+    copied = load_data(nlu_directory)
+
+    assert nlu_files[0].endswith("nlu.md")
+    assert original.intent_examples == copied.intent_examples
 
 
 def test_get_core_nlu_directories(project):
@@ -111,8 +125,6 @@ def test_is_not_nlu_file_with_json():
     assert not data._is_nlu_file(file)
 
 
-@pytest.mark.parametrize(
-    "line", ["- example", "## story intent 1 + two" "##slots" "* entry"]
-)
+@pytest.mark.parametrize("line", ["- example", "## story intent 1 + two##slots* entry"])
 def test_not_contains_nlu_pattern(line):
     assert not data._contains_nlu_pattern(line)

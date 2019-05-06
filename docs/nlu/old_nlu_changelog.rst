@@ -6,14 +6,22 @@ NLU Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-[Unreleased 0.15.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[0.15.1] - Unreleased
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed bug in rasa_nlu.test script that appeared if no intent classifier was present
+
+[0.15.0] - 2019-04-23
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
 - Added a detailed warning showing which entities are overlapping
-- Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
-- `SpacyEntityExtractor` supports same entity filtering as `DucklingHTTPExtractor`
+- Authentication token can be also set with env variable ``RASA_NLU_TOKEN``.
+- ``SpacyEntityExtractor`` supports same entity filtering as ``DucklingHTTPExtractor``
+- **added support for python 3.7**
 
 Changed
 -------
@@ -38,6 +46,7 @@ Changed
   ``rasa_nlu.test.cross_validate``
 - renamed ``rasa_nlu.train.do_train()`` to ``rasa_nlu.train.train()``
 - train command can now also load config from file
+- updated to tensorflow 1.13
 
 Removed
 -------

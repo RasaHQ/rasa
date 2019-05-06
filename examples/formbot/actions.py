@@ -111,7 +111,7 @@ class RestaurantForm(FormAction):
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: Dict[Text, Any],
-    ) -> Optional[bool]:
+    ) -> Any:
         """Validate outdoor_seating value."""
 
         if isinstance(value, str):

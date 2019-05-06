@@ -1,4 +1,3 @@
-import io
 import os
 
 from setuptools import setup, find_packages
@@ -26,17 +25,16 @@ tests_requires = [
     "freezegun~=0.3.0",
     "nbsphinx>=0.3",
     "aioresponses~=0.5.2",
-    "moto~=1.2",
+    "moto~=1.3.8",
     "mock~=2.0",
 ]
 
 install_requires = [
     "cloudpickle~=0.6.1",
-    "gevent~=1.2",
-    "boto3~=1.5",
+    "boto3~=1.9",
     "typing~=3.6",
     "requests~=2.20",
-    "matplotlib~=2.0",
+    "matplotlib~=2.2",
     "simplejson~=3.13",
     "attrs>=18",
     "jsonpickle~=1.0",
@@ -45,7 +43,7 @@ install_requires = [
     "pymongo~=3.7",
     "numpy~=1.16",
     "scipy~=1.2",
-    "tensorflow~=1.12.0",
+    "tensorflow~=1.13.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
     "networkx~=2.2",
@@ -68,20 +66,18 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2018.9",
     "python-dateutil~=2.7",
-    "rasa_core_sdk~=0.13.0a1",
+    "rasa_core_sdk~=0.13.1",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=18.12.0",
     "sanic-cors~=0.9.0",
     "sanic-jwt~=1.2",
     "aiohttp~=3.5",
-    "questionary>=1.0.1",
+    "questionary>=1.1.0",
     "python-socketio~=3.0",
     "pydot~=1.4",
     "async_generator~=1.10",
-    "keras-applications==1.0.6",
-    "keras-preprocessing==1.0.5",
-    "sqlalchemy~=1.2",
+    "SQLAlchemy~=1.2.18",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
 ]
@@ -90,6 +86,7 @@ extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy<=2.0.18,>2.0"],
     "mitie": ["mitie"],
+    "sql": ["psycopg2~=2.8.2"],
 }
 
 setup(
@@ -102,6 +99,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
     packages=find_packages(exclude=["tests", "tools", "docs", "contrib"]),

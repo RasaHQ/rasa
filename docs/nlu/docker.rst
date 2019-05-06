@@ -47,8 +47,7 @@ To train a NLU model you need to mount two directories into the Docker container
             python -m rasa.nlu.train \
                 -c /app/project/<nlu configuration>.yml \
                 -d /app/project/<nlu data> \
-                -o /app/model \
-                --project <nlu project name>
+                -o /app/model
 
 Running NLU with Rasa Core
 --------------------------

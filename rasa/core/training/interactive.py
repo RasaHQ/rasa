@@ -540,7 +540,9 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 
     slot_strs = []
     for k, s in tracker_dump.get("slots").items():
-        colored_value = cliutils.wrap_with_color(str(s), rasa.cli.utils.bcolors.WARNING)
+        colored_value = cliutils.wrap_with_color(
+            str(s), color=rasa.cli.utils.bcolors.WARNING
+        )
         slot_strs.append("{}: {}".format(k, colored_value))
     return slot_strs
 
@@ -619,7 +621,7 @@ async def _request_action_from_user(
         if action not in old_actions
     ]
     choices = (
-        [{"name": "<create new action>", "value": OTHER_ACTION}] + new_actions + choices
+        [{"name": "<create new action>", "value": NEW_ACTION}] + new_actions + choices
     )
     question = questionary.select("What is the next action of the bot?", choices)
 
@@ -1472,6 +1474,15 @@ def run_interactive_learning(
     """Start the interactive learning with the model of the agent."""
 
     server_args = server_args or {}
+
+    if server_args.get("nlu_data"):
+        PATHS["nlu"] = server_args["nlu_data"]
+
+    if server_args.get("stories"):
+        PATHS["stories"] = server_args["stories"]
+
+    if server_args.get("domain"):
+        PATHS["domain"] = server_args["domain"]
 
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))

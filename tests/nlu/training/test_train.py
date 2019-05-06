@@ -166,14 +166,13 @@ def test_train_named_model(component_builder, tmpdir):
     (trained, _, persisted_path) = train(
         _config,
         path=tmpdir.strpath,
-        project="my_keyword_model",
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,
     )
     assert trained.pipeline
     normalized_path = os.path.dirname(os.path.normpath(persisted_path))
     # should be saved in a dir named after a project
-    assert os.path.basename(normalized_path) == "my_keyword_model"
+    assert normalized_path == tmpdir.strpath
 
 
 def test_handles_pipeline_with_non_existing_component(component_builder):
@@ -189,9 +188,7 @@ def test_load_and_persist_without_train(language, pipeline, component_builder, t
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
     trainer = Trainer(_config, component_builder)
     persistor = create_persistor(_config)
-    persisted_path = trainer.persist(
-        tmpdir.strpath, persistor, project_name="my_project"
-    )
+    persisted_path = trainer.persist(tmpdir.strpath, persistor)
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
@@ -204,9 +201,7 @@ def test_train_with_empty_data(language, pipeline, component_builder, tmpdir):
     trainer = Trainer(_config, component_builder)
     trainer.train(TrainingData())
     persistor = create_persistor(_config)
-    persisted_path = trainer.persist(
-        tmpdir.strpath, persistor, project_name="my_project"
-    )
+    persisted_path = trainer.persist(tmpdir.strpath, persistor)
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello") is not None

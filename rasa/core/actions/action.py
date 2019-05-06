@@ -1,10 +1,10 @@
-import aiohttp
 import copy
 import json
-
 import logging
 import typing
 from typing import List, Text, Optional, Dict, Any
+
+import aiohttp
 
 import rasa.core
 from rasa.core import events
