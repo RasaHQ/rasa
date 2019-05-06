@@ -117,17 +117,18 @@ paths:
               schema:
                 type: object
               example:
-                config:
-                  - 7625d69d93053ac8520a544d0852c626
-                domain:
-                  - 229b51e41876bbcbbbfbeddf79548d5a
-                messages:
-                  - cf7eda7edcae128a75ee8c95d3bbd680
-                stories:
-                  - b5facea681fd00bc7ecc6818c70d9639
-                trained_at: 1556527123.42784
-                version: 1.0.0
-                model_name: 20190429-103105.tar.gz
+                fingerprint:
+                  config:
+                    - 7625d69d93053ac8520a544d0852c626
+                  domain:
+                    - 229b51e41876bbcbbbfbeddf79548d5a
+                  messages:
+                    - cf7eda7edcae128a75ee8c95d3bbd680
+                  stories:
+                    - b5facea681fd00bc7ecc6818c70d9639
+                  trained_at: 1556527123.42784
+                  version: 1.0.0
+                model_file: 20190429-103105.tar.gz
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
@@ -162,8 +163,8 @@ paths:
           $ref: '#/components/responses/403NotAuthorized'
         409:
           $ref: '#/components/responses/409Conflict'
-        503:
-          $ref: '#/components/responses/503ServiceUnavailable'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
   /conversations/{conversation_id}/tracker/events:
     post:
@@ -193,6 +194,8 @@ paths:
           $ref: '#/components/responses/403NotAuthorized'
         409:
           $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
     put:
       security:
@@ -222,6 +225,8 @@ paths:
           $ref: '#/components/responses/403NotAuthorized'
         409:
           $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
   /conversations/{conversation_id}/story:
     get:
@@ -232,7 +237,7 @@ paths:
       - Tracker
       summary: Retrieve an end-to-end story corresponding to a conversation
       description: >-
-        The story represents the whole conversation, in end-to-end
+        The story represents the whole conversation in end-to-end
         format. This can be posted to the /evaluate endpoint and used
         as a test.
       parameters:
@@ -245,8 +250,10 @@ paths:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
-        503:
-          $ref: '#/components/responses/503ServiceUnavailable'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
   /conversations/{conversation_id}/execute:
     post:
@@ -285,7 +292,7 @@ paths:
                   type: number
               required: ["name"]
             example:
-              action: utter_greet
+              name: utter_greet
       responses:
         200:
           description: Success
@@ -337,6 +344,8 @@ paths:
               example:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
+        400:
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
@@ -423,7 +432,7 @@ paths:
       description: >-
         Trains a Rasa model. Depending on the data given only a dialogue model,
         only a NLU model, or a model combining a trained dialogue model with an
-        NLU model will be trained.
+        NLU model will be trained. The trained model is not loaded by default.
       requestBody:
         required: true
         content:
@@ -620,8 +629,6 @@ paths:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
-        409:
-          $ref: '#/components/responses/409Conflict'
         500:
           $ref: '#/components/responses/500ServerError'
 
@@ -668,8 +675,6 @@ paths:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
-        500:
-          $ref: '#/components/responses/500ServerError'
 
   /domain:
     get:
@@ -681,7 +686,7 @@ paths:
       summary: Retrieve the loaded domain.
       description: >-
         Return the domain specification the currently loaded
-        stacked model is using.
+        model is using.
       responses:
         200:
           description: Domain was successfully retrieved.
@@ -696,6 +701,8 @@ paths:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        406:
+          $ref: '#/components/responses/406InvalidHeader'
         500:
           $ref: '#/components/responses/500ServerError'
 
@@ -819,7 +826,6 @@ components:
                 example: "/models/20190512.tar.gz"
               model_server:
                 $ref: '#/components/schemas/EndpointConfig'
-                example: 10
               remote_storage:
                 description: Name of remote storage system
                 type: string
@@ -890,6 +896,19 @@ components:
             message: >-
               User has insufficient permission to access resource.
             code: 403
+    406InvalidHeader:
+      description: Invalid header provided.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "1.0.0"
+            status: "failure"
+            reason: "InvalidHeader"
+            message: >-
+              Invalid header was provided with the request.
+            code: 406
     409Conflict:
       description: The request conflicts with the currently loaded model.
       content:
@@ -915,19 +934,6 @@ components:
             message: >-
               An unexpected error occurred.
             code: 500
-    503ServiceUnavailable:
-      description: Service is unavailable
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            version: "1.0.0"
-            status: "failure"
-            message: >-
-              No tracker store available.
-            reason: "NoTrackerStore"
-            code: 503
 
 
   schemas:

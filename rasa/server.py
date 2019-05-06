@@ -308,15 +308,21 @@ def create_app(
             )
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+        until_time = rasa.utils.endpoints.float_arg(request, "until")
 
         tracker = obtain_tracker_store(app.agent, conversation_id)
 
-        until_time = rasa.utils.endpoints.float_arg(request, "until")
-        if until_time is not None:
-            tracker = tracker.travel_back_in_time(until_time)
+        try:
+            if until_time is not None:
+                tracker = tracker.travel_back_in_time(until_time)
 
-        state = tracker.current_state(verbosity)
-        return response.json(state)
+            state = tracker.current_state(verbosity)
+            return response.json(state)
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+            )
 
     @app.post("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
@@ -403,12 +409,19 @@ def create_app(
         tracker = obtain_tracker_store(app.agent, conversation_id)
 
         until_time = rasa.utils.endpoints.float_arg(request, "until")
-        if until_time is not None:
-            tracker = tracker.travel_back_in_time(until_time)
 
-        # dump and return tracker
-        state = tracker.export_stories(e2e=True)
-        return response.text(state)
+        try:
+            if until_time is not None:
+                tracker = tracker.travel_back_in_time(until_time)
+
+            # dump and return tracker
+            state = tracker.export_stories(e2e=True)
+            return response.text(state)
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+            )
 
     @app.post("/conversations/<conversation_id>/execute")
     @requires_auth(app, auth_token)
@@ -416,7 +429,13 @@ def create_app(
     async def execute_action(request: Request, conversation_id: Text):
         request_params = request.json
 
-        action_to_execute = request_params.get("name")
+        action_to_execute = request_params.get("name", None)
+
+        if not action_to_execute:
+            raise ErrorResponse(
+                400, "BadRequest", "Name of the action not provided in request body."
+            )
+
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
 
@@ -465,11 +484,8 @@ def create_app(
         )
 
         request_params = request.json
-        message = (
-            request_params.get("message")
-            if "message" in request_params
-            else request_params.get("text")
-        )
+
+        message = request_params.get("text")
         sender = request_params.get("sender")
         parse_data = request_params.get("parse_data")
 
