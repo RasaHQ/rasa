@@ -27,9 +27,11 @@ Added
 - you can now choose actions previously created in the same session
 in ``interactive learning``
 - add formatter 'black'
+- channel-specific utterances via the ``- "channel":`` key in utterance templates
+- arbitrary json messages via the ``- "custom":`` key in utterance templates and
+  via ``utter_custom_json()`` method in custom actions
 - add ``rasa interactive core`` to command line interface
 - support for spaCy 2.1
-- channel-specific utterances via the "channel" key in utterance template
 
 Changed
 -------
@@ -40,20 +42,21 @@ Changed
 - changed removing punctuation logic in ``WhitespaceTokenizer``
 - ``training_processes`` in the Rasa NLU data router have been renamed to ``worker_processes``
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
-- removed ``--num_threads`` from run command (server will be asyncronous but
+- removed ``--num_threads`` from run command (server will be asynchronous but
   running in a single thread)
 - removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be loaded by default)
 - changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
 - ``rasa train`` uses fallback config if an invalid config is given
 - ``rasa test core`` compares multiple models if a list of model files is provided for the argument ``--model``
 - ``rasa train`` fails if either nlu or story data are missing
+- ``utter_custom_message()`` method in rasa_core_sdk has been renamed to ``utter_elements()``
 
 Removed
 -------
 - removed possibility to execute ``python -m rasa_core.train`` etc. (e.g. scripts in ``rasa.core`` and ``rasa.nlu``).
   Use the CLI for rasa instead, e.g. ``rasa train core``.
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
-- removed Dispatcher class from core 
+- removed ``Dispatcher`` class from core
 - removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.
 
 Fixed

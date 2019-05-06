@@ -358,7 +358,7 @@ class Agent(object):
         lock = self.conversations_in_processing.get(message.sender_id)
         if not lock:
             logger.debug(
-                "created a new lock for conversation '{}'".format(message.sender_id)
+                "Created a new lock for conversation '{}'".format(message.sender_id)
             )
             lock = LockCounter()
             self.conversations_in_processing[message.sender_id] = lock
@@ -379,7 +379,7 @@ class Agent(object):
                 # accumulating locks
                 del self.conversations_in_processing[message.sender_id]
                 logger.debug(
-                    "deleted lock for conversation '{}' (unused)"
+                    "Deleted lock for conversation '{}' (unused)"
                     "".format(message.sender_id)
                 )
 

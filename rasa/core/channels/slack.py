@@ -4,7 +4,7 @@ import logging
 from sanic import Blueprint, response
 from sanic.request import Request
 from slackclient import SlackClient
-from typing import Text, Optional, List
+from typing import Text, Optional, List, Dict, Any
 
 from rasa.core.channels import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
@@ -50,6 +50,11 @@ class SlackBot(SlackClient, OutputChannel):
             text=message,
             attachments=attachment,
         )
+
+    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
+        kwargs.setdefault("channel", self.slack_channel or recipient_id)
+        kwargs.setdefault("as_user", True)
+        return super(SlackBot, self).api_call("chat.postMessage", **kwargs)
 
     @staticmethod
     def _convert_to_slack_buttons(buttons):

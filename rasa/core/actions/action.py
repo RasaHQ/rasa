@@ -132,6 +132,7 @@ def log_bot_message_on_tracker(
             "buttons": message.get("buttons"),
             "attachment": message.get("image") or message.get("attachment"),
             "image": message.get("image"),
+            "custom": message.get("custom"),
         },
     )
     logger.debug("Bot utterance '{}'".format(bot_message))
