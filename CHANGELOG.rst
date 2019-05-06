@@ -30,6 +30,7 @@ in ``interactive learning``
 - support to load sub skills (domain, stories, nlu data)
 - support to select which sub skills to load through ``import`` section in
   ``config.yml``
+- add ``rasa interactive core`` to command line interface
 
 
 Changed
@@ -46,6 +47,8 @@ Changed
 - removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be loaded by default)
 - changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
 - ``rasa train`` uses fallback config if an invalid config is given
+- ``rasa test core`` compares multiple models if a list of model files is provided for the argument ``--model``
+- ``rasa train`` fails if either nlu or story data are missing
 
 Removed
 -------
@@ -61,9 +64,4 @@ Fixed
   in a parallel process, which prevents the currently loaded model unloading
 - added missing implementation of the ``keys()`` function for the Redis Tracker
   Store
-- ``rasa nlu test`` doesn't error anymore when a test file is passed with ``-u``
 - in interactive learning: only updates entity values if user changes annotation
-- ``SQLTrackerStore.keys()`` now returns the distinct stored sender ids
-  instead of the column names
-- ``rasa train core`` actually uses additional arguments, such as ``augmentation``
-- ``rasa test`` actually considers additional arguments, such as ``e2e`` or ``successes``

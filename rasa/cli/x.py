@@ -96,7 +96,7 @@ def add_subparser(
 def _event_service():
     """Start the event service."""
     # noinspection PyUnresolvedReferences
-    from rasa_platform.community.services.event_service import main
+    from rasax.community.services.event_service import main
 
     main()
 
@@ -209,7 +209,7 @@ def is_rasa_x_installed():
     # we could also do something like checking if `import rasa_platform` works,
     # the issue with that is that it actually does import the package and this
     # takes some time that we don't want to spend when booting the CLI
-    return importlib.util.find_spec("rasa_platform") is not None
+    return importlib.util.find_spec("rasax") is not None
 
 
 def generate_rasa_x_token(length=16):
@@ -260,7 +260,7 @@ def rasa_x(args: argparse.Namespace):
             sys.exit(1)
 
         # noinspection PyUnresolvedReferences
-        from rasa_platform.community.api.local import main_local
+        from rasax.community.api.local import main_local
 
         start_event_service()
 
