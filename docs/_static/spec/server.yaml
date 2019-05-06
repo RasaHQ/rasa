@@ -593,6 +593,8 @@ paths:
         posted to this endpoint. No messages will be stored
         to a conversation and no action will be run. This will
         just retrieve the NLU parse results.
+      parameters:
+      - $ref: '#/components/parameters/emulation_mode'
       requestBody:
         required: true
         content:
@@ -760,6 +762,17 @@ components:
           - ALL
           - APPLIED
           - NONE
+    emulation_mode:
+      in: query
+      name: emulation_mode
+      description: >-
+        Specify the emulation mode.
+      schema:
+        type: string
+        enum:
+          - WIT
+          - LUIS
+          - DIALOGFLOW
     until:
       in: query
       name: until

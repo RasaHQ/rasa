@@ -28,6 +28,7 @@ from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file
 from rasa.model import get_model_subdirectories, fingerprint_from_path
+from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 
 logger = logging.getLogger(__name__)
@@ -194,6 +195,34 @@ async def authenticate(request):
 def _configure_logging(loglevel, logfile):
     logging.basicConfig(filename=logfile, level=loglevel)
     logging.captureWarnings(True)
+
+
+def _create_emulator(mode: Optional[Text]) -> NoEmulator:
+    """Create emulator for specified mode.
+    If no emulator is specified, we will use the Rasa NLU format."""
+
+    if mode is None:
+        return NoEmulator()
+    elif mode.lower() == "wit":
+        from rasa.nlu.emulators.wit import WitEmulator
+
+        return WitEmulator()
+    elif mode.lower() == "luis":
+        from rasa.nlu.emulators.luis import LUISEmulator
+
+        return LUISEmulator()
+    elif mode.lower() == "dialogflow":
+        from rasa.nlu.emulators.dialogflow import DialogflowEmulator
+
+        return DialogflowEmulator()
+    else:
+        raise ErrorResponse(
+            400,
+            "BadRequest",
+            "Invalid parameter value for 'emulation_mode'. "
+            "Should be one of 'WIT', 'LUIS', 'DIALOGFLOW'.",
+            {"parameter": "emulation_mode", "in": "query"},
+        )
 
 
 def create_app(
@@ -660,11 +689,18 @@ def create_app(
         )
 
         try:
-            request_params = request.json
-            text = request_params.get("text")
+            emulation_mode = request.raw_args.get("emulation_mode", None)
 
+            emulator = _create_emulator(emulation_mode)
+
+            request_params = request.json
+            data = emulator.normalise_request_json(request_params)
+            text = data.get("text")
             parse_data = await app.agent.interpreter.parse(text)
+            parse_data = emulator.normalise_response_json(parse_data)
+
             return response.json(parse_data)
+
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(

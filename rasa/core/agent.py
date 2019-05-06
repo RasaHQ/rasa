@@ -28,8 +28,6 @@ from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
 from rasa.model import get_model_subdirectories, get_latest_model, unpack_model
-from rasa.nlu.model import Interpreter
-from rasa.nlu.persistor import Persistor
 from rasa.nlu.utils import is_url
 from rasa.utils.endpoints import EndpointConfig
 

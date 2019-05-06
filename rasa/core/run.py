@@ -125,7 +125,6 @@ def serve_application(
     jwt_secret: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
-    wait_time_between_pulls: Optional[int] = 100,
     remote_storage: Optional[Text] = None,
 ):
     if not channel and not credentials:
