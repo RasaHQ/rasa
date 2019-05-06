@@ -255,6 +255,7 @@ async def load_agent(
 
         else:
             logger.error("No valid configuration given to load agent.")
+            return None
 
     except Exception as e:
         logger.error("Could not load model due to {}.".format(e))

@@ -550,5 +550,55 @@ def test_unload_model_error(rasa_app):
     assert "model_file" in response.json and response.json["model_file"] is None
 
 
-# TODO add test for loading model
-# TODO add test for getting domain
+def test_get_domain(rasa_app):
+    _, response = rasa_app.get("/domain", headers={"accept": "application/json"})
+
+    content = response.json
+
+    assert response.status == 200
+    assert "config" in content
+    assert "intents" in content
+    assert "entities" in content
+    assert "slots" in content
+    assert "templates" in content
+    assert "actions" in content
+
+
+def test_get_domain_invalid_accept_header(rasa_app):
+    _, response = rasa_app.get("/domain")
+
+    assert response.status == 406
+
+
+def test_load_model(rasa_app, trained_core_model):
+    _, response = rasa_app.get("/status")
+
+    assert response.status == 200
+    assert "fingerprint" in response.json
+
+    old_fingerprint = response.json["fingerprint"]
+
+    data = {"model_file": trained_core_model}
+    _, response = rasa_app.put("/model", json=data)
+
+    assert response.status == 204
+
+    _, response = rasa_app.get("/status")
+
+    assert response.status == 200
+    assert "fingerprint" in response.json
+
+    assert old_fingerprint != response.json["fingerprint"]
+
+
+def test_load_model_invalid_request_body(rasa_app):
+    _, response = rasa_app.put("/model")
+
+    assert response.status == 400
+
+
+def test_load_model_invalid_configuration(rasa_app):
+    data = {"model_file": "some-random-path"}
+    _, response = rasa_app.put("/model", json=data)
+
+    assert response.status == 400

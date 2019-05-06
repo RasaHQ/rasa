@@ -8,7 +8,7 @@ from sanic import Sanic, response
 import rasa.utils.io
 import rasa.core
 from rasa.core import jobs, utils
-from rasa.core.agent import Agent
+from rasa.core.agent import Agent, load_agent
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
@@ -144,4 +144,15 @@ async def test_wait_time_between_pulls_without_interval(model_server, monkeypatc
     jobs.kill_scheduler()
 
 
-# TODO add test to load agent from local directory
+async def test_load_agent(trained_model):
+    agent = await load_agent(model_path=trained_model)
+
+    assert agent.tracker_store is not None
+    assert agent.interpreter is not None
+    assert agent.model_directory is not None
+
+
+async def test_load_agent_on_not_existing_path():
+    agent = await load_agent(model_path="some-random-path")
+
+    assert agent is None

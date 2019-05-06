@@ -676,14 +676,29 @@ def create_app(
     async def load_model(request: Request):
         validate_request_body(request, "No path to model file defined in request_body.")
 
-        model_path = request.json.get("model_file")
+        model_path = request.json.get("model_file", None)
         model_server = request.json.get("model_server", None)
         wait_time_between_pulls = request.json.get("wait_time_between_pulls", None)
         remote_storage = request.json.get("remote_storage", None)
 
-        app.agent = load_agent(
-            model_path, model_server, wait_time_between_pulls, remote_storage
-        )
+        try:
+            agent = await load_agent(
+                model_path, model_server, wait_time_between_pulls, remote_storage
+            )
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+            )
+
+        if not agent:
+            raise ErrorResponse(
+                400, "BadRequest", "Agent could not be loaded with given configuration."
+            )
+
+        app.agent = agent
+        logger.debug("Successfully loaded model '{}'.".format(model_path))
+        return response.json(None, status=204)
 
     @app.delete("/model")
     @requires_auth(app, auth_token)
