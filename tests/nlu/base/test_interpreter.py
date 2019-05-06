@@ -60,7 +60,7 @@ def test_model_not_compatible(metadata):
 
 
 @pytest.mark.parametrize(
-    "metadata", [{"rasa_version": "1.0.0a2"}, {"rasa_version": "1.0.0"}]
+    "metadata", [{"rasa_version": "1.0.0a5"}, {"rasa_version": "1.0.0"}]
 )
 def test_model_is_compatible(metadata):
     # should not raise an exception

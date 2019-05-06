@@ -44,7 +44,10 @@ class NGramFeaturizer(Featurizer):
         "min_intent_examples": 4,
     }
 
-    def __init__(self, component_config=None, all_ngrams=None, best_num_ngrams=None):
+    def __init__(self,
+                 component_config: Optional[Dict[Text, Any]] = None,
+                 all_ngrams: Optional[List[Text]] = None,
+                 best_num_ngrams: Optional[int] = None):
         super(NGramFeaturizer, self).__init__(component_config)
 
         self.best_num_ngrams = best_num_ngrams
