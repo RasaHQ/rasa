@@ -53,7 +53,7 @@ def _docs(sub_url: Text) -> Text:
     return constants.DOCS_BASE_URL + sub_url
 
 
-def ensure_loaded_agent(app):
+def ensure_loaded_agent(app: Sanic):
     """Wraps a request handler ensuring there is a loaded and usable agent."""
 
     def decorator(f):
@@ -150,8 +150,10 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
     return decorator
 
 
-def event_verbosity_parameter(request, default_verbosity):
-    event_verbosity_str = request.raw_args.get(
+def event_verbosity_parameter(
+    request: Request, default_verbosity: EventVerbosity
+) -> EventVerbosity:
+    event_verbosity_str = request.args.get(
         "include_events", default_verbosity.name
     ).upper()
     try:
@@ -167,7 +169,7 @@ def event_verbosity_parameter(request, default_verbosity):
         )
 
 
-def obtain_tracker_store(agent: "Agent", conversation_id: Text):
+def obtain_tracker_store(agent: "Agent", conversation_id: Text) -> DialogueStateTracker:
     tracker = agent.tracker_store.get_or_create_tracker(conversation_id)
     if not tracker:
         raise ErrorResponse(

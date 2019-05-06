@@ -7,7 +7,7 @@ import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict
+from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader, StringIO
 
@@ -118,7 +118,7 @@ def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
         return f.read()
 
 
-def read_json_file(filename):
+def read_json_file(filename: Text) -> Union[Dict, List]:
     """Read json from a file"""
     with open(filename) as f:
         return json.load(f)

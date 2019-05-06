@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import logging
 from functools import partial
@@ -11,7 +10,7 @@ import rasa.core
 import rasa.core.cli.arguments
 import rasa.utils
 import rasa.utils.io
-from rasa.core import constants, utils, cli
+from rasa.core import constants, utils
 from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import BUILTIN_CHANNELS, InputChannel, console
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -59,14 +58,14 @@ def _create_single_channel(channel, credentials):
 
 
 def configure_app(
-    input_channels: List["InputChannel"] = None,
-    cors: Union[Text, List[Text]] = None,
+    input_channels: Optional[List["InputChannel"]] = None,
+    cors: Optional[Union[Text, List[Text]]] = None,
     auth_token: Optional[Text] = None,
-    enable_api: Optional[bool] = True,
+    enable_api: bool = True,
     jwt_secret: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     route: Optional[Text] = "/webhooks/",
-    port: Optional[Text] = None,
+    port: int = constants.DEFAULT_SERVER_PORT,
 ):
     """Run the agent."""
     from rasa import server
@@ -115,13 +114,13 @@ def configure_app(
 
 
 def serve_application(
-    model_path: Text = None,
+    model_path: Optional[Text] = None,
     channel: Optional[Text] = None,
-    port: Optional[int] = constants.DEFAULT_SERVER_PORT,
+    port: int = constants.DEFAULT_SERVER_PORT,
     credentials: Optional[Text] = None,
-    cors: Union[Text, List[Text]] = None,
+    cors: Optional[Union[Text, List[Text]]] = None,
     auth_token: Optional[Text] = None,
-    enable_api: Optional[bool] = True,
+    enable_api: bool = True,
     jwt_secret: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
