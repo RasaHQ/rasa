@@ -1,4 +1,4 @@
-:desc: Handle Rasa NLU models on premise or in your private cloud for
+:desc: Handle Rasa models on premise or in your private cloud for
        gdpr compliant intent recognition and entity extraction.
 
 .. _section_persistence:
@@ -7,14 +7,14 @@ Storing Models in the Cloud
 ===========================
 
 
-Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
+Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ and
 `GCS <https://cloud.google.com/storage/>`_ to save your models.
 
 * Amazon S3 Storage
     S3 is supported using the ``boto3`` module which you can
     install with ``pip install boto3``.
 
-    Start the Rasa NLU server with ``storage`` option set to
+    Start the Rasa server with ``remote-storage`` option set to
     ``aws``. Get your S3 credentials and set the following
     environment variables:
 
@@ -30,7 +30,7 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     GCS is supported using the ``google-cloud-storage`` package
     which you can install with ``pip install google-cloud-storage``
 
-    Start the Rasa NLU server with ``storage`` option set to ``gcs``.
+    Start the Rasa server with ``remote-storage`` option set to ``gcs``.
 
     When running on google app engine and compute engine, the auth
     credentials are already set up. For running locally or elsewhere,
@@ -45,7 +45,7 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     Azure is supported using the ``azure-storage-blob`` package
     which you can install with ``pip install azure-storage-blob``
 
-    Start the Rasa NLU server with ``storage`` option set to ``azure``.
+    Start the Rasa server with ``remote-storage`` option set to ``azure``.
 
     The following environment variables must be set:
 
@@ -59,7 +59,5 @@ Models are gzipped before they are saved in the cloud. The gzipped file naming c
 is `{MODEL_NAME}.tar.gz` and it is stored in the root folder of the storage service.
 Currently, you are not able to manually specify the path on the cloud storage.
 
-If storing trained models, Rasa NLU will gzip the new model and upload it to the container. If retrieving/loading models
-from the cloud storage, Rasa NLU will download the gzipped model locally and extract the contents to the location
-specified by the `--path` flag.
-
+If storing trained models, Rasa will gzip the new model and upload it to the container. If retrieving/loading models
+from the cloud storage, Rasa will download the gzipped model locally and extract the contents to a temporary directory.
