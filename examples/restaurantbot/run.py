@@ -3,6 +3,7 @@ import asyncio
 import logging
 from typing import Text
 
+import os
 import rasa.utils.io
 import rasa.train
 from examples.restaurantbot.policy import RestaurantPolicy
@@ -27,7 +28,8 @@ async def parse(text: Text, model_path: Text):
 
 async def train_core(
     domain_file: Text = "domain.yml",
-    model_path: Text = "models/core",
+    model_directory: Text = "models",
+    model_name: Text = "current",
     training_data_file: Text = "data/stories.md",
 ):
     agent = Agent(
@@ -44,6 +46,7 @@ async def train_core(
 
     # Attention: agent.persist stores the model and all meta data into a folder.
     # The folder itself is not zipped.
+    model_path = os.path.join(model_directory, model_name, "core")
     agent.persist(model_path)
 
     logger.info("Model trained. Stored in '{}'.".format(model_path))
@@ -52,7 +55,10 @@ async def train_core(
 
 
 def train_nlu(
-    config_file="config.yml", model_path="models", training_data_file="data/nlu.md"
+    config_file="config.yml",
+    model_directory: Text = "models",
+    model_name: Text = "current",
+    training_data_file="data/nlu.md",
 ):
     from rasa.nlu.training_data import load_data
     from rasa.nlu import config
@@ -64,6 +70,7 @@ def train_nlu(
 
     # Attention: trainer.persist stores the model and all meta data into a folder.
     # The folder itself is not zipped.
+    model_path = os.path.join(model_directory, model_name)
     model_directory = trainer.persist(model_path, fixed_model_name="nlu")
 
     logger.info("Model trained. Stored in '{}'.".format(model_directory))
@@ -78,11 +85,11 @@ if __name__ == "__main__":
 
     subparser = parser.add_subparsers(dest="subparser_name")
     train_parser = subparser.add_parser("train", help="train a core or nlu model")
-    parse_parser = subparser.add_parser("parse", help="parse any text")
+    parse_parser = subparser.add_parser("predict", help="predict next action")
 
     parse_parser.add_argument(
         "--model",
-        default=None,
+        default="models/current",
         help="Path to the model directory which contains "
         "sub-folders for core and nlu models.",
     )
@@ -103,5 +110,5 @@ if __name__ == "__main__":
             train_nlu()
         elif args.model == "core":
             loop.run_until_complete(train_core())
-    elif args.subparser_name == "parse":
+    elif args.subparser_name == "predict":
         loop.run_until_complete(parse(args.text, args.model))
