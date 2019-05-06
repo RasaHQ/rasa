@@ -58,7 +58,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
 
 .. toctree::
    :maxdepth: 1
-   :caption: Dialogue Elements
+   :caption: Conversation Design
    :hidden:
 
    dialogue-elements/about

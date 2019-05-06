@@ -1,7 +1,7 @@
 .. _dialogue-elements:
 
-About
-=====
+Dialogue Elements
+=================
 
 Dialogue elements are common conversation patterns.
 We use three different levels of abstraction to discuss AI assistants.

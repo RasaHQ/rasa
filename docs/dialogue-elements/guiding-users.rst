@@ -24,7 +24,7 @@ If the user goal is ambiguous to your assistant, ask for clarification.
 
 You can configure the ``TwoStageFallbackPolicy`` to ask your user to clarify,
 and present them with quick replies for the most likely intents.
-To do this, add configure the policy as in this example:
+To do this, configure the policy as in this example:
 
 .. code-block:: yaml
 
@@ -37,13 +37,14 @@ To do this, add configure the policy as in this example:
       deny_suggestion_intent_name: "out_of_scope"
     ...
 
+.. _explaining-possibilities:
 
 Explaining Possibilities
 ------------------------
 
 AI assistants are always limited to helping users with a specific set of
 tasks, and should be able to explain to a user what they can do.
-That includes coherently respond to requests that are out of scope.
+That includes coherently responding to requests that are out of scope.
 
 
 .. conversations:: 

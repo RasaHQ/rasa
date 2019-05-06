@@ -108,7 +108,9 @@ Your assistant will often receive unexpected or unprompted input.
 We call this chitchat.
 While it's not possible to coherently respond to everything a user
 might say, you can at least acknowledge that the message was received.
-The best strategy is to collect 
+One strategy is to collect training data from your users and define intents
+and responses for some of the more common topics.
+See :ref:`explaining-possibilities` for how to handle out-of-scope input.
 
 .. conversations:: 
    :path: _static/elements/small-talk/chitchat.yml
