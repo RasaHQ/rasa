@@ -1,4 +1,4 @@
-:desc: Find out how to use the HTTP API of Rasa Core to integrate
+:desc: Find out how to use the HTTP API of Rasa to integrate
        with your backend components.
 
 .. _section_http:
@@ -29,8 +29,7 @@ All the endpoints this API exposes are documented in :ref:`http-api` .
 The different parameters are:
 
 - ``--enable-api``, enables this additional API
-- ``-m``, which is the path to the folder containing your Rasa Core model
-  and Rasa NLU model.
+- ``-m``, which is the path to the folder containing your Rasa model.
 - ``-o``, which is the path to the log file.
 
 
@@ -71,7 +70,7 @@ log the event.
 Security Considerations
 -----------------------
 
-We recommend to not expose the Rasa Core server to the outside world but
+We recommend to not expose the Rasa Server to the outside world but
 rather connect to it from your backend over a private connection (e.g.
 between docker containers).
 
