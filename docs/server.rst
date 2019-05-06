@@ -19,7 +19,7 @@ models with:
 
 .. code-block:: bash
 
-    rasa run core \
+    rasa run \
         --enable-api \
         -m models \
         -o out.log
@@ -46,23 +46,12 @@ The different parameters are:
     on a different machine, or you aren't using the Rasa SDk, make sure
     to update your ``endpoints.yml`` file.
 
-Events
-------
-Events allow you to modify the internal state of the dialogue. This information
-will be used to predict the next action. E.g. you can set slots (to store
-information about the user) or restart the conversation.
 
-You can return multiple events as part of your query, e.g.:
+.. note::
 
-.. code-block:: bash
-
-    $ curl -XPOST http://localhost:5005/conversations/default/tracker/events -d \
-        '{"event": "slot", "name": "cuisine", "value": "mexican"}'
-
-
-You can find a list of all events and their json representation
-at :ref:`events`. You need to send these json formats to the endpoint to
-log the event.
+    If you start the server with only a Rasa NLU model, not all the available endpoints
+    can be called. Be aware that some endpoint will return a 409 status code, as a trained
+    Rasa Core model is needed to process the request.
 
 
 .. _server_security:
@@ -126,6 +115,90 @@ Your requests should have set a proper JWT header:
                      "Gl8eZFVfKXA6jhncgRn-I"
 
 
+Fetching Models From a Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also configure the http server to fetch models from another URL:
+
+.. code-block:: bash
+
+    $ rasa run \
+        --enable-api \
+        -m models \
+        --endpoints my_endpoints.yaml \
+        -o out.log
+
+The model server is specified in the endpoint configuration
+(``my_endpoints.yaml``), where you specify the server URL Rasa
+regularly queries for zipped Rasa models:
+
+.. code-block:: yaml
+
+    models:
+      url: http://my-server.com/models/default@latest
+      wait_time_between_pulls:  10   # [optional](default: 100)
+
+.. note::
+
+    If you want to pull the model just once from the server, set
+    ``wait_time_between_pulls`` to ``None``.
+
+.. note::
+
+    Your model server must provide zipped Rasa models, and have
+    ``{"ETag": <model_hash_string>}`` as one of its headers. Rasa will
+    only download a new model if this model hash changed.
+
+Rasa sends requests to your model server with an ``If-None-Match``
+header that contains the current model hash. If your model server can
+provide a model with a different hash from the one you sent, it should send it
+in as a zip file with an ``ETag`` header containing the new hash. If not, Rasa
+expects an empty response with a ``204`` or ``304`` status code.
+
+An example request Rasa might make to your model server looks like this:
+
+.. code-block:: bash
+
+      $ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default@latest
+
+
+Fetching Models from a Remote Storage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also configure the Rasa server to fetch your model from a remote storage:
+
+.. code-block:: bash
+
+    $ rasa run \
+        --enable-api \
+        -m 20190506-100418.tar.gz \
+        --remote-storage aws \
+        -o out.log
+
+The model will be downloaded and stored in a temporary directory on your local storage system.
+For more information see :ref:`_section_persistence
+
+
+Endpoint Configuration
+----------------------
+
+To connect Rasa to other endpoints, you can specify an endpoint
+configuration within a `YAML <https://en.wikipedia.org/wiki/YAML>`_ file.
+Then run Rasa with the flag
+``--endpoints <path to endpoint configuration.yml``.
+
+For example:
+
+.. code-block:: bash
+
+    rasa run \
+        --m <Rasa model> \
+        --endpoints <path to endpoint configuration>.yml
+
+.. note::
+    You can use environment variables within configuration files by specifying them with ``${name of environment variable}``.
+    These placeholders are then replaced by the value of the environment variable.
+
 Connecting a Tracker Store
 --------------------------
 
@@ -137,3 +210,17 @@ Connecting an Event Broker
 
 To configure an event broker within your endpoint configuration,
 please see :ref:`brokers`.
+
+
+.. _http_api:
+
+Endpoints
+---------
+
+Documentation of the server API as
+:download:`OpenAPI Spec <_static/spec/rasa.yml>`.
+
+.. apidoc::
+   :path: ../_static/spec/rasa.yml
+
+.. include:: feedback.inc
