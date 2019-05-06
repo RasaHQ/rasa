@@ -12,7 +12,7 @@ import rasa.core.cli.arguments
 import rasa.utils
 import rasa.utils.io
 from rasa.core import constants, utils, cli
-from rasa.core.agent import load_agent
+from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import BUILTIN_CHANNELS, InputChannel, console
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
@@ -185,6 +185,18 @@ async def load_agent_on_start(
         tracker_store=_tracker_store,
         action_endpoint=endpoints.action,
     )
+
+    if not app.agent:
+        logger.error(
+            "Agent could not be loaded with the provided configuration."
+            "Load default agent without any model."
+        )
+        app.agent = Agent(
+            interpreter=_interpreter,
+            generator=endpoints.nlg,
+            tracker_store=_tracker_store,
+            action_endpoint=endpoints.action,
+        )
 
     return app.agent
 

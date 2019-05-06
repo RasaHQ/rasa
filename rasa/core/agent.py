@@ -875,10 +875,11 @@ class Agent(object):
     ) -> "Agent":
         from rasa.nlu.persistor import get_persistor
 
-        p = get_persistor(remote_storage)
-        if p is not None:
+        persistor = get_persistor(remote_storage)
+
+        if persistor is not None:
             target_path = tempfile.mkdtemp()
-            p.retrieve(model_name, target_path)
+            persistor.retrieve(model_name, target_path)
 
             return Agent.load(
                 target_path,
@@ -888,12 +889,7 @@ class Agent(object):
                 action_endpoint=action_endpoint,
             )
 
-        return Agent(
-            interpreter=interpreter,
-            generator=generator,
-            tracker_store=tracker_store,
-            action_endpoint=action_endpoint,
-        )
+        return None
 
     def _is_form_policy_present(self) -> bool:
         """Check whether form policy is present and used."""

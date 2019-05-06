@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import json
 import logging
 import warnings
@@ -8,10 +7,9 @@ from difflib import SequenceMatcher
 import rasa.cli.utils
 import rasa.core.cli.arguments
 import rasa.utils.io
-from typing import List, Optional, Text, Tuple
+from typing import List, Text, Tuple
 
 from rasa.cli import utils as cliutils
-from rasa.core import constants, run
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.channels import UserMessage, CollectingOutputChannel, console
 from rasa.core.domain import Domain

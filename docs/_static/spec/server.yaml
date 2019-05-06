@@ -5,7 +5,7 @@ info:
   description: >-
     The Rasa server provides endpoints to retrieve trackers of
     conversations as well as endpoints to modify them. Additionally,
-    enpoints for training and evaluating models are provided.
+    endpoints for training and evaluating models are provided.
 servers:
   - url: "http://localhost:5005"
     description: "Local development server"
