@@ -136,7 +136,7 @@ def test_parse(rasa_app, response_test):
     "response_test",
     [
         ResponseTest(
-            "/model/parse",
+            "/model/parse?emulation_mode=wit",
             {
                 "entities": [],
                 "intent": {"confidence": 1.0, "name": "greet"},
@@ -145,7 +145,7 @@ def test_parse(rasa_app, response_test):
             payload={"text": "hello"},
         ),
         ResponseTest(
-            "/model/parse",
+            "/model/parse?emulation_mode=dialogflow",
             {
                 "entities": [],
                 "intent": {"confidence": 1.0, "name": "greet"},
@@ -154,7 +154,7 @@ def test_parse(rasa_app, response_test):
             payload={"text": "hello"},
         ),
         ResponseTest(
-            "/model/parse",
+            "/model/parse?emulation_mode=luis",
             {
                 "entities": [],
                 "intent": {"confidence": 1.0, "name": "greet"},
@@ -164,11 +164,24 @@ def test_parse(rasa_app, response_test):
         ),
     ],
 )
-def test_parse_without_interpreter(rasa_app_core, response_test):
-    _, response = rasa_app_core.post(response_test.endpoint, json=response_test.payload)
-    rjs = response.json
+def test_parse_with_different_emulation_mode(rasa_app, response_test):
+    _, response = rasa_app.post(response_test.endpoint, json=response_test.payload)
     assert response.status == 200
+
+
+def test_parse_without_nlu_model(rasa_app_core):
+    _, response = rasa_app_core.post("/model/parse", json={"text": "hello"})
+    assert response.status == 200
+
+    rjs = response.json
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
+
+
+def test_parse_on_invalid_emulation_mode(rasa_app_nlu):
+    _, response = rasa_app_nlu.post(
+        "/model/parse?emulation_mode=ANYTHING", json={"text": "hello"}
+    )
+    assert response.status == 400
 
 
 def test_train_stack_success(

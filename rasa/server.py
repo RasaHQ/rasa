@@ -688,18 +688,15 @@ def create_app(
             "in order to obtain the intent and extracted entities.",
         )
 
+        emulation_mode = request.raw_args.get("emulation_mode", None)
+        emulator = _create_emulator(emulation_mode)
+
         try:
-            emulation_mode = request.raw_args.get("emulation_mode", None)
+            data = emulator.normalise_request_json(request.json)
+            parse_data = await app.agent.interpreter.parse(data.get("text"))
+            response_data = emulator.normalise_response_json(parse_data)
 
-            emulator = _create_emulator(emulation_mode)
-
-            request_params = request.json
-            data = emulator.normalise_request_json(request_params)
-            text = data.get("text")
-            parse_data = await app.agent.interpreter.parse(text)
-            parse_data = emulator.normalise_response_json(parse_data)
-
-            return response.json(parse_data)
+            return response.json(response_data)
 
         except Exception as e:
             logger.debug(traceback.format_exc())
