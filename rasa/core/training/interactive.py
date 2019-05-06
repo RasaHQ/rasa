@@ -1475,8 +1475,6 @@ def run_interactive_learning(
 
     server_args = server_args or {}
 
-    # TODO
-
     if server_args.get("nlu_data"):
         PATHS["nlu"] = server_args["nlu_data"]
 
@@ -1498,14 +1496,9 @@ def run_interactive_learning(
 
     # before_server_start handlers make sure the agent is loaded before the
     # interactive learning IO starts
-    if server_args.get("core"):
+    if server_args.get("model"):
         app.register_listener(
-            partial(
-                run.load_agent_on_start,
-                server_args.get("core"),
-                endpoints,
-                server_args.get("nlu"),
-            ),
+            partial(run.load_agent_on_start, server_args.get("model"), endpoints, None),
             "before_server_start",
         )
     else:
