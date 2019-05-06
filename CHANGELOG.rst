@@ -28,7 +28,7 @@ Added
 in ``interactive learning``
 - add formatter 'black'
 - add ``rasa interactive core`` to command line interface
-
+- support for spaCy 2.1
 
 Changed
 -------
