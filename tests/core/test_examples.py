@@ -94,10 +94,12 @@ async def test_restaurantbot_example():
     stories = os.path.join("data", "test_stories", "stories_babi_small.md")
     nlu_data = os.path.join(p, "data", "nlu.md")
     await train_core(
-        os.path.join(p, "domain.yml"), os.path.join(p, "models", "core"), stories
+        os.path.join(p, "domain.yml"), os.path.join(p, "models", "current"), stories
     )
-    train_nlu(os.path.join(p, "config.yml"), os.path.join(p, "models"), nlu_data)
+    train_nlu(
+        os.path.join(p, "config.yml"), os.path.join(p, "models", "current"), nlu_data
+    )
 
-    responses = await parse("hello", os.path.join(p, "models"))
+    responses = await parse("hello", os.path.join(p, "models", "current"))
 
     assert responses[0]["text"] == "how can I help you?"
