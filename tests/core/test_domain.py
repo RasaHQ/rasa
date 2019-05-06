@@ -119,8 +119,8 @@ def test_utter_templates():
     expected_template = {
         "text": "Hey! How are you?",
         "buttons": [
-            {"title": "/mood_great", "payload": "great"},
-            {"title": "/mood_unhappy", "payload": "super sad"},
+            {"title": "great", "payload": "/mood_great"},
+            {"title": "super sad", "payload": "/mood_unhappy"},
         ],
     }
     assert domain.random_template_for("utter_greet") == expected_template
