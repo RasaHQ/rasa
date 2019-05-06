@@ -17,7 +17,6 @@ from rasa.core.channels import UserMessage, CollectingOutputChannel, console
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger()  # get the root logger
 
