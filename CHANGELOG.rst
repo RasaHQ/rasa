@@ -31,7 +31,7 @@ in ``interactive learning``
 - support to select which sub skills to load through ``import`` section in
   ``config.yml``
 - add ``rasa interactive core`` to command line interface
-
+- support for spaCy 2.1
 
 Changed
 -------
