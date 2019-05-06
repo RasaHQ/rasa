@@ -70,7 +70,7 @@ def test_core(
         _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
 
         _agent = Agent.load(model_path, interpreter=_interpreter)
-        
+
         kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
 
         loop.run_until_complete(
