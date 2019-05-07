@@ -303,7 +303,7 @@ def test_evaluate_stories(rasa_app, default_stories_file):
     with open(default_stories_file, "r") as f:
         stories = f.read()
 
-    _, response = rasa_app.post("/model/evaluate/stories", data=stories)
+    _, response = rasa_app.post("/model/test/stories", data=stories)
 
     assert response.status == 200
 
@@ -330,7 +330,7 @@ def test_evaluate_stories_not_ready_agent(rasa_app_nlu, default_stories_file):
     with open(default_stories_file, "r") as f:
         stories = f.read()
 
-    _, response = rasa_app_nlu.post("/model/evaluate/stories", data=stories)
+    _, response = rasa_app_nlu.post("/model/test/stories", data=stories)
 
     assert response.status == 409
 
@@ -339,7 +339,7 @@ def test_evaluate_stories_end_to_end(rasa_app, end_to_end_story_file):
     with open(end_to_end_story_file, "r") as f:
         stories = f.read()
 
-    _, response = rasa_app.post("/model/evaluate/stories?e2e=true", data=stories)
+    _, response = rasa_app.post("/model/test/stories?e2e=true", data=stories)
 
     assert response.status == 200
     js = response.json
@@ -365,7 +365,7 @@ def test_evaluate_intent(rasa_app, default_nlu_data):
     with open(default_nlu_data, "r") as f:
         nlu_data = f.read()
 
-    _, response = rasa_app.post("/model/evaluate/intents", data=nlu_data)
+    _, response = rasa_app.post("/model/test/intents", data=nlu_data)
 
     assert response.status == 200
     assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}

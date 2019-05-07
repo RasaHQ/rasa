@@ -590,7 +590,7 @@ def create_app(
                 "specify the `domain`.",
             )
 
-    @app.post("/model/evaluate/stories")
+    @app.post("/model/test/stories")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def evaluate_stories(request: Request):
@@ -615,7 +615,7 @@ def create_app(
                 "An unexpected error occurred during evaluation. Error: {}".format(e),
             )
 
-    @app.post("/model/evaluate/intents")
+    @app.post("/model/test/intents")
     @requires_auth(app, auth_token)
     async def evaluate_intents(request: Request):
         """Evaluate intents against a Rasa model."""

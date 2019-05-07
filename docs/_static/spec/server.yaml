@@ -238,7 +238,7 @@ paths:
       summary: Retrieve an end-to-end story corresponding to a conversation
       description: >-
         The story represents the whole conversation in end-to-end
-        format. This can be posted to the /evaluate endpoint and used
+        format. This can be posted to the '/test/stories' endpoint and used
         as a test.
       parameters:
       - $ref: '#/components/parameters/conversation_id'
@@ -458,7 +458,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /model/evaluate/stories:
+  /model/test/stories:
     post:
       security:
       - TokenAuth: []
@@ -505,7 +505,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /model/evaluate/intents:
+  /model/test/intents:
     post:
       security:
       - TokenAuth: []
