@@ -151,8 +151,8 @@ def _contains_nlu_pattern(text: Text) -> bool:
 def _is_story_file(file_path: Text) -> bool:
     is_story_file = False
 
-    with open(file_path, encoding="utf-8") as f:
-        if file_path.endswith(".md"):
+    if file_path.endswith(".md"):
+        with open(file_path, encoding="utf-8") as f:
             is_story_file = any(_contains_story_pattern(l) for l in f)
 
     return is_story_file
