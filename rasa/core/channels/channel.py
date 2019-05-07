@@ -381,7 +381,7 @@ class RestInput(InputChannel):
         async def receive(request):
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
-            should_use_stream = rasa.endpoints.utils.bool_arg(
+            should_use_stream = rasa.utils.endpoints.bool_arg(
                 request, "stream", default=False
             )
 
