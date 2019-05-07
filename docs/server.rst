@@ -54,7 +54,7 @@ The different parameters are:
     Rasa Core model is needed to process the request.
 
 
-Fetching Models From a Server
+Fetching Models from a Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can configure the http server to fetch models from another URL:
@@ -115,7 +115,7 @@ You can also configure the Rasa server to fetch your model from a remote storage
         -o out.log
 
 The model will be downloaded and stored in a temporary directory on your local storage system.
-For more information see :ref:`_section_persistence
+For more information see :ref:`_section_persistence`
 
 
 .. _server_security:
