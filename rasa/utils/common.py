@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Text
 
 import rasa.core.utils
 import rasa.utils.io
-from rasa.constants import GLOBAL_USER_CONFIG_PATH
+from rasa.constants import GLOBAL_USER_CONFIG_PATH, DEFAULT_LOG_LEVEL
 
 
 def arguments_of(func: Callable) -> List[Text]:
@@ -51,3 +51,19 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         return c[name]
     else:
         return not_found()
+
+
+def set_tensorflow_log_level():
+    import tensorflow as tf
+
+    log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
+
+    tf_log_level = tf.logging.INFO
+    if log_level == "DEBUG":
+        tf_log_level = tf.logging.DEBUG
+    if log_level == "WARNING":
+        tf_log_level = tf.logging.WARN
+    if log_level == "ERROR":
+        tf_log_level = tf.logging.ERROR
+
+    tf.logging.set_verbosity(tf_log_level)

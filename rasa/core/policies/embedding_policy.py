@@ -27,6 +27,7 @@ from rasa.core.policies.tf_utils import (
     ChronoBiasLayerNormBasicLSTMCell,
 )
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.common import set_tensorflow_log_level
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.tf_utils import TimeAttentionWrapperState
@@ -35,6 +36,8 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+set_tensorflow_log_level()
 
 logger = logging.getLogger(__name__)
 

@@ -18,9 +18,15 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
     from rasa.nlu.model import Metadata
     from rasa.nlu.training_data import Message
+    from rasa.utils.common import set_tensorflow_log_level
+
+    set_tensorflow_log_level()
 
 try:
     import tensorflow as tf
+    from rasa.utils.common import set_tensorflow_log_level
+
+    set_tensorflow_log_level()
 except ImportError:
     tf = None
 

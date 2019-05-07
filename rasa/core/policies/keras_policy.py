@@ -18,11 +18,14 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.common import set_tensorflow_log_level
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+set_tensorflow_log_level()
 
 logger = logging.getLogger(__name__)
 
