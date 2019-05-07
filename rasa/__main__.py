@@ -33,7 +33,6 @@ def create_argument_parser() -> argparse.ArgumentParser:
     )
 
     parent_parser = argparse.ArgumentParser(add_help=False)
-    add_logging_option_arguments(parent_parser)
     parent_parsers = [parent_parser]
 
     subparsers = parser.add_subparsers(help="Rasa commands")
