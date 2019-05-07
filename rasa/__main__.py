@@ -8,7 +8,7 @@ from rasa.core.cli.arguments import add_logging_option_arguments
 from rasa import version
 from rasa.cli import scaffold, run, train, interactive, shell, test, show, data, x
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
-
+from rasa.utils.common import set_log_level
 
 logger = logging.getLogger(__name__)
 
@@ -60,13 +60,10 @@ def main() -> None:
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
 
+    set_log_level(cmdline_arguments.loglevel)
+
     if hasattr(cmdline_arguments, "func"):
-        import os
-
         rasa.utils.io.configure_colored_logging(cmdline_arguments.loglevel)
-        os.environ[ENV_LOG_LEVEL] = logging.getLevelName(cmdline_arguments.loglevel)
-        logger.setLevel(cmdline_arguments.loglevel)
-
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
         print_version()

@@ -19,7 +19,6 @@ import questionary
 import rasa.cli.utils
 from questionary import Choice, Form, Question
 
-from rasa.utils.common import set_sanic_log_level
 from rasa.cli import utils as cliutils
 from rasa.core import constants, events, run, train, utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
@@ -1391,8 +1390,6 @@ def _serve_application(app, stories, finetune, skip_visualization):
 
     app.add_task(run_interactive_io)
 
-    set_sanic_log_level()
-
     app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT)
 
     return app
@@ -1421,8 +1418,6 @@ def start_visualization(image_path: Text = None) -> None:
             return response.file(os.path.abspath(image_path), headers=headers)
         except FileNotFoundError:
             return response.text("", 404)
-
-    set_sanic_log_level()
 
     app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT + 1, access_log=False)
 

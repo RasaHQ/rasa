@@ -1,5 +1,6 @@
+import logging
 import os
-from typing import Any, Callable, Dict, List, Text
+from typing import Any, Callable, Dict, List, Text, Optional, Union
 
 import rasa.core.utils
 import rasa.utils.io
@@ -53,26 +54,38 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         return not_found()
 
 
-def set_tensorflow_log_level():
+def set_log_level(log_level: Optional[Any] = None):
+    import logging
+
+    if not log_level:
+        log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+        log_level = logging.getLevelName(log_level)
+
+    logging.getLogger(__name__).setLevel(log_level)
+
+    set_tensorflow_log_level(log_level)
+    set_sanic_log_level(log_level)
+
+    os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
+
+
+def set_tensorflow_log_level(log_level: logging):
     import tensorflow as tf
 
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
     tf_log_level = tf.logging.INFO
-    if log_level == "DEBUG":
+    if log_level == logging.DEBUG:
         tf_log_level = tf.logging.DEBUG
-    if log_level == "WARNING":
+    if log_level == logging.WARNING:
         tf_log_level = tf.logging.WARN
-    if log_level == "ERROR":
+    if log_level == logging.ERROR:
         tf_log_level = tf.logging.ERROR
 
     tf.logging.set_verbosity(tf_log_level)
 
 
-def set_sanic_log_level():
+def set_sanic_log_level(log_level):
     from sanic.log import logger as sanic_logger
 
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
     sanic_logger.setLevel(log_level)
 
 

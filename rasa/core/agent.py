@@ -11,7 +11,6 @@ import aiohttp
 
 import rasa
 import rasa.utils.io
-from rasa.utils.common import set_sanic_log_level
 from rasa.constants import DEFAULT_DOMAIN_PATH
 from rasa.core import constants, jobs, training
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
@@ -671,8 +670,6 @@ class Agent(object):
         app = run.configure_app(channels, cors, None, enable_api=False, route=route)
 
         app.agent = self
-
-        set_sanic_log_level()
 
         app.run(host="0.0.0.0", port=http_port)
 

@@ -1,8 +1,5 @@
 from collections import namedtuple
 import tensorflow as tf
-from rasa.utils.common import set_tensorflow_log_level
-
-set_tensorflow_log_level()
 
 
 class TimedNTM(object):

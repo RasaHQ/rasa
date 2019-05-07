@@ -10,7 +10,6 @@ import rasa.core
 import rasa.core.cli.arguments
 import rasa.utils
 import rasa.utils.io
-from rasa.utils.common import set_sanic_log_level
 from rasa.core import constants, utils
 from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import BUILTIN_CHANNELS, InputChannel, console
@@ -145,8 +144,6 @@ def serve_application(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
-
-    set_sanic_log_level()
 
     app.run(host="0.0.0.0", port=port)
 
