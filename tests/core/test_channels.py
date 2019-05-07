@@ -16,6 +16,7 @@ from tests.core.conftest import MOODBOT_MODEL_PATH
 
 # this is needed so that the tests included as code examples look better
 from tests.utilities import json_of_latest_request, latest_request
+import os
 
 MODEL_PATH = MOODBOT_MODEL_PATH
 

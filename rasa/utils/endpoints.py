@@ -168,3 +168,32 @@ class ClientResponseError(aiohttp.ClientError):
         self.message = message
         self.text = text
         super().__init__("{}, {}, body='{}'".format(status, message, text))
+
+
+def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a valid
+    boolean value. If not, `default` is returned."""
+
+    return request.args.get(name, str(default)).lower() == "true"
+
+
+def float_arg(
+    request: Request, key: Text, default: Optional[float] = None
+) -> Optional[float]:
+    """Return a passed argument cast as a float or None.
+
+    Checks the `name` parameter of the request if it contains a valid
+    float value. If not, `None` is returned."""
+
+    arg = request.args.get(key, default)
+
+    if arg is default:
+        return arg
+
+    try:
+        return float(str(arg))
+    except (ValueError, TypeError):
+        logger.warning("Failed to convert '{}' to float.".format(arg))
+        return default

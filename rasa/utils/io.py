@@ -1,11 +1,13 @@
 import asyncio
 import io
+import json
 import logging
 import tarfile
+import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict
+from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader, StringIO
 
@@ -116,6 +118,12 @@ def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
         return f.read()
 
 
+def read_json_file(filename: Text) -> Union[Dict, List]:
+    """Read json from a file"""
+    with open(filename) as f:
+        return json.load(f)
+
+
 def read_yaml_file(filename: Text) -> Dict[Text, Any]:
     """Parses a yaml file.
 
@@ -151,3 +159,18 @@ def write_yaml_file(data: Dict, filename: Text):
     """
     with open(filename, "w") as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
+
+
+def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
+    """Creates a tempfile.NamedTemporaryFile object for data.
+
+    mode defines NamedTemporaryFile's  mode parameter in py3."""
+
+    encoding = None if "b" in mode else "utf-8"
+    f = tempfile.NamedTemporaryFile(
+        mode=mode, suffix=suffix, delete=False, encoding=encoding
+    )
+    f.write(data)
+
+    f.close()
+    return f.name
