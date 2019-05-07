@@ -1,0 +1,15 @@
+intents:
+  - greet
+  - goodbye
+
+actions:
+- utter_greet
+- utter_goodbye
+
+templates:
+
+  utter_did_that_help:
+  - text: "Did that help you?"
+
+  utter_happy:
+  - text: "Great carry on!"
