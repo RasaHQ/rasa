@@ -674,7 +674,7 @@ class Agent(object):
 
         set_sanic_log_level()
 
-        app.run(host="0.0.0.0", port=http_port, access_log=True)
+        app.run(host="0.0.0.0", port=http_port)
 
         # this might seem unnecessary (as run does not return until the server
         # is killed) - but we use it for tests where we mock `.run` to directly

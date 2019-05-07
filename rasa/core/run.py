@@ -148,7 +148,7 @@ def serve_application(
 
     set_sanic_log_level()
 
-    app.run(host="0.0.0.0", port=port, access_log=True)
+    app.run(host="0.0.0.0", port=port)
 
 
 # noinspection PyUnusedLocal

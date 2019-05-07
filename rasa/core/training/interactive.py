@@ -1393,7 +1393,7 @@ def _serve_application(app, stories, finetune, skip_visualization):
 
     set_sanic_log_level()
 
-    app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT, access_log=True)
+    app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT)
 
     return app
 
