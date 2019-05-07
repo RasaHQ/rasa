@@ -368,9 +368,10 @@ class Domain(object):
 
         action.ensure_action_name_uniqueness(self.action_names)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         self_as_string = json.dumps(self.as_dict())
-        return utils.get_text_hash(self_as_string)
+        text_hash = utils.get_text_hash(self_as_string)
+        return int(text_hash, 16)
 
     @utils.lazyproperty
     def user_actions_and_forms(self):
