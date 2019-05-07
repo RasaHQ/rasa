@@ -60,7 +60,11 @@ def main() -> None:
     cmdline_arguments = arg_parser.parse_args()
 
     if hasattr(cmdline_arguments, "func"):
+        import os
+
         rasa.utils.io.configure_colored_logging(cmdline_arguments.loglevel)
+        os.environ["LOG_LEVEL"] = logging.getLevelName(cmdline_arguments.loglevel)
+
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
         print_version()
