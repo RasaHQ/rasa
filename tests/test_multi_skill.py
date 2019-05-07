@@ -4,8 +4,10 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 import os
 
+from rasa import model
 from rasa.core import utils
 from rasa.skill import SkillSelector
+from rasa.train import train_async
 
 
 def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
@@ -151,3 +153,19 @@ def test_import_outside_project_directory(tmpdir_factory):
     actual = SkillSelector.load(skill_a_directory / "config.yml")
 
     assert actual._imports == {str(skill_b_directory), str(root / "Skill C")}
+
+
+async def test_multi_skill_training():
+    example_directory = "data/examples/multi_skill_bot"
+    config_file = os.path.join(example_directory, "config.yml")
+    trained_stack_model_path = await train_async(
+        config=config_file, domain=None, training_files=None
+    )
+
+    unpacked = model.unpack(trained_stack_model_path)
+    model_fingerprint = model.fingerprint_from_path(unpacked)
+
+    assert len(model_fingerprint["messages"]) == 2
+    assert len(model_fingerprint["stories"]) == 2
+
+    domain_file = None  # TBD
