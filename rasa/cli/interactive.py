@@ -93,6 +93,7 @@ def perform_interactive_learning(args, zipped_model):
     from rasa.core.train import do_interactive_learning
 
     if zipped_model:
+        args.model = zipped_model
         model_path = model.unpack_model(zipped_model)
         args.core, args.nlu = model.get_model_subdirectories(model_path)
         stories_directory = data.get_core_directory(args.data)

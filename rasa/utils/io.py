@@ -1,7 +1,9 @@
 import asyncio
+import json
 import logging
 import os
 import tarfile
+import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
@@ -116,7 +118,13 @@ def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
         return f.read()
 
 
-def read_yaml_file(filename: Text) -> Union[List[Any], Dict[Text, Any]]:
+def read_json_file(filename: Text) -> Union[Dict, List]:
+    """Read json from a file"""
+    with open(filename) as f:
+        return json.load(f)
+
+
+def read_yaml_file(filename: Text) -> Union[Dict, List]:
     """Parses a yaml file.
 
      Args:
@@ -161,3 +169,18 @@ def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
     potential_parent_directory = os.path.abspath(potential_parent_directory)
 
     return potential_parent_directory in path
+
+
+def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
+    """Creates a tempfile.NamedTemporaryFile object for data.
+
+    mode defines NamedTemporaryFile's  mode parameter in py3."""
+
+    encoding = None if "b" in mode else "utf-8"
+    f = tempfile.NamedTemporaryFile(
+        mode=mode, suffix=suffix, delete=False, encoding=encoding
+    )
+    f.write(data)
+
+    f.close()
+    return f.name
