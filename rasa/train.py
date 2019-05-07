@@ -40,9 +40,9 @@ def train(
 
 
 async def train_async(
-    domain: Text,
+    domain: Optional,
     config: Text,
-    training_files: Union[Text, List[Text]],
+    training_files: Optional[Union[Text, List[Text]]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
     kwargs: Optional[Dict] = None,
