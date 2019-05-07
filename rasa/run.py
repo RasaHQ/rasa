@@ -36,11 +36,6 @@ def run(
     import rasa.nlu.run
     from rasa.core.utils import AvailableEndpoints
 
-    logger.debug("DEBUG")
-    logger.info("INFO")
-    logger.warning("WARNING")
-    logger.error("ERROR")
-
     model_path = get_model(model)
     if not model_path:
         logger.error(

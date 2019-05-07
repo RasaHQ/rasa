@@ -2,9 +2,7 @@ import argparse
 import logging
 
 import rasa.utils.io
-from rasa.constants import ENV_LOG_LEVEL
 
-from rasa.core.cli.arguments import add_logging_option_arguments
 from rasa import version
 from rasa.cli import scaffold, run, train, interactive, shell, test, show, data, x
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
