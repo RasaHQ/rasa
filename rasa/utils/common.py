@@ -74,3 +74,21 @@ def set_sanic_log_level():
 
     log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
     sanic_logger.setLevel(log_level)
+
+
+def obtain_verbosity():
+    log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
+
+    verbosity = 0
+    if log_level == "DEBUG":
+        verbosity = 2
+    if log_level == "INFO":
+        verbosity = 1
+
+    return verbosity
+
+
+def disable_logging():
+    log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
+
+    return not (log_level == "DEBUG" or log_level == "INFO")

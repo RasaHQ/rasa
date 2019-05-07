@@ -27,7 +27,7 @@ from rasa.core.policies.tf_utils import (
     ChronoBiasLayerNormBasicLSTMCell,
 )
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import set_tensorflow_log_level
+from rasa.utils.common import set_tensorflow_log_level, disable_logging
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.tf_utils import TimeAttentionWrapperState
@@ -1179,7 +1179,7 @@ class EmbeddingPolicy(Policy):
                 "Accuracy is updated every {} epochs"
                 "".format(self.evaluate_every_num_epochs)
             )
-        pbar = tqdm(range(self.epochs), desc="Epochs")
+        pbar = tqdm(range(self.epochs), desc="Epochs", disable=disable_logging())
         train_acc = 0
         last_loss = 0
         for ep in pbar:

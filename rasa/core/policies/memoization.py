@@ -15,6 +15,7 @@ from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.common import disable_logging
 
 logger = logging.getLogger(__name__)
 
@@ -76,9 +77,7 @@ class MemoizationPolicy(Policy):
     def toggle(self, activate: bool) -> None:
         self.is_enabled = activate
 
-    def _add_states_to_lookup(
-        self, trackers_as_states, trackers_as_actions, domain, online=False
-    ):
+    def _add_states_to_lookup(self, trackers_as_states, trackers_as_actions, domain):
         """Add states to lookup dict"""
         if not trackers_as_states:
             return
@@ -98,7 +97,7 @@ class MemoizationPolicy(Policy):
         pbar = tqdm(
             zip(trackers_as_states, trackers_as_actions),
             desc="Processed actions",
-            disable=online,
+            disable=disable_logging(),
         )
         for states, actions in pbar:
             action = actions[0]
@@ -170,9 +169,7 @@ class MemoizationPolicy(Policy):
             trackers_as_states,
             trackers_as_actions,
         ) = self.featurizer.training_states_and_actions(training_trackers[-1:], domain)
-        self._add_states_to_lookup(
-            trackers_as_states, trackers_as_actions, domain, online=True
-        )
+        self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
 
     def _recall_states(self, states: List[Dict[Text, float]]) -> Optional[int]:
 

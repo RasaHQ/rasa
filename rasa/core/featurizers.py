@@ -13,6 +13,7 @@ from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.utils.common import disable_logging
 
 logger = logging.getLogger(__name__)
 
@@ -471,11 +472,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             "collected trackers (by {}({}))..."
             "".format(type(self).__name__, type(self.state_featurizer).__name__)
         )
-        pbar = tqdm(
-            trackers,
-            desc="Processed trackers",
-            disable=(not logger.isEnabledFor(logging.DEBUG)),
-        )
+        pbar = tqdm(trackers, desc="Processed trackers", disable=disable_logging())
         for tracker in pbar:
             states = self._create_states(tracker, domain, is_binary_training=True)
 
@@ -583,11 +580,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             "collected trackers (by {}({}))..."
             "".format(type(self).__name__, type(self.state_featurizer).__name__)
         )
-        pbar = tqdm(
-            trackers,
-            desc="Processed trackers",
-            disable=(not logger.isEnabledFor(logging.DEBUG)),
-        )
+        pbar = tqdm(trackers, desc="Processed trackers", disable=disable_logging())
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
 
