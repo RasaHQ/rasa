@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_core_directory(
-    paths: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
+    paths: Optional[Union[Text, List[Text]]],
+    skill_imports: Optional[SkillSelector] = None,
 ) -> Text:
     """Recursively collects all Core training files from a list of paths.
 
@@ -30,7 +31,8 @@ def get_core_directory(
 
 
 def get_nlu_directory(
-    paths: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
+    paths: Optional[Union[Text, List[Text]]],
+    skill_imports: Optional[SkillSelector] = None,
 ) -> Text:
     """Recursively collects all NLU training files from a list of paths.
 
@@ -47,7 +49,8 @@ def get_nlu_directory(
 
 
 def get_core_nlu_directories(
-    paths: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
+    paths: Optional[Union[Text, List[Text]]],
+    skill_imports: Optional[SkillSelector] = None,
 ) -> Tuple[Text, Text]:
     """Recursively collects all training files from a list of paths.
 
@@ -69,7 +72,8 @@ def get_core_nlu_directories(
 
 
 def _get_core_nlu_files(
-    paths: Union[Text, List[Text]], skill_imports: Optional[SkillSelector] = None
+    paths: Optional[Union[Text, List[Text]]],
+    skill_imports: Optional[SkillSelector] = None,
 ) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
@@ -78,6 +82,9 @@ def _get_core_nlu_files(
 
     if not skill_imports.is_empty():
         paths = skill_imports.training_paths()
+
+    if paths is None:
+        paths = []
     elif isinstance(paths, str):
         paths = [paths]
 

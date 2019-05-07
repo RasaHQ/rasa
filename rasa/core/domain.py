@@ -147,7 +147,13 @@ class Domain(object):
 
         if not skill_imports.is_empty():
             paths = skill_imports.training_paths()
-        elif not isinstance(paths, list):
+
+        if not paths:
+            raise InvalidDomain(
+                "No domain file was specified. Please specify a path "
+                "to a valid domain file."
+            )
+        elif not isinstance(paths, list) and not isinstance(paths, set):
             paths = [paths]
 
         domain = Domain.empty()
