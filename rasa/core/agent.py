@@ -11,6 +11,7 @@ import aiohttp
 
 import rasa
 import rasa.utils.io
+from rasa.utils.common import set_sanic_log_level
 from rasa.constants import DEFAULT_DOMAIN_PATH
 from rasa.core import constants, jobs, training
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
@@ -671,11 +672,9 @@ class Agent(object):
 
         app.agent = self
 
-        app.run(
-            host="0.0.0.0",
-            port=http_port,
-            access_log=logger.isEnabledFor(logging.DEBUG),
-        )
+        set_sanic_log_level()
+
+        app.run(host="0.0.0.0", port=http_port, access_log=True)
 
         # this might seem unnecessary (as run does not return until the server
         # is killed) - but we use it for tests where we mock `.run` to directly

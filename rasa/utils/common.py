@@ -67,3 +67,10 @@ def set_tensorflow_log_level():
         tf_log_level = tf.logging.ERROR
 
     tf.logging.set_verbosity(tf_log_level)
+
+
+def set_sanic_log_level():
+    from sanic.log import logger as sanic_logger
+
+    log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
+    sanic_logger.setLevel(log_level)
