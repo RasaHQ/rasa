@@ -15,6 +15,8 @@ class SkillSelector:
 
     @classmethod
     def empty(cls) -> "SkillSelector":
+        """Returns an empty `SkillSelector` instance."""
+
         return cls(set())
 
     @classmethod
