@@ -20,6 +20,24 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     def __init__(self, templates: Dict[Text, List[Dict[Text, Any]]]) -> None:
         self.templates = templates
 
+    def _templates_for_utter_action(self, utter_action, output_channel):
+        """Return array of templates that fit the channel and action."""
+
+        channel_templates = []
+        default_templates = []
+
+        for template in self.templates[utter_action]:
+            if template.get("channel") == output_channel:
+                channel_templates.append(template)
+            elif not template.get("channel"):
+                default_templates.append(template)
+
+        # always prefer channel specific templates over default ones
+        if channel_templates:
+            return channel_templates
+        else:
+            return default_templates
+
     # noinspection PyUnusedLocal
     def _random_template_for(
         self, utter_action: Text, output_channel: Text
@@ -32,17 +50,14 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         import numpy as np
 
         if utter_action in self.templates:
-            templates = defaultdict(list)
-            for template in self.templates[utter_action]:
-                if template.get("channel") == output_channel:
-                    templates["channel_templates"].append(template)
-                elif not template.get("channel"):
-                    templates["default_templates"].append(template)
+            suitable_templates = self._templates_for_utter_action(
+                utter_action, output_channel
+            )
 
-            if templates.get("channel_templates"):
-                return np.random.choice(templates["channel_templates"])
-            elif templates.get("default_templates"):
-                return np.random.choice(templates["default_templates"])
+            if suitable_templates:
+                return np.random.choice(suitable_templates)
+            else:
+                return None
         else:
             return None
 
