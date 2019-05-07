@@ -18,14 +18,16 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import set_tensorflow_log_level, obtain_verbosity
+from rasa.utils.common import obtain_verbosity, set_tensorflow_log_level
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
+
 set_tensorflow_log_level()
+
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +157,8 @@ class KerasPolicy(Policy):
             loss="categorical_crossentropy", optimizer="rmsprop", metrics=["accuracy"]
         )
 
-        logger.debug(model.summary())
+        if obtain_verbosity() > 0:
+            model.summary()
 
         return model
 
