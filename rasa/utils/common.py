@@ -91,4 +91,4 @@ def obtain_verbosity():
 def disable_logging():
     log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
 
-    return not (log_level == "DEBUG" or log_level == "INFO")
+    return log_level == "ERROR" or log_level == "WARNING"
