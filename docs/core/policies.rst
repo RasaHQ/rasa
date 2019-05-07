@@ -70,8 +70,8 @@ can become very large quickly.
 The number of sampled stories is ``augmentation_factor``x10.
 
 ``--augmentation 0`` disables all augmentation behavior.
-The :ref:`memoization_policy` is not affected by augmentation
-(independent on the ``augmentation_factor``) and will automatically
+The memoization based policies are not affected by augmentation
+(independent of the ``augmentation_factor``) and will automatically
 ignore all augmented stories.
 
 In python, you can pass the ``augmentation_factor`` argument to the
