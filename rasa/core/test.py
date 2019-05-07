@@ -322,7 +322,7 @@ def _collect_action_executed_predictions(
     action, policy, confidence = processor.predict_next_action(partial_tracker)
     predicted = action.name()
 
-    if predicted != gold and FormPolicy.__name__ in policy:
+    if policy and predicted != gold and FormPolicy.__name__ in policy:
         # FormPolicy predicted wrong action
         # but it might be Ok if form action is rejected
         _emulate_form_rejection(processor, partial_tracker)
@@ -506,15 +506,15 @@ async def test(
     max_stories: Optional[int] = None,
     out_directory: Optional[Text] = None,
     fail_on_prediction_errors: bool = False,
-    use_e2e: bool = False,
+    e2e: bool = False,
 ):
     """Run the evaluation of the stories, optionally plot the results."""
     from rasa.nlu.test import get_evaluation_metrics
 
-    completed_trackers = await _generate_trackers(stories, agent, max_stories, use_e2e)
+    completed_trackers = await _generate_trackers(stories, agent, max_stories, e2e)
 
     story_evaluation, _ = collect_story_predictions(
-        completed_trackers, agent, fail_on_prediction_errors, use_e2e
+        completed_trackers, agent, fail_on_prediction_errors, e2e
     )
 
     evaluation_store = story_evaluation.evaluation_store
@@ -549,7 +549,7 @@ async def test(
         "accuracy": accuracy,
         "actions": story_evaluation.action_list,
         "in_training_data_fraction": story_evaluation.in_training_data_fraction,
-        "is_end_to_end_evaluation": use_e2e,
+        "is_end_to_end_evaluation": e2e,
     }
 
 
@@ -687,67 +687,6 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
     ax.set_ylabel("Number of correct test stories")
     plt.savefig(os.path.join(output, "model_comparison_graph.pdf"), format="pdf")
     plt.show()
-
-
-def main():
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import NaturalLanguageInterpreter
-    from rasa.core.utils import AvailableEndpoints, set_default_subparser
-    import rasa.nlu.utils as nlu_utils
-    import rasa.core.cli
-    from rasa.core import utils
-
-    loop = asyncio.get_event_loop()
-
-    # Running as standalone python application
-    arg_parser = create_argument_parser()
-    set_default_subparser(arg_parser, "default")
-    cmdline_arguments = arg_parser.parse_args()
-
-    logging.basicConfig(level=cmdline_arguments.loglevel)
-    _endpoints = AvailableEndpoints.read_endpoints(cmdline_arguments.endpoints)
-
-    if cmdline_arguments.output:
-        nlu_utils.create_dir(cmdline_arguments.output)
-
-    if not cmdline_arguments.core:
-        raise ValueError(
-            "you must provide a core model directory to evaluate using -d / --core"
-        )
-    if cmdline_arguments.mode == "default":
-
-        _interpreter = NaturalLanguageInterpreter.create(
-            cmdline_arguments.nlu, _endpoints.nlu
-        )
-
-        _agent = Agent.load(cmdline_arguments.core, interpreter=_interpreter)
-
-        stories = loop.run_until_complete(
-            rasa.core.cli.train.stories_from_cli_args(cmdline_arguments)
-        )
-
-        loop.run_until_complete(
-            test(
-                stories,
-                _agent,
-                cmdline_arguments.max_stories,
-                cmdline_arguments.output,
-                cmdline_arguments.fail_on_prediction_errors,
-                cmdline_arguments.e2e,
-            )
-        )
-
-    elif cmdline_arguments.mode == "compare":
-        compare(
-            cmdline_arguments.core, cmdline_arguments.stories, cmdline_arguments.output
-        )
-
-        story_n_path = os.path.join(cmdline_arguments.core, "num_stories.json")
-
-        number_of_stories = utils.read_json_file(story_n_path)
-        plot_curve(cmdline_arguments.output, number_of_stories)
-
-    logger.info("Finished evaluation")
 
 
 if __name__ == "__main__":

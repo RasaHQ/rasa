@@ -29,7 +29,7 @@ def add_interactive_args(parser):
         help="Configuration file for the connectors as a yml file",
     )
     parser.add_argument(
-        "--skip_visualization",
+        "--skip-visualization",
         default=False,
         action="store_true",
         help="disables plotting the visualization during interactive learning",
@@ -41,7 +41,7 @@ def add_interactive_args(parser):
         help="retrain the model immediately based on feedback.",
     )
     parser.add_argument(
-        "--nlu_data",
+        "--nlu-data",
         default=None,
         help="Location where the nlu training data should be saved.",
     )
@@ -71,13 +71,13 @@ def add_general_args(parser):
         help="how much data augmentation to use during training",
     )
     parser.add_argument(
-        "--dump_stories",
+        "--dump-stories",
         default=False,
         action="store_true",
         help="If enabled, save flattened stories to a file",
     )
     parser.add_argument(
-        "--debug_plots",
+        "--debug-plots",
         default=False,
         action="store_true",
         help="If enabled, will create plots showing checkpoints "

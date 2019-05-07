@@ -69,10 +69,9 @@ then you can train the model by running:
 
 .. code-block:: console
 
-    $ python -m rasa.nlu.train \
+    $ rasa train nlu \
         --config config.yml \
-        --data nlu_data/ \
-        --path projects
+        --data nlu_data/
 
 Once the training is finished, you can test your model's Norwegian language skills.
 

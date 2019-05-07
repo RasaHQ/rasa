@@ -27,10 +27,13 @@ Added
 - you can now choose actions previously created in the same session
 in ``interactive learning``
 - add formatter 'black'
-
+- add ``rasa interactive core`` to command line interface
+- support for spaCy 2.1
+- a model for an agent can now also be loaded from a remote storage
 
 Changed
 -------
+- renamed all CLI parameters containing any ``_`` to use dashes ``-`` instead (GNU standard)
 - renamed ``rasa_core`` package to ``rasa.core``
 - for interactive learning only include manually annotated and ner_crf entities in nlu export
 - made ``message_id`` an additional argument to ``interpreter.parse``
@@ -39,12 +42,21 @@ Changed
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 - removed ``--num_threads`` from run command (server will be asyncronous but
   running in a single thread)
+- removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be
+  loaded by default)
+- changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
+- ``rasa train`` uses fallback config if an invalid config is given
+- ``rasa test core`` compares multiple models if a list of model files is provided for the argument ``--model``
+- ``rasa train`` falls back to ``rasa train core``/``rasa train nlu`` if the corresponding training data are missing
+- Merged rasa.core and rasa.nlu server into a single server. See swagger file in ``docs/_static/spec/server.yaml`` for
+  available endpoints.
 
 Removed
 -------
 - removed possibility to execute ``python -m rasa_core.train`` etc. (e.g. scripts in ``rasa.core`` and ``rasa.nlu``).
   Use the CLI for rasa instead, e.g. ``rasa train core``.
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
+- removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.
 
 Fixed
 -----
@@ -53,5 +65,4 @@ Fixed
   in a parallel process, which prevents the currently loaded model unloading
 - added missing implementation of the ``keys()`` function for the Redis Tracker
   Store
-- ``rasa nlu test`` doesn't error anymore when a test file is passed with ``-u``
 - in interactive learning: only updates entity values if user changes annotation

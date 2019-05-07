@@ -1,10 +1,8 @@
-from collections import deque, defaultdict
-
-import io
-import sys
 import json
 import logging
+import sys
 import uuid
+from collections import deque, defaultdict
 from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
 from rasa.core import utils

@@ -14,7 +14,18 @@ import zipfile
 from asyncio import AbstractEventLoop, Future
 from hashlib import md5, sha1
 from io import BytesIO as IOReader, StringIO
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Text,
+    Tuple,
+    Callable,
+    Awaitable,
+)
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -329,23 +340,6 @@ def zip_folder(folder):
     return shutil.make_archive(zipped_path.name, str("zip"), folder)
 
 
-def unarchive(byte_array: bytes, directory: Text) -> Text:
-    """Tries to unpack a byte array interpreting it as an archive.
-
-    Tries to use tar first to unpack, if that fails, zip will be used."""
-
-    try:
-        tar = tarfile.open(fileobj=IOReader(byte_array))
-        tar.extractall(directory)
-        tar.close()
-        return directory
-    except tarfile.TarError:
-        zip_ref = zipfile.ZipFile(IOReader(byte_array))
-        zip_ref.extractall(directory)
-        zip_ref.close()
-        return directory
-
-
 def cap_length(s, char_limit=20, append_ellipsis=True):
     """Makes sure the string doesn't exceed the passed char limit.
 
@@ -365,35 +359,6 @@ def write_request_body_to_file(request: Request, path: Text):
 
     with open(path, "w+b") as f:
         f.write(request.body)
-
-
-def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
-    """Return a passed boolean argument of the request or a default.
-
-    Checks the `name` parameter of the request if it contains a valid
-    boolean value. If not, `default` is returned."""
-
-    return request.args.get(name, str(default)).lower() == "true"
-
-
-def float_arg(
-    request: Request, key: Text, default: Optional[float] = None
-) -> Optional[float]:
-    """Return a passed argument cast as a float or None.
-
-    Checks the `name` parameter of the request if it contains a valid
-    float value. If not, `None` is returned."""
-
-    arg = request.args.get(key, default)
-
-    if arg is default:
-        return arg
-
-    try:
-        return float(arg)
-    except (ValueError, TypeError):
-        logger.warning("Failed to convert '{}' to float.".format(arg))
-        return default
 
 
 def extract_args(
@@ -590,12 +555,12 @@ class LockCounter(asyncio.Lock):
         super().__init__()
         self.wait_counter = 0
 
-    async def acquire(self) -> Any:
+    async def acquire(self) -> bool:
         """Acquire the lock, makes sure only one coroutine can retrieve it."""
 
         self.wait_counter += 1
         try:
-            return await super(LockCounter, self).acquire()
+            return await super(LockCounter, self).acquire()  # type: ignore
         finally:
             self.wait_counter -= 1
 

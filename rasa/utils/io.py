@@ -1,10 +1,15 @@
 import asyncio
 import io
+import json
 import logging
+import tarfile
+import tempfile
 import warnings
+import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict
+from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
+from io import BytesIO as IOReader, StringIO
 
 
 def configure_colored_logging(loglevel):
@@ -113,6 +118,12 @@ def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
         return f.read()
 
 
+def read_json_file(filename: Text) -> Union[Dict, List]:
+    """Read json from a file"""
+    with open(filename) as f:
+        return json.load(f)
+
+
 def read_yaml_file(filename: Text) -> Dict[Text, Any]:
     """Parses a yaml file.
 
@@ -120,3 +131,46 @@ def read_yaml_file(filename: Text) -> Dict[Text, Any]:
         filename: The path to the file which should be read.
     """
     return read_yaml(read_file(filename, "utf-8"))
+
+
+def unarchive(byte_array: bytes, directory: Text) -> Text:
+    """Tries to unpack a byte array interpreting it as an archive.
+
+    Tries to use tar first to unpack, if that fails, zip will be used."""
+
+    try:
+        tar = tarfile.open(fileobj=IOReader(byte_array))
+        tar.extractall(directory)
+        tar.close()
+        return directory
+    except tarfile.TarError:
+        zip_ref = zipfile.ZipFile(IOReader(byte_array))
+        zip_ref.extractall(directory)
+        zip_ref.close()
+        return directory
+
+
+def write_yaml_file(data: Dict, filename: Text):
+    """Writes a yaml file.
+
+     Args:
+        data: The data to write.
+        filename: The path to the file which should be written.
+    """
+    with open(filename, "w") as outfile:
+        yaml.dump(data, outfile, default_flow_style=False)
+
+
+def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
+    """Creates a tempfile.NamedTemporaryFile object for data.
+
+    mode defines NamedTemporaryFile's  mode parameter in py3."""
+
+    encoding = None if "b" in mode else "utf-8"
+    f = tempfile.NamedTemporaryFile(
+        mode=mode, suffix=suffix, delete=False, encoding=encoding
+    )
+    f.write(data)
+
+    f.close()
+    return f.name

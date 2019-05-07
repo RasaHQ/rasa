@@ -105,8 +105,8 @@ async def test_dispatcher_utter_buttons_from_domain_templ(default_tracker):
     assert len(bot.messages) == 1
     assert bot.messages[0]["text"] == "Hey! How are you?"
     assert bot.messages[0]["buttons"] == [
-        {"payload": "great", "title": "great"},
-        {"payload": "super sad", "title": "super sad"},
+        {"payload": "/mood_great", "title": "great"},
+        {"payload": "/mood_unhappy", "title": "super sad"},
     ]
 
 

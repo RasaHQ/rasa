@@ -44,7 +44,6 @@ def run(
         )
         return
 
-    core_path, nlu_path = get_model_subdirectories(model_path)
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     if not connector and not credentials:
@@ -57,39 +56,20 @@ def run(
     else:
         channel = connector
 
-    if os.path.exists(core_path):
-        kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)
-        rasa.core.run.serve_application(
-            core_path,
-            nlu_path,
-            channel=channel,
-            credentials_file=credentials,
-            endpoints=_endpoints,
-            **kwargs
-        )
-
-    # TODO: No core model was found, run only nlu server for now
-    elif os.path.exists(nlu_path):
-        rasa.nlu.run.run_cmdline(nlu_path)
+    kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)
+    rasa.core.run.serve_application(
+        model, channel=channel, credentials=credentials, endpoints=_endpoints, **kwargs
+    )
 
     shutil.rmtree(model_path)
 
 
 def create_agent(model: Text, endpoints: Text = None) -> "Agent":
-    from rasa.core.interpreter import RasaNLUInterpreter
     from rasa.core.tracker_store import TrackerStore
     from rasa.core import broker
     from rasa.core.utils import AvailableEndpoints
 
-    core_path, nlu_path = get_model_subdirectories(model)
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
-
-    _interpreter = None
-    if os.path.exists(nlu_path):
-        _interpreter = RasaNLUInterpreter(model_directory=nlu_path)
-    else:
-        _interpreter = None
-        logging.info("No NLU model found. Running without NLU.")
 
     _broker = broker.from_endpoint_config(_endpoints.event_broker)
 
@@ -98,7 +78,7 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     )
 
     return Agent.load(
-        core_path,
+        model,
         generator=_endpoints.nlg,
         tracker_store=_tracker_store,
         action_endpoint=_endpoints.action,

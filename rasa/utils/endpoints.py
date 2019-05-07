@@ -1,3 +1,6 @@
+import logging
+import os
+
 import aiohttp
 from typing import Any, Optional, Text, Dict
 
@@ -5,6 +8,9 @@ from sanic.request import Request
 
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
+
+
+logger = logging.getLogger(__name__)
 
 
 def read_endpoint_config(
@@ -16,7 +22,13 @@ def read_endpoint_config(
     if not filename:
         return None
 
-    content = rasa.utils.io.read_yaml_file(filename)
+    try:
+        content = rasa.utils.io.read_yaml_file(filename)
+    except FileNotFoundError:
+        logger.error(
+            "Failed to read endpoint configuration "
+            "from {}. No such file.".format(os.path.abspath(filename))
+        )
 
     if endpoint_type in content:
         return EndpointConfig.from_dict(content[endpoint_type])
@@ -156,3 +168,32 @@ class ClientResponseError(aiohttp.ClientError):
         self.message = message
         self.text = text
         super().__init__("{}, {}, body='{}'".format(status, message, text))
+
+
+def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a valid
+    boolean value. If not, `default` is returned."""
+
+    return request.args.get(name, str(default)).lower() == "true"
+
+
+def float_arg(
+    request: Request, key: Text, default: Optional[float] = None
+) -> Optional[float]:
+    """Return a passed argument cast as a float or None.
+
+    Checks the `name` parameter of the request if it contains a valid
+    float value. If not, `None` is returned."""
+
+    arg = request.args.get(key, default)
+
+    if arg is default:
+        return arg
+
+    try:
+        return float(str(arg))
+    except (ValueError, TypeError):
+        logger.warning("Failed to convert '{}' to float.".format(arg))
+        return default

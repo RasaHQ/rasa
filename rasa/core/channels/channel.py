@@ -1,12 +1,14 @@
 import asyncio
-from asyncio import Queue, CancelledError
-
 import inspect
 import json
 import logging
+from asyncio import Queue, CancelledError
+
 from sanic import Sanic, Blueprint, response
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 import uuid
+
+import rasa.utils.endpoints
 from rasa.core import utils
 from rasa.core.constants import DOCS_BASE_URL
 
@@ -379,7 +381,9 @@ class RestInput(InputChannel):
         async def receive(request):
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
-            should_use_stream = utils.bool_arg(request, "stream", default=False)
+            should_use_stream = rasa.utils.endpoints.bool_arg(
+                request, "stream", default=False
+            )
 
             if should_use_stream:
                 return response.stream(

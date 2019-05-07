@@ -58,7 +58,7 @@ build the documentation, you need to install the development dependencies:
 
 .. code-block:: bash
 
-    pip install -r dev-requirements.txt
+    pip install -r requirements-dev.txt
     pip install -e .
 
 

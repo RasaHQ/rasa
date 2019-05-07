@@ -12,6 +12,7 @@ env:
   global:
   - BOTO_CONFIG=/dev/null
   - COVERALLS_PARALLEL=true
+  - PIP_USE_PEP517=false
 
 install:
   - sudo apt-get install graphviz graphviz-dev
@@ -40,11 +41,6 @@ jobs:
     name: "Black Formatting"
     python: 3.6
     script: pip install black; black --check .
-  - stage: test
-    name: "Test Codestyle"
-    python: 3.6
-    script:
-      - py.test --codestyle -m codestyle
   - &test-core
     stage: test
     name: "Test Core 3.6"
@@ -102,7 +98,7 @@ jobs:
   - stage: test
     name: "Test CLI"
     script:
-    - timeout 2 time rasa --help
+    - timeout 3 time rasa --help
   - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "Stack starter pack"
@@ -115,7 +111,7 @@ jobs:
     name: "Test Docs Core"
     install:
     - pip install -r requirements-docs.txt
-    - pip install -e .
+    - pip install -e .[sql]
     - pip list
     script:
       # be strict about warnings --> they will be treated as errors

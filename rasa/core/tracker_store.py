@@ -1,10 +1,12 @@
-import itertools
 import json
 import logging
 import pickle
+from typing import Iterator, KeysView, List, Optional, Text, Iterable
+
+import itertools
 
 # noinspection PyPep8Naming
-from typing import Iterator, KeysView, List, Optional, Text
+from time import sleep
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.broker import EventChannel
@@ -37,7 +39,7 @@ class TrackerStore(object):
             )
         elif store.type.lower() == "sql":
             return SQLTrackerStore(
-                domain=domain, url=store.url, event_broker=event_broker, **store.kwargs
+                domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
         else:
             return TrackerStore.load_tracker_from_module_string(domain, store)
@@ -100,7 +102,7 @@ class TrackerStore(object):
             body.update(evt.as_dict())
             self.event_broker.publish(body)
 
-    def keys(self) -> List[Text]:
+    def keys(self) -> Iterable[Text]:
         raise NotImplementedError()
 
     @staticmethod
@@ -136,12 +138,12 @@ class InMemoryTrackerStore(TrackerStore):
             logger.debug("Creating a new tracker for id '{}'.".format(sender_id))
             return None
 
-    def keys(self) -> KeysView[Text]:
+    def keys(self) -> Iterable[Text]:
         return self.store.keys()
 
 
 class RedisTrackerStore(TrackerStore):
-    def keys(self) -> List[Text]:
+    def keys(self) -> Iterable[Text]:
         return self.red.keys()
 
     def __init__(
@@ -255,7 +257,7 @@ class MongoTrackerStore(TrackerStore):
         else:
             return None
 
-    def keys(self) -> List[Text]:
+    def keys(self) -> Iterable[Text]:
         return [c["sender_id"] for c in self.conversations.find()]
 
 
@@ -283,36 +285,104 @@ class SQLTrackerStore(TrackerStore):
         self,
         domain: Optional[Domain] = None,
         dialect: Text = "sqlite",
-        url: Text = None,
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
         db: Text = "rasa.db",
         username: Text = None,
         password: Text = None,
         event_broker: Optional[EventChannel] = None,
+        login_db: Optional[Text] = None,
     ) -> None:
+        import sqlalchemy
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
 
-        engine_url = URL(dialect, username, password, url, database=db)
+        engine_url = URL(
+            dialect,
+            username,
+            password,
+            host,
+            port,
+            database=login_db if login_db else db,
+        )
 
         logger.debug(
             "Attempting to connect to database "
             'via "{}"'.format(engine_url.__to_string__())
         )
 
-        self.engine = create_engine(engine_url)
-        self.session = sessionmaker(bind=self.engine)()
+        # Database might take a while to come up
+        while True:
+            try:
+                self.engine = create_engine(engine_url)
 
-        self.Base.metadata.create_all(self.engine)
+                # if `login_db` has been provided, use current connection with
+                # that database to create working database `db`
+                if login_db:
+                    self._create_database_and_update_engine(db, engine_url)
+
+                try:
+                    self.Base.metadata.create_all(self.engine)
+                except (
+                    sqlalchemy.exc.OperationalError,
+                    sqlalchemy.exc.ProgrammingError,
+                ) as e:
+                    # Several Rasa services started in parallel may attempt to
+                    # create tables at the same time. That is okay so long as
+                    # the first services finishes the table creation.
+                    logger.error("Could not create tables: {}".format(e))
+
+                self.session = sessionmaker(bind=self.engine)()
+                break
+            except (
+                sqlalchemy.exc.OperationalError,
+                sqlalchemy.exc.IntegrityError,
+            ) as e:
+
+                logger.warning(e)
+                sleep(5)
 
         logger.debug("Connection to SQL database '{}' successful".format(db))
 
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
-    def keys(self) -> List[Text]:
-        """Collect all keys of the items stored in the database."""
-        # noinspection PyUnresolvedReferences
-        return self.SQLEvent.__table__.columns.keys()
+    def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
+        """Create databse `db` and update engine to reflect the updated
+            `engine_url`."""
+
+        from sqlalchemy import create_engine
+
+        self._create_database(self.engine, db)
+        engine_url.database = db
+        self.engine = create_engine(engine_url)
+
+    @staticmethod
+    def _create_database(engine: "Engine", db: Text):
+        """Create database `db` on `engine` if it does not exist."""
+
+        import psycopg2
+
+        conn = engine.connect()
+
+        cursor = conn.connection.cursor()
+        cursor.execute("COMMIT")
+        cursor.execute(
+            ("SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{}'".format(db))
+        )
+        exists = cursor.fetchone()
+        if not exists:
+            try:
+                cursor.execute("CREATE DATABASE {}".format(db))
+            except psycopg2.IntegrityError as e:
+                logger.error("Could not create database '{}': {}".format(db, e))
+
+        cursor.close()
+        conn.close()
+
+    def keys(self) -> Iterable[Text]:
+        sender_ids = self.session.query(self.SQLEvent.sender_id).distinct().all()
+        return [sender_id for (sender_id,) in sender_ids]
 
     def retrieve(self, sender_id: Text) -> DialogueStateTracker:
         """Create a tracker from all previously stored events."""
@@ -341,7 +411,6 @@ class SQLTrackerStore(TrackerStore):
         events = self._additional_events(tracker)  # only store recent events
 
         for event in events:
-
             data = event.as_dict()
 
             intent = data.get("parse_data", {}).get("intent", {}).get("name")

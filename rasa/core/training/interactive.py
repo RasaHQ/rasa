@@ -540,7 +540,9 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 
     slot_strs = []
     for k, s in tracker_dump.get("slots").items():
-        colored_value = cliutils.wrap_with_color(str(s), rasa.cli.utils.bcolors.WARNING)
+        colored_value = cliutils.wrap_with_color(
+            str(s), color=rasa.cli.utils.bcolors.WARNING
+        )
         slot_strs.append("{}: {}".format(k, colored_value))
     return slot_strs
 
@@ -1494,14 +1496,9 @@ def run_interactive_learning(
 
     # before_server_start handlers make sure the agent is loaded before the
     # interactive learning IO starts
-    if server_args.get("core"):
+    if server_args.get("model"):
         app.register_listener(
-            partial(
-                run.load_agent_on_start,
-                server_args.get("core"),
-                endpoints,
-                server_args.get("nlu"),
-            ),
+            partial(run.load_agent_on_start, server_args.get("model"), endpoints, None),
             "before_server_start",
         )
     else:
