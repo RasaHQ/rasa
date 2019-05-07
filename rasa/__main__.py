@@ -64,6 +64,7 @@ def main() -> None:
 
         rasa.utils.io.configure_colored_logging(cmdline_arguments.loglevel)
         os.environ["LOG_LEVEL"] = logging.getLevelName(cmdline_arguments.loglevel)
+        logger.setLevel(cmdline_arguments.loglevel)
 
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
