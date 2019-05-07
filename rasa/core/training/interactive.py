@@ -20,7 +20,11 @@ import rasa.cli.utils
 from questionary import Choice, Form, Question
 from rasa.cli import utils as cliutils
 from rasa.core import constants, events, run, train, utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    default_action_names,
+    UTTER_PREFIX,
+)
 from rasa.core.channels import UserMessage
 from rasa.core.channels.channel import button_to_string, element_to_string
 from rasa.core.constants import (
@@ -631,7 +635,7 @@ async def _request_action_from_user(
     if is_new_action:
         # create new action
         action_name = await _request_free_text_action(sender_id, endpoint)
-        if "utter_" in action_name:
+        if action_name.startswith(UTTER_PREFIX):
             utter_message = await _request_free_text_utterance(
                 sender_id, endpoint, action_name
             )

@@ -110,7 +110,6 @@ class DialogueStateTracker(object):
         self.latest_action_name = None
         # Stores the most recent message sent by the user
         self.latest_message = None
-        self.action_utterances = []
         self.latest_bot_utterance = None
         self._reset()
         self.active_form = {}
@@ -248,13 +247,6 @@ class DialogueStateTracker(object):
         return DialogueStateTracker(
             UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
         )
-
-    def log_action_utterances_to_events(self) -> None:
-        """Logs the utterances collected during an action to events."""
-        if self.action_utterances:
-            for utter_event in self.action_utterances:
-                self.update(utter_event)
-            self.action_utterances = []
 
     def generate_all_prior_trackers(self):
         # type: () -> Generator[DialogueStateTracker, None, None]

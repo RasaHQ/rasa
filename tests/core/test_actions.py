@@ -24,7 +24,7 @@ from rasa.core.actions.action import (
     RemoteAction,
 )
 from rasa.core.domain import Domain
-from rasa.core.events import Restarted, SlotSet, UserUtteranceReverted
+from rasa.core.events import Restarted, SlotSet, UserUtteranceReverted, BotUttered
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -197,16 +197,12 @@ async def test_remote_action_logs_events(
             },
         }
 
-    assert events == [SlotSet("name", "rasa")]
-
-    assert default_channel.messages == [
-        {
-            "text": "test text",
-            "recipient_id": "my-sender",
-            "buttons": [{"title": "cheap", "payload": "cheap"}],
-        },
-        {"text": "hey there None!", "recipient_id": "my-sender"},
-    ]
+    assert len(events) == 3  # first two events are bot utterances
+    assert events[0] == BotUttered(
+        "test text", {"buttons": [{"title": "cheap", "payload": "cheap"}]}
+    )
+    assert events[1] == BotUttered("hey there None!")
+    assert events[2] == SlotSet("name", "rasa")
 
 
 async def test_remote_action_without_endpoint(
@@ -279,11 +275,7 @@ async def test_action_utter_template(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
-    assert default_channel.latest_output() == {
-        "text": "this is a default channel",
-        "recipient_id": "my-sender",
-    }
-    assert events == []
+    assert events == [BotUttered("this is a default channel")]
 
 
 async def test_action_utter_template_unknown_template(
@@ -293,7 +285,6 @@ async def test_action_utter_template_unknown_template(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
-    assert default_channel.latest_output() is None
     assert events == []
 
 
@@ -304,15 +295,17 @@ async def test_action_utter_template_with_buttons(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert default_channel.latest_output() == {
-        "text": "button message",
-        "buttons": [
-            {"payload": "button1", "title": "button1"},
-            {"payload": "button2", "title": "button2"},
-        ],
-        "recipient_id": "template-sender",
-    }
-    assert events == []
+    assert events == [
+        BotUttered(
+            "button message",
+            {
+                "buttons": [
+                    {"payload": "button1", "title": "button1"},
+                    {"payload": "button2", "title": "button2"},
+                ]
+            },
+        )
+    ]
 
 
 async def test_action_utter_template_invalid_template(
@@ -322,9 +315,9 @@ async def test_action_utter_template_invalid_template(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    collected = default_channel.latest_output()
-    assert collected["text"].startswith("a template referencing an invalid {variable}.")
-    assert events == []
+    assert len(events) == 1
+    assert isinstance(events[0], BotUttered)
+    assert events[0].text.startswith("a template referencing an invalid {variable}.")
 
 
 async def test_action_utter_template_channel_specific(
@@ -332,27 +325,13 @@ async def test_action_utter_template_channel_specific(
 ):
     from rasa.core.channels.slack import SlackBot
 
-    httpretty.register_uri(
-        httpretty.POST,
-        "https://slack.com/api/chat.postMessage",
-        body='{"ok":true,"purpose":"Testing bots"}',
-    )
-    httpretty.enable()
-
     output_channel = SlackBot("DummyToken", "General")
 
     events = await ActionUtterTemplate("utter_channel").run(
         output_channel, default_nlg, default_tracker, default_domain
     )
-    httpretty.disable()
 
-    r = httpretty.latest_requests[-1]
-    assert r.parsed_body == {
-        "as_user": ["True"],
-        "channel": ["General"],
-        "text": ["you're talking to me on slack!"],
-    }
-    assert events == []
+    assert events == [BotUttered("you're talking to me on slack!")]
 
 
 async def test_action_back(
@@ -362,11 +341,11 @@ async def test_action_back(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert default_channel.latest_output() == {
-        "text": "backing up...",
-        "recipient_id": "template-sender",
-    }
-    assert events == [UserUtteranceReverted(), UserUtteranceReverted()]
+    assert events == [
+        BotUttered("backing up..."),
+        UserUtteranceReverted(),
+        UserUtteranceReverted(),
+    ]
 
 
 async def test_action_restart(
@@ -376,12 +355,7 @@ async def test_action_restart(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert default_channel.latest_output() == {
-        "text": "congrats, you've restarted me!",
-        "recipient_id": "template-sender",
-    }
-
-    assert events == [Restarted()]
+    assert events == [BotUttered("congrats, you've restarted me!"), Restarted()]
 
 
 async def test_action_default_fallback(
@@ -391,11 +365,10 @@ async def test_action_default_fallback(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
-    assert default_channel.latest_output() == {
-        "text": "sorry, I didn't get that, can you rephrase it?",
-        "recipient_id": "my-sender",
-    }
-    assert events == [UserUtteranceReverted()]
+    assert events == [
+        BotUttered("sorry, I didn't get that, can you rephrase it?"),
+        UserUtteranceReverted(),
+    ]
 
 
 async def test_action_default_ask_affirmation(
@@ -405,17 +378,17 @@ async def test_action_default_ask_affirmation(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
-    assert default_channel.messages == [
-        {
-            "text": "Did you mean 'None'?",
-            "buttons": [
-                {"title": "Yes", "payload": "/None"},
-                {"title": "No", "payload": "/out_of_scope"},
-            ],
-            "recipient_id": "my-sender",
-        }
+    assert events == [
+        BotUttered(
+            "Did you mean 'None'?",
+            {
+                "buttons": [
+                    {"title": "Yes", "payload": "/None"},
+                    {"title": "No", "payload": "/out_of_scope"},
+                ]
+            },
+        )
     ]
-    assert events == []
 
 
 async def test_action_default_ask_rephrase(
@@ -425,8 +398,4 @@ async def test_action_default_ask_rephrase(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert default_channel.latest_output() == {
-        "text": "can you rephrase that?",
-        "recipient_id": "template-sender",
-    }
-    assert events == []
+    assert events == [BotUttered("can you rephrase that?")]

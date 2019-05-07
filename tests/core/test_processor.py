@@ -1,25 +1,24 @@
+import asyncio
 import datetime
-import pytest
 import uuid
+
+import pytest
 from aioresponses import aioresponses
 
-import asyncio
 import rasa.utils.io
-from rasa.core.actions.action import ActionUtterTemplate
 from rasa.core import jobs
-from rasa.core.channels import UserMessage
+from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
-    ReminderScheduled,
-    ReminderCancelled,
-    UserUttered,
     ActionExecuted,
     BotUttered,
+    ReminderCancelled,
+    ReminderScheduled,
     Restarted,
+    UserUttered,
 )
-from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
+from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
-
 from tests.utilities import json_of_latest_request, latest_request
 
 
@@ -30,7 +29,9 @@ def loop():
     return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
-async def test_message_processor(default_channel, default_processor):
+async def test_message_processor(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
     await default_processor.handle_message(
         UserMessage('/greet{"name":"Core"}', default_channel)
     )
@@ -40,7 +41,7 @@ async def test_message_processor(default_channel, default_processor):
     } == default_channel.latest_output()
 
 
-async def test_message_id_logging(default_processor):
+async def test_message_id_logging(default_processor: MessageProcessor):
     from rasa.core.trackers import DialogueStateTracker
 
     message = UserMessage("If Meg was an egg would she still have a leg?")
@@ -52,7 +53,7 @@ async def test_message_id_logging(default_processor):
     assert logged_event.message_id is not None
 
 
-async def test_parsing(default_processor):
+async def test_parsing(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "boy"}')
     parsed = await default_processor._parse_message(message)
     assert parsed["intent"]["name"] == "greet"
@@ -80,7 +81,9 @@ async def test_http_parsing():
         assert json_of_latest_request(r)["message_id"] == message.message_id
 
 
-async def test_reminder_scheduled(default_channel, default_processor):
+async def test_reminder_scheduled(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
     sender_id = uuid.uuid4().hex
 
     reminder = ReminderScheduled("utter_greet", datetime.datetime.now())
@@ -113,7 +116,9 @@ async def test_reminder_scheduled(default_channel, default_processor):
     assert t.events[-1] == ActionExecuted("action_listen")
 
 
-async def test_reminder_aborted(default_channel, default_processor):
+async def test_reminder_aborted(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
     sender_id = uuid.uuid4().hex
 
     reminder = ReminderScheduled(
@@ -134,7 +139,9 @@ async def test_reminder_aborted(default_channel, default_processor):
     assert len(t.events) == 3  # nothing should have been executed
 
 
-async def test_reminder_cancelled(default_channel, default_processor):
+async def test_reminder_cancelled(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
     sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
     trackers = []
     for sender_id in sender_ids:
@@ -177,7 +184,9 @@ async def test_reminder_cancelled(default_channel, default_processor):
     assert ActionExecuted("utter_greet") in tracker_1.events
 
 
-async def test_reminder_restart(default_channel, default_processor: MessageProcessor):
+async def test_reminder_restart(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
     sender_id = uuid.uuid4().hex
 
     reminder = ReminderScheduled(
@@ -197,27 +206,3 @@ async def test_reminder_restart(default_channel, default_processor: MessageProce
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 4  # nothing should have been executed
-
-
-async def test_logging_of_bot_utterances_on_tracker(
-    default_channel, default_nlg, default_agent, default_domain
-):
-    sender_id = "test_logging_of_bot_utterances_on_tracker"
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
-
-    assert tracker.action_utterances == []
-
-    await ActionUtterTemplate("utter_goodbye").run(
-        default_channel, default_nlg, tracker, default_domain
-    )
-    await ActionUtterTemplate("utter_channel").run(
-        default_channel, default_nlg, tracker, default_domain
-    )
-
-    assert len(tracker.action_utterances) == 2
-    event_count = len(tracker.events)
-
-    tracker.log_action_utterances_to_events()
-
-    assert len(tracker.action_utterances) == 0
-    assert len(tracker.events) == event_count + 2

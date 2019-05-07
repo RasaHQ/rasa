@@ -8,7 +8,11 @@ import time
 
 from rasa.core import jobs
 from rasa.core.actions import Action
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ActionExecutionRejection,
+    UTTER_PREFIX,
+)
 from rasa.core.channels import CollectingOutputChannel, UserMessage, OutputChannel
 from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
 from rasa.core.domain import Domain
@@ -20,6 +24,7 @@ from rasa.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
+    BotUttered,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -351,6 +356,20 @@ class MessageProcessor(object):
         is_listen_action = action_name == ACTION_LISTEN_NAME
         return not is_listen_action
 
+    @staticmethod
+    async def _send_bot_messages(
+        events: List[Event],
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+    ) -> None:
+        """Send all the bot messages that are logged in the events array."""
+
+        for e in events:
+            if not isinstance(e, BotUttered):
+                continue
+
+            await output_channel.send_response(tracker.sender_id, e.message())
+
     async def _schedule_reminders(
         self,
         events: List[Event],
@@ -364,20 +383,22 @@ class MessageProcessor(object):
         (i.e. only one of them will eventually run)."""
 
         for e in events:
-            if isinstance(e, ReminderScheduled):
-                (await jobs.scheduler()).add_job(
-                    self.handle_reminder,
-                    "date",
-                    run_date=e.trigger_date_time,
-                    args=[e, tracker.sender_id, output_channel, nlg],
-                    id=e.name,
-                    replace_existing=True,
-                    name=(
-                        str(e.action_name)
-                        + ACTION_NAME_SENDER_ID_CONNECTOR_STR
-                        + tracker.sender_id
-                    ),
-                )
+            if not isinstance(e, ReminderScheduled):
+                continue
+
+            (await jobs.scheduler()).add_job(
+                self.handle_reminder,
+                "date",
+                run_date=e.trigger_date_time,
+                args=[e, tracker.sender_id, output_channel, nlg],
+                id=e.name,
+                replace_existing=True,
+                name=(
+                    str(e.action_name)
+                    + ACTION_NAME_SENDER_ID_CONNECTOR_STR
+                    + tracker.sender_id
+                ),
+            )
 
     @staticmethod
     async def _cancel_reminders(
@@ -421,11 +442,12 @@ class MessageProcessor(object):
 
         self._log_action_on_tracker(tracker, action.name(), events, policy, confidence)
 
-        if action.name() != "action_listen" and "utter_" not in action.name():
+        if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
+            UTTER_PREFIX
+        ):
             self._log_slots(tracker)
 
-        tracker.log_action_utterances_to_events()
-
+        await self._send_bot_messages(events, tracker, output_channel)
         await self._schedule_reminders(events, tracker, output_channel, nlg)
         await self._cancel_reminders(events, tracker)
 
