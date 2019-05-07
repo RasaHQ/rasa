@@ -99,9 +99,9 @@ class SkillSelector:
         return skill_selector
 
     def merge(self, other: "SkillSelector") -> "SkillSelector":
-        imports = self._imports | {
-            i for i in other._imports if not self.is_imported(i) or self.is_empty()
-        }
+        imports = self._imports.union(
+            {i for i in other._imports if not self.is_imported(i) or self.is_empty()}
+        )
 
         return SkillSelector(imports, self._project_directory)
 
@@ -136,15 +136,20 @@ class SkillSelector:
 
         return (
             self.is_empty()
-            or absolute_path == self._project_directory
-            or (
-                os.path.isfile(absolute_path)
-                and os.path.abspath(os.path.dirname(path)) == self._project_directory
-            )
-            or any(
-                [io_utils.is_in_subdirectory(absolute_path, i) for i in self._imports]
-            )
+            or self._is_in_project_directory(absolute_path)
+            or self._is_in_imported_paths(absolute_path)
         )
+
+    def _is_in_project_directory(self, path: Text) -> bool:
+        if os.path.isfile(path):
+            parent_directory = os.path.abspath(os.path.dirname(path))
+
+            return parent_directory == self._project_directory
+        else:
+            return path == self._project_directory
+
+    def _is_in_imported_paths(self, path):
+        return any([io_utils.is_subdirectory(path, i) for i in self._imports])
 
     def add_import(self, path: Text) -> bool:
         self._imports.add(path)
