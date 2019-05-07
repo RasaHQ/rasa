@@ -15,7 +15,7 @@ class SkillSelector:
 
     @classmethod
     def empty(cls) -> "SkillSelector":
-        """Returns an empty `SkillSelector` instance."""
+        """Returns a `SkillSelector` instance which does not specify any skills."""
 
         return cls(set())
 
@@ -31,7 +31,11 @@ class SkillSelector:
         """
         # All imports are by default relative to the root config file directory
         config = os.path.abspath(config)
+
+        # Create a base selector which keeps track of the imports during the
+        # skill config loading in order to avoid cyclic imports
         selector = cls(set(), os.path.dirname(config))
+
         selector = cls._from_file(config, selector)
 
         logger.debug("Selected skills: {}.".format(selector._imports))
