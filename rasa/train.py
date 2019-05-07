@@ -248,8 +248,7 @@ def train_nlu(
     config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
     if not train_path:
-        # Training is not part of the stack model training, hence we have to load the
-        # nlu data first
+        # training NLU only hence the training files still have to be selected
         skill_imports = SkillSelector.load(config)
         nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
     else:
