@@ -7,7 +7,7 @@ import uuid
 from typing import Tuple, List, Text, Set, Union, Optional
 import re
 
-from rasa.multi_skill import SkillSelector
+from rasa.skill import SkillSelector
 
 logger = logging.getLogger(__name__)
 

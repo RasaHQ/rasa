@@ -6,7 +6,7 @@ from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
 from rasa.core.domain import Domain
-from rasa.multi_skill import SkillSelector
+from rasa.skill import SkillSelector
 
 from rasa.cli.utils import (
     create_output_path,

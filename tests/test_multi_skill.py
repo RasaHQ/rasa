@@ -5,7 +5,7 @@ from _pytest.tmpdir import TempdirFactory
 import os
 
 from rasa.core import utils
-from rasa.multi_skill import SkillSelector
+from rasa.skill import SkillSelector
 
 
 def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):

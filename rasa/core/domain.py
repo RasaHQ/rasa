@@ -15,7 +15,7 @@ from rasa.core.actions import Action, action
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.core.trackers import SlotSet
-from rasa.multi_skill import SkillSelector
+from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
