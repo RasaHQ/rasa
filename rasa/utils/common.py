@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Text
 
 import rasa.core.utils
 import rasa.utils.io
-from rasa.constants import GLOBAL_USER_CONFIG_PATH, DEFAULT_LOG_LEVEL
+from rasa.constants import GLOBAL_USER_CONFIG_PATH, DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 
 
 def arguments_of(func: Callable) -> List[Text]:
@@ -56,7 +56,7 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
 def set_tensorflow_log_level():
     import tensorflow as tf
 
-    log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
+    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     tf_log_level = tf.logging.INFO
     if log_level == "DEBUG":
@@ -72,12 +72,12 @@ def set_tensorflow_log_level():
 def set_sanic_log_level():
     from sanic.log import logger as sanic_logger
 
-    log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
+    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
     sanic_logger.setLevel(log_level)
 
 
 def obtain_verbosity():
-    log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
+    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     verbosity = 0
     if log_level == "DEBUG":
@@ -89,6 +89,6 @@ def obtain_verbosity():
 
 
 def disable_logging():
-    log_level = os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
+    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     return log_level == "ERROR" or log_level == "WARNING"

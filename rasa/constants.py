@@ -23,3 +23,4 @@ MINIMUM_COMPATIBLE_VERSION = "1.0.0a5"
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/config.yml")
 
 DEFAULT_LOG_LEVEL = "INFO"
+ENV_LOG_LEVEL = "LOG_LEVEL"
