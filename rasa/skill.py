@@ -1,5 +1,5 @@
 import logging
-from typing import Text, List, Union, Set, Dict, Optional
+from typing import Text, Set, Dict, Optional
 import os
 
 import rasa.utils.io as io_utils
@@ -71,7 +71,7 @@ class SkillSelector:
         import_candidates = [
             p
             for p in imports
-            if skill_selector.is_empty() or not skill_selector.is_imported(p)
+            if skill_selector.no_skills_selected() or not skill_selector.is_imported(p)
         ]
         new = cls(imports, parent_directory)
         skill_selector = skill_selector.merge(new)
@@ -100,12 +100,16 @@ class SkillSelector:
 
     def merge(self, other: "SkillSelector") -> "SkillSelector":
         imports = self._imports.union(
-            {i for i in other._imports if not self.is_imported(i) or self.is_empty()}
+            {
+                i
+                for i in other._imports
+                if not self.is_imported(i) or self.no_skills_selected()
+            }
         )
 
         return SkillSelector(imports, self._project_directory)
 
-    def is_empty(self) -> bool:
+    def no_skills_selected(self) -> bool:
         return not self._imports
 
     def training_paths(self) -> Set[Text]:
@@ -135,7 +139,7 @@ class SkillSelector:
         absolute_path = os.path.abspath(path)
 
         return (
-            self.is_empty()
+            self.no_skills_selected()
             or self._is_in_project_directory(absolute_path)
             or self._is_in_imported_paths(absolute_path)
         )

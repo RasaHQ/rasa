@@ -80,7 +80,7 @@ def _get_core_nlu_files(
 
     skill_imports = skill_imports or SkillSelector.empty()
 
-    if not skill_imports.is_empty():
+    if not skill_imports.no_skills_selected():
         paths = skill_imports.training_paths()
 
     if paths is None:

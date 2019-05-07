@@ -145,7 +145,7 @@ class Domain(object):
     ) -> "Domain":
         skill_imports = skill_imports or SkillSelector.empty()
 
-        if not skill_imports.is_empty():
+        if not skill_imports.no_skills_selected():
             paths = skill_imports.training_paths()
 
         if not paths:
@@ -168,7 +168,7 @@ class Domain(object):
         path = os.path.abspath(path)
 
         # If skills were imported search the whole directory tree for domain files
-        if os.path.isfile(path) and not skill_imports.is_empty():
+        if os.path.isfile(path) and not skill_imports.no_skills_selected():
             path = os.path.dirname(path)
 
         if os.path.isfile(path):
