@@ -795,7 +795,7 @@ def run_evaluation(
     Evaluate intent classification and entity extraction.
 
     :param data_path: path to the test data
-    :param model: path to the model
+    :param model_path: path to the model
     :param report_folder: path to folder where reports are stored
     :param successes: path to file that will contain success cases
     :param errors: path to file that will contain error cases
@@ -1028,58 +1028,6 @@ def return_entity_results(results, dataset_name):
     for extractor, result in results.items():
         logger.info("Entity extractor: {}".format(extractor))
         return_results(result, dataset_name)
-
-
-def main():
-    parser = create_argument_parser()
-    cmdline_args = parser.parse_args()
-    utils.configure_colored_logging(cmdline_args.loglevel)
-
-    if cmdline_args.mode == "crossvalidation":
-
-        # TODO: move parsing into sub parser
-        # manual check argument dependency
-        if cmdline_args.model is not None:
-            parser.error(
-                "Crossvalidation will train a new model "
-                "- do not specify external model."
-            )
-
-        if cmdline_args.config is None:
-            parser.error(
-                "Crossvalidation will train a new model "
-                "you need to specify a model configuration."
-            )
-
-        nlu_config = config.load(cmdline_args.config)
-        data = training_data.load_data(cmdline_args.data)
-        data = drop_intents_below_freq(data, cutoff=5)
-        results, entity_results = cross_validate(
-            data, int(cmdline_args.folds), nlu_config
-        )
-        logger.info("CV evaluation (n={})".format(cmdline_args.folds))
-
-        if any(results):
-            logger.info("Intent evaluation results")
-            return_results(results.train, "train")
-            return_results(results.test, "test")
-        if any(entity_results):
-            logger.info("Entity evaluation results")
-            return_entity_results(entity_results.train, "train")
-            return_entity_results(entity_results.test, "test")
-
-    elif cmdline_args.mode == "evaluation":
-        run_evaluation(
-            cmdline_args.data,
-            cmdline_args.model,
-            cmdline_args.report,
-            cmdline_args.successes,
-            cmdline_args.errors,
-            cmdline_args.confmat,
-            cmdline_args.histogram,
-        )
-
-    logger.info("Finished evaluation")
 
 
 if __name__ == "__main__":

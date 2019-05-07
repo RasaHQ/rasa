@@ -1,10 +1,8 @@
 import argparse
 import logging
 import os
-import shutil
 from typing import List
 
-from rasa import model
 from rasa.cli.default_arguments import add_model_param
 from rasa.cli.utils import get_validated_path
 from rasa.constants import (
@@ -13,7 +11,6 @@ from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
 )
-from rasa.model import get_latest_model
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +24,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Start a Rasa server which loads a trained model",
+        help="Start a Rasa server which loads a trained model.",
     )
     add_run_arguments(run_parser)
     run_parser.set_defaults(func=run)
@@ -51,8 +48,8 @@ def add_subparser(
         help="Run a trained NLU model",
     )
 
-    _add_nlu_arguments(nlu_subparser)
-    nlu_subparser.set_defaults(func=run_nlu)
+    add_run_arguments(nlu_subparser)
+    nlu_subparser.set_defaults(func=run)
 
     sdk_subparser = run_subparsers.add_parser(
         "actions",
@@ -71,29 +68,6 @@ def add_run_arguments(parser: argparse.ArgumentParser):
     add_run_arguments(parser)
     add_model_param(parser)
 
-    parser.add_argument(
-        "--credentials",
-        type=str,
-        default="credentials.yml",
-        help="Authentication credentials for the connector as a yml file",
-    )
-
-
-def _add_nlu_arguments(parser: argparse.ArgumentParser):
-    from rasa.nlu.cli.server import add_server_arguments
-
-    add_server_arguments(parser)
-    parser.add_argument(
-        "--path",
-        default=DEFAULT_MODELS_PATH,
-        type=str,
-        help="Working directory of the server. Models are"
-        "loaded from this directory and trained models "
-        "will be saved here",
-    )
-
-    add_model_param(parser, "NLU")
-
 
 def _adk_sdk_arguments(parser: argparse.ArgumentParser):
     import rasa_core_sdk.cli.arguments as sdk
@@ -105,14 +79,6 @@ def _adk_sdk_arguments(parser: argparse.ArgumentParser):
         default="actions",
         help="name of action package to be loaded",
     )
-
-
-def run_nlu(args: argparse.Namespace):
-    import rasa.nlu.server
-
-    args.model = get_validated_path(args.path, "path", DEFAULT_MODELS_PATH)
-
-    rasa.nlu.server.main(args)
 
 
 def run_actions(args: argparse.Namespace):

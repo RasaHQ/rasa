@@ -1,10 +1,18 @@
 import argparse
+import logging
+import os
+
 from typing import List
 
 import rasa.cli.run
 
 
+logger = logging.getLogger(__name__)
+
+
 # noinspection PyProtectedMember
+
+
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
@@ -20,5 +28,26 @@ def add_subparser(
 
 
 def shell(args: argparse.Namespace):
+    from rasa.cli.utils import get_validated_path
+    from rasa.constants import DEFAULT_MODELS_PATH
+    from rasa.model import get_model, get_model_subdirectories
+
     args.connector = "cmdline"
-    rasa.cli.run.run(args)
+
+    model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    model_path = get_model(model)
+    if not model_path:
+        logger.error(
+            "No model found. Train a model before running the "
+            "server using `rasa train`."
+        )
+        return
+
+    core_model, nlu_model = get_model_subdirectories(model_path)
+
+    if not os.path.exists(core_model):
+        import rasa.nlu.run
+
+        rasa.nlu.run.run_cmdline(nlu_model)
+    else:
+        rasa.cli.run.run(args)
