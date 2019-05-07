@@ -17,6 +17,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.model import get_model_subdirectories, get_model
+from rasa.utils.common import update_sanic_log_level
 
 logger = logging.getLogger()  # get the root logger
 
@@ -144,6 +145,8 @@ def serve_application(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
+
+    update_sanic_log_level()
 
     app.run(host="0.0.0.0", port=port)
 

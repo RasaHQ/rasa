@@ -29,6 +29,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
 from rasa.model import get_model_subdirectories, get_latest_model, unpack_model
 from rasa.nlu.utils import is_url
+from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -670,6 +671,8 @@ class Agent(object):
         app = run.configure_app(channels, cors, None, enable_api=False, route=route)
 
         app.agent = self
+
+        update_sanic_log_level()
 
         app.run(host="0.0.0.0", port=http_port)
 
