@@ -213,7 +213,7 @@ def model_fingerprint(
     import time
 
     if isinstance(domain, Domain):
-        domain_hash = domain.__hash__()
+        domain_hash = hash(domain)
     else:
         domain_hash = _get_hashes_for_paths(domain)
 
