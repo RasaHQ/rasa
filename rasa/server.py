@@ -323,7 +323,9 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+                500,
+                "ConversationError",
+                "An unexpected error occurred. Error: {}".format(e),
             )
 
     @app.post("/conversations/<conversation_id>/tracker/events")
@@ -351,7 +353,7 @@ def create_app(
                 logger.debug(traceback.format_exc())
                 raise ErrorResponse(
                     500,
-                    "ServerError",
+                    "ConversationError",
                     "An unexpected error occurred. Error: {}".format(e),
                 )
 
@@ -390,7 +392,9 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+                500,
+                "ConversationError",
+                "An unexpected error occurred. Error: {}".format(e),
             )
 
     @app.get("/conversations/<conversation_id>/story")
@@ -422,7 +426,9 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+                500,
+                "ConversationError",
+                "An unexpected error occurred. Error: {}".format(e),
             )
 
     @app.post("/conversations/<conversation_id>/execute")
@@ -435,7 +441,10 @@ def create_app(
 
         if not action_to_execute:
             raise ErrorResponse(
-                400, "BadRequest", "Name of the action not provided in request body."
+                400,
+                "BadRequest",
+                "Name of the action not provided in request body.",
+                {"parameter": "name", "in": "body"},
             )
 
         policy = request_params.get("policy", None)
@@ -451,7 +460,9 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+                500,
+                "ConversationError",
+                "An unexpected error occurred. Error: {}".format(e),
             )
 
         tracker = obtain_tracker_store(app.agent, conversation_id)
@@ -472,7 +483,9 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+                500,
+                "ConversationError",
+                "An unexpected error occurred. Error: {}".format(e),
             )
 
     @app.post("/conversations/<conversation_id>/messages")
@@ -510,7 +523,9 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+                500,
+                "ConversationError",
+                "An unexpected error occurred. Error: {}".format(e),
             )
 
     @app.post("/model/train")
@@ -562,7 +577,7 @@ def create_app(
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
-                "ServerError",
+                "TrainingError",
                 "An unexpected error occurred during training. Error: {}".format(e),
             )
 
@@ -571,7 +586,8 @@ def create_app(
             raise ErrorResponse(
                 400,
                 "BadRequest",
-                "The training request is missing the required key " "`config`.",
+                "The training request is missing the required key `config`.",
+                {"parameter": "config", "in": "body"},
             )
 
         if "nlu" not in rjs and "stories" not in rjs:
@@ -580,6 +596,7 @@ def create_app(
                 "BadRequest",
                 "To train a Rasa model you need to specify at least one type of "
                 "training data. Add `nlu` and/or `stories` to the request.",
+                {"parameters": ["nlu", "stories"], "in": "body"},
             )
 
         if "stories" in rjs and "domain" not in rjs:
@@ -588,6 +605,7 @@ def create_app(
                 "BadRequest",
                 "To train a Rasa model with story training data, you also need to "
                 "specify the `domain`.",
+                {"parameter": "domain", "in": "body"},
             )
 
     @app.post("/model/test/stories")
@@ -611,7 +629,7 @@ def create_app(
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
-                "ServerError",
+                "TestingError",
                 "An unexpected error occurred during evaluation. Error: {}".format(e),
             )
 
@@ -641,7 +659,7 @@ def create_app(
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
-                "ServerError",
+                "TestingError",
                 "An unexpected error occurred during evaluation. Error: {}".format(e),
             )
 
@@ -694,7 +712,9 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+                500,
+                "PredictionError",
+                "An unexpected error occurred. Error: {}".format(e),
             )
 
     @app.post("/model/parse")
@@ -719,7 +739,7 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+                500, "ParsingError", "An unexpected error occurred. Error: {}".format(e)
             )
 
     @app.put("/model")
@@ -736,12 +756,18 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ServerError", "An unexpected error occurred. Error: {}".format(e)
+                500, "LoadingError", "An unexpected error occurred. Error: {}".format(e)
             )
 
         if not agent:
             raise ErrorResponse(
-                400, "BadRequest", "Agent could not be loaded with given configuration."
+                400,
+                "BadRequest",
+                "Agent could not be loaded with given configuration.",
+                {
+                    "parameters": ["model_file", "model_server", "remote_storage"],
+                    "in": "body",
+                },
             )
 
         app.agent = agent
@@ -776,7 +802,7 @@ def create_app(
         else:
             raise ErrorResponse(
                 406,
-                "InvalidHeader",
+                "NotAcceptable",
                 "Invalid Accept header. Domain can be "
                 "provided as "
                 'json ("Accept: application/json") or'
