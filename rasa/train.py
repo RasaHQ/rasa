@@ -105,9 +105,11 @@ async def train_async(
             retrain_nlu = not model.merge_model(old_nlu, target_path)
 
     if force_training or retrain_core:
+        print ("Start training dialogue model ...")
         await train_core_async(
             domain, config, story_directory, output, train_path, kwargs
         )
+        print ("Done.")
     else:
         print (
             "Dialogue data / configuration did not change. "
@@ -115,7 +117,9 @@ async def train_async(
         )
 
     if force_training or retrain_nlu:
+        print ("Start training NLU model ...")
         train_nlu(config, nlu_data_directory, output, train_path)
+        print ("Done.")
     else:
         print ("NLU data / configuration did not change. No need to retrain NLU model.")
 
