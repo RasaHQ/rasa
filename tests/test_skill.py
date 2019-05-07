@@ -6,6 +6,7 @@ import os
 
 from rasa import model
 from rasa.core import utils
+from rasa.core.domain import Domain
 from rasa.skill import SkillSelector
 from rasa.train import train_async
 
@@ -156,16 +157,38 @@ def test_import_outside_project_directory(tmpdir_factory):
 
 
 async def test_multi_skill_training():
-    example_directory = "data/examples/multi_skill_bot"
+    example_directory = "examples/multi_skill_bot"
     config_file = os.path.join(example_directory, "config.yml")
     trained_stack_model_path = await train_async(
         config=config_file, domain=None, training_files=None
     )
 
-    unpacked = model.unpack(trained_stack_model_path)
+    unpacked = model.unpack_model(trained_stack_model_path)
     model_fingerprint = model.fingerprint_from_path(unpacked)
 
     assert len(model_fingerprint["messages"]) == 2
     assert len(model_fingerprint["stories"]) == 2
 
-    domain_file = None  # TBD
+    domain_file = os.path.join(unpacked, "core", "domain.yml")
+    domain = Domain.load(domain_file)
+
+    expected_intents = [
+        "greet",
+        "goodbye",
+        "mood_affirm",
+        "mood_deny",
+        "mood_great",
+        "mood_unhappy",
+    ]
+
+    assert all([i in domain.intents for i in expected_intents])
+
+    expected_actions = [
+        "utter_greet",
+        "utter_cheer_up",
+        "utter_did_that_help",
+        "utter_happy",
+        "utter_goodbye",
+    ]
+
+    assert all([a in domain.action_names for a in expected_actions])
