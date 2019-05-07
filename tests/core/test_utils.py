@@ -48,36 +48,6 @@ def test_on_hot_out_of_range():
         utils.one_hot(4, 3)
 
 
-def test_list_routes(default_agent):
-    from rasa.core import server
-
-    app = server.create_app(default_agent, auth_token=None)
-
-    routes = utils.list_routes(app)
-    assert set(routes.keys()) == {
-        "hello",
-        "version",
-        "execute_action",
-        "append_event",
-        "replace_events",
-        "list_trackers",
-        "retrieve_tracker",
-        "retrieve_story",
-        "respond",
-        "predict",
-        "parse",
-        "train_stack",
-        "evaluate_intents",
-        "log_message",
-        "load_model",
-        "evaluate_stories",
-        "get_domain",
-        "continue_training",
-        "status",
-        "tracker_predict",
-    }
-
-
 def test_cap_length():
     assert utils.cap_length("mystring", 6) == "mys..."
 
