@@ -73,9 +73,7 @@ class SkillSelector:
         # clean out relative paths
         imports = {os.path.abspath(i) for i in imports}
         import_candidates = [
-            p
-            for p in imports
-            if skill_selector.no_skills_selected() or not skill_selector.is_imported(p)
+            p for p in imports if not skill_selector._is_explicitly_imported(p)
         ]
         new = cls(imports, parent_directory)
         skill_selector = skill_selector.merge(new)
@@ -86,6 +84,9 @@ class SkillSelector:
             skill_selector = skill_selector.merge(other)
 
         return skill_selector
+
+    def _is_explicitly_imported(self, path: Text) -> bool:
+        return not self.no_skills_selected() and self.is_imported(path)
 
     @classmethod
     def _from_directory(
