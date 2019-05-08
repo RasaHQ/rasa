@@ -18,6 +18,7 @@ from rasa.constants import (
     GLOBAL_USER_CONFIG_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_LOG_LEVEL,
 )
 from rasa.utils.common import read_global_config_value, write_global_config_value
 
@@ -242,8 +243,9 @@ def rasa_x(args: argparse.Namespace):
         logging.getLogger("rasa").setLevel(logging.WARNING)
         logging.getLogger("sanic.root").setLevel(logging.ERROR)
 
-    configure_colored_logging(args.loglevel)
-    configure_file_logging(args.loglevel, args.log_file)
+    log_level = args.loglevel or DEFAULT_LOG_LEVEL
+    configure_colored_logging(log_level)
+    configure_file_logging(log_level, args.log_file)
 
     metrics = is_metrics_collection_enabled(args)
 

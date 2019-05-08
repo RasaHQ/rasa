@@ -16,28 +16,6 @@ import rasa.utils.io
 from rasa.utils.endpoints import read_endpoint_config
 
 
-def add_logging_option_arguments(parser, default=logging.WARNING):
-    """Add options to an argument parser to configure logging levels."""
-
-    # arguments for logging configuration
-    parser.add_argument(
-        "--debug",
-        help="Print lots of debugging statements. Sets logging level to DEBUG",
-        action="store_const",
-        dest="loglevel",
-        const=logging.DEBUG,
-        default=default,
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Be verbose. Sets logging level to INFO",
-        action="store_const",
-        dest="loglevel",
-        const=logging.INFO,
-    )
-
-
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
     """Return the path of file relative to `path`."""
 

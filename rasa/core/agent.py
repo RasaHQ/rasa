@@ -29,6 +29,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
 from rasa.model import get_model_subdirectories, get_latest_model, unpack_model
 from rasa.nlu.utils import is_url
+from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -671,11 +672,9 @@ class Agent(object):
 
         app.agent = self
 
-        app.run(
-            host="0.0.0.0",
-            port=http_port,
-            access_log=logger.isEnabledFor(logging.DEBUG),
-        )
+        update_sanic_log_level()
+
+        app.run(host="0.0.0.0", port=http_port)
 
         # this might seem unnecessary (as run does not return until the server
         # is killed) - but we use it for tests where we mock `.run` to directly

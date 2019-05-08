@@ -17,9 +17,6 @@ from rasa.constants import (
     DEFAULT_MODELS_PATH,
 )
 
-if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Interpreter
-
 
 # noinspection PyProtectedMember
 def add_subparser(
