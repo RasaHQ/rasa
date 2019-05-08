@@ -11,9 +11,13 @@ from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader, StringIO
 
+from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+
 
 def configure_colored_logging(loglevel):
     import coloredlogs
+
+    loglevel = loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
     field_styles["asctime"] = {}

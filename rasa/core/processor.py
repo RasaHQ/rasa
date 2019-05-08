@@ -8,20 +8,23 @@ import time
 
 from rasa.core import jobs
 from rasa.core.actions import Action
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
-from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ActionExecutionRejection,
+    UTTER_PREFIX,
+)
+from rasa.core.channels import CollectingOutputChannel, UserMessage, OutputChannel
 from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
-from rasa.core.dispatcher import Dispatcher
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
-    BotUttered,
     Event,
     ReminderCancelled,
     ReminderScheduled,
     SlotSet,
     UserUttered,
+    BotUttered,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -126,7 +129,8 @@ class MessageProcessor(object):
         self,
         sender_id: Text,
         action_name: Text,
-        dispatcher: Dispatcher,
+        output_channel: CollectingOutputChannel,
+        nlg: NaturalLanguageGenerator,
         policy: Text,
         confidence: float,
     ) -> Optional[DialogueStateTracker]:
@@ -136,7 +140,9 @@ class MessageProcessor(object):
         tracker = self._get_tracker(sender_id)
         if tracker:
             action = self._get_action(action_name)
-            await self._run_action(action, tracker, dispatcher, policy, confidence)
+            await self._run_action(
+                action, tracker, output_channel, nlg, policy, confidence
+            )
 
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -195,16 +201,20 @@ class MessageProcessor(object):
         return True  # tracker has probably been restarted
 
     async def handle_reminder(
-        self, reminder_event: ReminderScheduled, dispatcher: Dispatcher
+        self,
+        reminder_event: ReminderScheduled,
+        sender_id: Text,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
-        tracker = self._get_tracker(dispatcher.sender_id)
+        tracker = self._get_tracker(sender_id)
 
         if not tracker:
             logger.warning(
                 "Failed to retrieve or create tracker for sender "
-                "'{}'.".format(dispatcher.sender_id)
+                "'{}'.".format(sender_id)
             )
             return None
 
@@ -224,11 +234,11 @@ class MessageProcessor(object):
             # unrelated message would influence featurization
             tracker.update(UserUttered.empty())
             action = self._get_action(reminder_event.action_name)
-            should_continue = await self._run_action(action, tracker, dispatcher)
+            should_continue = await self._run_action(
+                action, tracker, output_channel, nlg
+            )
             if should_continue:
-                user_msg = UserMessage(
-                    None, dispatcher.output_channel, dispatcher.sender_id
-                )
+                user_msg = UserMessage(None, output_channel, sender_id)
                 await self._predict_and_execute_next_action(user_msg, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -303,7 +313,9 @@ class MessageProcessor(object):
             or tracker.latest_message.intent.get("name") == USER_INTENT_RESTART
         )
 
-    async def _predict_and_execute_next_action(self, message, tracker):
+    async def _predict_and_execute_next_action(
+        self, message: UserMessage, tracker: DialogueStateTracker
+    ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0
@@ -313,9 +325,6 @@ class MessageProcessor(object):
                 num_predicted_actions == self.max_number_of_predictions
                 and should_predict_another_action
             )
-
-        # this will actually send the response to the user
-        dispatcher = Dispatcher(message.sender_id, message.output_channel, self.nlg)
 
         # action loop. predicts actions until we hit action listen
         while (
@@ -327,7 +336,7 @@ class MessageProcessor(object):
             action, policy, confidence = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
-                action, tracker, dispatcher, policy, confidence
+                action, tracker, message.output_channel, self.nlg, policy, confidence
             )
             num_predicted_actions += 1
 
@@ -339,7 +348,7 @@ class MessageProcessor(object):
             )
             if self.on_circuit_break:
                 # call a registered callback
-                self.on_circuit_break(tracker, dispatcher)
+                self.on_circuit_break(tracker, message.output_channel, self.nlg)
 
     # noinspection PyUnusedLocal
     @staticmethod
@@ -347,8 +356,26 @@ class MessageProcessor(object):
         is_listen_action = action_name == ACTION_LISTEN_NAME
         return not is_listen_action
 
+    @staticmethod
+    async def _send_bot_messages(
+        events: List[Event],
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+    ) -> None:
+        """Send all the bot messages that are logged in the events array."""
+
+        for e in events:
+            if not isinstance(e, BotUttered):
+                continue
+
+            await output_channel.send_response(tracker.sender_id, e.message())
+
     async def _schedule_reminders(
-        self, events: List[Event], tracker: DialogueStateTracker, dispatcher: Dispatcher
+        self,
+        events: List[Event],
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
     ) -> None:
         """Uses the scheduler to time a job to trigger the passed reminder.
 
@@ -356,20 +383,22 @@ class MessageProcessor(object):
         (i.e. only one of them will eventually run)."""
 
         for e in events:
-            if isinstance(e, ReminderScheduled):
-                (await jobs.scheduler()).add_job(
-                    self.handle_reminder,
-                    "date",
-                    run_date=e.trigger_date_time,
-                    args=[e, dispatcher],
-                    id=e.name,
-                    replace_existing=True,
-                    name=(
-                        str(e.action_name)
-                        + ACTION_NAME_SENDER_ID_CONNECTOR_STR
-                        + tracker.sender_id
-                    ),
-                )
+            if not isinstance(e, ReminderScheduled):
+                continue
+
+            (await jobs.scheduler()).add_job(
+                self.handle_reminder,
+                "date",
+                run_date=e.trigger_date_time,
+                args=[e, tracker.sender_id, output_channel, nlg],
+                id=e.name,
+                replace_existing=True,
+                name=(
+                    str(e.action_name)
+                    + ACTION_NAME_SENDER_ID_CONNECTOR_STR
+                    + tracker.sender_id
+                ),
+            )
 
     @staticmethod
     async def _cancel_reminders(
@@ -391,12 +420,12 @@ class MessageProcessor(object):
                         scheduler.remove_job(j.id)
 
     async def _run_action(
-        self, action, tracker, dispatcher, policy=None, confidence=None
+        self, action, tracker, output_channel, nlg, policy=None, confidence=None
     ):
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
-            events = await action.run(dispatcher, tracker, self.domain)
+            events = await action.run(output_channel, nlg, tracker, self.domain)
         except ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])
@@ -413,12 +442,13 @@ class MessageProcessor(object):
 
         self._log_action_on_tracker(tracker, action.name(), events, policy, confidence)
 
-        if action.name() != "action_listen" and "utter_" not in action.name():
+        if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
+            UTTER_PREFIX
+        ):
             self._log_slots(tracker)
 
-        self.log_bot_utterances_on_tracker(tracker, dispatcher)
-
-        await self._schedule_reminders(events, tracker, dispatcher)
+        await self._send_bot_messages(events, tracker, output_channel)
+        await self._schedule_reminders(events, tracker, output_channel, nlg)
         await self._cancel_reminders(events, tracker)
 
         return self.should_predict_another_action(action.name(), events)
@@ -450,19 +480,6 @@ class MessageProcessor(object):
                             "after the action."
                             "".format(action_name, e.key, json.dumps(e.value))
                         )
-
-    @staticmethod
-    def log_bot_utterances_on_tracker(
-        tracker: DialogueStateTracker, dispatcher: Dispatcher
-    ) -> None:
-
-        if dispatcher.latest_bot_messages:
-            for m in dispatcher.latest_bot_messages:
-                bot_utterance = BotUttered(text=m.text, data=m.data)
-                logger.debug("Bot utterance '{}'".format(bot_utterance))
-                tracker.update(bot_utterance)
-
-            dispatcher.latest_bot_messages = []
 
     def _log_action_on_tracker(self, tracker, action_name, events, policy, confidence):
         # Ensures that the code still works even if a lazy programmer missed

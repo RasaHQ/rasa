@@ -187,8 +187,7 @@ class DialogueStateTracker(object):
             # reset form rejection if it was predicted again
             self.active_form["rejected"] = False
 
-    def current_slot_values(self):
-        # type: () -> Dict[Text, Any]
+    def current_slot_values(self) -> [Dict[Text, Any]]:
         """Return the currently set values of the slots"""
         return {key: slot.value for key, slot in self.slots.items()}
 
@@ -225,8 +224,7 @@ class DialogueStateTracker(object):
         """State whether the tracker is currently paused."""
         return self._paused
 
-    def idx_after_latest_restart(self):
-        # type: () -> int
+    def idx_after_latest_restart(self) -> int:
         """Return the idx of the most recent restart in the list of events.
 
         If the conversation has not been restarted, ``0`` is returned."""
@@ -237,8 +235,7 @@ class DialogueStateTracker(object):
 
         return 0
 
-    def events_after_latest_restart(self):
-        # type: () -> List[Event]
+    def events_after_latest_restart(self) -> List[Event]:
         """Return a list of events after the most recent restart."""
         return list(self.events)[self.idx_after_latest_restart() :]
 
@@ -350,8 +347,7 @@ class DialogueStateTracker(object):
                 applied_events.append(event)
         return applied_events
 
-    def replay_events(self):
-        # type: () -> None
+    def replay_events(self) -> None:
         """Update the tracker based on a list of events."""
 
         applied_events = self.applied_events()
@@ -396,8 +392,7 @@ class DialogueStateTracker(object):
 
         return tracker  # yields the final state
 
-    def as_dialogue(self):
-        # type: () -> Dialogue
+    def as_dialogue(self) -> Dialogue:
         """Return a ``Dialogue`` object containing all of the turns.
 
         This can be serialised and later used to recover the state
@@ -482,8 +477,7 @@ class DialogueStateTracker(object):
     # only be called by events, not directly. Rather update the tracker
     # with an event that in its ``apply_to`` method modifies the tracker.
     ###
-    def _reset(self):
-        # type: () -> None
+    def _reset(self) -> None:
         """Reset tracker to initial state - doesn't delete events though!."""
 
         self._reset_slots()
@@ -494,8 +488,7 @@ class DialogueStateTracker(object):
         self.followup_action = ACTION_LISTEN_NAME
         self.active_form = {}
 
-    def _reset_slots(self):
-        # type: () -> None
+    def _reset_slots(self) -> None:
         """Set all the slots to their initial value."""
 
         for slot in self.slots.values():
@@ -533,8 +526,7 @@ class DialogueStateTracker(object):
 
         self.followup_action = action
 
-    def clear_followup_action(self):
-        # type: () -> None
+    def clear_followup_action(self) -> None:
         """Clears follow up action when it was executed."""
 
         self.followup_action = None

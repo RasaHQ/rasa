@@ -1,5 +1,4 @@
 import logging
-import socketio
 import uuid
 from sanic import Blueprint, response
 from socketio import AsyncServer
@@ -44,7 +43,7 @@ class SocketIOOutput(OutputChannel):
         await self._send_message(self.sid, {"text": message})
 
     async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
-        """Sends an image. Default will just post the url as a string."""
+        """Sends an image to the output"""
 
         message = {"attachment": {"type": "image", "payload": {"src": image_url}}}
         await self._send_message(self.sid, message)
@@ -71,7 +70,7 @@ class SocketIOOutput(OutputChannel):
 
         await self._send_message(self.sid, message)
 
-    async def send_custom_message(
+    async def send_elements(
         self, recipient_id: Text, elements: List[Dict[Text, Any]]
     ) -> None:
         """Sends elements to the output."""
@@ -84,6 +83,15 @@ class SocketIOOutput(OutputChannel):
         }
 
         await self._send_message(self.sid, message)
+
+    async def send_custom_json(
+        self, recipient_id: Text, kwargs: Dict[Text, Any]
+    ) -> None:
+        """Sends custom json to the output"""
+
+        kwargs.setdefault("room", self.sid)
+
+        await self.sio.emit(self.bot_message_evt, **kwargs)
 
 
 class SocketIOInput(InputChannel):

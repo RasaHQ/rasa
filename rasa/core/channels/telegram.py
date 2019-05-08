@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from sanic import Blueprint, response
 from telegram import (
@@ -9,6 +8,8 @@ from telegram import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
+
+from typing import Dict, Text, Any
 
 from rasa.core import constants
 from rasa.core.channels import InputChannel
@@ -31,6 +32,42 @@ class TelegramOutput(Bot, OutputChannel):
     async def send_text_message(self, recipient_id, message):
         for message_part in message.split("\n\n"):
             self.send_message(recipient_id, message_part)
+
+    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
+        recipient_id = kwargs.pop("chat_id", recipient_id)
+
+        send_functions = {
+            ("text",): "send_message",
+            ("photo",): "send_photo",
+            ("audio",): "send_audio",
+            ("document",): "send_document",
+            ("sticker",): "send_sticker",
+            ("video",): "send_video",
+            ("video_note",): "send_video_note",
+            ("animation",): "send_animation",
+            ("voice",): "send_voice",
+            ("media",): "send_media_group",
+            ("latitude", "longitude", "title", "address"): "send_venue",
+            ("latitude", "longitude"): "send_location",
+            ("phone_number", "first_name"): "send_contact",
+            ("game_short_name",): "send_game",
+            ("action",): "send_chat_action",
+            (
+                "title",
+                "decription",
+                "payload",
+                "provider_token",
+                "start_parameter",
+                "currency",
+                "prices",
+            ): "send_invoice",
+        }
+
+        for params in send_functions.keys():
+            if all(kwargs.get(p) is not None for p in params):
+                args = [kwargs.pop(p) for p in params]
+                api_call = getattr(self, send_functions[params])
+                api_call(recipient_id, *args, **kwargs)
 
     async def send_image_url(self, recipient_id, image_url):
         self.send_photo(recipient_id, image_url)
