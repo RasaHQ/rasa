@@ -18,7 +18,7 @@ def add_subparser(
     scaffold_parser.add_argument(
         "--no-prompt",
         action="store_true",
-        help="Automatically choose default options for prompts and oppress warnings",
+        help="Automatically choose default options for prompts and suppress warnings",
     )
     scaffold_parser.set_defaults(func=run)
 
