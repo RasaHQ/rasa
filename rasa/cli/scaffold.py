@@ -117,9 +117,7 @@ def scaffold_path() -> Text:
 
 
 def print_cancel() -> None:
-    print_success(
-        "Ok. You can continue setting up by running 'rasa init' 🙋🏽‍♀️"
-    )
+    print_success("Ok. You can continue setting up by running 'rasa init' 🙋🏽‍♀️")
     exit(0)
 
 
@@ -132,10 +130,7 @@ def _ask_create_path(path: Text) -> None:
     if should_create:
         os.makedirs(path)
     else:
-        print_success(
-            "Ok. You can continue setting up by running "
-            "'rasa init' 🙋🏽‍♀️"
-        )
+        print_success("Ok. You can continue setting up by running " "'rasa init' 🙋🏽‍♀️")
         exit(0)
 
 
