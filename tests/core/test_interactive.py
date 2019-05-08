@@ -29,11 +29,7 @@ async def test_send_message(mock_endpoint):
 
         assert r
 
-        expected = {
-            "sender": "user",
-            "text": "Hello",
-            "parse_data": None,
-        }
+        expected = {"sender": "user", "text": "Hello", "parse_data": None}
 
         assert json_of_latest_request(r) == expected
 
