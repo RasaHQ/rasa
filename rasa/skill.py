@@ -1,5 +1,5 @@
 import logging
-from typing import Text, Set, Dict, Optional
+from typing import Text, Set, Dict
 import os
 
 import rasa.utils.io as io_utils
@@ -9,15 +9,15 @@ logger = logging.getLogger(__name__)
 
 
 class SkillSelector:
-    def __init__(self, imports: Set[Text], project_directory: Optional[Text] = None):
+    def __init__(self, imports: Set[Text], project_directory: Text = os.getcwd()):
         self._imports = imports
         self._project_directory = project_directory
 
     @classmethod
-    def all_skills(cls) -> "SkillSelector":
+    def all_skills(cls, project_directory: Text = os.getcwd()) -> "SkillSelector":
         """Returns a `SkillSelector` instance which does not specify any skills."""
 
-        return cls(set())
+        return cls(set(), project_directory)
 
     @classmethod
     def load(cls, config: Text) -> "SkillSelector":
@@ -34,7 +34,7 @@ class SkillSelector:
 
         # Create a base selector which keeps track of the imports during the
         # skill config loading in order to avoid cyclic imports
-        selector = cls(set(), os.path.dirname(config))
+        selector = cls.all_skills(os.path.dirname(config))
 
         selector = cls._from_file(config, selector)
 
