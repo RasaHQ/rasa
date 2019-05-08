@@ -673,8 +673,11 @@ def create_app(
 
         model_path = request.args.get("model", None)
         if model_path:
+            model_server = app.agent.model_server
+            if model_server is not None:
+                model_server.url = model_path
             eval_agent = await _load_agent(
-                model_path, app.agent.model_server, app.agent.remote_storage
+                model_path, model_server, app.agent.remote_storage
             )
 
         nlu_data = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
