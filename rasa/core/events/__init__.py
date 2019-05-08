@@ -8,6 +8,8 @@ import uuid
 from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
+from rasa.core import utils
+
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
 
@@ -307,24 +309,30 @@ class BotUttered(Event):
 
     def __init__(self, text=None, data=None, timestamp=None):
         self.text = text
-        self.data = data
+        self.data = data or {}
         super(BotUttered, self).__init__(timestamp)
 
+    def __members(self):
+        wo_none_values = utils.remove_none_values(self.data)
+        return (self.text, jsonpickle.encode(wo_none_values))
+
     def __hash__(self):
-        return hash((self.text, jsonpickle.encode(self.data)))
+        return hash(self.__members())
 
     def __eq__(self, other):
         if not isinstance(other, BotUttered):
             return False
         else:
-            return (self.text, jsonpickle.encode(self.data)) == (
-                other.text,
-                jsonpickle.encode(other.data),
-            )
+            return self.__members() == other.__members()
 
     def __str__(self):
         return "BotUttered(text: {}, data: {})".format(
             self.text, json.dumps(self.data, indent=2)
+        )
+
+    def __repr__(self):
+        return "BotUttered('{}', {}, {})".format(
+            self.text, json.dumps(self.data), self.timestamp
         )
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
@@ -333,6 +341,20 @@ class BotUttered(Event):
 
     def as_story_string(self):
         return None
+
+    def message(self) -> Dict[Text, Any]:
+        """Return the complete message as a dictionary."""
+
+        m = self.data.copy()
+        m["text"] = self.text
+
+        if m.get("image") == m.get("attachment"):
+            # we need this as there is an oddity we introduced a while ago where
+            # we automatically set the attachment to the image. to not break
+            # any persisted events we kept that, but we need to make sure that
+            # the message contains the image only once
+            m["attachment"] = None
+        return m
 
     @staticmethod
     def empty():

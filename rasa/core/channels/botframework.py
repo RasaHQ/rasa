@@ -76,23 +76,13 @@ class BotFramework(OutputChannel):
         else:
             return BotFramework.headers
 
-    async def send(self, recipient_id: Text, message_data: Dict[Text, Any]) -> None:
-
+    async def send(self, kwargs: Dict[Text, Any]) -> None:
         post_message_uri = "{}conversations/{}/activities".format(
             self.global_uri, self.conversation["id"]
         )
-        data = {
-            "type": "message",
-            "recipient": {"id": recipient_id},
-            "from": self.bot,
-            "channelData": {"notification": {"alert": "true"}},
-            "text": "",
-        }
-
-        data.update(message_data)
         headers = await self._get_headers()
         send_response = requests.post(
-            post_message_uri, headers=headers, data=json.dumps(data)
+            post_message_uri, headers=headers, data=json.dumps(kwargs)
         )
 
         if not send_response.ok:
@@ -101,10 +91,23 @@ class BotFramework(OutputChannel):
                 send_response.text,
             )
 
+    async def prepare_message(
+        self, recipient_id: Text, message_data: Dict[Text, Any]
+    ) -> None:
+        data = {
+            "type": "message",
+            "recipient": {"id": recipient_id},
+            "from": self.bot,
+            "channelData": {"notification": {"alert": "true"}},
+            "text": "",
+        }
+        return data.update(message_data)
+
     async def send_text_message(self, recipient_id, message):
         for message_part in message.split("\n\n"):
             text_message = {"text": message_part}
-            await self.send(recipient_id, text_message)
+            message = self.prepare_message(recipient_id, text_message)
+            await self.send(message)
 
     async def send_image_url(self, recipient_id, image_url):
         hero_content = {
@@ -113,7 +116,8 @@ class BotFramework(OutputChannel):
         }
 
         image_message = {"attachments": [hero_content]}
-        await self.send(recipient_id, image_message)
+        message = self.prepare_message(recipient_id, image_message)
+        await self.send(message)
 
     async def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
         hero_content = {
@@ -122,10 +126,22 @@ class BotFramework(OutputChannel):
         }
 
         buttons_message = {"attachments": [hero_content]}
-        await self.send(recipient_id, buttons_message)
+        message = self.prepare_message(recipient_id, buttons_message)
+        await self.send(message)
 
-    async def send_custom_message(self, recipient_id, elements):
-        await self.send(recipient_id, elements[0])
+    async def send_elements(self, recipient_id, elements):
+        message = self.prepare_message(recipient_id, elements[0])
+        await self.send(message)
+
+    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
+        kwargs.setdefault("type", "message")
+        kwargs.setdefault("recipient", {}).setdefault("id", recipient_id)
+        kwargs.setdefault("from", self.bot)
+        kwargs.setdefault("channelData", {}).setdefault("notification", {}).setdefault(
+            "alert", "true"
+        )
+        kwargs.setdefault("text", "")
+        await self.send(kwargs)
 
 
 class BotFrameworkInput(InputChannel):

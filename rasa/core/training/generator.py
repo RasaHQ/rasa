@@ -24,6 +24,7 @@ from rasa.core.training.structures import (
     StoryStep,
     GENERATED_CHECKPOINT_PREFIX,
 )
+from rasa.utils.common import is_logging_disabled
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +191,7 @@ class TrainingDataGenerator(object):
         else:
             return "data generation round {}".format(phase)
 
-    def generate(self, silent: bool = False) -> List[TrackerWithCachedStates]:
+    def generate(self) -> List[TrackerWithCachedStates]:
         if self.config.remove_duplicates and self.config.unique_last_num_states:
             logger.debug(
                 "Generated trackers will be deduplicated "
@@ -248,7 +249,7 @@ class TrainingDataGenerator(object):
             pbar = tqdm(
                 self.story_graph.ordered_steps(),
                 desc="Processed Story Blocks",
-                disable=silent,
+                disable=is_logging_disabled(),
             )
             for step in pbar:
                 incoming_trackers = []  # type: List[TrackerWithCachedStates]

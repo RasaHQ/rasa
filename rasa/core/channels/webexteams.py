@@ -1,6 +1,6 @@
 import logging
 from sanic import Blueprint, response
-from typing import Text, Optional
+from typing import Text, Optional, Dict, Any
 from webexteamssdk import WebexTeamsAPI, Webhook
 
 from rasa.core.channels import InputChannel
@@ -32,6 +32,10 @@ class WebexTeamsBot(OutputChannel):
     async def send_file_url(self, recipient_id, file_url):
         recipient = self.room or recipient_id
         return self.api.messages.create(roomId=recipient, files=[file_url])
+
+    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
+        kwargs.setdefault("roomID", recipient_id)
+        return self.api.messages.create(**kwargs)
 
 
 class WebexTeamsInput(InputChannel):
