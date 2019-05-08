@@ -17,11 +17,7 @@ venv
 .tox
 .pytype
 dist/
-data/*
 pip-wheel-metadata
-!data/examples
-!data/test
-!data/README.md
 docs/nlu/_build
 docs/_build
 server/

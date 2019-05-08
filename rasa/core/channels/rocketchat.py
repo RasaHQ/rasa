@@ -1,6 +1,6 @@
 import logging
 from sanic import Blueprint, response
-from typing import Text
+from typing import Text, Dict, Any
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -57,10 +57,24 @@ class RocketChatBot(OutputChannel):
             message, room_id=recipient_id, attachments=button_attachment
         )
 
-    async def send_custom_message(self, recipient_id, elements):
+    async def send_elements(self, recipient_id, elements):
         return self.rocket.chat_post_message(
             None, room_id=recipient_id, attachments=elements
         )
+
+    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
+        text = kwargs.pop("text")
+
+        if kwargs.get("channel"):
+            if kwargs.get("room_id"):
+                logger.warning(
+                    "Only one of `channel` or `room_id` can be passed to a RocketChat message post. Defaulting to `channel`."
+                )
+                del kwargs["room_id"]
+            return self.rocket.chat_post_message(text, **kwargs)
+        else:
+            kwargs.setdefault("room_id", recipient_id)
+            return self.rocket.chat_post_message(text, **kwargs)
 
 
 class RocketChatInput(InputChannel):

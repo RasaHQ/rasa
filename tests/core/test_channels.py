@@ -28,6 +28,49 @@ def fake_sanic_run(*args, **kwargs):
     logger.info("Rabatnic: Take this and find Sanic! I want him here by supper time.")
 
 
+async def test_send_response(default_channel, default_tracker):
+    text_only_message = {"text": "hey"}
+    image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
+    text_and_image_message = {
+        "text": "look at this",
+        "image": "https://i.imgur.com/T5xVo.jpg",
+    }
+    custom_json_message = {
+        "text": "look at this",  # this value will be ignored
+        "custom": {"some_random_arg": "value", "another_arg": "value2"},
+    }
+
+    await default_channel.send_response(default_tracker.sender_id, text_only_message)
+    await default_channel.send_response(default_tracker.sender_id, image_only_message)
+    await default_channel.send_response(
+        default_tracker.sender_id, text_and_image_message
+    )
+    await default_channel.send_response(default_tracker.sender_id, custom_json_message)
+    collected = default_channel.messages
+
+    assert len(collected) == 5
+
+    # text only message
+    assert collected[0] == {"recipient_id": "my-sender", "text": "hey"}
+
+    # image only message
+    assert collected[1] == {
+        "recipient_id": "my-sender",
+        "image": "https://i.imgur.com/nGF1K8f.jpg",
+    }
+
+    # text & image combined - will result in two messages
+    assert collected[2] == {"recipient_id": "my-sender", "text": "look at this"}
+    assert collected[3] == {
+        "recipient_id": "my-sender",
+        "image": "https://i.imgur.com/T5xVo.jpg",
+    }
+    assert collected[4] == {
+        "recipient_id": "my-sender",
+        "custom": {"some_random_arg": "value", "another_arg": "value2"},
+    }
+
+
 async def test_console_input():
     from rasa.core.channels import console
 
@@ -826,7 +869,7 @@ def test_int_message_id_in_user_message():
     assert message.message_id == "987654321"
 
 
-async def test_send_custom_messages_without_buttons():
+async def test_send_elements_without_buttons():
     from rasa.core.channels.channel import OutputChannel
 
     async def test_message(sender, message):
@@ -835,7 +878,7 @@ async def test_send_custom_messages_without_buttons():
 
     channel = OutputChannel()
     channel.send_text_message = test_message
-    await channel.send_custom_message("user", [{"title": "a", "subtitle": "b"}])
+    await channel.send_elements("user", [{"title": "a", "subtitle": "b"}])
 
 
 def test_newsline_strip():

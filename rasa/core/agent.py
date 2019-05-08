@@ -12,10 +12,14 @@ import aiohttp
 import rasa
 import rasa.utils.io
 from rasa.constants import DEFAULT_DOMAIN_PATH
-from rasa.core import constants, jobs, training
-from rasa.core.channels import InputChannel, OutputChannel, UserMessage
+from rasa.core import constants, jobs, training, utils
+from rasa.core.channels import (
+    InputChannel,
+    OutputChannel,
+    UserMessage,
+    CollectingOutputChannel,
+)
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.dispatcher import Dispatcher
 from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -409,7 +413,7 @@ class Agent(object):
         lock = self.conversations_in_processing.get(message.sender_id)
         if not lock:
             logger.debug(
-                "created a new lock for conversation '{}'".format(message.sender_id)
+                "Created a new lock for conversation '{}'".format(message.sender_id)
             )
             lock = LockCounter()
             self.conversations_in_processing[message.sender_id] = lock
@@ -430,7 +434,7 @@ class Agent(object):
                 # accumulating locks
                 del self.conversations_in_processing[message.sender_id]
                 logger.debug(
-                    "deleted lock for conversation '{}' (unused)"
+                    "Deleted lock for conversation '{}' (unused)"
                     "".format(message.sender_id)
                 )
 
@@ -457,16 +461,15 @@ class Agent(object):
         self,
         sender_id: Text,
         action: Text,
-        output_channel: OutputChannel,
+        output_channel: CollectingOutputChannel,
         policy: Text,
         confidence: float,
     ) -> DialogueStateTracker:
         """Handle a single message."""
 
         processor = self.create_processor()
-        dispatcher = Dispatcher(sender_id, output_channel, self.nlg)
         return await processor.execute_action(
-            sender_id, action, dispatcher, policy, confidence
+            sender_id, action, output_channel, self.nlg, policy, confidence
         )
 
     async def handle_text(
@@ -661,11 +664,8 @@ class Agent(object):
         route: Text = "/webhooks/",
         cors=None,
     ) -> "Sanic":
-        """Start a webserver attaching the input channels and handling msgs.
+        """Start a webserver attaching the input channels and handling msgs."""
 
-        If ``serve_forever`` is set to ``True``, this call will be blocking.
-        Otherwise the webserver will be started, and the method will
-        return afterwards."""
         from rasa.core import run
 
         app = run.configure_app(channels, cors, None, enable_api=False, route=route)
