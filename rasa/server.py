@@ -15,6 +15,7 @@ import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
+from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DEFAULT_MODELS_PATH,
@@ -30,6 +31,7 @@ from rasa.core.utils import dump_obj_as_str_to_file
 from rasa.model import get_model_subdirectories, fingerprint_from_path
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
+
 
 logger = logging.getLogger(__name__)
 
@@ -227,7 +229,11 @@ def _create_emulator(mode: Optional[Text]) -> NoEmulator:
         )
 
 
-async def _load_agent(model_path, model_server, remote_storage):
+async def _load_agent(
+    model_path: Optional[Text] = None,
+    model_server: Optional[EndpointConfig] = None,
+    remote_storage: Optional[Text] = None,
+) -> Agent:
     try:
         loaded_agent = await load_agent(model_path, model_server, remote_storage)
     except Exception as e:
@@ -667,7 +673,7 @@ def create_app(
 
         model_path = request.args.get("model", None)
         if model_path:
-            eval_agent = _load_agent(
+            eval_agent = await _load_agent(
                 model_path, app.agent.model_server, app.agent.remote_storage
             )
 
@@ -779,7 +785,7 @@ def create_app(
         model_server = request.json.get("model_server", None)
         remote_storage = request.json.get("remote_storage", None)
 
-        app.agent = _load_agent(model_path, model_server, remote_storage)
+        app.agent = await _load_agent(model_path, model_server, remote_storage)
 
         logger.debug("Successfully loaded model '{}'.".format(model_path))
         return response.json(None, status=204)
