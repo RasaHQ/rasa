@@ -78,7 +78,7 @@ def _get_core_nlu_files(
     story_files = set()
     nlu_data_files = set()
 
-    skill_imports = skill_imports or SkillSelector.empty()
+    skill_imports = skill_imports or SkillSelector.all_skills()
 
     if not skill_imports.no_skills_selected():
         paths = skill_imports.training_paths()

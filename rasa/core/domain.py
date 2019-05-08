@@ -143,7 +143,7 @@ class Domain(object):
         paths: Union[List[Text], Text],
         skill_imports: Optional[SkillSelector] = None,
     ) -> "Domain":
-        skill_imports = skill_imports or SkillSelector.empty()
+        skill_imports = skill_imports or SkillSelector.all_skills()
 
         if not skill_imports.no_skills_selected():
             paths = skill_imports.training_paths()
@@ -216,7 +216,7 @@ class Domain(object):
         """Loads and merges multiple domain files recursively from a directory tree."""
 
         domain = Domain.empty()
-        skill_imports = skill_imports or SkillSelector.empty()
+        skill_imports = skill_imports or SkillSelector.all_skills()
 
         for root, _, files in os.walk(path):
             if not skill_imports.is_imported(root):

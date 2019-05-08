@@ -14,7 +14,7 @@ class SkillSelector:
         self._project_directory = project_directory
 
     @classmethod
-    def empty(cls) -> "SkillSelector":
+    def all_skills(cls) -> "SkillSelector":
         """Returns a `SkillSelector` instance which does not specify any skills."""
 
         return cls(set())
@@ -50,7 +50,7 @@ class SkillSelector:
             return cls._from_directory(path, skill_selector)
         else:
             logger.debug("No imports found. Importing everything.")
-            return cls.empty()
+            return cls.all_skills()
 
     @classmethod
     def _from_file(cls, path: Text, skill_selector: "SkillSelector") -> "SkillSelector":
@@ -62,7 +62,7 @@ class SkillSelector:
                 parent_directory = os.path.dirname(path)
                 return cls._from_dict(config, parent_directory, skill_selector)
 
-        return cls.empty()
+        return cls.all_skills()
 
     @classmethod
     def _from_dict(
