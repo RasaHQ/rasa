@@ -282,8 +282,6 @@ class CollectingOutputChannel(OutputChannel):
             "attachment": attachment,
             "custom": custom,
         }
-        if obj.get("custom"):
-            obj["custom"].setdefault("recipient_id", recipient_id)
 
         # filter out any values that are `None`
         return utils.remove_none_values(obj)

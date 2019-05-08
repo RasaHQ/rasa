@@ -8,6 +8,8 @@ import uuid
 from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
+from rasa.core import utils
+
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
 
@@ -311,7 +313,7 @@ class BotUttered(Event):
         super(BotUttered, self).__init__(timestamp)
 
     def __members(self):
-        wo_none_values = {k: v for k, v in self.data.items() if v is not None}
+        wo_none_values = utils.remove_none_values(self.data)
         return (self.text, jsonpickle.encode(wo_none_values))
 
     def __hash__(self):

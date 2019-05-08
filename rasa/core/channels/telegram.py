@@ -68,7 +68,6 @@ class TelegramOutput(Bot, OutputChannel):
                 args = [kwargs.pop(p) for p in params]
                 api_call = getattr(self, send_functions[params])
                 api_call(recipient_id, *args, **kwargs)
-                continue
 
     async def send_image_url(self, recipient_id, image_url):
         self.send_photo(recipient_id, image_url)
