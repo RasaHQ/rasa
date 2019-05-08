@@ -7,6 +7,7 @@ import uuid
 from typing import Tuple, List, Text, Set, Union, Optional
 import re
 
+import rasa.utils.io as io_utils
 from rasa.skill import SkillSelector
 
 logger = logging.getLogger(__name__)
@@ -142,8 +143,10 @@ def _is_valid_filetype(path: Text) -> bool:
 def _is_nlu_file(file_path: Text) -> bool:
     with open(file_path, encoding="utf-8") as f:
         if file_path.endswith(".json"):
-            content = f.read()
-            is_nlu_file = json.loads(content).get("rasa_nlu_data") is not None
+            content = io_utils.read_json_file(file_path)
+            is_nlu_file = (
+                isinstance(content, dict) and content.get("rasa_nlu_data") is not None
+            )
         else:
             is_nlu_file = any(_contains_nlu_pattern(l) for l in f)
     return is_nlu_file
