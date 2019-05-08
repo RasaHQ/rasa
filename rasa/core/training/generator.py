@@ -24,7 +24,7 @@ from rasa.core.training.structures import (
     StoryStep,
     GENERATED_CHECKPOINT_PREFIX,
 )
-from rasa.utils.common import disable_logging
+from rasa.utils.common import is_logging_disabled
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +249,7 @@ class TrainingDataGenerator(object):
             pbar = tqdm(
                 self.story_graph.ordered_steps(),
                 desc="Processed Story Blocks",
-                disable=disable_logging(),
+                disable=is_logging_disabled(),
             )
             for step in pbar:
                 incoming_trackers = []  # type: List[TrackerWithCachedStates]

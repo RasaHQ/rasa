@@ -30,7 +30,7 @@ in ``interactive learning``
 - add ``rasa interactive core`` to command line interface
 - support for spaCy 2.1
 - a model for an agent can now also be loaded from a remote storage
-- log level can be set via environment variable ``LOG_LEVEL`
+- log level can be set via environment variable ``LOG_LEVEL``
 
 Changed
 -------

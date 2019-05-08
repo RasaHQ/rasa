@@ -54,21 +54,25 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         return not_found()
 
 
-def set_log_level(log_level: Optional[Any] = None):
+def set_log_level(log_level: Optional[int] = None):
+    """Set log level of Rasa and Tensorflow either to the provided log level or
+    to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
+    a default log level will be used."""
     import logging
 
     if not log_level:
         log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
         log_level = logging.getLevelName(log_level)
 
-    logging.getLogger(__name__).setLevel(log_level)
+    logging.getLogger("rasa").setLevel(log_level)
 
     set_tensorflow_log_level(log_level)
 
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
 
 
-def set_tensorflow_log_level(log_level: logging):
+def set_tensorflow_log_level(log_level: int):
+    """Set the log level of Tensorflow."""
     import tensorflow as tf
 
     tf_log_level = tf.logging.INFO
@@ -83,6 +87,8 @@ def set_tensorflow_log_level(log_level: logging):
 
 
 def update_sanic_log_level():
+    """Set the log level of sanic loggers to the log level specified in the environment
+    variable 'LOG_LEVEL'."""
     log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     from sanic.log import logger, error_logger, access_logger
@@ -92,7 +98,8 @@ def update_sanic_log_level():
     access_logger.setLevel(log_level)
 
 
-def obtain_verbosity():
+def obtain_verbosity() -> int:
+    """Returns a verbosity level according to the set log level."""
     log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     verbosity = 0
@@ -104,7 +111,8 @@ def obtain_verbosity():
     return verbosity
 
 
-def disable_logging():
+def is_logging_disabled() -> bool:
+    """Returns true, if log level is set to WARNING or ERROR, false otherwise."""
     log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     return log_level == "ERROR" or log_level == "WARNING"

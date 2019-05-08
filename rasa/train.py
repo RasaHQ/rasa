@@ -12,6 +12,8 @@ from rasa.cli.utils import (
     print_warning,
     get_validated_path,
     print_error,
+    bcolors,
+    print_color,
 )
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
@@ -105,11 +107,9 @@ async def train_async(
             retrain_nlu = not model.merge_model(old_nlu, target_path)
 
     if force_training or retrain_core:
-        print ("Start training dialogue model ...")
         await train_core_async(
             domain, config, story_directory, output, train_path, kwargs
         )
-        print ("Done.")
     else:
         print (
             "Dialogue data / configuration did not change. "
@@ -117,9 +117,7 @@ async def train_async(
         )
 
     if force_training or retrain_nlu:
-        print ("Start training NLU model ...")
         train_nlu(config, nlu_data_directory, output, train_path)
-        print ("Done.")
     else:
         print ("NLU data / configuration did not change. No need to retrain NLU model.")
 
@@ -193,6 +191,7 @@ async def train_core_async(
         return
 
     # normal (not compare) training
+    print_color("Start training dialogue model ...", color=bcolors.OKBLUE)
     await rasa.core.train(
         domain_file=domain,
         stories_file=story_directory,
@@ -200,6 +199,7 @@ async def train_core_async(
         policy_config=config,
         kwargs=kwargs,
     )
+    print_color("Done.", color=bcolors.OKBLUE)
 
     if not train_path:
         # Only Core was trained.
@@ -248,9 +248,11 @@ def train_nlu(
         return
 
     _train_path = train_path or tempfile.mkdtemp()
+    print_color("Start training NLU model ...", color=bcolors.OKBLUE)
     _, nlu_model, _ = rasa.nlu.train(
         config, nlu_data_directory, _train_path, fixed_model_name="nlu"
     )
+    print_color("Done.", color=bcolors.OKBLUE)
 
     if not train_path:
         output_path = create_output_path(output, prefix="nlu-")

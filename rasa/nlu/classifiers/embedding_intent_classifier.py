@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa.nlu.components import Component
-from rasa.utils.common import disable_logging
+from rasa.utils.common import is_logging_disabled
 
 logger = logging.getLogger(__name__)
 
@@ -431,7 +431,7 @@ class EmbeddingIntentClassifier(Component):
                 "".format(self.evaluate_every_num_epochs)
             )
 
-        pbar = tqdm(range(self.epochs), desc="Epochs", disable=disable_logging())
+        pbar = tqdm(range(self.epochs), desc="Epochs", disable=is_logging_disabled())
         train_acc = 0
         last_loss = 0
         for ep in pbar:

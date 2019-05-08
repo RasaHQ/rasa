@@ -15,7 +15,7 @@ from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import disable_logging
+from rasa.utils.common import is_logging_disabled
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class MemoizationPolicy(Policy):
         pbar = tqdm(
             zip(trackers_as_states, trackers_as_actions),
             desc="Processed actions",
-            disable=disable_logging(),
+            disable=is_logging_disabled(),
         )
         for states, actions in pbar:
             action = actions[0]
