@@ -1228,7 +1228,7 @@ components:
     EvaluationIntentsResult:
       type: object
       properties:
-        intent_evaluattion:
+        intent_evaluation:
           type: object
           description: Rasa NLU intent evaluation
           properties:
