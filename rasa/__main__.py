@@ -58,10 +58,13 @@ def main() -> None:
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
 
-    set_log_level(cmdline_arguments.loglevel)
+    log_level = (
+        cmdline_arguments.loglevel if hasattr(cmdline_arguments, "loglevel") else None
+    )
+    set_log_level(log_level)
 
     if hasattr(cmdline_arguments, "func"):
-        rasa.utils.io.configure_colored_logging(cmdline_arguments.loglevel)
+        rasa.utils.io.configure_colored_logging(log_level)
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
         print_version()
