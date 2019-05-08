@@ -68,7 +68,6 @@ async def test_send_response(default_channel, default_tracker):
     assert collected[4] == {
         "recipient_id": "my-sender",
         "custom": {
-            "recipient_id": "my-sender",
             "some_random_arg": "value",
             "another_arg": "value2",
         },
