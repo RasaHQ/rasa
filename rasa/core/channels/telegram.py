@@ -64,7 +64,7 @@ class TelegramOutput(Bot, OutputChannel):
         }
 
         for params in send_functions.keys():
-            if all(kwargs.get(p) for p in params):
+            if all(kwargs.get(p) is not None for p in params):
                 args = [kwargs.pop(p) for p in params]
                 api_call = getattr(self, send_functions[params])
                 api_call(recipient_id, *args, **kwargs)
