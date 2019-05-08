@@ -234,7 +234,7 @@ def train_nlu(
         otherwise the path to the directory with the trained model files.
 
     """
-    import rasa.nlu
+    import rasa.nlu.train
 
     config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
