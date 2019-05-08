@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
 from sanic import Blueprint, response
+from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
+from typing import Dict, Text, Any
 
 from rasa.core.channels import InputChannel
 from rasa.core.channels import UserMessage, OutputChannel
@@ -25,18 +27,27 @@ class TwilioOutput(Client, OutputChannel):
     async def send_text_message(self, recipient_id, text):
         """Sends text message"""
 
+        kwargs = {"to": recipient_id, "from_": self.twilio_number}
         for message_part in text.split("\n\n"):
-            await self._send_text(recipient_id, message_part)
+            kwargs.update({"body": message_part})
+            await self._send_message(kwargs)
 
-    async def _send_text(self, recipient_id, text):
-        from twilio.base.exceptions import TwilioRestException
+    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
+        """Send custom json dict"""
 
+        kwargs.setdefault("to", recipient_id)
+        if not kwargs.get("media_url"):
+            kwargs.setdefault("body", "")
+        if not kwargs.get("messaging_service_sid"):
+            kwargs.setdefault("from", self.twilio_number)
+
+        await self._send_message(kwargs)
+
+    async def _send_message(self, kwargs: Dict[Text, Any]):
         message = None
         try:
             while not message and self.send_retry < self.max_retry:
-                message = self.messages.create(
-                    body=text, to=recipient_id, from_=self.twilio_number
-                )
+                message = self.messages.create(**kwargs)
                 self.send_retry += 1
         except TwilioRestException as e:
             logger.error("Something went wrong " + repr(e.msg))

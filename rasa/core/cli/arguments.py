@@ -78,7 +78,6 @@ def add_logging_option_arguments(parser):
         action="store_const",
         dest="loglevel",
         const=logging.INFO,
-        default=logging.INFO,
     )
     logging_arguments.add_argument(
         "-vv",

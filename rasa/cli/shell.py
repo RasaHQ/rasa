@@ -5,6 +5,7 @@ import os
 from typing import List
 
 import rasa.cli.run
+import rasa.core.cli.arguments
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,9 @@ def add_subparser(
         help="Speak to a trained model on the command line",
     )
     rasa.cli.run.add_run_arguments(shell_parser)
+
+    rasa.core.cli.arguments.add_logging_option_arguments(shell_parser)
+
     shell_parser.set_defaults(func=shell)
 
 
@@ -50,4 +54,6 @@ def shell(args: argparse.Namespace):
 
         rasa.nlu.run.run_cmdline(nlu_model)
     else:
+        import rasa.cli.run
+
         rasa.cli.run.run(args)

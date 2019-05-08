@@ -1,11 +1,10 @@
 import argparse
 import logging
-import os
-import tempfile
-from typing import List, Optional, Text, Union
+from typing import List, Union
 
+import rasa.core.cli.arguments
 from rasa import data
-from rasa.cli.default_arguments import add_model_param, add_stories_param
+from rasa.cli.default_arguments import add_stories_param
 from rasa.cli.utils import get_validated_path
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
@@ -14,7 +13,7 @@ from rasa.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
 )
-from rasa.model import get_latest_model, get_model, unpack_model
+from rasa.model import get_latest_model
 from rasa.test import test_compare
 
 logger = logging.getLogger(__name__)
@@ -172,6 +171,8 @@ def _add_test_subparser_arguments(parser: argparse.ArgumentParser):
         help="Path to a pre-trained model. If directory is given, the latest model "
         "in that directory will be used.",
     )
+
+    rasa.core.cli.arguments.add_logging_option_arguments(parser)
 
 
 def _add_nlu_subparser_arguments(parser: argparse.ArgumentParser):

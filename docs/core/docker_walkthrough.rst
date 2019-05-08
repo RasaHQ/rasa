@@ -120,7 +120,7 @@ Now you can train the Rasa Core model using the following command:
   docker run \
     -v $(pwd):/app/project \
     -v $(pwd)/models/rasa_core:/app/models \
-    rasa/rasa_core:latest \
+    rasa/rasa:latest-full \
     train \
       --domain project/domain.yml \
       --stories project/data/stories.md \
@@ -161,7 +161,7 @@ Use the following command to run Rasa Core:
   docker run \
     -it \
     -v $(pwd)/models/rasa_core:/app/models \
-    rasa/rasa_core:latest \
+    rasa/rasa:latest-full \
     start \
       --core models
 
@@ -251,7 +251,7 @@ the trained Rasa model:
   docker run \
     -v $(pwd):/app/project \
     -v $(pwd)/models/:/app/models \
-    rasa/rasa:latest-spacy \
+    rasa/rasa:latest-spacy-en \
     run \
       python3 -m rasa.train \
       -c config.yml \
@@ -307,7 +307,7 @@ The first service is the ``rasa`` service.
 
   services:
     rasa:
-      image: rasa/rasa:latest
+      image: rasa/rasa:latest-full
       ports:
         - 5005:5005
       volumes:
@@ -335,8 +335,8 @@ Then add the Rasa NLU service to your docker compose file:
 
 .. code-block:: yaml
 
-  rasa_nlu:
-      image: rasa/rasa_nlu:latest-spacy
+  rasa:
+      image: rasa/rasa:latest-spacy-en
       volumes:
         - ./models/rasa_nlu:/app/models
       command:
