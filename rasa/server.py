@@ -227,6 +227,26 @@ def _create_emulator(mode: Optional[Text]) -> NoEmulator:
         )
 
 
+async def _load_agent(model_path, model_server, remote_storage):
+    try:
+        loaded_agent = await load_agent(model_path, model_server, remote_storage)
+    except Exception as e:
+        logger.debug(traceback.format_exc())
+        raise ErrorResponse(
+            500, "LoadingError", "An unexpected error occurred. Error: {}".format(e)
+        )
+
+    if not loaded_agent:
+        raise ErrorResponse(
+            400,
+            "BadRequest",
+            "Agent with name '{}' could not be loaded.".format(model_path),
+            {"parameter": "model", "in": "query"},
+        )
+
+    return loaded_agent
+
+
 def create_app(
     agent: Optional["Agent"] = None,
     cors_origins: Union[Text, List[Text]] = "*",
@@ -643,13 +663,21 @@ def create_app(
             "evaluate your model.",
         )
 
+        eval_agent = app.agent
+
+        model_path = request.args.get("model", None)
+        if model_path:
+            eval_agent = _load_agent(
+                model_path, app.agent.model_server, app.agent.remote_storage
+            )
+
         nlu_data = rasa.utils.io.create_temporary_file(request.body, mode="w+b")
         data_path = os.path.abspath(nlu_data)
 
-        if not os.path.exists(app.agent.model_directory):
+        if not os.path.exists(eval_agent.model_directory):
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
-        model_directory = app.agent.model_directory
+        model_directory = eval_agent.model_directory
         _, nlu_model = get_model_subdirectories(model_directory)
 
         try:
@@ -751,26 +779,8 @@ def create_app(
         model_server = request.json.get("model_server", None)
         remote_storage = request.json.get("remote_storage", None)
 
-        try:
-            agent = await load_agent(model_path, model_server, remote_storage)
-        except Exception as e:
-            logger.debug(traceback.format_exc())
-            raise ErrorResponse(
-                500, "LoadingError", "An unexpected error occurred. Error: {}".format(e)
-            )
+        app.agent = _load_agent(model_path, model_server, remote_storage)
 
-        if not agent:
-            raise ErrorResponse(
-                400,
-                "BadRequest",
-                "Agent could not be loaded with given configuration.",
-                {
-                    "parameters": ["model_file", "model_server", "remote_storage"],
-                    "in": "body",
-                },
-            )
-
-        app.agent = agent
         logger.debug("Successfully loaded model '{}'.".format(model_path))
         return response.json(None, status=204)
 
