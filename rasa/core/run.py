@@ -199,6 +199,8 @@ async def load_agent_on_start(
             generator=endpoints.nlg,
             tracker_store=_tracker_store,
             action_endpoint=endpoints.action,
+            model_server=model_server,
+            remote_storage=remote_storage,
         )
 
     return app.agent
