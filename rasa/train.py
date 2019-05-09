@@ -5,6 +5,9 @@ import typing
 from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
+from rasa.core.domain import Domain
+from rasa.skill import SkillSelector
+
 from rasa.cli.utils import (
     create_output_path,
     print_success,
@@ -39,9 +42,9 @@ def train(
 
 
 async def train_async(
-    domain: Text,
+    domain: Optional,
     config: Text,
-    training_files: Union[Text, List[Text]],
+    training_files: Optional[Union[Text, List[Text]]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
     kwargs: Optional[Dict] = None,
@@ -66,7 +69,12 @@ async def train_async(
     retrain_core = True
     retrain_nlu = True
 
-    story_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
+    skill_imports = SkillSelector.load(config)
+    domain = Domain.load(domain, skill_imports)
+
+    story_directory, nlu_data_directory = data.get_core_nlu_directories(
+        training_files, skill_imports
+    )
     new_fingerprint = model.model_fingerprint(
         config, domain, nlu_data_directory, story_directory
     )
@@ -138,7 +146,7 @@ async def train_async(
 
 
 def train_core(
-    domain: Text,
+    domain: Union[Domain, Text],
     config: Text,
     stories: Text,
     output: Text,
@@ -152,7 +160,7 @@ def train_core(
 
 
 async def train_core_async(
-    domain: Text,
+    domain: Union[Domain, Text],
     config: Text,
     stories: Text,
     output: Text,
@@ -181,7 +189,12 @@ async def train_core_async(
 
     _train_path = train_path or tempfile.mkdtemp()
 
-    story_directory = data.get_core_directory(stories)
+    if isinstance(Domain, str) or not train_path:
+        skill_imports = SkillSelector.load(config)
+        domain = Domain.load(domain, skill_imports)
+        story_directory = data.get_core_directory(stories, skill_imports)
+    else:
+        story_directory = stories
 
     if not os.listdir(story_directory):
         print_error(
@@ -238,7 +251,12 @@ def train_nlu(
 
     config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
-    nlu_data_directory = data.get_nlu_directory(nlu_data)
+    if not train_path:
+        # training NLU only hence the training files still have to be selected
+        skill_imports = SkillSelector.load(config)
+        nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
+    else:
+        nlu_data_directory = nlu_data
 
     if not os.listdir(nlu_data_directory):
         print_error(
@@ -248,6 +266,7 @@ def train_nlu(
         return
 
     _train_path = train_path or tempfile.mkdtemp()
+
     print_color("Start training NLU model ...", color=bcolors.OKBLUE)
     _, nlu_model, _ = rasa.nlu.train(
         config, nlu_data_directory, _train_path, fixed_model_name="nlu"
