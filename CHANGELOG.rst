@@ -37,7 +37,6 @@ in ``interactive learning``
 - support for spaCy 2.1
 - a model for an agent can now also be loaded from a remote storage
 - log level can be set via environment variable ``LOG_LEVEL``
-- add subparser ``rasa shell nlu`` to interpret text on the command line
 
 Changed
 -------
