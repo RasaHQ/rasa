@@ -9,9 +9,7 @@ import re
 import sys
 import tempfile
 from pathlib import Path
-from typing import (
-    Union,
-)
+from typing import Union
 from asyncio import Future
 from hashlib import md5, sha1
 from io import StringIO
