@@ -39,13 +39,13 @@ models with:
 .. code-block:: bash
 
     $ rasa run core \
-        --enable_api \
+        --enable-api \
         -m models \
         -o out.log
 
 The different parameters are:
 
-- ``--enable_api``, enables this additional API
+- ``--enable-api``, enables this additional API
 - ``-m``, which is the path to the folder containing your Rasa Core model
   and Rasa NLU model.
 - ``-o``, which is the path to the log file.
@@ -88,14 +88,14 @@ Nevertheless, there are two authentication methods built in:
 
 **Token Based Auth:**
 
-Pass in the token using ``--auth_token thisismysecret`` when starting
+Pass in the token using ``--auth-token thisismysecret`` when starting
 the server:
 
 .. code-block:: bash
 
     $ rasa run core \
-        --enable_api \
-        --auth_token thisismysecret \
+        --enable-api \
+        --auth-token thisismysecret \
         -m models \
         -o out.log
 
@@ -108,7 +108,7 @@ as a parameter:
 
 **JWT Based Auth:**
 
-Enable JWT based authentication using ``--jwt_secret thisismysecret``.
+Enable JWT based authentication using ``--jwt-secret thisismysecret``.
 Requests to the server need to contain a valid JWT token in
 the ``Authorization`` header that is signed using this secret
 and the ``HS256`` algorithm.
@@ -121,8 +121,8 @@ if the ``sender_id`` matches the user's ``username``.
 .. code-block:: bash
 
     $ rasa run core \
-        --enable_api \
-        --jwt_secret thisismysecret \
+        --enable-api \
+        --jwt-secret thisismysecret \
         -m models \
         -o out.log
 
@@ -164,7 +164,7 @@ You can also configure the http server to fetch models from another URL:
 .. code-block:: bash
 
     $ rasa run core \
-        --enable_api \
+        --enable-api \
         -m models \
         --endpoints my_endpoints.yaml \
         -o out.log

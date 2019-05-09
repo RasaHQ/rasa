@@ -9,11 +9,11 @@ import re
 import sys
 import tarfile
 import tempfile
-import warnings
 import zipfile
-from asyncio import AbstractEventLoop, Future
+from asyncio import Future
 from hashlib import md5, sha1
 from io import BytesIO as IOReader, StringIO
+from pathlib import Path
 from typing import (
     Any,
     Dict,
@@ -25,6 +25,7 @@ from typing import (
     Tuple,
     Callable,
     Awaitable,
+    Union,
 )
 
 import aiohttp
@@ -34,7 +35,6 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
 
-import rasa.utils.endpoints
 from rasa.utils.endpoints import read_endpoint_config
 
 logger = logging.getLogger(__name__)
@@ -270,22 +270,22 @@ def _dump_yaml(obj, output):
     yaml_writer.dump(obj, output)
 
 
-def dump_obj_as_yaml_to_file(filename, obj):
+def dump_obj_as_yaml_to_file(filename: Union[Text, Path], obj: Dict) -> None:
     """Writes data (python dict) to the filename in yaml repr."""
-    with open(filename, "w", encoding="utf-8") as output:
+    with open(str(filename), "w", encoding="utf-8") as output:
         _dump_yaml(obj, output)
 
 
-def dump_obj_as_yaml_to_string(obj):
+def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
     """Writes data (python dict) to a yaml string."""
     str_io = StringIO()
     _dump_yaml(obj, str_io)
     return str_io.getvalue()
 
 
-def read_json_file(filename):
+def read_json_file(filename: Union[Text, Path]) -> Dict:
     """Read json from a file"""
-    with open(filename) as f:
+    with open(str(filename)) as f:
         return json.load(f)
 
 
@@ -359,35 +359,6 @@ def write_request_body_to_file(request: Request, path: Text):
 
     with open(path, "w+b") as f:
         f.write(request.body)
-
-
-def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
-    """Return a passed boolean argument of the request or a default.
-
-    Checks the `name` parameter of the request if it contains a valid
-    boolean value. If not, `default` is returned."""
-
-    return request.args.get(name, str(default)).lower() == "true"
-
-
-def float_arg(
-    request: Request, key: Text, default: Optional[float] = None
-) -> Optional[float]:
-    """Return a passed argument cast as a float or None.
-
-    Checks the `name` parameter of the request if it contains a valid
-    float value. If not, `None` is returned."""
-
-    arg = request.args.get(key, default)
-
-    if arg is default:
-        return arg
-
-    try:
-        return float(str(arg))
-    except (ValueError, TypeError):
-        logger.warning("Failed to convert '{}' to float.".format(arg))
-        return default
 
 
 def extract_args(

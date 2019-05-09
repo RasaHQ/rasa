@@ -529,7 +529,6 @@ async def visualize_stories(
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     fontsize: int = 12,
-    silent: bool = False,
 ):
     """Given a set of stories, generates a graph visualizing the flows in the
     stories.
@@ -568,7 +567,7 @@ async def visualize_stories(
         tracker_limit=100,
         augmentation_factor=0,
     )
-    completed_trackers = g.generate(silent)
+    completed_trackers = g.generate()
     event_sequences = [t.events for t in completed_trackers]
 
     graph = await visualize_neighborhood(

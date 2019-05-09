@@ -32,7 +32,6 @@ tests_requires = [
 install_requires = [
     "cloudpickle~=0.6.1",
     "boto3~=1.9",
-    "typing~=3.6",
     "requests~=2.20",
     "matplotlib~=2.2",
     "simplejson~=3.13",
@@ -66,7 +65,7 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2018.9",
     "python-dateutil~=2.7",
-    "rasa_core_sdk~=0.13.1",
+    "rasa_core_sdk~=1.0.0a1",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=18.12.0",
@@ -84,7 +83,7 @@ install_requires = [
 
 extras_requires = {
     "test": tests_requires,
-    "spacy": ["spacy<=2.0.18,>2.0"],
+    "spacy": ["spacy>=2.0,<2.2"],
     "mitie": ["mitie"],
     "sql": ["psycopg2~=2.8.2"],
 }

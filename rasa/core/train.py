@@ -3,7 +3,9 @@ import asyncio
 import logging
 import os
 import typing
-from typing import Dict, Optional, Text
+from typing import Dict, Optional, Text, Union
+
+from rasa.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -50,7 +52,7 @@ def create_argument_parser():
 
 
 async def train(
-    domain_file: Text,
+    domain_file: Union[Domain, Text],
     stories_file: Text,
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
@@ -224,39 +226,6 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
         server_args=cmdline_args.__dict__,
         additional_arguments=additional_arguments,
     )
-
-
-def main():
-    from rasa.utils.io import configure_colored_logging
-    import rasa.core.cli.train
-    from rasa.core.utils import set_default_subparser
-
-    # Running as standalone python application
-    arg_parser = create_argument_parser()
-    set_default_subparser(arg_parser, "default")
-    cmdline_arguments = arg_parser.parse_args()
-    additional_args = _additional_arguments(cmdline_arguments)
-
-    configure_colored_logging(cmdline_arguments.loglevel)
-
-    loop = asyncio.get_event_loop()
-
-    training_stories = loop.run_until_complete(
-        rasa.core.cli.train.stories_from_cli_args(cmdline_arguments)
-    )
-
-    if cmdline_arguments.mode == "default":
-        loop.run_until_complete(
-            do_default_training(cmdline_arguments, training_stories, additional_args)
-        )
-
-    elif cmdline_arguments.mode == "interactive":
-        do_interactive_learning(cmdline_arguments, training_stories, additional_args)
-
-    elif cmdline_arguments.mode == "compare":
-        loop.run_until_complete(
-            do_compare_training(cmdline_arguments, training_stories, additional_args)
-        )
 
 
 if __name__ == "__main__":

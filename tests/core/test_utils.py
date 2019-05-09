@@ -48,36 +48,6 @@ def test_on_hot_out_of_range():
         utils.one_hot(4, 3)
 
 
-def test_list_routes(default_agent):
-    from rasa.core import server
-
-    app = server.create_app(default_agent, auth_token=None)
-
-    routes = utils.list_routes(app)
-    assert set(routes.keys()) == {
-        "hello",
-        "version",
-        "execute_action",
-        "append_event",
-        "replace_events",
-        "list_trackers",
-        "retrieve_tracker",
-        "retrieve_story",
-        "respond",
-        "predict",
-        "parse",
-        "train_stack",
-        "evaluate_intents",
-        "log_message",
-        "load_model",
-        "evaluate_stories",
-        "get_domain",
-        "continue_training",
-        "status",
-        "tracker_predict",
-    }
-
-
 def test_cap_length():
     assert utils.cap_length("mystring", 6) == "mys..."
 
@@ -174,3 +144,15 @@ def test_read_yaml_string_with_env_var_not_exist():
     """
     with pytest.raises(ValueError):
         rasa.utils.io.read_yaml(config_with_env_var_not_exist)
+
+
+@pytest.mark.parametrize("file, parents", [("A/test.md", "A"), ("A", "A")])
+def test_file_in_path(file, parents):
+    assert rasa.utils.io.is_subdirectory(file, parents)
+
+
+@pytest.mark.parametrize(
+    "file, parents", [("A", "A/B"), ("B", "A"), ("A/test.md", "A/B"), (None, "A")]
+)
+def test_file_not_in_path(file, parents):
+    assert not rasa.utils.io.is_subdirectory(file, parents)

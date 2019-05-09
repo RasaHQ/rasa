@@ -1,7 +1,7 @@
 import argparse
 import tempfile
 import typing
-from typing import List, Optional, Text
+from typing import List, Optional, Text, Dict
 
 from rasa.cli.default_arguments import (
     add_config_param,
@@ -16,9 +16,6 @@ from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
 )
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Interpreter
 
 
 # noinspection PyProtectedMember
@@ -111,11 +108,14 @@ def _add_core_compare_arguments(parser: argparse.ArgumentParser):
 def train(args: argparse.Namespace) -> Optional[Text]:
     import rasa
 
-    domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
+    domain = get_validated_path(
+        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+    )
     config = args.config or DEFAULT_CONFIG_PATH
 
     training_files = [
-        get_validated_path(f, "data", DEFAULT_DATA_PATH) for f in args.data
+        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
+        for f in args.data
     ]
 
     return rasa.train(
@@ -137,8 +137,12 @@ def train_core(
     loop = asyncio.get_event_loop()
     output = train_path or args.out
 
-    args.domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
-    stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
+    args.domain = get_validated_path(
+        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+    )
+    stories = get_validated_path(
+        args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
+    )
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -167,18 +171,20 @@ def train_core(
 
 def train_nlu(
     args: argparse.Namespace, train_path: Optional[Text] = None
-) -> Optional["Interpreter"]:
+) -> Optional[Text]:
     from rasa.train import train_nlu
 
     output = train_path or args.out
 
     config = args.config or DEFAULT_CONFIG_PATH
-    nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    nlu_data = get_validated_path(
+        args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
+    )
 
     return train_nlu(config, nlu_data, output, train_path)
 
 
-def extract_additional_arguments(args: argparse.Namespace) -> typing.Dict:
+def extract_additional_arguments(args: argparse.Namespace) -> Dict:
     arguments = {}
 
     if "augmentation" in args:
@@ -187,9 +193,5 @@ def extract_additional_arguments(args: argparse.Namespace) -> typing.Dict:
         arguments["dump_stories"] = args.dump_stories
     if "debug_plots" in args:
         arguments["debug_plots"] = args.debug_plots
-    if "percentages" in args:
-        arguments["percentages"] = args.percentages
-    if "runs" in args:
-        arguments["runs"] = args.runs
 
     return arguments

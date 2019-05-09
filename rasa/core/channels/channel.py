@@ -7,6 +7,8 @@ from asyncio import Queue, CancelledError
 from sanic import Sanic, Blueprint, response
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 import uuid
+
+import rasa.utils.endpoints
 from rasa.core import utils
 from rasa.core.constants import DOCS_BASE_URL
 
@@ -158,8 +160,8 @@ class OutputChannel(object):
     async def send_response(self, recipient_id: Text, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
 
-        if message.get("elements"):
-            await self.send_custom_message(recipient_id, message.get("elements"))
+        if message.get("custom"):
+            return await self.send_custom_json(recipient_id, message.get("custom"))
 
         if message.get("quick_replies"):
             await self.send_quick_replies(
@@ -179,6 +181,9 @@ class OutputChannel(object):
 
         if message.get("attachment"):
             await self.send_attachment(recipient_id, message.get("attachment"))
+
+        if message.get("elements"):
+            await self.send_elements(recipient_id, message.get("elements"))
 
     async def send_text_message(self, recipient_id: Text, message: Text) -> None:
         """Send a message through this channel."""
@@ -226,7 +231,7 @@ class OutputChannel(object):
 
         await self.send_text_with_buttons(recipient_id, message, buttons, **kwargs)
 
-    async def send_custom_message(
+    async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]]
     ) -> None:
         """Sends elements to the output.
@@ -240,6 +245,15 @@ class OutputChannel(object):
             await self.send_text_with_buttons(
                 recipient_id, element_msg, element.get("buttons", [])
             )
+
+    async def send_custom_json(
+        self, recipient_id: Text, custom: Dict[Text, Any]
+    ) -> None:
+        """Sends json dict to the output channel.
+
+        Default implementation will just post the json contents as a string."""
+
+        await self.send_text_message(recipient_id, json.dumps(custom))
 
 
 class CollectingOutputChannel(OutputChannel):
@@ -255,7 +269,9 @@ class CollectingOutputChannel(OutputChannel):
         return "collector"
 
     @staticmethod
-    def _message(recipient_id, text=None, image=None, buttons=None, attachment=None):
+    def _message(
+        recipient_id, text=None, image=None, buttons=None, attachment=None, custom=None
+    ):
         """Create a message object that will be stored."""
 
         obj = {
@@ -264,6 +280,7 @@ class CollectingOutputChannel(OutputChannel):
             "image": image,
             "buttons": buttons,
             "attachment": attachment,
+            "custom": custom,
         }
 
         # filter out any values that are `None`
@@ -297,6 +314,11 @@ class CollectingOutputChannel(OutputChannel):
 
         await self._persist_message(self._message(recipient_id, attachment=attachment))
 
+    async def send_custom_json(
+        self, recipient_id: Text, custom: Dict[Text, Any]
+    ) -> None:
+        await self._persist_message(self._message(recipient_id, custom=custom))
+
 
 class QueueOutputChannel(CollectingOutputChannel):
     """Output channel that collects send messages in a list
@@ -313,7 +335,7 @@ class QueueOutputChannel(CollectingOutputChannel):
         self.messages = Queue() if not message_queue else message_queue
 
     def latest_output(self):
-        raise NotImplemented("A queue doesn't allow to peek at messages.")
+        raise NotImplementedError("A queue doesn't allow to peek at messages.")
 
     async def _persist_message(self, message):
         await self.messages.put(message)
@@ -379,7 +401,9 @@ class RestInput(InputChannel):
         async def receive(request):
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
-            should_use_stream = utils.bool_arg(request, "stream", default=False)
+            should_use_stream = rasa.utils.endpoints.bool_arg(
+                request, "stream", default=False
+            )
 
             if should_use_stream:
                 return response.stream(

@@ -3,7 +3,8 @@ import hmac
 import logging
 from typing import Text, List, Dict, Any, Callable, Awaitable
 
-from fbmessenger import MessengerClient, attachments
+from fbmessenger import MessengerClient
+from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from sanic import Blueprint, response
 
@@ -117,7 +118,7 @@ class MessengerBot(OutputChannel):
         # send messages but instead expects the incoming sender to be present
         # which we don't have as it is stored in the input channel.
         self.messenger_client.send(
-            element.to_dict(), {"sender": {"id": recipient_id}}, "RESPONSE"
+            element.to_dict(), self._recipient_json(recipient_id), "RESPONSE"
         )
 
     async def send_text_message(self, recipient_id: Text, message: Text) -> None:
@@ -131,7 +132,7 @@ class MessengerBot(OutputChannel):
     async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        self.send(recipient_id, attachments.Image(url=image_url))
+        self.send(recipient_id, Image(url=image_url))
 
     async def send_text_with_buttons(
         self,
@@ -166,7 +167,7 @@ class MessengerBot(OutputChannel):
                 }
             }
             self.messenger_client.send(
-                payload, {"sender": {"id": recipient_id}}, "RESPONSE"
+                payload, self._recipient_json(recipient_id), "RESPONSE"
             )
 
     async def send_quick_replies(
@@ -181,7 +182,7 @@ class MessengerBot(OutputChannel):
         self._add_text_info(quick_replies)
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
-    async def send_custom_message(
+    async def send_elements(
         self, recipient_id: Text, elements: List[Dict[Text, Any]]
     ) -> None:
         """Sends elements to the output."""
@@ -197,6 +198,17 @@ class MessengerBot(OutputChannel):
         }
         self.messenger_client.send(
             payload, self._recipient_json(recipient_id), "RESPONSE"
+        )
+
+    async def send_custom_json(
+        self, recipient_id: Text, kwargs: Dict[Text, Any]
+    ) -> None:
+        """Sends custom json data to the output."""
+
+        recipient_id = kwargs.pop("sender", {}).pop("id", None) or recipient_id
+
+        self.messenger_client.send(
+            kwargs, self._recipient_json(recipient_id), "RESPONSE"
         )
 
     @staticmethod

@@ -1,7 +1,6 @@
 ## Setup py requirements
 cloudpickle==0.6.1
 boto3==1.9.96
-typing==3.6.6
 requests==2.20.0
 matplotlib==2.2.4
 simplejson==3.13.2
@@ -34,7 +33,7 @@ packaging==18.0
 gevent==1.4.0
 pytz==2018.9
 python-dateutil==2.7.5
-rasa_core_sdk~=0.13.0a1
+rasa_core_sdk~=1.0.0a1
 colorclass==2.2.0
 terminaltables==3.1.0
 sanic==18.12.0

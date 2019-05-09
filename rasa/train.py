@@ -5,12 +5,18 @@ import typing
 from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
+from rasa.core.domain import Domain
+from rasa.skill import SkillSelector
+
 from rasa.cli.utils import (
     create_output_path,
     print_success,
     missing_config_keys,
     print_warning,
     get_validated_path,
+    print_error,
+    bcolors,
+    print_color,
 )
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
@@ -19,9 +25,6 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS_NLU,
     FALLBACK_CONFIG_PATH,
 )
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Interpreter
 
 
 def train(
@@ -32,8 +35,6 @@ def train(
     force_training: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
-    config = get_valid_config(config, CONFIG_MANDATORY_KEYS)
-
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
         train_async(domain, config, training_files, output, force_training, kwargs)
@@ -41,9 +42,9 @@ def train(
 
 
 async def train_async(
-    domain: Text,
+    domain: Optional,
     config: Text,
-    training_files: Union[Text, List[Text]],
+    training_files: Optional[Union[Text, List[Text]]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
     kwargs: Optional[Dict] = None,
@@ -68,10 +69,37 @@ async def train_async(
     retrain_core = True
     retrain_nlu = True
 
-    story_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
+    skill_imports = SkillSelector.load(config)
+    domain = Domain.load(domain, skill_imports)
+
+    story_directory, nlu_data_directory = data.get_core_nlu_directories(
+        training_files, skill_imports
+    )
     new_fingerprint = model.model_fingerprint(
         config, domain, nlu_data_directory, story_directory
     )
+
+    dialogue_data_not_present = not os.listdir(story_directory)
+    nlu_data_not_present = not os.listdir(nlu_data_directory)
+
+    if dialogue_data_not_present and nlu_data_not_present:
+        print_error(
+            "No training data given. Please provide dialogue and NLU data in "
+            "order to train a Rasa model."
+        )
+        return
+
+    if dialogue_data_not_present:
+        print_warning(
+            "No dialogue data present. Just a Rasa NLU model will be trained."
+        )
+        return train_nlu(config, nlu_data_directory, output, None)
+
+    if nlu_data_not_present:
+        print_warning("No NLU data present. Just a Rasa Core model will be trained.")
+        return await train_core_async(
+            domain, config, story_directory, output, None, kwargs
+        )
 
     if not force_training and old_model:
         unpacked = model.unpack_model(old_model)
@@ -105,14 +133,12 @@ async def train_async(
         output = create_output_path(output)
         model.create_package_rasa(train_path, output, new_fingerprint)
 
-        print ("Train path: '{}'.".format(train_path))
-
         print_success("Your bot is trained and ready to take for a spin!")
 
         return output
     else:
-        print (
-            "Nothing changed. You can use the old model stored at {}"
+        print_success(
+            "Nothing changed. You can use the old model stored at '{}'"
             "".format(os.path.abspath(old_model))
         )
 
@@ -120,7 +146,7 @@ async def train_async(
 
 
 def train_core(
-    domain: Text,
+    domain: Union[Domain, Text],
     config: Text,
     stories: Text,
     output: Text,
@@ -134,7 +160,7 @@ def train_core(
 
 
 async def train_core_async(
-    domain: Text,
+    domain: Union[Domain, Text],
     config: Text,
     stories: Text,
     output: Text,
@@ -163,31 +189,50 @@ async def train_core_async(
 
     _train_path = train_path or tempfile.mkdtemp()
 
+    if isinstance(Domain, str) or not train_path:
+        skill_imports = SkillSelector.load(config)
+        domain = Domain.load(domain, skill_imports)
+        story_directory = data.get_core_directory(stories, skill_imports)
+    else:
+        story_directory = stories
+
+    if not os.listdir(story_directory):
+        print_error(
+            "No dialogue data given. Please provide dialogue data in order to "
+            "train a Rasa Core model."
+        )
+        return
+
     # normal (not compare) training
-    core_model = await rasa.core.train(
+    print_color("Start training dialogue model ...", color=bcolors.OKBLUE)
+    await rasa.core.train(
         domain_file=domain,
-        stories_file=data.get_core_directory(stories),
+        stories_file=story_directory,
         output_path=os.path.join(_train_path, "core"),
         policy_config=config,
         kwargs=kwargs,
     )
+    print_color("Done.", color=bcolors.OKBLUE)
 
     if not train_path:
         # Only Core was trained.
-        stories = data.get_core_directory(stories)
         output_path = create_output_path(output, prefix="core-")
-        new_fingerprint = model.model_fingerprint(config, domain, stories=stories)
+        new_fingerprint = model.model_fingerprint(
+            config, domain, stories=story_directory
+        )
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
         print_success(
             "Your Rasa Core model is trained and saved at '{}'.".format(output_path)
         )
 
-    return core_model
+        return output_path
+
+    return _train_path
 
 
 def train_nlu(
     config: Text, nlu_data: Text, output: Text, train_path: Optional[Text]
-) -> Optional["Interpreter"]:
+) -> Optional[Text]:
     """Trains a NLU model.
 
     Args:
@@ -202,25 +247,43 @@ def train_nlu(
         otherwise the path to the directory with the trained model files.
 
     """
-    import rasa.nlu
+    import rasa.nlu.train
 
     config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
+    if not train_path:
+        # training NLU only hence the training files still have to be selected
+        skill_imports = SkillSelector.load(config)
+        nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
+    else:
+        nlu_data_directory = nlu_data
+
+    if not os.listdir(nlu_data_directory):
+        print_error(
+            "No NLU data given. Please provide NLU data in order to train "
+            "a Rasa NLU model."
+        )
+        return
+
     _train_path = train_path or tempfile.mkdtemp()
+
+    print_color("Start training NLU model ...", color=bcolors.OKBLUE)
     _, nlu_model, _ = rasa.nlu.train(
-        config, data.get_nlu_directory(nlu_data), _train_path, fixed_model_name="nlu"
+        config, nlu_data_directory, _train_path, fixed_model_name="nlu"
     )
+    print_color("Done.", color=bcolors.OKBLUE)
 
     if not train_path:
-        nlu_data = data.get_nlu_directory(nlu_data)
         output_path = create_output_path(output, prefix="nlu-")
-        new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data)
+        new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data_directory)
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
         print_success(
             "Your Rasa NLU model is trained and saved at '{}'.".format(output_path)
         )
 
-    return nlu_model
+        return output_path
+
+    return _train_path
 
 
 def enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH):

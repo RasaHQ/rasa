@@ -18,6 +18,7 @@ from rasa.constants import (
     GLOBAL_USER_CONFIG_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_LOG_LEVEL,
 )
 from rasa.utils.common import read_global_config_value, write_global_config_value
 
@@ -43,7 +44,6 @@ def add_subparser(
     shell_parser = subparsers.add_parser("x", **x_parser_args)
 
     shell_parser.add_argument(
-        "--no_prompt",
         "--no-prompt",
         action="store_true",
         help="Automatic yes or default options to prompts and oppressed warnings",
@@ -55,7 +55,7 @@ def add_subparser(
         help="Run Rasa X in a production environment",
     )
 
-    shell_parser.add_argument("--auth_token", type=str, help="Rasa API auth token")
+    shell_parser.add_argument("--auth-token", type=str, help="Rasa API auth token")
 
     shell_parser.add_argument(
         "--nlg",
@@ -65,20 +65,20 @@ def add_subparser(
     )
 
     shell_parser.add_argument(
-        "--model_endpoint_url",
+        "--model-endpoint-url",
         type=str,
         default="http://localhost:5002/api/projects/default/models/tags/production",
         help="Rasa model endpoint URL",
     )
 
     shell_parser.add_argument(
-        "--project_path",
+        "--project-path",
         type=str,
         default=".",
         help="Path to the Rasa project directory",
     )
     shell_parser.add_argument(
-        "--data_path",
+        "--data-path",
         type=str,
         default="data",
         help=(
@@ -97,7 +97,7 @@ def add_subparser(
 def _event_service():
     """Start the event service."""
     # noinspection PyUnresolvedReferences
-    from rasa_platform.community.services.event_service import main
+    from rasax.community.services.event_service import main
 
     main()
 
@@ -210,7 +210,7 @@ def is_rasa_x_installed():
     # we could also do something like checking if `import rasa_platform` works,
     # the issue with that is that it actually does import the package and this
     # takes some time that we don't want to spend when booting the CLI
-    return importlib.util.find_spec("rasa_platform") is not None
+    return importlib.util.find_spec("rasax") is not None
 
 
 def generate_rasa_x_token(length=16):
@@ -243,8 +243,9 @@ def rasa_x(args: argparse.Namespace):
         logging.getLogger("rasa").setLevel(logging.WARNING)
         logging.getLogger("sanic.root").setLevel(logging.ERROR)
 
-    configure_colored_logging(args.loglevel)
-    configure_file_logging(args.loglevel, args.log_file)
+    log_level = args.loglevel or DEFAULT_LOG_LEVEL
+    configure_colored_logging(log_level)
+    configure_file_logging(log_level, args.log_file)
 
     metrics = is_metrics_collection_enabled(args)
 
@@ -261,7 +262,7 @@ def rasa_x(args: argparse.Namespace):
             sys.exit(1)
 
         # noinspection PyUnresolvedReferences
-        from rasa_platform.community.api.local import main_local
+        from rasax.community.api.local import main_local
 
         start_event_service()
 

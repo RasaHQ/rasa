@@ -16,7 +16,6 @@ def add_subparser(
         "init", parents=parents, help="Create a new project from a initial_project"
     )
     scaffold_parser.add_argument(
-        "--no_prompt",
         "--no-prompt",
         action="store_true",
         help="Automatic yes or default options to prompts and uppressed warnings",
@@ -82,11 +81,18 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
         shell(args)
     else:
-        print_success(
-            "Ok 👍🏼. If you want to speak to the bot later, "
-            "change into the project directory and run 'rasa shell'."
-            "".format(path)
-        )
+        if args.no_prompt:
+            print (
+                "If you want to speak to the bot, "
+                "change into the project directory and run 'rasa shell'."
+                "".format(path)
+            )
+        else:
+            print_success(
+                "Ok 👍🏼. If you want to speak to the bot later, "
+                "change into the project directory and run 'rasa shell'."
+                "".format(path)
+            )
 
 
 def init_project(args: argparse.Namespace, path: Text) -> None:
@@ -144,14 +150,22 @@ def run(args: argparse.Namespace) -> None:
     import questionary
 
     print_success("Welcome to Rasa! 🤖\n")
-    print (
-        "To get started quickly, I can assist you to create an "
-        "initial project.\n"
-        "If you need some help to get from this template to a "
-        "bad ass contextual assistant, checkout our quickstart guide"
-        "here: https://rasa.com/docs/core/quickstart \n\n"
-        "Now let's start! 👇🏽\n"
-    )
+    if args.no_prompt:
+        print (
+            "To get started quickly, I will create an "
+            "initial project for you.\n"
+            "If you need some help later on, checkout our quickstart guide"
+            "here: https://rasa.com/docs/core/quickstart\n"
+        )
+    else:
+        print (
+            "To get started quickly, I can assist you to create an "
+            "initial project.\n"
+            "If you need some help to get from this template to a "
+            "bad ass contextual assistant, checkout our quickstart guide"
+            "here: https://rasa.com/docs/core/quickstart \n\n"
+            "Now let's start! 👇🏽\n"
+        )
 
     path = (
         questionary.text(
