@@ -233,7 +233,7 @@ async def train_core_async(
 def train_nlu(
     config: Text, nlu_data: Text, output: Text, train_path: Optional[Text]
 ) -> Optional[Text]:
-    """Trains a NLU model.
+    """Trains an NLU model.
 
     Args:
         config: Path to the config file for NLU.
