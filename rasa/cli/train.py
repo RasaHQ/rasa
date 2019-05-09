@@ -1,6 +1,5 @@
 import argparse
 import tempfile
-import typing
 from typing import List, Optional, Text, Dict
 
 from rasa.cli.default_arguments import (
@@ -22,7 +21,7 @@ from rasa.constants import (
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
-    import rasa.core.cli.train as core_cli
+    import rasa.cli.arguments.train as core_cli
 
     train_parser = subparsers.add_parser("train", help="Train the Rasa bot")
 

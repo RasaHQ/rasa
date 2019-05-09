@@ -5,7 +5,7 @@ import os
 from typing import List
 
 import rasa.cli.run
-import rasa.core.cli.arguments
+import rasa.cli.arguments.arguments
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def add_subparser(
     )
     rasa.cli.run.add_run_arguments(shell_parser)
 
-    rasa.core.cli.arguments.add_logging_option_arguments(shell_parser)
+    rasa.cli.arguments.arguments.add_logging_option_arguments(shell_parser)
 
     shell_parser.set_defaults(func=shell)
 

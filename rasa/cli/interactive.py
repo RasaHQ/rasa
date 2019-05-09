@@ -5,7 +5,7 @@ from typing import List
 
 import rasa.cli.run as run
 import rasa.cli.train as train
-import rasa.core.cli.train as core_cli
+import rasa.cli.arguments.train as core_cli
 from rasa import data, model
 
 

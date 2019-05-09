@@ -2,7 +2,7 @@ import argparse
 import logging
 from typing import List, Union
 
-import rasa.core.cli.arguments
+import rasa.cli.arguments.arguments
 from rasa import data
 from rasa.cli.default_arguments import add_stories_param
 from rasa.cli.utils import get_validated_path
@@ -68,7 +68,7 @@ def add_subparser(
 def _add_core_arguments(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
-    from rasa.core.cli.test import add_evaluation_arguments
+    from rasa.cli.arguments.test import add_evaluation_arguments
 
     add_evaluation_arguments(parser)
     add_stories_param(parser, "test")
@@ -172,7 +172,7 @@ def _add_test_subparser_arguments(parser: argparse.ArgumentParser):
         "in that directory will be used.",
     )
 
-    rasa.core.cli.arguments.add_logging_option_arguments(parser)
+    rasa.cli.arguments.arguments.add_logging_option_arguments(parser)
 
 
 def _add_nlu_subparser_arguments(parser: argparse.ArgumentParser):

@@ -2,6 +2,7 @@ import argparse
 from typing import List
 
 from rasa import data
+from rasa.cli.arguments import convert as arguments
 from rasa.cli.default_arguments import add_nlu_data_param
 from rasa.cli.utils import get_validated_path
 from rasa.constants import DEFAULT_DATA_PATH
@@ -39,7 +40,7 @@ def add_subparser(
         help="Convert NLU training data between markdown and json",
     )
 
-    convert.add_arguments(convert_nlu_parser)
+    arguments.add_arguments(convert_nlu_parser)
     convert_nlu_parser.set_defaults(func=convert.main)
 
     split_parser = data_subparsers.add_parser(

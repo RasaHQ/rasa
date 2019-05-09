@@ -1,5 +1,3 @@
-import argparse
-import asyncio
 import json
 import logging
 import os
@@ -20,35 +18,6 @@ StoryEvalution = namedtuple(
     "StoryEvaluation",
     "evaluation_store failed_stories action_list in_training_data_fraction",
 )
-
-
-def create_argument_parser():
-    """Create argument parser for the evaluate script."""
-    import rasa.core.cli.arguments
-
-    import rasa.core.cli.train
-    from rasa.core import cli
-
-    parser = argparse.ArgumentParser(description="evaluates a dialogue model")
-    parent_parser = argparse.ArgumentParser(add_help=False)
-    cli.test.add_evaluation_arguments(parent_parser)
-    cli.arguments.add_model_and_story_group(parent_parser, allow_pretrained_model=False)
-    rasa.core.cli.arguments.add_logging_option_arguments(parent_parser)
-    subparsers = parser.add_subparsers(help="mode", dest="mode")
-    subparsers.add_parser(
-        "default",
-        help="default mode: evaluate a dialogue model",
-        parents=[parent_parser],
-    )
-    subparsers.add_parser(
-        "compare",
-        help="compare mode: evaluate multiple"
-        " dialogue models to compare "
-        "policies",
-        parents=[parent_parser],
-    )
-
-    return parser
 
 
 class EvaluationStore(object):

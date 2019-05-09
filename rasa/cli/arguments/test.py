@@ -1,4 +1,4 @@
-from rasa.core.cli import arguments
+from rasa.cli.arguments import arguments
 
 
 def add_evaluation_arguments(parser):

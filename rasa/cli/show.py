@@ -41,7 +41,7 @@ def add_subparser(
 
 
 def add_core_visualization_params(parser: argparse.ArgumentParser):
-    from rasa.core.cli.visualization import add_visualization_arguments
+    from rasa.cli.arguments.visualization import add_visualization_arguments
 
     add_visualization_arguments(parser)
     add_domain_param(parser)

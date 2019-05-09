@@ -29,8 +29,6 @@ logger = logging.getLogger(__name__)
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
-    from rasa.core import cli
-
     x_parser_args = {
         "parents": parents,
         "conflict_handler": "resolve",
@@ -91,7 +89,7 @@ def add_subparser(
 
     shell_parser.set_defaults(func=rasa_x)
 
-    cli.arguments.add_logging_option_arguments(shell_parser)
+    rasa.cli.arguments.arguments.add_logging_option_arguments(shell_parser)
 
 
 def _event_service():
