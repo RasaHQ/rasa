@@ -37,6 +37,7 @@ in ``interactive learning``
 - support for spaCy 2.1
 - a model for an agent can now also be loaded from a remote storage
 - log level can be set via environment variable ``LOG_LEVEL``
+- add subparser ``rasa shell nlu`` to interpret text on the command line
 
 Changed
 -------
@@ -66,6 +67,7 @@ Removed
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
 - removed ``Dispatcher`` class from core
 - removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.
+- removed subparsers ``rasa run nlu`` and ``rasa run core`` as they offer the same functionality as ``rasa run``.
 
 Fixed
 -----
