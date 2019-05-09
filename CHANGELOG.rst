@@ -30,6 +30,9 @@ in ``interactive learning``
 - channel-specific utterances via the ``- "channel":`` key in utterance templates
 - arbitrary json messages via the ``- "custom":`` key in utterance templates and
   via ``utter_custom_json()`` method in custom actions
+- support to load sub skills (domain, stories, nlu data)
+- support to select which sub skills to load through ``import`` section in
+  ``config.yml``
 - add ``rasa interactive core`` to command line interface
 - support for spaCy 2.1
 - a model for an agent can now also be loaded from a remote storage
