@@ -7,7 +7,6 @@ from sanic import Sanic
 from sanic_cors import CORS
 
 import rasa.core
-import rasa.core.cli.arguments
 import rasa.utils
 import rasa.utils.io
 from rasa.core import constants, utils

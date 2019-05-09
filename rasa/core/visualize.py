@@ -1,27 +1,9 @@
-import argparse
-import asyncio
 import logging
 import os
 from typing import Text
 
-import rasa.utils.io
-import rasa.core.cli
-import rasa.core.cli.arguments
-import rasa.core.cli.train
 
 logger = logging.getLogger(__name__)
-
-
-def add_arguments(parser: argparse.ArgumentParser):
-    """Parse all the command line arguments for the visualisation script."""
-    rasa.core.cli.arguments.add_logging_option_arguments(parser)
-    rasa.core.cli.visualization.add_visualization_arguments(parser)
-    rasa.core.cli.arguments.add_config_arg(parser, nargs=1)
-    rasa.core.cli.arguments.add_domain_arg(parser)
-    rasa.core.cli.arguments.add_model_and_story_group(
-        parser, allow_pretrained_model=False
-    )
-    return parser
 
 
 async def visualize(

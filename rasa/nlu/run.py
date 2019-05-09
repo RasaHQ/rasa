@@ -1,7 +1,6 @@
 import json
 import logging
 
-from rasa.nlu import utils
 from rasa.nlu.model import Interpreter
 
 logger = logging.getLogger(__name__)

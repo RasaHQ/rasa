@@ -7,26 +7,13 @@ import logging
 import os
 import re
 import sys
-import tarfile
 import tempfile
-import zipfile
+from pathlib import Path
+from typing import Union
 from asyncio import Future
 from hashlib import md5, sha1
-from io import BytesIO as IOReader, StringIO
-from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    TYPE_CHECKING,
-    Text,
-    Tuple,
-    Callable,
-    Awaitable,
-    Union,
-)
+from io import StringIO
+from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
 
 import aiohttp
 from aiohttp import InvalidURL
