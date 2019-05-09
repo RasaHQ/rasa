@@ -50,7 +50,8 @@ def run(
         channel = "rest"
         print_warning(
             "No chat connector configured, falling back to the "
-            "rest. Use `rasa configure channel` to connect"
+            "REST input channel.  To connect your bot to another channel, "
+            "read the docs here: https://rasa.com/docs/core/connectors"
             "the bot to e.g. facebook messenger."
         )
     else:
