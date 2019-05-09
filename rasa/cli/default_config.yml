@@ -11,4 +11,5 @@ policies:
     fallback_action_name: 'action_default_fallback'
   - name: MemoizationPolicy
     max_history: 5
+  - name: FormPolicy
   - name: MappingPolicy
