@@ -168,7 +168,7 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.core.train` directly is "
-        "no longer supported. "
-        "Please use `rasa train core` instead."
+        "Calling `rasa.core.train` directly is no longer supported. Please use "
+        "`rasa train` to train a combined Core and NLU model or `rasa train core` "
+        "to train a Core model."
     )

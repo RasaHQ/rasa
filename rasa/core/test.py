@@ -660,7 +660,7 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.core.test` directly is "
-        "no longer supported. "
-        "Please use `rasa test core` instead."
+        "Calling `rasa.core.test` directly is no longer supported. Please use "
+        "`rasa test` to test a combined Core and NLU model or `rasa test core` "
+        "to test a Core model."
     )
