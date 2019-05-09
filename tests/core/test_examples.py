@@ -44,7 +44,7 @@ async def test_formbot_example():
         stories,
         os.path.join(p, "models", "dialogue"),
         endpoints=endpoints,
-        policy_config="rasa/core/default_config.yml",
+        policy_config="rasa/cli/default_config.yml",
     )
     response = {
         "events": [
