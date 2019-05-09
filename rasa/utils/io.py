@@ -1,5 +1,4 @@
 import asyncio
-import io
 import json
 import logging
 import os
@@ -87,7 +86,7 @@ def replace_environment_variables():
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text) -> Dict[Text, Any]:
+def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses yaml from a text.
 
      Args:
@@ -119,7 +118,7 @@ def read_yaml(content: Text) -> Dict[Text, Any]:
 
 def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
     """Read text from a file."""
-    with io.open(filename, encoding=encoding) as f:
+    with open(filename, encoding=encoding) as f:
         return f.read()
 
 
@@ -129,7 +128,7 @@ def read_json_file(filename: Text) -> Union[Dict, List]:
         return json.load(f)
 
 
-def read_yaml_file(filename: Text) -> Dict[Text, Any]:
+def read_yaml_file(filename: Text) -> Union[Dict, List]:
     """Parses a yaml file.
 
      Args:
@@ -164,6 +163,16 @@ def write_yaml_file(data: Dict, filename: Text):
     """
     with open(filename, "w") as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
+
+
+def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+    if path is None or potential_parent_directory is None:
+        return False
+
+    path = os.path.abspath(path)
+    potential_parent_directory = os.path.abspath(potential_parent_directory)
+
+    return potential_parent_directory in path
 
 
 def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
