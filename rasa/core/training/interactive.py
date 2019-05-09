@@ -117,7 +117,7 @@ async def send_message(
 
     payload = {
         "sender": UserUttered.type_name,
-        "message": message,
+        "text": message,
         "parse_data": parse_data,
     }
 

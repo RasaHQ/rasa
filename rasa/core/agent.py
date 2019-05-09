@@ -231,6 +231,8 @@ async def load_agent(
                 generator=generator,
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
+                model_server=model_server,
+                remote_storage=remote_storage,
             )
 
         elif model_server is not None:
@@ -240,6 +242,8 @@ async def load_agent(
                     generator=generator,
                     tracker_store=tracker_store,
                     action_endpoint=action_endpoint,
+                    model_server=model_server,
+                    remote_storage=remote_storage,
                 ),
                 model_server,
             )
@@ -252,6 +256,7 @@ async def load_agent(
                 generator=generator,
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
+                model_server=model_server,
             )
 
         else:
@@ -280,6 +285,8 @@ class Agent(object):
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_directory: Optional[Text] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -301,6 +308,8 @@ class Agent(object):
 
         self._set_fingerprint(fingerprint)
         self.model_directory = model_directory
+        self.model_server = model_server
+        self.remote_storage = remote_storage
 
     def update_model(
         self,
@@ -333,6 +342,8 @@ class Agent(object):
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         if not os.path.exists(unpacked_model_path) or not os.path.isdir(
@@ -372,6 +383,8 @@ class Agent(object):
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
             model_directory=unpacked_model_path,
+            model_server=model_server,
+            remote_storage=remote_storage,
         )
 
     def is_ready(self):
@@ -842,6 +855,8 @@ class Agent(object):
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
     ) -> "Agent":
         if os.path.isfile(model_path):
             model_archive = model_path
@@ -861,6 +876,8 @@ class Agent(object):
             generator=generator,
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
+            model_server=model_server,
+            remote_storage=remote_storage,
         )
 
     @staticmethod
@@ -871,6 +888,7 @@ class Agent(object):
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
+        model_server: Optional[EndpointConfig] = None,
     ) -> "Agent":
         from rasa.nlu.persistor import get_persistor
 
@@ -886,6 +904,8 @@ class Agent(object):
                 generator=generator,
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
+                model_server=model_server,
+                remote_storage=remote_storage,
             )
 
         return None
