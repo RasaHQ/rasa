@@ -28,7 +28,7 @@ You can run a simple HTTP server that handles requests using your model with:
 
 .. code-block:: bash
 
-    $ rasa run nlu -m models
+    $ rasa run -m models
 
 The server will look for existing models under the folder defined by
 the ``-m`` parameter. By default the latest trained model will be loaded.
@@ -42,11 +42,11 @@ There are a number of parameters you can pass when running the server.
 
 .. code-block:: console
 
-    $ rasa run nlu
+    $ rasa run
 
 Here is a quick overview:
 
-.. program-output:: rasa run nlu --help
+.. program-output:: rasa run --help
 
 
 .. _section_auth:

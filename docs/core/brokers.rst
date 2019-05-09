@@ -49,7 +49,7 @@ Then instruct Rasa Core to use the endpoint configuration and Pika producer by a
 
 .. code-block:: shell
 
-    rasa run core -m models --endpoints endpoints.yml
+    rasa run -m models --endpoints endpoints.yml
 
 Adding a Pika Event Broker in Python
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -124,7 +124,7 @@ when running Rasa, as following example:
 
 .. code-block:: shell
 
-    rasa run core -m models --endpoints endpoints.yml
+    rasa run -m models --endpoints endpoints.yml
 
 Using ``SASL_PLAINTEXT`` protocol the endpoints file must have the following entries:
 

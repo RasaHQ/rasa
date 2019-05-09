@@ -18,7 +18,7 @@ For example:
 
 .. code-block:: bash
 
-  rasa run core -m models --debug
+  rasa run -m models --debug
 
 
 This will print lots of information to help you understand what's going on.

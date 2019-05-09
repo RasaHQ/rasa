@@ -38,7 +38,7 @@ models with:
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         -m models \
         -o out.log
@@ -93,7 +93,7 @@ the server:
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         --auth-token thisismysecret \
         -m models \
@@ -120,7 +120,7 @@ if the ``sender_id`` matches the user's ``username``.
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         --jwt-secret thisismysecret \
         -m models \
@@ -147,7 +147,7 @@ For example:
 
 .. code-block:: bash
 
-    rasa run core \
+    rasa run \
         --m <core model> \
         --endpoints <path to endpoint configuration>.yml
 
@@ -163,7 +163,7 @@ You can also configure the http server to fetch models from another URL:
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         -m models \
         --endpoints my_endpoints.yaml \
@@ -220,7 +220,7 @@ For example:
 
 .. code-block:: bash
 
-    rasa run core -m models --endpoints endpoints.yml
+    rasa run -m models --endpoints endpoints.yml
 
 Connecting a Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

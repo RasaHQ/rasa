@@ -15,7 +15,7 @@ For example:
 
 .. code-block:: bash
 
-    rasa run nlu \
+    rasa run \
         --path <working directory of the server> \
         --endpoints <path to endpoint configuration>.yml
 

@@ -60,7 +60,7 @@ and you can use this file like this:
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
        --enable-api \
        -m examples/babi/models \
        -o out.log \

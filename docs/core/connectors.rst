@@ -46,7 +46,7 @@ Facebook Setup
 
 You first need to retrieve some credentials to connect to the
 Facebook Messenger. Once you have them you can
-**either** attach the input channel running the ``rasa run core``
+**either** attach the input channel running the ``rasa run``
 command, or you can attach it in your own code.
 
 Getting Credentials
@@ -69,7 +69,7 @@ You need to set up a Facebook app and a page.
      This will be your ``secret``.
   5. Use the collected ``secret`` and ``page-access-token`` in your
      ``credentials.yml``, and add a field called ``verify`` containing
-     a string of your choice. Start ``rasa run core`` with the
+     a string of your choice. Start ``rasa run`` with the
      ``--credentials credentials.yml`` option.
   6. Set up a *Webhook* and select at least the *messaging* and
      *messaging_postback* subscriptions. Insert your callback URL which will
@@ -127,7 +127,7 @@ Cisco Webex Teams Setup
 -----------------------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the ``rasa run core``
+**either** attach the input channel running the ``rasa run``
 command, or you can attach it in your own code.
 
 Getting Credentials
@@ -155,7 +155,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  rasa run core -m models --port 5002 --credentials credentials.yml
+  rasa run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -199,7 +199,7 @@ Slack Setup
 -----------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the ``rasa run core``
+**either** attach the input channel running the ``rasa run``
 command, or you can attach it in your own code.
 
 Getting Credentials
@@ -229,7 +229,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  rasa run core -m models --port 5002 --credentials credentials.yml
+  rasa run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -273,7 +273,7 @@ Mattermost Setup
 ----------------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the ``rasa run core``
+**either** attach the input channel running the ``rasa run``
 command, or you can attach it in your own code.
 
 Getting Credentials
@@ -344,7 +344,7 @@ Telegram Setup
 --------------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the ``rasa run core``
+**either** attach the input channel running the ``rasa run``
 command, or you can attach it in your own code.
 
 Getting Credentials
@@ -371,7 +371,7 @@ If you want to connect to telegram using the run script, e.g. using:
 
 .. code-block:: bash
 
-  rasa run core -m models --port 5002 --credentials credentials.yml
+  rasa run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -411,7 +411,7 @@ Twilio Setup
 --------------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the provided ``rasa run core``
+**either** attach the input channel running the provided ``rasa run``
 script, or you can attach it in your own code.
 
 Getting Credentials
@@ -509,7 +509,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  rasa run core -m models --port 5002 --credentials credentials.yml
+  rasa run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -552,7 +552,7 @@ run script, e.g. using:
 
 .. code-block:: bash
 
- rasa run core -m models --port 5002 --credentials credentials.yml
+ rasa run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -588,7 +588,7 @@ SocketIO Setup
 --------------
 
 You can **either** attach the input channel running the
-``rasa run core`` command, or you can attach the channel in your
+``rasa run`` command, or you can attach the channel in your
 own code.
 
 Using run script
@@ -599,7 +599,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  rasa run core -m models --port 5002 --credentials credentials.yml
+  rasa run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 

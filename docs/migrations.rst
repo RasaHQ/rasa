@@ -21,14 +21,14 @@ General
   should use instead.
   Mapping of old scripts to new commands:
   ``rasa.core.run`` -> ``rasa shell``
-  ``rasa.core.server`` -> ``rasa run core``
+  ``rasa.core.server`` -> ``rasa run``
   ``rasa.core.test`` -> ``rasa test core``
   ``rasa.core.train`` -> ``rasa train core``
   ``rasa.core.visualize`` -> ``rasa show``
   ``rasa.nlu.convert`` -> ``rasa data``
   ``rasa.nlu.evaluate`` -> ``rasa test nlu``
   ``rasa.nlu.run`` -> ``rasa shell``
-  ``rasa.nlu.server`` -> ``rasa run nlu``
+  ``rasa.nlu.server`` -> ``rasa run``
   ``rasa.nlu.test`` -> ``rasa test nlu``
   ``rasa.nlu.train`` -> ``rasa train nlu``
 

@@ -57,7 +57,7 @@ function names
 - ``rasa_nlu.server`` has to  be supplied with a ``yml`` file defining the
   model endpoint from which to retrieve training data. The file location has
   be passed with the ``--endpoints`` argument, e.g.
-  ``rasa run nlu --endpoints endpoints.yml``
+  ``rasa run --endpoints endpoints.yml``
   ``endpoints.yml`` needs to contain the ``model`` key
   with a ``url`` and an optional ``token``. Here's an example:
 

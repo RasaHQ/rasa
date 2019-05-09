@@ -225,7 +225,7 @@ If you are running these commands locally, run:
 
 .. code-block:: bash
 
-   rasa run core -m models
+   rasa run -m models
 
 If you are running the cells here in the docs, run this cell:
 
@@ -379,7 +379,7 @@ If you are running these commands locally, run:
 
 .. code-block:: bash
 
-   rasa run core -m models
+   rasa run -m models
 
 If you are running the cells here in the docs, run this cell:
 
@@ -459,7 +459,7 @@ After setting that up, we can now run the bot using:
 
 .. code-block:: bash
 
-   rasa run core -m models --port 5002--credentials credentials.yml
+   rasa run -m models --port 5002--credentials credentials.yml
 
 and it will now handle messages users send to the Facebook page.
 
