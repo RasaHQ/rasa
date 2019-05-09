@@ -66,7 +66,6 @@ Removed
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
 - removed ``Dispatcher`` class from core
 - removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.
-- removed subparsers ``rasa run nlu`` and ``rasa run core`` as they offer the same functionality as ``rasa run``.
 
 Fixed
 -----
