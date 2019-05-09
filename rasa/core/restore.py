@@ -5,7 +5,7 @@ import warnings
 from difflib import SequenceMatcher
 
 import rasa.cli.utils
-import rasa.core.cli.arguments
+import rasa.cli.arguments.arguments
 import rasa.utils.io
 from typing import List, Text, Tuple
 
@@ -17,30 +17,6 @@ from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger()  # get the root logger
-
-
-def create_argument_parser():
-    """Parse all the command line arguments for the restore script."""
-
-    parser = argparse.ArgumentParser(description="starts the bot")
-    parser.add_argument(
-        "-d", "--core", required=True, type=str, help="core model to run"
-    )
-    parser.add_argument("-u", "--nlu", type=str, help="nlu model to run")
-    parser.add_argument(
-        "tracker_dump",
-        type=str,
-        help="file that contains a dumped tracker state in json format",
-    )
-    parser.add_argument(
-        "--enable-api",
-        action="store_true",
-        help="Start the web server api in addition to the input channel",
-    )
-
-    rasa.core.cli.arguments.add_logging_option_arguments(parser)
-
-    return parser
 
 
 def _check_prediction_aligns_with_story(
