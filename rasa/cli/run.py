@@ -30,26 +30,6 @@ def add_subparser(
     run_parser.set_defaults(func=run)
 
     run_subparsers = run_parser.add_subparsers()
-    run_core_parser = run_subparsers.add_parser(
-        "core",
-        parents=parents,
-        conflict_handler="resolve",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Run a trained Core model",
-    )
-    add_run_arguments(run_core_parser)
-    run_core_parser.set_defaults(func=run)
-
-    nlu_subparser = run_subparsers.add_parser(
-        "nlu",
-        parents=parents,
-        conflict_handler="resolve",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Run a trained NLU model",
-    )
-
-    add_run_arguments(nlu_subparser)
-    nlu_subparser.set_defaults(func=run)
 
     sdk_subparser = run_subparsers.add_parser(
         "actions",
