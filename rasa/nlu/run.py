@@ -22,5 +22,6 @@ if __name__ == "__main__":
     raise RuntimeError(
         "Calling `rasa.nlu.run` directly is no longer supported. "
         "Please use `rasa run` to start a Rasa server or `rasa shell` to obtain "
-        "the intent and entities of some text via the command line."
+        "NLU model to interpret text via the command line."
+``
     )
