@@ -281,7 +281,7 @@ class FacebookInput(InputChannel):
         @fb_webhook.route("/webhook", methods=["GET"])
         async def token_verification(request):
             if request.raw_args.get("hub.verify_token") == self.fb_verify:
-                return request.raw_args.get("hub.challenge")
+                return response.text(request.raw_args.get("hub.challenge"))
             else:
                 logger.warning(
                     "Invalid fb verify token! Make sure this matches "
@@ -292,7 +292,7 @@ class FacebookInput(InputChannel):
         @fb_webhook.route("/webhook", methods=["POST"])
         async def webhook(request):
             signature = request.headers.get("X-Hub-Signature") or ""
-            if not self.validate_hub_signature(self.fb_secret, request.data, signature):
+            if not self.validate_hub_signature(self.fb_secret, request.body, signature):
                 logger.warning(
                     "Wrong fb secret! Make sure this matches the "
                     "secret in your facebook app settings"
