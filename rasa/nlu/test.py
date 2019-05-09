@@ -950,5 +950,5 @@ if __name__ == "__main__":
     raise RuntimeError(
         "Calling `rasa.nlu.test` directly is no longer supported. Please use "
         "`rasa test` to test a combined Core and NLU model or `rasa test nlu` "
-        "to test a NLU model."
+        "to test an NLU model."
     )
