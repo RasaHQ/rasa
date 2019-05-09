@@ -514,7 +514,9 @@ paths:
       - Model
       summary: Perform an intent evaluation
       description: >-
-        Evaluates intents against the currently loaded Rasa model.
+        Evaluates intents against the currently loaded Rasa model or the model specified in the query.
+      parameters:
+      - $ref: '#/components/parameters/model'
       requestBody:
         required: true
         content:
@@ -754,6 +756,17 @@ components:
       schema:
         type: boolean
         default: false
+      required: false
+    model:
+      in: query
+      name: model
+      description: >-
+        Model that should be used for evaluation.
+        If the parameter is set, the model will be fetched with the currently loaded configuration setup. However,
+        the currently loaded model will not be updated. The state of the server will not change.
+        If the parameter is not set, the currently loaded model will be used for the evaluation.
+      schema:
+        type: string
       required: false
     include_events:
       in: query
