@@ -4,6 +4,8 @@ import os
 
 from typing import List
 
+from rasa.cli.utils import print_error, print_success
+
 import rasa.cli.run
 import rasa.cli.arguments.arguments
 
@@ -41,7 +43,7 @@ def shell(args: argparse.Namespace):
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
     model_path = get_model(model)
     if not model_path:
-        logger.error(
+        print_error(
             "No model found. Train a model before running the "
             "server using `rasa train`."
         )
@@ -51,6 +53,10 @@ def shell(args: argparse.Namespace):
 
     if not os.path.exists(core_model):
         import rasa.nlu.run
+
+        print_success(
+            "NLU interpreter loaded. Type a message to obtain its intent and entities."
+        )
 
         rasa.nlu.run.run_cmdline(nlu_model)
     else:
