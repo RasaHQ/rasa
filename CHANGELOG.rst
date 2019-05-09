@@ -49,7 +49,7 @@ Changed
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 - removed ``--num_threads`` from run command (server will be asynchronous but
   running in a single thread)
-- the ``_check_token()`` method in ``RasaChat`` now authenticates against ``/validate`` instead of ``/user``
+- the ``_check_token()`` method in ``RasaChat`` now authenticates against ``/auth/verify`` instead of ``/user``
 - removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be
   loaded by default)
 - changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
