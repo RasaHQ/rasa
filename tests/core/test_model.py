@@ -9,6 +9,7 @@ import rasa.data as data
 import rasa.core
 import rasa.nlu
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.core.domain import Domain
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
     FINGERPRINT_DOMAIN_KEY,
@@ -81,6 +82,7 @@ def test_persist_and_load_fingerprint():
     [
         _fingerprint(config=["other"]),
         _fingerprint(domain=["other"]),
+        _fingerprint(domain=Domain.empty()),
         _fingerprint(stories=["test", "other"]),
         _fingerprint(rasa_version="100"),
         _fingerprint(config=["other"], domain=["other"]),
@@ -108,7 +110,7 @@ def test_nlu_fingerprint_changed(fingerprint2):
 def _project_files(
     project,
     config_file=DEFAULT_CONFIG_PATH,
-    domain=DEFAULT_DOMAIN_PATH,
+    domain="domain.yml",
     training_files=DEFAULT_DATA_PATH,
 ):
 
@@ -121,7 +123,7 @@ def _project_files(
         )
     paths = {
         "config_file": config_file,
-        "domain_file": domain,
+        "domain": domain,
         "nlu_data": core_directory,
         "stories": nlu_directory,
     }

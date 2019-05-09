@@ -3,7 +3,9 @@ import asyncio
 import logging
 import os
 import typing
-from typing import Dict, Optional, Text
+from typing import Dict, Optional, Text, Union
+
+from rasa.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -50,7 +52,7 @@ def create_argument_parser():
 
 
 async def train(
-    domain_file: Text,
+    domain_file: Union[Domain, Text],
     stories_file: Text,
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,

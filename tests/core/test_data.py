@@ -57,6 +57,13 @@ def test_get_core_nlu_directories(project):
     assert stories[0].endswith("stories.md")
 
 
+def test_get_core_nlu_directories_with_none():
+    directories = data.get_core_nlu_directories(None)
+
+    assert all([directory for directory in directories])
+    assert all([not os.listdir(directory) for directory in directories])
+
+
 def test_same_file_names_get_resolved(tmpdir):
     # makes sure the resolution properly handles if there are two files with
     # with the same name in different directories
