@@ -2,7 +2,7 @@ import argparse
 import tempfile
 from typing import List, Optional, Text, Dict
 
-from rasa.cli.default_arguments import (
+from rasa.cli.arguments.default_arguments import (
     add_config_param,
     add_domain_param,
     add_nlu_data_param,

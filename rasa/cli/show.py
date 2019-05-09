@@ -4,7 +4,7 @@ import os
 from typing import List
 
 from rasa import data
-from rasa.cli.default_arguments import (
+from rasa.cli.arguments.default_arguments import (
     add_config_param,
     add_domain_param,
     add_stories_param,

@@ -13,6 +13,7 @@ import questionary
 import rasa.cli.run
 import rasa.core.utils
 from rasa.cli.utils import print_success, get_validated_path
+from rasa.cli.arguments.arguments import add_logging_option_arguments
 
 from rasa.constants import (
     GLOBAL_USER_CONFIG_PATH,
@@ -75,6 +76,7 @@ def add_subparser(
         default=".",
         help="Path to the Rasa project directory",
     )
+
     shell_parser.add_argument(
         "--data-path",
         type=str,
@@ -86,10 +88,9 @@ def add_subparser(
     )
 
     rasa.cli.run.add_run_arguments(shell_parser)
+    add_logging_option_arguments(shell_parser)
 
     shell_parser.set_defaults(func=rasa_x)
-
-    rasa.cli.arguments.arguments.add_logging_option_arguments(shell_parser)
 
 
 def _event_service():
@@ -241,9 +242,9 @@ def rasa_x(args: argparse.Namespace):
         logging.getLogger("rasa").setLevel(logging.WARNING)
         logging.getLogger("sanic.root").setLevel(logging.ERROR)
 
-    log_level = args.loglevel or DEFAULT_LOG_LEVEL
-    configure_colored_logging(log_level)
-    configure_file_logging(log_level, args.log_file)
+    args.log_level = args.loglevel or DEFAULT_LOG_LEVEL
+    configure_colored_logging(args.log_level)
+    configure_file_logging(args.log_level, args.log_file)
 
     metrics = is_metrics_collection_enabled(args)
 

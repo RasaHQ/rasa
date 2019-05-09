@@ -4,7 +4,7 @@ from typing import List, Union
 
 import rasa.cli.arguments.arguments
 from rasa import data
-from rasa.cli.default_arguments import add_stories_param
+from rasa.cli.arguments.default_arguments import add_stories_param
 from rasa.cli.utils import get_validated_path
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
