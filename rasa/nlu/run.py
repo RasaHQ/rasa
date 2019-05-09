@@ -23,5 +23,4 @@ if __name__ == "__main__":
         "Calling `rasa.nlu.run` directly is no longer supported. "
         "Please use `rasa run` to start a Rasa server or `rasa shell` to use your "
         "NLU model to interpret text via the command line."
-``
     )
