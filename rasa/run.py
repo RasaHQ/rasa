@@ -4,7 +4,7 @@ import shutil
 import typing
 from typing import Dict, Text
 
-from rasa.cli.utils import minimal_kwargs
+from rasa.cli.utils import minimal_kwargs, print_warning, print_error
 from rasa.model import get_model, get_model_subdirectories
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def run(
 
     model_path = get_model(model)
     if not model_path:
-        logger.error(
+        print_error(
             "No model found. Train a model before running the "
             "server using `rasa train`."
         )
@@ -47,10 +47,10 @@ def run(
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     if not connector and not credentials:
-        channel = "cmdline"
-        logger.info(
+        channel = "rest"
+        print_warning(
             "No chat connector configured, falling back to the "
-            "command line. Use `rasa configure channel` to connect"
+            "rest. Use `rasa configure channel` to connect"
             "the bot to e.g. facebook messenger."
         )
     else:
