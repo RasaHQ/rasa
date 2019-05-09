@@ -5,7 +5,7 @@ import tempfile
 import typing
 import uuid
 from asyncio import CancelledError
-from typing import Any, Callable, Dict, List, Optional, Text, Union
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
 
@@ -113,24 +113,24 @@ async def _update_model_from_server(
     if not is_url(model_server.url):
         raise aiohttp.InvalidURL(model_server.url)
 
-    model_directory = tempfile.mkdtemp()
-
-    new_model_fingerprint = await _pull_model_and_fingerprint(
-        model_server, model_directory, agent.fingerprint
+    model_directory_and_fingerprint = await _pull_model_and_fingerprint(
+        model_server, agent.fingerprint
     )
-    if new_model_fingerprint:
+    if model_directory_and_fingerprint:
+        model_directory, new_model_fingerprint = model_directory_and_fingerprint
         _load_and_set_updated_model(agent, model_directory, new_model_fingerprint)
     else:
         logger.debug("No new model found at URL {}".format(model_server.url))
 
 
 async def _pull_model_and_fingerprint(
-    model_server: EndpointConfig, model_directory: Text, fingerprint: Optional[Text]
-) -> Optional[Text]:
-    """Queries the model server and returns the value of the response's
+    model_server: EndpointConfig, fingerprint: Optional[Text]
+) -> Optional[Tuple[Text, Text]]:
+    """Queries the model server.
 
-     <ETag> header which contains the model hash.
-     """
+    Returns the temporary model directory and value of the response's <ETag> header
+    which contains the model hash. Returns `None` if no new model is found.
+    """
 
     headers = {"If-None-Match": fingerprint}
 
@@ -154,7 +154,7 @@ async def _pull_model_and_fingerprint(
                         "Current fingerprint: {}"
                         "".format(resp.status, fingerprint)
                     )
-                    return resp.headers.get("ETag")
+                    return None
                 elif resp.status == 404:
                     logger.debug(
                         "Model server didn't find a model for our request. "
@@ -170,13 +170,16 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
+                model_directory = tempfile.mkdtemp()
                 rasa.utils.io.unarchive(await resp.read(), model_directory)
                 logger.debug(
                     "Unzipped model to '{}'".format(os.path.abspath(model_directory))
                 )
 
                 # get the new fingerprint
-                return resp.headers.get("ETag")
+                new_fingerprint = resp.headers.get("ETag")
+                # return new tmp model directory and new fingerprint
+                return model_directory, new_fingerprint
 
         except aiohttp.ClientError as e:
             logger.info(
@@ -231,6 +234,8 @@ async def load_agent(
                 generator=generator,
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
+                model_server=model_server,
+                remote_storage=remote_storage,
             )
 
         elif model_server is not None:
@@ -240,6 +245,8 @@ async def load_agent(
                     generator=generator,
                     tracker_store=tracker_store,
                     action_endpoint=action_endpoint,
+                    model_server=model_server,
+                    remote_storage=remote_storage,
                 ),
                 model_server,
             )
@@ -252,6 +259,7 @@ async def load_agent(
                 generator=generator,
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
+                model_server=model_server,
             )
 
         else:
@@ -280,6 +288,8 @@ class Agent(object):
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_directory: Optional[Text] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -301,6 +311,8 @@ class Agent(object):
 
         self._set_fingerprint(fingerprint)
         self.model_directory = model_directory
+        self.model_server = model_server
+        self.remote_storage = remote_storage
 
     def update_model(
         self,
@@ -333,6 +345,8 @@ class Agent(object):
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         if not os.path.exists(unpacked_model_path) or not os.path.isdir(
@@ -372,6 +386,8 @@ class Agent(object):
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
             model_directory=unpacked_model_path,
+            model_server=model_server,
+            remote_storage=remote_storage,
         )
 
     def is_ready(self):
@@ -842,6 +858,8 @@ class Agent(object):
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
     ) -> "Agent":
         if os.path.isfile(model_path):
             model_archive = model_path
@@ -861,6 +879,8 @@ class Agent(object):
             generator=generator,
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
+            model_server=model_server,
+            remote_storage=remote_storage,
         )
 
     @staticmethod
@@ -871,6 +891,7 @@ class Agent(object):
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
+        model_server: Optional[EndpointConfig] = None,
     ) -> "Agent":
         from rasa.nlu.persistor import get_persistor
 
@@ -886,6 +907,8 @@ class Agent(object):
                 generator=generator,
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
+                model_server=model_server,
+                remote_storage=remote_storage,
             )
 
         return None

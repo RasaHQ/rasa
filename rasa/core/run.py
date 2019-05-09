@@ -7,7 +7,6 @@ from sanic import Sanic
 from sanic_cors import CORS
 
 import rasa.core
-import rasa.core.cli.arguments
 import rasa.utils
 import rasa.utils.io
 from rasa.core import constants, utils
@@ -199,6 +198,8 @@ async def load_agent_on_start(
             generator=endpoints.nlg,
             tracker_store=_tracker_store,
             action_endpoint=endpoints.action,
+            model_server=model_server,
+            remote_storage=remote_storage,
         )
 
     return app.agent
@@ -206,7 +207,7 @@ async def load_agent_on_start(
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.core.run` directly is "
-        "no longer supported. "
-        "Please use `rasa shell` instead."
+        "Calling `rasa.core.run` directly is no longer supported. "
+        "Please use `rasa run` to start a Rasa server or `rasa shell` to chat with "
+        "your bot on the command line."
     )

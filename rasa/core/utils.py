@@ -7,25 +7,13 @@ import logging
 import os
 import re
 import sys
-import tarfile
 import tempfile
-import warnings
-import zipfile
-from asyncio import AbstractEventLoop, Future
+from pathlib import Path
+from typing import Union
+from asyncio import Future
 from hashlib import md5, sha1
-from io import BytesIO as IOReader, StringIO
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    TYPE_CHECKING,
-    Text,
-    Tuple,
-    Callable,
-    Awaitable,
-)
+from io import StringIO
+from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -34,7 +22,6 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
 
-import rasa.utils.endpoints
 from rasa.utils.endpoints import read_endpoint_config
 
 logger = logging.getLogger(__name__)
@@ -270,22 +257,22 @@ def _dump_yaml(obj, output):
     yaml_writer.dump(obj, output)
 
 
-def dump_obj_as_yaml_to_file(filename, obj):
+def dump_obj_as_yaml_to_file(filename: Union[Text, Path], obj: Dict) -> None:
     """Writes data (python dict) to the filename in yaml repr."""
-    with open(filename, "w", encoding="utf-8") as output:
+    with open(str(filename), "w", encoding="utf-8") as output:
         _dump_yaml(obj, output)
 
 
-def dump_obj_as_yaml_to_string(obj):
+def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
     """Writes data (python dict) to a yaml string."""
     str_io = StringIO()
     _dump_yaml(obj, str_io)
     return str_io.getvalue()
 
 
-def read_json_file(filename):
+def read_json_file(filename: Union[Text, Path]) -> Dict:
     """Read json from a file"""
-    with open(filename) as f:
+    with open(str(filename)) as f:
         return json.load(f)
 
 

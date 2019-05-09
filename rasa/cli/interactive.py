@@ -5,7 +5,7 @@ from typing import List
 
 import rasa.cli.run as run
 import rasa.cli.train as train
-import rasa.core.cli.train as core_cli
+import rasa.cli.arguments.train as core_cli
 from rasa import data, model
 
 
@@ -65,7 +65,8 @@ def interactive(args: argparse.Namespace):
     args.finetune = False  # Don't support finetuning
 
     training_files = [
-        get_validated_path(f, "data", DEFAULT_DATA_PATH) for f in args.data
+        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
+        for f in args.data
     ]
     story_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
 

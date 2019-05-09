@@ -3,7 +3,7 @@ import logging
 import os
 from typing import List
 
-from rasa.cli.default_arguments import add_model_param
+from rasa.cli.arguments.default_arguments import add_model_param
 from rasa.cli.utils import get_validated_path
 from rasa.constants import (
     DEFAULT_ACTIONS_PATH,
@@ -30,26 +30,6 @@ def add_subparser(
     run_parser.set_defaults(func=run)
 
     run_subparsers = run_parser.add_subparsers()
-    run_core_parser = run_subparsers.add_parser(
-        "core",
-        parents=parents,
-        conflict_handler="resolve",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Run a trained Core model",
-    )
-    add_run_arguments(run_core_parser)
-    run_core_parser.set_defaults(func=run)
-
-    nlu_subparser = run_subparsers.add_parser(
-        "nlu",
-        parents=parents,
-        conflict_handler="resolve",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Run a trained NLU model",
-    )
-
-    add_run_arguments(nlu_subparser)
-    nlu_subparser.set_defaults(func=run)
 
     sdk_subparser = run_subparsers.add_parser(
         "actions",
@@ -63,8 +43,8 @@ def add_subparser(
 
 
 def add_run_arguments(parser: argparse.ArgumentParser):
-    from rasa.core.cli.run import add_run_arguments
-    from rasa.core.cli.arguments import add_logging_option_arguments
+    from rasa.cli.arguments.run import add_run_arguments
+    from rasa.cli.arguments.arguments import add_logging_option_arguments
 
     add_run_arguments(parser)
     add_model_param(parser)

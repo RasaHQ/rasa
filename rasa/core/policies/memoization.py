@@ -77,7 +77,9 @@ class MemoizationPolicy(Policy):
     def toggle(self, activate: bool) -> None:
         self.is_enabled = activate
 
-    def _add_states_to_lookup(self, trackers_as_states, trackers_as_actions, domain):
+    def _add_states_to_lookup(
+        self, trackers_as_states, trackers_as_actions, domain, online=False
+    ):
         """Add states to lookup dict"""
         if not trackers_as_states:
             return

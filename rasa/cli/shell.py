@@ -4,8 +4,12 @@ import os
 
 from typing import List
 
+from rasa.cli.arguments.default_arguments import add_model_param
+
+from rasa.cli.utils import print_error
+
 import rasa.cli.run
-import rasa.core.cli.arguments
+import rasa.cli.arguments.arguments
 
 
 logger = logging.getLogger(__name__)
@@ -26,9 +30,51 @@ def add_subparser(
     )
     rasa.cli.run.add_run_arguments(shell_parser)
 
-    rasa.core.cli.arguments.add_logging_option_arguments(shell_parser)
+    run_subparsers = shell_parser.add_subparsers()
+
+    shell_nlu_subparser = run_subparsers.add_parser(
+        "nlu",
+        parents=parents,
+        conflict_handler="resolve",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help="Interpret messages on the command line using your NLU model.",
+    )
+    shell_nlu_subparser.set_defaults(func=shell_nlu)
+    add_model_param(shell_nlu_subparser)
+
+    rasa.cli.arguments.arguments.add_logging_option_arguments(shell_parser)
+    rasa.cli.arguments.arguments.add_logging_option_arguments(shell_nlu_subparser)
 
     shell_parser.set_defaults(func=shell)
+
+
+def shell_nlu(args: argparse.Namespace):
+    from rasa.cli.utils import get_validated_path
+    from rasa.constants import DEFAULT_MODELS_PATH
+    from rasa.model import get_model, get_model_subdirectories
+    import rasa.nlu.run
+
+    args.connector = "cmdline"
+
+    model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    model_path = get_model(model)
+    if not model_path:
+        print_error(
+            "No model found. Train a model before running the "
+            "server using `rasa train nlu`."
+        )
+        return
+
+    _, nlu_model = get_model_subdirectories(model_path)
+
+    if not os.path.exists(nlu_model):
+        print_error(
+            "No NLU model found. Train a model before running the "
+            "server using `rasa train nlu`."
+        )
+        return
+
+    rasa.nlu.run.run_cmdline(nlu_model)
 
 
 def shell(args: argparse.Namespace):
@@ -41,7 +87,7 @@ def shell(args: argparse.Namespace):
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
     model_path = get_model(model)
     if not model_path:
-        logger.error(
+        print_error(
             "No model found. Train a model before running the "
             "server using `rasa train`."
         )

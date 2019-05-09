@@ -1,9 +1,8 @@
 import argparse
 import tempfile
-import typing
 from typing import List, Optional, Text, Dict
 
-from rasa.cli.default_arguments import (
+from rasa.cli.arguments.default_arguments import (
     add_config_param,
     add_domain_param,
     add_nlu_data_param,
@@ -22,7 +21,7 @@ from rasa.constants import (
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
-    import rasa.core.cli.train as core_cli
+    import rasa.cli.arguments.train as core_cli
 
     train_parser = subparsers.add_parser("train", help="Train the Rasa bot")
 
@@ -108,11 +107,14 @@ def _add_core_compare_arguments(parser: argparse.ArgumentParser):
 def train(args: argparse.Namespace) -> Optional[Text]:
     import rasa
 
-    domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
+    domain = get_validated_path(
+        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+    )
     config = args.config or DEFAULT_CONFIG_PATH
 
     training_files = [
-        get_validated_path(f, "data", DEFAULT_DATA_PATH) for f in args.data
+        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
+        for f in args.data
     ]
 
     return rasa.train(
@@ -134,8 +136,12 @@ def train_core(
     loop = asyncio.get_event_loop()
     output = train_path or args.out
 
-    args.domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
-    stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
+    args.domain = get_validated_path(
+        args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
+    )
+    stories = get_validated_path(
+        args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
+    )
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -170,7 +176,9 @@ def train_nlu(
     output = train_path or args.out
 
     config = args.config or DEFAULT_CONFIG_PATH
-    nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    nlu_data = get_validated_path(
+        args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
+    )
 
     return train_nlu(config, nlu_data, output, train_path)
 
