@@ -20,7 +20,7 @@ def run_cmdline(model_path, component_builder=None):
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.nlu.server` directly is "
-        "no longer supported. "
-        "Please use `rasa shell` instead."
+        "Calling `rasa.nlu.run` directly is no longer supported. "
+        "Please use `rasa run` to start a Rasa server or `rasa shell nlu` to obtain "
+        "the intent and entities of some text via the command line."
     )

@@ -948,7 +948,7 @@ def return_entity_results(results, dataset_name):
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.nlu.test` directly is "
-        "no longer supported. "
-        "Please use `rasa test nlu` instead."
+        "Calling `rasa.nlu.test` directly is no longer supported. Please use "
+        "`rasa test` to test a combined Core and NLU model or `rasa test nlu` "
+        "to test a NLU model."
     )

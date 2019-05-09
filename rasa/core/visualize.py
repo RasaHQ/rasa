@@ -66,5 +66,5 @@ if __name__ == "__main__":
     raise RuntimeError(
         "Calling `rasa.core.visualize` directly is "
         "no longer supported. "
-        "Please use `rasa show` instead."
+        "Please use `rasa show stories` instead."
     )
