@@ -4,7 +4,7 @@ import os
 
 from typing import List
 
-from rasa.cli.default_arguments import add_model_param
+from rasa.cli.arguments.default_arguments import add_model_param
 
 from rasa.cli.utils import print_error
 
