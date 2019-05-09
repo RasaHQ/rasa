@@ -44,7 +44,7 @@ questionary==1.1.0
 python-socketio==3.1.1
 pydot==1.4.1
 async_generator==1.10
-SQLAlchemy~=1.2.18
+SQLAlchemy~=1.3.0
 psycopg2-binary==2.8.2
 kafka-python==1.4.4
 sklearn-crfsuite==0.3.6
