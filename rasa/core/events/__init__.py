@@ -327,13 +327,15 @@ class BotUttered(Event):
             return self.__members() == other.__members()
 
     def __str__(self):
-        return "BotUttered(text: {}, data: {})".format(
-            self.text, json.dumps(self.data, indent=2)
+        return "BotUttered(text: {}, data: {}, metadata: {})".format(
+            self.text,
+            json.dumps(self.data, indent=2),
+            json.dumps(self.metadata, indent=2)
         )
 
     def __repr__(self):
-        return "BotUttered('{}', {}, {})".format(
-            self.text, json.dumps(self.data), self.timestamp
+        return "BotUttered('{}', {}, {}, {})".format(
+            self.text, json.dumps(self.data), json.dumps(self.metadata), self.timestamp
         )
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
@@ -365,7 +367,7 @@ class BotUttered(Event):
 
     def as_dict(self):
         d = super(BotUttered, self).as_dict()
-        d.update({"text": self.text, "data": self.data})
+        d.update({"text": self.text, "data": self.data, "metadata": self.metadata})
         return d
 
     @classmethod
@@ -374,6 +376,7 @@ class BotUttered(Event):
             return BotUttered(
                 parameters.get("text"),
                 parameters.get("data"),
+                parameters.get("metadata"),
                 parameters.get("timestamp"),
             )
         except KeyError as e:
