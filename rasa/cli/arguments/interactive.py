@@ -11,23 +11,27 @@ from rasa.cli.arguments.train import (
 
 
 def set_interactive_args(parser):
-    add_run_arguments(parser)
     add_config_param(parser)
-    add_out_param(parser)
     add_domain_param(parser)
     add_data_param(parser)
+    add_out_param(parser)
+
     add_force_param(parser)
+
     add_skip_visualization_param(parser)
+
+    add_run_arguments(parser)
 
 
 def set_interactive_core_args(parser):
     add_config_param(parser)
-    add_out_param(parser)
     add_domain_param(parser)
     add_stories_param(parser)
-    add_domain_param(parser)
-    add_run_arguments(parser)
+    add_out_param(parser)
+
     add_skip_visualization_param(parser)
+
+    add_run_arguments(parser)
 
 
 def add_skip_visualization_param(parser: argparse.ArgumentParser):
