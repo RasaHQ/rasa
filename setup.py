@@ -75,7 +75,7 @@ install_requires = [
     "python-socketio~=3.0",
     "pydot~=1.4",
     "async_generator~=1.10",
-    "SQLAlchemy~=1.3",
+    "SQLAlchemy~=1.2.18",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
 ]
