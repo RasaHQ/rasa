@@ -32,7 +32,6 @@ tests_requires = [
 install_requires = [
     "cloudpickle~=0.6.1",
     "boto3~=1.9",
-    "requests~=2.20",
     "matplotlib~=2.2",
     "simplejson~=3.13",
     "attrs>=18",
@@ -85,8 +84,7 @@ extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy>=2.0,<2.2"],
     "mitie": ["mitie"],
-    "sql": ["psycopg2~=2.8.2",
-            "SQLAlchemy~=1.3"],
+    "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
 }
 
 setup(
