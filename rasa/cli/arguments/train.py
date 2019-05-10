@@ -1,7 +1,73 @@
-from rasa.cli.arguments import arguments
+import argparse
+
+from rasa.cli.arguments.default_arguments import (
+    add_config_param,
+    add_logging_options,
+    add_stories_param,
+    add_nlu_data_param,
+    add_out_param,
+    add_domain_param,
+)
+from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
 
-def add_compare_args(parser):
+def set_train_args(parser):
+    add_data_param(parser)
+    add_config_param(parser)
+    add_domain_param(parser, True)
+    add_out_param(parser)
+
+    add_augmentation_param(parser)
+    add_debug_plots_param(parser)
+    add_dump_stories_param(parser)
+
+    add_force_param(parser)
+
+    add_logging_options(parser)
+
+
+def set_train_core_args(parser):
+    add_data_param(parser)
+    add_stories_param(parser)
+    add_domain_param(parser, True)
+    add_out_param(parser)
+
+    add_augmentation_param(parser)
+    add_debug_plots_param(parser)
+    add_dump_stories_param(parser)
+
+    add_force_param(parser)
+
+    add_compare_params(parser)
+
+    add_logging_options(parser)
+
+
+def set_train_nlu_args(parser):
+    add_config_param(parser)
+    add_out_param(parser)
+    add_logging_options(parser)
+    add_nlu_data_param(parser)
+
+
+def add_force_param(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force a model training even if the data has not changed.",
+    )
+
+
+def add_data_param(parser):
+    parser.add_argument(
+        "--data",
+        default=[DEFAULT_DATA_PATH],
+        nargs="+",
+        help="Paths to the Core and NLU training files.",
+    )
+
+
+def add_compare_params(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--percentages",
         nargs="*",
@@ -12,70 +78,36 @@ def add_compare_args(parser):
     parser.add_argument(
         "--runs", type=int, default=3, help="Number of runs for experiments"
     )
-
-    arguments.add_output_arg(
-        parser, help_text="directory to persist the trained model in", required=True
-    )
-    arguments.add_config_arg(parser, nargs="*")
-    arguments.add_model_and_story_group(parser, allow_pretrained_model=False)
-    arguments.add_domain_arg(parser, required=True)
-
-
-def add_interactive_args(parser):
-    parser.add_argument("-u", "--nlu", type=str, default=None, help="trained nlu model")
     parser.add_argument(
-        "--endpoints",
-        default=None,
-        help="Configuration file for the connectors as a yml file",
-    )
-    parser.add_argument(
-        "--skip-visualization",
-        default=False,
-        action="store_true",
-        help="disables plotting the visualization during interactive learning",
-    )
-    parser.add_argument(
-        "--finetune",
-        default=False,
-        action="store_true",
-        help="retrain the model immediately based on feedback.",
-    )
-    parser.add_argument(
-        "--nlu-data",
-        default=None,
-        help="Location where the nlu training data should be saved.",
+        "-c",
+        "--config",
+        nargs="+",
+        default=[DEFAULT_CONFIG_PATH],
+        help="The policy and NLU pipeline configuration of your bot."
+        "If multiple configuration files are provided, multiple dialogue "
+        "models are trained to compare policies.",
     )
 
-    arguments.add_output_arg(
-        parser, help_text="directory to persist the trained model in", required=False
-    )
-    arguments.add_config_arg(parser, nargs=1)
-    arguments.add_model_and_story_group(parser, allow_pretrained_model=True)
-    arguments.add_domain_arg(parser, required=False)
 
-
-def add_train_args(parser):
-    arguments.add_config_arg(parser, nargs=1)
-    arguments.add_output_arg(
-        parser, help_text="directory to persist the trained model in", required=True
-    )
-    arguments.add_model_and_story_group(parser, allow_pretrained_model=False)
-    arguments.add_domain_arg(parser, required=True)
-
-
-def add_general_args(parser):
+def add_augmentation_param(parser):
     parser.add_argument(
         "--augmentation",
         type=int,
         default=50,
         help="how much data augmentation to use during training",
     )
+
+
+def add_dump_stories_param(parser):
     parser.add_argument(
         "--dump-stories",
         default=False,
         action="store_true",
         help="If enabled, save flattened stories to a file",
     )
+
+
+def add_debug_plots_param(parser):
     parser.add_argument(
         "--debug-plots",
         default=False,
@@ -84,5 +116,3 @@ def add_general_args(parser):
         "and their connections between story blocks in a  "
         "file called `story_blocks_connections.html`.",
     )
-
-    arguments.add_logging_option_arguments(parser)

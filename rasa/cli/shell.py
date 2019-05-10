@@ -9,7 +9,7 @@ from rasa.cli.arguments.default_arguments import add_model_param
 from rasa.cli.utils import print_error
 
 import rasa.cli.run
-import rasa.cli.arguments.arguments
+import rasa.cli.arguments.default_arguments
 
 
 logger = logging.getLogger(__name__)
@@ -42,8 +42,8 @@ def add_subparser(
     shell_nlu_subparser.set_defaults(func=shell_nlu)
     add_model_param(shell_nlu_subparser)
 
-    rasa.cli.arguments.arguments.add_logging_option_arguments(shell_parser)
-    rasa.cli.arguments.arguments.add_logging_option_arguments(shell_nlu_subparser)
+    rasa.cli.arguments.default_arguments.add_logging_options(shell_parser)
+    rasa.cli.arguments.default_arguments.add_logging_options(shell_nlu_subparser)
 
     shell_parser.set_defaults(func=shell)
 

@@ -14,7 +14,7 @@ import questionary
 import rasa.cli.run
 import rasa.core.utils
 from rasa.cli.utils import print_success, get_validated_path
-from rasa.cli.arguments.arguments import add_logging_option_arguments
+from rasa.cli.arguments.default_arguments import add_logging_options
 
 from rasa.constants import (
     GLOBAL_USER_CONFIG_PATH,
@@ -90,7 +90,7 @@ def add_subparser(
     )
 
     rasa.cli.run.add_run_arguments(shell_parser)
-    add_logging_option_arguments(shell_parser)
+    add_logging_options(shell_parser)
 
     shell_parser.set_defaults(func=rasa_x)
 

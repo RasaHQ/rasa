@@ -2,9 +2,8 @@ import argparse
 import logging
 from typing import List, Union
 
-import rasa.cli.arguments.arguments
 from rasa import data
-from rasa.cli.arguments.default_arguments import add_stories_param
+from rasa.cli.arguments.default_arguments import add_stories_param, add_logging_options
 from rasa.cli.utils import get_validated_path
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
@@ -30,6 +29,8 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Test a trained model",
     )
+
+    _add_test_subparser_arguments(test_parser)
 
     test_subparsers = test_parser.add_subparsers()
     test_core_parser = test_subparsers.add_parser(
@@ -57,7 +58,9 @@ def add_subparser(
         _add_nlu_arguments(nlu_arguments)
     _add_nlu_subparser_arguments(test_nlu_parser)
 
-    _add_test_subparser_arguments(test_parser)
+    add_logging_options(test_parser)
+    add_logging_options(test_core_parser)
+    add_logging_options(test_nlu_parser)
 
     test_core_parser.set_defaults(func=test_core)
     test_nlu_parser.set_defaults(func=test_nlu)
@@ -171,8 +174,6 @@ def _add_test_subparser_arguments(parser: argparse.ArgumentParser):
         help="Path to a pre-trained model. If directory is given, the latest model "
         "in that directory will be used.",
     )
-
-    rasa.cli.arguments.arguments.add_logging_option_arguments(parser)
 
 
 def _add_nlu_subparser_arguments(parser: argparse.ArgumentParser):

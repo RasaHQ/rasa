@@ -1,4 +1,5 @@
 import argparse
+import logging
 from typing import Text
 
 from rasa.constants import (
@@ -42,12 +43,13 @@ def add_nlu_data_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_domain_param(parser: argparse.ArgumentParser) -> None:
+def add_domain_param(parser: argparse.ArgumentParser, required=False) -> None:
     parser.add_argument(
         "-d",
         "--domain",
         type=str,
         default=DEFAULT_DOMAIN_PATH,
+        required=required,
         help="Domain specification (yml file)",
     )
 
@@ -59,4 +61,51 @@ def add_config_param(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=DEFAULT_CONFIG_PATH,
         help="The policy and NLU pipeline configuration of your bot.",
+    )
+
+
+def add_out_param(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "-o",
+        "--out",
+        type=str,
+        default=DEFAULT_MODELS_PATH,
+        help="Directory where your models are stored",
+    )
+
+
+def add_core_model_param(parser, **kwargs):
+    parser.add_argument(
+        "--core", type=str, help="Path to a pre-trained core model directory", **kwargs
+    )
+
+
+def add_logging_options(parser):
+    """Add options to an argument parser to configure logging levels."""
+
+    logging_arguments = parser.add_argument_group("Python Logging Options")
+
+    # arguments for logging configuration
+    logging_arguments.add_argument(
+        "-v",
+        "--verbose",
+        help="Be verbose. Sets logging level to INFO",
+        action="store_const",
+        dest="loglevel",
+        const=logging.INFO,
+    )
+    logging_arguments.add_argument(
+        "-vv",
+        "--debug",
+        help="Print lots of debugging statements. Sets logging level to DEBUG",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+    )
+    logging_arguments.add_argument(
+        "--quiet",
+        help="Be quiet! Sets logging level to WARNING",
+        action="store_const",
+        dest="loglevel",
+        const=logging.WARNING,
     )
