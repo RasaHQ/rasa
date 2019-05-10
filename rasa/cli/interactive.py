@@ -4,7 +4,7 @@ import shutil
 from typing import List
 
 import rasa.cli.train as train
-import rasa.cli.arguments as arguments
+from rasa.cli.arguments import interactive as arguments
 from rasa import data, model
 
 
@@ -34,8 +34,8 @@ def add_subparser(
     )
     interactive_core_parser.set_defaults(func=interactive_core)
 
-    arguments.interactive.set_interactive_args(interactive_parser)
-    arguments.interactive.set_interactive_core_args(interactive_core_parser)
+    arguments.set_interactive_args(interactive_parser)
+    arguments.set_interactive_core_args(interactive_core_parser)
 
 
 def interactive(args: argparse.Namespace):
