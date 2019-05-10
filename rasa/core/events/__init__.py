@@ -330,7 +330,7 @@ class BotUttered(Event):
         return "BotUttered(text: {}, data: {}, metadata: {})".format(
             self.text,
             json.dumps(self.data, indent=2),
-            json.dumps(self.metadata, indent=2)
+            json.dumps(self.metadata, indent=2),
         )
 
     def __repr__(self):
