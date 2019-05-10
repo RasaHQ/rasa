@@ -9,6 +9,7 @@ from rasa.cli.arguments.default_arguments import (
     add_domain_param,
     add_stories_param,
 )
+from rasa.cli.arguments import show as arguments
 from rasa.constants import DEFAULT_DATA_PATH
 
 
@@ -23,6 +24,7 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Visualize Rasa Stack data",
     )
+    show_parser.set_defaults(func=lambda _: show_parser.print_help(None))
 
     show_subparsers = show_parser.add_subparsers()
     show_stories_subparser = show_subparsers.add_parser(
@@ -32,12 +34,9 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Show Rasa Core stories",
     )
-
-    add_core_visualization_params(show_stories_subparser)
-    add_config_param(show_stories_subparser)
     show_stories_subparser.set_defaults(func=show_stories)
 
-    show_parser.set_defaults(func=lambda _: show_parser.print_help(None))
+    arguments.add_show_stories_arguments(show_stories_subparser)
 
 
 def add_core_visualization_params(parser: argparse.ArgumentParser):

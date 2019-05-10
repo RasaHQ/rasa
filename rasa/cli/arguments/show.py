@@ -1,3 +1,20 @@
+import argparse
+
+from rasa.cli.arguments.default_arguments import (
+    add_config_param,
+    add_domain_param,
+    add_stories_param,
+)
+
+
+def add_show_stories_arguments(parser: argparse.ArgumentParser):
+    add_domain_param(parser)
+    add_stories_param(parser)
+    add_config_param(parser)
+
+    add_visualization_arguments(parser)
+
+
 def add_visualization_arguments(parser):
     parser.add_argument(
         "-o",
