@@ -138,7 +138,18 @@ class TrainingData(object):
             os.makedirs(dir_name)
 
         data_file = os.path.join(dir_name, filename)
-        write_to_file(data_file, self.as_json(indent=2))
+
+        fformat = "md" if filename.endswith(".md") else "json"
+
+        if fformat == "json":
+            write_to_file(data_file, self.as_json(indent=2))
+        elif fformat == "md":
+            write_to_file(data_file, self.as_markdown())
+        else:
+            ValueError(
+                "Unsupported file format detected. Supported file formats are 'json' "
+                "and 'md'."
+            )
 
         return {"training_data": DEFAULT_TRAINING_DATA_OUTPUT_PATH}
 
