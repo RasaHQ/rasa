@@ -24,6 +24,22 @@ class TwilioOutput(Client, OutputChannel):
         self.send_retry = 0
         self.max_retry = 5
 
+    async def _send_message(self, message_data: Dict[Text, Any]):
+        message = None
+        try:
+            while not message and self.send_retry < self.max_retry:
+                message = self.messages.create(**message_data)
+                self.send_retry += 1
+        except TwilioRestException as e:
+            logger.error("Something went wrong " + repr(e.msg))
+        finally:
+            self.send_retry = 0
+
+        if not message and self.send_retry == self.max_retry:
+            logger.error("Failed to send message. Max number of retires exceeded.")
+
+        return message
+
     async def send_text_message(self, recipient_id, text, **kwargs):
         """Sends text message"""
 
@@ -44,22 +60,6 @@ class TwilioOutput(Client, OutputChannel):
             json_message.setdefault("from", self.twilio_number)
 
         await self._send_message(json_message)
-
-    async def _send_message(self, message_data: Dict[Text, Any]):
-        message = None
-        try:
-            while not message and self.send_retry < self.max_retry:
-                message = self.messages.create(**message_data)
-                self.send_retry += 1
-        except TwilioRestException as e:
-            logger.error("Something went wrong " + repr(e.msg))
-        finally:
-            self.send_retry = 0
-
-        if not message and self.send_retry == self.max_retry:
-            logger.error("Failed to send message. Max number of retires exceeded.")
-
-        return message
 
 
 class TwilioInput(InputChannel):

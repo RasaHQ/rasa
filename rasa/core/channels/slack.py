@@ -24,6 +24,22 @@ class SlackBot(SlackClient, OutputChannel):
         self.slack_channel = slack_channel
         super(SlackBot, self).__init__(token)
 
+    @staticmethod
+    def _convert_to_slack_buttons(buttons):
+        return [
+            {
+                "text": b["title"],
+                "name": b["payload"],
+                "value": b["payload"],
+                "type": "button",
+            }
+            for b in buttons
+        ]
+
+    @staticmethod
+    def _get_text_from_slack_buttons(buttons):
+        return "".join([b.get("title", "") for b in buttons])
+
     async def send_text_message(self, recipient_id, text, **kwargs):
         recipient = self.slack_channel or recipient_id
         for message_part in text.split("\n\n"):
@@ -50,29 +66,6 @@ class SlackBot(SlackClient, OutputChannel):
             text=text,
             attachments=attachment,
         )
-
-    async def send_custom_json(
-        self, recipient_id, json_message: Dict[Text, Any], **kwargs
-    ):
-        json_message.setdefault("channel", self.slack_channel or recipient_id)
-        json_message.setdefault("as_user", True)
-        return super(SlackBot, self).api_call("chat.postMessage", **json_message)
-
-    @staticmethod
-    def _convert_to_slack_buttons(buttons):
-        return [
-            {
-                "text": b["title"],
-                "name": b["payload"],
-                "value": b["payload"],
-                "type": "button",
-            }
-            for b in buttons
-        ]
-
-    @staticmethod
-    def _get_text_from_slack_buttons(buttons):
-        return "".join([b.get("title", "") for b in buttons])
 
     async def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
         recipient = self.slack_channel or recipient_id
@@ -105,6 +98,13 @@ class SlackBot(SlackClient, OutputChannel):
             text=text,
             attachments=button_attachment,
         )
+
+    async def send_custom_json(
+        self, recipient_id, json_message: Dict[Text, Any], **kwargs
+    ):
+        json_message.setdefault("channel", self.slack_channel or recipient_id)
+        json_message.setdefault("as_user", True)
+        return super(SlackBot, self).api_call("chat.postMessage", **json_message)
 
 
 class SlackInput(InputChannel):

@@ -17,6 +17,18 @@ class RocketChatBot(OutputChannel):
 
         self.rocket = RocketChat(user, password, server_url=server_url)
 
+    @staticmethod
+    def _convert_to_rocket_buttons(buttons):
+        return [
+            {
+                "text": b["title"],
+                "msg": b["payload"],
+                "type": "button",
+                "msg_in_chat_window": True,
+            }
+            for b in buttons
+        ]
+
     async def send_text_message(self, recipient_id, text, **kwargs):
         """Send message to output channel"""
 
@@ -35,18 +47,6 @@ class RocketChatBot(OutputChannel):
             None, room_id=recipient_id, attachments=[attachment]
         )
 
-    @staticmethod
-    def _convert_to_rocket_buttons(buttons):
-        return [
-            {
-                "text": b["title"],
-                "msg": b["payload"],
-                "type": "button",
-                "msg_in_chat_window": True,
-            }
-            for b in buttons
-        ]
-
     async def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
         # implementation is based on
         # https://github.com/RocketChat/Rocket.Chat/pull/11473
@@ -62,7 +62,9 @@ class RocketChatBot(OutputChannel):
             None, room_id=recipient_id, attachments=elements
         )
 
-    async def send_custom_json(self, recipient_id, json_message: Dict[Text, Any], **kwargs):
+    async def send_custom_json(
+        self, recipient_id, json_message: Dict[Text, Any], **kwargs
+    ):
         text = json_message.pop("text")
 
         if json_message.get("channel"):

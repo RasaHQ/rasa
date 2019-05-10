@@ -76,21 +76,6 @@ class BotFramework(OutputChannel):
         else:
             return BotFramework.headers
 
-    async def send(self, kwargs: Dict[Text, Any]) -> None:
-        post_message_uri = "{}conversations/{}/activities".format(
-            self.global_uri, self.conversation["id"]
-        )
-        headers = await self._get_headers()
-        send_response = requests.post(
-            post_message_uri, headers=headers, data=json.dumps(kwargs)
-        )
-
-        if not send_response.ok:
-            logger.error(
-                "Error trying to send botframework messge. Response: %s",
-                send_response.text,
-            )
-
     async def prepare_message(
         self, recipient_id: Text, message_data: Dict[Text, Any]
     ) -> None:
@@ -102,6 +87,21 @@ class BotFramework(OutputChannel):
             "text": "",
         }
         return data.update(message_data)
+
+    async def send(self, message_data: Dict[Text, Any]) -> None:
+        post_message_uri = "{}conversations/{}/activities".format(
+            self.global_uri, self.conversation["id"]
+        )
+        headers = await self._get_headers()
+        send_response = requests.post(
+            post_message_uri, headers=headers, data=json.dumps(message_data)
+        )
+
+        if not send_response.ok:
+            logger.error(
+                "Error trying to send botframework messge. Response: %s",
+                send_response.text,
+            )
 
     async def send_text_message(self, recipient_id, text, **kwargs):
         for message_part in text.split("\n\n"):
