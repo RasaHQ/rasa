@@ -27,7 +27,7 @@ def set_test_arguments(parser):
     add_logging_options(parser)
 
 
-def set_test_core_arguments(parser):
+def set_test_core_arguments(parser: argparse.ArgumentParser):
     core_arguments = parser.add_argument_group("Core Test arguments")
     add_test_core_arguments(core_arguments)
     add_stories_param(core_arguments, "test")
@@ -37,7 +37,7 @@ def set_test_core_arguments(parser):
     add_test_core_model_param(parser)
 
 
-def set_test_nlu_arguments(parser):
+def set_test_nlu_arguments(parser: argparse.ArgumentParser):
     add_test_nlu_model_param(parser)
 
     nlu_arguments = parser.add_argument_group("NLU Test arguments")
@@ -46,7 +46,9 @@ def set_test_nlu_arguments(parser):
     add_logging_options(parser)
 
 
-def add_test_core_arguments(parser):
+def add_test_core_arguments(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "--max-stories", type=int, help="maximum number of stories to test on"
     )

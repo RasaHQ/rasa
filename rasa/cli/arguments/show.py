@@ -15,7 +15,7 @@ def set_show_stories_arguments(parser: argparse.ArgumentParser):
     add_visualization_arguments(parser)
 
 
-def add_visualization_arguments(parser):
+def add_visualization_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-o",
         "--output",

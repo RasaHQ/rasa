@@ -1,14 +1,16 @@
+import argparse
+
 from rasa.cli.arguments.default_arguments import add_model_param, add_logging_options
 from rasa.core import constants
 
 
-def set_run_arguments(parser):
+def set_run_arguments(parser: argparse.ArgumentParser):
     add_run_arguments(parser)
     add_model_param(parser)
     add_logging_options(parser)
 
 
-def set_run_action_arguments(parser):
+def set_run_action_arguments(parser: argparse.ArgumentParser):
     import rasa_core_sdk.cli.arguments as sdk
 
     sdk.add_endpoint_arguments(parser)
@@ -21,7 +23,7 @@ def set_run_action_arguments(parser):
     )
 
 
-def add_run_arguments(parser):
+def add_run_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-o",
         "--log-file",

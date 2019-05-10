@@ -11,7 +11,7 @@ from rasa.cli.arguments.default_arguments import (
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
 
-def set_train_arguments(parser):
+def set_train_arguments(parser: argparse.ArgumentParser):
     add_data_param(parser)
     add_config_param(parser)
     add_domain_param(parser, True)
@@ -26,7 +26,7 @@ def set_train_arguments(parser):
     add_logging_options(parser)
 
 
-def set_train_core_arguments(parser):
+def set_train_core_arguments(parser: argparse.ArgumentParser):
     add_data_param(parser)
     add_stories_param(parser)
     add_domain_param(parser, True)
@@ -43,7 +43,7 @@ def set_train_core_arguments(parser):
     add_logging_options(parser)
 
 
-def set_train_nlu_arguments(parser):
+def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
     add_out_param(parser)
     add_logging_options(parser)
@@ -58,7 +58,7 @@ def add_force_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_data_param(parser):
+def add_data_param(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--data",
         default=[DEFAULT_DATA_PATH],
@@ -89,7 +89,7 @@ def add_compare_params(parser: argparse.ArgumentParser):
     )
 
 
-def add_augmentation_param(parser):
+def add_augmentation_param(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--augmentation",
         type=int,
@@ -98,7 +98,7 @@ def add_augmentation_param(parser):
     )
 
 
-def add_dump_stories_param(parser):
+def add_dump_stories_param(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--dump-stories",
         default=False,
@@ -107,7 +107,7 @@ def add_dump_stories_param(parser):
     )
 
 
-def add_debug_plots_param(parser):
+def add_debug_plots_param(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--debug-plots",
         default=False,

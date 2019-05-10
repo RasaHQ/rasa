@@ -1,6 +1,6 @@
 import argparse
 import logging
-from typing import Text
+from typing import Text, Union
 
 from rasa.constants import (
     DEFAULT_DATA_PATH,
@@ -11,8 +11,10 @@ from rasa.constants import (
 
 
 def add_model_param(
-    parser: argparse.ArgumentParser, model_name: Text = "Rasa", add_positional_arg=True
-) -> None:
+    parser: argparse.ArgumentParser,
+    model_name: Text = "Rasa",
+    add_positional_arg: bool = True,
+):
     defaults = {
         "type": str,
         "help": "Path to a trained {} model. If a directory "
@@ -25,7 +27,8 @@ def add_model_param(
 
 
 def add_stories_param(
-    parser: argparse.ArgumentParser, stories_name: Text = "training"
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    stories_name: Text = "training",
 ) -> None:
     parser.add_argument(
         "-s",
@@ -46,7 +49,7 @@ def add_nlu_data_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_domain_param(parser: argparse.ArgumentParser, required=False) -> None:
+def add_domain_param(parser: argparse.ArgumentParser, required: bool = False):
     parser.add_argument(
         "-d",
         "--domain",
@@ -57,7 +60,7 @@ def add_domain_param(parser: argparse.ArgumentParser, required=False) -> None:
     )
 
 
-def add_config_param(parser: argparse.ArgumentParser) -> None:
+def add_config_param(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-c",
         "--config",
@@ -67,7 +70,7 @@ def add_config_param(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_out_param(parser: argparse.ArgumentParser) -> None:
+def add_out_param(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-o",
         "--out",
@@ -77,13 +80,13 @@ def add_out_param(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_core_model_param(parser, **kwargs):
+def add_core_model_param(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "--core", type=str, help="Path to a pre-trained core model directory", **kwargs
+        "--core", type=str, help="Path to a pre-trained core model directory"
     )
 
 
-def add_logging_options(parser):
+def add_logging_options(parser: argparse.ArgumentParser):
     """Add options to an argument parser to configure logging levels."""
 
     logging_arguments = parser.add_argument_group("Python Logging Options")

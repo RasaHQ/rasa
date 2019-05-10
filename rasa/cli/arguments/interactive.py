@@ -10,7 +10,7 @@ from rasa.cli.arguments.train import (
 )
 
 
-def set_interactive_arguments(parser):
+def set_interactive_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
     add_domain_param(parser)
     add_data_param(parser)
@@ -23,7 +23,7 @@ def set_interactive_arguments(parser):
     add_run_arguments(parser)
 
 
-def set_interactive_core_arguments(parser):
+def set_interactive_core_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
     add_domain_param(parser)
     add_stories_param(parser)
