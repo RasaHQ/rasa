@@ -1,6 +1,6 @@
 import argparse
 
-from rasa.cli.arguments.run import add_run_arguments
+from rasa.cli.arguments.run import add_server_arguments
 from rasa.cli.arguments.default_arguments import (
     add_domain_param,
     add_stories_param,
@@ -28,7 +28,7 @@ def set_interactive_arguments(parser: argparse.ArgumentParser):
 
     add_skip_visualization_param(parser)
 
-    add_run_arguments(parser)
+    add_server_arguments(parser)
 
 
 def set_interactive_core_arguments(parser: argparse.ArgumentParser):
@@ -44,7 +44,7 @@ def set_interactive_core_arguments(parser: argparse.ArgumentParser):
 
     add_skip_visualization_param(parser)
 
-    add_run_arguments(parser)
+    add_server_arguments(parser)
 
 
 def add_skip_visualization_param(parser: argparse.ArgumentParser):

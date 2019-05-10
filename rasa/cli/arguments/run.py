@@ -5,7 +5,7 @@ from rasa.core import constants
 
 
 def set_run_arguments(parser: argparse.ArgumentParser):
-    add_run_arguments(parser)
+    add_server_arguments(parser)
     add_model_param(parser)
 
 
@@ -22,7 +22,7 @@ def set_run_action_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def add_run_arguments(parser: argparse.ArgumentParser):
+def add_server_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--log-file",
         type=str,
