@@ -49,14 +49,13 @@ def add_nlu_data_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_domain_param(parser: argparse.ArgumentParser, required: bool = False):
+def add_domain_param(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-d",
         "--domain",
         type=str,
         default=DEFAULT_DOMAIN_PATH,
-        required=required,
-        help="Domain specification (yml file)",
+        help="Domain specification (yml file).",
     )
 
 
@@ -75,13 +74,13 @@ def add_out_param(parser: argparse.ArgumentParser):
         "--out",
         type=str,
         default=DEFAULT_MODELS_PATH,
-        help="Directory where your models are stored",
+        help="Directory where your models should be stored.",
     )
 
 
 def add_core_model_param(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "--core", type=str, help="Path to a pre-trained core model directory"
+        "--core", type=str, help="Path to a pre-trained Rasa Core model (tar.gz file)."
     )
 
 
@@ -94,7 +93,7 @@ def add_logging_options(parser: argparse.ArgumentParser):
     logging_arguments.add_argument(
         "-v",
         "--verbose",
-        help="Be verbose. Sets logging level to INFO",
+        help="Be verbose. Sets logging level to INFO.",
         action="store_const",
         dest="loglevel",
         const=logging.INFO,
@@ -102,14 +101,14 @@ def add_logging_options(parser: argparse.ArgumentParser):
     logging_arguments.add_argument(
         "-vv",
         "--debug",
-        help="Print lots of debugging statements. Sets logging level to DEBUG",
+        help="Print lots of debugging statements. Sets logging level to DEBUG.",
         action="store_const",
         dest="loglevel",
         const=logging.DEBUG,
     )
     logging_arguments.add_argument(
         "--quiet",
-        help="Be quiet! Sets logging level to WARNING",
+        help="Be quiet! Sets logging level to WARNING.",
         action="store_const",
         dest="loglevel",
         const=logging.WARNING,

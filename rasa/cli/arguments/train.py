@@ -13,7 +13,7 @@ from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 def set_train_arguments(parser: argparse.ArgumentParser):
     add_data_param(parser)
     add_config_param(parser)
-    add_domain_param(parser, True)
+    add_domain_param(parser)
     add_out_param(parser)
 
     add_augmentation_param(parser)
@@ -25,7 +25,7 @@ def set_train_arguments(parser: argparse.ArgumentParser):
 
 def set_train_core_arguments(parser: argparse.ArgumentParser):
     add_stories_param(parser)
-    add_domain_param(parser, True)
+    add_domain_param(parser)
     add_out_param(parser)
 
     add_augmentation_param(parser)
@@ -70,7 +70,7 @@ def add_compare_params(parser: argparse.ArgumentParser):
         help="Range of exclusion percentages",
     )
     parser.add_argument(
-        "--runs", type=int, default=3, help="Number of runs for experiments"
+        "--runs", type=int, default=3, help="Number of runs for experiments."
     )
     parser.add_argument(
         "-c",
@@ -88,7 +88,7 @@ def add_augmentation_param(parser: argparse.ArgumentParser):
         "--augmentation",
         type=int,
         default=50,
-        help="how much data augmentation to use during training",
+        help="How much data augmentation to use during training.",
     )
 
 
@@ -97,7 +97,7 @@ def add_dump_stories_param(parser: argparse.ArgumentParser):
         "--dump-stories",
         default=False,
         action="store_true",
-        help="If enabled, save flattened stories to a file",
+        help="If enabled, save flattened stories to a file.",
     )
 
 

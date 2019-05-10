@@ -44,20 +44,20 @@ def add_test_core_arguments(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
     parser.add_argument(
-        "--max-stories", type=int, help="maximum number of stories to test on"
+        "--max-stories", type=int, help="Maximum number of stories to test on."
     )
     add_core_model_param(parser)
     parser.add_argument(
         "-u",
         "--nlu",
         type=str,
-        help="nlu model to run with the server. None for regex interpreter",
+        help="NLU model to run with the server. None for regex interpreter.",
     )
     parser.add_argument(
         "--output",
         type=str,
         default="results",
-        help="output path for the any files created from the evaluation",
+        help="Output path for any files created during the evaluation.",
     )
     parser.add_argument(
         "--e2e",
@@ -70,7 +70,7 @@ def add_test_core_arguments(
     parser.add_argument(
         "--endpoints",
         default=None,
-        help="Configuration file for the connectors as a yml file",
+        help="Configuration file for the connectors as a yml file.",
     )
     parser.add_argument(
         "--fail-on-prediction-errors",
@@ -90,14 +90,14 @@ def add_test_nlu_arguments(
         "--config",
         type=str,
         default=DEFAULT_CONFIG_PATH,
-        help="model configuration file (crossvalidation only)",
+        help="Model configuration file (cross validation only).",
     )
     parser.add_argument(
         "-f",
         "--folds",
         required=False,
         default=10,
-        help="number of CV folds (crossvalidation only)",
+        help="Number of cross validation folds (cross validation only).",
     )
     parser.add_argument(
         "--report",
@@ -105,7 +105,7 @@ def add_test_nlu_arguments(
         nargs="?",
         const="reports",
         default=False,
-        help="output path to save the intent/entity metrics report",
+        help="Output path to save the intent/entity metrics report.",
     )
     parser.add_argument(
         "--successes",
@@ -113,25 +113,25 @@ def add_test_nlu_arguments(
         nargs="?",
         const="successes.json",
         default=False,
-        help="output path to save successful predictions",
+        help="Output path to save successful predictions.",
     )
     parser.add_argument(
         "--errors",
         required=False,
         default="errors.json",
-        help="output path to save model errors",
+        help="Output path to save model errors.",
     )
     parser.add_argument(
         "--histogram",
         required=False,
         default="hist.png",
-        help="output path for the confidence histogram",
+        help="Output path for the confidence histogram.",
     )
     parser.add_argument(
         "--confmat",
         required=False,
         default="confmat.png",
-        help="output path for the confusion matrix plot",
+        help="Output path for the confusion matrix plot.",
     )
 
 

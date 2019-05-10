@@ -18,7 +18,7 @@ def set_run_action_arguments(parser: argparse.ArgumentParser):
         "--actions",
         type=str,
         default="actions",
-        help="name of action package to be loaded",
+        help="Name of action package to be loaded.",
     )
 
 

@@ -11,13 +11,13 @@ def set_x_arguments(shell_parser: argparse.ArgumentParser):
     shell_parser.add_argument(
         "--no-prompt",
         action="store_true",
-        help="Automatic yes or default options to prompts and oppressed warnings",
+        help="Automatic yes or default options to prompts and oppressed warnings.",
     )
 
     shell_parser.add_argument(
         "--production",
         action="store_true",
-        help="Run Rasa X in a production environment",
+        help="Run Rasa X in a production environment.",
     )
 
     shell_parser.add_argument("--auth-token", type=str, help="Rasa API auth token")
@@ -26,21 +26,21 @@ def set_x_arguments(shell_parser: argparse.ArgumentParser):
         "--nlg",
         type=str,
         default="http://localhost:5002/api/nlg",
-        help="Rasa NLG endpoint",
+        help="Rasa NLG endpoint.",
     )
 
     shell_parser.add_argument(
         "--model-endpoint-url",
         type=str,
         default="http://localhost:5002/api/projects/default/models/tags/production",
-        help="Rasa model endpoint URL",
+        help="Rasa model endpoint URL.",
     )
 
     shell_parser.add_argument(
         "--project-path",
         type=str,
         default=".",
-        help="Path to the Rasa project directory",
+        help="Path to the Rasa project directory.",
     )
 
     shell_parser.add_argument(
@@ -49,6 +49,6 @@ def set_x_arguments(shell_parser: argparse.ArgumentParser):
         default="data",
         help=(
             "Path to the directory containing Rasa NLU training data "
-            "and Rasa Core stories"
+            "and Rasa Core stories."
         ),
     )
