@@ -37,7 +37,9 @@ class RocketChatBot(OutputChannel):
         for message_part in text.split("\n\n"):
             self.rocket.chat_post_message(message_part, room_id=recipient_id)
 
-    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         image_attachment = [{"image_url": image, "collapsed": False}]
 
         return self.rocket.chat_post_message(

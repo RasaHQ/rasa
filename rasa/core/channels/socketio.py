@@ -44,7 +44,9 @@ class SocketIOOutput(OutputChannel):
 
         await self._send_message(self.sid, {"text": text})
 
-    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         """Sends an image to the output"""
 
         message = {"attachment": {"type": "image", "payload": {"src": image}}}
@@ -87,7 +89,7 @@ class SocketIOOutput(OutputChannel):
         await self._send_message(self.sid, message)
 
     async def send_custom_json(
-        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json to the output"""
 

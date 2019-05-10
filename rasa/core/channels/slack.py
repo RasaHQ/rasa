@@ -50,7 +50,7 @@ class SlackBot(SlackClient, OutputChannel):
             )
 
     async def send_image_url(
-        self, recipient_id: Text, image: Text, text: Optional[Text] = "", **kwargs
+        self, recipient_id: Text, image: Text, text: Optional[Text] = "", **kwargs: Any
     ) -> None:
         image_attachment = [{"image_url": image, "text": text}]
         recipient = self.slack_channel or recipient_id

@@ -128,7 +128,9 @@ class MessengerBot(OutputChannel):
         for message_part in text.split("\n\n"):
             self.send(recipient_id, FBText(text=message_part))
 
-    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
         self.send(recipient_id, Image(url=image))
@@ -200,7 +202,7 @@ class MessengerBot(OutputChannel):
         )
 
     async def send_custom_json(
-        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json data to the output."""
 

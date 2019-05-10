@@ -33,7 +33,9 @@ class TelegramOutput(Bot, OutputChannel):
         for message_part in text.split("\n\n"):
             self.send_message(recipient_id, message_part)
 
-    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         self.send_photo(recipient_id, image)
 
     async def send_text_with_buttons(

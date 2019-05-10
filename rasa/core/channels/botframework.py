@@ -111,7 +111,9 @@ class BotFramework(OutputChannel):
             message = self.prepare_message(recipient_id, text_message)
             await self.send(message)
 
-    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         hero_content = {
             "contentType": "application/vnd.microsoft.card.hero",
             "content": {"images": [{"url": image}]},

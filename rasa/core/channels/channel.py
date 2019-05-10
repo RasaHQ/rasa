@@ -201,7 +201,9 @@ class OutputChannel(object):
             "Output channel needs to implement a send message for simple texts."
         )
 
-    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
         await self.send_text_message(recipient_id, "Image: {}".format(image), **kwargs)
@@ -314,7 +316,9 @@ class CollectingOutputChannel(OutputChannel):
         for message_part in text.split("\n\n"):
             await self._persist_message(self._message(recipient_id, text=message_part))
 
-    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
         await self._persist_message(self._message(recipient_id, image=image))
