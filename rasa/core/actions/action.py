@@ -131,8 +131,11 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
             "elements": message.pop("elements", None),
             "quick_replies": message.pop("quick_replies", None),
             "buttons": message.pop("buttons", None),
+            # for legacy / compatibility reasons we need to set the image to be the attachment if there
+            # is no other attachment (the `.get` is intentional - no `pop` as we still need the image`
+            # property to set it in the following line)
+            "attachment": message.pop("attachment", None) or message.get("image", None),
             "image": message.pop("image", None),
-            "attachment": message.pop("attachment", None) or message.pop("image", None),
             "custom": message.pop("custom", None),
         },
         metadata=message,
