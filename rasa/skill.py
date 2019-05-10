@@ -38,7 +38,7 @@ class SkillSelector:
 
         selector = cls._from_file(config, selector)
 
-        logger.info("Selected skills: {}.".format(selector._imports))
+        logger.debug("Selected skills: {}.".format(selector._imports))
 
         return selector
 

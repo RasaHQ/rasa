@@ -157,7 +157,7 @@ def test_import_outside_project_directory(tmpdir_factory):
 
 
 async def test_multi_skill_training():
-    example_directory = "examples/multi_skill_bot"
+    example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
     trained_stack_model_path = await train_async(
         config=config_file, domain=None, training_files=None
