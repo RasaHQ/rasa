@@ -89,7 +89,7 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
 
     if unpacked_model is None:
         print_error(
-            "Could not find any model. Use 'rasa train nlu' to train an " "NLU model."
+            "Could not find any model. Use 'rasa train nlu' to train an NLU model."
         )
         return
 
@@ -100,7 +100,7 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
         run_evaluation(nlu_data, nlu_model, **kwargs)
     else:
         print_error(
-            "Could not find any model. Use 'rasa train nlu' to train an " "NLU model."
+            "Could not find any model. Use 'rasa train nlu' to train an NLU model."
         )
 
 
