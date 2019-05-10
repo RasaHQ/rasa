@@ -95,22 +95,27 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
 
 def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int = 3):
     import rasa.nlu.config
-    import rasa.nlu.test as nlu_test
+    from rasa.nlu.test import (
+        drop_intents_below_freq,
+        cross_validate,
+        return_results,
+        return_entity_results,
+    )
 
     nlu_config = rasa.nlu.config.load(config)
     data = rasa.nlu.training_data.load_data(nlu)
-    data = nlu_test.drop_intents_below_freq(data, cutoff=5)
-    results, entity_results = nlu_test.cross_validate(data, int(folds), nlu_config)
+    data = drop_intents_below_freq(data, cutoff=5)
+    results, entity_results = cross_validate(data, int(folds), nlu_config)
     logger.info("CV evaluation (n={})".format(folds))
 
     if any(results):
         logger.info("Intent evaluation results")
-        nlu_test.return_results(results.train, "train")
-        nlu_test.return_results(results.test, "test")
+        return_results(results.train, "train")
+        return_results(results.test, "test")
     if any(entity_results):
         logger.info("Entity evaluation results")
-        nlu_test.return_entity_results(entity_results.train, "train")
-        nlu_test.return_entity_results(entity_results.test, "test")
+        return_entity_results(entity_results.train, "train")
+        return_entity_results(entity_results.test, "test")
 
 
 def copy_models_to_compare(models: List[str]) -> Text:
