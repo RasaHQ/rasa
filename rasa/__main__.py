@@ -5,6 +5,7 @@ import rasa.utils.io
 
 from rasa import version
 from rasa.cli import scaffold, run, train, interactive, shell, test, show, data, x
+from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
 from rasa.utils.common import set_log_level
 
@@ -31,6 +32,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     )
 
     parent_parser = argparse.ArgumentParser(add_help=False)
+    add_logging_options(parent_parser)
     parent_parsers = [parent_parser]
 
     subparsers = parser.add_subparsers(help="Rasa commands")

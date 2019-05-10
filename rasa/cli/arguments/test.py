@@ -4,7 +4,6 @@ from typing import Union
 from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CONFIG_PATH
 
 from rasa.cli.arguments.default_arguments import (
-    add_logging_options,
     add_stories_param,
     add_core_model_param,
     add_model_param,
@@ -24,8 +23,6 @@ def set_test_arguments(parser):
     nlu_arguments = parser.add_argument_group("NLU Test arguments")
     add_test_nlu_arguments(nlu_arguments)
 
-    add_logging_options(parser)
-
 
 def set_test_core_arguments(parser: argparse.ArgumentParser):
     core_arguments = parser.add_argument_group("Core Test arguments")
@@ -33,7 +30,6 @@ def set_test_core_arguments(parser: argparse.ArgumentParser):
     add_stories_param(core_arguments, "test")
     add_url_param(core_arguments)
 
-    add_logging_options(parser)
     add_test_core_model_param(parser)
 
 
@@ -42,8 +38,6 @@ def set_test_nlu_arguments(parser: argparse.ArgumentParser):
 
     nlu_arguments = parser.add_argument_group("NLU Test arguments")
     add_test_nlu_arguments(nlu_arguments)
-
-    add_logging_options(parser)
 
 
 def add_test_core_arguments(

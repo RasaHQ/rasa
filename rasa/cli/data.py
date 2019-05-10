@@ -53,6 +53,7 @@ def add_subparser(
     split_subparsers = split_parser.add_subparsers()
     nlu_split_parser = split_subparsers.add_parser(
         "nlu",
+        parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Perform a split of your NLU data according to the specified "
         "percentages",

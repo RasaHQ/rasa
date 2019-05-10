@@ -2,7 +2,6 @@ import argparse
 
 from rasa.cli.arguments.default_arguments import (
     add_config_param,
-    add_logging_options,
     add_stories_param,
     add_nlu_data_param,
     add_out_param,
@@ -23,8 +22,6 @@ def set_train_arguments(parser: argparse.ArgumentParser):
 
     add_force_param(parser)
 
-    add_logging_options(parser)
-
 
 def set_train_core_arguments(parser: argparse.ArgumentParser):
     add_data_param(parser)
@@ -40,13 +37,11 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
 
     add_compare_params(parser)
 
-    add_logging_options(parser)
-
 
 def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
     add_out_param(parser)
-    add_logging_options(parser)
+
     add_nlu_data_param(parser)
 
 

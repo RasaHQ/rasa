@@ -13,11 +13,14 @@ def add_subparser(
 ):
     import rasa.cli.arguments.train as core_cli
 
-    train_parser = subparsers.add_parser("train", help="Train the Rasa bot")
+    train_parser = subparsers.add_parser(
+        "train", help="Train the Rasa bot", parents=parents
+    )
 
     train_subparsers = train_parser.add_subparsers()
     train_core_parser = train_subparsers.add_parser(
         "core",
+        parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Train Rasa Core",
