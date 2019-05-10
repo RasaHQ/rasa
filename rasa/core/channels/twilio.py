@@ -24,30 +24,32 @@ class TwilioOutput(Client, OutputChannel):
         self.send_retry = 0
         self.max_retry = 5
 
-    async def send_text_message(self, recipient_id, text):
+    async def send_text_message(self, recipient_id, text, **kwargs):
         """Sends text message"""
 
-        kwargs = {"to": recipient_id, "from_": self.twilio_number}
+        message_data = {"to": recipient_id, "from_": self.twilio_number}
         for message_part in text.split("\n\n"):
-            kwargs.update({"body": message_part})
-            await self._send_message(kwargs)
+            message_data.update({"body": message_part})
+            await self._send_message(message_data)
 
-    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
+    async def send_custom_json(
+        self, recipient_id, json_message: Dict[Text, Any], **kwargs
+    ):
         """Send custom json dict"""
 
-        kwargs.setdefault("to", recipient_id)
-        if not kwargs.get("media_url"):
-            kwargs.setdefault("body", "")
-        if not kwargs.get("messaging_service_sid"):
-            kwargs.setdefault("from", self.twilio_number)
+        json_message.setdefault("to", recipient_id)
+        if not json_message.get("media_url"):
+            json_message.setdefault("body", "")
+        if not json_message.get("messaging_service_sid"):
+            json_message.setdefault("from", self.twilio_number)
 
-        await self._send_message(kwargs)
+        await self._send_message(json_message)
 
-    async def _send_message(self, kwargs: Dict[Text, Any]):
+    async def _send_message(self, message_data: Dict[Text, Any]):
         message = None
         try:
             while not message and self.send_retry < self.max_retry:
-                message = self.messages.create(**kwargs)
+                message = self.messages.create(**message_data)
                 self.send_retry += 1
         except TwilioRestException as e:
             logger.error("Something went wrong " + repr(e.msg))

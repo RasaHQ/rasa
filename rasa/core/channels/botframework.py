@@ -103,45 +103,47 @@ class BotFramework(OutputChannel):
         }
         return data.update(message_data)
 
-    async def send_text_message(self, recipient_id, message):
-        for message_part in message.split("\n\n"):
+    async def send_text_message(self, recipient_id, text, **kwargs):
+        for message_part in text.split("\n\n"):
             text_message = {"text": message_part}
             message = self.prepare_message(recipient_id, text_message)
             await self.send(message)
 
-    async def send_image_url(self, recipient_id, image_url):
+    async def send_image_url(self, recipient_id, image, **kwargs):
         hero_content = {
             "contentType": "application/vnd.microsoft.card.hero",
-            "content": {"images": [{"url": image_url}]},
+            "content": {"images": [{"url": image}]},
         }
 
         image_message = {"attachments": [hero_content]}
         message = self.prepare_message(recipient_id, image_message)
         await self.send(message)
 
-    async def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
+    async def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
         hero_content = {
             "contentType": "application/vnd.microsoft.card.hero",
-            "content": {"subtitle": message, "buttons": buttons},
+            "content": {"subtitle": text, "buttons": buttons},
         }
 
         buttons_message = {"attachments": [hero_content]}
         message = self.prepare_message(recipient_id, buttons_message)
         await self.send(message)
 
-    async def send_elements(self, recipient_id, elements):
+    async def send_elements(self, recipient_id, elements, **kwargs):
         message = self.prepare_message(recipient_id, elements[0])
         await self.send(message)
 
-    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
-        kwargs.setdefault("type", "message")
-        kwargs.setdefault("recipient", {}).setdefault("id", recipient_id)
-        kwargs.setdefault("from", self.bot)
-        kwargs.setdefault("channelData", {}).setdefault("notification", {}).setdefault(
-            "alert", "true"
-        )
-        kwargs.setdefault("text", "")
-        await self.send(kwargs)
+    async def send_custom_json(
+        self, recipient_id, json_message: Dict[Text, Any], **kwargs
+    ):
+        json_message.setdefault("type", "message")
+        json_message.setdefault("recipient", {}).setdefault("id", recipient_id)
+        json_message.setdefault("from", self.bot)
+        json_message.setdefault("channelData", {}).setdefault(
+            "notification", {}
+        ).setdefault("alert", "true")
+        json_message.setdefault("text", "")
+        await self.send(json_message)
 
 
 class BotFrameworkInput(InputChannel):

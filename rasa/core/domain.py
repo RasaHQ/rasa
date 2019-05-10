@@ -343,11 +343,6 @@ class Domain(object):
                         "template".format(template_key)
                     )
                 else:
-                    if "custom" in t and len(t) > 1:
-                        logger.warning(
-                            "All attributes other than '- custom: ' in template "
-                            "'{}' will be ignored".format(template_key)
-                        )
                     validated_variations.append(t)
 
             templates[template_key] = validated_variations

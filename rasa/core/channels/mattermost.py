@@ -26,14 +26,16 @@ class MattermostBot(MattermostAPI, OutputChannel):
         super(MattermostBot, self).__init__(url, team)
         super(MattermostBot, self).login(user, pw)
 
-    async def send_text_message(self, recipient_id, message):
-        for message_part in message.split("\n\n"):
+    async def send_text_message(self, recipient_id, text, **kwargs):
+        for message_part in text.split("\n\n"):
             self.post_channel(self.bot_channel, message_part)
 
-    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
-        kwargs.setdefault("channel_id", self.bot_channel)
-        kwargs.setdefault("message", "")
-        self.post("/posts", kwargs)
+    async def send_custom_json(
+        self, recipient_id, json_message: Dict[Text, Any], **kwargs
+    ):
+        json_message.setdefault("channel_id", self.bot_channel)
+        json_message.setdefault("message", "")
+        self.post("/posts", json_message)
 
 
 class MattermostInput(InputChannel):

@@ -161,41 +161,49 @@ class OutputChannel(object):
         """Send a message to the client."""
 
         if message.get("custom"):
-            return await self.send_custom_json(recipient_id, message.get("custom"))
+            return await self.send_custom_json(
+                recipient_id, message.pop("custom"), **message
+            )
 
         if message.get("quick_replies"):
             await self.send_quick_replies(
-                recipient_id, message.get("text"), message.get("quick_replies")
+                recipient_id,
+                message.pop("text"),
+                message.pop("quick_replies"),
+                **message
             )
 
-        elif message.get("buttons"):
+        if message.get("buttons"):
             await self.send_text_with_buttons(
-                recipient_id, message.get("text"), message.get("buttons")
+                recipient_id, message.pop("text"), message.pop("buttons"), **message
             )
-        elif message.get("text"):
-            await self.send_text_message(recipient_id, message.get("text"))
+
+        if message.get("text"):
+            await self.send_text_message(recipient_id, message.pop("text"), **message)
 
         # if there is an image we handle it separately as an attachment
         if message.get("image"):
-            await self.send_image_url(recipient_id, message.get("image"))
+            await self.send_image_url(recipient_id, message.pop("image"), **message)
 
         if message.get("attachment"):
-            await self.send_attachment(recipient_id, message.get("attachment"))
+            await self.send_attachment(
+                recipient_id, message.pop("attachment"), **message
+            )
 
         if message.get("elements"):
-            await self.send_elements(recipient_id, message.get("elements"))
+            await self.send_elements(recipient_id, message.pop("elements"), **message)
 
-    async def send_text_message(self, recipient_id: Text, message: Text) -> None:
+    async def send_text_message(self, recipient_id: Text, text: Text) -> None:
         """Send a message through this channel."""
 
         raise NotImplementedError(
             "Output channel needs to implement a send message for simple texts."
         )
 
-    async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
+    async def send_image_url(self, recipient_id: Text, image: Text) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        await self.send_text_message(recipient_id, "Image: {}".format(image_url))
+        await self.send_text_message(recipient_id, "Image: {}".format(image))
 
     async def send_attachment(self, recipient_id: Text, attachment: Text) -> None:
         """Sends an attachment. Default will just post as a string."""
@@ -205,7 +213,7 @@ class OutputChannel(object):
     async def send_text_with_buttons(
         self,
         recipient_id: Text,
-        message: Text,
+        text: Text,
         buttons: List[Dict[Text, Any]],
         **kwargs: Any
     ) -> None:
@@ -213,7 +221,7 @@ class OutputChannel(object):
 
         Default implementation will just post the buttons as a string."""
 
-        await self.send_text_message(recipient_id, message)
+        await self.send_text_message(recipient_id, text)
         for idx, button in enumerate(buttons):
             button_msg = button_to_string(button, idx)
             await self.send_text_message(recipient_id, button_msg)
@@ -221,15 +229,15 @@ class OutputChannel(object):
     async def send_quick_replies(
         self,
         recipient_id: Text,
-        message: Text,
-        buttons: List[Dict[Text, Any]],
+        text: Text,
+        quick_replies: List[Dict[Text, Any]],
         **kwargs: Any
     ) -> None:
         """Sends quick replies to the output.
 
         Default implementation will just send as buttons."""
 
-        await self.send_text_with_buttons(recipient_id, message, buttons, **kwargs)
+        await self.send_text_with_buttons(recipient_id, text, quick_replies, **kwargs)
 
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]]
@@ -247,13 +255,13 @@ class OutputChannel(object):
             )
 
     async def send_custom_json(
-        self, recipient_id: Text, custom: Dict[Text, Any]
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs
     ) -> None:
         """Sends json dict to the output channel.
 
         Default implementation will just post the json contents as a string."""
 
-        await self.send_text_message(recipient_id, json.dumps(custom))
+        await self.send_text_message(recipient_id, json.dumps(json_message))
 
 
 class CollectingOutputChannel(OutputChannel):
@@ -295,29 +303,31 @@ class CollectingOutputChannel(OutputChannel):
     async def _persist_message(self, message):
         self.messages.append(message)
 
-    async def send_text_message(self, recipient_id, message):
-        for message_part in message.split("\n\n"):
+    async def send_text_message(self, recipient_id, text, **kwargs):
+        for message_part in text.split("\n\n"):
             await self._persist_message(self._message(recipient_id, text=message_part))
 
-    async def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
+    async def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
         await self._persist_message(
-            self._message(recipient_id, text=message, buttons=buttons)
+            self._message(recipient_id, text=text, buttons=buttons)
         )
 
-    async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
+    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        await self._persist_message(self._message(recipient_id, image=image_url))
+        await self._persist_message(self._message(recipient_id, image=image))
 
-    async def send_attachment(self, recipient_id: Text, attachment: Text) -> None:
+    async def send_attachment(
+        self, recipient_id: Text, attachment: Text, **kwargs
+    ) -> None:
         """Sends an attachment. Default will just post as a string."""
 
         await self._persist_message(self._message(recipient_id, attachment=attachment))
 
     async def send_custom_json(
-        self, recipient_id: Text, custom: Dict[Text, Any]
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs
     ) -> None:
-        await self._persist_message(self._message(recipient_id, custom=custom))
+        await self._persist_message(self._message(recipient_id, custom=json_message))
 
 
 class QueueOutputChannel(CollectingOutputChannel):

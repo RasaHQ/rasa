@@ -11,7 +11,6 @@ from telegram import (
 
 from typing import Dict, Text, Any
 
-from rasa.core import constants
 from rasa.core.channels import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, USER_INTENT_RESTART
@@ -29,12 +28,14 @@ class TelegramOutput(Bot, OutputChannel):
     def __init__(self, access_token):
         super(TelegramOutput, self).__init__(access_token)
 
-    async def send_text_message(self, recipient_id, message):
-        for message_part in message.split("\n\n"):
+    async def send_text_message(self, recipient_id, text, **kwargs):
+        for message_part in text.split("\n\n"):
             self.send_message(recipient_id, message_part)
 
-    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
-        recipient_id = kwargs.pop("chat_id", recipient_id)
+    async def send_custom_json(
+        self, recipient_id, json_message: Dict[Text, Any], **kwargs
+    ):
+        recipient_id = json_message.pop("chat_id", recipient_id)
 
         send_functions = {
             ("text",): "send_message",
@@ -64,13 +65,13 @@ class TelegramOutput(Bot, OutputChannel):
         }
 
         for params in send_functions.keys():
-            if all(kwargs.get(p) is not None for p in params):
-                args = [kwargs.pop(p) for p in params]
+            if all(json_message.get(p) is not None for p in params):
+                args = [json_message.pop(p) for p in params]
                 api_call = getattr(self, send_functions[params])
-                api_call(recipient_id, *args, **kwargs)
+                api_call(recipient_id, *args, **json_message)
 
-    async def send_image_url(self, recipient_id, image_url):
-        self.send_photo(recipient_id, image_url)
+    async def send_image_url(self, recipient_id, image, **kwargs):
+        self.send_photo(recipient_id, image)
 
     async def send_text_with_buttons(
         self, recipient_id, text, buttons, button_type="inline", **kwargs
