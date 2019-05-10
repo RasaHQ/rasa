@@ -54,7 +54,7 @@ class TelegramOutput(Bot, OutputChannel):
 
         :button_type vertical: vertical inline keyboard
 
-        :button_type custom: custom keyboard
+        :button_type reply: reply keyboard
         """
         if button_type == "inline":
             button_list = [
@@ -72,7 +72,7 @@ class TelegramOutput(Bot, OutputChannel):
             ]
             reply_markup = InlineKeyboardMarkup(button_list)
 
-        elif button_type == "custom":
+        elif button_type == "reply":
             button_list = []
             for bttn in buttons:
                 if isinstance(bttn, list):

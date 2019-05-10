@@ -307,9 +307,10 @@ class BotUttered(Event):
 
     type_name = "bot"
 
-    def __init__(self, text=None, data=None, timestamp=None):
+    def __init__(self, text=None, data={}, kwargs={}, timestamp=None):
         self.text = text
-        self.data = data or {}
+        self.data = data
+        self.kwargs = kwargs
         super(BotUttered, self).__init__(timestamp)
 
     def __members(self):
@@ -347,13 +348,8 @@ class BotUttered(Event):
 
         m = self.data.copy()
         m["text"] = self.text
+        m.update(self.kwargs.copy())
 
-        if m.get("image") == m.get("attachment"):
-            # we need this as there is an oddity we introduced a while ago where
-            # we automatically set the attachment to the image. to not break
-            # any persisted events we kept that, but we need to make sure that
-            # the message contains the image only once
-            m["attachment"] = None
         return m
 
     @staticmethod

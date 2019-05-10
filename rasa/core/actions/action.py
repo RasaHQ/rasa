@@ -126,16 +126,18 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
     """Create BotUttered event from message."""
 
     bot_message = BotUttered(
-        text=message.get("text"),
+        text=message.pop("text"),
         data={
-            "elements": message.get("elements"),
-            "quick_replies": message.get("quick_replies"),
-            "buttons": message.get("buttons"),
-            "attachment": message.get("attachement") or message.get("image"),
-            "image": message.get("image"),
-            "custom": message.get("custom"),
+            "elements": message.pop("elements", None),
+            "quick_replies": message.pop("quick_replies", None),
+            "buttons": message.pop("buttons", None),
+            "image": message.pop("image", None),
+            "attachment": message.pop("attachment", None) or message.pop("image", None),
+            "custom": message.pop("custom", None),
         },
+        kwargs=message,
     )
+
     logger.debug("Bot utterance '{}'".format(bot_message))
     return bot_message
 
