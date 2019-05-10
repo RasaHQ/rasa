@@ -66,7 +66,7 @@
   <div class="nav-container">
     <ul>
       <li>
-    	<a href="/unmerged-docs/html" class="brand-link">
+    	<a href="/docs" class="brand-link">
     	    <h1 class="brand">
     	        <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
     	    </h1>
@@ -75,15 +75,15 @@
       </li>
       	
           
-      	    <li><a href=/unmerged-docs/html/getting-started/index.html>Getting Started</a></li>
+      	    <li><a href=/docs/getting-started/>Getting Started</a></li>
       	  
       	
           
-      	    <li class="active"><a href=/unmerged-docs/html/rasa/index.html>Rasa</a></li>
+      	    <li class="active"><a href=/docs/rasa/>Rasa</a></li>
       	  
       	
           
-      	    <li><a href=/unmerged-docs/html/rasa-x/index.html>Rasa X</a></li>
+      	    <li><a href=/docs/rasa-x/>Rasa X</a></li>
       	  
       	
     </ul>
@@ -212,7 +212,43 @@ An important thing to remember about AI assistants is that <strong>the user is n
 When a user tells you something like <cite>I just moved</cite>, they are being perfectly clear,
 even if your assistant is not sure how to help them.
 If the user goal is ambiguous to your assistant, ask for clarification.</p>
-<p>You can configure the <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> to ask your user to clarify,
+
+
+<div class="dialogue-conversations">
+  <div class="columns smtb tinycard">
+    
+      <div class="column">
+          <div class="dialogue-example">
+            
+              
+                <div class="chat-bubble user">
+                  <p>I just moved</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>I'm not sure I understood you correctly. Do you mean ...</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble quickreply">
+                  <p>I want to cancel my contract</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble quickreply">
+                  <p>I want to update my personal details</p>
+                </div>
+              
+            
+          </div>
+      </div>
+    
+  </div>
+</div><p>You can configure the <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> to ask your user to clarify,
 and present them with quick replies for the most likely intents.
 To do this, configure the policy as in this example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
@@ -231,7 +267,55 @@ To do this, configure the policy as in this example:</p>
 <p>AI assistants are always limited to helping users with a specific set of
 tasks, and should be able to explain to a user what they can do.
 That includes coherently responding to requests that are out of scope.</p>
-<p>When to explain the limitations of your assistant is specific to your application,
+
+
+<div class="dialogue-conversations">
+  <div class="columns smtb tinycard">
+    
+      <div class="column">
+          <div class="dialogue-example">
+            
+              
+                <div class="chat-bubble user">
+                  <p>What can you do?</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>I can help you update your personal details, change your plan, and answer any questions you have about our products.</p>
+                </div>
+              
+            
+          </div>
+      </div>
+    
+      <div class="column">
+          <div class="dialogue-example">
+            
+              
+                <div class="chat-bubble user">
+                  <p>Can you get me a pizza?</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>I'm afraid I can't help with that.</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>I can help you update your personal details, change your plan, and answer any questions you have about our products.</p>
+                </div>
+              
+            
+          </div>
+      </div>
+    
+  </div>
+</div><p>When to explain the limitations of your assistant is specific to your application,
 but these example stories show some common cases:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span>## user asks whats possible
 * ask_whatspossible
@@ -249,7 +333,49 @@ but these example stories show some common cases:</p>
 <p>Asking for feedback is one of the best tools you have to understand
 your users and determine whether you solved their problem!
 Storing this feedback is a powerful way to figure out how you can improve your assistant.</p>
-<p>Use a form to collect user feedback. To do this, define a custom form action
+
+
+<div class="dialogue-conversations">
+  <div class="columns smtb tinycard">
+    
+      <div class="column">
+          <div class="dialogue-example">
+            
+              
+                <div class="chat-bubble bot">
+                  <p>Was that helpful?</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble user">
+                  <p>no.</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>Thanks. Why wasnt I able to help?</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble quickreply">
+                  <p>you didn't understand me correctly</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble quickreply">
+                  <p>you understood me, but your answers weren't very helpful.</p>
+                </div>
+              
+            
+          </div>
+      </div>
+    
+  </div>
+</div><p>Use a form to collect user feedback. To do this, define a custom form action
 (see <span class="xref std std-ref">business-logic</span> for more details about forms).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_sdk.action</span> <span class="kn">import</span> <span class="n">FormAction</span>
 
@@ -292,7 +418,55 @@ There are multiple reasons why you might trigger a human handoff:</p>
 <li>the assistant is struggling to understand the user</li>
 <li>the assistant understands what the user wants, but a human is required to resolve the issue.</li>
 </ul>
-<p>The direct request to speak with a human can be handled using the mapping policy:</p>
+
+
+<div class="dialogue-conversations">
+  <div class="columns smtb tinycard">
+    
+      <div class="column">
+          <div class="dialogue-example">
+            
+              
+                <div class="chat-bubble user">
+                  <p>let me speak to a human</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>let me put you in touch with someone.</p>
+                </div>
+              
+            
+          </div>
+      </div>
+    
+      <div class="column">
+          <div class="dialogue-example">
+            
+              
+                <div class="chat-bubble user">
+                  <p>I want to cancel</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>I'm afraid I can't help you with that.</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>let me put you in touch with someone.</p>
+                </div>
+              
+            
+          </div>
+      </div>
+    
+  </div>
+</div><p>The direct request to speak with a human can be handled using the mapping policy:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">request_human</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="s">&quot;triggers&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;action_human_handoff&quot;</span><span class="p p-Indicator">}</span>
 </pre></div>
