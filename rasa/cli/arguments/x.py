@@ -6,7 +6,7 @@ from rasa.cli.arguments.run import add_run_arguments
 
 def set_x_arguments(shell_parser: argparse.ArgumentParser):
     add_run_arguments(shell_parser)
-    add_model_param(shell_parser)
+    add_model_param(shell_parser, add_positional_arg=False)
 
     shell_parser.add_argument(
         "--no-prompt",

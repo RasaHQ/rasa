@@ -15,15 +15,17 @@ def add_model_param(
     model_name: Text = "Rasa",
     add_positional_arg: bool = True,
 ):
-    defaults = {
-        "type": str,
-        "help": "Path to a trained {} model. If a directory "
-        "is specified, it will use the latest model "
-        "in this directory.".format(model_name),
-    }
-    parser.add_argument("-m", "--model", default=DEFAULT_MODELS_PATH, **defaults)
+    help_text = (
+        "Path to a trained {} model. If a directory is specified, it will "
+        "use the latest model in this directory.".format(model_name)
+    )
+    parser.add_argument(
+        "-m", "--model", type=str, default=DEFAULT_MODELS_PATH, help=help_text
+    )
     if add_positional_arg:
-        parser.add_argument("model-as-positional-argument", nargs="?", **defaults)
+        parser.add_argument(
+            "model-as-positional-argument", nargs="?", type=str, help=help_text
+        )
 
 
 def add_stories_param(
