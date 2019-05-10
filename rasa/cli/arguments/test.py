@@ -13,7 +13,7 @@ from rasa.cli.arguments.default_arguments import (
 from rasa.model import get_latest_model
 
 
-def set_test_args(parser):
+def set_test_arguments(parser):
     add_model_param(parser, add_positional_arg=False)
 
     core_arguments = parser.add_argument_group("Core Test arguments")
@@ -27,7 +27,7 @@ def set_test_args(parser):
     add_logging_options(parser)
 
 
-def set_test_core_args(parser):
+def set_test_core_arguments(parser):
     core_arguments = parser.add_argument_group("Core Test arguments")
     add_test_core_arguments(core_arguments)
     add_stories_param(core_arguments, "test")
@@ -37,7 +37,7 @@ def set_test_core_args(parser):
     add_test_core_model_param(parser)
 
 
-def set_test_nlu_args(parser):
+def set_test_nlu_arguments(parser):
     add_test_nlu_model_param(parser)
 
     nlu_arguments = parser.add_argument_group("NLU Test arguments")

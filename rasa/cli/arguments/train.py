@@ -11,7 +11,7 @@ from rasa.cli.arguments.default_arguments import (
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
 
-def set_train_args(parser):
+def set_train_arguments(parser):
     add_data_param(parser)
     add_config_param(parser)
     add_domain_param(parser, True)
@@ -26,7 +26,7 @@ def set_train_args(parser):
     add_logging_options(parser)
 
 
-def set_train_core_args(parser):
+def set_train_core_arguments(parser):
     add_data_param(parser)
     add_stories_param(parser)
     add_domain_param(parser, True)
@@ -43,7 +43,7 @@ def set_train_core_args(parser):
     add_logging_options(parser)
 
 
-def set_train_nlu_args(parser):
+def set_train_nlu_arguments(parser):
     add_config_param(parser)
     add_out_param(parser)
     add_logging_options(parser)

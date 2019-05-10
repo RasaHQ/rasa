@@ -36,15 +36,7 @@ def add_subparser(
     )
     show_stories_subparser.set_defaults(func=show_stories)
 
-    arguments.add_show_stories_arguments(show_stories_subparser)
-
-
-def add_core_visualization_params(parser: argparse.ArgumentParser):
-    from rasa.cli.arguments.visualization import add_visualization_arguments
-
-    add_visualization_arguments(parser)
-    add_domain_param(parser)
-    add_stories_param(parser)
+    arguments.set_show_stories_arguments(show_stories_subparser)
 
 
 def show_stories(args: argparse.Namespace):

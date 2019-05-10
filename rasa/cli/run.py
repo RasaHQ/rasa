@@ -3,7 +3,7 @@ import logging
 import os
 from typing import List
 
-from rasa.cli.arguments.default_arguments import add_model_param
+from rasa.cli.arguments import run as arguments
 from rasa.cli.utils import get_validated_path
 from rasa.constants import (
     DEFAULT_ACTIONS_PATH,
@@ -26,11 +26,9 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Start a Rasa server which loads a trained model.",
     )
-    add_run_arguments(run_parser)
     run_parser.set_defaults(func=run)
 
     run_subparsers = run_parser.add_subparsers()
-
     sdk_subparser = run_subparsers.add_parser(
         "actions",
         parents=parents,
@@ -38,29 +36,10 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Run the action server",
     )
-    _adk_sdk_arguments(sdk_subparser)
     sdk_subparser.set_defaults(func=run_actions)
 
-
-def add_run_arguments(parser: argparse.ArgumentParser):
-    from rasa.cli.arguments.run import add_run_arguments
-    from rasa.cli.arguments.default_arguments import add_logging_options
-
-    add_run_arguments(parser)
-    add_model_param(parser)
-    add_logging_options(parser)
-
-
-def _adk_sdk_arguments(parser: argparse.ArgumentParser):
-    import rasa_core_sdk.cli.arguments as sdk
-
-    sdk.add_endpoint_arguments(parser)
-    parser.add_argument(
-        "--actions",
-        type=str,
-        default="actions",
-        help="name of action package to be loaded",
-    )
+    arguments.set_run_arguments(run_parser)
+    arguments.set_run_action_arguments(sdk_subparser)
 
 
 def run_actions(args: argparse.Namespace):

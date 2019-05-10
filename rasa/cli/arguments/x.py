@@ -2,7 +2,7 @@ from rasa.cli.arguments.default_arguments import add_logging_options, add_model_
 from rasa.cli.arguments.run import add_run_arguments
 
 
-def add_x_arguments(shell_parser):
+def set_x_arguments(shell_parser):
     add_run_arguments(shell_parser)
     add_model_param(shell_parser)
     add_logging_options(shell_parser)

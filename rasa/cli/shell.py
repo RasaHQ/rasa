@@ -36,8 +36,8 @@ def add_subparser(
     )
     shell_nlu_subparser.set_defaults(func=shell_nlu)
 
-    arguments.add_shell_arguments(shell_parser)
-    arguments.add_shell_nlu_arguments(shell_nlu_subparser)
+    arguments.set_shell_arguments(shell_parser)
+    arguments.set_shell_nlu_arguments(shell_nlu_subparser)
 
 
 def shell_nlu(args: argparse.Namespace):

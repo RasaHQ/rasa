@@ -7,7 +7,7 @@ from rasa.cli.arguments.default_arguments import (
 )
 
 
-def add_show_stories_arguments(parser: argparse.ArgumentParser):
+def set_show_stories_arguments(parser: argparse.ArgumentParser):
     add_domain_param(parser)
     add_stories_param(parser)
     add_config_param(parser)

@@ -34,9 +34,9 @@ def add_subparser(
 
     train_parser.set_defaults(func=train)
 
-    arguments.train.set_train_args(train_parser)
-    arguments.train.set_train_core_args(train_core_parser)
-    arguments.train.set_train_nlu_args(train_nlu_parser)
+    arguments.train.set_train_arguments(train_parser)
+    arguments.train.set_train_core_arguments(train_core_parser)
+    arguments.train.set_train_nlu_arguments(train_nlu_parser)
 
 
 def train(args: argparse.Namespace) -> Optional[Text]:

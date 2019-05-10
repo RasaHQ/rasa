@@ -3,7 +3,7 @@ import argparse
 from rasa.cli.arguments.default_arguments import add_nlu_data_param
 
 
-def add_convert_arguments(parser):
+def set_convert_arguments(parser):
     parser.add_argument(
         "-d", "--data_file", required=True, help="file or dir containing training data"
     )
@@ -27,7 +27,7 @@ def add_convert_arguments(parser):
     return parser
 
 
-def add_split_arguments(parser: argparse.ArgumentParser) -> None:
+def set_split_arguments(parser: argparse.ArgumentParser) -> None:
     add_nlu_data_param(parser)
 
     parser.add_argument(

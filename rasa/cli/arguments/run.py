@@ -1,4 +1,24 @@
+from rasa.cli.arguments.default_arguments import add_model_param, add_logging_options
 from rasa.core import constants
+
+
+def set_run_arguments(parser):
+    add_run_arguments(parser)
+    add_model_param(parser)
+    add_logging_options(parser)
+
+
+def set_run_action_arguments(parser):
+    import rasa_core_sdk.cli.arguments as sdk
+
+    sdk.add_endpoint_arguments(parser)
+
+    parser.add_argument(
+        "--actions",
+        type=str,
+        default="actions",
+        help="name of action package to be loaded",
+    )
 
 
 def add_run_arguments(parser):

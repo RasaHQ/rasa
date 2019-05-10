@@ -45,9 +45,9 @@ def add_subparser(
         help="Test Rasa NLU",
     )
 
-    arguments.set_test_args(test_parser)
-    arguments.set_test_core_args(test_core_parser)
-    arguments.set_test_nlu_args(test_nlu_parser)
+    arguments.set_test_arguments(test_parser)
+    arguments.set_test_core_arguments(test_core_parser)
+    arguments.set_test_nlu_arguments(test_nlu_parser)
 
     test_core_parser.set_defaults(func=test_core)
     test_nlu_parser.set_defaults(func=test_nlu)

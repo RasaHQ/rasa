@@ -40,7 +40,7 @@ def add_subparser(
     )
     convert_nlu_parser.set_defaults(func=convert.main)
 
-    arguments.add_convert_arguments(convert_nlu_parser)
+    arguments.set_convert_arguments(convert_nlu_parser)
 
     split_parser = data_subparsers.add_parser(
         "split",
@@ -58,7 +58,8 @@ def add_subparser(
         "percentages",
     )
     nlu_split_parser.set_defaults(func=split_nlu_data)
-    arguments.add_split_arguments(nlu_split_parser)
+
+    arguments.set_split_arguments(nlu_split_parser)
 
 
 def split_nlu_data(args):

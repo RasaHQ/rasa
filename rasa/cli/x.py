@@ -42,7 +42,7 @@ def add_subparser(
     shell_parser = subparsers.add_parser("x", **x_parser_args)
     shell_parser.set_defaults(func=rasa_x)
 
-    arguments.add_x_arguments(shell_parser)
+    arguments.set_x_arguments(shell_parser)
 
 
 def _event_service():

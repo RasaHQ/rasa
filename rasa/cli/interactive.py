@@ -34,8 +34,8 @@ def add_subparser(
     )
     interactive_core_parser.set_defaults(func=interactive_core)
 
-    arguments.set_interactive_args(interactive_parser)
-    arguments.set_interactive_core_args(interactive_core_parser)
+    arguments.set_interactive_arguments(interactive_parser)
+    arguments.set_interactive_core_arguments(interactive_core_parser)
 
 
 def interactive(args: argparse.Namespace):
