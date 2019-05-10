@@ -29,6 +29,8 @@ def add_subparser(
         help="Test a trained model",
     )
 
+    arguments.set_test_arguments(test_parser)
+
     test_subparsers = test_parser.add_subparsers()
     test_core_parser = test_subparsers.add_parser(
         "core",
@@ -45,7 +47,6 @@ def add_subparser(
         help="Test Rasa NLU",
     )
 
-    arguments.set_test_arguments(test_parser)
     arguments.set_test_core_arguments(test_core_parser)
     arguments.set_test_nlu_arguments(test_nlu_parser)
 

@@ -17,6 +17,8 @@ def add_subparser(
         "train", help="Train the Rasa bot", parents=parents
     )
 
+    arguments.train.set_train_arguments(train_parser)
+
     train_subparsers = train_parser.add_subparsers()
     train_core_parser = train_subparsers.add_parser(
         "core",
@@ -37,7 +39,6 @@ def add_subparser(
 
     train_parser.set_defaults(func=train)
 
-    arguments.train.set_train_arguments(train_parser)
     arguments.train.set_train_core_arguments(train_core_parser)
     arguments.train.set_train_nlu_arguments(train_nlu_parser)
 
