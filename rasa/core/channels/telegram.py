@@ -8,8 +8,7 @@ from telegram import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
-
-from typing import Dict, Text, Any
+from typing import Dict, Text, Any, List, Optional
 
 from rasa.core.channels import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
@@ -28,16 +27,23 @@ class TelegramOutput(Bot, OutputChannel):
     def __init__(self, access_token):
         super(TelegramOutput, self).__init__(access_token)
 
-    async def send_text_message(self, recipient_id, text, **kwargs):
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         for message_part in text.split("\n\n"):
             self.send_message(recipient_id, message_part)
 
-    async def send_image_url(self, recipient_id, image, **kwargs):
+    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
         self.send_photo(recipient_id, image)
 
     async def send_text_with_buttons(
-        self, recipient_id, text, buttons, button_type="inline", **kwargs
-    ):
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        button_type: Optional[Text] = "inline",
+        **kwargs: Any
+    ) -> None:
         """Sends a message with keyboard.
 
         For more information: https://core.telegram.org/bots#keyboards
@@ -84,8 +90,8 @@ class TelegramOutput(Bot, OutputChannel):
         self.send_message(recipient_id, text, reply_markup=reply_markup)
 
     async def send_custom_json(
-        self, recipient_id, json_message: Dict[Text, Any], **kwargs
-    ):
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
         recipient_id = json_message.pop("chat_id", recipient_id)
 
         send_functions = {

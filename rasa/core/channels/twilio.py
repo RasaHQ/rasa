@@ -40,7 +40,9 @@ class TwilioOutput(Client, OutputChannel):
 
         return message
 
-    async def send_text_message(self, recipient_id, text, **kwargs):
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         """Sends text message"""
 
         message_data = {"to": recipient_id, "from_": self.twilio_number}
@@ -49,8 +51,8 @@ class TwilioOutput(Client, OutputChannel):
             await self._send_message(message_data)
 
     async def send_custom_json(
-        self, recipient_id, json_message: Dict[Text, Any], **kwargs
-    ):
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
         """Send custom json dict"""
 
         json_message.setdefault("to", recipient_id)

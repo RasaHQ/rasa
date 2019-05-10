@@ -1,6 +1,6 @@
-import re
 import json
 import logging
+import re
 from sanic import Blueprint, response
 from sanic.request import Request
 from slackclient import SlackClient
@@ -40,14 +40,18 @@ class SlackBot(SlackClient, OutputChannel):
     def _get_text_from_slack_buttons(buttons):
         return "".join([b.get("title", "") for b in buttons])
 
-    async def send_text_message(self, recipient_id, text, **kwargs):
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         recipient = self.slack_channel or recipient_id
         for message_part in text.split("\n\n"):
             super(SlackBot, self).api_call(
                 "chat.postMessage", channel=recipient, as_user=True, text=message_part
             )
 
-    async def send_image_url(self, recipient_id, image, text="", **kwargs):
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, text: Optional[Text] = "", **kwargs
+    ) -> None:
         image_attachment = [{"image_url": image, "text": text}]
         recipient = self.slack_channel or recipient_id
         return super(SlackBot, self).api_call(
@@ -57,7 +61,13 @@ class SlackBot(SlackClient, OutputChannel):
             attachments=image_attachment,
         )
 
-    async def send_attachment(self, recipient_id, attachment, text="", **kwargs):
+    async def send_attachment(
+        self,
+        recipient_id: Text,
+        attachment: Text,
+        text: Optional[Text] = "",
+        **kwargs: Any
+    ) -> None:
         recipient = self.slack_channel or recipient_id
         return super(SlackBot, self).api_call(
             "chat.postMessage",
@@ -67,7 +77,13 @@ class SlackBot(SlackClient, OutputChannel):
             attachments=attachment,
         )
 
-    async def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
+    async def send_text_with_buttons(
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        **kwargs: Any
+    ) -> None:
         recipient = self.slack_channel or recipient_id
 
         if len(buttons) > 5:
@@ -100,8 +116,8 @@ class SlackBot(SlackClient, OutputChannel):
         )
 
     async def send_custom_json(
-        self, recipient_id, json_message: Dict[Text, Any], **kwargs
-    ):
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
         json_message.setdefault("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
         return super(SlackBot, self).api_call("chat.postMessage", **json_message)

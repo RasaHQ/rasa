@@ -1,6 +1,6 @@
 import logging
 from sanic import Blueprint, response
-from typing import Text, Dict, Any
+from typing import Text, Dict, Any, List, Iterable
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -29,25 +29,35 @@ class RocketChatBot(OutputChannel):
             for b in buttons
         ]
 
-    async def send_text_message(self, recipient_id, text, **kwargs):
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         """Send message to output channel"""
 
         for message_part in text.split("\n\n"):
             self.rocket.chat_post_message(message_part, room_id=recipient_id)
 
-    async def send_image_url(self, recipient_id, image, **kwargs):
+    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
         image_attachment = [{"image_url": image, "collapsed": False}]
 
         return self.rocket.chat_post_message(
             None, room_id=recipient_id, attachments=image_attachment
         )
 
-    async def send_attachment(self, recipient_id, attachment, **kwargs):
+    async def send_attachment(
+        self, recipient_id: Text, attachment: Text, **kwargs: Any
+    ) -> None:
         return self.rocket.chat_post_message(
             None, room_id=recipient_id, attachments=[attachment]
         )
 
-    async def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
+    async def send_text_with_buttons(
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        **kwargs: Any
+    ) -> None:
         # implementation is based on
         # https://github.com/RocketChat/Rocket.Chat/pull/11473
         # should work in rocket chat >= 0.69.0
@@ -57,14 +67,16 @@ class RocketChatBot(OutputChannel):
             text, room_id=recipient_id, attachments=button_attachment
         )
 
-    async def send_elements(self, recipient_id, elements, **kwargs):
+    async def send_elements(
+        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
+    ) -> None:
         return self.rocket.chat_post_message(
             None, room_id=recipient_id, attachments=elements
         )
 
     async def send_custom_json(
-        self, recipient_id, json_message: Dict[Text, Any], **kwargs
-    ):
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
         text = json_message.pop("text")
 
         if json_message.get("channel"):

@@ -2,7 +2,7 @@ import logging
 import uuid
 from sanic import Blueprint, response
 from socketio import AsyncServer
-from typing import Optional, Text, Any, List, Dict
+from typing import Optional, Text, Any, List, Dict, Iterable
 
 from rasa.core.channels import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
@@ -37,7 +37,9 @@ class SocketIOOutput(OutputChannel):
 
         await self.sio.emit(self.bot_message_evt, response, room=socket_id)
 
-    async def send_text_message(self, recipient_id: Text, text: Text, **kwargs) -> None:
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         """Send a message through this channel."""
 
         await self._send_message(self.sid, {"text": text})
@@ -71,7 +73,7 @@ class SocketIOOutput(OutputChannel):
         await self._send_message(self.sid, message)
 
     async def send_elements(
-        self, recipient_id: Text, elements: List[Dict[Text, Any]], **kwargs
+        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output."""
 

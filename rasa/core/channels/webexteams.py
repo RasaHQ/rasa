@@ -20,18 +20,20 @@ class WebexTeamsBot(OutputChannel):
         self.room = room
         self.api = WebexTeamsAPI(access_token)
 
-    async def send_text_message(self, recipient_id, text, **kwargs):
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         recipient = self.room or recipient_id
         for message_part in text.split("\n\n"):
             self.api.messages.create(roomId=recipient, text=message_part)
 
-    async def send_image_url(self, recipient_id, image, **kwargs):
+    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
         recipient = self.room or recipient_id
         return self.api.messages.create(roomId=recipient, files=[image])
 
     async def send_custom_json(
-        self, recipient_id, json_message: Dict[Text, Any], **kwargs
-    ):
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
         json_message.setdefault("roomID", recipient_id)
         return self.api.messages.create(**json_message)
 

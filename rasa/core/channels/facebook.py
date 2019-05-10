@@ -1,12 +1,11 @@
 import hashlib
 import hmac
 import logging
-from typing import Text, List, Dict, Any, Callable, Awaitable
-
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from sanic import Blueprint, response
+from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -121,7 +120,9 @@ class MessengerBot(OutputChannel):
             element.to_dict(), self._recipient_json(recipient_id), "RESPONSE"
         )
 
-    async def send_text_message(self, recipient_id: Text, text: Text, **kwargs) -> None:
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         """Send a message through this channel."""
 
         for message_part in text.split("\n\n"):
@@ -181,7 +182,7 @@ class MessengerBot(OutputChannel):
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
     async def send_elements(
-        self, recipient_id: Text, elements: List[Dict[Text, Any]], **kwargs
+        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output."""
 
