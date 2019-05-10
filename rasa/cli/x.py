@@ -4,6 +4,7 @@ import importlib.util
 import logging
 import signal
 import sys
+import os
 from multiprocessing import get_context
 from typing import List, Text
 
@@ -20,6 +21,7 @@ from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_LOG_LEVEL,
+    ENV_LOG_LEVEL,
 )
 from rasa.utils.common import read_global_config_value, write_global_config_value
 
@@ -226,9 +228,11 @@ def generate_rasa_x_token(length=16):
 def rasa_x(args: argparse.Namespace):
     from rasa.cli.utils import print_success, print_error, signal_handler
     from rasa.core.utils import configure_file_logging
-    from rasa.utils.io import configure_colored_logging
 
     signal.signal(signal.SIGINT, signal_handler)
+
+    args.log_level = args.loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+    configure_file_logging(args.log_level, args.log_file)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
@@ -238,13 +242,6 @@ def rasa_x(args: argparse.Namespace):
     if not args.loglevel == logging.DEBUG:
         logging.getLogger().setLevel(logging.WARNING)
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
-        logging.getLogger("apscheduler").setLevel(logging.ERROR)
-        logging.getLogger("rasa").setLevel(logging.WARNING)
-        logging.getLogger("sanic.root").setLevel(logging.ERROR)
-
-    args.log_level = args.loglevel or DEFAULT_LOG_LEVEL
-    configure_colored_logging(args.log_level)
-    configure_file_logging(args.log_level, args.log_file)
 
     metrics = is_metrics_collection_enabled(args)
 
