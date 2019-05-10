@@ -1,7 +1,6 @@
 ## Setup py requirements
 cloudpickle==0.6.1
 boto3==1.9.96
-requests==2.20.0
 matplotlib==2.2.4
 simplejson==3.13.2
 attrs==18.1.0
