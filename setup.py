@@ -32,7 +32,6 @@ tests_requires = [
 install_requires = [
     "cloudpickle~=0.6.1",
     "boto3~=1.9",
-    "requests~=2.20",
     "matplotlib~=2.2",
     "simplejson~=3.13",
     "attrs>=18",
