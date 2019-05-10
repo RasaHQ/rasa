@@ -6,7 +6,7 @@ import os
 
 from rasa.constants import DEFAULT_RESULTS_PATH
 from rasa.model import get_model, get_model_subdirectories, unpack_model
-from rasa.cli.utils import minimal_kwargs
+from rasa.cli.utils import minimal_kwargs, print_error
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +77,8 @@ def test_core(
             rasa.core.test(stories, _agent, out_directory=output, **kwargs)
         )
     else:
-        logger.error(
-            "Not able to test. Make sure both models, core and " "nlu, are available."
+        print_error(
+            "Not able to test. Make sure both models " "- core and nlu - are available."
         )
 
 
@@ -86,11 +86,22 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
     from rasa.nlu.test import run_evaluation
 
     unpacked_model = get_model(model)
+
+    if unpacked_model is None:
+        print_error(
+            "Could not find any model. Use 'rasa train nlu' to train an NLU model."
+        )
+        return
+
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
         kwargs = minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
         run_evaluation(nlu_data, nlu_model, **kwargs)
+    else:
+        print_error(
+            "Could not find any model. Use 'rasa train nlu' to train an NLU model."
+        )
 
 
 def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int = 3):
