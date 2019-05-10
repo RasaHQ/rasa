@@ -1,5 +1,7 @@
 import argparse
-from typing import List
+from typing import List, Text
+
+from rasa.nlu.utils import list_files
 
 from rasa import data
 from rasa.cli.arguments import data as arguments
@@ -68,8 +70,26 @@ def split_nlu_data(args):
 
     data_path = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = data.get_nlu_directory(data_path)
+
     nlu_data = load_data(data_path)
+    fformat = get_file_format(data_path)
+
     train, test = nlu_data.train_test_split(args.training_fraction)
 
-    train.persist(args.out, filename="training_data.json")
-    test.persist(args.out, filename="test_data.json")
+    train.persist(args.out, filename="training_data.{}".format(fformat))
+    test.persist(args.out, filename="test_data.{}".format(fformat))
+
+
+def get_file_format(resource_name: Text) -> Text:
+    files = list_files(resource_name)
+
+    file_formats = list(map(lambda f: "json" if f.endswith("json") else "md", files))
+
+    if not file_formats:
+        return "json"
+
+    fformat = file_formats[0]
+    if all(f == fformat for f in file_formats):
+        return fformat
+
+    return "json"
