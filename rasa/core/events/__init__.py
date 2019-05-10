@@ -348,7 +348,7 @@ class BotUttered(Event):
 
         m = self.data.copy()
         m["text"] = self.text
-        m.update(self.kwargs.copy())
+        m.update(self.metadata.copy())
 
         return m
 
