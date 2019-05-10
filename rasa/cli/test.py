@@ -1,9 +1,9 @@
 import argparse
 import logging
-from typing import List, Union
+from typing import List
 
 from rasa import data
-from rasa.cli.arguments.default_arguments import add_stories_param, add_logging_options
+from rasa.cli.arguments import test as arguments
 from rasa.cli.utils import get_validated_path
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
@@ -12,7 +12,6 @@ from rasa.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
 )
-from rasa.model import get_latest_model
 from rasa.test import test_compare
 
 logger = logging.getLogger(__name__)
@@ -30,8 +29,6 @@ def add_subparser(
         help="Test a trained model",
     )
 
-    _add_test_subparser_arguments(test_parser)
-
     test_subparsers = test_parser.add_subparsers()
     test_core_parser = test_subparsers.add_parser(
         "core",
@@ -48,142 +45,13 @@ def add_subparser(
         help="Test Rasa NLU",
     )
 
-    for p in [test_parser, test_core_parser]:
-        core_arguments = p.add_argument_group("Core Test arguments")
-        _add_core_arguments(core_arguments)
-    _add_core_subparser_arguments(test_core_parser)
-
-    for p in [test_parser, test_nlu_parser]:
-        nlu_arguments = p.add_argument_group("NLU Test arguments")
-        _add_nlu_arguments(nlu_arguments)
-    _add_nlu_subparser_arguments(test_nlu_parser)
-
-    add_logging_options(test_parser)
-    add_logging_options(test_core_parser)
-    add_logging_options(test_nlu_parser)
+    arguments.set_test_args(test_parser)
+    arguments.set_test_core_args(test_core_parser)
+    arguments.set_test_nlu_args(test_nlu_parser)
 
     test_core_parser.set_defaults(func=test_core)
     test_nlu_parser.set_defaults(func=test_nlu)
     test_parser.set_defaults(func=test)
-
-
-# noinspection PyProtectedMember
-def _add_core_arguments(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
-    from rasa.cli.arguments.test import add_evaluation_arguments
-
-    add_evaluation_arguments(parser)
-    add_stories_param(parser, "test")
-
-    parser.add_argument(
-        "--url",
-        type=str,
-        help="If supplied, downloads a story file from a URL and "
-        "trains on it. Fetches the data by sending a GET request "
-        "to the supplied URL.",
-    )
-
-
-def _add_core_subparser_arguments(parser: argparse.ArgumentParser):
-    default_path = get_latest_model(DEFAULT_MODELS_PATH)
-    parser.add_argument(
-        "--model",
-        nargs="+",
-        default=[default_path],
-        help="Path to a pre-trained model. If it is a 'tar.gz' file that model file "
-        "will be used. If it is a directory, the latest model in that directory "
-        "will be used. If multiple 'tar.gz' files are provided, all those models "
-        "will be compared.",
-    )
-
-
-# noinspection PyProtectedMember
-def _add_nlu_arguments(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
-    parser.add_argument(
-        "-u",
-        "--nlu",
-        type=str,
-        default=DEFAULT_DATA_PATH,
-        help="file containing training/evaluation data",
-    )
-
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=str,
-        default=DEFAULT_CONFIG_PATH,
-        help="model configuration file (crossvalidation only)",
-    )
-
-    parser.add_argument(
-        "-f",
-        "--folds",
-        required=False,
-        default=10,
-        help="number of CV folds (crossvalidation only)",
-    )
-
-    parser.add_argument(
-        "--report",
-        required=False,
-        nargs="?",
-        const="reports",
-        default=False,
-        help="output path to save the intent/entity metrics report",
-    )
-
-    parser.add_argument(
-        "--successes",
-        required=False,
-        nargs="?",
-        const="successes.json",
-        default=False,
-        help="output path to save successful predictions",
-    )
-
-    parser.add_argument(
-        "--errors",
-        required=False,
-        default="errors.json",
-        help="output path to save model errors",
-    )
-
-    parser.add_argument(
-        "--histogram",
-        required=False,
-        default="hist.png",
-        help="output path for the confidence histogram",
-    )
-
-    parser.add_argument(
-        "--confmat",
-        required=False,
-        default="confmat.png",
-        help="output path for the confusion matrix plot",
-    )
-
-
-def _add_test_subparser_arguments(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "--model",
-        type=str,
-        default=DEFAULT_MODELS_PATH,
-        help="Path to a pre-trained model. If directory is given, the latest model "
-        "in that directory will be used.",
-    )
-
-
-def _add_nlu_subparser_arguments(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "--model",
-        type=str,
-        default=None,
-        help="Path to a pre-trained model. If none is given it will "
-        "perform crossvalidation.",
-    )
 
 
 def test_core(args: argparse.Namespace) -> None:

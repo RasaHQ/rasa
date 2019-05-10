@@ -1,10 +1,56 @@
-from rasa.cli.arguments import arguments
+import argparse
+from typing import Union
+
+from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CONFIG_PATH
+
+from rasa.cli.arguments.default_arguments import (
+    add_logging_options,
+    add_stories_param,
+    add_core_model_param,
+    add_model_param,
+    add_nlu_data_param,
+)
+from rasa.model import get_latest_model
 
 
-def add_evaluation_arguments(parser):
+def set_test_args(parser):
+    add_model_param(parser, add_positional_arg=False)
+
+    core_arguments = parser.add_argument_group("Core Test arguments")
+    add_test_core_arguments(core_arguments)
+    add_stories_param(core_arguments, "test")
+    add_url_param(core_arguments)
+
+    nlu_arguments = parser.add_argument_group("NLU Test arguments")
+    add_test_nlu_arguments(nlu_arguments)
+
+    add_logging_options(parser)
+
+
+def set_test_core_args(parser):
+    core_arguments = parser.add_argument_group("Core Test arguments")
+    add_test_core_arguments(core_arguments)
+    add_stories_param(core_arguments, "test")
+    add_url_param(core_arguments)
+
+    add_logging_options(parser)
+    add_test_core_model_param(parser)
+
+
+def set_test_nlu_args(parser):
+    add_test_nlu_model_param(parser)
+
+    nlu_arguments = parser.add_argument_group("NLU Test arguments")
+    add_test_nlu_arguments(nlu_arguments)
+
+    add_logging_options(parser)
+
+
+def add_test_core_arguments(parser):
     parser.add_argument(
-        "-m", "--max-stories", type=int, help="maximum number of stories to test on"
+        "--max-stories", type=int, help="maximum number of stories to test on"
     )
+    add_core_model_param(parser)
     parser.add_argument(
         "-u",
         "--nlu",
@@ -39,4 +85,91 @@ def add_evaluation_arguments(parser):
         "tests, e.g. on travis.",
     )
 
-    arguments.add_core_model_arg(parser)
+
+def add_test_nlu_arguments(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
+    add_nlu_data_param(parser)
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        default=DEFAULT_CONFIG_PATH,
+        help="model configuration file (crossvalidation only)",
+    )
+    parser.add_argument(
+        "-f",
+        "--folds",
+        required=False,
+        default=10,
+        help="number of CV folds (crossvalidation only)",
+    )
+    parser.add_argument(
+        "--report",
+        required=False,
+        nargs="?",
+        const="reports",
+        default=False,
+        help="output path to save the intent/entity metrics report",
+    )
+    parser.add_argument(
+        "--successes",
+        required=False,
+        nargs="?",
+        const="successes.json",
+        default=False,
+        help="output path to save successful predictions",
+    )
+    parser.add_argument(
+        "--errors",
+        required=False,
+        default="errors.json",
+        help="output path to save model errors",
+    )
+    parser.add_argument(
+        "--histogram",
+        required=False,
+        default="hist.png",
+        help="output path for the confidence histogram",
+    )
+    parser.add_argument(
+        "--confmat",
+        required=False,
+        default="confmat.png",
+        help="output path for the confusion matrix plot",
+    )
+
+
+def add_url_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
+    parser.add_argument(
+        "--url",
+        type=str,
+        help="If supplied, downloads a story file from a URL and "
+        "trains on it. Fetches the data by sending a GET request "
+        "to the supplied URL.",
+    )
+
+
+def add_test_nlu_model_param(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "-m" "--model",
+        type=str,
+        default=None,
+        help="Path to a trained Rasa model. If a directory "
+        "is specified, it will use the latest model "
+        "in this directory. If none is given it will "
+        "perform crossvalidation.",
+    )
+
+
+def add_test_core_model_param(parser: argparse.ArgumentParser):
+    default_path = get_latest_model(DEFAULT_MODELS_PATH)
+    parser.add_argument(
+        "-m" "--model",
+        nargs="+",
+        default=[default_path],
+        help="Path to a pre-trained model. If it is a 'tar.gz' file that model file "
+        "will be used. If it is a directory, the latest model in that directory "
+        "will be used. If multiple 'tar.gz' files are provided, all those models "
+        "will be compared.",
+    )

@@ -10,7 +10,9 @@ from rasa.constants import (
 )
 
 
-def add_model_param(parser: argparse.ArgumentParser, model_name: Text = "Rasa") -> None:
+def add_model_param(
+    parser: argparse.ArgumentParser, model_name: Text = "Rasa", add_positional_arg=True
+) -> None:
     defaults = {
         "type": str,
         "help": "Path to a trained {} model. If a directory "
@@ -18,7 +20,8 @@ def add_model_param(parser: argparse.ArgumentParser, model_name: Text = "Rasa") 
         "in this directory.".format(model_name),
     }
     parser.add_argument("-m", "--model", default=DEFAULT_MODELS_PATH, **defaults)
-    parser.add_argument("model-as-positional-argument", nargs="?", **defaults)
+    if add_positional_arg:
+        parser.add_argument("model-as-positional-argument", nargs="?", **defaults)
 
 
 def add_stories_param(
