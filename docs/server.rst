@@ -215,14 +215,3 @@ please see :ref:`brokers`.
 
 
 .. _http_api:
-
-Endpoints
----------
-
-Documentation of the server API as
-:download:`OpenAPI Spec <_static/spec/rasa.yml>`.
-
-.. apidoc::
-   :path: ../_static/spec/rasa.yml
-
-.. include:: feedback.inc
