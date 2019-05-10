@@ -1,405 +1,404 @@
 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Language Understanding with Rasa NLU &mdash; Rasa NLU 0.12.3 documentation</title>
-  
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Build contextual chatbots and AI assistants with Rasa</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="_static/button.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="#" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex/" />
+    <link rel="search" title="Search" href="search/" />
+    <link rel="next" title="Installation" href="installation/" />
 
-  
-  
-  
-  
-
-  
-
-  
-  
-    
-
-  
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
-  
-    <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Rasa NLU 0.12.3 documentation" href="#"/>
-        <link rel="next" title="Installation" href="installation.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
-</head>
-
-<body class="wy-body-for-nav" role="document">
-
+  <!-- Google Tag Manager -->
+  <script type="application/javascript">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MMHSZCS');</script>
+  <!-- End Google Tag Manager -->
    
-  <div class="wy-grid-for-nav">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+  <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
+  <meta property="og:title" content="Build contextual chatbots and AI assistants with Rasa" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
+  <meta property="og:url" content="https://rasa.com/docs/rasa/index" />
+  
+    <meta name="description" content="Learn more about open-source natural language processing library Rasa NLU
+for intent classification and entity extraction in on premise chatbots." />
+    <meta itemprop="description" content="Learn more about open-source natural language processing library Rasa NLU
+for intent classification and entity extraction in on premise chatbots.">
+    <meta name="twitter:description" content="Learn more about open-source natural language processing library Rasa NLU
+for intent classification and entity extraction in on premise chatbots." />
+    <meta property="og:description" content="Learn more about open-source natural language processing library Rasa NLU
+for intent classification and entity extraction in on premise chatbots." />
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Rasa_HQ">
+  <meta name="twitter:title" content="Build contextual chatbots and AI assistants with Rasa">
+  <meta name="twitter:creator" content="@Rasa_HQ">
+  <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
 
-    
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
-
-          
-            <a href="#" class="icon icon-home"> Rasa NLU
-          
-
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                0.12
-              </div>
-            
-          
-
-          
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-          
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
-              <p class="caption"><span class="caption-text">Getting Started</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
-</ul>
-<p class="caption"><span class="caption-text">User Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
-<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
-<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
-<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
-</ul>
-<p class="caption"><span class="caption-text">Resources</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
-</ul>
-<p class="caption"><span class="caption-text">Developer Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
-</ul>
-
-            
-          
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">Rasa NLU</a>
-        
-      </nav>
+  <link rel="stylesheet" href="_static/xq-light.css" type="text/css" />
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
+  
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css" />
 
 
-      
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          
+  </head><body>
 
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
-  <ul class="wy-breadcrumbs">
-    
-      <li><a href="#">Docs</a> &raquo;</li>
-        
-      <li>Language Understanding with Rasa NLU</li>
-    
-    
-      <li class="wy-breadcrumbs-aside">
-        
-            
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
-          
-        
+<div class="nav-top">
+  <div class="nav-container">
+    <ul>
+      <li>
+    	<a href="/unmerged-docs/html" class="brand-link">
+    	    <h1 class="brand">
+    	        <img src="_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
+    	    </h1>
+    	    <span class="logo extension">docs</span>
+    	</a>
       </li>
-    
-  </ul>
+      	
+          
+      	    <li><a href=/unmerged-docs/html/getting-started/index.html>Getting Started</a></li>
+      	  
+      	
+          
+      	    <li class="active"><a href=/unmerged-docs/html/rasa/index.html>Rasa</a></li>
+      	  
+      	
+          
+      	    <li><a href=/unmerged-docs/html/rasa-x/index.html>Rasa X</a></li>
+      	  
+      	
+    </ul>
+    <ul class="nav">
+      <input type="text" class="search" placeholder="Search">
+      <li>
+        <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost btn-small"> <i class="fab fa-github"></i>GitHub</button></a>
+      </li>
 
-  
-  <hr/>
-</div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-            
-  
+      <li>
+        <a href="https://forum.rasa.com" target="_blank"><button class="button btn-small">Ask the Community</button></a>
+      </li>
 
-
-
-
-
-<div class="section" id="language-understanding-with-rasa-nlu">
-<h1>Language Understanding with Rasa NLU<a class="headerlink" href="#language-understanding-with-rasa-nlu" title="Permalink to this headline">¶</a></h1>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">This is the documentation for version 0.12.3 of Rasa NLU. Make sure you select
-the appropriate version of the documentation for your local installation!</p>
-</div>
-<p>Rasa NLU is an open-source tool for intent classification and entity extraction. For example, taking a sentence like</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">&quot;I am looking for a Mexican restaurant in the center of town&quot;</span>
-</pre></div>
-</div>
-<p>and returning structured data like</p>
-<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;search_restaurant&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;cuisine&quot;</span> <span class="p">:</span> <span class="s2">&quot;Mexican&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;location&quot;</span> <span class="p">:</span> <span class="s2">&quot;center&quot;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>The intended audience is mainly people developing bots.
-You can use Rasa as a drop-in replacement for <a class="reference external" href="https://wit.ai">wit</a> , <a class="reference external" href="https://www.luis.ai">LUIS</a> , or <a class="reference external" href="https://dialogflow.com">Dialogflow</a>, the only change in your code is to send requests to <code class="docutils literal"><span class="pre">localhost</span></code> instead (see <a class="reference internal" href="migrating.html#section-migration"><span class="std std-ref">Migrating an existing app</span></a> for details).</p>
-<p>Why might you use Rasa instead of one of those services?</p>
-<ul class="simple">
-<li>you don&#8217;t have to hand over your data to FB/MSFT/GOOG</li>
-<li>you don&#8217;t have to make a <code class="docutils literal"><span class="pre">https</span></code> call every time.</li>
-<li>you can tune models to work well on your particular use case.</li>
-</ul>
-<p>These points are laid out in more detail in a <a class="reference external" href="https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d">blog post</a> .</p>
-<div class="section" id="the-quickest-quickstart-in-the-west">
-<h2>The quickest quickstart in the west<a class="headerlink" href="#the-quickest-quickstart-in-the-west" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> python setup.py install
-<span class="gp">$</span> python -m rasa_nlu.server -e wit <span class="p">&amp;</span>
-<span class="gp">$</span> curl <span class="s1">&#39;http://localhost:5000/parse?q=hello&#39;</span>
-<span class="go">[{&quot;_text&quot;: &quot;hello&quot;, &quot;confidence&quot;: 1.0, &quot;entities&quot;: {}, &quot;intent&quot;: &quot;greet&quot;}]</span>
-</pre></div>
-</div>
-<p>There you go! you just parsed some text. Next step, do the <a class="reference internal" href="tutorial.html#section-tutorial"><span class="std std-ref">Tutorial: A simple restaurant search bot</span></a>.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">This demo uses a very limited ML model. To apply Rasa NLU to your use case, you need to train your own model! Follow the tutorial to get to know how to apply rasa_nlu to your data.</p>
-</div>
-</div>
-<div class="section" id="about">
-<h2>About<a class="headerlink" href="#about" title="Permalink to this headline">¶</a></h2>
-<p>You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
-The setup process is designed to be as simple as possible. If you&#8217;re currently using wit, LUIS, or Dialogflow, you just:</p>
-<ol class="arabic simple">
-<li>download your app data from wit or LUIS and feed it into Rasa NLU</li>
-<li>run Rasa NLU on your machine and switch the URL of your wit/LUIS/Dialogflow api calls to <code class="docutils literal"><span class="pre">localhost:5000/parse</span></code>.</li>
-</ol>
-<p>Rasa NLU is written in Python, but it you can use it from any language through <a class="reference internal" href="http.html#section-http"><span class="std std-ref">Using Rasa NLU as a HTTP server</span></a>.
-If your project <em>is</em> written in Python you can simply import the relevant classes.</p>
-<p>Rasa is a set of tools for building more advanced bots, developed by <a class="reference external" href="https://rasa.com">Rasa</a>. This is the natural language understanding module. To
-build conversational chatbots, you can interface Rasa NLU with libraries
-that steer the flow of the conversation - more on this in <a class="reference internal" href="context.html#section-context"><span class="std std-ref">Context-aware Dialogue</span></a>.</p>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Getting Started</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">User Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
-<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
-<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
-<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Resources</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Developer Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
-</ul>
-</div>
-</div>
-</div>
-
-
-           </div>
-           <div class="articleComments">
-            
-           </div>
-          </div>
-          <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-    </div>
-  
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>
-        &copy; Copyright 2017, Rasa Technologies GmbH.
-
-    </p>
+    </ul>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+</div>
 
-</footer>
+  
+    
+      <div class="sidebar-extended"></div>
+    
+  
+
+  <div class="document">
+    
+      
+        
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluating-models/">Evaluating Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="server/">Running the Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cloud-storage/">Storing Models in the Cloud</a></li>
+</ul>
+<p class="caption"><span class="caption-text">NLU</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nlu/data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nlu/languages/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nlu/entities/">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nlu/components/">Component Configuration</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="core/stories/">Story Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/domains/">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/responses/">Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/run-code-in-custom-actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/policies/">Training and Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/slots/">Using Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/slot-filling/">Slot Filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/interactive-learning/">Interactive Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/fallbacks/">Fallback Actions</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Conversation Design</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dialogue-elements/about/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dialogue-elements/small-talk/">Small Talk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dialogue-elements/completing-tasks/">Completing Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dialogue-elements/guiding-users/">Guiding Users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/action-server/">Action Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/rasa-http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/jupyter/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/agent/">Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/events/">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/tracker/">Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/tracker-stores/">Tracker Stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/featurizer/">Featurization</a></li>
+</ul>
+
+<div class="versions">
+    <p class="caption">Versions</p>
+    <div class="versions-content">
+      <div>
+        <span class="current-version">
+          viewing: post-merge-docs
+        </span>
+      </div>
+      <div class="other-versions">
+          <p>branches</p>
+          <div class="dropdown-content">
+              <a href="./post-merge-docs/">post-merge-docs</a>
+          </div>
+      </div>
+    </div>
+</div>
+
 
         </div>
       </div>
+      
+    
+      
+        
+      
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+          
 
-    </section>
-
-  </div>
-  
-<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
-    <span class="rst-current-version" data-toggle="rst-current-version">
-        <span class="fa fa-book"> Other Versions</span>
-        v: 0.12.3
-        <span class="fa fa-caret-down"></span>
-    </span>
-    <div class="rst-other-versions">
-        <dl>
-            <dt>Tags</dt>
-            <dd><a href="0.12.3/index.html">0.12.3</a></dd>
-            <dd><a href="0.12.2/index.html">0.12.2</a></dd>
-            <dd><a href="0.12.1/index.html">0.12.1</a></dd>
-            <dd><a href="0.12.0/index.html">0.12.0</a></dd>
-            <dd><a href="0.11.4/index.html">0.11.4</a></dd>
-            <dd><a href="0.10.6/index.html">0.10.6</a></dd>
-            <dd><a href="0.9.2/index.html">0.9.2</a></dd>
-            <dd><a href="0.8.12/index.html">0.8.12</a></dd>
-            <dd><a href="0.7.4/index.html">0.7.4</a></dd>
-        </dl>
-        <dl>
-            <dt>Branches</dt>
-            <dd><a href="master/index.html">master</a></dd>
-        </dl>
-    </div>
+          <div class="body" role="main">
+            
+  <div class="section" id="build-contextual-chatbots-and-ai-assistants-with-rasa">
+<span id="section-index"></span><h1>Build contextual chatbots and AI assistants with Rasa<a class="headerlink" href="#build-contextual-chatbots-and-ai-assistants-with-rasa" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This is the documentation for version 1.0.0a3 of Rasa. Please make sure you are reading the documentation
+that matches the version you have installed.</p>
+</div>
+<p>Rasa is an open source machine learning framework for automated text and voice-based conversations.
+Understand messages, hold conversations, and connect to messaging channels and APIs.</p>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
 </div>
 
 
-  
+	    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js"></script>
+	    <script type="text/javascript"> docsearch({
+	     apiKey: '1f9e0efb89e98543f6613a60f847b176',
+	     indexName: 'rasa',
+	     inputSelector: 'body > div.nav-top > .nav-container > .nav > input',
+	     debug: false // Set debug to true if you want to inspect the dropdown
+	    });
+	    </script>
+          </div>
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.12.3',
-            LANGUAGE:'None',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+          <div class="footer">
+            <div class="questions">
+              Stuck?
+              <a class="reference external" href="https://forum.rasa.com" target="_blank">Ask a Question</a>
+              or
+              <a class="reference external" href="https://github.com/rasahq/rasa/issues" target="_blank">Create an Issue</a>
+            </div>
+            <div class="social">
+              <a href="https://github.com/RasaHQ" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+              <a href="https://stackoverflow.com/search?q=rasa" target="_blank" title="Stack Overflow"><i class="fab fa-stack-overflow"></i></a>
+              <a href="https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+              <a href="https://twitter.com/rasa_hq" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
 
-  
+            <div class="copyright small">
+            &copy;2019, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            
+            </div>
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+    <!-- consent-banner -->
+    <div class="consent-banner">
+        <div class="container">
+            <img class="cookie-icon" src="_static/cookie.svg" alt="cookie">
+            <p>
+                In order to give you a better service Rasa uses cookies.
+                By continuing to browse the site you are agreeing to our use of <a href="//rasa.com/privacy-policy" target="_blank">cookies</a>.
+                <a class="agree" href="#">I agree</a>.
+            </p>
+        </div>
+    </div>
+  </div>
 
-  
-  
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
-      });
+    
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(...arguments) {
+      dataLayer.push(...arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-87333416-1', {
+      'anonymize_ip': true,
+    });
   </script>
-  
- 
-<!-- Global Site Tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
-<script>
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments)};
-gtag('js', new Date());
+  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+  <script type="text/javascript" src="https://rasa.com/assets/js/userId.js"></script>
 
-gtag('config', 'UA-87333416-1');
-</script>
-<script type="text/javascript" src="//script.crazyegg.com/pages/scripts/0074/3851.js" async="async"></script>
+  <script type="text/javascript">
+    var clipboard = new ClipboardJS('.copyable');
+    clipboard.on('success', function(e) {
+      gtag('event', e.action, {
+        'event_category': 'code',
+        'event_label': e.text
+      });
+      const id = e.text.replace(' ','-');
+      document.getElementById(id).classList.add('visible');
+      setTimeout(function(){
+        document.getElementById(id).classList.remove('visible');},
+        800
+      );
+    });
+    clipboard.on('error', function(e) {
+      console.log(e);
+    });
 
+    /* Consent Manager */
+    $(document).ready(function() {
+      if(!document.cookie.match(/^(.*;)?\s*rasa-cookie-consent\s*=\s*[^;]+(.*)?$/))
+        $('.consent-banner').addClass('visible');
 
-</body>
+      $('.consent-banner .agree').click(function(e){
+        e.preventDefault();
+        var CookieDate = new Date;
+        CookieDate.setFullYear(CookieDate.getFullYear() + 1);
+        document.cookie = 'rasa-cookie-consent=true; expires=' + CookieDate.toUTCString() + '; domain=.rasa.com';
+        $('.consent-banner').remove();
+      });
+    });
+  </script>
+
+  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
+  <script>
+    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
+    (function(document, history, location) {
+      var HISTORY_SUPPORT = !!(history && history.pushState);
+
+      var anchorScrolls = {
+        ANCHOR_REGEX: /^#[^ ]+$/,
+        OFFSET_HEIGHT_PX: 66,
+
+        /**
+         * Establish events, and fix initial scroll position if a hash is provided.
+         */
+        init: function() {
+          this.scrollToCurrent();
+          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
+          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
+        },
+
+        /**
+         * Return the offset amount to deduct from the normal scroll position.
+         * Modify as appropriate to allow for dynamic calculations
+         */
+        getFixedOffset: function() {
+          return this.OFFSET_HEIGHT_PX;
+        },
+
+        /**
+         * If the provided href is an anchor which resolves to an element on the
+         * page, scroll to it.
+         * @param  {String} href
+         * @return {Boolean} - Was the href an anchor.
+         */
+        scrollIfAnchor: function(href, pushToHistory) {
+          var match, anchorOffset;
+
+          if(!this.ANCHOR_REGEX.test(href)) {
+            return false;
+          }
+
+          match = document.getElementById(href.slice(1));
+
+          if(match) {
+            anchorOffset = $(match).offset().top - this.getFixedOffset();
+            $('html, body').animate({ scrollTop: anchorOffset});
+
+            // Add the state to history as-per normal anchor links
+            if(HISTORY_SUPPORT && pushToHistory) {
+              history.pushState({}, document.title, location.pathname + href);
+            }
+          }
+
+          return !!match;
+        },
+
+        /**
+         * Attempt to scroll to the current location's hash.
+         */
+        scrollToCurrent: function(e) {
+          if(this.scrollIfAnchor(window.location.hash) && e) {
+            e.preventDefault();
+          }
+        },
+
+        /**
+         * If the click event's target was an anchor, fix the scroll position.
+         */
+        delegateAnchors: function(e) {
+          var elem = e.target;
+
+          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
+            e.preventDefault();
+          }
+        }
+      };
+
+      $(document).ready($.proxy(anchorScrolls, 'init'));
+    })(window.document, window.history, window.location);
+
+  </script>
+  <script type="text/javascript" src="https://rasa.com/assets/js/u-info.js"></script>
+  </body>
 </html>
