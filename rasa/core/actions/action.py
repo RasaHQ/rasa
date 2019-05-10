@@ -135,7 +135,7 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
             "attachment": message.pop("attachment", None) or message.pop("image", None),
             "custom": message.pop("custom", None),
         },
-        kwargs=message,
+        metadata=message,
     )
 
     logger.debug("Bot utterance '{}'".format(bot_message))

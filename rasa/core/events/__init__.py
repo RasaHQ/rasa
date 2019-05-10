@@ -307,10 +307,10 @@ class BotUttered(Event):
 
     type_name = "bot"
 
-    def __init__(self, text=None, data={}, kwargs={}, timestamp=None):
+    def __init__(self, text=None, data={}, metadata={}, timestamp=None):
         self.text = text
         self.data = data
-        self.kwargs = kwargs
+        self.metadata = metadata
         super(BotUttered, self).__init__(timestamp)
 
     def __members(self):
