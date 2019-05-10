@@ -20,7 +20,13 @@ If the user goal is ambiguous to your assistant, ask for clarification.
 
 
 .. conversations:: 
-   :path: _static/elements/guiding-users/explicit-confirmation.yml
+   examples:
+     - 
+       - I just moved
+       - ( I'm not sure I understood you correctly. Do you mean ...
+       - ^ I want to cancel my contract
+       - ^ I want to update my personal details
+
 
 You can configure the ``TwoStageFallbackPolicy`` to ask your user to clarify,
 and present them with quick replies for the most likely intents.
@@ -48,7 +54,15 @@ That includes coherently responding to requests that are out of scope.
 
 
 .. conversations:: 
-   :path: _static/elements/guiding-users/explain-possibilities.yml
+   examples:
+     - 
+       - What can you do?
+       - ( I can help you update your personal details, change your plan, and answer any questions you have about our products.
+     -
+       - Can you get me a pizza?
+       - ( I'm afraid I can't help with that.
+       - ( I can help you update your personal details, change your plan, and answer any questions you have about our products.
+
 
 When to explain the limitations of your assistant is specific to your application,
 but these example stories show some common cases:
@@ -73,7 +87,14 @@ your users and determine whether you solved their problem!
 Storing this feedback is a powerful way to figure out how you can improve your assistant.
 
 .. conversations:: 
-   :path: _static/elements/guiding-users/get-user-feedback.yml
+   examples:
+     - 
+       - ( Was that helpful?
+       - no.
+       - ( Thanks. Why wasnt I able to help?
+       - ^ you didn't understand me correctly
+       - ^ you understood me, but your answers weren't very helpful.
+
 
 Use a form to collect user feedback. To do this, define a custom form action
 (see :ref:`business-logic` for more details about forms).
@@ -130,7 +151,15 @@ There are multiple reasons why you might trigger a human handoff:
     
 
 .. conversations:: 
-   :path: _static/elements/guiding-users/hand-off-to-human.yml
+   examples:
+     - 
+       - let me speak to a human
+       - ( let me put you in touch with someone.
+     - 
+       - I want to cancel
+       - ( I'm afraid I can't help you with that.
+       - ( let me put you in touch with someone.
+
 
 The direct request to speak with a human can be handled using the mapping policy:
 

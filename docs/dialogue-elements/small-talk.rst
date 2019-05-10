@@ -19,7 +19,17 @@ Greetings
 Greetings and goodbyes are some of the simplest interactions. Just about every system needs them. 
 
 .. conversations:: 
-   :path: _static/elements/small-talk/greetings.yml
+   examples:
+     - 
+       - hello
+       - ( hi, how are you?
+     - 
+       - how are you?
+       - ( I am well, and you?
+     - 
+       - goodbye
+       - ( bye bye!
+
 
 To respond correctly to greetings and goodbyes, you need to define responses
 for each of these. If you always want the same responses, you can use the ``MappingPolicy``
@@ -64,7 +74,15 @@ They reassure the user that their message has been received.
 For the most common reactions, it is worth implementing specific responses.
 
 .. conversations:: 
-   :path: _static/elements/small-talk/acknowledgements.yml
+   examples:
+     - 
+       - woah that's expensive!
+       - ( we offer good value.
+       - ( would you like to continue getting a quote?
+     - 
+       - that's awesome!
+       - ( glad you think so :)
+
 
 First, you need NLU data for reactions and acknowledgements:
 
@@ -113,7 +131,17 @@ and responses for some of the more common topics.
 See :ref:`explaining-possibilities` for how to handle out-of-scope input.
 
 .. conversations:: 
-   :path: _static/elements/small-talk/chitchat.yml
+   examples:
+     - 
+       - will you marry me?
+       - ( no
+     - 
+       - I can juggle 7 oranges
+       - ( wow!
+     - 
+       - aahhh
+       - ( I feel you
+
 
 Insults
 -------
@@ -125,7 +153,11 @@ You can read more about this topic in `this paper <https://www.aclweb.org/anthol
 
 
 .. conversations:: 
-   :path: _static/elements/small-talk/insults.yml
+   examples:
+     - 
+       - stupid bot
+       - ( that's not very nice
+
 
 The simplest approach is to create a single ``insult`` intent and use the mapping policy
 to respond to it:

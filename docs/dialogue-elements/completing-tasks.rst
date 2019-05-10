@@ -18,7 +18,13 @@ Users will often ask a basic set of questions
 and your assistant should answer them reliably.
 
 .. conversations:: 
-   :path: _static/elements/completing-tasks/simple-questions.yml
+   examples:
+     - 
+       - what's your email address?
+       - ( it's contact@example.com
+     - 
+       - do you have a loyalty program?
+       - ( unfortunately we don't
 
 Just like greetings and goodbyes, you can use the mapping policy to achieve this.
 See :ref:`greetings` .
@@ -38,7 +44,18 @@ can cover all the happy paths (e.g. all the ways that a user can provide the req
 You can read more about forms in `this tutorial <https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/>`_
 
 .. conversations:: 
-   :path: _static/elements/completing-tasks/business-logic.yml
+   examples:
+     - 
+       - I'd like to apply for a loan
+       - ( I'd love to help. Which state are you in?
+       - Alaska
+       - ( Unfortunately, we only operate in the continental U.S.
+     - 
+       - I'd like to apply for a loan
+       - ( I'd love to help. Which state are you in?
+       - California
+       - ( Thanks. Do you know what your credit score is?
+
 
 See :ref:`conditional-logic` for details on how to use forms to implement business logic.
 
@@ -55,7 +72,15 @@ Understanding contextual questions is a key difference between `level 2 and leve
 
 
 .. conversations:: 
-   :path: _static/elements/completing-tasks/contextual-questions.yml
+   examples:
+     - 
+       - ( what's your email address?
+       - why do you need to know that?
+       - ( I need your email so I can send you a confirmation
+     - 
+       - ( are you currently a premium customer?
+       - what do you mean?
+       - ( We have different memberships. Check your statement to see if you are a premium member.
 
 
 Unhappy Paths
@@ -73,5 +98,17 @@ The best way to collect training data for unhappy paths is to use
 :ref:`section_interactive_learning_forms`
 
 .. conversations:: 
-   :path: _static/elements/completing-tasks/unhappy-paths.yml
+   examples:
+     - 
+       - ( what's your email address?
+       - no.
+       - ( I will need your email address in order to create an account.
+       - ( what's your email address?
+     - 
+       - ( what's your email address?
+       - work@example.com
+       - ( thanks, and your phone number?
+       - no wait, please use personal@example.com
+       - ( ok, I'll use that email.
+       - ( thanks, and your phone number?
 
