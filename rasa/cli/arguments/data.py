@@ -9,7 +9,6 @@ def set_convert_arguments(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-o",
         "--out_file",
         required=True,
         help="file where to save training data in rasa format",
@@ -37,7 +36,6 @@ def set_split_arguments(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-o",
         "--out",
         type=str,
         default="train_test_split",

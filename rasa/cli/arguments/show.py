@@ -17,7 +17,6 @@ def set_show_stories_arguments(parser: argparse.ArgumentParser):
 
 def add_visualization_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "-o",
         "--output",
         default="graph.html",
         type=str,

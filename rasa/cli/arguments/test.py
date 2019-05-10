@@ -54,7 +54,6 @@ def add_test_core_arguments(
         help="nlu model to run with the server. None for regex interpreter",
     )
     parser.add_argument(
-        "-o",
         "--output",
         type=str,
         default="results",

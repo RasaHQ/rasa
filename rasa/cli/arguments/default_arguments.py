@@ -72,7 +72,6 @@ def add_config_param(parser: argparse.ArgumentParser):
 
 def add_out_param(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "-o",
         "--out",
         type=str,
         default=DEFAULT_MODELS_PATH,

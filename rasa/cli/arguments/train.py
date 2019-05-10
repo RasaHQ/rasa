@@ -24,7 +24,6 @@ def set_train_arguments(parser: argparse.ArgumentParser):
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser):
-    add_data_param(parser)
     add_stories_param(parser)
     add_domain_param(parser, True)
     add_out_param(parser)

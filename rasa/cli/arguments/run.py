@@ -24,7 +24,6 @@ def set_run_action_arguments(parser: argparse.ArgumentParser):
 
 def add_run_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "-o",
         "--log-file",
         type=str,
         default="rasa_core.log",
@@ -77,7 +76,7 @@ def add_run_arguments(parser: argparse.ArgumentParser):
         help="Authentication credentials for the connector as a yml file.",
     )
     channel_arguments.add_argument(
-        "-c", "--connector", type=str, help="Service to connect to."
+        "--connector", type=str, help="Service to connect to."
     )
 
     jwt_auth = parser.add_argument_group("JWT Authentication")
