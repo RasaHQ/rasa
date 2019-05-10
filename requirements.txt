@@ -32,7 +32,7 @@ packaging==18.0
 gevent==1.4.0
 pytz==2018.9
 python-dateutil==2.7.5
-rasa_core_sdk~=1.0.0rc1
+rasa_core_sdk~=1.0.0rc2
 colorclass==2.2.0
 terminaltables==3.1.0
 sanic==18.12.0
