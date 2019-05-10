@@ -310,12 +310,24 @@ class BotUttered(Event):
     def __init__(self, text=None, data=None, metadata=None, timestamp=None):
         self.text = text
         self.data = data or {}
-        self.metadata = metadata or {}
+        self._metadata = metadata or {}
         super(BotUttered, self).__init__(timestamp)
 
+    @property
+    def metadata(self):
+        # needed for backwards compatibility <1.0.0 - previously pickled events
+        # won't have the `_metadata` attribute
+        if hasattr(self, "_metadata"):
+            return self._metadata
+        else:
+            return {}
+
     def __members(self):
-        wo_none_values = utils.remove_none_values(self.data)
-        return (self.text, jsonpickle.encode(wo_none_values))
+        data_no_nones = utils.remove_none_values(self.data)
+        meta_no_nones = utils.remove_none_values(self.metadata)
+        return (self.text,
+                jsonpickle.encode(data_no_nones),
+                jsonpickle.encode(meta_no_nones))
 
     def __hash__(self):
         return hash(self.__members())
