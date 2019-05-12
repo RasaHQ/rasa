@@ -325,9 +325,11 @@ class BotUttered(Event):
     def __members(self):
         data_no_nones = utils.remove_none_values(self.data)
         meta_no_nones = utils.remove_none_values(self.metadata)
-        return (self.text,
-                jsonpickle.encode(data_no_nones),
-                jsonpickle.encode(meta_no_nones))
+        return (
+            self.text,
+            jsonpickle.encode(data_no_nones),
+            jsonpickle.encode(meta_no_nones),
+        )
 
     def __hash__(self):
         return hash(self.__members())
