@@ -1,6 +1,5 @@
-import logging
-
 import aiohttp
+import logging
 from sanic.exceptions import abort
 
 from rasa.core.channels.channel import RestInput

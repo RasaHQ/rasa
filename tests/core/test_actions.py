@@ -331,7 +331,9 @@ async def test_action_utter_template_channel_specific(
         output_channel, default_nlg, default_tracker, default_domain
     )
 
-    assert events == [BotUttered("you're talking to me on slack!")]
+    assert events == [
+        BotUttered("you're talking to me on slack!", metadata={"channel": "slack"})
+    ]
 
 
 async def test_action_back(

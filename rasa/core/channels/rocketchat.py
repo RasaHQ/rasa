@@ -1,6 +1,6 @@
 import logging
 from sanic import Blueprint, response
-from typing import Text, Dict, Any
+from typing import Text, Dict, Any, List, Iterable
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -17,24 +17,6 @@ class RocketChatBot(OutputChannel):
 
         self.rocket = RocketChat(user, password, server_url=server_url)
 
-    async def send_text_message(self, recipient_id, message):
-        """Messages handler."""
-
-        for message_part in message.split("\n\n"):
-            self.rocket.chat_post_message(message_part, room_id=recipient_id)
-
-    async def send_image_url(self, recipient_id, image_url):
-        image_attachment = [{"image_url": image_url, "collapsed": False}]
-
-        return self.rocket.chat_post_message(
-            None, room_id=recipient_id, attachments=image_attachment
-        )
-
-    async def send_attachment(self, recipient_id, attachment, message=""):
-        return self.rocket.chat_post_message(
-            None, room_id=recipient_id, attachments=[attachment]
-        )
-
     @staticmethod
     def _convert_to_rocket_buttons(buttons):
         return [
@@ -47,34 +29,68 @@ class RocketChatBot(OutputChannel):
             for b in buttons
         ]
 
-    async def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
+        """Send message to output channel"""
+
+        for message_part in text.split("\n\n"):
+            self.rocket.chat_post_message(message_part, room_id=recipient_id)
+
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
+        image_attachment = [{"image_url": image, "collapsed": False}]
+
+        return self.rocket.chat_post_message(
+            None, room_id=recipient_id, attachments=image_attachment
+        )
+
+    async def send_attachment(
+        self, recipient_id: Text, attachment: Text, **kwargs: Any
+    ) -> None:
+        return self.rocket.chat_post_message(
+            None, room_id=recipient_id, attachments=[attachment]
+        )
+
+    async def send_text_with_buttons(
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        **kwargs: Any
+    ) -> None:
         # implementation is based on
         # https://github.com/RocketChat/Rocket.Chat/pull/11473
         # should work in rocket chat >= 0.69.0
         button_attachment = [{"actions": self._convert_to_rocket_buttons(buttons)}]
 
         return self.rocket.chat_post_message(
-            message, room_id=recipient_id, attachments=button_attachment
+            text, room_id=recipient_id, attachments=button_attachment
         )
 
-    async def send_elements(self, recipient_id, elements):
+    async def send_elements(
+        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
+    ) -> None:
         return self.rocket.chat_post_message(
             None, room_id=recipient_id, attachments=elements
         )
 
-    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
-        text = kwargs.pop("text")
+    async def send_custom_json(
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
+        text = json_message.pop("text")
 
-        if kwargs.get("channel"):
-            if kwargs.get("room_id"):
+        if json_message.get("channel"):
+            if json_message.get("room_id"):
                 logger.warning(
                     "Only one of `channel` or `room_id` can be passed to a RocketChat message post. Defaulting to `channel`."
                 )
-                del kwargs["room_id"]
-            return self.rocket.chat_post_message(text, **kwargs)
+                del json_message["room_id"]
+            return self.rocket.chat_post_message(text, **json_message)
         else:
-            kwargs.setdefault("room_id", recipient_id)
-            return self.rocket.chat_post_message(text, **kwargs)
+            json_message.setdefault("room_id", recipient_id)
+            return self.rocket.chat_post_message(text, **json_message)
 
 
 class RocketChatInput(InputChannel):

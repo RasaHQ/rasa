@@ -1,12 +1,11 @@
 import hashlib
 import hmac
 import logging
-from typing import Text, List, Dict, Any, Callable, Awaitable
-
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from sanic import Blueprint, response
+from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -121,18 +120,20 @@ class MessengerBot(OutputChannel):
             element.to_dict(), self._recipient_json(recipient_id), "RESPONSE"
         )
 
-    async def send_text_message(self, recipient_id: Text, message: Text) -> None:
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         """Send a message through this channel."""
 
-        logger.info("Sending message: " + message)
-
-        for message_part in message.split("\n\n"):
+        for message_part in text.split("\n\n"):
             self.send(recipient_id, FBText(text=message_part))
 
-    async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        self.send(recipient_id, Image(url=image_url))
+        self.send(recipient_id, Image(url=image))
 
     async def send_text_with_buttons(
         self,
@@ -149,7 +150,7 @@ class MessengerBot(OutputChannel):
                 "Facebook API currently allows only up to 3 buttons. "
                 "If you add more, all will be ignored."
             )
-            await self.send_text_message(recipient_id, text)
+            await self.send_text_message(recipient_id, text, **kwargs)
         else:
             self._add_postback_info(buttons)
 
@@ -183,7 +184,7 @@ class MessengerBot(OutputChannel):
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
     async def send_elements(
-        self, recipient_id: Text, elements: List[Dict[Text, Any]]
+        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output."""
 
@@ -201,14 +202,14 @@ class MessengerBot(OutputChannel):
         )
 
     async def send_custom_json(
-        self, recipient_id: Text, kwargs: Dict[Text, Any]
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json data to the output."""
 
-        recipient_id = kwargs.pop("sender", {}).pop("id", None) or recipient_id
+        recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
 
         self.messenger_client.send(
-            kwargs, self._recipient_json(recipient_id), "RESPONSE"
+            json_message, self._recipient_json(recipient_id), "RESPONSE"
         )
 
     @staticmethod

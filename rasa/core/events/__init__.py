@@ -307,14 +307,29 @@ class BotUttered(Event):
 
     type_name = "bot"
 
-    def __init__(self, text=None, data=None, timestamp=None):
+    def __init__(self, text=None, data=None, metadata=None, timestamp=None):
         self.text = text
         self.data = data or {}
+        self._metadata = metadata or {}
         super(BotUttered, self).__init__(timestamp)
 
+    @property
+    def metadata(self):
+        # needed for backwards compatibility <1.0.0 - previously pickled events
+        # won't have the `_metadata` attribute
+        if hasattr(self, "_metadata"):
+            return self._metadata
+        else:
+            return {}
+
     def __members(self):
-        wo_none_values = utils.remove_none_values(self.data)
-        return (self.text, jsonpickle.encode(wo_none_values))
+        data_no_nones = utils.remove_none_values(self.data)
+        meta_no_nones = utils.remove_none_values(self.metadata)
+        return (
+            self.text,
+            jsonpickle.encode(data_no_nones),
+            jsonpickle.encode(meta_no_nones),
+        )
 
     def __hash__(self):
         return hash(self.__members())
@@ -326,13 +341,15 @@ class BotUttered(Event):
             return self.__members() == other.__members()
 
     def __str__(self):
-        return "BotUttered(text: {}, data: {})".format(
-            self.text, json.dumps(self.data, indent=2)
+        return "BotUttered(text: {}, data: {}, metadata: {})".format(
+            self.text,
+            json.dumps(self.data, indent=2),
+            json.dumps(self.metadata, indent=2),
         )
 
     def __repr__(self):
-        return "BotUttered('{}', {}, {})".format(
-            self.text, json.dumps(self.data), self.timestamp
+        return "BotUttered('{}', {}, {}, {})".format(
+            self.text, json.dumps(self.data), json.dumps(self.metadata), self.timestamp
         )
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
@@ -347,6 +364,7 @@ class BotUttered(Event):
 
         m = self.data.copy()
         m["text"] = self.text
+        m.update(self.metadata)
 
         if m.get("image") == m.get("attachment"):
             # we need this as there is an oddity we introduced a while ago where
@@ -354,6 +372,7 @@ class BotUttered(Event):
             # any persisted events we kept that, but we need to make sure that
             # the message contains the image only once
             m["attachment"] = None
+
         return m
 
     @staticmethod
@@ -362,7 +381,7 @@ class BotUttered(Event):
 
     def as_dict(self):
         d = super(BotUttered, self).as_dict()
-        d.update({"text": self.text, "data": self.data})
+        d.update({"text": self.text, "data": self.data, "metadata": self.metadata})
         return d
 
     @classmethod
@@ -371,6 +390,7 @@ class BotUttered(Event):
             return BotUttered(
                 parameters.get("text"),
                 parameters.get("data"),
+                parameters.get("metadata"),
                 parameters.get("timestamp"),
             )
         except KeyError as e:

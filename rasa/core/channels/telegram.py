@@ -8,10 +8,8 @@ from telegram import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
+from typing import Dict, Text, Any, List, Optional
 
-from typing import Dict, Text, Any
-
-from rasa.core import constants
 from rasa.core.channels import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, USER_INTENT_RESTART
@@ -29,12 +27,74 @@ class TelegramOutput(Bot, OutputChannel):
     def __init__(self, access_token):
         super(TelegramOutput, self).__init__(access_token)
 
-    async def send_text_message(self, recipient_id, message):
-        for message_part in message.split("\n\n"):
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
+        for message_part in text.split("\n\n"):
             self.send_message(recipient_id, message_part)
 
-    async def send_custom_json(self, recipient_id, kwargs: Dict[Text, Any]):
-        recipient_id = kwargs.pop("chat_id", recipient_id)
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
+        self.send_photo(recipient_id, image)
+
+    async def send_text_with_buttons(
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        button_type: Optional[Text] = "inline",
+        **kwargs: Any
+    ) -> None:
+        """Sends a message with keyboard.
+
+        For more information: https://core.telegram.org/bots#keyboards
+
+        :button_type inline: horizontal inline keyboard
+
+        :button_type vertical: vertical inline keyboard
+
+        :button_type reply: reply keyboard
+        """
+        if button_type == "inline":
+            button_list = [
+                [
+                    InlineKeyboardButton(s["title"], callback_data=s["payload"])
+                    for s in buttons
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(button_list)
+
+        elif button_type == "vertical":
+            button_list = [
+                [InlineKeyboardButton(s["title"], callback_data=s["payload"])]
+                for s in buttons
+            ]
+            reply_markup = InlineKeyboardMarkup(button_list)
+
+        elif button_type == "reply":
+            button_list = []
+            for bttn in buttons:
+                if isinstance(bttn, list):
+                    button_list.append([KeyboardButton(s["title"]) for s in bttn])
+                else:
+                    button_list.append([KeyboardButton(bttn["title"])])
+            reply_markup = ReplyKeyboardMarkup(
+                button_list, resize_keyboard=True, one_time_keyboard=True
+            )
+        else:
+            logger.error(
+                "Trying to send text with buttons for unknown "
+                "button type {}".format(button_type)
+            )
+            return
+
+        self.send_message(recipient_id, text, reply_markup=reply_markup)
+
+    async def send_custom_json(
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
+        recipient_id = json_message.pop("chat_id", recipient_id)
 
         send_functions = {
             ("text",): "send_message",
@@ -64,61 +124,10 @@ class TelegramOutput(Bot, OutputChannel):
         }
 
         for params in send_functions.keys():
-            if all(kwargs.get(p) is not None for p in params):
-                args = [kwargs.pop(p) for p in params]
+            if all(json_message.get(p) is not None for p in params):
+                args = [json_message.pop(p) for p in params]
                 api_call = getattr(self, send_functions[params])
-                api_call(recipient_id, *args, **kwargs)
-
-    async def send_image_url(self, recipient_id, image_url):
-        self.send_photo(recipient_id, image_url)
-
-    async def send_text_with_buttons(
-        self, recipient_id, text, buttons, button_type="inline", **kwargs
-    ):
-        """Sends a message with keyboard.
-
-        For more information: https://core.telegram.org/bots#keyboards
-
-        :button_type inline: horizontal inline keyboard
-
-        :button_type vertical: vertical inline keyboard
-
-        :button_type custom: custom keyboard
-        """
-        if button_type == "inline":
-            button_list = [
-                [
-                    InlineKeyboardButton(s["title"], callback_data=s["payload"])
-                    for s in buttons
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(button_list)
-
-        elif button_type == "vertical":
-            button_list = [
-                [InlineKeyboardButton(s["title"], callback_data=s["payload"])]
-                for s in buttons
-            ]
-            reply_markup = InlineKeyboardMarkup(button_list)
-
-        elif button_type == "custom":
-            button_list = []
-            for bttn in buttons:
-                if isinstance(bttn, list):
-                    button_list.append([KeyboardButton(s["title"]) for s in bttn])
-                else:
-                    button_list.append([KeyboardButton(bttn["title"])])
-            reply_markup = ReplyKeyboardMarkup(
-                button_list, resize_keyboard=True, one_time_keyboard=True
-            )
-        else:
-            logger.error(
-                "Trying to send text with buttons for unknown "
-                "button type {}".format(button_type)
-            )
-            return
-
-        self.send_message(recipient_id, text, reply_markup=reply_markup)
+                api_call(recipient_id, *args, **json_message)
 
 
 class TelegramInput(InputChannel):

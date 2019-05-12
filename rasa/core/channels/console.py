@@ -1,14 +1,12 @@
 # this builtin is needed so we can overwrite in test
+import aiohttp
 import json
 import logging
-
-import aiohttp
+import questionary
 from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
-import questionary
 import rasa.cli.utils
-from rasa.cli import utils as cliutils
 from rasa.core import utils
 from rasa.core.channels import UserMessage
 from rasa.core.channels.channel import RestInput, button_to_string, element_to_string
@@ -99,7 +97,7 @@ async def record_messages(
 
     exit_text = INTENT_MESSAGE_PREFIX + "stop"
 
-    cliutils.print_success(
+    rasa.cli.utils.print_success(
         "Bot loaded. Type a message and press enter "
         "(use '{}' to exit): ".format(exit_text)
     )
