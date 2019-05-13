@@ -15,10 +15,10 @@ def convert_training_data(
         print_error("Data file '{}' does not exist.".format(data_file))
         return
 
-    if output_format == "md":
+    if output_format == "json":
         td = training_data.load_data(data_file, language)
         output = td.as_json(indent=2)
-    elif output_format == "json":
+    elif output_format == "md":
         td = training_data.load_data(data_file, language)
         output = td.as_markdown()
     else:
