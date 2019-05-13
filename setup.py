@@ -30,14 +30,13 @@ tests_requires = [
 ]
 
 install_requires = [
-    "cloudpickle~=0.6.1",
     "boto3~=1.9",
-    "matplotlib~=2.2",
-    "simplejson~=3.13",
+    "matplotlib~=3.0",
+    "simplejson~=3.16",
     "attrs>=18",
-    "jsonpickle~=1.0",
-    "redis~=2.0",
-    "fakeredis~=0.10.0",
+    "jsonpickle~=1.1",
+    "redis~=3.2",
+    "fakeredis~=1.0",
     "pymongo~=3.7",
     "numpy~=1.16",
     "scipy~=1.2",

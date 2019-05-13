@@ -198,10 +198,12 @@ class SklearnIntentClassifier(Component):
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
         if self.clf:
-            utils.pycloud_pickle(
-                os.path.join(model_dir, classifier_file_name), self.clf
+            utils.json_pickle(
+                os.path.join(model_dir, encoder_file_name), self.le.classes_
             )
-            utils.pycloud_pickle(os.path.join(model_dir, encoder_file_name), self.le)
+            utils.json_pickle(
+                os.path.join(model_dir, classifier_file_name), self.clf.best_estimator_
+            )
         return {"classifier": classifier_file_name, "encoder": encoder_file_name}
 
     @classmethod
@@ -213,13 +215,16 @@ class SklearnIntentClassifier(Component):
         cached_component: Optional["SklearnIntentClassifier"] = None,
         **kwargs: Any
     ) -> "SklearnIntentClassifier":
+        from sklearn.preprocessing import LabelEncoder
 
         classifier_file = os.path.join(model_dir, meta.get("classifier"))
         encoder_file = os.path.join(model_dir, meta.get("encoder"))
 
         if os.path.exists(classifier_file):
-            classifier = utils.pycloud_unpickle(classifier_file)
-            encoder = utils.pycloud_unpickle(encoder_file)
+            classifier = utils.json_unpickle(classifier_file)
+            classes = utils.json_unpickle(encoder_file)
+            encoder = LabelEncoder()
+            encoder.classes_ = classes
             return cls(meta, classifier, encoder)
         else:
             return cls(meta)

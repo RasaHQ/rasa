@@ -117,7 +117,7 @@ class MessengerBot(OutputChannel):
         # send messages but instead expects the incoming sender to be present
         # which we don't have as it is stored in the input channel.
         self.messenger_client.send(
-            element.to_dict(), self._recipient_json(recipient_id), "RESPONSE"
+            element.to_dict(), recipient_id, "RESPONSE"
         )
 
     async def send_text_message(
@@ -168,7 +168,7 @@ class MessengerBot(OutputChannel):
                 }
             }
             self.messenger_client.send(
-                payload, self._recipient_json(recipient_id), "RESPONSE"
+                payload, recipient_id, "RESPONSE"
             )
 
     async def send_quick_replies(
@@ -198,7 +198,7 @@ class MessengerBot(OutputChannel):
             }
         }
         self.messenger_client.send(
-            payload, self._recipient_json(recipient_id), "RESPONSE"
+            payload, recipient_id, "RESPONSE"
         )
 
     async def send_custom_json(
@@ -209,7 +209,7 @@ class MessengerBot(OutputChannel):
         recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
 
         self.messenger_client.send(
-            json_message, self._recipient_json(recipient_id), "RESPONSE"
+            json_message, recipient_id, "RESPONSE"
         )
 
     @staticmethod
@@ -228,11 +228,6 @@ class MessengerBot(OutputChannel):
         for button in buttons:
             if "type" not in button:
                 button["type"] = "postback"
-
-    @staticmethod
-    def _recipient_json(recipient_id: Text) -> Dict[Text, Dict[Text, Text]]:
-        """Generate the response json for the recipient expected by FB."""
-        return {"sender": {"id": recipient_id}}
 
 
 class FacebookInput(InputChannel):
@@ -281,8 +276,8 @@ class FacebookInput(InputChannel):
 
         @fb_webhook.route("/webhook", methods=["GET"])
         async def token_verification(request):
-            if request.raw_args.get("hub.verify_token") == self.fb_verify:
-                return response.text(request.raw_args.get("hub.challenge"))
+            if request.args.get("hub.verify_token") == self.fb_verify:
+                return response.text(request.args.get("hub.challenge"))
             else:
                 logger.warning(
                     "Invalid fb verify token! Make sure this matches "

@@ -189,7 +189,7 @@ async def train_core_async(
 
     _train_path = train_path or tempfile.mkdtemp()
 
-    if isinstance(Domain, str) or not train_path:
+    if isinstance(domain, str) or not train_path:
         skill_imports = SkillSelector.load(config)
         domain = Domain.load(domain, skill_imports)
         story_directory = data.get_core_directory(stories, skill_imports)

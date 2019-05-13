@@ -242,20 +242,26 @@ def configure_colored_logging(loglevel: Text) -> None:
     )
 
 
-def pycloud_unpickle(file_name: Text) -> Any:
-    """Unpickle an object from file using cloudpickle."""
-    import cloudpickle
+def json_unpickle(file_name: Text) -> Any:
+    """Unpickle an object from file using json."""
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
 
-    with io.open(file_name, "rb") as f:  # pragma: no test
-        return cloudpickle.load(f, encoding="latin-1")
+    jsonpickle_numpy.register_handlers()
+
+    with io.open(file_name, "r", encoding="utf-8") as f:
+        return jsonpickle.loads(f.read())
 
 
-def pycloud_pickle(file_name: Text, obj: Any) -> None:
-    """Pickle an object to a file using cloudpickle."""
-    import cloudpickle
+def json_pickle(file_name: Text, obj: Any) -> None:
+    """Pickle an object to a file using json."""
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
 
-    with io.open(file_name, "wb") as f:
-        cloudpickle.dump(obj, f)
+    jsonpickle_numpy.register_handlers()
+
+    with io.open(file_name, "w", encoding="utf-8") as f:
+        f.write(jsonpickle.dumps(obj))
 
 
 def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
