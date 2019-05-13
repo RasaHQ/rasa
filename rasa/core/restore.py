@@ -1,11 +1,9 @@
-import argparse
 import json
 import logging
 import warnings
 from difflib import SequenceMatcher
 
 import rasa.cli.utils
-import rasa.cli.arguments.arguments
 import rasa.utils.io
 from typing import List, Text, Tuple
 

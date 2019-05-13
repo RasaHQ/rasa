@@ -3,9 +3,8 @@ import os
 import shutil
 from typing import List
 
-import rasa.cli.run as run
 import rasa.cli.train as train
-import rasa.cli.arguments.train as core_cli
+from rasa.cli.arguments import interactive as arguments
 from rasa import data, model
 
 
@@ -23,14 +22,9 @@ def add_subparser(
         parents=parents,
         help="Teach the bot with interactive learning",
     )
-
-    run.add_run_arguments(interactive_parser)
-    train.add_general_arguments(interactive_parser)
-    train.add_domain_param(interactive_parser)
-    train.add_joint_parser_arguments(interactive_parser)
-    _add_interactive_arguments(interactive_parser)
-
     interactive_parser.set_defaults(func=interactive)
+
+    arguments.set_interactive_arguments(interactive_parser)
 
     interactive_subparsers = interactive_parser.add_subparsers()
     interactive_core_parser = interactive_subparsers.add_parser(
@@ -40,25 +34,9 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Train a Rasa Core model with interactive learning",
     )
-
-    train.add_domain_param(interactive_core_parser)
-    core_cli.add_general_args(interactive_core_parser)
-    train.add_stories_param(interactive_core_parser)
-    train.add_domain_param(interactive_core_parser)
-    run.add_run_arguments(interactive_core_parser)
-    _add_interactive_arguments(interactive_core_parser)
-    train.add_general_arguments(interactive_core_parser)
-
     interactive_core_parser.set_defaults(func=interactive_core)
 
-
-def _add_interactive_arguments(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "--skip-visualization",
-        default=False,
-        action="store_true",
-        help="Disables plotting the visualization during interactive learning",
-    )
+    arguments.set_interactive_core_arguments(interactive_core_parser)
 
 
 def interactive(args: argparse.Namespace):
