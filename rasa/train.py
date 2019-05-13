@@ -33,11 +33,20 @@ def train(
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
+    fix_model_name: Text = None,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_async(domain, config, training_files, output, force_training, kwargs)
+        train_async(
+            domain,
+            config,
+            training_files,
+            output,
+            force_training,
+            fix_model_name,
+            kwargs,
+        )
     )
 
 
@@ -47,6 +56,7 @@ async def train_async(
     training_files: Optional[Union[Text, List[Text]]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
+    fix_model_name: Text = None,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
@@ -93,12 +103,12 @@ async def train_async(
         print_warning(
             "No dialogue data present. Just a Rasa NLU model will be trained."
         )
-        return train_nlu(config, nlu_data_directory, output, None)
+        return train_nlu(config, nlu_data_directory, output, None, fix_model_name)
 
     if nlu_data_not_present:
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
         return await train_core_async(
-            domain, config, story_directory, output, None, kwargs
+            domain, config, story_directory, output, None, fix_model_name, kwargs
         )
 
     if not force_training and old_model:
@@ -116,7 +126,7 @@ async def train_async(
 
     if force_training or retrain_core:
         await train_core_async(
-            domain, config, story_directory, output, train_path, kwargs
+            domain, config, story_directory, output, train_path, fix_model_name, kwargs
         )
     else:
         print (
@@ -125,12 +135,12 @@ async def train_async(
         )
 
     if force_training or retrain_nlu:
-        train_nlu(config, nlu_data_directory, output, train_path)
+        train_nlu(config, nlu_data_directory, output, train_path, fix_model_name)
     else:
         print ("NLU data / configuration did not change. No need to retrain NLU model.")
 
     if retrain_core or retrain_nlu:
-        output = create_output_path(output)
+        output = create_output_path(output, fix_name=fix_model_name)
         model.create_package_rasa(train_path, output, new_fingerprint)
 
         print_success("Your bot is trained and ready to take for a spin!")
@@ -151,11 +161,14 @@ def train_core(
     stories: Text,
     output: Text,
     train_path: Optional[Text],
+    fix_model_name: Text,
     kwargs: Optional[Dict],
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_core_async(domain, config, stories, output, train_path, kwargs)
+        train_core_async(
+            domain, config, stories, output, train_path, fix_model_name, kwargs
+        )
     )
 
 
@@ -165,6 +178,7 @@ async def train_core_async(
     stories: Text,
     output: Text,
     train_path: Optional[Text] = None,
+    fix_model_name: Text = None,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Core model.
@@ -216,7 +230,9 @@ async def train_core_async(
 
     if not train_path:
         # Only Core was trained.
-        output_path = create_output_path(output, prefix="core-")
+        output_path = create_output_path(
+            output, prefix="core-", fix_name=fix_model_name
+        )
         new_fingerprint = model.model_fingerprint(
             config, domain, stories=story_directory
         )
@@ -231,7 +247,11 @@ async def train_core_async(
 
 
 def train_nlu(
-    config: Text, nlu_data: Text, output: Text, train_path: Optional[Text]
+    config: Text,
+    nlu_data: Text,
+    output: Text,
+    train_path: Optional[Text],
+    fix_model_name: Text = "",
 ) -> Optional[Text]:
     """Trains an NLU model.
 
@@ -241,6 +261,7 @@ def train_nlu(
         output: Output path.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
+        fix_model_name: Name of the model to be stored.
 
     Returns:
         If `train_path` is given it returns the path to the model archive,
@@ -274,7 +295,7 @@ def train_nlu(
     print_color("Done.", color=bcolors.OKBLUE)
 
     if not train_path:
-        output_path = create_output_path(output, prefix="nlu-")
+        output_path = create_output_path(output, prefix="nlu-", fix_name=fix_model_name)
         new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data_directory)
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
         print_success(

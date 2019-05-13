@@ -91,12 +91,13 @@ def parse_last_positional_argument_as_model_path() -> None:
 
 
 def create_output_path(
-    output_path: Text = DEFAULT_MODELS_PATH, prefix: Text = ""
+    output_path: Text = DEFAULT_MODELS_PATH, prefix: Text = "", fix_name: Text = ""
 ) -> Text:
     """Creates an output path which includes the current timestamp.
 
     Args:
         output_path: The path where the model should be stored.
+        fix_name: Fix name of the model.
         prefix: A prefix which should be included in the output path.
 
     Returns:
@@ -107,8 +108,12 @@ def create_output_path(
     if output_path.endswith("tar.gz"):
         return output_path
     else:
-        time_format = "%Y%m%d-%H%M%S"
-        file_name = "{}{}.tar.gz".format(prefix, time.strftime(time_format))
+        if fix_name:
+            name = fix_name
+        else:
+            time_format = "%Y%m%d-%H%M%S"
+            name = time.strftime(time_format)
+        file_name = "{}{}.tar.gz".format(prefix, name)
         return os.path.join(output_path, file_name)
 
 

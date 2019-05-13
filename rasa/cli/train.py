@@ -65,6 +65,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         training_files,
         args.out,
         args.force,
+        args.fix_model_name,
         extract_additional_arguments(args),
     )
 
@@ -101,6 +102,7 @@ def train_core(
             stories,
             output,
             train_path,
+            args.fix_model_name,
             extract_additional_arguments(args),
         )
     else:
@@ -122,7 +124,7 @@ def train_nlu(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
-    return train_nlu(config, nlu_data, output, train_path)
+    return train_nlu(config, nlu_data, output, train_path, args.fix_model_name)
 
 
 def extract_additional_arguments(args: argparse.Namespace) -> Dict:
