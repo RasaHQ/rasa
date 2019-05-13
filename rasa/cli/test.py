@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 from typing import List
 
 from rasa import data
@@ -39,6 +40,7 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Test Rasa Core",
     )
+    arguments.set_test_core_arguments(test_core_parser)
 
     test_nlu_parser = test_subparsers.add_parser(
         "nlu",
@@ -46,8 +48,6 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Test Rasa NLU",
     )
-
-    arguments.set_test_core_arguments(test_core_parser)
     arguments.set_test_nlu_arguments(test_nlu_parser)
 
     test_core_parser.set_defaults(func=test_core)
@@ -64,7 +64,9 @@ def test_core(args: argparse.Namespace) -> None:
     stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
     stories = data.get_core_directory(stories)
     output = args.output or DEFAULT_RESULTS_PATH
-    args.config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+
+    if not os.path.exists(output):
+        os.makedirs(output)
 
     if len(args.model) == 1:
         args.model = args.model[0]
