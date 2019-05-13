@@ -48,7 +48,7 @@ The configuration file of the ``MoodBot`` in turn references the ``GreetBot``:
     imports:
     - ../GreetBot
 
-Rasa uses relatives paths from the referencing configuration files to import skills.
+Rasa uses relative paths from the referencing configuration files to import skills.
 These can be anywhere on your file system as long as the file access is permitted.
 
 During the training process Rasa will import all required training files, combine
