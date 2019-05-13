@@ -4,12 +4,8 @@ import os
 
 from typing import List
 
-from rasa.cli.arguments.default_arguments import add_model_param
-
+from rasa.cli.arguments import shell as arguments
 from rasa.cli.utils import print_error
-
-import rasa.cli.run
-import rasa.cli.arguments.arguments
 
 
 logger = logging.getLogger(__name__)
@@ -28,10 +24,11 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Speak to a trained model on the command line",
     )
-    rasa.cli.run.add_run_arguments(shell_parser)
+    shell_parser.set_defaults(func=shell)
+
+    arguments.set_shell_arguments(shell_parser)
 
     run_subparsers = shell_parser.add_subparsers()
-
     shell_nlu_subparser = run_subparsers.add_parser(
         "nlu",
         parents=parents,
@@ -40,12 +37,8 @@ def add_subparser(
         help="Interpret messages on the command line using your NLU model.",
     )
     shell_nlu_subparser.set_defaults(func=shell_nlu)
-    add_model_param(shell_nlu_subparser)
 
-    rasa.cli.arguments.arguments.add_logging_option_arguments(shell_parser)
-    rasa.cli.arguments.arguments.add_logging_option_arguments(shell_nlu_subparser)
-
-    shell_parser.set_defaults(func=shell)
+    arguments.set_shell_nlu_arguments(shell_nlu_subparser)
 
 
 def shell_nlu(args: argparse.Namespace):

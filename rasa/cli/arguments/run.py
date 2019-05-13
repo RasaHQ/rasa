@@ -1,9 +1,29 @@
+import argparse
+
+from rasa.cli.arguments.default_arguments import add_model_param
 from rasa.core import constants
 
 
-def add_run_arguments(parser):
+def set_run_arguments(parser: argparse.ArgumentParser):
+    add_server_arguments(parser)
+    add_model_param(parser)
+
+
+def set_run_action_arguments(parser: argparse.ArgumentParser):
+    import rasa_core_sdk.cli.arguments as sdk
+
+    sdk.add_endpoint_arguments(parser)
+
     parser.add_argument(
-        "-o",
+        "--actions",
+        type=str,
+        default="actions",
+        help="Name of action package to be loaded.",
+    )
+
+
+def add_server_arguments(parser: argparse.ArgumentParser):
+    parser.add_argument(
         "--log-file",
         type=str,
         default="rasa_core.log",
@@ -56,7 +76,7 @@ def add_run_arguments(parser):
         help="Authentication credentials for the connector as a yml file.",
     )
     channel_arguments.add_argument(
-        "-c", "--connector", type=str, help="Service to connect to."
+        "--connector", type=str, help="Service to connect to."
     )
 
     jwt_auth = parser.add_argument_group("JWT Authentication")
