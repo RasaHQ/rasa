@@ -129,7 +129,10 @@ class TrainingData(object):
         return MarkdownWriter().dumps(self)
 
     def persist(
-        self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
+        self,
+        dir_name: Text,
+        filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH,
+        fformat: Text = "json",
     ) -> Dict[Text, Any]:
         """Persists this training data to disk and returns necessary
         information to load it again."""
@@ -138,8 +141,6 @@ class TrainingData(object):
             os.makedirs(dir_name)
 
         data_file = os.path.join(dir_name, filename)
-
-        fformat = "md" if filename.endswith(".md") else "json"
 
         if fformat == "json":
             write_to_file(data_file, self.as_json(indent=2))

@@ -1,6 +1,7 @@
 import argparse
 from typing import List, Text
 
+from rasa.nlu.training_data.loading import _guess_format
 from rasa.nlu.utils import list_files
 
 from rasa import data
@@ -76,14 +77,16 @@ def split_nlu_data(args):
 
     train, test = nlu_data.train_test_split(args.training_fraction)
 
-    train.persist(args.out, filename="training_data.{}".format(fformat))
-    test.persist(args.out, filename="test_data.{}".format(fformat))
+    train.persist(
+        args.out, filename="training_data.{}".format(fformat), fformat=fformat
+    )
+    test.persist(args.out, filename="test_data.{}".format(fformat), fformat=fformat)
 
 
 def get_file_format(resource_name: Text) -> Text:
     files = list_files(resource_name)
 
-    file_formats = list(map(lambda f: "json" if f.endswith("json") else "md", files))
+    file_formats = list(map(lambda f: _guess_format(f), files))
 
     if not file_formats:
         return "json"
