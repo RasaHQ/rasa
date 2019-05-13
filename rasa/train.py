@@ -171,9 +171,7 @@ async def train_async(
         model.create_package_rasa(train_path, output_path, new_fingerprint)
 
         if uncompress:
-            zipped_path = output_path
-            output_path = output_path.replace(".tar.gz", "")
-            model.unpack_model(zipped_path, output_path)
+            output_path = _decompress(output_path)
 
         print_success(
             "Your Rasa model is trained and saved at '{}'.".format(output_path)
@@ -308,9 +306,7 @@ async def _train_core_with_validated_data(
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
 
         if uncompress:
-            zipped_path = output_path
-            output_path = output_path.replace(".tar.gz", "")
-            model.unpack_model(zipped_path, output_path)
+            output_path = _decompress(output_path)
 
         print_success(
             "Your Rasa Core model is trained and saved at '{}'.".format(output_path)
@@ -391,9 +387,7 @@ def _train_nlu_with_validated_data(
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
 
         if uncompress:
-            zipped_path = output_path
-            output_path = output_path.replace(".tar.gz", "")
-            model.unpack_model(zipped_path, output_path)
+            output_path = _decompress(output_path)
 
         print_success(
             "Your Rasa NLU model is trained and saved at '{}'.".format(output_path)
@@ -430,3 +424,10 @@ def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
         enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
 
     return config_path
+
+
+def _decompress(output_path):
+    zipped_path = output_path
+    output_path = output_path.replace(".tar.gz", "")
+    model.unpack_model(zipped_path, output_path)
+    return output_path
