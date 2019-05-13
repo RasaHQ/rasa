@@ -22,7 +22,7 @@ Command                    Effect
 ``rasa train``             Trains a model using your nlu data and stories, saves trained model in ``./models``.
 ``rasa interactive``       Starts an interactive learning session, to create new training data by chatting.
 ``rasa test``              Tests a trained model using your test nlu data and stories.
-``rasa show``              Visualize Rasa Stack data.
+``rasa show``              Visualize training data.
 ``rasa data``              Utils for the Rasa training files.
 ``rasa -h``                Shows all available commands.
 =========================  ===================================================================================
