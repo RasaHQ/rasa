@@ -57,7 +57,7 @@ class NGramFeaturizer(Featurizer):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
-        return ["spacy", "sklearn", "cloudpickle"]
+        return ["spacy", "sklearn"]
 
     def train(
         self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any

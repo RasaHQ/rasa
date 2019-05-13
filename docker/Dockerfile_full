@@ -47,9 +47,9 @@ RUN apt-get update -qq \
     && apt-get remove -y wget \
     && apt-get autoremove -y
 
-RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > /dev/null \
+RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
     && python -m spacy link en_core_web_md en \
-    && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > /dev/null \
+    && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > /dev/null \
     && python -m spacy link de_core_news_sm de
 
 COPY sample_configs/config_pretrained_embeddings_spacy_duckling.yml /app/config.yml
