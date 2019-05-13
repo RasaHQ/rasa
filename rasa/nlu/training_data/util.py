@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os
+from typing import Text
+
+from rasa.nlu import utils
 
 logger = logging.getLogger(__name__)
 
@@ -23,3 +27,23 @@ def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
             "with {1}->{3} during merge"
             "".format(context_str, text, entity_synonyms[text], syn)
         )
+
+
+def get_file_format(resource_name: Text) -> Text:
+    from rasa.nlu.training_data.loading import _guess_format
+
+    if resource_name is None or not os.path.exists(resource_name):
+        raise AttributeError("Resource '{}' does not exist.".format(resource_name))
+
+    files = utils.list_files(resource_name)
+
+    file_formats = list(map(lambda f: _guess_format(f), files))
+
+    if not file_formats:
+        return "json"
+
+    fformat = file_formats[0]
+    if fformat == "md" and all(f == fformat for f in file_formats):
+        return fformat
+
+    return "json"
