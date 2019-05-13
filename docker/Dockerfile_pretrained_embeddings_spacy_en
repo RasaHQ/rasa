@@ -41,8 +41,8 @@ RUN pip install -r alt_requirements/requirements_pretrained_embeddings_spacy.txt
 COPY --from=builder /build/rasa.tar.gz .
 RUN pip install ./rasa.tar.gz[sql,spacy]
 
-RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > /dev/null \
-    && python -m spacy link en_core_web_md en 
+RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
+    && python -m spacy link en_core_web_md en
 
 COPY sample_configs/config_pretrained_embeddings_spacy.yml /app/config.yml
 

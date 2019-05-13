@@ -59,7 +59,8 @@ Changed
 - Merged rasa.core and rasa.nlu server into a single server. See swagger file in ``docs/_static/spec/server.yaml`` for
   available endpoints.
 - ``utter_custom_message()`` method in rasa_core_sdk has been renamed to ``utter_elements()``
-
+- updated dependencies. as part of this, models for spacy need to be reinstalled
+  for 2.1 (from 2.0)
 
 Removed
 -------

@@ -147,7 +147,8 @@ def add_url_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContai
 
 def add_test_nlu_model_param(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "-m" "--model",
+        "-m",
+        "--model",
         type=str,
         default=None,
         help="Path to a trained Rasa model. If a directory "
@@ -160,7 +161,8 @@ def add_test_nlu_model_param(parser: argparse.ArgumentParser):
 def add_test_core_model_param(parser: argparse.ArgumentParser):
     default_path = get_latest_model(DEFAULT_MODELS_PATH)
     parser.add_argument(
-        "-m" "--model",
+        "-m",
+        "--model",
         nargs="+",
         default=[default_path],
         help="Path to a pre-trained model. If it is a 'tar.gz' file that model file "
