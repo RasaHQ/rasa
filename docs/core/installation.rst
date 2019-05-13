@@ -36,7 +36,7 @@ that you install and use `Anaconda <https://www.anaconda.com/download/>`_.
 
     If you want to run custom action code, please also take a look at
     :ref:`customactions`. You'll need to install Rasa Core to train and
-    use the model and ``rasa_core_sdk`` to develop your custom action code.
+    use the model and ``rasa_sdk`` to develop your custom action code.
 
 
 Latest (Most recent github)

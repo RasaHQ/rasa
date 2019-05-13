@@ -117,8 +117,8 @@ When the ``fetch_profile`` action is run, it returns a
 
 .. code-block:: python
 
-   from rasa_core_sdk.actions import Action
-   from rasa_core_sdk.events import SlotSet
+   from rasa_sdk.actions import Action
+   from rasa_sdk.events import SlotSet
    import requests
 
    class FetchProfileAction(Action):
