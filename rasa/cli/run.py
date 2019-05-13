@@ -44,7 +44,7 @@ def add_subparser(
 
 
 def run_actions(args: argparse.Namespace):
-    import rasa_core_sdk.endpoint as sdk
+    import rasa_sdk.__main__ as sdk
     import sys
 
     args.actions = args.actions or DEFAULT_ACTIONS_PATH
@@ -54,7 +54,7 @@ def run_actions(args: argparse.Namespace):
     path = args.actions.replace(".", os.sep) + ".py"
     _ = get_validated_path(path, "action", DEFAULT_ACTIONS_PATH)
 
-    sdk.main(args)
+    sdk.main_from_args(args)
 
 
 def run(args: argparse.Namespace):

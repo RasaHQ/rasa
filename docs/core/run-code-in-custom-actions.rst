@@ -63,7 +63,7 @@ And pass it to the scripts using ``--endpoints endpoints.yml``.
 
 You can create an action server in node.js, .NET, java, or any
 other language and define your actions there - but we provide
-a small python sdk to make development there even easier.
+a small python SDK to make development there even easier.
 
 Custom Actions Written in Python
 --------------------------------
@@ -71,25 +71,25 @@ Custom Actions Written in Python
 For actions written in python, we have a convenient SDK which starts
 this action server for you.
 
-The only thing your action server needs to install is ``rasa_core_sdk``:
+The only thing your action server needs to install is ``rasa-sdk``:
 
 .. code-block:: bash
 
-    pip install rasa_core_sdk
+    pip install rasa-sdk
 
 .. note::
 
     You do not need to install ``rasa`` for your action server.
-    E.g. it is recommended to run Rasa Core in a docker container and
+    E.g. it is recommended to run Rasa in a docker container and
     create a separate container for your action server. In this
-    separate container, you only need to install ``rasa_core_sdk``.
+    separate container, you only need to install ``rasa-sdk``.
 
 If your actions are defined in a file
 called ``actions.py``, run this command:
 
 .. code-block:: bash
 
-    python -m rasa_core_sdk.endpoint --actions actions
+    python -m rasa_sdk --actions actions
 
 .. _custom_action_example:
 
@@ -99,8 +99,8 @@ which might look like this:
 
 .. testcode::
 
-   from rasa_core_sdk import Action
-   from rasa_core_sdk.events import SlotSet
+   from rasa_sdk import Action
+   from rasa_sdk.events import SlotSet
 
    class ActionCheckRestaurants(Action):
       def name(self):
@@ -123,11 +123,11 @@ three arguments. You can access the values of slots and the latest message
 sent by the user using the ``tracker`` object, and you can send messages
 back to the user with the ``dispatcher`` object, by calling
 ``dispatcher.utter_template``, ``dispatcher.utter_message``, or any other
-``rasa_core_sdk.executor.CollectingDispatcher`` method.
+``rasa_sdk.executor.CollectingDispatcher`` method.
 
 Details of the ``run`` method:
 
-.. automethod:: rasa_core_sdk.Action.run
+.. automethod:: rasa_sdk.Action.run
 
 
 There is an example of a ``SlotSet`` event

@@ -26,7 +26,7 @@ Run the following command to start interactive learning:
 
 .. code-block:: bash
 
-   python3 -m rasa_core_sdk.endpoint --actions actions&
+   python3 -m rasa_sdk --actions actions&
 
    rasa interactive \
      -o models \

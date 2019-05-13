@@ -1,5 +1,8 @@
 import argparse
-from typing import List
+from typing import List, Text
+
+from rasa.nlu.training_data.loading import _guess_format
+from rasa.nlu.utils import list_files
 
 from rasa import data
 from rasa.cli.arguments import data as arguments
@@ -65,11 +68,17 @@ def add_subparser(
 
 def split_nlu_data(args):
     from rasa.nlu.training_data.loading import load_data
+    from rasa.nlu.training_data.util import get_file_format
 
     data_path = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = data.get_nlu_directory(data_path)
+
     nlu_data = load_data(data_path)
+    fformat = get_file_format(data_path)
+
     train, test = nlu_data.train_test_split(args.training_fraction)
 
-    train.persist(args.out, filename="training_data.json")
-    test.persist(args.out, filename="test_data.json")
+    train.persist(
+        args.out, filename="training_data.{}".format(fformat), fformat=fformat
+    )
+    test.persist(args.out, filename="test_data.{}".format(fformat), fformat=fformat)

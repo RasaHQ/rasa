@@ -10,6 +10,7 @@ from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
+from rasa.nlu.training_data.util import get_file_format
 
 
 def test_example_training_data_is_valid():
@@ -501,3 +502,23 @@ def test_markdown_entity_regex():
         ],
     }
     assert fourth.text == "show me chines restaurants"
+
+
+def test_get_file_format():
+    fformat = get_file_format("data/examples/luis/demo-restaurants.json")
+
+    assert fformat == "json"
+
+    fformat = get_file_format("data/examples")
+
+    assert fformat == "json"
+
+    fformat = get_file_format("examples/restaurantbot/data/nlu.md")
+
+    assert fformat == "md"
+
+    with pytest.raises(AttributeError):
+        get_file_format("path-does-not-exists")
+
+    with pytest.raises(AttributeError):
+        get_file_format(None)

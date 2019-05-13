@@ -21,7 +21,7 @@ Rasa Core.
 
 You can take a look at the FormAction base class by clicking this link:
 
-.. autoclass:: rasa_core_sdk.forms.FormAction
+.. autoclass:: rasa_sdk.forms.FormAction
 
 Domain Format
 -------------
