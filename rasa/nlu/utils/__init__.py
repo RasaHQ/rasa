@@ -249,7 +249,7 @@ def json_unpickle(file_name: Text) -> Any:
 
     jsonpickle_numpy.register_handlers()
 
-    with io.open(file_name, "r", encoding="utf-8") as f:
+    with open(file_name, "r", encoding="utf-8") as f:
         return jsonpickle.loads(f.read())
 
 
