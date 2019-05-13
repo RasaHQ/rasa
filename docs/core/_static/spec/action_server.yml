@@ -1,6 +1,6 @@
 openapi: "3.0.2"
 info:
-  title: "Rasa Core SDK - Action Server Endpoint"
+  title: "Rasa SDK - Action Server Endpoint"
   version: "0.0.0"
   description: >-
     API of the action server which is used by Rasa Core 
