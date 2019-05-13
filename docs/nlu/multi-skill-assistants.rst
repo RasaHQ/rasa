@@ -8,7 +8,7 @@ Multi Skill Assistants
 ======================
 
 Rasa supports building AI assistants from multiple contextual AI assistant projects.
-This allows it to develop reusable building blocks of skills which you can reuse among
+This allows for the development of reusable building blocks of skills which you can use within
 your projects. One skill could for example handle chitchat, while the other skill
 is responsible for greeting your users. You can develop each skill isolated and then
 import them for the combined training of contextual AI assistant.
