@@ -6,6 +6,27 @@ Core Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
+[0.14.4] - 2019-05-13
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process form actions in core evaluations
+
+[0.14.3] - 2019-05-07
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed interactive learning history printing
+
+[0.14.2] - 2019-05-07
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed required version of ``rasa_core_sdk`` during installation
+
 [0.14.1] - 2019-05-02
 ^^^^^^^^^^^^^^^^^^^^^
 
