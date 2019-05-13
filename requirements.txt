@@ -43,6 +43,6 @@ python-socketio==4.0.1
 pydot==1.4.1
 async_generator==1.10
 SQLAlchemy~=1.3.3
-psycopg2-binary==2.8.2
 kafka-python==1.4.6
 sklearn-crfsuite==0.3.6
+psycopg2-binary==2.8.2
