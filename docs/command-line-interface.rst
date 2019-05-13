@@ -22,7 +22,7 @@ Command                    Effect
 ``rasa train``             Trains a model using your nlu data and stories, saves trained model in ``./models``.
 ``rasa interactive``       Starts an interactive learning session, to create new training data by chatting.
 ``rasa test``              Tests a trained model using your test nlu data and stories.
-``rasa show``              Visualize training data.
+``rasa show``              Visualize Rasa Stack data.
 ``rasa data``              Utils for the Rasa training files.
 ``rasa -h``                Shows all available commands.
 =========================  ===================================================================================
@@ -244,7 +244,8 @@ This command will attempt to keep the proportions of intents the same in train a
 Convert Data Between Markdown and JSON
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To convert nlu data from LUIS data format, WIT data format, json, or markdown to json or markdown, run:
+To convert nlu data from LUIS data format, WIT data format, Dialogflow data format, json, or markdown
+to json or markdown, run:
 
 .. code:: bash
 
