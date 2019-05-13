@@ -41,7 +41,9 @@ def add_stories_param(
     )
 
 
-def add_nlu_data_param(parser: argparse.ArgumentParser):
+def add_nlu_data_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "-u",
         "--nlu",
@@ -77,12 +79,6 @@ def add_out_param(parser: argparse.ArgumentParser):
         type=str,
         default=DEFAULT_MODELS_PATH,
         help="Directory where your models should be stored.",
-    )
-
-
-def add_core_model_param(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "--core", type=str, help="Path to a pre-trained Rasa Core model (tar.gz file)."
     )
 
 
