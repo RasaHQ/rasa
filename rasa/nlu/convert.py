@@ -8,15 +8,17 @@ from rasa.nlu import training_data
 from rasa.nlu.utils import write_to_file
 
 
-def convert_training_data(data_file: Text, out_file: Text, language: Text):
+def convert_training_data(
+    data_file: Text, out_file: Text, output_format: Text, language: Text
+):
     if not os.path.exists(data_file):
         print_error("Data file '{}' does not exist.".format(data_file))
         return
 
-    if data_file.endswith("md"):
+    if output_format == "md":
         td = training_data.load_data(data_file, language)
         output = td.as_json(indent=2)
-    elif data_file.endswith("json"):
+    elif output_format == "json":
         td = training_data.load_data(data_file, language)
         output = td.as_markdown()
     else:
@@ -29,7 +31,7 @@ def convert_training_data(data_file: Text, out_file: Text, language: Text):
 
 
 def main(args: argparse.Namespace):
-    convert_training_data(args.data_file, args.out_file, args.language)
+    convert_training_data(args.data_file, args.out_file, args.format, args.language)
 
 
 if __name__ == "__main__":
