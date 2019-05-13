@@ -68,6 +68,7 @@ def add_subparser(
 
 def split_nlu_data(args):
     from rasa.nlu.training_data.loading import load_data
+    from rasa.nlu.training_data.util import get_file_format
 
     data_path = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = data.get_nlu_directory(data_path)
@@ -81,18 +82,3 @@ def split_nlu_data(args):
         args.out, filename="training_data.{}".format(fformat), fformat=fformat
     )
     test.persist(args.out, filename="test_data.{}".format(fformat), fformat=fformat)
-
-
-def get_file_format(resource_name: Text) -> Text:
-    files = list_files(resource_name)
-
-    file_formats = list(map(lambda f: _guess_format(f), files))
-
-    if not file_formats:
-        return "json"
-
-    fformat = file_formats[0]
-    if all(f == fformat for f in file_formats):
-        return fformat
-
-    return "json"
