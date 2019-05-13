@@ -116,9 +116,7 @@ class MessengerBot(OutputChannel):
         # this is a bit hacky, but the client doesn't have a proper API to
         # send messages but instead expects the incoming sender to be present
         # which we don't have as it is stored in the input channel.
-        self.messenger_client.send(
-            element.to_dict(), recipient_id, "RESPONSE"
-        )
+        self.messenger_client.send(element.to_dict(), recipient_id, "RESPONSE")
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
@@ -167,9 +165,7 @@ class MessengerBot(OutputChannel):
                     },
                 }
             }
-            self.messenger_client.send(
-                payload, recipient_id, "RESPONSE"
-            )
+            self.messenger_client.send(payload, recipient_id, "RESPONSE")
 
     async def send_quick_replies(
         self,
@@ -197,9 +193,7 @@ class MessengerBot(OutputChannel):
                 "payload": {"template_type": "generic", "elements": elements},
             }
         }
-        self.messenger_client.send(
-            payload, recipient_id, "RESPONSE"
-        )
+        self.messenger_client.send(payload, recipient_id, "RESPONSE")
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
@@ -208,9 +202,7 @@ class MessengerBot(OutputChannel):
 
         recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
 
-        self.messenger_client.send(
-            json_message, recipient_id, "RESPONSE"
-        )
+        self.messenger_client.send(json_message, recipient_id, "RESPONSE")
 
     @staticmethod
     def _add_text_info(quick_replies: List[Dict[Text, Any]]) -> None:
