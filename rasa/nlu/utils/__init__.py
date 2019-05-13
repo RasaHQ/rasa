@@ -260,7 +260,7 @@ def json_pickle(file_name: Text, obj: Any) -> None:
 
     jsonpickle_numpy.register_handlers()
 
-    with io.open(file_name, "w", encoding="utf-8") as f:
+    with open(file_name, "w", encoding="utf-8") as f:
         f.write(jsonpickle.dumps(obj))
 
 
