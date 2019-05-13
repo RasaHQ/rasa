@@ -197,7 +197,7 @@ class SklearnIntentClassifier(Component):
 
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
-        if self.clf:
+        if self.clf and self.le:
             utils.json_pickle(
                 os.path.join(model_dir, encoder_file_name), self.le.classes_
             )
