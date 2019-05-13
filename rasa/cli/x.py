@@ -81,11 +81,10 @@ def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
         .ask()
     )
 
-    print_success(
-        "Your decision has been stored into {}. " "".format(GLOBAL_USER_CONFIG_PATH)
-    )
-
     if not args.no_prompt:
+        print_success(
+            "Your decision has been stored into {}. " "".format(GLOBAL_USER_CONFIG_PATH)
+        )
         date = datetime.datetime.now()
         write_global_config_value("metrics", {"enabled": allow_metrics, "date": date})
 
