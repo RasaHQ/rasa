@@ -430,4 +430,6 @@ def _decompress(output_path):
     zipped_path = output_path
     output_path = output_path.replace(".tar.gz", "")
     model.unpack_model(zipped_path, output_path)
+    os.remove(zipped_path)
+
     return output_path
