@@ -9,29 +9,34 @@ async def test_endpoint_config():
             "https://example.com/",
             params={"A": "B"},
             headers={"X-Powered-By": "Rasa"},
-            basic_auth={"username": "user",
-                        "password": "pass"},
+            basic_auth={"username": "user", "password": "pass"},
             token="mytoken",
             token_name="letoken",
             type="redis",
             port=6379,
             db=0,
             password="password",
-            timeout=30000
+            timeout=30000,
         )
 
-        mocked.post('https://example.com/test?A=B&P=1&letoken=mytoken',
-                    payload={"ok": True},
-                    repeat=True,
-                    status=200)
+        mocked.post(
+            "https://example.com/test?A=B&P=1&letoken=mytoken",
+            payload={"ok": True},
+            repeat=True,
+            status=200,
+        )
 
-        await endpoint.request("post", subpath="test",
-                               content_type="application/text",
-                               json={"c": "d"},
-                               params={"P": "1"})
+        await endpoint.request(
+            "post",
+            subpath="test",
+            content_type="application/text",
+            json={"c": "d"},
+            params={"P": "1"},
+        )
 
-        r = latest_request(mocked, 'post',
-                           "https://example.com/test?A=B&P=1&letoken=mytoken")
+        r = latest_request(
+            mocked, "post", "https://example.com/test?A=B&P=1&letoken=mytoken"
+        )
 
         assert r
 

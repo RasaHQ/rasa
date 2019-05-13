@@ -1,12 +1,12 @@
 help:
-	@echo "    train-core"
-	@echo "        Train a dialogue model using Rasa core."
 	@echo "    run"
 	@echo "        Runs the bot on the command line."
 	@echo "    run-core"
 	@echo "        Runs the core server."
 	@echo "    run-actions"
 	@echo "        Runs the action server."
+	@echo "    train-core"
+	@echo "        Train a dialogue model using Rasa core."
 	@echo "    train-interactive"
 	@echo "        Train the bot with interactive learning."
 	@echo "    visualize"
@@ -17,17 +17,16 @@ run:
 	make run-core
 
 run-core:
-	python -m rasa.core.run --core models/dialogue --endpoints endpoints.yml
+	rasa run -m models --endpoints endpoints.yml
 
 run-actions:
-	python -m rasa_core_sdk.endpoint --actions actions
+	rasa run actions
 
 train-core:
-	python train.py
+	rasa train core -d domain.yml -s data/stories.md -o models -c config.yml
 
 train-interactive:
-	make run-actions&
-	python train_interactive.py
+	rasa interactive -d domain.yml -m models -c config.yml --data data
 
 visualize:
-	python visualize.py
+	rasa show stories

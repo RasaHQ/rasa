@@ -16,23 +16,11 @@ def nlg_response_format_spec():
     return {
         "type": "object",
         "properties": {
-            "text": {
-                "type": "string"
-            },
-            "buttons": {
-                "type": ["array", "null"],
-                "items": {"type": "object"}
-            },
-            "elements": {
-                "type": ["array", "null"],
-                "items": {"type": "object"}
-            },
-            "attachment": {
-                "type": ["object", "null"]
-            },
-            "image": {
-                "type": ["string", "null"]
-            }
+            "text": {"type": "string"},
+            "buttons": {"type": ["array", "null"], "items": {"type": "object"}},
+            "elements": {"type": ["array", "null"], "items": {"type": "object"}},
+            "attachment": {"type": ["object", "null"]},
+            "image": {"type": ["string", "null"]},
         },
     }
 
@@ -53,23 +41,20 @@ def nlg_request_format_spec():
                     "latest_message": {"type": "object"},
                     "latest_event_time": {"type": "number"},
                     "paused": {"type": "boolean"},
-                    "events": {"type": "array"}
-                }
+                    "events": {"type": "array"},
+                },
             },
-            "channel": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"}
-                }
-            }
+            "channel": {"type": "object", "properties": {"name": {"type": "string"}}},
         },
     }
 
 
-def nlg_request_format(template_name: Text,
-                       tracker: DialogueStateTracker,
-                       output_channel: Text,
-                       **kwargs: Any) -> Dict[Text, Any]:
+def nlg_request_format(
+    template_name: Text,
+    tracker: DialogueStateTracker,
+    output_channel: Text,
+    **kwargs: Any
+) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
 
     tracker_state = tracker.current_state(EventVerbosity.ALL)
@@ -78,9 +63,7 @@ def nlg_request_format(template_name: Text,
         "template": template_name,
         "arguments": kwargs,
         "tracker": tracker_state,
-        "channel": {
-            "name": output_channel
-        }
+        "channel": {"name": output_channel},
     }
 
 
@@ -96,20 +79,25 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         self.nlg_endpoint = endpoint_config
 
-    async def generate(self, template_name: Text, tracker: DialogueStateTracker,
-                       output_channel: Text, **kwargs: Any) -> Dict[Text, Any]:
+    async def generate(
+        self,
+        template_name: Text,
+        tracker: DialogueStateTracker,
+        output_channel: Text,
+        **kwargs: Any
+    ) -> Dict[Text, Any]:
         """Retrieve a named template from the domain using an endpoint."""
 
-        body = nlg_request_format(template_name,
-                                  tracker,
-                                  output_channel,
-                                  **kwargs)
+        body = nlg_request_format(template_name, tracker, output_channel, **kwargs)
 
-        logger.debug("Requesting NLG for {} from {}."
-                     "".format(template_name, self.nlg_endpoint.url))
+        logger.debug(
+            "Requesting NLG for {} from {}."
+            "".format(template_name, self.nlg_endpoint.url)
+        )
 
         response = await self.nlg_endpoint.request(
-            method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT)
+            method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT
+        )
 
         if self.validate_response(response):
             return response
@@ -135,5 +123,6 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                 ". Failed to validate NLG response from API, make sure your "
                 "response from the NLG endpoint is valid. "
                 "For more information about the format visit "
-                "https://nlu.rasa.com/...")
+                "https://nlu.rasa.com/..."
+            )
             raise e

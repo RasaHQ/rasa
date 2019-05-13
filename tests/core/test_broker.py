@@ -9,12 +9,14 @@ from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 TEST_EVENTS = [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
     SlotSet("name", "rasa"),
-    Restarted()]
+    Restarted(),
+]
 
 
 def test_pika_broker_from_config():
-    cfg = read_endpoint_config('data/test_endpoints/event_brokers/'
-                               'pika_endpoint.yml', "event_broker")
+    cfg = read_endpoint_config(
+        "data/test_endpoints/event_brokers/pika_endpoint.yml", "event_broker"
+    )
     actual = broker.from_endpoint_config(cfg)
 
     assert isinstance(actual, PikaProducer)
@@ -32,8 +34,9 @@ def test_no_broker_in_config():
 
 
 def test_file_broker_from_config():
-    cfg = read_endpoint_config("data/test_endpoints/event_brokers/"
-                               "file_endpoint.yml", "event_broker")
+    cfg = read_endpoint_config(
+        "data/test_endpoints/event_brokers/file_endpoint.yml", "event_broker"
+    )
     actual = broker.from_endpoint_config(cfg)
 
     assert isinstance(actual, FileProducer)
@@ -43,8 +46,9 @@ def test_file_broker_from_config():
 def test_file_broker_logs_to_file(tmpdir):
     fname = tmpdir.join("events.log").strpath
 
-    actual = broker.from_endpoint_config(EndpointConfig(**{"type": "file",
-                                                           "path": fname}))
+    actual = broker.from_endpoint_config(
+        EndpointConfig(**{"type": "file", "path": fname})
+    )
 
     for e in TEST_EVENTS:
         actual.publish(e.as_dict())
@@ -61,8 +65,9 @@ def test_file_broker_logs_to_file(tmpdir):
 def test_file_broker_properly_logs_newlines(tmpdir):
     fname = tmpdir.join("events.log").strpath
 
-    actual = broker.from_endpoint_config(EndpointConfig(**{"type": "file",
-                                                           "path": fname}))
+    actual = broker.from_endpoint_config(
+        EndpointConfig(**{"type": "file", "path": fname})
+    )
 
     event_with_newline = UserUttered("hello \n there")
 
@@ -88,14 +93,18 @@ def test_load_non_existent_custom_broker_name():
 
 
 def test_kafka_broker_from_config():
-    endpoints_path = 'data/test_endpoints/event_brokers/' \
-                     'kafka_plaintext_endpoint.yml'
+    endpoints_path = "data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml"
     cfg = read_endpoint_config(endpoints_path, "event_broker")
 
     actual = KafkaProducer.from_endpoint_config(cfg)
 
-    expected = KafkaProducer("localhost", "username", "password",
-                             topic="topic", security_protocol="SASL_PLAINTEXT")
+    expected = KafkaProducer(
+        "localhost",
+        "username",
+        "password",
+        topic="topic",
+        security_protocol="SASL_PLAINTEXT",
+    )
 
     assert actual.host == expected.host
     assert actual.sasl_username == expected.sasl_username

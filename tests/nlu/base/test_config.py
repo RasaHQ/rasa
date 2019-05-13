@@ -25,8 +25,7 @@ def test_blank_config():
 
 def test_invalid_config_json():
     file_config = """pipeline: [pretrained_embeddings_spacy"""  # invalid yaml
-    with tempfile.NamedTemporaryFile("w+",
-                                     suffix="_tmp_config_file.json") as f:
+    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json") as f:
         f.write(file_config)
         f.flush()
         with pytest.raises(config.InvalidConfigError):
@@ -60,8 +59,7 @@ def test_set_attr_on_component(default_config):
     cfg.set_component_attr(6, C=324)
 
     assert cfg.for_component(1) == {"name": "SpacyTokenizer"}
-    assert cfg.for_component(6) == {"name": "SklearnIntentClassifier",
-                                    "C": 324}
+    assert cfg.for_component(6) == {"name": "SklearnIntentClassifier", "C": 324}
 
 
 def test_override_defaults_supervised_embeddings_pipeline():

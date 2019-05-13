@@ -1,7 +1,7 @@
 :desc: Read more about how to run custom actions and code with open source Rasa
-       Stack to integrate your contextual Assistant in your processes and databases. 
+       Stack to integrate your contextual Assistant in your processes and databases.
 
-.. _customactions:
+.. _actions:
 
 Actions
 =======
@@ -13,14 +13,14 @@ There are three kinds of actions in Rasa Core:
 
  1. **default actions** (``action_listen``, ``action_restart``,
     ``action_default_fallback``)
- 2. **utter actions**, starting with ``utter_``, which just sends a message
+ 2. **utterance actions**, starting with ``utter_``, which just send a message
     to the user (see :ref:`responses`).
  3. **custom actions** - any other action, these actions can run arbitrary code
 
-Utter Actions
--------------
+Utterance Actions
+-----------------
 
-To define an ``UtterAction``, add an utterance template to the domain file,
+To define an utterance action (``ActionUtterTemplate``), add an utterance template to the domain file
 that starts with ``utter_``:
 
 .. code-block:: yaml
@@ -29,7 +29,7 @@ that starts with ``utter_``:
       utter_my_message:
         - "this is what I want my action to say!"
 
-It is conventional to start the name of an ``UtterAction`` with ``utter_``.
+It is conventional to start the name of an utterance action with ``utter_``.
 If this prefix is missing, you can still use the template in your custom
 actions, but the template can not be directly predicted as its own action.
 See :ref:`responses` for more details.
@@ -37,6 +37,8 @@ See :ref:`responses` for more details.
 If you use an external NLG service, you don't need to specify the
 templates in the domain, but you still need to add the utterance names
 to the actions list of the domain.
+
+.. _customactions:
 
 Custom Actions
 --------------
@@ -135,18 +137,23 @@ events in :ref:`events`.
 Default Actions
 ---------------
 
-There are three default actions:
+There are four default actions:
 
 +-----------------------------+------------------------------------------------+
-| ``action_listen``           | stop predicting more actions and wait for user |
+| ``action_listen``           | Stop predicting more actions and wait for user |
 |                             | input                                          |
 +-----------------------------+------------------------------------------------+
-| ``action_restart``          | reset the whole conversation, usually triggered|
+| ``action_restart``          | Reset the whole conversation, usually triggered|
 |                             | by using ``/restart``                          |
 +-----------------------------+------------------------------------------------+
-| ``action_default_fallback`` | undoes the last user message (as if the user   |
+| ``action_default_fallback`` | Undoes the last user message (as if the user   |
 |                             | did not send it) and utters a message that the |
 |                             | bot did not understand. See :ref:`fallbacks`.  |
++-----------------------------+------------------------------------------------+
+|``action_back``              | Triggered by typing ``/back``. Undoes the last |
+|                             | user message (as if the user did not send it)  |
+|                             | and utters a message to the user if one is     |
+|                             | provided as ``utter_back`` in the domain.      |
 +-----------------------------+------------------------------------------------+
 
 All the default actions can be overwritten. To do so, add the action name

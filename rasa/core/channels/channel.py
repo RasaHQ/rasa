@@ -1,14 +1,13 @@
 import asyncio
-from asyncio import Queue, CancelledError
-
 import inspect
 import json
 import logging
-from sanic import Sanic, Blueprint, response
-from typing import (
-    Text, List, Dict, Any, Optional, Callable, Iterable,
-    Awaitable)
 import uuid
+from asyncio import Queue, CancelledError
+from sanic import Sanic, Blueprint, response
+from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
+
+import rasa.utils.endpoints
 from rasa.core import utils
 from rasa.core.constants import DOCS_BASE_URL
 
@@ -27,14 +26,15 @@ class UserMessage(object):
 
     DEFAULT_SENDER_ID = "default"
 
-    def __init__(self,
-                 text: Optional[Text],
-                 output_channel: Optional['OutputChannel'] = None,
-                 sender_id: Text = None,
-                 parse_data: Dict[Text, Any] = None,
-                 input_channel: Text = None,
-                 message_id: Text = None
-                 ) -> None:
+    def __init__(
+        self,
+        text: Optional[Text],
+        output_channel: Optional["OutputChannel"] = None,
+        sender_id: Text = None,
+        parse_data: Dict[Text, Any] = None,
+        input_channel: Text = None,
+        message_id: Text = None,
+    ) -> None:
         if text:
             self.text = text.strip()
         else:
@@ -60,10 +60,9 @@ class UserMessage(object):
         self.parse_data = parse_data
 
 
-def register(input_channels: List['InputChannel'],
-             app: Sanic,
-             route: Optional[Text]
-             ) -> None:
+def register(
+    input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]
+) -> None:
     async def handler(*args, **kwargs):
         await app.agent.handle_message(*args, **kwargs)
 
@@ -78,10 +77,10 @@ def register(input_channels: List['InputChannel'],
 def button_to_string(button, idx=0):
     """Create a string representation of a button."""
 
-    title = button.pop('title', '')
+    title = button.pop("title", "")
 
-    if 'payload' in button:
-        payload = " ({})".format(button.pop('payload'))
+    if "payload" in button:
+        payload = " ({})".format(button.pop("payload"))
     else:
         payload = ""
 
@@ -92,10 +91,8 @@ def button_to_string(button, idx=0):
         details = ""
 
     button_string = "{idx}: {title}{payload}{details}".format(
-        idx=idx + 1,
-        title=title,
-        payload=payload,
-        details=details)
+        idx=idx + 1, title=title, payload=payload, details=details
+    )
 
     return button_string
 
@@ -103,18 +100,16 @@ def button_to_string(button, idx=0):
 def element_to_string(element, idx=0):
     """Create a string representation of an element."""
 
-    title = element.pop('title', '')
+    title = element.pop("title", "")
 
     element_string = "{idx}: {title} - {element}".format(
-        idx=idx + 1,
-        title=title,
-        element=json.dumps(element, sort_keys=True))
+        idx=idx + 1, title=title, element=json.dumps(element, sort_keys=True)
+    )
 
     return element_string
 
 
 class InputChannel(object):
-
     @classmethod
     def name(cls):
         """Every input channel needs a name to identify it."""
@@ -127,26 +122,27 @@ class InputChannel(object):
     def url_prefix(self):
         return self.name()
 
-    def blueprint(self,
-                  on_new_message: Callable[[UserMessage], Awaitable[None]]
-                  ) -> None:
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[None]]
+    ) -> None:
         """Defines a Sanic blueprint.
 
         The blueprint will be attached to a running sanic server and handle
         incoming routes it registered for."""
-        raise NotImplementedError(
-            "Component listener needs to provide blueprint.")
+        raise NotImplementedError("Component listener needs to provide blueprint.")
 
     @classmethod
     def raise_missing_credentials_exception(cls):
-        raise Exception("To use the {} input channel, you need to "
-                        "pass a credentials file using '--credentials'. "
-                        "The argument should be a file path pointing to"
-                        "a yml file containing the {} authentication"
-                        "information. Details in the docs: "
-                        "{}/connectors/#{}-setup".
-                        format(cls.name(), cls.name(),
-                               DOCS_BASE_URL, cls.name()))
+        raise Exception(
+            "To use the {} input channel, you need to "
+            "pass a credentials file using '--credentials'. "
+            "The argument should be a file path pointing to"
+            "a yml file containing the {} authentication"
+            "information. Details in the docs: "
+            "{}/connectors/#{}-setup".format(
+                cls.name(), cls.name(), DOCS_BASE_URL, cls.name()
+            )
+        )
 
 
 class OutputChannel(object):
@@ -160,93 +156,119 @@ class OutputChannel(object):
         """Every output channel needs a name to identify it."""
         return cls.__name__
 
-    async def send_response(self, recipient_id: Text,
-                            message: Dict[Text, Any]) -> None:
+    async def send_response(self, recipient_id: Text, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
 
-        if message.get("elements"):
-            await self.send_custom_message(recipient_id,
-                                           message.get("elements"))
+        if message.get("custom"):
+            return await self.send_custom_json(
+                recipient_id, message.pop("custom"), **message
+            )
 
         if message.get("quick_replies"):
-            await self.send_quick_replies(recipient_id,
-                                          message.get("text"),
-                                          message.get("quick_replies"))
+            await self.send_quick_replies(
+                recipient_id,
+                message.pop("text"),
+                message.pop("quick_replies"),
+                **message
+            )
 
-        elif message.get("buttons"):
-            await self.send_text_with_buttons(recipient_id,
-                                              message.get("text"),
-                                              message.get("buttons"))
-        elif message.get("text"):
-            await self.send_text_message(recipient_id,
-                                         message.get("text"))
+        if message.get("buttons"):
+            await self.send_text_with_buttons(
+                recipient_id, message.pop("text"), message.pop("buttons"), **message
+            )
+
+        if message.get("text"):
+            await self.send_text_message(recipient_id, message.pop("text"), **message)
 
         # if there is an image we handle it separately as an attachment
         if message.get("image"):
-            await self.send_image_url(recipient_id, message.get("image"))
+            await self.send_image_url(recipient_id, message.pop("image"), **message)
 
         if message.get("attachment"):
-            await self.send_attachment(recipient_id, message.get("attachment"))
+            await self.send_attachment(
+                recipient_id, message.pop("attachment"), **message
+            )
 
-    async def send_text_message(self, recipient_id: Text,
-                                message: Text) -> None:
+        if message.get("elements"):
+            await self.send_elements(recipient_id, message.pop("elements"), **message)
+
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         """Send a message through this channel."""
 
-        raise NotImplementedError("Output channel needs to implement a send "
-                                  "message for simple texts.")
+        raise NotImplementedError(
+            "Output channel needs to implement a send message for simple texts."
+        )
 
-    async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        await self.send_text_message(recipient_id,
-                                     "Image: {}".format(image_url))
+        await self.send_text_message(recipient_id, "Image: {}".format(image), **kwargs)
 
-    async def send_attachment(self, recipient_id: Text,
-                              attachment: Text) -> None:
+    async def send_attachment(
+        self, recipient_id: Text, attachment: Text, **kwargs: Any
+    ) -> None:
         """Sends an attachment. Default will just post as a string."""
 
-        await self.send_text_message(recipient_id,
-                                     "Attachment: {}".format(attachment))
+        await self.send_text_message(
+            recipient_id, "Attachment: {}".format(attachment), **kwargs
+        )
 
-    async def send_text_with_buttons(self,
-                                     recipient_id: Text,
-                                     message: Text,
-                                     buttons: List[Dict[Text, Any]],
-                                     **kwargs: Any) -> None:
+    async def send_text_with_buttons(
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        **kwargs: Any
+    ) -> None:
         """Sends buttons to the output.
 
         Default implementation will just post the buttons as a string."""
 
-        await self.send_text_message(recipient_id, message)
+        await self.send_text_message(recipient_id, text, **kwargs)
         for idx, button in enumerate(buttons):
             button_msg = button_to_string(button, idx)
-            await self.send_text_message(recipient_id, button_msg)
+            await self.send_text_message(recipient_id, button_msg, **kwargs)
 
-    async def send_quick_replies(self,
-                                 recipient_id: Text,
-                                 message: Text,
-                                 buttons: List[Dict[Text, Any]],
-                                 **kwargs: Any) -> None:
+    async def send_quick_replies(
+        self,
+        recipient_id: Text,
+        text: Text,
+        quick_replies: List[Dict[Text, Any]],
+        **kwargs: Any
+    ) -> None:
         """Sends quick replies to the output.
 
         Default implementation will just send as buttons."""
 
-        await self.send_text_with_buttons(recipient_id, message, buttons,
-                                          **kwargs)
+        await self.send_text_with_buttons(recipient_id, text, quick_replies, **kwargs)
 
-    async def send_custom_message(self,
-                                  recipient_id: Text,
-                                  elements: Iterable[Dict[Text, Any]]) -> None:
+    async def send_elements(
+        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
+    ) -> None:
         """Sends elements to the output.
 
         Default implementation will just post the elements as a string."""
 
         for element in elements:
             element_msg = "{title} : {subtitle}".format(
-                title=element.get('title', ''),
-                subtitle=element.get('subtitle', ''))
+                title=element.get("title", ""), subtitle=element.get("subtitle", "")
+            )
             await self.send_text_with_buttons(
-                recipient_id, element_msg, element.get('buttons', []))
+                recipient_id, element_msg, element.get("buttons", [], **kwargs)
+            )
+
+    async def send_custom_json(
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
+        """Sends json dict to the output channel.
+
+        Default implementation will just post the json contents as a string."""
+
+        await self.send_text_message(recipient_id, json.dumps(json_message), **kwargs)
 
 
 class CollectingOutputChannel(OutputChannel):
@@ -262,11 +284,9 @@ class CollectingOutputChannel(OutputChannel):
         return "collector"
 
     @staticmethod
-    def _message(recipient_id,
-                 text=None,
-                 image=None,
-                 buttons=None,
-                 attachment=None):
+    def _message(
+        recipient_id, text=None, image=None, buttons=None, attachment=None, custom=None
+    ):
         """Create a message object that will be stored."""
 
         obj = {
@@ -274,7 +294,8 @@ class CollectingOutputChannel(OutputChannel):
             "text": text,
             "image": image,
             "buttons": buttons,
-            "attachment": attachment
+            "attachment": attachment,
+            "custom": custom,
         }
 
         # filter out any values that are `None`
@@ -289,31 +310,41 @@ class CollectingOutputChannel(OutputChannel):
     async def _persist_message(self, message):
         self.messages.append(message)
 
-    async def send_text_message(self, recipient_id, message):
-        for message_part in message.split("\n\n"):
-            await self._persist_message(self._message(recipient_id,
-                                                      text=message_part))
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
+        for message_part in text.split("\n\n"):
+            await self._persist_message(self._message(recipient_id, text=message_part))
 
-    async def send_text_with_buttons(self, recipient_id, message, buttons,
-                                     **kwargs):
-        await self._persist_message(self._message(recipient_id,
-                                                  text=message,
-                                                  buttons=buttons))
-
-    async def send_image_url(self,
-                             recipient_id: Text,
-                             image_url: Text) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        await self._persist_message(self._message(recipient_id,
-                                                  image=image_url))
+        await self._persist_message(self._message(recipient_id, image=image))
 
-    async def send_attachment(self, recipient_id: Text,
-                              attachment: Text) -> None:
+    async def send_attachment(
+        self, recipient_id: Text, attachment: Text, **kwargs: Any
+    ) -> None:
         """Sends an attachment. Default will just post as a string."""
 
-        await self._persist_message(self._message(recipient_id,
-                                                  attachment=attachment))
+        await self._persist_message(self._message(recipient_id, attachment=attachment))
+
+    async def send_text_with_buttons(
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        **kwargs: Any
+    ) -> None:
+        await self._persist_message(
+            self._message(recipient_id, text=text, buttons=buttons)
+        )
+
+    async def send_custom_json(
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
+        await self._persist_message(self._message(recipient_id, custom=json_message))
 
 
 class QueueOutputChannel(CollectingOutputChannel):
@@ -331,7 +362,7 @@ class QueueOutputChannel(CollectingOutputChannel):
         self.messages = Queue() if not message_queue else message_queue
 
     def latest_output(self):
-        raise NotImplemented("A queue doesn't allow to peek at messages.")
+        raise NotImplementedError("A queue doesn't allow to peek at messages.")
 
     async def _persist_message(self, message):
         await self.messages.put(message)
@@ -352,8 +383,9 @@ class RestInput(InputChannel):
     async def on_message_wrapper(on_new_message, text, queue, sender_id):
         collector = QueueOutputChannel(queue)
 
-        message = UserMessage(text, collector, sender_id,
-                              input_channel=RestInput.name())
+        message = UserMessage(
+            text, collector, sender_id, input_channel=RestInput.name()
+        )
         await on_new_message(message)
 
         await queue.put("DONE")
@@ -369,7 +401,8 @@ class RestInput(InputChannel):
         async def stream(resp):
             q = Queue()
             task = asyncio.ensure_future(
-                self.on_message_wrapper(on_new_message, text, q, sender_id))
+                self.on_message_wrapper(on_new_message, text, q, sender_id)
+            )
             while True:
                 result = await q.get()
                 if result == "DONE":
@@ -382,37 +415,47 @@ class RestInput(InputChannel):
 
     def blueprint(self, on_new_message):
         custom_webhook = Blueprint(
-            'custom_webhook_{}'.format(type(self).__name__),
-            inspect.getmodule(self).__name__)
+            "custom_webhook_{}".format(type(self).__name__),
+            inspect.getmodule(self).__name__,
+        )
 
         # noinspection PyUnusedLocal
-        @custom_webhook.route("/", methods=['GET'])
+        @custom_webhook.route("/", methods=["GET"])
         async def health(request):
             return response.json({"status": "ok"})
 
-        @custom_webhook.route("/webhook", methods=['POST'])
+        @custom_webhook.route("/webhook", methods=["POST"])
         async def receive(request):
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
-            should_use_stream = utils.bool_arg(request, "stream",
-                                               default=False)
+            should_use_stream = rasa.utils.endpoints.bool_arg(
+                request, "stream", default=False
+            )
 
             if should_use_stream:
                 return response.stream(
                     self.stream_response(on_new_message, text, sender_id),
-                    content_type='text/event-stream')
+                    content_type="text/event-stream",
+                )
             else:
                 collector = CollectingOutputChannel()
                 # noinspection PyBroadException
                 try:
-                    await on_new_message(UserMessage(text, collector, sender_id,
-                                                     input_channel=self.name()))
+                    await on_new_message(
+                        UserMessage(
+                            text, collector, sender_id, input_channel=self.name()
+                        )
+                    )
                 except CancelledError:
-                    logger.error("Message handling timed out for "
-                                 "user message '{}'.".format(text))
+                    logger.error(
+                        "Message handling timed out for "
+                        "user message '{}'.".format(text)
+                    )
                 except Exception:
-                    logger.exception("An exception occured while handling "
-                                     "user message '{}'.".format(text))
+                    logger.exception(
+                        "An exception occured while handling "
+                        "user message '{}'.".format(text)
+                    )
                 return response.json(collector.messages)
 
         return custom_webhook

@@ -4,12 +4,12 @@ from rasa_core_sdk.events import SlotSet
 
 class ActionSearchConcerts(Action):
     def name(self):
-        return 'action_search_concerts'
+        return "action_search_concerts"
 
     def run(self, dispatcher, tracker, domain):
         concerts = [
             {"artist": "Foo Fighters", "reviews": 4.5},
-            {"artist": "Katy Perry", "reviews": 5.}
+            {"artist": "Katy Perry", "reviews": 5.0},
         ]
         description = ", ".join([c["artist"] for c in concerts])
         dispatcher.utter_message("{}".format(description))
@@ -18,12 +18,12 @@ class ActionSearchConcerts(Action):
 
 class ActionSearchVenues(Action):
     def name(self):
-        return 'action_search_venues'
+        return "action_search_venues"
 
     def run(self, dispatcher, tracker, domain):
         venues = [
             {"name": "Big Arena", "reviews": 4.5},
-            {"name": "Rock Cellar", "reviews": 5.}
+            {"name": "Rock Cellar", "reviews": 5.0},
         ]
         dispatcher.utter_message("here are some venues I found")
         description = ", ".join([c["name"] for c in venues])
@@ -33,7 +33,7 @@ class ActionSearchVenues(Action):
 
 class ActionShowConcertReviews(Action):
     def name(self):
-        return 'action_show_concert_reviews'
+        return "action_show_concert_reviews"
 
     def run(self, dispatcher, tracker, domain):
         concerts = tracker.get_slot("concerts")
@@ -43,7 +43,7 @@ class ActionShowConcertReviews(Action):
 
 class ActionShowVenueReviews(Action):
     def name(self):
-        return 'action_show_venue_reviews'
+        return "action_show_venue_reviews"
 
     def run(self, dispatcher, tracker, domain):
         venues = tracker.get_slot("venues")

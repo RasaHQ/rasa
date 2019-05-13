@@ -123,7 +123,7 @@ When the ``fetch_profile`` action is run, it returns a
 
    class FetchProfileAction(Action):
        def name(self):
-           return "fetch_profile"
+           return "action_fetch_profile"
 
        def run(self, dispatcher, tracker, domain):
            url = "http://myprofileurl.com"
