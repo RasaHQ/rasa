@@ -6,7 +6,7 @@ from rasa.nlu import data_router, config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.model import Trainer
 from rasa.nlu.utils import zip_folder
-from rasa.nlu import training_data
+from rasa.nlu import training_data, train
 
 logging.basicConfig(level="DEBUG")
 
@@ -15,6 +15,8 @@ CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 TEST_MODEL_PATH = "test_models/test_model_pretrained_embeddings"
+
+MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 # see `rasa.nlu.data_router` for details. avoids deadlock in
 # `deferred_from_future` function during tests
@@ -31,6 +33,17 @@ def spacy_nlp(component_builder, default_config):
     spacy_nlp_config = {'name': 'SpacyNLP'}
     return component_builder.create_component(spacy_nlp_config,
                                               default_config).nlp
+
+
+@pytest.fixture(scope="session")
+def trained_moodbot_path():
+    _, _, persisted_path = train(
+        data="examples/moodbot/data/nlu.md",
+        nlu_config="examples/moodbot/config.yml",
+        path=MOODBOT_MODEL_PATH,
+    )
+
+    return persisted_path
 
 
 @pytest.fixture(scope="session")
