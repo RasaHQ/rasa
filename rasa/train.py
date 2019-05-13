@@ -108,7 +108,7 @@ async def train_async(
             "No dialogue data present. Just a Rasa NLU model will be trained."
         )
         return _train_nlu_with_validated_data(
-            config, nlu_data_directory, output_path, None, fix_model_name
+            config, nlu_data_directory, output_path, None, fix_model_name, uncompress
         )
 
     if nlu_data_not_present:
@@ -156,7 +156,12 @@ async def train_async(
 
     if force_training or retrain_nlu:
         _train_nlu_with_validated_data(
-            config, nlu_data_directory, output_path, train_path, fix_model_name
+            config,
+            nlu_data_directory,
+            output_path,
+            train_path,
+            fix_model_name,
+            uncompress,
         )
     else:
         print ("NLU data / configuration did not change. No need to retrain NLU model.")
