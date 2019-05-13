@@ -594,7 +594,7 @@ def create_app(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
-                output=rjs.get("out", DEFAULT_MODELS_PATH),
+                output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
             )
 

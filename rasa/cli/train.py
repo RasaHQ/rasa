@@ -66,6 +66,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         args.out,
         args.force,
         args.fix_model_name,
+        args.store_uncompressed,
         extract_additional_arguments(args),
     )
 
@@ -103,6 +104,7 @@ def train_core(
             output,
             train_path,
             args.fix_model_name,
+            args.store_uncompressed,
             extract_additional_arguments(args),
         )
     else:
@@ -124,7 +126,14 @@ def train_nlu(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
-    return train_nlu(config, nlu_data, output, train_path, args.fix_model_name)
+    return train_nlu(
+        config,
+        nlu_data,
+        output,
+        train_path,
+        args.fix_model_name,
+        args.store_uncompressed,
+    )
 
 
 def extract_additional_arguments(args: argparse.Namespace) -> Dict:

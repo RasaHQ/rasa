@@ -21,9 +21,8 @@ def set_train_arguments(parser: argparse.ArgumentParser):
     add_dump_stories_param(parser)
 
     add_model_name_param(parser)
-    add_compress_param(parser)
-
     add_force_param(parser)
+    add_compress_param(parser)
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser):
@@ -35,22 +34,20 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
     add_debug_plots_param(parser)
     add_dump_stories_param(parser)
 
-    add_force_param(parser)
+    add_compare_params(parser)
 
     add_model_name_param(parser)
     add_compress_param(parser)
-
-    add_compare_params(parser)
 
 
 def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
     add_out_param(parser)
 
+    add_nlu_data_param(parser)
+
     add_model_name_param(parser)
     add_compress_param(parser)
-
-    add_nlu_data_param(parser)
 
 
 def add_force_param(parser: argparse.ArgumentParser):
