@@ -4,7 +4,7 @@ import tempfile
 from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.skill import SkillSelector
 
 from rasa.cli.utils import (
@@ -84,7 +84,11 @@ async def train_async(
     retrain_nlu = True
 
     skill_imports = SkillSelector.load(config)
-    domain = Domain.load(domain, skill_imports)
+    try:
+        domain = Domain.load(domain, skill_imports)
+    except InvalidDomain as e:
+        print_error(e)
+        return None
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
         training_files, skill_imports
@@ -245,7 +249,11 @@ async def train_core_async(
     skill_imports = SkillSelector.load(config)
 
     if isinstance(domain, str):
-        domain = Domain.load(domain, skill_imports)
+        try:
+            domain = Domain.load(domain, skill_imports)
+        except InvalidDomain as e:
+            print_error(e)
+            return None
 
     story_directory = data.get_core_directory(stories, skill_imports)
 
