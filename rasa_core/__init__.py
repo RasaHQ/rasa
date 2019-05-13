@@ -7,7 +7,7 @@ import warnings
 sys.modules["rasa_core"] = rasa.core
 
 warnings.warn(
-    "The 'rasa_core' package hase been renamed. You should change "
+    "The 'rasa_core' package has been renamed. You should change "
     "your imports to use 'rasa.core' instead.",
     UserWarning,
 )
