@@ -3,6 +3,8 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
+import jsonpickle
+
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
@@ -277,7 +279,7 @@ class CountVectorsFeaturizer(Featurizer):
         file_name = file_name + ".pkl"
         if self.vectorizer:
             featurizer_file = os.path.join(model_dir, file_name)
-            utils.pycloud_pickle(featurizer_file, self.vectorizer)
+            utils.json_pickle(featurizer_file, self.vectorizer.vocabulary_)
         return {"file": file_name}
 
     @classmethod
@@ -289,12 +291,16 @@ class CountVectorsFeaturizer(Featurizer):
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         **kwargs: Any
     ) -> "CountVectorsFeaturizer":
+        from sklearn.feature_extraction.text import CountVectorizer
 
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(featurizer_file):
-            vectorizer = utils.pycloud_unpickle(featurizer_file)
+            vocabulary = utils.json_unpickle(featurizer_file)
+
+            vectorizer = CountVectorizer()
+            vectorizer.vocabulary_ = vocabulary
             return cls(meta, vectorizer)
         else:
             return cls(meta)

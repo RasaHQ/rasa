@@ -762,8 +762,7 @@ def create_app(
             "No text message defined in request_body. Add text message to request body "
             "in order to obtain the intent and extracted entities.",
         )
-
-        emulation_mode = request.raw_args.get("emulation_mode", None)
+        emulation_mode = request.args.get("emulation_mode")
         emulator = _create_emulator(emulation_mode)
 
         try:
