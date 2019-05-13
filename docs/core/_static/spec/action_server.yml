@@ -3,7 +3,7 @@ info:
   title: "Rasa SDK - Action Server Endpoint"
   version: "0.0.0"
   description: >-
-    API of the action server which is used by Rasa Core 
+    API of the action server which is used by Rasa 
     to execute custom actions.
 servers:
   - url: "http://localhost:5055/webhook"

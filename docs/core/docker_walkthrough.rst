@@ -1,4 +1,4 @@
-:desc: Setup open source Rasa with Docker in your own infrastructure for on
+:desc: Set up open source Rasa with Docker in your own infrastructure for on
        premise contextual AI assistants and chatbots. 
 
 .. _docker_walkthrough:
