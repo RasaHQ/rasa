@@ -147,7 +147,6 @@ async def train_async(
             kwargs=kwargs,
         )
 
-    if retrain_core or retrain_nlu:
         return _package_model(
             new_fingerprint=new_fingerprint,
             output_path=output_path,
@@ -274,6 +273,13 @@ async def train_core_async(
 
     story_directory = data.get_core_directory(stories, skill_imports)
 
+    if not os.listdir(story_directory):
+        print_error(
+            "No dialogue data given. Please provide dialogue data in order to "
+            "train a Rasa Core model."
+        )
+        return
+
     return await _train_core_with_validated_data(
         domain=domain,
         config=config,
@@ -299,13 +305,6 @@ async def _train_core_with_validated_data(
     """Train Core with validated training and config data."""
 
     import rasa.core.train
-
-    if not os.listdir(story_directory):
-        print_error(
-            "No dialogue data given. Please provide dialogue data in order to "
-            "train a Rasa Core model."
-        )
-        return
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -367,6 +366,13 @@ def train_nlu(
     skill_imports = SkillSelector.load(config)
     nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
 
+    if not os.listdir(nlu_data_directory):
+        print_error(
+            "No NLU data given. Please provide NLU data in order to train "
+            "a Rasa NLU model."
+        )
+        return
+
     return _train_nlu_with_validated_data(
         config=config,
         nlu_data_directory=nlu_data_directory,
@@ -388,13 +394,6 @@ def _train_nlu_with_validated_data(
     """Train NLU with validated training and config data."""
 
     import rasa.nlu.train
-
-    if not os.listdir(nlu_data_directory):
-        print_error(
-            "No NLU data given. Please provide NLU data in order to train "
-            "a Rasa NLU model."
-        )
-        return
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -464,7 +463,11 @@ def _package_model(
     if uncompress:
         output_path = decompress(output_path)
 
-    print_success("Your Rasa model is trained and saved at '{}'.".format(output_path))
+    print_success(
+        "Your Rasa model is trained and saved at '{}'.".format(
+            os.path.abspath(output_path)
+        )
+    )
 
     return output_path
 
