@@ -226,7 +226,7 @@ class SlackInput(InputChannel):
             ]:
                 text = re.sub(regex, replacement, text)
 
-        return text.rstrip().lstrip()  # drop extra spaces at beginning and end
+        return text.strip()
 
     async def process_message(self, request: Request, on_new_message, text, sender_id):
         """Slack retries to post messages up to 3 times based on
