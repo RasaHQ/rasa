@@ -43,11 +43,9 @@ def show_stories(args: argparse.Namespace):
     import rasa.core.visualize
 
     loop = asyncio.get_event_loop()
-    args.config = args.config
-    args.url = None
 
     args.stories = data.get_core_directory(args.stories)
-    if os.path.exists(DEFAULT_DATA_PATH):
+    if args.nlu_data is None and os.path.exists(DEFAULT_DATA_PATH):
         args.nlu_data = data.get_nlu_directory(DEFAULT_DATA_PATH)
 
     loop.run_until_complete(
