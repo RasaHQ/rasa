@@ -1,3 +1,68 @@
+import os
+
+from rasa.nlu.utils import list_files
+
+
+def test_train(run_in_default_project):
+
+    result, temp_dir = run_in_default_project(
+        "train",
+        "-c",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--data",
+        "data",
+        "--out",
+        "train_models",
+        "--force",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "train_models"))
+    files = list_files(os.path.join(temp_dir, "train_models"))
+    assert len(files) == 1
+
+
+def test_train_core(run_in_default_project):
+
+    result, temp_dir = run_in_default_project(
+        "train",
+        "core",
+        "-c",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--stories",
+        "data",
+        "--out",
+        "train_models",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "train_models"))
+    files = list_files(os.path.join(temp_dir, "train_models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]).startswith("core-")
+
+
+def test_train_nlu(run_in_default_project):
+
+    result, temp_dir = run_in_default_project(
+        "train",
+        "nlu",
+        "-c",
+        "config.yml",
+        "--nlu",
+        "data/nlu.md",
+        "--out",
+        "train_models",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "train_models"))
+    files = list_files(os.path.join(temp_dir, "train_models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]).startswith("nlu-")
+
+
 def test_train_help(run):
     help, _ = run("train", "--help")
 
