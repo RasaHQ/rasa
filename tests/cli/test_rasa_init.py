@@ -2,18 +2,16 @@ import os
 
 
 def test_init(run):
-    temp_dir = os.getcwd()
-
     run("init", "--no-prompt", "--quiet")
 
-    assert os.path.exists(os.path.join(temp_dir, "actions.py"))
-    assert os.path.exists(os.path.join(temp_dir, "domain.yml"))
-    assert os.path.exists(os.path.join(temp_dir, "config.yml"))
-    assert os.path.exists(os.path.join(temp_dir, "credentials.yml"))
-    assert os.path.exists(os.path.join(temp_dir, "endpoints.yml"))
-    assert os.path.exists(os.path.join(temp_dir, "models"))
-    assert os.path.exists(os.path.join(temp_dir, "data", "nlu.md"))
-    assert os.path.exists(os.path.join(temp_dir, "data", "stories.md"))
+    assert os.path.exists("actions.py")
+    assert os.path.exists("domain.yml")
+    assert os.path.exists("config.yml")
+    assert os.path.exists("credentials.yml")
+    assert os.path.exists("endpoints.yml")
+    assert os.path.exists("models")
+    assert os.path.exists("data/nlu.md")
+    assert os.path.exists("data/stories.md")
 
 
 def test_init_help(run):

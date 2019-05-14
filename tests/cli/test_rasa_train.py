@@ -28,8 +28,6 @@ def test_train(run_in_default_project):
 
 
 def test_train_core(run_in_default_project):
-    temp_dir = os.getcwd()
-
     run_in_default_project(
         "train",
         "core",
@@ -46,16 +44,12 @@ def test_train_core(run_in_default_project):
         "rasa-model",
     )
 
-    assert os.path.exists(os.path.join(temp_dir, "train_rasa_models"))
-    assert os.path.exists(
-        os.path.join(temp_dir, "train_rasa_models", "core-rasa-model")
-    )
-    assert os.path.isdir(os.path.join(temp_dir, "train_rasa_models", "core-rasa-model"))
+    assert os.path.exists("train_rasa_models")
+    assert os.path.exists("train_rasa_models/core-rasa-model")
+    assert os.path.isdir("train_rasa_models/core-rasa-model")
 
 
 def test_train_nlu(run_in_default_project):
-    temp_dir = os.getcwd()
-
     run_in_default_project(
         "train",
         "nlu",
@@ -67,8 +61,8 @@ def test_train_nlu(run_in_default_project):
         "train_models",
     )
 
-    assert os.path.exists(os.path.join(temp_dir, "train_models"))
-    files = list_files(os.path.join(temp_dir, "train_models"))
+    assert os.path.exists("train_models")
+    files = list_files("train_models")
     assert len(files) == 1
     assert os.path.basename(files[0]).startswith("nlu-")
 
