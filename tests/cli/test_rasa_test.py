@@ -1,3 +1,31 @@
+import os
+
+from rasa.nlu.utils import list_files
+
+
+def test_train(run_in_default_project):
+
+    result, temp_dir = run_in_default_project("test")
+
+    assert os.path.exists(os.path.join(temp_dir, "results"))
+
+
+def test_train_core(run_in_default_project):
+
+    result, temp_dir = run_in_default_project(
+        "test", "core", "-c", "config.yml", "-d", "domain.yml", "--stories", "data"
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "results"))
+
+
+def test_train_nlu(run_in_default_project):
+
+    run_in_default_project(
+        "test", "nlu", "-m", "models", "-u", "data/nlu.md", "-c", "config.yml"
+    )
+
+
 def test_test_help(run):
     help, _ = run("test", "--help")
 
