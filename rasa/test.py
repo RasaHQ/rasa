@@ -78,7 +78,7 @@ def test_core(
         )
     else:
         print_error(
-            "Not able to test. Make sure both models " "- core and nlu - are available."
+            "Not able to test. Make sure both models - core and nlu - are available."
         )
 
 

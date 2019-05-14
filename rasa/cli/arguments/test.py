@@ -14,23 +14,25 @@ from rasa.model import get_latest_model
 
 def set_test_arguments(parser: argparse.ArgumentParser):
     add_model_param(parser, add_positional_arg=False)
+
     core_arguments = parser.add_argument_group("Core Test Arguments")
-    add_core_test_argument_group(core_arguments)
+    add_test_core_argument_group(core_arguments)
+
     nlu_arguments = parser.add_argument_group("NLU Test Arguments")
-    add_nlu_test_argument_group(nlu_arguments)
+    add_test_nlu_argument_group(nlu_arguments)
 
 
 def set_test_core_arguments(parser: argparse.ArgumentParser):
     add_test_core_model_param(parser)
-    add_core_test_argument_group(parser)
+    add_test_core_argument_group(parser)
 
 
 def set_test_nlu_arguments(parser: argparse.ArgumentParser):
     add_test_nlu_model_param(parser)
-    add_nlu_test_argument_group(parser)
+    add_test_nlu_argument_group(parser)
 
 
-def add_core_test_argument_group(
+def add_test_core_argument_group(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
     add_stories_param(parser, "test")
@@ -68,7 +70,7 @@ def add_core_test_argument_group(
     )
 
 
-def add_nlu_test_argument_group(
+def add_test_nlu_argument_group(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
     add_nlu_data_param(parser)
