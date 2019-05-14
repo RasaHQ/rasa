@@ -1,8 +1,7 @@
 import logging
-
-from sanic import Blueprint, request, response
 from mattermostwrapper import MattermostAPI
-from typing import Text
+from sanic import Blueprint, response
+from typing import Text, Dict, Any
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -26,9 +25,18 @@ class MattermostBot(MattermostAPI, OutputChannel):
         super(MattermostBot, self).__init__(url, team)
         super(MattermostBot, self).login(user, pw)
 
-    async def send_text_message(self, recipient_id, message):
-        for message_part in message.split("\n\n"):
-            super(MattermostBot, self).post_channel(self.bot_channel, message_part)
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
+        for message_part in text.split("\n\n"):
+            self.post_channel(self.bot_channel, message_part)
+
+    async def send_custom_json(
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
+        json_message.setdefault("channel_id", self.bot_channel)
+        json_message.setdefault("message", "")
+        self.post("/posts", json_message)
 
 
 class MattermostInput(InputChannel):

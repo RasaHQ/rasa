@@ -43,90 +43,6 @@ IntentEvaluationResult = namedtuple(
 )
 
 
-def create_argument_parser():
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="evaluate a Rasa NLU pipeline with cross "
-        "validation or on external data"
-    )
-
-    utils.add_logging_option_arguments(parser, default=logging.INFO)
-    _add_arguments(parser)
-
-    return parser
-
-
-def _add_arguments(parser):
-    parser.add_argument(
-        "-d", "--data", required=True, help="file containing training/evaluation data"
-    )
-
-    parser.add_argument(
-        "--mode",
-        default="evaluation",
-        help="evaluation|crossvalidation (evaluate "
-        "pretrained model or train model "
-        "by crossvalidation)",
-    )
-
-    # todo: make the two different modes two subparsers
-    parser.add_argument(
-        "-c", "--config", help="model configuration file (crossvalidation only)"
-    )
-
-    parser.add_argument(
-        "-m", "--model", required=False, help="path to model (evaluation only)"
-    )
-
-    parser.add_argument(
-        "-f",
-        "--folds",
-        required=False,
-        default=10,
-        help="number of CV folds (crossvalidation only)",
-    )
-
-    parser.add_argument(
-        "--report",
-        required=False,
-        nargs="?",
-        const="reports",
-        default=False,
-        help="output path to save the intent/entity metrics report",
-    )
-
-    parser.add_argument(
-        "--successes",
-        required=False,
-        nargs="?",
-        const="successes.json",
-        default=False,
-        help="output path to save successful predictions",
-    )
-
-    parser.add_argument(
-        "--errors",
-        required=False,
-        default="errors.json",
-        help="output path to save model errors",
-    )
-
-    parser.add_argument(
-        "--histogram",
-        required=False,
-        default="hist.png",
-        help="output path for the confidence histogram",
-    )
-
-    parser.add_argument(
-        "--confmat",
-        required=False,
-        default="confmat.png",
-        help="output path for the confusion matrix plot",
-    )
-
-
 def plot_confusion_matrix(
     cm, classes, normalize=False, title="Confusion matrix", cmap=None, zmin=1, out=None
 ) -> None:  # pragma: no cover
@@ -795,7 +711,7 @@ def run_evaluation(
     Evaluate intent classification and entity extraction.
 
     :param data_path: path to the test data
-    :param model: path to the model
+    :param model_path: path to the model
     :param report_folder: path to folder where reports are stored
     :param successes: path to file that will contain success cases
     :param errors: path to file that will contain error cases
@@ -815,7 +731,7 @@ def run_evaluation(
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
     else:
-        intent_targets = [None] * test_data.training_examples
+        intent_targets = [None] * len(test_data.training_examples)
 
     intent_results, entity_predictions, tokens = get_predictions(
         interpreter, test_data, intent_targets
@@ -1030,61 +946,9 @@ def return_entity_results(results, dataset_name):
         return_results(result, dataset_name)
 
 
-def main():
-    parser = create_argument_parser()
-    cmdline_args = parser.parse_args()
-    utils.configure_colored_logging(cmdline_args.loglevel)
-
-    if cmdline_args.mode == "crossvalidation":
-
-        # TODO: move parsing into sub parser
-        # manual check argument dependency
-        if cmdline_args.model is not None:
-            parser.error(
-                "Crossvalidation will train a new model "
-                "- do not specify external model."
-            )
-
-        if cmdline_args.config is None:
-            parser.error(
-                "Crossvalidation will train a new model "
-                "you need to specify a model configuration."
-            )
-
-        nlu_config = config.load(cmdline_args.config)
-        data = training_data.load_data(cmdline_args.data)
-        data = drop_intents_below_freq(data, cutoff=5)
-        results, entity_results = cross_validate(
-            data, int(cmdline_args.folds), nlu_config
-        )
-        logger.info("CV evaluation (n={})".format(cmdline_args.folds))
-
-        if any(results):
-            logger.info("Intent evaluation results")
-            return_results(results.train, "train")
-            return_results(results.test, "test")
-        if any(entity_results):
-            logger.info("Entity evaluation results")
-            return_entity_results(entity_results.train, "train")
-            return_entity_results(entity_results.test, "test")
-
-    elif cmdline_args.mode == "evaluation":
-        run_evaluation(
-            cmdline_args.data,
-            cmdline_args.model,
-            cmdline_args.report,
-            cmdline_args.successes,
-            cmdline_args.errors,
-            cmdline_args.confmat,
-            cmdline_args.histogram,
-        )
-
-    logger.info("Finished evaluation")
-
-
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.nlu.test` directly is "
-        "no longer supported. "
-        "Please use `rasa test nlu` instead."
+        "Calling `rasa.nlu.test` directly is no longer supported. Please use "
+        "`rasa test` to test a combined Core and NLU model or `rasa test nlu` "
+        "to test an NLU model."
     )

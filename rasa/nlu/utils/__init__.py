@@ -16,28 +16,6 @@ import rasa.utils.io
 from rasa.utils.endpoints import read_endpoint_config
 
 
-def add_logging_option_arguments(parser, default=logging.WARNING):
-    """Add options to an argument parser to configure logging levels."""
-
-    # arguments for logging configuration
-    parser.add_argument(
-        "--debug",
-        help="Print lots of debugging statements. Sets logging level to DEBUG",
-        action="store_const",
-        dest="loglevel",
-        const=logging.DEBUG,
-        default=default,
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Be verbose. Sets logging level to INFO",
-        action="store_const",
-        dest="loglevel",
-        const=logging.INFO,
-    )
-
-
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
     """Return the path of file relative to `path`."""
 
@@ -264,20 +242,26 @@ def configure_colored_logging(loglevel: Text) -> None:
     )
 
 
-def pycloud_unpickle(file_name: Text) -> Any:
-    """Unpickle an object from file using cloudpickle."""
-    import cloudpickle
+def json_unpickle(file_name: Text) -> Any:
+    """Unpickle an object from file using json."""
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
 
-    with io.open(file_name, "rb") as f:  # pragma: no test
-        return cloudpickle.load(f, encoding="latin-1")
+    jsonpickle_numpy.register_handlers()
+
+    with open(file_name, "r", encoding="utf-8") as f:
+        return jsonpickle.loads(f.read())
 
 
-def pycloud_pickle(file_name: Text, obj: Any) -> None:
-    """Pickle an object to a file using cloudpickle."""
-    import cloudpickle
+def json_pickle(file_name: Text, obj: Any) -> None:
+    """Pickle an object to a file using json."""
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
 
-    with io.open(file_name, "wb") as f:
-        cloudpickle.dump(obj, f)
+    jsonpickle_numpy.register_handlers()
+
+    with open(file_name, "w", encoding="utf-8") as f:
+        f.write(jsonpickle.dumps(obj))
 
 
 def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Text
 
-from rasa.nlu.emulators import NoEmulator
+from rasa.nlu.emulators.no_emulator import NoEmulator
 
 
 class DialogflowEmulator(NoEmulator):

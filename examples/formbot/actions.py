@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, Text, Any, List, Union, Optional
 
-from rasa_core_sdk import Tracker
-from rasa_core_sdk.executor import CollectingDispatcher
-from rasa_core_sdk.forms import FormAction
+from rasa_sdk import Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.forms import FormAction
 
 
 class RestaurantForm(FormAction):

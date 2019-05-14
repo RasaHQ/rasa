@@ -16,7 +16,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    import sklearn_crfsuite
+    from sklearn_crfsuite import CRF
 
 
 class CRFEntityExtractor(EntityExtractor):
@@ -81,7 +81,7 @@ class CRFEntityExtractor(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        ent_tagger: Optional[Dict[Text, Any]] = None,
+        ent_tagger: Optional["CRF"] = None,
     ) -> None:
 
         super(CRFEntityExtractor, self).__init__(component_config)

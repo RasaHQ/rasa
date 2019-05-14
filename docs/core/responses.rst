@@ -61,7 +61,11 @@ the server:
 
 .. code-block:: shell
 
-   rasa run --enable-api
+    $ rasa run \
+       --enable-api \
+       -m examples/babi/models \
+       -o out.log \
+       --endpoints endpoints.yml
 
 
 The body of the ``POST`` request sent to the endpoint will look

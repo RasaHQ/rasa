@@ -3,6 +3,8 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
+import jsonpickle
+
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
@@ -137,7 +139,11 @@ class CountVectorsFeaturizer(Featurizer):
                     "contain single letters only."
                 )
 
-    def __init__(self, component_config=None):
+    def __init__(
+        self,
+        component_config: Dict[Text, Any] = None,
+        vectorizer: Optional["CountVectorsFeaturizer"] = None,
+    ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
 
         super(CountVectorsFeaturizer, self).__init__(component_config)
@@ -152,7 +158,7 @@ class CountVectorsFeaturizer(Featurizer):
         self._check_analyzer()
 
         # declare class instance for CountVectorizer
-        self.vect = None
+        self.vectorizer = vectorizer
 
     def _tokenizer(self, text):
         """Override tokenizer in CountVectorizer."""
@@ -163,11 +169,11 @@ class CountVectorsFeaturizer(Featurizer):
         tokens = token_pattern.findall(text)
 
         if self.OOV_token:
-            if hasattr(self.vect, "vocabulary_"):
+            if hasattr(self.vectorizer, "vocabulary_"):
                 # CountVectorizer is trained, process for prediction
-                if self.OOV_token in self.vect.vocabulary_:
+                if self.OOV_token in self.vectorizer.vocabulary_:
                     tokens = [
-                        t if t in self.vect.vocabulary_.keys() else self.OOV_token
+                        t if t in self.vectorizer.vocabulary_.keys() else self.OOV_token
                         for t in tokens
                     ]
             elif self.OOV_words:
@@ -216,7 +222,7 @@ class CountVectorsFeaturizer(Featurizer):
             # create spacy lemma_ for OOV_words
             self.OOV_words = [t.lemma_ for w in self.OOV_words for t in spacy_nlp(w)]
 
-        self.vect = CountVectorizer(
+        self.vectorizer = CountVectorizer(
             token_pattern=self.token_pattern,
             strip_accents=self.strip_accents,
             lowercase=self.lowercase,
@@ -237,9 +243,9 @@ class CountVectorsFeaturizer(Featurizer):
 
         try:
             # noinspection PyPep8Naming
-            X = self.vect.fit_transform(lem_exs).toarray()
+            X = self.vectorizer.fit_transform(lem_exs).toarray()
         except ValueError:
-            self.vect = None
+            self.vectorizer = None
             return
 
         for i, example in enumerate(training_data.intent_examples):
@@ -250,7 +256,7 @@ class CountVectorsFeaturizer(Featurizer):
             )
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        if self.vect is None:
+        if self.vectorizer is None:
             logger.error(
                 "There is no trained CountVectorizer: "
                 "component is either not trained or "
@@ -259,7 +265,7 @@ class CountVectorsFeaturizer(Featurizer):
         else:
             message_text = self._get_message_text(message)
 
-            bag = self.vect.transform([message_text]).toarray().squeeze()
+            bag = self.vectorizer.transform([message_text]).toarray().squeeze()
             message.set(
                 "text_features", self._combine_with_existing_text_features(message, bag)
             )
@@ -271,8 +277,9 @@ class CountVectorsFeaturizer(Featurizer):
         """
 
         file_name = file_name + ".pkl"
-        featurizer_file = os.path.join(model_dir, file_name)
-        utils.pycloud_pickle(featurizer_file, self)
+        if self.vectorizer:
+            featurizer_file = os.path.join(model_dir, file_name)
+            utils.json_pickle(featurizer_file, self.vectorizer.vocabulary_)
         return {"file": file_name}
 
     @classmethod
@@ -284,14 +291,16 @@ class CountVectorsFeaturizer(Featurizer):
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         **kwargs: Any
     ) -> "CountVectorsFeaturizer":
+        from sklearn.feature_extraction.text import CountVectorizer
 
-        if model_dir and meta.get("file"):
-            file_name = meta.get("file")
-            featurizer_file = os.path.join(model_dir, file_name)
-            return utils.pycloud_unpickle(featurizer_file)
+        file_name = meta.get("file")
+        featurizer_file = os.path.join(model_dir, file_name)
+
+        if os.path.exists(featurizer_file):
+            vocabulary = utils.json_unpickle(featurizer_file)
+
+            vectorizer = CountVectorizer()
+            vectorizer.vocabulary_ = vocabulary
+            return cls(meta, vectorizer)
         else:
-            logger.warning(
-                "Failed to load featurizer. Maybe path {} "
-                "doesn't exist".format(os.path.abspath(model_dir))
-            )
-            return CountVectorsFeaturizer(meta)
+            return cls(meta)

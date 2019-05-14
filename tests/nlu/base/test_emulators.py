@@ -2,8 +2,8 @@ def test_luis_request():
     from rasa.nlu.emulators.luis import LUISEmulator
 
     em = LUISEmulator()
-    norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text", "project": "default", "time": None}
+    norm = em.normalise_request_json({"text": ["arb text"]})
+    assert norm == {"text": "arb text", "time": None}
 
 
 def test_luis_response():
@@ -48,8 +48,8 @@ def test_wit_request():
     from rasa.nlu.emulators.wit import WitEmulator
 
     em = WitEmulator()
-    norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text", "project": "default", "time": None}
+    norm = em.normalise_request_json({"text": ["arb text"]})
+    assert norm == {"text": "arb text", "time": None}
 
 
 def test_wit_response():
@@ -84,8 +84,8 @@ def test_dialogflow_request():
     from rasa.nlu.emulators.dialogflow import DialogflowEmulator
 
     em = DialogflowEmulator()
-    norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text", "project": "default", "time": None}
+    norm = em.normalise_request_json({"text": ["arb text"]})
+    assert norm == {"text": "arb text", "time": None}
 
 
 def test_dialogflow_response():
@@ -123,20 +123,18 @@ def test_dialogflow_response():
 
 
 def test_dummy_request():
-    from rasa.nlu.emulators import NoEmulator
+    from rasa.nlu.emulators.no_emulator import NoEmulator
 
     em = NoEmulator()
-    norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text", "project": "default", "time": None}
+    norm = em.normalise_request_json({"text": ["arb text"]})
+    assert norm == {"text": "arb text", "time": None}
 
-    norm = em.normalise_request_json(
-        {"q": ["arb text"], "project": "specific", "time": "1499279161658"}
-    )
-    assert norm == {"text": "arb text", "project": "specific", "time": "1499279161658"}
+    norm = em.normalise_request_json({"text": ["arb text"], "time": "1499279161658"})
+    assert norm == {"text": "arb text", "time": "1499279161658"}
 
 
 def test_dummy_response():
-    from rasa.nlu.emulators import NoEmulator
+    from rasa.nlu.emulators.no_emulator import NoEmulator
 
     em = NoEmulator()
     data = {"intent": "greet", "text": "hi", "entities": {}, "confidence": 1.0}

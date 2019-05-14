@@ -44,7 +44,7 @@ async def test_formbot_example():
         stories,
         os.path.join(p, "models", "dialogue"),
         endpoints=endpoints,
-        policy_config="rasa/core/default_config.yml",
+        policy_config="rasa/cli/default_config.yml",
     )
     response = {
         "events": [
@@ -93,13 +93,13 @@ async def test_restaurantbot_example():
     p = "examples/restaurantbot/"
     stories = os.path.join("data", "test_stories", "stories_babi_small.md")
     nlu_data = os.path.join(p, "data", "nlu.md")
-    core_model_path = await train_core(
-        os.path.join(p, "domain.yml"), os.path.join(p, "models", "core"), stories
+    await train_core(
+        os.path.join(p, "domain.yml"), os.path.join(p, "models"), "current", stories
     )
-    nlu_model_path = train_nlu(
-        os.path.join(p, "config.yml"), os.path.join(p, "models", "nlu"), nlu_data
+    train_nlu(
+        os.path.join(p, "config.yml"), os.path.join(p, "models"), "current", nlu_data
     )
 
-    responses = await parse("hello", core_model_path, nlu_model_path)
+    responses = await parse("hello", os.path.join(p, "models", "current"))
 
     assert responses[0]["text"] == "how can I help you?"

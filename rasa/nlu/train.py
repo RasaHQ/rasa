@@ -14,73 +14,6 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-def create_argument_parser():
-    parser = argparse.ArgumentParser(description="train a custom language parser")
-
-    parser.add_argument(
-        "-o",
-        "--path",
-        default="models/nlu/",
-        help="Path where model files will be saved",
-    )
-
-    group = parser.add_mutually_exclusive_group(required=True)
-
-    group.add_argument(
-        "-d",
-        "--data",
-        default=None,
-        help="Location of the training data. For JSON and "
-        "markdown data, this can either be a single file "
-        "or a directory containing multiple training "
-        "data files.",
-    )
-
-    group.add_argument(
-        "-u", "--url", default=None, help="URL from which to retrieve training data."
-    )
-
-    group.add_argument(
-        "--endpoints",
-        default=None,
-        help="EndpointConfig defining the server from which pull training data.",
-    )
-
-    parser.add_argument(
-        "-c", "--config", required=True, help="Rasa NLU configuration file"
-    )
-
-    parser.add_argument(
-        "-t",
-        "--num_threads",
-        default=1,
-        type=int,
-        help="Number of threads to use during model training",
-    )
-
-    parser.add_argument(
-        "--project", default=None, help="Project this model belongs to."
-    )
-
-    parser.add_argument(
-        "--fixed_model_name",
-        help="If present, a model will always be persisted "
-        "in the specified directory instead of creating "
-        "a folder like 'model_20171020-160213'",
-    )
-
-    parser.add_argument(
-        "--storage",
-        help="Set the remote location where models are stored. "
-        "E.g. on AWS. If nothing is configured, the "
-        "server will only serve the models that are "
-        "on disk in the configured `path`.",
-    )
-
-    utils.add_logging_option_arguments(parser)
-    return parser
-
-
 class TrainingException(Exception):
     """Exception wrapping lower level exceptions that may happen while training
 
@@ -167,7 +100,7 @@ def train(
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.nlu.train` directly is "
-        "no longer supported. "
-        "Please use `rasa train nlu` instead."
+        "Calling `rasa.nlu.train` directly is no longer supported. Please use "
+        "`rasa train` to train a combined Core and NLU model or `rasa train nlu` "
+        "to train an NLU model."
     )
