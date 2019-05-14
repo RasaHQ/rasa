@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 from sanic import Blueprint, response
+from sanic.request import Request
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 from typing import Dict, Text, Any
@@ -92,13 +93,13 @@ class TwilioInput(InputChannel):
         twilio_webhook = Blueprint("twilio_webhook", __name__)
 
         @twilio_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @twilio_webhook.route("/webhook", methods=["POST"])
-        async def message(request):
-            sender = request.values.get("From", None)
-            text = request.values.get("Body", None)
+        async def message(request: Request):
+            sender = request.form.get("From", None)
+            text = request.form.get("Body", None)
 
             out_channel = TwilioOutput(
                 self.account_sid, self.auth_token, self.twilio_number
