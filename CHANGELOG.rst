@@ -63,6 +63,8 @@ Changed
 - ``utter_custom_message()`` method in rasa_core_sdk has been renamed to ``utter_elements()``
 - updated dependencies. as part of this, models for spacy need to be reinstalled
   for 2.1 (from 2.0)
+- make sure all command line arguments for ``rasa test`` and ``rasa interactive`` are actually used, removed arguments
+  that were not used at all (e.g. ``--core`` for ``rasa test``)
 
 Removed
 -------
