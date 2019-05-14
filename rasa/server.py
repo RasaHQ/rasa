@@ -372,8 +372,18 @@ def create_app(
 
         if evt:
             try:
+                import json
+                print("1. updating tracker in /events", conversation_id, json.dumps(
+                    evt.as_dict(), indent=2))
+
+                print("2. tracker state before update", json.dumps(
+                    tracker.current_state(),
+                    indent=2))
                 tracker.update(evt)
                 app.agent.tracker_store.save(tracker)
+                print("5. tracker state after update", json.dumps(
+                    tracker.current_state(),
+                    indent=2))
                 return response.json(tracker.current_state(verbosity))
             except Exception as e:
                 logger.debug(traceback.format_exc())

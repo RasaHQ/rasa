@@ -405,7 +405,12 @@ class DialogueStateTracker(object):
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
 
+        import json
+        print("3. appending event in update()", json.dumps([e.as_dict() for e in
+                                                            self.events], indent=2))
         self.events.append(event)
+        print("4. have appended event in update()", json.dumps([e.as_dict() for e in
+                                                                self.events], indent=2))
         event.apply_to(self)
 
     def export_stories(self, e2e=False) -> Text:
