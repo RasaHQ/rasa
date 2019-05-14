@@ -65,7 +65,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         training_files,
         args.out,
         args.force,
-        args.fix_model_name,
+        args.fixed_model_name,
         args.store_uncompressed,
         extract_additional_arguments(args),
     )
@@ -103,7 +103,7 @@ def train_core(
             stories,
             output,
             train_path,
-            args.fix_model_name,
+            args.fixed_model_name,
             args.store_uncompressed,
             extract_additional_arguments(args),
         )
@@ -131,7 +131,7 @@ def train_nlu(
         nlu_data,
         output,
         train_path,
-        args.fix_model_name,
+        args.fixed_model_name,
         args.store_uncompressed,
     )
 

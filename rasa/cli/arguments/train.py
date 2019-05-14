@@ -120,7 +120,7 @@ def add_debug_plots_param(parser: argparse.ArgumentParser):
 
 def add_model_name_param(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "--fix-model-name",
+        "--fixed-model-name",
         type=str,
         help="If set, the name of the model file/directory will be set to the given "
         "name.",

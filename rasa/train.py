@@ -32,7 +32,7 @@ def train(
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
-    fix_model_name: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
     uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
@@ -44,7 +44,7 @@ def train(
             training_files,
             output,
             force_training,
-            fix_model_name,
+            fixed_model_name,
             uncompress,
             kwargs,
         )
@@ -57,7 +57,7 @@ async def train_async(
     training_files: Optional[Union[Text, List[Text]]],
     output_path: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
-    fix_model_name: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
     uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
@@ -69,7 +69,7 @@ async def train_async(
         training_files: Paths to the training data for Core and NLU.
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
-        fix_model_name: Name of model to be stored.
+        fixed_model_name: Name of model to be stored.
         uncompress: If 'True' the model will not be compressed.
         kwargs: Additional training parameters.
 
@@ -112,7 +112,7 @@ async def train_async(
             "No dialogue data present. Just a Rasa NLU model will be trained."
         )
         return _train_nlu_with_validated_data(
-            config, nlu_data_directory, output_path, None, fix_model_name, uncompress
+            config, nlu_data_directory, output_path, None, fixed_model_name, uncompress
         )
 
     if nlu_data_not_present:
@@ -123,7 +123,7 @@ async def train_async(
             story_directory,
             output_path,
             None,
-            fix_model_name,
+            fixed_model_name,
             uncompress,
             kwargs,
         )
@@ -148,7 +148,7 @@ async def train_async(
             story_directory,
             output_path,
             train_path,
-            fix_model_name,
+            fixed_model_name,
             uncompress,
             kwargs,
         )
@@ -164,14 +164,14 @@ async def train_async(
             nlu_data_directory,
             output_path,
             train_path,
-            fix_model_name,
+            fixed_model_name,
             uncompress,
         )
     else:
         print ("NLU data / configuration did not change. No need to retrain NLU model.")
 
     if retrain_core or retrain_nlu:
-        output_path = create_output_path(output_path, fix_name=fix_model_name)
+        output_path = create_output_path(output_path, fixed_name=fixed_model_name)
         model.create_package_rasa(train_path, output_path, new_fingerprint)
 
         if uncompress:
@@ -197,7 +197,7 @@ def train_core(
     stories: Text,
     output: Text,
     train_path: Optional[Text] = None,
-    fix_model_name: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
     uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
@@ -209,7 +209,7 @@ def train_core(
             stories,
             output,
             train_path,
-            fix_model_name,
+            fixed_model_name,
             uncompress,
             kwargs,
         )
@@ -222,7 +222,7 @@ async def train_core_async(
     stories: Text,
     output: Text,
     train_path: Optional[Text] = None,
-    fix_model_name: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
     uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
@@ -235,7 +235,7 @@ async def train_core_async(
         output: Output path.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
-        fix_model_name: Name of model to be stored.
+        fixed_model_name: Name of model to be stored.
         uncompress: If 'True' the model will not be compressed.
         kwargs: Additional training parameters.
 
@@ -263,7 +263,7 @@ async def train_core_async(
         story_directory,
         output,
         train_path,
-        fix_model_name,
+        fixed_model_name,
         uncompress,
         kwargs,
     )
@@ -275,7 +275,7 @@ async def _train_core_with_validated_data(
     story_directory: Text,
     output: Text,
     train_path: Optional[Text] = None,
-    fix_model_name: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
     uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
@@ -306,7 +306,7 @@ async def _train_core_with_validated_data(
     if not train_path:
         # Only Core was trained.
         output_path = create_output_path(
-            output, prefix="core-", fix_name=fix_model_name
+            output, prefix="core-", fixed_name=fixed_model_name
         )
         new_fingerprint = model.model_fingerprint(
             config, domain, stories=story_directory
@@ -330,7 +330,7 @@ def train_nlu(
     nlu_data: Text,
     output: Text,
     train_path: Optional[Text],
-    fix_model_name: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
     uncompress: bool = False,
 ) -> Optional[Text]:
     """Trains an NLU model.
@@ -341,7 +341,7 @@ def train_nlu(
         output: Output path.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
-        fix_model_name: Name of the model to be stored.
+        fixed_model_name: Name of the model to be stored.
         uncompress: If 'True' the model will not be compressed.
 
     Returns:
@@ -356,7 +356,7 @@ def train_nlu(
     nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
 
     return _train_nlu_with_validated_data(
-        config, nlu_data_directory, output, train_path, fix_model_name, uncompress
+        config, nlu_data_directory, output, train_path, fixed_model_name, uncompress
     )
 
 
@@ -365,7 +365,7 @@ def _train_nlu_with_validated_data(
     nlu_data_directory: Text,
     output: Text,
     train_path: Optional[Text],
-    fix_model_name: Optional[Text],
+    fixed_model_name: Optional[Text],
     uncompress: bool = False,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
@@ -389,7 +389,9 @@ def _train_nlu_with_validated_data(
 
     if not train_path:
         # Only NLU was trained
-        output_path = create_output_path(output, prefix="nlu-", fix_name=fix_model_name)
+        output_path = create_output_path(
+            output, prefix="nlu-", fixed_name=fixed_model_name
+        )
         new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data_directory)
 
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
