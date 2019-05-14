@@ -20,6 +20,7 @@ def add_subparser(
         "interactive",
         conflict_handler="resolve",
         parents=parents,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Teach the bot with interactive learning",
     )
     interactive_parser.set_defaults(func=interactive)
