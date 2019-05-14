@@ -7,7 +7,7 @@ def test_run_help(run):
                 [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
                 [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
                 [--jwt-method JWT_METHOD]
-                [model-as-positional-argument] {actions} ..."""
+                {actions} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
 
@@ -18,10 +18,8 @@ def test_run_help(run):
 def test_run_action_help(run):
     help = run("run", "actions", "--help")
 
-    help_text = """usage: rasa run [model-as-positional-argument] actions [-h] [-v] [-vv]
-                                                       [--quiet] [-p PORT]
-                                                       [--cors [CORS [CORS ...]]]
-                                                       [--actions ACTIONS]"""
+    help_text = """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]"""
 
     lines = help_text.split("\n")
 

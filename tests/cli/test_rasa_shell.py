@@ -7,7 +7,7 @@ def test_shell_help(run):
                   [--remote-storage REMOTE_STORAGE]
                   [--credentials CREDENTIALS] [--connector CONNECTOR]
                   [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]
-                  [model-as-positional-argument] {nlu} ..."""
+                  {nlu} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
 
@@ -18,9 +18,8 @@ def test_shell_help(run):
 def test_shell_nlu_help(run):
     help = run("shell", "nlu", "--help")
 
-    help_text = """usage: rasa shell [model-as-positional-argument] nlu [-h] [-v] [-vv] [--quiet]
-                                                     [-m MODEL]
-                                                     [model-as-positional-argument]"""
+    help_text = """usage: rasa shell nlu [-h] [-v] [-vv] [--quiet] [-m MODEL]
+                      [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
 
