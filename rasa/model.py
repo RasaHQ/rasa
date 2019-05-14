@@ -191,6 +191,15 @@ def create_package_rasa(
     return output_filename
 
 
+def decompress(model_path: Text):
+    zipped_path = model_path
+    output_path = model_path.replace(".tar.gz", "")
+    unpack_model(zipped_path, output_path)
+    os.remove(zipped_path)
+
+    return output_path
+
+
 def model_fingerprint(
     config_file: Text,
     domain: Optional[Union[Domain, Text]] = None,

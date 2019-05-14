@@ -91,7 +91,9 @@ def parse_last_positional_argument_as_model_path() -> None:
 
 
 def create_output_path(
-    output_path: Text = DEFAULT_MODELS_PATH, prefix: Text = "", fixed_name: Text = None
+    output_path: Text = DEFAULT_MODELS_PATH,
+    prefix: Text = "",
+    fixed_name: Optional[Text] = None,
 ) -> Text:
     """Creates an output path which includes the current timestamp.
 

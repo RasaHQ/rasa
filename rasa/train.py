@@ -5,6 +5,7 @@ from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
 from rasa.core.domain import Domain, InvalidDomain
+from rasa.model import decompress
 from rasa.skill import SkillSelector
 
 from rasa.cli.utils import (
@@ -70,7 +71,7 @@ async def train_async(
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
-        uncompress: If 'True' the model will not be compressed.
+        uncompress: If `True` the model will not be compressed.
         kwargs: Additional training parameters.
 
     Returns:
@@ -175,7 +176,7 @@ async def train_async(
         model.create_package_rasa(train_path, output_path, new_fingerprint)
 
         if uncompress:
-            output_path = _decompress(output_path)
+            output_path = decompress(output_path)
 
         print_success(
             "Your Rasa model is trained and saved at '{}'.".format(output_path)
@@ -236,7 +237,7 @@ async def train_core_async(
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
         fixed_model_name: Name of model to be stored.
-        uncompress: If 'True' the model will not be compressed.
+        uncompress: If `True` the model will not be compressed.
         kwargs: Additional training parameters.
 
     Returns:
@@ -314,7 +315,7 @@ async def _train_core_with_validated_data(
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
 
         if uncompress:
-            output_path = _decompress(output_path)
+            output_path = decompress(output_path)
 
         print_success(
             "Your Rasa Core model is trained and saved at '{}'.".format(output_path)
@@ -342,7 +343,7 @@ def train_nlu(
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
         fixed_model_name: Name of the model to be stored.
-        uncompress: If 'True' the model will not be compressed.
+        uncompress: If `True` the model will not be compressed.
 
     Returns:
         If `train_path` is given it returns the path to the model archive,
@@ -397,7 +398,7 @@ def _train_nlu_with_validated_data(
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
 
         if uncompress:
-            output_path = _decompress(output_path)
+            output_path = decompress(output_path)
 
         print_success(
             "Your Rasa NLU model is trained and saved at '{}'.".format(output_path)
@@ -434,12 +435,3 @@ def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
         enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
 
     return config_path
-
-
-def _decompress(output_path):
-    zipped_path = output_path
-    output_path = output_path.replace(".tar.gz", "")
-    model.unpack_model(zipped_path, output_path)
-    os.remove(zipped_path)
-
-    return output_path
