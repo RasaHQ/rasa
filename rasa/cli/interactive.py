@@ -61,6 +61,8 @@ def interactive_core(args: argparse.Namespace):
     else:
         zipped_model = get_provided_model(args.model)
 
+    args.data = args.stories
+
     perform_interactive_learning(args, zipped_model)
 
 

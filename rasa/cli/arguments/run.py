@@ -1,6 +1,6 @@
 import argparse
 
-from rasa.cli.arguments.default_arguments import add_model_param
+from rasa.cli.arguments.default_arguments import add_model_param, add_endpoint_param
 from rasa.core import constants
 
 
@@ -22,10 +22,9 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         default="rasa_core.log",
         help="Store logs in specified file.",
     )
-    parser.add_argument(
-        "--endpoints",
-        default=None,
-        help="Configuration file for the model server and the connectors as a yml file.",
+    add_endpoint_param(
+        parser,
+        help_text="Configuration file for the model server and the connectors as a yml file.",
     )
 
     server_arguments = parser.add_argument_group("Server Settings")

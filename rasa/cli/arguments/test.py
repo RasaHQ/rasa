@@ -7,6 +7,7 @@ from rasa.cli.arguments.default_arguments import (
     add_stories_param,
     add_model_param,
     add_nlu_data_param,
+    add_endpoint_param,
 )
 from rasa.model import get_latest_model
 
@@ -50,11 +51,7 @@ def add_core_test_argument_group(
         "intent prediction. Requires a story file in end-to-end "
         "format.",
     )
-    parser.add_argument(
-        "--endpoints",
-        default=None,
-        help="Configuration file for the connectors as a yml file.",
-    )
+    add_endpoint_param(parser)
     parser.add_argument(
         "--fail-on-prediction-errors",
         action="store_true",

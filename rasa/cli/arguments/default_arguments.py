@@ -52,7 +52,9 @@ def add_nlu_data_param(
     )
 
 
-def add_domain_param(parser: argparse.ArgumentParser):
+def add_domain_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "-d",
         "--domain",
@@ -62,7 +64,9 @@ def add_domain_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_config_param(parser: argparse.ArgumentParser):
+def add_config_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "-c",
         "--config",
@@ -72,13 +76,20 @@ def add_config_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_out_param(parser: argparse.ArgumentParser):
+def add_out_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
     parser.add_argument(
         "--out",
         type=str,
         default=DEFAULT_MODELS_PATH,
         help="Directory where your models should be stored.",
     )
+
+
+def add_endpoint_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    help_text="Configuration file for the connectors as a yml file.",
+):
+    parser.add_argument("--endpoints", type=str, default=None, help=help_text)
 
 
 def add_logging_options(parser: argparse.ArgumentParser):
