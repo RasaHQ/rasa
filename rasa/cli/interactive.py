@@ -9,7 +9,7 @@ from rasa import data, model
 
 
 # noinspection PyProtectedMember
-from rasa.cli.utils import get_validated_path, print_error, print_warning
+from rasa.cli.utils import get_validated_path, print_error
 from rasa.constants import DEFAULT_DATA_PATH, DEFAULT_MODELS_PATH
 from rasa.model import get_latest_model
 
@@ -61,8 +61,6 @@ def interactive_core(args: argparse.Namespace):
     else:
         zipped_model = get_provided_model(args.model)
 
-    args.data = args.stories
-
     perform_interactive_learning(args, zipped_model)
 
 
@@ -79,7 +77,10 @@ def perform_interactive_learning(args, zipped_model):
 
         shutil.rmtree(model_path)
     else:
-        print_warning("No initial zipped trained model found.")
+        print_error(
+            "No initial zipped trained model found. Interactive learning process "
+            "cannot be started."
+        )
 
 
 def get_provided_model(arg_model: Text):
