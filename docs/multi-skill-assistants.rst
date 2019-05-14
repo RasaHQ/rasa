@@ -1,4 +1,4 @@
-:desc: Iterate quickly by developing reusable building blocks of AI assistant skills
+.. :desc: Iterate quickly by developing reusable building blocks of AI assistant skills
        and combining them at training time.
 
 .. _multi_skill_bots:
@@ -48,6 +48,9 @@ The configuration file of the ``MoodBot`` in turn references the ``GreetBot``:
     imports:
     - ../GreetBot
 
+The ``GreetBot`` skill does not specify further skills so the ``config.yml`` can be
+omitted.
+
 Rasa uses relative paths from the referencing configuration files to import skills.
 These can be anywhere on your file system as long as the file access is permitted.
 
@@ -56,7 +59,11 @@ them, and train a unified AI assistant.
 
 .. note::
 
-    Note that equal identifiers will be merged, e.g. if two skills have training data
-    for an intent ``greet``, their training data will be combined.
+    Rasa will use the policy and NLU pipeline configuration of the root project
+    directory during the training. Policy or NLU configurations of used skills will
+    be ignored.
 
-.. include:: feedback.inc
+.. note::
+
+    Equal identifiers will be merged, e.g. if two skills have training data
+    for an intent ``greet``, their training data will be combined.
