@@ -20,12 +20,16 @@ slots:
 
 templates:
   utter_greet:
-    - "hey there {name}!"  # {name} will be filled by slot (same name) or by custom action code
+    - text: "hey there {name}!"  # {name} will be filled by slot (same name) or by custom action
+  utter_channel:
+    - text: "this is a default channel"
+    - text: "you're talking to me on slack!"  # if you define channel-specific utterances, the bot will pick
+      channel: "slack"                        # from those when talking on that specific channel
   utter_goodbye:
-    - "goodbye 😢"   # multiple templates - bot will randomly pick one of them
-    - "bye bye 😢"
+    - text: "goodbye 😢"   # multiple templates - bot will randomly pick one of them
+    - text: "bye bye 😢"
   utter_default:   # utterance sent by action_default_fallback
-    - "sorry, I didn't get that, can you rephrase it?"
+    - text: "sorry, I didn't get that, can you rephrase it?"
 
 actions:
   - utter_default

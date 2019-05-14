@@ -7,9 +7,12 @@ import tarfile
 import tempfile
 from typing import Text, Tuple, Union, Optional, List, Dict, Any
 
+import rasa.utils.io
 from rasa.constants import DEFAULT_MODELS_PATH
 
 # Type alias for the fingerprint
+from rasa.core.domain import Domain
+
 Fingerprint = Dict[Text, Union[Text, List[Text]]]
 
 logger = logging.getLogger(__name__)
@@ -190,7 +193,7 @@ def create_package_rasa(
 
 def model_fingerprint(
     config_file: Text,
-    domain_file: Optional[Text] = None,
+    domain: Optional[Union[Domain, Text]] = None,
     nlu_data: Optional[Text] = None,
     stories: Optional[Text] = None,
 ) -> Fingerprint:
@@ -199,7 +202,7 @@ def model_fingerprint(
 
     Args:
         config_file: Path to the configuration file.
-        domain_file: Path to the models domain file.
+        domain: Path to the models domain file.
         nlu_data: Path to the used NLU training data.
         stories: Path to the used story training data.
 
@@ -207,14 +210,17 @@ def model_fingerprint(
         The fingerprint.
 
     """
-    import rasa.core
-    import rasa.nlu
     import rasa
     import time
 
+    if isinstance(domain, Domain):
+        domain_hash = hash(domain)
+    else:
+        domain_hash = _get_hashes_for_paths(domain)
+
     return {
         FINGERPRINT_CONFIG_KEY: _get_hashes_for_paths(config_file),
-        FINGERPRINT_DOMAIN_KEY: _get_hashes_for_paths(domain_file),
+        FINGERPRINT_DOMAIN_KEY: domain_hash,
         FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
         FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
@@ -245,12 +251,13 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     Returns:
         The fingerprint or an empty dict if no fingerprint was found.
     """
-    import rasa.core.utils
+    if not model_path or not os.path.exists(model_path):
+        return {}
 
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
-        return rasa.core.utils.read_json_file(fingerprint_path)
+        return rasa.utils.io.read_json_file(fingerprint_path)
     else:
         return {}
 

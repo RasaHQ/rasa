@@ -23,8 +23,6 @@ logic to loop over the required slots and ask the user for this information.
 There is a full example using forms in the ``examples/formbot`` directory of
 Rasa Core.
 
-Domain File
------------
 
 When you define a form, you need to add it to your domain file.
 If your form's name is ``restaurant_form``, your domain would look like this:

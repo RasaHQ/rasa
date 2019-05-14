@@ -1,15 +1,34 @@
-:desc: Find out how to use the HTTP API of Rasa to integrate
+:desc: Find out how to use the HTTP API of Rasa Core to integrate
        with your backend components.
 
 .. _section_http:
 
-Running the Server
-==================
+HTTP API
+========
 
+.. warning::
+
+    To protect your conversational data, make sure to secure the server.
+    Either by restricting access to the server (e.g. using firewalls) or
+    by enabling one of the authentication methods: :ref:`server_security`.
+
+.. note::
+
+    Before you can use the server, you need to define a domain, create training
+    data, and train a model. You can then use the trained model!
+    See :ref:`quickstart` for an introduction.
+
+    If you are looking for documentation on how to run custom actions -
+    head over to :ref:`customactions`.
+
+
+The HTTP api exists to make it easy for python and non-python
+projects to interact with Rasa Core. The API allows you to modify
+the trackers.
 
 
 .. contents::
-   :local:
+
 
 Running the HTTP server
 -----------------------
@@ -19,103 +38,41 @@ models with:
 
 .. code-block:: bash
 
-    rasa run \
+    $ rasa run \
         --enable-api \
         -m models \
         -o out.log
-
-All the endpoints this API exposes are documented in :ref:`http-api` .
 
 The different parameters are:
 
 - ``--enable-api``, enables this additional API
-- ``-m``, which is the path to the folder containing your Rasa model.
+- ``-m``, which is the path to the folder containing your Rasa Core model
+  and Rasa NLU model.
 - ``-o``, which is the path to the log file.
 
-
-.. warning::
-
-    Make sure to secure your server, either by restricting access to the server (e.g. using firewalls) or
-    by enabling one of the authentication methods: :ref:`server_security`.
-
-
 .. note::
 
-    If you are using custom actions - make sure your action server is 
-    running (see :ref:`run-action-server`). If your actions are running
-    on a different machine, or you aren't using the Rasa SDk, make sure
-    to update your ``endpoints.yml`` file.
+  If you are using custom actions - make sure to pass in the endpoint
+  configuration for your action server as well using
+  ``--endpoints endpoints.yml``.
 
+Events
+------
+Events allow you to modify the internal state of the dialogue. This information
+will be used to predict the next action. E.g. you can set slots (to store
+information about the user) or restart the conversation.
 
-.. note::
-
-    If you start the server with only a Rasa NLU model, not all the available endpoints
-    can be called. Be aware that some endpoint will return a 409 status code, as a trained
-    Rasa Core model is needed to process the request.
-
-
-Fetching Models from a Server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can configure the http server to fetch models from another URL:
+You can return multiple events as part of your query, e.g.:
 
 .. code-block:: bash
 
-    $ rasa run \
-        --enable-api \
-        -m models \
-        --endpoints my_endpoints.yaml \
-        -o out.log
-
-The model server is specified in the endpoint configuration
-(``my_endpoints.yaml``), where you specify the server URL Rasa
-regularly queries for zipped Rasa models:
-
-.. code-block:: yaml
-
-    models:
-      url: http://my-server.com/models/default@latest
-      wait_time_between_pulls:  10   # [optional](default: 100)
-
-.. note::
-
-    If you want to pull the model just once from the server, set
-    ``wait_time_between_pulls`` to ``None``.
-
-.. note::
-
-    Your model server must provide zipped Rasa models, and have
-    ``{"ETag": <model_hash_string>}`` as one of its headers. Rasa will
-    only download a new model if this model hash changed.
-
-Rasa sends requests to your model server with an ``If-None-Match``
-header that contains the current model hash. If your model server can
-provide a model with a different hash from the one you sent, it should send it
-in as a zip file with an ``ETag`` header containing the new hash. If not, Rasa
-expects an empty response with a ``204`` or ``304`` status code.
-
-An example request Rasa might make to your model server looks like this:
-
-.. code-block:: bash
-
-      $ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default@latest
+    $ curl -XPOST http://localhost:5005/conversations/default/tracker/events -d \
+        '{"event": "slot", "name": "cuisine", "value": "mexican"}'
 
 
-Fetching Models from a Remote Storage
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can also configure the Rasa server to fetch your model from a remote storage:
-
-.. code-block:: bash
-
-    $ rasa run \
-        --enable-api \
-        -m 20190506-100418.tar.gz \
-        --remote-storage aws \
-        -o out.log
-
-The model will be downloaded and stored in a temporary directory on your local storage system.
-For more information see :ref:`_section_persistence`
+You can find a list of all events and their json representation
+at :ref:`events`. You need to send these json formats to the endpoint to
+log the event.
 
 
 .. _server_security:
@@ -123,7 +80,7 @@ For more information see :ref:`_section_persistence`
 Security Considerations
 -----------------------
 
-We recommend to not expose the Rasa Server to the outside world but
+We recommend to not expose the Rasa Core server to the outside world but
 rather connect to it from your backend over a private connection (e.g.
 between docker containers).
 
@@ -136,7 +93,7 @@ the server:
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         --auth-token thisismysecret \
         -m models \
@@ -163,7 +120,7 @@ if the ``sender_id`` matches the user's ``username``.
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         --jwt-secret thisismysecret \
         -m models \
@@ -178,15 +135,12 @@ Your requests should have set a proper JWT header:
                      "wiaWF0IjoxNTE2MjM5MDIyfQ.qdrr2_a7Sd80gmCWjnDomO"
                      "Gl8eZFVfKXA6jhncgRn-I"
 
-
-
-
 Endpoint Configuration
 ----------------------
 
-To connect Rasa to other endpoints, you can specify an endpoint
+To connect Rasa Core to other endpoints, you can specify an endpoint
 configuration within a `YAML <https://en.wikipedia.org/wiki/YAML>`_ file.
-Then run Rasa with the flag
+Then run Rasa Core with the flag
 ``--endpoints <path to endpoint configuration.yml``.
 
 For example:
@@ -194,12 +148,79 @@ For example:
 .. code-block:: bash
 
     rasa run \
-        --m <Rasa model> \
+        --m <core model> \
         --endpoints <path to endpoint configuration>.yml
 
 .. note::
     You can use environment variables within configuration files by specifying them with ``${name of environment variable}``.
     These placeholders are then replaced by the value of the environment variable.
+
+
+Fetching Models From a Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also configure the http server to fetch models from another URL:
+
+.. code-block:: bash
+
+    $ rasa run \
+        --enable-api \
+        -m models \
+        --endpoints my_endpoints.yaml \
+        -o out.log
+
+The model server is specified in the endpoint configuration
+(``my_endpoints.yaml``), where you specify the server URL Rasa Core
+regularly queries for zipped Rasa Core models:
+
+.. code-block:: yaml
+
+    models:
+      url: http://my-server.com/models/default_core@latest
+      wait_time_between_pulls:  10   # [optional](default: 100)
+
+.. note::
+
+    If you want to pull the model just once from the server, set
+    ``wait_time_between_pulls`` to ``None``.
+
+.. note::
+
+    Your model server must provide zipped Rasa Core models, and have
+    ``{"ETag": <model_hash_string>}`` as one of its headers. Core will
+    only download a new model if this model hash changed.
+
+Rasa Core sends requests to your model server with an ``If-None-Match``
+header that contains the current model hash. If your model server can
+provide a model with a different hash from the one you sent, it should send it
+in as a zip file with an ``ETag`` header containing the new hash. If not, Rasa
+Core expects an empty response with a ``204`` or ``304`` status code.
+
+An example request Rasa Core might make to your model server looks like this:
+
+.. code-block:: bash
+
+      $ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default_core@latest
+
+Connecting Rasa NLU
+~~~~~~~~~~~~~~~~~~~
+
+To connect Rasa Core with a NLU server, you have to add the connection details
+into your endpoint configuration file:
+
+.. code-block:: yaml
+
+    nlu:
+        url: "http://<your nlu host>:5000"
+        token: <token>  # [optional]
+        token_name: <name of the token> # [optional] (default: token)
+
+Then run Rasa Core with the ``--endpoints <path_to_your_endpoint_config>.yml``.
+For example:
+
+.. code-block:: bash
+
+    rasa run -m models --endpoints endpoints.yml
 
 Connecting a Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -214,15 +235,13 @@ To configure an event broker within your endpoint configuration,
 please see :ref:`brokers`.
 
 
-.. _http_api:
-
 Endpoints
 ---------
 
 Documentation of the server API as
-:download:`OpenAPI Spec <_static/spec/rasa.yml>`.
+:download:`OpenAPI Spec <_static/spec/server.yml>`.
 
 .. apidoc::
-   :path: ../_static/spec/rasa.yml
+   :path: ../_static/spec/server.yml
 
 .. include:: feedback.inc

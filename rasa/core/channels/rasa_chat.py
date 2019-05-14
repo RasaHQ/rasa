@@ -1,6 +1,5 @@
-import logging
-
 import aiohttp
+import logging
 from sanic.exceptions import abort
 
 from rasa.core.channels.channel import RestInput
@@ -27,7 +26,7 @@ class RasaChatInput(RestInput):
         self.base_url = url
 
     async def _check_token(self, token):
-        url = "{}/user".format(self.base_url)
+        url = "{}/auth/verify".format(self.base_url)
         headers = {"Authorization": token}
         logger.debug("Requesting user information from auth server {}.".format(url))
 

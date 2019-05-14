@@ -1,35 +1,24 @@
-import argparse
 import asyncio
 import logging
 from functools import partial
-from typing import List, Optional, Text
+from typing import List, Optional, Text, Union
 
 from sanic import Sanic
 from sanic_cors import CORS
 
 import rasa.core
-import rasa.core.cli.arguments
 import rasa.utils
-from rasa.core import constants, utils, cli
+import rasa.utils.io
+from rasa.core import constants, utils
+from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import BUILTIN_CHANNELS, InputChannel, console
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
+from rasa.core.utils import AvailableEndpoints
+from rasa.model import get_model_subdirectories, get_model
+from rasa.utils.common import update_sanic_log_level
 
 logger = logging.getLogger()  # get the root logger
-
-
-def create_argument_parser():
-    """Parse all the command line arguments for the run script."""
-
-    parser = argparse.ArgumentParser(description="starts the bot")
-    parser.add_argument(
-        "-d", "--core", required=True, type=str, help="core model to run"
-    )
-    parser.add_argument("-u", "--nlu", type=str, help="nlu model to run")
-
-    cli.arguments.add_logging_option_arguments(parser)
-    cli.run.add_run_arguments(parser)
-    return parser
 
 
 def create_http_input_channels(
@@ -69,17 +58,17 @@ def _create_single_channel(channel, credentials):
 
 
 def configure_app(
-    input_channels=None,
-    cors=None,
-    auth_token=None,
-    enable_api=True,
-    jwt_secret=None,
-    jwt_method=None,
-    route="/webhooks/",
-    port=None,
+    input_channels: Optional[List["InputChannel"]] = None,
+    cors: Optional[Union[Text, List[Text]]] = None,
+    auth_token: Optional[Text] = None,
+    enable_api: bool = True,
+    jwt_secret: Optional[Text] = None,
+    jwt_method: Optional[Text] = None,
+    route: Optional[Text] = "/webhooks/",
+    port: int = constants.DEFAULT_SERVER_PORT,
 ):
     """Run the agent."""
-    from rasa.core import server
+    from rasa import server
 
     if enable_api:
         app = server.create_app(
@@ -125,17 +114,17 @@ def configure_app(
 
 
 def serve_application(
-    core_model=None,
-    nlu_model=None,
-    channel=None,
-    port=constants.DEFAULT_SERVER_PORT,
-    credentials=None,
-    cors=None,
-    auth_token=None,
-    enable_api=True,
-    jwt_secret=None,
-    jwt_method=None,
-    endpoints=None,
+    model_path: Optional[Text] = None,
+    channel: Optional[Text] = None,
+    port: int = constants.DEFAULT_SERVER_PORT,
+    credentials: Optional[Text] = None,
+    cors: Optional[Union[Text, List[Text]]] = None,
+    auth_token: Optional[Text] = None,
+    enable_api: bool = True,
+    jwt_secret: Optional[Text] = None,
+    jwt_method: Optional[Text] = None,
+    endpoints: Optional[AvailableEndpoints] = None,
+    remote_storage: Optional[Text] = None,
 ):
     if not channel and not credentials:
         channel = "cmdline"
@@ -152,46 +141,65 @@ def serve_application(
     )
 
     app.register_listener(
-        partial(load_agent_on_start, core_model, endpoints, nlu_model),
+        partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
-    app.run(host="0.0.0.0", port=port, access_log=logger.isEnabledFor(logging.DEBUG))
+
+    update_sanic_log_level()
+
+    app.run(host="0.0.0.0", port=port)
 
 
 # noinspection PyUnusedLocal
-async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
+async def load_agent_on_start(
+    model_path: Text,
+    endpoints: Optional[AvailableEndpoints],
+    remote_storage: Optional[Text],
+    app: Sanic,
+    loop: Text,
+):
     """Load an agent.
 
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments)."""
     from rasa.core import broker
-    from rasa.core.agent import Agent
 
-    _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+    try:
+        _, nlu_model = get_model_subdirectories(get_model(model_path))
+        _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+    except Exception:
+        logger.debug("Could not load interpreter from '{}'".format(model_path))
+        _interpreter = None
+
     _broker = broker.from_endpoint_config(endpoints.event_broker)
-
     _tracker_store = TrackerStore.find_tracker_store(
         None, endpoints.tracker_store, _broker
     )
 
-    if endpoints and endpoints.model:
-        from rasa.core import agent
+    model_server = endpoints.model if endpoints and endpoints.model else None
 
+    app.agent = await load_agent(
+        model_path,
+        model_server=model_server,
+        remote_storage=remote_storage,
+        interpreter=_interpreter,
+        generator=endpoints.nlg,
+        tracker_store=_tracker_store,
+        action_endpoint=endpoints.action,
+    )
+
+    if not app.agent:
+        logger.error(
+            "Agent could not be loaded with the provided configuration."
+            "Load default agent without any model."
+        )
         app.agent = Agent(
             interpreter=_interpreter,
             generator=endpoints.nlg,
             tracker_store=_tracker_store,
             action_endpoint=endpoints.action,
-        )
-
-        await agent.load_from_server(app.agent, model_server=endpoints.model)
-    else:
-        app.agent = Agent.load(
-            core_model,
-            interpreter=_interpreter,
-            generator=endpoints.nlg,
-            tracker_store=_tracker_store,
-            action_endpoint=endpoints.action,
+            model_server=model_server,
+            remote_storage=remote_storage,
         )
 
     return app.agent
@@ -199,7 +207,7 @@ async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.core.run` directly is "
-        "no longer supported. "
-        "Please use `rasa shell` instead."
+        "Calling `rasa.core.run` directly is no longer supported. "
+        "Please use `rasa run` to start a Rasa server or `rasa shell` to chat with "
+        "your bot on the command line."
     )

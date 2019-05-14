@@ -1,14 +1,12 @@
 # this builtin is needed so we can overwrite in test
+import aiohttp
 import json
 import logging
-
-import aiohttp
+import questionary
 from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
-import questionary
 import rasa.cli.utils
-from rasa.cli import utils as cliutils
 from rasa.core import utils
 from rasa.core.channels import UserMessage
 from rasa.core.channels.channel import RestInput, button_to_string, element_to_string
@@ -36,14 +34,20 @@ def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
             rasa.cli.utils.print_color(button_to_string(button, idx), color=color)
 
     if "elements" in message:
+        rasa.cli.utils.print_color("Elements:", color=color)
         for idx, element in enumerate(message.get("elements")):
-            element_str = "Elements:\n" + element_to_string(element, idx)
-            rasa.cli.utils.print_color(element_str, color=color)
+            rasa.cli.utils.print_color(element_to_string(element, idx), color=color)
 
     if "quick_replies" in message:
+        rasa.cli.utils.print_color("Quick Replies:", color)
         for idx, element in enumerate(message.get("quick_replies")):
-            element_str = "Quick Replies:\n" + button_to_string(element, idx)
-            rasa.cli.utils.print_color(element_str, color=color)
+            rasa.cli.utils.print_color(button_to_string(element, idx), color=color)
+
+    if "custom" in message:
+        rasa.cli.utils.print_color("Custom json:", color=color)
+        return rasa.cli.utils.print_color(
+            json.dumps(message.get("custom"), indent=2), color=color
+        )
 
 
 def get_cmd_input():
@@ -93,7 +97,7 @@ async def record_messages(
 
     exit_text = INTENT_MESSAGE_PREFIX + "stop"
 
-    cliutils.print_success(
+    rasa.cli.utils.print_success(
         "Bot loaded. Type a message and press enter "
         "(use '{}' to exit): ".format(exit_text)
     )

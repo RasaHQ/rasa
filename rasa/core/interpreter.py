@@ -256,10 +256,6 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
             self._load_interpreter()
         result = self.interpreter.parse(text)
 
-        # TODO: hotfix to append attributes that NLU is adding as a server
-        #   but where the interpreter does not add them
-        if result:
-            result["model"] = "current"
         return result
 
     def _load_interpreter(self):

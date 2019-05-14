@@ -6,10 +6,9 @@ import matplotlib
 import pytest
 
 import rasa.utils.io
-from rasa.core import server, train, utils
+from rasa.core import train
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, channel
-from rasa.core.dispatcher import Dispatcher
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -42,7 +41,7 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
-MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
+MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
@@ -125,9 +124,8 @@ def default_agent_path(default_agent, tmpdir_factory):
 
 
 @pytest.fixture
-def default_dispatcher_collecting(default_nlg):
-    bot = CollectingOutputChannel()
-    return Dispatcher("my-sender", bot, default_nlg)
+def default_channel():
+    return CollectingOutputChannel()
 
 
 @pytest.fixture
@@ -157,7 +155,7 @@ async def trained_moodbot_path():
         stories_file="examples/moodbot/data/stories.md",
         output_path=MOODBOT_MODEL_PATH,
         interpreter=RegexInterpreter(),
-        policy_config="rasa/core/default_config.yml",
+        policy_config="rasa/cli/default_config.yml",
         kwargs=None,
     )
 
@@ -167,30 +165,31 @@ async def trained_moodbot_path():
 @pytest.fixture(scope="session")
 async def zipped_moodbot_model():
     # train moodbot if necessary
-    policy_file = os.path.join(MOODBOT_MODEL_PATH, "metadata.json")
+    policy_file = os.path.join(MOODBOT_MODEL_PATH, "core", "metadata.json")
     if not os.path.isfile(policy_file):
         await trained_moodbot_path()
 
-    zip_path = zip_folder(MOODBOT_MODEL_PATH)
+    zip_path = zip_folder(os.path.dirname(MOODBOT_MODEL_PATH))
 
     return zip_path
 
 
 @pytest.fixture(scope="session")
 def moodbot_domain():
-    domain_path = os.path.join(MOODBOT_MODEL_PATH, "domain.yml")
+    domain_path = os.path.join(MOODBOT_MODEL_PATH, "core", "domain.yml")
     return Domain.load(domain_path)
 
 
 @pytest.fixture(scope="session")
 def moodbot_metadata():
-    return PolicyEnsemble.load_metadata(MOODBOT_MODEL_PATH)
+    return PolicyEnsemble.load_metadata(os.path.join(MOODBOT_MODEL_PATH, "core"))
 
 
 @pytest.fixture()
 async def trained_stack_model(
     default_domain_path, default_stack_config, default_nlu_data, default_stories_file
 ):
+
     trained_stack_model_path = await train_async(
         domain=default_domain_path,
         config=default_stack_config,
@@ -216,30 +215,13 @@ async def prepared_agent(tmpdir_factory) -> Agent:
 
 
 @pytest.fixture
-async def core_server(prepared_agent):
-    app = server.create_app(prepared_agent)
-    channel.register([RestInput()], app, "/webhooks/")
-    return app
-
-
-@pytest.fixture
-async def core_server_secured(prepared_agent):
-    app = server.create_app(prepared_agent, auth_token="rasa", jwt_secret="core")
-    channel.register([RestInput()], app, "/webhooks/")
-    return app
-
-
-@pytest.fixture
 def default_nlg(default_domain):
     return TemplatedNaturalLanguageGenerator(default_domain.templates)
 
 
 @pytest.fixture
 def default_tracker(default_domain):
-    import uuid
-
-    uid = str(uuid.uuid1())
-    return DialogueStateTracker(uid, default_domain.slots)
+    return DialogueStateTracker("my-sender", default_domain.slots)
 
 
 @pytest.fixture(scope="session")

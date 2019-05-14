@@ -113,7 +113,7 @@ two ways to use these templates:
 
    .. code-block:: python
 
-      from rasa_core_sdk.actions import Action
+      from rasa_sdk.actions import Action
 
       class ActionGreet(Action):
         def name(self):
@@ -171,7 +171,7 @@ In custom code, you can retrieve a template by using:
 
 .. testsetup::
 
-   from rasa_core_sdk.actions import Action
+   from rasa_sdk.actions import Action
 
 .. testcode::
 

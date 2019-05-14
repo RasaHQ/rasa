@@ -1,17 +1,23 @@
 import asyncio
-import io
+import json
 import logging
+import os
 import tarfile
+import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict
+from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader, StringIO
+
+from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 
 
 def configure_colored_logging(loglevel):
     import coloredlogs
+
+    loglevel = loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
     field_styles["asctime"] = {}
@@ -80,7 +86,7 @@ def replace_environment_variables():
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text) -> Dict[Text, Any]:
+def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses yaml from a text.
 
      Args:
@@ -112,11 +118,17 @@ def read_yaml(content: Text) -> Dict[Text, Any]:
 
 def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
     """Read text from a file."""
-    with io.open(filename, encoding=encoding) as f:
+    with open(filename, encoding=encoding) as f:
         return f.read()
 
 
-def read_yaml_file(filename: Text) -> Dict[Text, Any]:
+def read_json_file(filename: Text) -> Union[Dict, List]:
+    """Read json from a file"""
+    with open(filename) as f:
+        return json.load(f)
+
+
+def read_yaml_file(filename: Text) -> Union[Dict, List]:
     """Parses a yaml file.
 
      Args:
@@ -151,3 +163,28 @@ def write_yaml_file(data: Dict, filename: Text):
     """
     with open(filename, "w") as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
+
+
+def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+    if path is None or potential_parent_directory is None:
+        return False
+
+    path = os.path.abspath(path)
+    potential_parent_directory = os.path.abspath(potential_parent_directory)
+
+    return potential_parent_directory in path
+
+
+def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
+    """Creates a tempfile.NamedTemporaryFile object for data.
+
+    mode defines NamedTemporaryFile's  mode parameter in py3."""
+
+    encoding = None if "b" in mode else "utf-8"
+    f = tempfile.NamedTemporaryFile(
+        mode=mode, suffix=suffix, delete=False, encoding=encoding
+    )
+    f.write(data)
+
+    f.close()
+    return f.name
