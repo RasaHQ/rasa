@@ -5,7 +5,6 @@ from rasa.cli.arguments.run import add_server_arguments
 
 
 def set_x_arguments(shell_parser: argparse.ArgumentParser):
-    add_server_arguments(shell_parser)
     add_model_param(shell_parser, add_positional_arg=False)
 
     shell_parser.add_argument(
@@ -19,8 +18,6 @@ def set_x_arguments(shell_parser: argparse.ArgumentParser):
         action="store_true",
         help="Run Rasa X in a production environment.",
     )
-
-    shell_parser.add_argument("--auth-token", type=str, help="Rasa API auth token")
 
     shell_parser.add_argument(
         "--nlg",
@@ -52,3 +49,5 @@ def set_x_arguments(shell_parser: argparse.ArgumentParser):
             "and Rasa Core stories."
         ),
     )
+
+    add_server_arguments(shell_parser)
