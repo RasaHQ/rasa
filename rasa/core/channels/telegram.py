@@ -1,5 +1,6 @@
 import logging
 from sanic import Blueprint, response
+from sanic.request import Request
 from telegram import (
     Bot,
     InlineKeyboardButton,
@@ -171,11 +172,11 @@ class TelegramInput(InputChannel):
         out_channel = TelegramOutput(self.access_token)
 
         @telegram_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @telegram_webhook.route("/set_webhook", methods=["GET", "POST"])
-        async def set_webhook(request):
+        async def set_webhook(request: Request):
             s = out_channel.setWebhook(self.webhook_url)
             if s:
                 logger.info("Webhook Setup Successful")
@@ -185,7 +186,7 @@ class TelegramInput(InputChannel):
                 return response.text("Invalid webhook")
 
         @telegram_webhook.route("/webhook", methods=["GET", "POST"])
-        async def message(request):
+        async def message(request: Request):
             if request.method == "POST":
 
                 if not out_channel.get_me()["username"] == self.verify:
