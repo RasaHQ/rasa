@@ -7,7 +7,7 @@
 Multi Skill Assistants
 ======================
 
-Rasa supports building AI assistants from multiple contextual AI assistant projects.
+Rasa supports building AI assistants from multiple contextual AI assistant skills.
 This allows for the development of reusable building blocks of skills which you can use within
 your different projects. For example, one skill could handle chitchat while another skill
 is responsible for greeting your users. You can develop skills in isolation, and then
@@ -19,7 +19,7 @@ An example directory structure could e.g. look like this:
 
     .
     ├── config.yml
-    └── data
+    └── skills
         ├── GreetBot
         │   ├── data
         │   │   ├── nlu.md
@@ -39,7 +39,7 @@ each project. The ``config.yml`` in the root project e.g. looks like this:
 .. code-block:: yaml
 
     imports:
-    - data/MoodBot
+    - skills/MoodBot
 
 The configuration file of the ``MoodBot`` in turn references the ``GreetBot``:
 
