@@ -180,25 +180,6 @@ class SlackInput(InputChannel):
         )
 
     @staticmethod
-    def _is_interactive_message(payload):
-        return payload["type"] == "interactive_message"
-
-    @staticmethod
-    def _is_button(payload):
-        return payload["actions"][0]["type"] == "button"
-
-    @staticmethod
-    def _is_button_reply(slack_event):
-        payload = json.loads(slack_event["payload"])
-        return SlackInput._is_interactive_message(payload) and SlackInput._is_button(
-            payload
-        )
-
-    @staticmethod
-    def _get_button_reply(slack_event):
-        return json.loads(slack_event["payload"])["actions"][0]["name"]
-
-    @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
         """Remove superfluous/wrong/problematic tokens from a message.
 
@@ -227,6 +208,55 @@ class SlackInput(InputChannel):
                 text = re.sub(regex, replacement, text)
 
         return text.strip()
+
+    @staticmethod
+    def _is_interactive_message(payload):
+        """Check wheter the input is a supported interactive input type."""
+
+        supported = [
+            "button",
+            "select",
+            "static_select",
+            "conversations_select",
+            "users_select",
+            "channels_select",
+            "overflow",
+            "datepicker",
+        ]
+        if payload.get("actions"):
+            action_type = payload["actions"][0].get("type")
+            if action_type in supported:
+                return True
+            elif action_type:
+                logger.warning(
+                    "Received input from an interactive component of type "
+                    + "'{}', for which payload parsing is not yet supported.".format(
+                        payload["actions"][0]["type"]
+                    )
+                )
+        return False
+
+    @staticmethod
+    def _get_interactive_repsonse(action):
+        """Parse the payload for the response value."""
+
+        if action["type"] == "button":
+            # TODO: Support link buttons
+            return action["value"]
+        elif action["type"] == "select":
+            return action["selected_options"][0]["value"]
+        elif action["type"] == "static_select":
+            return action["selected_option"]["value"]
+        elif action["type"] == "conversations_select":
+            return action["selected_conversation"]
+        elif action["type"] == "users_select":
+            return action["selected_user"]
+        elif action["type"] == "channels_select":
+            return action["selected_channel"]
+        elif action["type"] == "overflow":
+            return action["selected_option"]["value"]
+        elif action["type"] == "datepicker":
+            return action["selected_date"]
 
     async def process_message(self, request: Request, on_new_message, text, sender_id):
         """Slack retries to post messages up to 3 times based on
@@ -266,15 +296,21 @@ class SlackInput(InputChannel):
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request):
             if request.form:
-                output = dict(request.form)
-                if self._is_button_reply(output):
-                    sender_id = json.loads(output["payload"])["user"]["id"]
+                output = request.form
+                payload = json.loads(output["payload"][0])
+
+                # TODO: support external select menus POSTing to this endpoint
+
+                if self._is_interactive_message(payload):
+                    sender_id = payload["user"]["id"]
+                    text = self._get_interactive_repsonse(payload["actions"][0])
                     return await self.process_message(
-                        request,
-                        on_new_message,
-                        text=self._get_button_reply(output),
-                        sender_id=sender_id,
+                        request, on_new_message, text=text, sender_id=sender_id
                     )
+                return response.text(
+                    "The input message could not be processed.", status=500
+                )
+
             elif request.json:
                 output = request.json
                 if "challenge" in output:
@@ -290,6 +326,6 @@ class SlackInput(InputChannel):
                         sender_id=output.get("event").get("user"),
                     )
 
-            return response.text("")
+            return response.text("Bot message successful")
 
         return slack_webhook
