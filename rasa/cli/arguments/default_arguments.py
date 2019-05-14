@@ -1,6 +1,6 @@
 import argparse
 import logging
-from typing import Text, Union
+from typing import Text, Union, Optional
 
 from rasa.constants import (
     DEFAULT_DATA_PATH,
@@ -14,14 +14,13 @@ def add_model_param(
     parser: argparse.ArgumentParser,
     model_name: Text = "Rasa",
     add_positional_arg: bool = True,
+    default: Optional[Text] = DEFAULT_MODELS_PATH,
 ):
     help_text = (
         "Path to a trained {} model. If a directory is specified, it will "
         "use the latest model in this directory.".format(model_name)
     )
-    parser.add_argument(
-        "-m", "--model", type=str, default=DEFAULT_MODELS_PATH, help=help_text
-    )
+    parser.add_argument("-m", "--model", type=str, default=default, help=help_text)
     if add_positional_arg:
         parser.add_argument(
             "model-as-positional-argument", nargs="?", type=str, help=help_text
