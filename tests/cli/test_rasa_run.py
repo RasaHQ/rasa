@@ -1,12 +1,12 @@
 def test_run_help(run):
     help, _ = run("run", "--help")
 
-    help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [--log-file LOG_FILE]
+    help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
                 [--cors [CORS [CORS ...]]] [--enable-api]
                 [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
                 [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
-                [--jwt-method JWT_METHOD] [-m MODEL]
+                [--jwt-method JWT_METHOD]
                 [model-as-positional-argument] {actions} ..."""
 
     lines = help_text.split("\n")

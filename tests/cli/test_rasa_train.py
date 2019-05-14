@@ -29,10 +29,11 @@ def test_train_core_help(run):
     help, _ = run("train", "core", "--help")
 
     help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
-                       [--out OUT] [--augmentation AUGMENTATION]
-                       [--debug-plots] [--dump-stories] [--force]
+                       [-c CONFIG [CONFIG ...]] [--out OUT]
+                       [--augmentation AUGMENTATION] [--debug-plots]
+                       [--dump-stories] [--force]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
-                       [--runs RUNS] [-c CONFIG [CONFIG ...]]"""
+                       [--runs RUNS]"""
 
     lines = help_text.split("\n")
 
