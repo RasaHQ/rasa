@@ -32,6 +32,9 @@ def set_interactive_arguments(parser: argparse.ArgumentParser):
     add_config_param(train_arguments)
     add_domain_param(train_arguments)
     add_out_param(train_arguments)
+    add_augmentation_param(train_arguments)
+    add_debug_plots_param(train_arguments)
+    add_dump_stories_param(train_arguments)
     add_force_param(train_arguments)
 
 
