@@ -2,8 +2,9 @@ import os
 
 
 def test_data_split_nlu(run_in_default_project):
+    temp_dir = os.getcwd()
 
-    result, temp_dir = run_in_default_project(
+    run_in_default_project(
         "data", "split", "nlu", "--nlu", "data/nlu.md", "--training-fraction", "0.75"
     )
 
@@ -15,8 +16,9 @@ def test_data_split_nlu(run_in_default_project):
 
 
 def test_data_convert_nlu(run_in_default_project):
+    temp_dir = os.getcwd()
 
-    result, temp_dir = run_in_default_project(
+    run_in_default_project(
         "data",
         "convert",
         "nlu",
@@ -32,7 +34,7 @@ def test_data_convert_nlu(run_in_default_project):
 
 
 def test_data_split_help(run):
-    help, _ = run("data", "split", "nlu", "--help")
+    help = run("data", "split", "nlu", "--help")
 
     help_text = """usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
                            [--training-fraction TRAINING_FRACTION] [--out OUT]"""
@@ -44,7 +46,7 @@ def test_data_split_help(run):
 
 
 def test_data_convert_help(run):
-    help, _ = run("data", "convert", "nlu", "--help")
+    help = run("data", "convert", "nlu", "--help")
 
     help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data-file DATA_FILE
                              --out-file OUT_FILE [-l LANGUAGE] -f {json,md}"""

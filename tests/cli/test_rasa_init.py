@@ -2,7 +2,9 @@ import os
 
 
 def test_init(run):
-    result, temp_dir = run("init", "--no-prompt", "--quiet")
+    temp_dir = os.getcwd()
+
+    run("init", "--no-prompt", "--quiet")
 
     assert os.path.exists(os.path.join(temp_dir, "actions.py"))
     assert os.path.exists(os.path.join(temp_dir, "domain.yml"))
@@ -15,7 +17,7 @@ def test_init(run):
 
 
 def test_init_help(run):
-    help, _ = run("init", "--help")
+    help = run("init", "--help")
 
     assert (
         help.outlines[0] == "usage: rasa init [-h] [-v] [-vv] [--quiet] [--no-prompt]"

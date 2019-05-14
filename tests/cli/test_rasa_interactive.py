@@ -1,5 +1,5 @@
 def test_interactive_help(run):
-    help, _ = run("interactive", "--help")
+    help = run("interactive", "--help")
 
     help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [-m MODEL] [-c CONFIG]
                         [-d DOMAIN] [--data DATA [DATA ...]] [--out OUT]
@@ -18,7 +18,7 @@ def test_interactive_help(run):
 
 
 def test_interactive_core_help(run):
-    help, _ = run("interactive", "core", "--help")
+    help = run("interactive", "core", "--help")
 
     help_text = """usage: rasa interactive [model-as-positional-argument] core
        [-h] [-v] [-vv] [--quiet] [-m MODEL] [-c CONFIG] [-d DOMAIN]

@@ -1,5 +1,5 @@
 def test_run_help(run):
-    help, _ = run("run", "--help")
+    help = run("run", "--help")
 
     help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
@@ -16,7 +16,7 @@ def test_run_help(run):
 
 
 def test_run_action_help(run):
-    help, _ = run("run", "actions", "--help")
+    help = run("run", "actions", "--help")
 
     help_text = """usage: rasa run [model-as-positional-argument] actions [-h] [-v] [-vv]
                                                        [--quiet] [-p PORT]

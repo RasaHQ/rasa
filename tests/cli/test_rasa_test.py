@@ -1,33 +1,24 @@
 import os
 
-from rasa.nlu.utils import list_files
 
+def test_test(run_in_default_project):
+    temp_dir = os.getcwd()
 
-def test_train(run_in_default_project):
-
-    result, temp_dir = run_in_default_project("test")
-
-    assert os.path.exists(os.path.join(temp_dir, "results"))
-
-
-def test_train_core(run_in_default_project):
-
-    result, temp_dir = run_in_default_project(
-        "test", "core", "-c", "config.yml", "-d", "domain.yml", "--stories", "data"
-    )
+    run_in_default_project("test")
 
     assert os.path.exists(os.path.join(temp_dir, "results"))
 
 
-def test_train_nlu(run_in_default_project):
+def test_test_core(run_in_default_project):
+    temp_dir = os.getcwd()
 
-    run_in_default_project(
-        "test", "nlu", "-m", "models", "-u", "data/nlu.md", "-c", "config.yml"
-    )
+    run_in_default_project("test", "core", "--stories", "data")
+
+    assert os.path.exists(os.path.join(temp_dir, "results"))
 
 
 def test_test_help(run):
-    help, _ = run("test", "--help")
+    help = run("test", "--help")
 
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL]
                  [--max-stories MAX_STORIES] [--core CORE] [--output OUTPUT]
@@ -44,7 +35,7 @@ def test_test_help(run):
 
 
 def test_test_nlu_help(run):
-    help, _ = run("test", "nlu", "--help")
+    help = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [-c CONFIG]
                      [-f FOLDS] [--report [REPORT]] [--successes [SUCCESSES]]
@@ -58,7 +49,7 @@ def test_test_nlu_help(run):
 
 
 def test_test_core_help(run):
-    help, _ = run("test", "core", "--help")
+    help = run("test", "core", "--help")
 
     help_text = """usage: rasa test core [-h] [-v] [-vv] [--quiet] [--max-stories MAX_STORIES]
                       [--core CORE] [-u NLU] [--output OUTPUT] [--e2e]

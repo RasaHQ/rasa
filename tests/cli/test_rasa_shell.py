@@ -1,5 +1,5 @@
 def test_shell_help(run):
-    help, _ = run("shell", "--help")
+    help = run("shell", "--help")
 
     help_text = """usage: rasa shell [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                   [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
@@ -16,7 +16,7 @@ def test_shell_help(run):
 
 
 def test_shell_nlu_help(run):
-    help, _ = run("shell", "nlu", "--help")
+    help = run("shell", "nlu", "--help")
 
     help_text = """usage: rasa shell [model-as-positional-argument] nlu [-h] [-v] [-vv] [--quiet]
                                                      [-m MODEL]

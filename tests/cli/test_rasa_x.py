@@ -1,5 +1,5 @@
 def test_x_help(run):
-    help, _ = run("x", "--help")
+    help = run("x", "--help")
 
     help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--no-prompt]
               [--production] [--nlg NLG]

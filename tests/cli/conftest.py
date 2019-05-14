@@ -10,7 +10,7 @@ pytest_plugins = ["pytester"]
 def run(testdir):
     def do_run(*args):
         args = ["rasa"] + list(args)
-        return testdir.run(*args), testdir.tmpdir
+        return testdir.run(*args)
 
     return do_run
 
@@ -22,6 +22,6 @@ def run_in_default_project(testdir):
 
     def do_run(*args):
         args = ["rasa"] + list(args)
-        return testdir.run(*args), testdir.tmpdir
+        return testdir.run(*args)
 
     return do_run
