@@ -60,9 +60,7 @@ def test_model_not_compatible(metadata):
         Interpreter.ensure_model_compatibility(metadata)
 
 
-@pytest.mark.parametrize(
-    "metadata", [{"rasa_version": rasa.__version__}]
-)
+@pytest.mark.parametrize("metadata", [{"rasa_version": rasa.__version__}])
 def test_model_is_compatible(metadata):
     # should not raise an exception
     assert Interpreter.ensure_model_compatibility(metadata) is None
