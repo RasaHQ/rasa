@@ -10,7 +10,7 @@
 * mood_unhappy
   - utter_cheer_up
   - utter_did_that_help
-* mood_affirm
+* affirm
   - utter_happy
 
 ## sad path 2
@@ -19,7 +19,7 @@
 * mood_unhappy
   - utter_cheer_up
   - utter_did_that_help
-* mood_deny
+* deny
   - utter_goodbye
 
 ## say goodbye
