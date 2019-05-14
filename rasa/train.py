@@ -40,14 +40,14 @@ def train(
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
         train_async(
-            domain,
-            config,
-            training_files,
-            output,
-            force_training,
-            fixed_model_name,
-            uncompress,
-            kwargs,
+            domain=domain,
+            config=config,
+            training_files=training_files,
+            output_path=output,
+            force_training=force_training,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+            kwargs=kwargs,
         )
     )
 
@@ -113,20 +113,23 @@ async def train_async(
             "No dialogue data present. Just a Rasa NLU model will be trained."
         )
         return _train_nlu_with_validated_data(
-            config, nlu_data_directory, output_path, None, fixed_model_name, uncompress
+            config=config,
+            nlu_data_directory=nlu_data_directory,
+            output=output_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
         )
 
     if nlu_data_not_present:
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
         return await _train_core_with_validated_data(
-            domain,
-            config,
-            story_directory,
-            output_path,
-            None,
-            fixed_model_name,
-            uncompress,
-            kwargs,
+            domain=domain,
+            config=config,
+            story_directory=story_directory,
+            output=output_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+            kwargs=kwargs,
         )
 
     if not force_training and old_model:
@@ -144,14 +147,14 @@ async def train_async(
 
     if force_training or retrain_core:
         await _train_core_with_validated_data(
-            domain,
-            config,
-            story_directory,
-            output_path,
-            train_path,
-            fixed_model_name,
-            uncompress,
-            kwargs,
+            domain=domain,
+            config=config,
+            story_directory=story_directory,
+            output=output_path,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+            kwargs=kwargs,
         )
     else:
         print (
@@ -161,12 +164,12 @@ async def train_async(
 
     if force_training or retrain_nlu:
         _train_nlu_with_validated_data(
-            config,
-            nlu_data_directory,
-            output_path,
-            train_path,
-            fixed_model_name,
-            uncompress,
+            config=config,
+            nlu_data_directory=nlu_data_directory,
+            output=output_path,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
         )
     else:
         print ("NLU data / configuration did not change. No need to retrain NLU model.")
@@ -205,14 +208,14 @@ def train_core(
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
         train_core_async(
-            domain,
-            config,
-            stories,
-            output,
-            train_path,
-            fixed_model_name,
-            uncompress,
-            kwargs,
+            domain=domain,
+            config=config,
+            stories=stories,
+            output=output,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+            kwargs=kwargs,
         )
     )
 
@@ -259,14 +262,14 @@ async def train_core_async(
     story_directory = data.get_core_directory(stories, skill_imports)
 
     return await _train_core_with_validated_data(
-        domain,
-        config,
-        story_directory,
-        output,
-        train_path,
-        fixed_model_name,
-        uncompress,
-        kwargs,
+        domain=domain,
+        config=config,
+        story_directory=story_directory,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+        uncompress=uncompress,
+        kwargs=kwargs,
     )
 
 
@@ -330,7 +333,7 @@ def train_nlu(
     config: Text,
     nlu_data: Text,
     output: Text,
-    train_path: Optional[Text],
+    train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     uncompress: bool = False,
 ) -> Optional[Text]:
@@ -357,7 +360,12 @@ def train_nlu(
     nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
 
     return _train_nlu_with_validated_data(
-        config, nlu_data_directory, output, train_path, fixed_model_name, uncompress
+        config=config,
+        nlu_data_directory=nlu_data_directory,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+        uncompress=uncompress,
     )
 
 
@@ -365,8 +373,8 @@ def _train_nlu_with_validated_data(
     config: Text,
     nlu_data_directory: Text,
     output: Text,
-    train_path: Optional[Text],
-    fixed_model_name: Optional[Text],
+    train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
     uncompress: bool = False,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""

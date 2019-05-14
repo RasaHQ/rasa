@@ -60,14 +60,14 @@ def train(args: argparse.Namespace) -> Optional[Text]:
     ]
 
     return rasa.train(
-        domain,
-        config,
-        training_files,
-        args.out,
-        args.force,
-        args.fixed_model_name,
-        args.store_uncompressed,
-        extract_additional_arguments(args),
+        domain=domain,
+        config=config,
+        training_files=training_files,
+        output=args.out,
+        force_training=args.force,
+        fixed_model_name=args.fixed_model_name,
+        uncompress=args.store_uncompressed,
+        kwargs=extract_additional_arguments(args),
     )
 
 
@@ -98,14 +98,14 @@ def train_core(
         config = args.config or DEFAULT_CONFIG_PATH
 
         return train_core(
-            args.domain,
-            config,
-            stories,
-            output,
-            train_path,
-            args.fixed_model_name,
-            args.store_uncompressed,
-            extract_additional_arguments(args),
+            domain=args.domain,
+            config=config,
+            stories=stories,
+            output=output,
+            train_path=train_path,
+            fixed_model_name=args.fixed_model_name,
+            uncompress=args.store_uncompressed,
+            kwargs=extract_additional_arguments(args),
         )
     else:
         from rasa.core.train import do_compare_training
@@ -127,12 +127,12 @@ def train_nlu(
     )
 
     return train_nlu(
-        config,
-        nlu_data,
-        output,
-        train_path,
-        args.fixed_model_name,
-        args.store_uncompressed,
+        config=config,
+        nlu_data=nlu_data,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=args.fixed_model_name,
+        uncompress=args.store_uncompressed,
     )
 
 
