@@ -276,7 +276,7 @@ class SlackInput(InputChannel):
         slack_webhook = Blueprint("slack_webhook", __name__)
 
         @slack_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
@@ -284,8 +284,6 @@ class SlackInput(InputChannel):
             if request.form:
                 output = request.form
                 payload = json.loads(output["payload"][0])
-
-                # TODO: support external select menus POSTing to this endpoint
 
                 if self._is_interactive_message(payload):
                     sender_id = payload["user"]["id"]

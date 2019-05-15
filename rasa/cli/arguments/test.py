@@ -5,53 +5,39 @@ from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CONFIG_PATH
 
 from rasa.cli.arguments.default_arguments import (
     add_stories_param,
-    add_core_model_param,
     add_model_param,
     add_nlu_data_param,
+    add_endpoint_param,
 )
 from rasa.model import get_latest_model
 
 
-def set_test_arguments(parser):
+def set_test_arguments(parser: argparse.ArgumentParser):
     add_model_param(parser, add_positional_arg=False)
 
-    core_arguments = parser.add_argument_group("Core Test arguments")
-    add_test_core_arguments(core_arguments)
-    add_stories_param(core_arguments, "test")
-    add_url_param(core_arguments)
+    core_arguments = parser.add_argument_group("Core Test Arguments")
+    add_test_core_argument_group(core_arguments)
 
-    nlu_arguments = parser.add_argument_group("NLU Test arguments")
-    add_test_nlu_arguments(nlu_arguments)
+    nlu_arguments = parser.add_argument_group("NLU Test Arguments")
+    add_test_nlu_argument_group(nlu_arguments)
 
 
 def set_test_core_arguments(parser: argparse.ArgumentParser):
-    core_arguments = parser.add_argument_group("Core Test arguments")
-    add_test_core_arguments(core_arguments)
-    add_stories_param(core_arguments, "test")
-    add_url_param(core_arguments)
-
     add_test_core_model_param(parser)
+    add_test_core_argument_group(parser)
 
 
 def set_test_nlu_arguments(parser: argparse.ArgumentParser):
     add_test_nlu_model_param(parser)
-
-    nlu_arguments = parser.add_argument_group("NLU Test arguments")
-    add_test_nlu_arguments(nlu_arguments)
+    add_test_nlu_argument_group(parser)
 
 
-def add_test_core_arguments(
+def add_test_core_argument_group(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
+    add_stories_param(parser, "test")
     parser.add_argument(
         "--max-stories", type=int, help="Maximum number of stories to test on."
-    )
-    add_core_model_param(parser)
-    parser.add_argument(
-        "-u",
-        "--nlu",
-        type=str,
-        help="NLU model to run with the server. None for regex interpreter.",
     )
     parser.add_argument(
         "--output",
@@ -67,11 +53,7 @@ def add_test_core_arguments(
         "intent prediction. Requires a story file in end-to-end "
         "format.",
     )
-    parser.add_argument(
-        "--endpoints",
-        default=None,
-        help="Configuration file for the connectors as a yml file.",
-    )
+    add_endpoint_param(parser)
     parser.add_argument(
         "--fail-on-prediction-errors",
         action="store_true",
@@ -79,26 +61,19 @@ def add_test_core_arguments(
         "is thrown. This can be used to validate stories during "
         "tests, e.g. on travis.",
     )
+    parser.add_argument(
+        "--url",
+        type=str,
+        help="If supplied, downloads a story file from a URL and "
+        "trains on it. Fetches the data by sending a GET request "
+        "to the supplied URL.",
+    )
 
 
-def add_test_nlu_arguments(
+def add_test_nlu_argument_group(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
     add_nlu_data_param(parser)
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=str,
-        default=DEFAULT_CONFIG_PATH,
-        help="Model configuration file (cross validation only).",
-    )
-    parser.add_argument(
-        "-f",
-        "--folds",
-        required=False,
-        default=10,
-        help="Number of cross validation folds (cross validation only).",
-    )
     parser.add_argument(
         "--report",
         required=False,
@@ -134,14 +109,20 @@ def add_test_nlu_arguments(
         help="Output path for the confusion matrix plot.",
     )
 
-
-def add_url_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
-    parser.add_argument(
-        "--url",
+    cross_validation_arguments = parser.add_argument_group("Cross Validation")
+    cross_validation_arguments.add_argument(
+        "-c",
+        "--config",
         type=str,
-        help="If supplied, downloads a story file from a URL and "
-        "trains on it. Fetches the data by sending a GET request "
-        "to the supplied URL.",
+        default=DEFAULT_CONFIG_PATH,
+        help="Model configuration file (cross validation only).",
+    )
+    cross_validation_arguments.add_argument(
+        "-f",
+        "--folds",
+        required=False,
+        default=10,
+        help="Number of cross validation folds (cross validation only).",
     )
 
 

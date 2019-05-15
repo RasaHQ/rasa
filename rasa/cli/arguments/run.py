@@ -1,25 +1,18 @@
 import argparse
 
-from rasa.cli.arguments.default_arguments import add_model_param
+from rasa.cli.arguments.default_arguments import add_model_param, add_endpoint_param
 from rasa.core import constants
 
 
 def set_run_arguments(parser: argparse.ArgumentParser):
-    add_server_arguments(parser)
     add_model_param(parser)
+    add_server_arguments(parser)
 
 
 def set_run_action_arguments(parser: argparse.ArgumentParser):
     import rasa_sdk.cli.arguments as sdk
 
     sdk.add_endpoint_arguments(parser)
-
-    parser.add_argument(
-        "--actions",
-        type=str,
-        default="actions",
-        help="Name of action package to be loaded.",
-    )
 
 
 def add_server_arguments(parser: argparse.ArgumentParser):
@@ -29,10 +22,9 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         default="rasa_core.log",
         help="Store logs in specified file.",
     )
-    parser.add_argument(
-        "--endpoints",
-        default=None,
-        help="Configuration file for the model server and the connectors as a yml file.",
+    add_endpoint_param(
+        parser,
+        help_text="Configuration file for the model server and the connectors as a yml file.",
     )
 
     server_arguments = parser.add_argument_group("Server Settings")

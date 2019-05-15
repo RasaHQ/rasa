@@ -13,7 +13,10 @@ def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
     scaffold_parser = subparsers.add_parser(
-        "init", parents=parents, help="Create a new project"
+        "init",
+        parents=parents,
+        help="Create a new project",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     scaffold_parser.add_argument(
         "--no-prompt",

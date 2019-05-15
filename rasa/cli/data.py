@@ -1,8 +1,5 @@
 import argparse
-from typing import List, Text
-
-from rasa.nlu.training_data.loading import _guess_format
-from rasa.nlu.utils import list_files
+from typing import List
 
 from rasa import data
 from rasa.cli.arguments import data as arguments

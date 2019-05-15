@@ -5,6 +5,7 @@ from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from sanic import Blueprint, response
+from sanic.request import Request
 from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
@@ -263,11 +264,11 @@ class FacebookInput(InputChannel):
         fb_webhook = Blueprint("fb_webhook", __name__)
 
         @fb_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @fb_webhook.route("/webhook", methods=["GET"])
-        async def token_verification(request):
+        async def token_verification(request: Request):
             if request.args.get("hub.verify_token") == self.fb_verify:
                 return response.text(request.args.get("hub.challenge"))
             else:
@@ -278,7 +279,7 @@ class FacebookInput(InputChannel):
                 return response.text("failure, invalid token")
 
         @fb_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request):
+        async def webhook(request: Request):
             signature = request.headers.get("X-Hub-Signature") or ""
             if not self.validate_hub_signature(self.fb_secret, request.body, signature):
                 logger.warning(
