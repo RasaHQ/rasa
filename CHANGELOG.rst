@@ -36,7 +36,6 @@ in ``interactive learning``
 - support for spaCy 2.1
 - a model for an agent can now also be loaded from a remote storage
 - log level can be set via environment variable ``LOG_LEVEL``
-- add ``--fixed-model-name`` to train command to specify name of stored model
 - add ``--store-uncompressed`` to train command to not compress Rasa model
 
 Changed
@@ -56,7 +55,6 @@ Changed
 - changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
 - train command uses fallback config if an invalid config is given
 - test command now compares multiple models if a list of model files is provided for the argument ``--model``
-- train command falls back to training only nlu or core if the corresponding training data are missing
 - Merged rasa.core and rasa.nlu server into a single server. See swagger file in ``docs/_static/spec/server.yaml`` for
   available endpoints.
 - ``utter_custom_message()`` method in rasa_core_sdk has been renamed to ``utter_elements()``
