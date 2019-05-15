@@ -7,7 +7,7 @@ Running Rasa with Docker
 ========================
 
 This is a guide on how to set up Rasa using Docker.
-If you have not used Rasa before it is recommended to read the :ref:`project-structure`.
+If you have not used Rasa before it is recommended to read the :ref:`tutorial`.
 
 .. contents::
 
