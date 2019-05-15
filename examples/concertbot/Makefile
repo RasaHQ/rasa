@@ -23,10 +23,10 @@ run-actions:
 	rasa run actions
 
 train-core:
-	rasa train core -d domain.yml -s data/stories.md -o models -c config.yml
+	rasa train core -d domain.yml -s data/stories.md --out models -c config.yml
 
 train-interactive:
 	rasa interactive -d domain.yml -m models -c config.yml --data data
 
 visualize:
-	rasa show stories
+	rasa visualize
