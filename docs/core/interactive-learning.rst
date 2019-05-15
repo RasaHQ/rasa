@@ -30,14 +30,12 @@ Run the following command to start interactive learning:
    python3 -m rasa_sdk --actions actions&
 
    rasa interactive \
-     --out models \
-     -d domain.yml \
-     -c policy_config.yml \
+     -m models/20190515-135859.tar.gz \
      --endpoints endpoints.yml
 
 The first command starts the action server (see :ref:`custom-actions`).
 
-The second command trains a model and starts interactive learning mode.
+The second command starts interactive learning mode.
 
 In interactive mode, Rasa will ask you to confirm every prediction
 made by NLU and Core before proceeding.
