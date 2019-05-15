@@ -35,6 +35,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    :caption: NLU
    :hidden:
 
+   nlu/using-only-nlu
    nlu/data-format
    nlu/choosing-pipeline
    nlu/languages
