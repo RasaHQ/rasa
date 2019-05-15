@@ -1,10 +1,10 @@
 :desc: This tutorial will show you the different parts needed to build a
-       bot using open source Rasa Core.
+       chatbot or AI assistant using open source Rasa.
 
 .. _tutorial:
 
-Tutorial
-========
+Rasa Tutorial
+=============
 
 This page explains the basics of building an assistant with Rasa and
 shows the structure of a rasa project.
@@ -16,7 +16,7 @@ shows the structure of a rasa project.
 
 **Goal**
 
-You will build a friendly chatbot which will ask you how you're doing
+You will build a simple, friendly assistant which will ask you how you're doing
 and send you a fun picture to cheer you up if you are sad.
 
 .. image:: /_static/images/mood_bot.png
@@ -25,22 +25,47 @@ and send you a fun picture to cheer you up if you are sad.
 1. Create a New Project
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+The first step is to create a new Rasa project. To do this, run:
 
 .. runnable::
    :description: stack-init
 
    rasa init --no-prompt
 
+The ``rasa init`` command creates the files that a Rasa project needs. 
+If you leave out the ``--no-prompt`` flag you will be asked some questions about
+how you want your project to be set up.
 
-Let's take a look at the files this created:
+This creates the following files:
 
+.. code:: bash
+
+   .
+   ├── __init__.py
+   ├── actions.py
+   ├── config.yml
+   ├── credentials.yml
+   ├── data
+   │   ├── nlu.md
+   │   └── stories.md
+   ├── domain.yml
+   ├── endpoints.yml
+   └── models
+       └── <timestamp>.tar.gz
+
+
+The most important ones are your NLU training data (``data/nlu.md``)
+your stories (``data/stories.md``) and a domain file (``domain.yml``).
+You will learn about all of these in this tutorial.
+
+
+To check that all the files were created, run:
 
 .. runnable::
    :description: stack-ls
 
    ls -1
 
-The training data files are inside the ``./data`` directory.
 
 2. Create NLU examples
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -70,19 +95,22 @@ your assistant. You can find all the details of the data format in :ref:`nlu-dat
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The configuration file defines the NLU and Core components that your model
-will use. In this example, you will use the
-predefined ``supervised_embeddings`` pipeline. You can learn all about NLU pipelines
+will use. In this example, your NLU model will use the
+``supervised_embeddings`` pipeline. You can learn all about NLU pipelines
 `here <https://rasa.com/docs/nlu/choosing_pipeline/>`_.
 
 Let's take a look at your model configuration file.
-The ``pipeline`` and ``language`` keys specify how the NLU model should be built.
-You can read more about this in :ref:`choosing_pipeline`
-The ``policies`` key defines the :ref:`policies` that the Core model will use.
 
 .. runnable::
    :description: stack-cat-config
 
    cat config.yml
+
+
+The ``pipeline`` and ``language`` keys specify how the NLU model should be built.
+You can read more about this in :ref:`choosing_pipeline`
+The ``policies`` key defines the :ref:`policies` that the Core model will use.
+
 
 
 4. Write Your First Stories
@@ -91,8 +119,8 @@ The ``policies`` key defines the :ref:`policies` that the Core model will use.
 At this stage, you will teach your assistant to respond to your messages.
 Dialogue is handled by Rasa's ``Core`` module.
 
-Rasa Core models learn from real conversational data in the form of training "stories".
-A story is a real conversation between a user and a bot. 
+Core models learn from real conversational data in the form of training "stories".
+A story is a real conversation between a user and an assistant.
 Lines with intents and entities reflect the user's input and action names show what the
 assistant should do in response.
 
@@ -126,7 +154,7 @@ Run the cell below to show the example stories inside the file ``data/stories.md
 ^^^^^^^^^^^^^^^^^^
 
 The next thing we need to do is define a ``Domain``.
-The domain defines the universe your bot lives in - what user inputs it
+The domain defines the universe your assistant lives in - what user inputs it
 should expect to get, what actions it should be able to predict, how to
 respond and what information to store.
 Here is the domain for our assistant, it's saved in a 
@@ -142,12 +170,11 @@ So what do the different parts mean?
 
 
 +---------------+-------------------------------------------------------------+
-| ``intents``   | things you expect users to say. See                         |
-|               | `Rasa NLU <https://rasa.com/docs/nlu/>`_                    |
+| ``intents``   | things you expect users to say.                             |
 +---------------+-------------------------------------------------------------+
-| ``actions``   | things your bot can do and say                              |
+| ``actions``   | things your assistant can do and say                        |
 +---------------+-------------------------------------------------------------+
-| ``templates`` | template strings for the things your bot can say            |
+| ``templates`` | template strings for the things your assistant can say      |
 +---------------+-------------------------------------------------------------+
 
 
@@ -178,8 +205,6 @@ the training results for each training epoch.
    print("Finished training! You can move on to the next step!")
 
 The ``rasa train`` command will look for both NLU and Core data and will train a model for each.
-You could have also typed ``rasa train core`` to be explicit, but since the NLU data has not changed
-Rasa will automatically skip training an NLU model.
 
 
 8. Talk To Your Assistant
@@ -192,19 +217,16 @@ The easiest way to try it out and start collecting new training
 data is to use Rasa X.
 
 .. button::
-   :text: Talk to Your Assistant
-   :link: ../rasax/build
+   :text: Try Rasa X
+   :link: ../../rasa-x/
 
 
-You can also talk to your assistant on the command line without using Rasa X.
-To do this, run:
+You don't need to use Rasa X to test your assistant, though.
+First, repeat the steps in this tutorial on your own machine.
+Then, start talking to your assistant by running:
 
-.. runnable::
-   :description: stack-chat-with-bot
+.. copyable::
 
    rasa shell
 
-
-.. raw:: html
-   :file: poll.html
 
