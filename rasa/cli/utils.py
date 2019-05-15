@@ -1,8 +1,12 @@
 import os
 import sys
 from typing import Any, Callable, Dict, Optional, Text, List
+import logging
 
 from rasa.constants import DEFAULT_MODELS_PATH
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_validated_path(
@@ -31,7 +35,7 @@ def get_validated_path(
             if current is None:
                 reason_str = "Parameter '{}' not set.".format(parameter)
 
-            print_warning(
+            logger.debug(
                 "{} Using default location '{}' instead." "".format(reason_str, default)
             )
             current = default
