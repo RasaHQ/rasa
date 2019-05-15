@@ -38,6 +38,8 @@ class UserMessage(object):
     ) -> None:
         if text:
             self.text = text.strip()
+        else:
+            self.text = text
 
         if message_id is not None:
             self.message_id = str(message_id)

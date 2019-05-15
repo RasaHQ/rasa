@@ -123,7 +123,7 @@ def test_facebook_channel():
         # the above marker marks the end of the code snipped included
         # in the docs
         routes_list = utils.list_routes(s)
-        print (routes_list)
+        print(routes_list)
         assert routes_list.get("fb_webhook.health").startswith("/webhooks/facebook")
         assert routes_list.get("fb_webhook.webhook").startswith(
             "/webhooks/facebook/webhook"
@@ -789,7 +789,7 @@ async def test_slackbot_send_image_url():
         "as_user": ["True"],
         "channel": ["General"],
         "blocks": [
-            '[{"type": "image", "image_url": "http://www.rasa.net", "alt_text": "http://www.rasa.net"}]'
+            '[{"alt_text": "http://www.rasa.net", "type": "image", "image_url": "http://www.rasa.net"}]'
         ],
     }
 
@@ -888,8 +888,6 @@ def test_register_channel_without_route():
     from rasa.core.channels import RestInput
     import rasa.core
 
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
     input_channel = RestInput()
 
     app = Sanic(__name__)

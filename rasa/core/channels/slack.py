@@ -215,7 +215,7 @@ class SlackInput(InputChannel):
                 return True
             elif action_type:
                 logger.warning(
-                    "Received input from an interactive component of type "
+                    "Received input from a Slack interactive component of type "
                     + "'{}', for which payload parsing is not yet supported.".format(
                         payload["actions"][0]["type"]
                     )
@@ -227,23 +227,23 @@ class SlackInput(InputChannel):
         """Parse the payload for the response value."""
 
         if action["type"] == "button":
-            return action.get("value")  # No input payload for link buttons
+            return action.get("value")
         elif action["type"] == "select":
-            return action["selected_options"][0]["value"]
+            return action.get("selected_options", [{}])[0].get("value")
         elif action["type"] == "static_select":
-            return action["selected_option"]["value"]
+            return action.get("selected_option", {}).get("value")
         elif action["type"] == "external_select":
-            return action["selected_option"]["value"]
+            return action.get("selected_option", {}).get("value")
         elif action["type"] == "conversations_select":
-            return action["selected_conversation"]
+            return action.get("selected_conversation")
         elif action["type"] == "users_select":
-            return action["selected_user"]
+            return action.get("selected_user")
         elif action["type"] == "channels_select":
-            return action["selected_channel"]
+            return action.get("selected_channel")
         elif action["type"] == "overflow":
-            return action["selected_option"]["value"]
+            return action.get("selected_option", {}).get("value")
         elif action["type"] == "datepicker":
-            return action["selected_date"]
+            return action.get("selected_date")
 
     async def process_message(self, request: Request, on_new_message, text, sender_id):
         """Slack retries to post messages up to 3 times based on
@@ -294,6 +294,7 @@ class SlackInput(InputChannel):
                             request, on_new_message, text=text, sender_id=sender_id
                         )
                     elif payload["actions"][0]["type"] == "button":
+                        # link buttons don't have "value", don't send their clicks to bot
                         return response.text("User clicked link button")
                 return response.text(
                     "The input message could not be processed.", status=500
