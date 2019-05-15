@@ -34,7 +34,7 @@ An example directory structure could look like this:
 
 In this example the contextual AI assistant imports the ``MoodBot`` skill which in turn
 imports the ``GreetBot`` skill. Skill imports are defined in the configuration files of
-each project. The ``config.yml`` in the root project e.g. looks like this:
+each project. In our example, the ``config.yml`` in the root project would look like this:
 
 .. code-block:: yaml
 
