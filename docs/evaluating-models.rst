@@ -48,7 +48,7 @@ you can evaluate your model against them. To do this, run:
 .. note::
 
   Make sure your model file in ``models`` contains both models, ``core``
-  and ``nlu``. If it does not contain a Rasa NLU model, Rasa Core will load
+  and ``nlu``. If it does not contain an NLU model, Core will use
   the default ``RegexInterpreter``.
 
 
