@@ -192,6 +192,14 @@ def create_package_rasa(
 
 
 def decompress(model_path: Text):
+    """Decompresses the provided zipped Rasa model.
+
+    Args:
+        model_path: Path to the zipped Rasa model.
+
+    Returns:
+        Path to unzipped Rasa model.
+    """
     zipped_path = model_path
     output_path = model_path.replace(".tar.gz", "")
     unpack_model(zipped_path, output_path)
@@ -356,3 +364,37 @@ def merge_model(source: Text, target: Text) -> bool:
     except Exception as e:
         logging.debug(e)
         return False
+
+
+def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text):
+    """Checks which component of a model should be retrained.
+
+    Args:
+        new_fingerprint: The fingerprint of the new model to be trained.
+        old_model: Path to the old zipped model file.
+        train_path: Path to the directory in which the new model will be trained.
+
+    Returns:
+        A tuple of boolean values indicating whether Rasa Core and/or Rasa NLU needs
+        to be retrained or not.
+
+    """
+    retrain_nlu = retrain_core = True
+
+    if old_model is None or not os.path.exists(old_model):
+        return retrain_core, retrain_nlu
+
+    unpacked = unpack_model(old_model)
+    last_fingerprint = fingerprint_from_path(unpacked)
+
+    old_core, old_nlu = get_model_subdirectories(unpacked)
+
+    if not core_fingerprint_changed(last_fingerprint, new_fingerprint):
+        target_path = os.path.join(train_path, "core")
+        retrain_core = not merge_model(old_core, target_path)
+
+    if not nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
+        target_path = os.path.join(train_path, "nlu")
+        retrain_nlu = not merge_model(old_nlu, target_path)
+
+    return retrain_core, retrain_nlu
