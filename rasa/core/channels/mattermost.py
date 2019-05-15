@@ -1,6 +1,7 @@
 import logging
 from mattermostwrapper import MattermostAPI
 from sanic import Blueprint, response
+from sanic.request import Request
 from typing import Text, Dict, Any
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
@@ -79,11 +80,11 @@ class MattermostInput(InputChannel):
         mattermost_webhook = Blueprint("mattermost_webhook", __name__)
 
         @mattermost_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @mattermost_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request):
+        async def webhook(request: Request):
             output = request.json
             if output:
                 # splitting to get rid of the @botmention

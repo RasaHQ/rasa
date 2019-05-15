@@ -4,7 +4,8 @@ import tempfile
 from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
+from rasa.model import decompress, Fingerprint, should_retrain
 from rasa.skill import SkillSelector
 
 from rasa.cli.utils import (
@@ -32,20 +33,33 @@ def train(
     training_files: Union[Text, List[Text]],
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
+    fixed_model_name: Optional[Text] = None,
+    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_async(domain, config, training_files, output, force_training, kwargs)
+        train_async(
+            domain=domain,
+            config=config,
+            training_files=training_files,
+            output_path=output,
+            force_training=force_training,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+            kwargs=kwargs,
+        )
     )
 
 
 async def train_async(
-    domain: Optional,
+    domain: Union[Domain, Text],
     config: Text,
     training_files: Optional[Union[Text, List[Text]]],
-    output: Text = DEFAULT_MODELS_PATH,
+    output_path: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
+    fixed_model_name: Optional[Text] = None,
+    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
@@ -54,22 +68,24 @@ async def train_async(
         domain: Path to the domain file.
         config: Path to the config for Core and NLU.
         training_files: Paths to the training data for Core and NLU.
-        output: Output path.
+        output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
+        fixed_model_name: Name of model to be stored.
+        uncompress: If `True` the model will not be compressed.
         kwargs: Additional training parameters.
 
     Returns:
         Path of the trained model archive.
     """
-    config = get_valid_config(config, CONFIG_MANDATORY_KEYS)
-
+    config = _get_valid_config(config, CONFIG_MANDATORY_KEYS)
     train_path = tempfile.mkdtemp()
-    old_model = model.get_latest_model(output)
-    retrain_core = True
-    retrain_nlu = True
 
     skill_imports = SkillSelector.load(config)
-    domain = Domain.load(domain, skill_imports)
+    try:
+        domain = Domain.load(domain, skill_imports)
+    except InvalidDomain as e:
+        print_error(e)
+        return None
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
         training_files, skill_imports
@@ -92,30 +108,85 @@ async def train_async(
         print_warning(
             "No dialogue data present. Just a Rasa NLU model will be trained."
         )
-        return _train_nlu_with_validated_data(config, nlu_data_directory, output, None)
+        return _train_nlu_with_validated_data(
+            config=config,
+            nlu_data_directory=nlu_data_directory,
+            output=output_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+        )
 
     if nlu_data_not_present:
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
         return await _train_core_with_validated_data(
-            domain, config, story_directory, output, None, kwargs
+            domain=domain,
+            config=config,
+            story_directory=story_directory,
+            output=output_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+            kwargs=kwargs,
         )
 
-    if not force_training and old_model:
-        unpacked = model.unpack_model(old_model)
-        old_core, old_nlu = model.get_model_subdirectories(unpacked)
-        last_fingerprint = model.fingerprint_from_path(unpacked)
+    old_model = model.get_latest_model(output_path)
+    retrain_core, retrain_nlu = should_retrain(new_fingerprint, old_model, train_path)
 
-        if not model.core_fingerprint_changed(last_fingerprint, new_fingerprint):
-            target_path = os.path.join(train_path, "core")
-            retrain_core = not model.merge_model(old_core, target_path)
+    if force_training or retrain_core or retrain_nlu:
+        await _do_training(
+            domain=domain,
+            config=config,
+            output_path=output_path,
+            train_path=train_path,
+            nlu_data_directory=nlu_data_directory,
+            story_directory=story_directory,
+            force_training=force_training,
+            retrain_core=retrain_core,
+            retrain_nlu=retrain_nlu,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+            kwargs=kwargs,
+        )
 
-        if not model.nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
-            target_path = os.path.join(train_path, "nlu")
-            retrain_nlu = not model.merge_model(old_nlu, target_path)
+        return _package_model(
+            new_fingerprint=new_fingerprint,
+            output_path=output_path,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+        )
+
+    print_success(
+        "Nothing changed. You can use the old model stored at '{}'."
+        "".format(os.path.abspath(old_model))
+    )
+    return old_model
+
+
+async def _do_training(
+    domain: Union[Domain, Text],
+    config: Text,
+    nlu_data_directory: Optional[Text],
+    story_directory: Optional[Text],
+    output_path: Text,
+    train_path: Text,
+    force_training: bool = False,
+    retrain_core: bool = True,
+    retrain_nlu: bool = True,
+    fixed_model_name: Optional[Text] = None,
+    uncompress: bool = False,
+    kwargs: Optional[Dict] = None,
+):
 
     if force_training or retrain_core:
         await _train_core_with_validated_data(
-            domain, config, story_directory, output, train_path, kwargs
+            domain=domain,
+            config=config,
+            story_directory=story_directory,
+            output=output_path,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+            kwargs=kwargs,
         )
     else:
         print (
@@ -124,24 +195,16 @@ async def train_async(
         )
 
     if force_training or retrain_nlu:
-        _train_nlu_with_validated_data(config, nlu_data_directory, output, train_path)
+        _train_nlu_with_validated_data(
+            config=config,
+            nlu_data_directory=nlu_data_directory,
+            output=output_path,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+        )
     else:
         print ("NLU data / configuration did not change. No need to retrain NLU model.")
-
-    if retrain_core or retrain_nlu:
-        output = create_output_path(output)
-        model.create_package_rasa(train_path, output, new_fingerprint)
-
-        print_success("Your bot is trained and ready to take for a spin!")
-
-        return output
-    else:
-        print_success(
-            "Nothing changed. You can use the old model stored at '{}'"
-            "".format(os.path.abspath(old_model))
-        )
-
-        return old_model
 
 
 def train_core(
@@ -149,12 +212,23 @@ def train_core(
     config: Text,
     stories: Text,
     output: Text,
-    train_path: Optional[Text],
-    kwargs: Optional[Dict],
+    train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    uncompress: bool = False,
+    kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        train_core_async(domain, config, stories, output, train_path, kwargs)
+        train_core_async(
+            domain=domain,
+            config=config,
+            stories=stories,
+            output=output,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            uncompress=uncompress,
+            kwargs=kwargs,
+        )
     )
 
 
@@ -164,6 +238,8 @@ async def train_core_async(
     stories: Text,
     output: Text,
     train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Core model.
@@ -175,6 +251,8 @@ async def train_core_async(
         output: Output path.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
+        fixed_model_name: Name of model to be stored.
+        uncompress: If `True` the model will not be compressed.
         kwargs: Additional training parameters.
 
     Returns:
@@ -183,16 +261,34 @@ async def train_core_async(
 
     """
 
-    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
+    config = _get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
     skill_imports = SkillSelector.load(config)
 
     if isinstance(domain, str):
-        domain = Domain.load(domain, skill_imports)
+        try:
+            domain = Domain.load(domain, skill_imports)
+        except InvalidDomain as e:
+            print_error(e)
+            return None
 
     story_directory = data.get_core_directory(stories, skill_imports)
 
+    if not os.listdir(story_directory):
+        print_error(
+            "No dialogue data given. Please provide dialogue data in order to "
+            "train a Rasa Core model."
+        )
+        return
+
     return await _train_core_with_validated_data(
-        domain, config, story_directory, output, train_path, kwargs
+        domain=domain,
+        config=config,
+        story_directory=story_directory,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+        uncompress=uncompress,
+        kwargs=kwargs,
     )
 
 
@@ -202,18 +298,13 @@ async def _train_core_with_validated_data(
     story_directory: Text,
     output: Text,
     train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
 
     import rasa.core.train
-
-    if not os.listdir(story_directory):
-        print_error(
-            "No dialogue data given. Please provide dialogue data in order to "
-            "train a Rasa Core model."
-        )
-        return
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -228,24 +319,30 @@ async def _train_core_with_validated_data(
     )
     print_color("Done.", color=bcolors.OKBLUE)
 
-    if not train_path:
+    if train_path is None:
         # Only Core was trained.
-        output_path = create_output_path(output, prefix="core-")
         new_fingerprint = model.model_fingerprint(
             config, domain, stories=story_directory
         )
-        model.create_package_rasa(_train_path, output_path, new_fingerprint)
-        print_success(
-            "Your Rasa Core model is trained and saved at '{}'.".format(output_path)
+        return _package_model(
+            new_fingerprint=new_fingerprint,
+            output_path=output,
+            train_path=_train_path,
+            fixed_model_name=fixed_model_name,
+            model_prefix="core-",
+            uncompress=uncompress,
         )
-
-        return output_path
 
     return _train_path
 
 
 def train_nlu(
-    config: Text, nlu_data: Text, output: Text, train_path: Optional[Text]
+    config: Text,
+    nlu_data: Text,
+    output: Text,
+    train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    uncompress: bool = False,
 ) -> Optional[Text]:
     """Trains an NLU model.
 
@@ -255,29 +352,19 @@ def train_nlu(
         output: Output path.
         train_path: If `None` the model will be trained in a temporary
             directory, otherwise in the provided directory.
+        fixed_model_name: Name of the model to be stored.
+        uncompress: If `True` the model will not be compressed.
 
     Returns:
         If `train_path` is given it returns the path to the model archive,
         otherwise the path to the directory with the trained model files.
 
     """
-    config = get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
+    config = _get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
     # training NLU only hence the training files still have to be selected
     skill_imports = SkillSelector.load(config)
     nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
-
-    return _train_nlu_with_validated_data(
-        config, nlu_data_directory, output, train_path
-    )
-
-
-def _train_nlu_with_validated_data(
-    config: Text, nlu_data_directory: Text, output: Text, train_path: Optional[Text]
-) -> Optional[Text]:
-    """Train NLU with validated training and config data."""
-
-    import rasa.nlu.train
 
     if not os.listdir(nlu_data_directory):
         print_error(
@@ -285,6 +372,28 @@ def _train_nlu_with_validated_data(
             "a Rasa NLU model."
         )
         return
+
+    return _train_nlu_with_validated_data(
+        config=config,
+        nlu_data_directory=nlu_data_directory,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+        uncompress=uncompress,
+    )
+
+
+def _train_nlu_with_validated_data(
+    config: Text,
+    nlu_data_directory: Text,
+    output: Text,
+    train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    uncompress: bool = False,
+) -> Optional[Text]:
+    """Train NLU with validated training and config data."""
+
+    import rasa.nlu.train
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -294,20 +403,25 @@ def _train_nlu_with_validated_data(
     )
     print_color("Done.", color=bcolors.OKBLUE)
 
-    if not train_path:
-        output_path = create_output_path(output, prefix="nlu-")
+    if train_path is None:
+        # Only NLU was trained
         new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data_directory)
-        model.create_package_rasa(_train_path, output_path, new_fingerprint)
-        print_success(
-            "Your Rasa NLU model is trained and saved at '{}'.".format(output_path)
-        )
 
-        return output_path
+        return _package_model(
+            new_fingerprint=new_fingerprint,
+            output_path=output,
+            train_path=_train_path,
+            fixed_model_name=fixed_model_name,
+            model_prefix="nlu-",
+            uncompress=uncompress,
+        )
 
     return _train_path
 
 
-def enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH):
+def _enrich_config(
+    config_path: Text, missing_keys: List[Text], FALLBACK_CONFIG_PATH: Text
+):
     import rasa.utils.io
 
     config_data = rasa.utils.io.read_yaml_file(config_path)
@@ -319,7 +433,7 @@ def enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH):
     rasa.utils.io.write_yaml_file(config_data, config_path)
 
 
-def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
+def _get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
     config_path = get_validated_path(config, "config", FALLBACK_CONFIG_PATH)
 
     missing_keys = missing_config_keys(config_path, mandatory_keys)
@@ -330,6 +444,31 @@ def get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
             "{}. Filling missing parameters from fallback configuration file: '{}'."
             "".format(config, ", ".join(missing_keys), FALLBACK_CONFIG_PATH)
         )
-        enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
+        _enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
 
     return config_path
+
+
+def _package_model(
+    new_fingerprint: Fingerprint,
+    output_path: Text,
+    train_path: Text,
+    fixed_model_name: Optional[Text] = None,
+    model_prefix: Text = "",
+    uncompress: bool = False,
+):
+    output_path = create_output_path(
+        output_path, prefix=model_prefix, fixed_name=fixed_model_name
+    )
+    model.create_package_rasa(train_path, output_path, new_fingerprint)
+
+    if uncompress:
+        output_path = decompress(output_path)
+
+    print_success(
+        "Your Rasa model is trained and saved at '{}'.".format(
+            os.path.abspath(output_path)
+        )
+    )
+
+    return output_path
