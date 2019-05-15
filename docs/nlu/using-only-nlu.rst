@@ -18,7 +18,7 @@ To train an NLU model only, run:
    rasa train nlu
 
 This will look for NLU training data files in the ``data/`` directory
-and saved a trained model in the ``models/`` directory. 
+and saves a trained model in the ``models/`` directory. 
 The name of the model will start with ``nlu-``.
 
 Testing your NLU model on the command line
