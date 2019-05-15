@@ -163,7 +163,6 @@ def start_rasa_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
     vars(args).update(
         dict(
             nlu_model=None,
-            credentials=DEFAULT_CREDENTIALS_PATH,
             cors="*",
             auth_token=args.auth_token,
             enable_api=True,
