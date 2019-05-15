@@ -156,7 +156,7 @@ async def train_async(
         )
 
     print_success(
-        "Nothing changed. You can use the old model stored at '{}'"
+        "Nothing changed. You can use the old model stored at '{}'."
         "".format(os.path.abspath(old_model))
     )
     return old_model
@@ -419,7 +419,9 @@ def _train_nlu_with_validated_data(
     return _train_path
 
 
-def _enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH):
+def _enrich_config(
+    config_path: Text, missing_keys: List[Text], FALLBACK_CONFIG_PATH: Text
+):
     import rasa.utils.io
 
     config_data = rasa.utils.io.read_yaml_file(config_path)
@@ -472,7 +474,7 @@ def _package_model(
     return output_path
 
 
-def _should_retrain(new_fingerprint, old_model, train_path):
+def _should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text):
     retrain_nlu = retrain_core = True
 
     if old_model is None or not os.path.exists(old_model):
