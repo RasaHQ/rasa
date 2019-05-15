@@ -6,7 +6,7 @@ import signal
 import sys
 import os
 from multiprocessing import get_context
-from typing import List, Text
+from typing import List, Text, Optional
 
 import questionary
 
@@ -21,6 +21,7 @@ from rasa.constants import (
     ENV_LOG_LEVEL,
 )
 from rasa.utils.common import read_global_config_value, write_global_config_value
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -92,16 +93,14 @@ def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
 
 
 def _core_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
-    """Starts the Rasa Core application."""
+    """Starts the Rasa application."""
     from rasa.core.run import serve_application
     from rasa.nlu.utils import configure_colored_logging
 
     configure_colored_logging(args.loglevel)
     logging.getLogger("apscheduler.executors.default").setLevel(logging.WARNING)
 
-    args.credentials = get_validated_path(
-        args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
-    )
+    credentials_path = _prepare_credentials_for_rasa_x(args.credentials)
 
     if endpoints is None:
         args.endpoints = get_validated_path(
@@ -114,13 +113,37 @@ def _core_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = No
     serve_application(
         endpoints=endpoints,
         port=args.port,
-        credentials=args.credentials,
+        credentials=credentials_path,
         cors=args.cors,
         auth_token=args.auth_token,
         enable_api=True,
         jwt_secret=args.jwt_secret,
         jwt_method=args.jwt_method,
     )
+
+
+def _prepare_credentials_for_rasa_x(credentials_path: Optional[Text]) -> Text:
+    credentials_path = get_validated_path(
+        credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+    )
+    if credentials_path:
+        credentials = io_utils.read_yaml_file(credentials_path)
+    else:
+        credentials = {}
+        # If no credentials are given, create a new credentials file.
+        credentials_path = DEFAULT_CREDENTIALS_PATH
+
+    if not credentials.get("rasa"):
+        credentials["rasa"] = {"url": "http://localhost:5002"}
+
+        io_utils.write_yaml_file(credentials, credentials_path)
+
+        logging.debug(
+            "No Rasa credentials given. Creating one in '{}'"
+            "".format(credentials_path)
+        )
+
+    return credentials_path
 
 
 def start_core_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
@@ -140,8 +163,7 @@ def start_core_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
     vars(args).update(
         dict(
             nlu_model=None,
-            channel="rasa",
-            credentials="credentials.yml",
+            credentials=DEFAULT_CREDENTIALS_PATH,
             cors="*",
             auth_token=args.auth_token,
             enable_api=True,
