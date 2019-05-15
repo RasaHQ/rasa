@@ -4,7 +4,7 @@ import os
 from typing import List
 
 from rasa import data
-from rasa.cli.arguments import show as arguments
+from rasa.cli.arguments import visualize as arguments
 from rasa.constants import DEFAULT_DATA_PATH
 
 
