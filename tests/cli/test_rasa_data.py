@@ -28,7 +28,7 @@ def test_data_convert_nlu(run_in_default_project):
 
 
 def test_data_split_help(run):
-    help = run("data", "split", "nlu", "--help")
+    output = run("data", "split", "nlu", "--help")
 
     help_text = """usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
                            [--training-fraction TRAINING_FRACTION] [--out OUT]"""
@@ -36,11 +36,11 @@ def test_data_split_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line
 
 
 def test_data_convert_help(run):
-    help = run("data", "convert", "nlu", "--help")
+    output = run("data", "convert", "nlu", "--help")
 
     help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data-file DATA_FILE
                              --out-file OUT_FILE [-l LANGUAGE] -f {json,md}"""
@@ -48,4 +48,4 @@ def test_data_convert_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line

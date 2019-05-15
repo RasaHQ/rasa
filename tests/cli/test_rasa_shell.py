@@ -1,5 +1,5 @@
 def test_shell_help(run):
-    help = run("shell", "--help")
+    output = run("shell", "--help")
 
     help_text = """usage: rasa shell [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                   [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
@@ -12,11 +12,11 @@ def test_shell_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line
 
 
 def test_shell_nlu_help(run):
-    help = run("shell", "nlu", "--help")
+    output = run("shell", "nlu", "--help")
 
     help_text = """usage: rasa shell nlu [-h] [-v] [-vv] [--quiet] [-m MODEL]
                       [model-as-positional-argument]"""
@@ -24,4 +24,4 @@ def test_shell_nlu_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line

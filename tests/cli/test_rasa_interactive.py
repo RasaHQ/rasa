@@ -1,5 +1,5 @@
 def test_interactive_help(run):
-    help = run("interactive", "--help")
+    output = run("interactive", "--help")
 
     help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [-m MODEL] [-c CONFIG]
                         [-d DOMAIN] [--data DATA [DATA ...]] [--out OUT]
@@ -14,11 +14,11 @@ def test_interactive_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line
 
 
 def test_interactive_core_help(run):
-    help = run("interactive", "core", "--help")
+    output = run("interactive", "core", "--help")
 
     help_text = """usage: rasa interactive core [-h] [-v] [-vv] [--quiet] [-m MODEL] [-c CONFIG]
                              [-d DOMAIN] [-s STORIES] [--out OUT]
@@ -36,4 +36,4 @@ def test_interactive_core_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line

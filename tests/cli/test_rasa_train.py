@@ -68,7 +68,7 @@ def test_train_nlu(run_in_default_project):
 
 
 def test_train_help(run):
-    help = run("train", "--help")
+    output = run("train", "--help")
 
     help_text = """usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
@@ -80,11 +80,11 @@ def test_train_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line
 
 
 def test_train_nlu_help(run):
-    help = run("train", "nlu", "--help")
+    output = run("train", "nlu", "--help")
 
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [--out OUT]
                       [-u NLU] [--fixed-model-name FIXED_MODEL_NAME]
@@ -93,11 +93,11 @@ def test_train_nlu_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line
 
 
 def test_train_core_help(run):
-    help = run("train", "core", "--help")
+    output = run("train", "core", "--help")
 
     help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
                        [-c CONFIG [CONFIG ...]] [--out OUT]
@@ -111,4 +111,4 @@ def test_train_core_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line

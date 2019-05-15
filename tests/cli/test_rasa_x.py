@@ -1,5 +1,5 @@
 def test_x_help(run):
-    help = run("x", "--help")
+    output = run("x", "--help")
 
     help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--no-prompt]
               [--production] [--nlg NLG]
@@ -14,4 +14,4 @@ def test_x_help(run):
     lines = help_text.split("\n")
 
     for i, line in enumerate(lines):
-        assert help.outlines[i] == line
+        assert output.outlines[i] == line
