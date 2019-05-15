@@ -36,7 +36,7 @@ def get_validated_path(
                 reason_str = "Parameter '{}' not set.".format(parameter)
 
             logger.debug(
-                 "{} Using default location '{}' instead.".format(reason_str, default)
+                "{} Using default location '{}' instead.".format(reason_str, default)
             )
             current = default
         elif none_is_valid:
