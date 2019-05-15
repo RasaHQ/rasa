@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from rasa.nlu.utils import list_files
 
@@ -18,13 +19,73 @@ def test_train(run_in_default_project):
         "train_models",
         "--fixed-model-name",
         "test-model",
-        "--force",
     )
 
     assert os.path.exists(os.path.join(temp_dir, "train_models"))
     files = list_files(os.path.join(temp_dir, "train_models"))
     assert len(files) == 1
     assert os.path.basename(files[0]) == "test-model.tar.gz"
+
+
+def test_train_skip_on_model_not_changed(run_in_default_project):
+    temp_dir = os.getcwd()
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+
+    file_name = files[0]
+
+    run_in_default_project("train")
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+    assert file_name == files[0]
+
+
+def test_train_force(run_in_default_project):
+    temp_dir = os.getcwd()
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+
+    run_in_default_project("train", "--force")
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 2
+
+
+def test_train_with_only_nlu_data(run_in_default_project):
+    temp_dir = os.getcwd()
+
+    assert os.path.exists(os.path.join(temp_dir, "data/stories.md"))
+    os.remove(os.path.join(temp_dir, "data/stories.md"))
+    shutil.rmtree(os.path.join(temp_dir, "models"))
+
+    run_in_default_project("train", "--fixed-model-name", "test-model")
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "nlu-test-model.tar.gz"
+
+
+def test_train_with_only_core_data(run_in_default_project):
+    temp_dir = os.getcwd()
+
+    assert os.path.exists(os.path.join(temp_dir, "data/nlu.md"))
+    os.remove(os.path.join(temp_dir, "data/nlu.md"))
+    shutil.rmtree(os.path.join(temp_dir, "models"))
+
+    run_in_default_project("train", "--fixed-model-name", "test-model")
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "core-test-model.tar.gz"
 
 
 def test_train_core(run_in_default_project):
