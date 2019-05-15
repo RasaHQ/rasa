@@ -5,7 +5,7 @@ from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.model import decompress, Fingerprint
+from rasa.model import decompress, Fingerprint, should_retrain
 from rasa.skill import SkillSelector
 
 from rasa.cli.utils import (
@@ -129,7 +129,7 @@ async def train_async(
         )
 
     old_model = model.get_latest_model(output_path)
-    retrain_core, retrain_nlu = _should_retrain(new_fingerprint, old_model, train_path)
+    retrain_core, retrain_nlu = should_retrain(new_fingerprint, old_model, train_path)
 
     if force_training or retrain_core or retrain_nlu:
         await _do_training(
@@ -472,25 +472,3 @@ def _package_model(
     )
 
     return output_path
-
-
-def _should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text):
-    retrain_nlu = retrain_core = True
-
-    if old_model is None or not os.path.exists(old_model):
-        return retrain_core, retrain_nlu
-
-    unpacked = model.unpack_model(old_model)
-    last_fingerprint = model.fingerprint_from_path(unpacked)
-
-    old_core, old_nlu = model.get_model_subdirectories(unpacked)
-
-    if not model.core_fingerprint_changed(last_fingerprint, new_fingerprint):
-        target_path = os.path.join(train_path, "core")
-        retrain_core = not model.merge_model(old_core, target_path)
-
-    if not model.nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
-        target_path = os.path.join(train_path, "nlu")
-        retrain_nlu = not model.merge_model(old_nlu, target_path)
-
-    return retrain_core, retrain_nlu

@@ -1,6 +1,7 @@
 import os
 import tempfile
 import time
+from typing import Text
 
 import pytest
 
@@ -25,6 +26,8 @@ from rasa.model import (
     get_model_subdirectories,
     model_fingerprint,
     nlu_fingerprint_changed,
+    Fingerprint,
+    should_retrain,
 )
 
 
@@ -178,3 +181,62 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
     assert not os.path.exists(unpacked_model_path)
+
+
+@pytest.mark.parametrize(
+    "fingerprint",
+    [
+        {
+            "new": _fingerprint(),
+            "old": _fingerprint(stories=["others"]),
+            "retrain_core": True,
+            "retrain_nlu": False,
+        },
+        {
+            "new": _fingerprint(nlu=["others"]),
+            "old": _fingerprint(),
+            "retrain_core": False,
+            "retrain_nlu": True,
+        },
+        {
+            "new": _fingerprint(config=["others"]),
+            "old": _fingerprint(),
+            "retrain_core": True,
+            "retrain_nlu": True,
+        },
+        {
+            "new": _fingerprint(),
+            "old": _fingerprint(),
+            "retrain_core": False,
+            "retrain_nlu": False,
+        },
+    ],
+)
+def test_should_retrain(trained_model, fingerprint):
+    old_model = set_fingerprint(trained_model, fingerprint["old"])
+
+    retrain_core, retrain_nlu = should_retrain(
+        fingerprint["new"], old_model, tempfile.mkdtemp()
+    )
+
+    assert retrain_core == fingerprint["retrain_core"]
+    assert retrain_nlu == fingerprint["retrain_nlu"]
+
+
+def set_fingerprint(
+    trained_model: Text, fingerprint: Fingerprint, use_fingerprint: bool = True
+) -> Text:
+    unpacked_model_path = get_model(trained_model)
+
+    os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
+    if use_fingerprint:
+        fingerprint = fingerprint
+    else:
+        fingerprint = None
+
+    tempdir = tempfile.mkdtemp()
+    output_path = os.path.join(tempdir, "test.tar.gz")
+
+    create_package_rasa(unpacked_model_path, output_path, fingerprint)
+
+    return output_path
