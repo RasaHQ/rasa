@@ -22,7 +22,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    :hidden:
 
    installation
-   project-structure
+   tutorial
    command-line-interface
    architecture
    channels

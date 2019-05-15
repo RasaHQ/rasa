@@ -1,10 +1,10 @@
 :desc: This tutorial will show you the different parts needed to build a
        bot using open source Rasa Core.
 
-.. _project-structure:
+.. _tutorial:
 
-Project Structure
-=================
+Tutorial
+========
 
 This page explains the basics of building an assistant with Rasa and
 shows the structure of a rasa project.
