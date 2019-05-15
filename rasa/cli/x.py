@@ -92,7 +92,7 @@ def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
     return allow_metrics
 
 
- def _rasa_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
+def _rasa_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
     from rasa.nlu.utils import configure_colored_logging
@@ -146,7 +146,7 @@ def _prepare_credentials_for_rasa_x(credentials_path: Optional[Text]) -> Text:
     return credentials_path
 
 
-def start_core_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
+def start_rasa_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
     """Starts the Rasa X API with Rasa as a background process."""
 
     from rasa.core.utils import AvailableEndpoints
@@ -172,7 +172,7 @@ def start_core_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
     )
 
     ctx = get_context("spawn")
-    p = ctx.Process(target=_core_service, args=(args, endpoints))
+    p = ctx.Process(target=_rasa_service, args=(args, endpoints))
     p.start()
 
 
@@ -218,7 +218,7 @@ def rasa_x(args: argparse.Namespace):
 
     if args.production:
         print_success("Starting Rasa X in production mode... 🚀")
-        _core_service(args)
+        _rasa_service(args)
     else:
         print_success("Starting Rasa X in local mode... 🚀")
         if not is_rasa_x_installed():
@@ -235,7 +235,7 @@ def rasa_x(args: argparse.Namespace):
 
         rasa_x_token = generate_rasa_x_token()
 
-        start_core_for_local_platform(args, rasa_x_token=rasa_x_token)
+        start_rasa_for_local_platform(args, rasa_x_token=rasa_x_token)
 
         main_local(
             args.project_path, args.data_path, token=rasa_x_token, metrics=metrics
