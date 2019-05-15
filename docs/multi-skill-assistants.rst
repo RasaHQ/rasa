@@ -4,7 +4,7 @@
 .. _multi_skill_bots:
 
 
-Multi Skill Assistants
+Multi-skill Assistants
 ======================
 
 Rasa supports building AI assistants from multiple contextual AI assistant skills.
