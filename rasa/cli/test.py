@@ -91,7 +91,7 @@ def test_nlu(args: argparse.Namespace) -> None:
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
 
-    if args.model:
+    if not args.cross_validation:
         model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
         test_nlu(model_path, nlu_data, vars(args))
     else:
