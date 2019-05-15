@@ -137,7 +137,7 @@ The model that should be used to interact with your bot, can be specified by
                         directory. (default: models)
 
 
-In case you start the chat session only with a trained NLU model, ``rasa shell`` allows
+In case you start the shell with an NLU-only model, ``rasa shell`` allows
 you to obtain the intent and entities of any text you type on the command line.
 If your model includes a trained Core model, you can chat with your bot and see
 what the bot predicts as a next action.
