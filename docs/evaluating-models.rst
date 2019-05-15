@@ -48,7 +48,7 @@ you can evaluate your model against them. To do this, run:
 .. note::
 
   Make sure your model file in ``models`` contains both models, ``core``
-  and ``nlu``. If it does not contain a ``nlu`` model, Rasa Core will load
+  and ``nlu``. If it does not contain a Rasa NLU model, Rasa Core will load
   the default ``RegexInterpreter``.
 
 
@@ -60,24 +60,22 @@ Evaluating an NLU Model
 A standard technique in machine learning is to keep some data separate as a *test set*.
 If you've done this, you can see how well your NLU model predicts the test cases using this command:
 
-To evaluate your model against test data, run:
-
 .. code-block:: shell
 
-   rasa test nlu --data test_set.md \
-     --model models/model_20180323-145833.tar.gz
+   rasa test nlu -u test_set.md \
+     --model models/nlu-20180323-145833.tar.gz
 
 
 If you don't have a separate test set, you can
 still estimate how well your model generalises using cross-validation.
-To do this, add the ``--mode crossvalidation`` flag:
+To do this, add the flag ``--cross-validation``:
 
 .. code-block:: shell
 
    rasa test nlu
-         --data data/nlu.md \
+         -u data/nlu.md \
          --config config.yml \
-         --mode crossvalidation
+         --cross-validation
 
 
 
@@ -88,8 +86,8 @@ The evaluation script will produce a report, confusion matrix
 and confidence histogram for your model.
 
 The report logs precision, recall and f1 measure for
-each intent and entity, as well as provide an overall average.
-You can save these reports as JSON files using the `--report` flag.
+each intent and entity, as well as provides an overall average.
+You can save these reports as JSON files using the ``--report`` argument.
 
 The confusion matrix shows you which
 intents are mistaken for others; any samples which have been
