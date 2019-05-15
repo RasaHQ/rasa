@@ -17,6 +17,8 @@ The recommended way to get started with Rasa is via ``pip``:
 This will install both Rasa and Rasa X.
 If you don't want to use Rasa X, run ``pip install rasa`` instead.
 
+Once you're done installing, head over to the :ref:`tutorial` .
+
 .. raw:: html
 
      Unless you've already got numpy & scipy installed, we highly recommend that you install and use <a class="reference external" href="https://www.anaconda.com/download/" target="_blank">Anaconda</a>.
@@ -131,4 +133,14 @@ Using MITIE alone can be quite slow to train, but you can use it with this confi
 .. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
 
+
+
+Next Step
+---------
+
+Now that you have everything installed, head over to the tutorial:
+
+.. button::
+   :text: Next Step: Tutorial
+   :link: ../tutorial/
 
