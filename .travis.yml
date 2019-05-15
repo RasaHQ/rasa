@@ -96,10 +96,6 @@ jobs:
     - cd starter-pack-rasa-nlu
     - python -m pytest tests
   - stage: test
-    name: "Test CLI"
-    script:
-    - timeout 3 time rasa --help
-  - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "Stack starter pack"
     python: 3.6
