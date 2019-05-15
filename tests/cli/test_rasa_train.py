@@ -44,7 +44,6 @@ def test_train_core(run_in_default_project):
         "rasa-model",
     )
 
-    assert os.path.exists("train_rasa_models")
     assert os.path.exists("train_rasa_models/core-rasa-model")
     assert os.path.isdir("train_rasa_models/core-rasa-model")
 
