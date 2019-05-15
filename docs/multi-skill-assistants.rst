@@ -27,23 +27,23 @@ An example directory structure could look like this:
         │   │   ├── nlu.md
         │   │   └── stories.md
         │   └── domain.yml
-        └── MoodBot
+        └── ChitchatBot
             ├── config.yml
             ├── data
             │   ├── nlu.md
             │   └── stories.md
             └── domain.yml
 
-In this example the contextual AI assistant imports the ``MoodBot`` skill which in turn
+In this example the contextual AI assistant imports the ``ChitchatBot`` skill which in turn
 imports the ``GreetBot`` skill. Skill imports are defined in the configuration files of
 each project. In our example, the ``config.yml`` in the root project would look like this:
 
 .. code-block:: yaml
 
     imports:
-    - skills/MoodBot
+    - skills/ChitchatBot
 
-The configuration file of the ``MoodBot`` in turn references the ``GreetBot``:
+The configuration file of the ``ChitchatBot`` in turn references the ``GreetBot``:
 
 .. code-block:: yaml
 
