@@ -25,8 +25,6 @@ def add_subparser(
     )
     interactive_parser.set_defaults(func=interactive)
 
-    arguments.set_interactive_arguments(interactive_parser)
-
     interactive_subparsers = interactive_parser.add_subparsers()
     interactive_core_parser = interactive_subparsers.add_parser(
         "core",
@@ -37,6 +35,7 @@ def add_subparser(
     )
     interactive_core_parser.set_defaults(func=interactive_core)
 
+    arguments.set_interactive_arguments(interactive_parser)
     arguments.set_interactive_core_arguments(interactive_core_parser)
 
 

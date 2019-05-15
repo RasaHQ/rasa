@@ -13,7 +13,6 @@ from tests.core.conftest import (
     DEFAULT_NLU_DATA,
     END_TO_END_STORY_FILE,
 )
-from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
