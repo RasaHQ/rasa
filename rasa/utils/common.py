@@ -75,11 +75,7 @@ def set_tensorflow_log_level(log_level: int):
     """Set the log level of Tensorflow."""
     import tensorflow as tf
 
-    tf_log_level = tf.logging.INFO
-    if log_level == logging.DEBUG:
-        tf_log_level = tf.logging.DEBUG
-    if log_level == logging.WARNING:
-        tf_log_level = tf.logging.WARN
+    tf_log_level = tf.logging.WARN
     if log_level == logging.ERROR:
         tf_log_level = tf.logging.ERROR
 
@@ -93,6 +89,9 @@ def update_sanic_log_level():
     log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
 
     from sanic.log import logger, error_logger, access_logger
+
+    if log_level == "INFO" or log_level == "DEBUG":
+        log_level = "WARNING"
 
     logger.setLevel(log_level)
     error_logger.setLevel(log_level)
