@@ -37,6 +37,7 @@ in ``interactive learning``
 - a model for an agent can now also be loaded from a remote storage
 - log level can be set via environment variable ``LOG_LEVEL``
 - add ``--store-uncompressed`` to train command to not compress Rasa model
+- log level of libraries, such as tensorflow, can be set via environment variable ``LOG_LEVEL_LIBRARIES``
 
 Changed
 -------
