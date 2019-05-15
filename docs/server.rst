@@ -47,7 +47,7 @@ The different parameters are:
 
 .. note::
 
-    If you start the server with only a Rasa NLU model, not all the available endpoints
+    If you start the server with an NLU-only model, not all the available endpoints
     can be called. Be aware that some endpoint will return a 409 status code, as a trained
     Rasa Core model is needed to process the request.
 
