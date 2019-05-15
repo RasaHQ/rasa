@@ -392,10 +392,10 @@ paths:
                     - user
                 parse_data:
                   $ref: '#/components/schemas/ParseResult'
-              required: ["message", "sender"]
+              required: ["text", "sender"]
             example:
               sender: user
-              message: hello
+              text: hello
               parse_data:
                 text: hello
                 entities: []
@@ -812,9 +812,16 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Event'
-          example:
-            $ref: '#/components/examples/Event'
+            type: object
+            properties:
+              event:
+                type: string
+                description: Event name
+                example: "slot"
+              timestamp:
+                type: integer
+                description: Time of application
+            required: ["event"]
     EventList:
       required: true
       content:
@@ -822,10 +829,15 @@ components:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/Event'
-          example:
-            Events:
-              $ref: '#/components/examples/Events'
+              type: object
+              properties:
+                event:
+                  type: string
+                  description: Event name
+                  example: "action"
+                timestamp:
+                  type: integer
+                  description: Time of application
     ModelRequest:
       required: true
       content:
