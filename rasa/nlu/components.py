@@ -35,39 +35,48 @@ def validate_requirements(component_names: List[Text]) -> None:
     failed_imports = set()
     for component_name in component_names:
         component_class = registry.get_component_class(component_name)
-        failed_imports.update(find_unavailable_packages(
-            component_class.required_packages()))
+        failed_imports.update(
+            find_unavailable_packages(component_class.required_packages())
+        )
     if failed_imports:  # pragma: no cover
         # if available, use the development file to figure out the correct
         # version numbers for each requirement
-        raise Exception("Not all required packages are installed. " +
-                        "To use this pipeline, you need to install the "
-                        "missing dependencies. " +
-                        "Please install {}".format(", ".join(failed_imports)))
+        raise Exception(
+            "Not all required packages are installed. "
+            + "To use this pipeline, you need to install the "
+            "missing dependencies. "
+            + "Please install {}".format(", ".join(failed_imports))
+        )
 
 
-def validate_arguments(pipeline: List['Component'],
-                       context: Dict[Text, Any],
-                       allow_empty_pipeline: bool = False) -> None:
+def validate_arguments(
+    pipeline: List["Component"],
+    context: Dict[Text, Any],
+    allow_empty_pipeline: bool = False,
+) -> None:
     """Validates a pipeline before it is run. Ensures, that all
     arguments are present to train the pipeline."""
 
     # Ensure the pipeline is not empty
     if not allow_empty_pipeline and len(pipeline) == 0:
-        raise ValueError("Can not train an empty pipeline. "
-                         "Make sure to specify a proper pipeline in "
-                         "the configuration using the `pipeline` key." +
-                         "The `backend` configuration key is "
-                         "NOT supported anymore.")
+        raise ValueError(
+            "Can not train an empty pipeline. "
+            "Make sure to specify a proper pipeline in "
+            "the configuration using the `pipeline` key."
+            + "The `backend` configuration key is "
+            "NOT supported anymore."
+        )
 
     provided_properties = set(context.keys())
 
     for component in pipeline:
         for r in component.requires:
             if r not in provided_properties:
-                raise Exception("Failed to validate at component "
-                                "'{}'. Missing property: '{}'"
-                                "".format(component.name, r))
+                raise Exception(
+                    "Failed to validate at component "
+                    "'{}'. Missing property: '{}'"
+                    "".format(component.name, r)
+                )
         provided_properties.update(component.provides)
 
 
@@ -102,8 +111,9 @@ class UnsupportedLanguageError(Exception):
         super(UnsupportedLanguageError, self).__init__(component, language)
 
     def __str__(self) -> Text:
-        return ("component {} does not support language {}"
-                "".format(self.component, self.language))
+        return "component {} does not support language {}".format(
+            self.component, self.language
+        )
 
 
 class ComponentMetaclass(type):
@@ -172,8 +182,7 @@ class Component(object, metaclass=ComponentMetaclass):
     # This is an important feature for backwards compatibility of components.
     language_list = None
 
-    def __init__(self,
-                 component_config: Optional[Dict[Text, Any]] = None) -> None:
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
         if not component_config:
             component_config = {}
@@ -182,8 +191,7 @@ class Component(object, metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = override_defaults(self.defaults,
-                                                  component_config)
+        self.component_config = override_defaults(self.defaults, component_config)
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
@@ -198,13 +206,14 @@ class Component(object, metaclass=ComponentMetaclass):
         return []
 
     @classmethod
-    def load(cls,
-             meta: Dict[Text, Any],
-             model_dir: Optional[Text] = None,
-             model_metadata: Optional['Metadata'] = None,
-             cached_component: Optional['Component'] = None,
-             **kwargs: Any
-             ) -> 'Component':
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Optional[Text] = None,
+        model_metadata: Optional["Metadata"] = None,
+        cached_component: Optional["Component"] = None,
+        **kwargs: Any
+    ) -> "Component":
         """Load this component from file.
 
         After a component has been trained, it will be persisted by
@@ -220,9 +229,9 @@ class Component(object, metaclass=ComponentMetaclass):
             return cls(meta)
 
     @classmethod
-    def create(cls,
-               component_config: Dict[Text, Any],
-               config: RasaNLUModelConfig) -> 'Component':
+    def create(
+        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+    ) -> "Component":
         """Creates this component (e.g. before a training is started).
 
         Method can access all configuration parameters."""
@@ -249,10 +258,9 @@ class Component(object, metaclass=ComponentMetaclass):
         (e.g. loading word vectors for the pipeline)."""
         pass
 
-    def train(self,
-              training_data: 'TrainingData',
-              cfg: RasaNLUModelConfig,
-              **kwargs: Any) -> None:
+    def train(
+        self, training_data: "TrainingData", cfg: RasaNLUModelConfig, **kwargs: Any
+    ) -> None:
         """Train this component.
 
         This is the components chance to train itself provided
@@ -265,7 +273,7 @@ class Component(object, metaclass=ComponentMetaclass):
         of components previous to this one."""
         pass
 
-    def process(self, message: 'Message', **kwargs: Any) -> None:
+    def process(self, message: "Message", **kwargs: Any) -> None:
         """Process an incoming message.
 
         This is the components chance to process an incoming
@@ -278,17 +286,15 @@ class Component(object, metaclass=ComponentMetaclass):
         of components previous to this one."""
         pass
 
-    def persist(self,
-                file_name: Text,
-                model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this component to disk for future loading."""
 
         pass
 
     @classmethod
-    def cache_key(cls,
-                  component_meta: Dict[Text, Any],
-                  model_metadata: 'Metadata') -> Optional[Text]:
+    def cache_key(
+        cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
+    ) -> Optional[Text]:
         """This key is used to cache components.
 
         If a component is unique to a model it should return None.
@@ -310,9 +316,9 @@ class Component(object, metaclass=ComponentMetaclass):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def prepare_partial_processing(self,
-                                   pipeline: List['Component'],
-                                   context: Dict[Text, Any]) -> None:
+    def prepare_partial_processing(
+        self, pipeline: List["Component"], context: Dict[Text, Any]
+    ) -> None:
         """Sets the pipeline and context used for partial processing.
 
         The pipeline should be a list of components that are
@@ -323,7 +329,7 @@ class Component(object, metaclass=ComponentMetaclass):
         self.partial_processing_pipeline = pipeline
         self.partial_processing_context = context
 
-    def partially_process(self, message: 'Message') -> 'Message':
+    def partially_process(self, message: "Message") -> "Message":
         """Allows the component to process messages during
         training (e.g. external training data).
 
@@ -334,8 +340,7 @@ class Component(object, metaclass=ComponentMetaclass):
             for component in self.partial_processing_pipeline:
                 component.process(message, **self.partial_processing_context)
         else:
-            logger.info("Failed to run partial processing due "
-                        "to missing pipeline.")
+            logger.info("Failed to run partial processing due to missing pipeline.")
         return message
 
     @classmethod
@@ -364,42 +369,46 @@ class ComponentBuilder(object):
         # every component that implements a cache-key will be cached
         self.component_cache = {}
 
-    def __get_cached_component(self,
-                               component_meta: Dict[Text, Any],
-                               model_metadata: 'Metadata'
-                               ) -> Tuple[Optional[Component], Optional[Text]]:
+    def __get_cached_component(
+        self, component_meta: Dict[Text, Any], model_metadata: "Metadata"
+    ) -> Tuple[Optional[Component], Optional[Text]]:
         """Load a component from the cache, if it exists.
 
         Returns the component, if found, and the cache key.
         """
 
         from rasa.nlu import registry
+
         # try to get class name first, else create by name
-        component_name = component_meta.get('class', component_meta['name'])
+        component_name = component_meta.get("class", component_meta["name"])
         component_class = registry.get_component_class(component_name)
         cache_key = component_class.cache_key(component_meta, model_metadata)
-        if (cache_key is not None and
-                self.use_cache and
-                cache_key in self.component_cache):
+        if (
+            cache_key is not None
+            and self.use_cache
+            and cache_key in self.component_cache
+        ):
             return self.component_cache[cache_key], cache_key
         else:
             return None, cache_key
 
-    def __add_to_cache(self,
-                       component: Component,
-                       cache_key: Optional[Text]) -> None:
+    def __add_to_cache(self, component: Component, cache_key: Optional[Text]) -> None:
         """Add a component to the cache."""
 
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
-            logger.info("Added '{}' to component cache. Key '{}'."
-                        "".format(component.name, cache_key))
+            logger.info(
+                "Added '{}' to component cache. Key '{}'."
+                "".format(component.name, cache_key)
+            )
 
-    def load_component(self,
-                       component_meta: Dict[Text, Any],
-                       model_dir: Text,
-                       model_metadata: 'Metadata',
-                       **context: Any) -> Component:
+    def load_component(
+        self,
+        component_meta: Dict[Text, Any],
+        model_dir: Text,
+        model_metadata: "Metadata",
+        **context: Any
+    ) -> Component:
         """Tries to retrieve a component from the cache, else calls
         ``load`` to create a new component.
 
@@ -419,22 +428,25 @@ class ComponentBuilder(object):
 
         try:
             cached_component, cache_key = self.__get_cached_component(
-                component_meta, model_metadata)
+                component_meta, model_metadata
+            )
             component = registry.load_component_by_meta(
-                component_meta, model_dir, model_metadata,
-                cached_component, **context)
+                component_meta, model_dir, model_metadata, cached_component, **context
+            )
             if not cached_component:
                 # If the component wasn't in the cache,
                 # let us add it if possible
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            raise Exception("Failed to load component from file `{}`. "
-                            "{}".format(component_meta.get("file"), e))
+            raise Exception(
+                "Failed to load component from file `{}`. "
+                "{}".format(component_meta.get("file"), e)
+            )
 
-    def create_component(self,
-                         component_config: Dict[Text, Any],
-                         cfg: RasaNLUModelConfig) -> Component:
+    def create_component(
+        self, component_config: Dict[Text, Any], cfg: RasaNLUModelConfig
+    ) -> Component:
         """Tries to retrieve a component from the cache,
         calls `create` to create a new component."""
         from rasa.nlu import registry
@@ -442,12 +454,14 @@ class ComponentBuilder(object):
 
         try:
             component, cache_key = self.__get_cached_component(
-                component_config, Metadata(cfg.as_dict(), None))
+                component_config, Metadata(cfg.as_dict(), None)
+            )
             if component is None:
-                component = registry.create_component_by_config(
-                    component_config, cfg)
+                component = registry.create_component_by_config(component_config, cfg)
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            raise Exception("Failed to create component `{}`. "
-                            "{}".format(component_config['name'], e))
+            raise Exception(
+                "Failed to create component `{}`. "
+                "{}".format(component_config["name"], e)
+            )

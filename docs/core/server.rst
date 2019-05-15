@@ -38,17 +38,16 @@ models with:
 
 .. code-block:: bash
 
-    $ python -m rasa.core.run \
-        --enable_api \
-        -d models/dialogue \
-        -u models/nlu/current \
+    $ rasa run \
+        --enable-api \
+        -m models \
         -o out.log
 
 The different parameters are:
 
-- ``--enable_api``, enables this additional API
-- ``-d``, which is the path to the Rasa Core model.
-- ``-u``, which is the path to the Rasa NLU model.
+- ``--enable-api``, enables this additional API
+- ``-m``, which is the path to the folder containing your Rasa Core model
+  and Rasa NLU model.
 - ``-o``, which is the path to the log file.
 
 .. note::
@@ -89,16 +88,15 @@ Nevertheless, there are two authentication methods built in:
 
 **Token Based Auth:**
 
-Pass in the token using ``--auth_token thisismysecret`` when starting
+Pass in the token using ``--auth-token thisismysecret`` when starting
 the server:
 
 .. code-block:: bash
 
-    $ python -m rasa.core.run \
-        --enable_api \
-        --auth_token thisismysecret \
-        -d models/dialogue \
-        -u models/nlu/current \
+    $ rasa run \
+        --enable-api \
+        --auth-token thisismysecret \
+        -m models \
         -o out.log
 
 Your requests should pass the token, in our case ``thisismysecret``,
@@ -110,7 +108,7 @@ as a parameter:
 
 **JWT Based Auth:**
 
-Enable JWT based authentication using ``--jwt_secret thisismysecret``.
+Enable JWT based authentication using ``--jwt-secret thisismysecret``.
 Requests to the server need to contain a valid JWT token in
 the ``Authorization`` header that is signed using this secret
 and the ``HS256`` algorithm.
@@ -122,11 +120,10 @@ if the ``sender_id`` matches the user's ``username``.
 
 .. code-block:: bash
 
-    $ python -m rasa.core.run \
-        --enable_api \
-        --jwt_secret thisismysecret \
-        -d models/dialogue \
-        -u models/nlu/current \
+    $ rasa run \
+        --enable-api \
+        --jwt-secret thisismysecret \
+        -m models \
         -o out.log
 
 Your requests should have set a proper JWT header:
@@ -150,8 +147,8 @@ For example:
 
 .. code-block:: bash
 
-    python -m rasa.core.run \
-        --d <core model> \
+    rasa run \
+        --m <core model> \
         --endpoints <path to endpoint configuration>.yml
 
 .. note::
@@ -166,10 +163,9 @@ You can also configure the http server to fetch models from another URL:
 
 .. code-block:: bash
 
-    $ python -m rasa.core.run \
-        --enable_api \
-        -d models/dialogue \
-        -u models/nlu/current \
+    $ rasa run \
+        --enable-api \
+        -m models \
         --endpoints my_endpoints.yaml \
         -o out.log
 
@@ -219,15 +215,12 @@ into your endpoint configuration file:
         token: <token>  # [optional]
         token_name: <name of the token> # [optional] (default: token)
 
-Then run Rasa Core with the ``--endpoints <path_to_your_endpoint_config>.yml``
-and specify the nlu model to use with the `-u` flag.
+Then run Rasa Core with the ``--endpoints <path_to_your_endpoint_config>.yml``.
 For example:
 
 .. code-block:: bash
 
-    python -m rasa.core.run -d models/current/dialogue \
-        -u <project_name>/<model_name> \
-        --endpoints endpoints.yml
+    rasa run -m models --endpoints endpoints.yml
 
 Connecting a Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

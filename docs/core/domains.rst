@@ -48,7 +48,7 @@ For example, an ``action`` can:
 * make an external API call
 * query a database
 
-see :ref:`customactions`
+see :ref:`actions`
 
 For a more complete example domain, check the :doc:`quickstart`.
 
@@ -115,7 +115,7 @@ two ways to use these templates:
 
    .. code-block:: python
 
-      from rasa_core_sdk.actions import Action
+      from rasa_sdk.actions import Action
 
       class ActionGreet(Action):
         def name(self):
@@ -173,7 +173,7 @@ In custom code, you can retrieve a template by using:
 
 .. testsetup::
 
-   from rasa_core_sdk.actions import Action
+   from rasa_sdk.actions import Action
 
 .. testcode::
 

@@ -17,17 +17,6 @@ if typing.TYPE_CHECKING:
     import sklearn
 
 
-def _sklearn_numpy_warning_fix():
-    """Fixes unecessary warnings emitted by sklearns use of numpy.
-
-    Sklearn will fix the warnings in their next release in ~ August 2018.
-    based on https://stackoverflow.com/a/49668081"""
-    import warnings
-
-    warnings.filterwarnings(module='sklearn*', action='ignore',
-                            category=DeprecationWarning)
-
-
 class SklearnIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
 
@@ -38,28 +27,25 @@ class SklearnIntentClassifier(Component):
     defaults = {
         # C parameter of the svm - cross validation will select the best value
         "C": [1, 2, 5, 10, 20, 100],
-
         # gamma parameter of the svm
         "gamma": [0.1],
-
         # the kernels to use for the svm training - cross validation will
         # decide which one of them performs best
         "kernels": ["linear"],
-
         # We try to find a good number of cross folds to use during
         # intent training, this specifies the max number of folds
         "max_cross_validation_folds": 5,
-
         # Scoring function used for evaluating the hyper parameters
         # This can be a name or a function (cfr GridSearchCV doc for more info)
-        "scoring_function": "f1_weighted"
+        "scoring_function": "f1_weighted",
     }
 
-    def __init__(self,
-                 component_config: Dict[Text, Any] = None,
-                 clf: 'sklearn.model_selection.GridSearchCV' = None,
-                 le: Optional['sklearn.preprocessing.LabelEncoder'] = None
-                 ) -> None:
+    def __init__(
+        self,
+        component_config: Dict[Text, Any] = None,
+        clf: "sklearn.model_selection.GridSearchCV" = None,
+        le: Optional["sklearn.preprocessing.LabelEncoder"] = None,
+    ) -> None:
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
 
@@ -70,8 +56,6 @@ class SklearnIntentClassifier(Component):
         else:
             self.le = LabelEncoder()
         self.clf = clf
-
-        _sklearn_numpy_warning_fix()
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -91,25 +75,29 @@ class SklearnIntentClassifier(Component):
 
         return self.le.inverse_transform(y)
 
-    def train(self,
-              training_data: TrainingData,
-              cfg: RasaNLUModelConfig,
-              **kwargs: Any) -> None:
+    def train(
+        self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
+    ) -> None:
         """Train the intent classifier on a data set."""
 
         num_threads = kwargs.get("num_threads", 1)
 
-        labels = [e.get("intent")
-                  for e in training_data.intent_examples]
+        labels = [e.get("intent") for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            logger.warning("Can not train an intent classifier. "
-                           "Need at least 2 different classes. "
-                           "Skipping training of intent classifier.")
+            logger.warning(
+                "Can not train an intent classifier. "
+                "Need at least 2 different classes. "
+                "Skipping training of intent classifier."
+            )
         else:
             y = self.transform_labels_str2num(labels)
-            X = np.stack([example.get("text_features")
-                          for example in training_data.intent_examples])
+            X = np.stack(
+                [
+                    example.get("text_features")
+                    for example in training_data.intent_examples
+                ]
+            )
 
             self.clf = self._create_classifier(num_threads, y)
 
@@ -128,22 +116,22 @@ class SklearnIntentClassifier(Component):
         gamma = self.component_config["gamma"]
         # dirty str fix because sklearn is expecting
         # str not instance of basestr...
-        tuned_parameters = [{"C": C,
-                             "gamma": gamma,
-                             "kernel": [str(k) for k in kernels]}]
+        tuned_parameters = [
+            {"C": C, "gamma": gamma, "kernel": [str(k) for k in kernels]}
+        ]
 
         # aim for 5 examples in each fold
 
         cv_splits = self._num_cv_splits(y)
 
-        return GridSearchCV(SVC(C=1,
-                                probability=True,
-                                class_weight='balanced'),
-                            param_grid=tuned_parameters,
-                            n_jobs=num_threads,
-                            cv=cv_splits,
-                            scoring=self.component_config['scoring_function'],
-                            verbose=1)
+        return GridSearchCV(
+            SVC(C=1, probability=True, class_weight="balanced"),
+            param_grid=tuned_parameters,
+            n_jobs=num_threads,
+            cv=cv_splits,
+            scoring=self.component_config["scoring_function"],
+            verbose=1,
+        )
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely intent and its probability for a message."""
@@ -162,13 +150,16 @@ class SklearnIntentClassifier(Component):
             probabilities = probabilities.flatten()
 
             if intents.size > 0 and probabilities.size > 0:
-                ranking = list(zip(list(intents),
-                                   list(probabilities)))[:INTENT_RANKING_LENGTH]
+                ranking = list(zip(list(intents), list(probabilities)))[
+                    :INTENT_RANKING_LENGTH
+                ]
 
                 intent = {"name": intents[0], "confidence": probabilities[0]}
 
-                intent_ranking = [{"name": intent_name, "confidence": score}
-                                  for intent_name, score in ranking]
+                intent_ranking = [
+                    {"name": intent_name, "confidence": score}
+                    for intent_name, score in ranking
+                ]
             else:
                 intent = {"name": None, "confidence": 0.0}
                 intent_ranking = []
@@ -201,29 +192,39 @@ class SklearnIntentClassifier(Component):
         sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
         return sorted_indices, pred_result[:, sorted_indices]
 
-    @classmethod
-    def load(cls,
-             meta: Dict[Text, Any],
-             model_dir: Optional[Text] = None,
-             model_metadata: Optional[Metadata] = None,
-             cached_component: Optional['SklearnIntentClassifier'] = None,
-             **kwargs: Any
-             ) -> 'SklearnIntentClassifier':
-
-        file_name = meta.get("file")
-        classifier_file = os.path.join(model_dir, file_name)
-
-        if os.path.exists(classifier_file):
-            return utils.pycloud_unpickle(classifier_file)
-        else:
-            return cls(meta)
-
-    def persist(self,
-                file_name: Text,
-                model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
-        file_name = file_name + ".pkl"
-        classifier_file = os.path.join(model_dir, file_name)
-        utils.pycloud_pickle(classifier_file, self)
-        return {"file": file_name}
+        classifier_file_name = file_name + "_classifier.pkl"
+        encoder_file_name = file_name + "_encoder.pkl"
+        if self.clf and self.le:
+            utils.json_pickle(
+                os.path.join(model_dir, encoder_file_name), self.le.classes_
+            )
+            utils.json_pickle(
+                os.path.join(model_dir, classifier_file_name), self.clf.best_estimator_
+            )
+        return {"classifier": classifier_file_name, "encoder": encoder_file_name}
+
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Optional[Text] = None,
+        model_metadata: Optional[Metadata] = None,
+        cached_component: Optional["SklearnIntentClassifier"] = None,
+        **kwargs: Any
+    ) -> "SklearnIntentClassifier":
+        from sklearn.preprocessing import LabelEncoder
+
+        classifier_file = os.path.join(model_dir, meta.get("classifier"))
+        encoder_file = os.path.join(model_dir, meta.get("encoder"))
+
+        if os.path.exists(classifier_file):
+            classifier = utils.json_unpickle(classifier_file)
+            classes = utils.json_unpickle(encoder_file)
+            encoder = LabelEncoder()
+            encoder.classes_ = classes
+            return cls(meta, classifier, encoder)
+        else:
+            return cls(meta)

@@ -1,13 +1,13 @@
 import argparse
 import logging
 
-from rasa.core.cli.arguments import add_logging_option_arguments
-from rasa.utils import configure_colored_logging
+import rasa.utils.io
 
 from rasa import version
-from rasa.cli import (scaffold, run, train, interactive,
-                      shell, test, show, data, up)
+from rasa.cli import scaffold, run, train, interactive, shell, test, show, data, x
+from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
+from rasa.utils.common import set_log_level
 
 logger = logging.getLogger(__name__)
 
@@ -19,19 +19,23 @@ def create_argument_parser() -> argparse.ArgumentParser:
         prog="rasa",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Rasa command line interface. Rasa allows you to build "
-                    "your own conversational assistants 🤖. The 'rasa' command "
-                    "allows you to easily run most common commands like "
-                    "creating a new bot, training or evaluating models.")
+        "your own conversational assistants 🤖. The 'rasa' command "
+        "allows you to easily run most common commands like "
+        "creating a new bot, training or evaluating models.",
+    )
 
-    parser.add_argument("--version", action='store_true',
-                        default=argparse.SUPPRESS,
-                        help="Print installed Rasa version")
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Print installed Rasa version",
+    )
 
     parent_parser = argparse.ArgumentParser(add_help=False)
-    add_logging_option_arguments(parent_parser)
+    add_logging_options(parent_parser)
     parent_parsers = [parent_parser]
 
-    subparsers = parser.add_subparsers(help='Rasa commands')
+    subparsers = parser.add_subparsers(help="Rasa commands")
 
     scaffold.add_subparser(subparsers, parents=parent_parsers)
     run.add_subparser(subparsers, parents=parent_parsers)
@@ -41,13 +45,13 @@ def create_argument_parser() -> argparse.ArgumentParser:
     test.add_subparser(subparsers, parents=parent_parsers)
     show.add_subparser(subparsers, parents=parent_parsers)
     data.add_subparser(subparsers, parents=parent_parsers)
-    up.add_subparser(subparsers, parents=parent_parsers)
+    x.add_subparser(subparsers, parents=parent_parsers)
 
     return parser
 
 
 def print_version() -> None:
-    print("Rasa", version.__version__)
+    print ("Rasa", version.__version__)
 
 
 def main() -> None:
@@ -56,8 +60,13 @@ def main() -> None:
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
 
+    log_level = (
+        cmdline_arguments.loglevel if hasattr(cmdline_arguments, "loglevel") else None
+    )
+    set_log_level(log_level)
+
     if hasattr(cmdline_arguments, "func"):
-        configure_colored_logging(cmdline_arguments.loglevel)
+        rasa.utils.io.configure_colored_logging(log_level)
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
         print_version()
@@ -68,5 +77,5 @@ def main() -> None:
         exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -20,8 +20,8 @@ You can run training from the command line like in the :ref:`quickstart`:
 
 .. code-block:: bash
 
-   python3 -m rasa.core.train -d domain.yml -s data/stories.md \
-     -o models/current/dialogue -c config.yml
+   rasa train core -d domain.yml -s data/stories.md \
+     -o models -c config.yml
 
 Or by creating an agent and running the train method yourself:
 
@@ -37,13 +37,13 @@ Or by creating an agent and running the train method yourself:
 Training Script Options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. program-output:: python3 -m rasa.core.train default -h
+.. program-output:: rasa train core --help
 
 
 Data Augmentation
 ^^^^^^^^^^^^^^^^^
 
-By default, Rasa Core will create longer stories by randomly glueing together
+By default, Rasa Core will create longer stories by randomly gluing together
 the ones in your stories file. This is because if you have stories like:
 
 .. code-block:: story
@@ -62,10 +62,21 @@ when it isn't relevant and just respond with the same action no matter
 what happened before.
 
 You can alter this behaviour with the ``--augmentation`` flag.
-``--augmentation 0`` disables this behavior.
+Which allows you to set the ``augmentation_factor``.
+The ``augmentation_factor`` determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since their number
+can become very large quickly.
+The number of sampled stories is ``augmentation_factor`` x10.
+
+``--augmentation 0`` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the ``augmentation_factor``) and will automatically
+ignore all augmented stories.
 
 In python, you can pass the ``augmentation_factor`` argument to the
 ``Agent.load_data`` method.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
 
 Policies
 --------
@@ -125,7 +136,7 @@ By default, we try to provide you with a good set of configuration values
 and policies that suit most people. But you are encouraged to modify
 these to your needs:
 
-.. literalinclude:: ../../rasa/core/default_config.yml
+.. literalinclude:: ../../rasa/cli/default_config.yml
 
 
 Max History
@@ -397,6 +408,8 @@ It is recommended to use
           the original starspace algorithm in the case
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
+.. _memoization_policy:
 
 Memoization Policy
 ^^^^^^^^^^^^^^^^^^

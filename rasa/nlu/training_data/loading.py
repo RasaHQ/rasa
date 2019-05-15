@@ -4,12 +4,18 @@ import requests
 import typing
 from typing import Optional, Text
 
+import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats import markdown
 from rasa.nlu.training_data.formats.dialogflow import (
-    DIALOGFLOW_AGENT, DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES,
-    DIALOGFLOW_INTENT, DIALOGFLOW_INTENT_EXAMPLES, DIALOGFLOW_PACKAGE)
-from rasa.nlu.utils import EndpointConfig
+    DIALOGFLOW_AGENT,
+    DIALOGFLOW_ENTITIES,
+    DIALOGFLOW_ENTITY_ENTRIES,
+    DIALOGFLOW_INTENT,
+    DIALOGFLOW_INTENT_EXAMPLES,
+    DIALOGFLOW_PACKAGE,
+)
+from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -25,8 +31,7 @@ UNK = "unk"
 MARKDOWN = "md"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
-_markdown_section_markers = ["## {}:".format(s)
-                             for s in markdown.available_sections]
+_markdown_section_markers = ["## {}:".format(s) for s in markdown.available_sections]
 _json_format_heuristics = {
     WIT: lambda js, fn: "data" in js and isinstance(js.get("data"), list),
     LUIS: lambda js, fn: "luis_schema_version" in js,
@@ -36,12 +41,11 @@ _json_format_heuristics = {
     DIALOGFLOW_INTENT: lambda js, fn: "responses" in js,
     DIALOGFLOW_ENTITIES: lambda js, fn: "isEnum" in js,
     DIALOGFLOW_INTENT_EXAMPLES: lambda js, fn: "_usersays_" in fn,
-    DIALOGFLOW_ENTITY_ENTRIES: lambda js, fn: "_entries_" in fn
+    DIALOGFLOW_ENTITY_ENTRIES: lambda js, fn: "_entries_" in fn,
 }
 
 
-def load_data(resource_name: Text,
-              language: Optional[Text] = 'en') -> 'TrainingData':
+def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
     """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
@@ -60,30 +64,33 @@ def load_data(resource_name: Text,
     return training_data
 
 
-def load_data_from_endpoint(data_endpoint: EndpointConfig,
-                            language: Optional[Text] = 'en') -> 'TrainingData':
+async def load_data_from_endpoint(
+    data_endpoint: EndpointConfig, language: Optional[Text] = "en"
+) -> "TrainingData":
     """Load training data from a URL."""
 
     if not utils.is_url(data_endpoint.url):
         raise requests.exceptions.InvalidURL(data_endpoint.url)
     try:
-        response = data_endpoint.request("get")
+        response = await data_endpoint.request("get")
         response.raise_for_status()
-        temp_data_file = utils.create_temporary_file(response.content,
-                                                     mode="w+b")
+        temp_data_file = utils.create_temporary_file(response.content, mode="w+b")
         training_data = _load(temp_data_file, language)
 
         return training_data
     except Exception as e:
-        logger.warning("Could not retrieve training data "
-                       "from URL:\n{}".format(e))
+        logger.warning("Could not retrieve training data from URL:\n{}".format(e))
 
 
-def _reader_factory(fformat: Text) -> Optional['TrainingDataReader']:
+def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     """Generates the appropriate reader class based on the file format."""
     from rasa.nlu.training_data.formats import (
-        MarkdownReader, WitReader, LuisReader,
-        RasaReader, DialogflowReader)
+        MarkdownReader,
+        WitReader,
+        LuisReader,
+        RasaReader,
+        DialogflowReader,
+    )
 
     reader = None
     if fformat == LUIS:
@@ -99,8 +106,7 @@ def _reader_factory(fformat: Text) -> Optional['TrainingDataReader']:
     return reader
 
 
-def _load(filename: Text, language: Optional[Text] = 'en'
-          ) -> Optional['TrainingData']:
+def _load(filename: Text, language: Optional[Text] = "en") -> Optional["TrainingData"]:
     """Loads a single training data file from disk."""
 
     fformat = _guess_format(filename)
@@ -119,7 +125,7 @@ def _load(filename: Text, language: Optional[Text] = 'en'
 def _guess_format(filename: Text) -> Text:
     """Applies heuristics to guess the data format of a file."""
     guess = UNK
-    content = utils.read_file(filename)
+    content = rasa.utils.io.read_file(filename)
     try:
         js = json.loads(content)
     except ValueError:

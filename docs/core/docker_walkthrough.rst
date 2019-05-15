@@ -1,4 +1,4 @@
-:desc: Setup open source Rasa Core with Docker in your own infrastructure for on
+:desc: Set up open source Rasa with Docker in your own infrastructure for on
        premise contextual AI assistants and chatbots. 
 
 .. _docker_walkthrough:
@@ -120,7 +120,7 @@ Now you can train the Rasa Core model using the following command:
   docker run \
     -v $(pwd):/app/project \
     -v $(pwd)/models/rasa_core:/app/models \
-    rasa/rasa_core:latest \
+    rasa/rasa:latest-full \
     train \
       --domain project/domain.yml \
       --stories project/data/stories.md \
@@ -161,7 +161,7 @@ Use the following command to run Rasa Core:
   docker run \
     -it \
     -v $(pwd)/models/rasa_core:/app/models \
-    rasa/rasa_core:latest \
+    rasa/rasa:latest-full \
     start \
       --core models
 
@@ -251,7 +251,7 @@ the trained Rasa model:
   docker run \
     -v $(pwd):/app/project \
     -v $(pwd)/models/:/app/models \
-    rasa/rasa:latest-spacy \
+    rasa/rasa:latest-spacy-en \
     run \
       python3 -m rasa.train \
       -c config.yml \
@@ -307,7 +307,7 @@ The first service is the ``rasa`` service.
 
   services:
     rasa:
-      image: rasa/rasa:latest
+      image: rasa/rasa:latest-full
       ports:
         - 5005:5005
       volumes:
@@ -335,8 +335,8 @@ Then add the Rasa NLU service to your docker compose file:
 
 .. code-block:: yaml
 
-  rasa_nlu:
-      image: rasa/rasa_nlu:latest-spacy
+  rasa:
+      image: rasa/rasa:latest-spacy-en
       volumes:
         - ./models/rasa_nlu:/app/models
       command:
@@ -394,7 +394,7 @@ your ``docker-compose.yml`` it should have the following content:
         - --endpoints
         - config/endpoints.yml
         - -u
-        - current/
+        - default/
     rasa_nlu:
       image: rasa/rasa_nlu:latest-spacy
       volumes:
@@ -460,12 +460,12 @@ Put the description of your custom pipeline in there, e.g.:
 .. code-block:: yaml
 
   pipeline:
-  - name: "nlp_spacy"
-  - name: "tokenizer_spacy"
-  - name: "intent_entity_featurizer_regex"
-  - name: "intent_featurizer_spacy"
-  - name: "ner_crf"
-  - name: "intent_classifier_sklearn"
+  - name: "SpacyNLP"
+  - name: "SpacyTokenizer"
+  - name: "RegexFeaturizer"
+  - name: "SpacyFeaturizer"
+  - name: "CRFEntityExtractor"
+  - name: "SklearnIntentClassifier"
 
 Then retrain your NLU model. In contrast to the previous training also mount
 the ``config`` directory which contains the NLU configuration
@@ -479,7 +479,7 @@ and specify it in the run command:
     -v $(pwd)/config:/app/config \
     rasa/rasa_nlu:latest-spacy \
     run \
-      python3 -m rasa_nlu.train \
+      python3 -m rasa.train \
       -c config/nlu_config.yml \
       -d project/data/nlu.md \
       -o models \
@@ -509,8 +509,8 @@ Depending on the selected
 `NLU Pipeline <https://rasa.com/docs/nlu/choosing_pipeline/>`_ you might
 have to use a different Rasa NLU image:
 
-  - ``rasa/rasa_nlu:latest-spacy``: To use the ``spaCy`` pipeline
-  - ``rasa/rasa_nlu:latest-tensorflow``: To use the ``tensorflow_embedding``
+  - ``rasa/rasa_nlu:latest-spacy``: To use the ``pretrained_embeddings_spacy`` pipeline
+  - ``rasa/rasa_nlu:latest-tensorflow``: To use the ``supervised_embeddings``
     pipeline
   - ``rasa/rasa_nlu:latest-mitie``: To use a pipeline which includes ``mitie``
   - ``rasa/rasa_nlu:latest-full``: To build a pipeline with dependencies to
@@ -533,18 +533,18 @@ Start with creating the custom actions in a directory ``actions``:
 .. code-block:: bash
 
   mkdir actions
-  # Rasa Core SDK expects a python module.
+  # Rasa SDK expects a python module.
   # Therefore, make sure that you have this file in the directory.
   touch actions/__init__.py
   touch actions/actions.py
 
-Then build a custom action using the Rasa Core SDK, e.g.:
+Then build a custom action using the Rasa SDK, e.g.:
 
 .. code-block:: python
 
   import requests
   import json
-  from rasa_core_sdk import Action
+  from rasa_sdk import Action
 
 
   class ActionJoke(Action):
@@ -572,11 +572,11 @@ To spin it up together with Rasa Core and Rasa NLU, add a service
 .. code-block:: yaml
 
   action_server:
-    image: rasa/rasa_core_sdk:latest
+    image: rasa/rasa-sdk:latest
     volumes:
       - ./actions:/app/actions
 
-This pulls the image for the Rasa Core SDK which includes the action server,
+This pulls the image for the Rasa SDK which includes the action server,
 mounts your custom actions into it, and starts the server.
 
 As for Rasa NLU, it is necessary to tell Rasa Core the location of the action
@@ -601,8 +601,8 @@ dependencies, e.g.:
 
 .. code-block:: docker
 
-    # Extend the official Rasa Core SDK image
-    FROM rasa/rasa_core_sdk:latest
+    # Extend the official Rasa SDK image
+    FROM rasa/rasa-sdk:latest
 
     # Add a custom system library (e.g. git)
     RUN apt-get update && \

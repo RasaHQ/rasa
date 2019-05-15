@@ -306,10 +306,9 @@ To train a model with this data, pass the path to the directory to the train scr
 
 .. code-block:: console
 
-    $ python -m rasa.nlu.train \
+    $ rasa train nlu \
         --config config.yml \
-        --data nlu_data/ \
-        --path projects
+        --data nlu_data/
 
 
 .. note::

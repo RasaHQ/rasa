@@ -24,9 +24,11 @@ class Message(object):
 
     def as_dict(self, only_output_properties=False):
         if only_output_properties:
-            d = {key: value
-                 for key, value in self.data.items()
-                 if key in self.output_properties}
+            d = {
+                key: value
+                for key, value in self.data.items()
+                if key in self.output_properties
+            }
         else:
             d = self.data
         return dict(d, text=self.text)
@@ -35,8 +37,7 @@ class Message(object):
         if not isinstance(other, Message):
             return False
         else:
-            return ((other.text, ordered(other.data)) ==
-                    (self.text, ordered(self.data)))
+            return (other.text, ordered(other.data)) == (self.text, ordered(self.data))
 
     def __hash__(self):
         return hash((self.text, str(ordered(self.data))))

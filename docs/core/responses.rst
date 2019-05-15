@@ -60,10 +60,9 @@ and you can use this file like this:
 
 .. code-block:: bash
 
-    $ python3 -m rasa.core.run \
-       --enable_api \
-       -d examples/babi/models/policy/current \
-       -u examples/babi/models/nlu/current_py2 \
+    $ rasa run \
+       --enable-api \
+       -m examples/babi/models \
        -o out.log \
        --endpoints endpoints.yml
 
