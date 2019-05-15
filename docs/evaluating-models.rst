@@ -114,6 +114,7 @@ to the left of the plot.
     like ``[Brian](name)'s house``, this is only valid if your tokenizer splits ``Brian's`` into
     multiple tokens. A whitespace tokenizer would not work in this case.
 
+
 Entity Extraction
 ^^^^^^^^^^^^^^^^^
 
@@ -162,7 +163,7 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    rasa test core --stories test_stories.md -o results
+    rasa test core --stories test_stories.md --output results
 
 
 This will print the failed stories to ``results/failed_stories.md``.
@@ -177,6 +178,7 @@ incorrect action was predicted instead.
 The full list of options for the script is:
 
 .. program-output:: rasa test core --help
+
 
 Comparing Policies
 ------------------
@@ -197,7 +199,7 @@ the train script to train your models:
 .. code-block:: bash
 
   $ rasa train core -c policy_config1.yml policy_config2.yml \
-    -d domain.yml -s stories_folder -o comparison_models --runs 3 --percentages \
+    -d domain.yml -s stories_folder --out comparison_models --runs 3 --percentages \
     0 5 25 50 70 90 95
 
 For each policy configuration provided, Rasa Core will be trained multiple times
@@ -209,8 +211,8 @@ mode to evaluate the models you just trained:
 
 .. code-block:: bash
 
-  $ rasa test core --stories stories_folder \
-    -o comparison_results
+  $ rasa test core -m comparison_models/<model-1>.tar.gz comparison_models/<model-2>.tar.gz \
+    --stories stories_folder --out comparison_results
 
 This will evaluate each of the models on the training set, and plot some graphs
 to show you which policy is best.  By evaluating on the full set of stories, you
