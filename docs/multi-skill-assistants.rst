@@ -7,8 +7,6 @@
 Multi-skill Assistants
 ======================
 
-
-Rasa supports building AI assistants from multiple contextual AI assistant skills.
 You can build a contextual AI assistant by combining reusable "building blocks"
 called skills.
 You might, for example, handle chitchat with one skill and greet your users with
