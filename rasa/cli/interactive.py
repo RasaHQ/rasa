@@ -26,8 +26,6 @@ def add_subparser(
     )
     interactive_parser.set_defaults(func=interactive)
 
-    arguments.set_interactive_arguments(interactive_parser)
-
     interactive_subparsers = interactive_parser.add_subparsers()
     interactive_core_parser = interactive_subparsers.add_parser(
         "core",
@@ -38,11 +36,14 @@ def add_subparser(
     )
     interactive_core_parser.set_defaults(func=interactive_core)
 
+    arguments.set_interactive_arguments(interactive_parser)
     arguments.set_interactive_core_arguments(interactive_core_parser)
 
 
 def interactive(args: argparse.Namespace):
     args.finetune = False  # Don't support finetuning
+    args.fixed_model_name = None
+    args.store_uncompressed = False
 
     if args.model is None:
         check_training_data(args)
@@ -55,6 +56,8 @@ def interactive(args: argparse.Namespace):
 
 def interactive_core(args: argparse.Namespace):
     args.finetune = False  # Don't support finetuning
+    args.fixed_model_name = None
+    args.store_uncompressed = False
 
     if args.model is None:
         zipped_model = train.train_core(args)
