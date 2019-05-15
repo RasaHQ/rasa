@@ -92,7 +92,7 @@ def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
     return allow_metrics
 
 
-def _core_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
+ def _rasa_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
     from rasa.nlu.utils import configure_colored_logging
