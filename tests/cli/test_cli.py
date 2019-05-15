@@ -1,3 +1,7 @@
+import pytest
+
+
+@pytest.mark.repeat(3)
 def test_cli_start(run):
     import time
 
