@@ -21,14 +21,14 @@ General
   should use instead.
   Mapping of old scripts to new commands:
   ``rasa.core.run`` -> ``rasa shell``
-  ``rasa.core.server`` -> ``rasa run core``
+  ``rasa.core.server`` -> ``rasa run``
   ``rasa.core.test`` -> ``rasa test core``
   ``rasa.core.train`` -> ``rasa train core``
   ``rasa.core.visualize`` -> ``rasa show``
   ``rasa.nlu.convert`` -> ``rasa data``
   ``rasa.nlu.evaluate`` -> ``rasa test nlu``
   ``rasa.nlu.run`` -> ``rasa shell``
-  ``rasa.nlu.server`` -> ``rasa run nlu``
+  ``rasa.nlu.server`` -> ``rasa run``
   ``rasa.nlu.test`` -> ``rasa test nlu``
   ``rasa.nlu.train`` -> ``rasa train nlu``
 
@@ -59,3 +59,8 @@ Script parameters
   server will always run single threaded, but in an async way. If you want to
   make use of multiple processes, feel free to check out the sanic server
   documentation https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn
+
+- To avoid conflicts in the script parameter names, connectors in the ``run`` command now need to be specified with
+  ``--connector``. ``-c`` is no longer supported. The maximum history in the ``rasa show stories`` command need to be
+  defined with ``--max-history``. Output paths and log files cannot be specified with ``-o`` anymore. ``--output`` and
+  ``--log-file`` should be used.

@@ -11,13 +11,14 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex/" />
     <link rel="search" title="Search" href="../search/" />
-    <link rel="next" title="Evaluating Models" href="../evaluating-models/" />
+    <link rel="next" title="Your Own Website" href="../connectors/website/" />
     <link rel="prev" title="Architecture" href="../architecture/" />
 
   <!-- Google Tag Manager -->
@@ -107,7 +108,12 @@
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -115,7 +121,7 @@
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Messaging and Voice Channels</a></li>
@@ -125,6 +131,7 @@
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/languages/">Language Support</a></li>
@@ -198,24 +205,32 @@
   <div class="section" id="messaging-and-voice-channels">
 <span id="id1"></span><h1>Messaging and Voice Channels<a class="headerlink" href="#messaging-and-voice-channels" title="Permalink to this headline">¶</a></h1>
 <p>If you’re testing this on your local computer (e.g. not a server), you
-will need to <span class="xref std std-ref">use_ngrok_for_local_testing</span>.
+will need to <a class="reference external" href="/docs/rasa-x/get-feedback-from-test-users/#use-ngrok-for-local-testing">use ngrok</a> .
 This gives your machine a domain name and so that facebook, slack, etc. know where to send messages.</p>
-<div class="section" id="make-your-assistant-available-to-users">
-<h2>Make your assistant available to users<a class="headerlink" href="#make-your-assistant-available-to-users" title="Permalink to this headline">¶</a></h2>
-<p>To make your assistant available on a messaging platform like <span class="xref std std-ref">slack-connector</span> or
-<span class="xref std std-ref">messenger-connector</span>, you need to provide credentials in a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> file.
+<p>To make your assistant available on a messaging platform you need to provide credentials
+in a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> file.
 An example file is created when you run <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code>, so it’s easiest to edit that file
-and add your credentials there.</p>
-<p>Here is an example file containing facebook credentials:</p>
+and add your credentials there. Here is an example with facebook credentials:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">facebook</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">verify</span><span class="p p-Indicator">:</span> <span class="s">&quot;rasa-bot&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">secret</span><span class="p p-Indicator">:</span> <span class="s">&quot;3e34709d01ea89032asdebfe5a74518&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">page-access-token</span><span class="p p-Indicator">:</span> <span class="s">&quot;EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD&quot;</span>
 </pre></div>
 </div>
-<p>Here is the full list of connectors:</p>
+<p>Learn how to make your assistant available on:</p>
 <div class="toctree-wrapper compound">
-</div>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/website/">Your Own Website</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/messenger/">Facebook Messenger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/slack/">Slack</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/telegram/">Telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/twilio/">Twilio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/ms-bot-framework/">Microsoft Bot Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/webex/">Cisco Webex Teams</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/rocketchat/">RocketChat Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/mattermost/">Mattermost</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connectors/custom/">Custom Connectors</a></li>
+</ul>
 </div>
 </div>
 
@@ -293,7 +308,7 @@ and add your credentials there.</p>
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

@@ -11,13 +11,14 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex/" />
     <link rel="search" title="Search" href="../search/" />
-    <link rel="next" title="Project Structure" href="../project-structure/" />
+    <link rel="next" title="Rasa Tutorial" href="../tutorial/" />
     <link rel="prev" title="Build contextual chatbots and AI assistants with Rasa" href="../" />
 
   <!-- Google Tag Manager -->
@@ -111,7 +112,12 @@ entity extraction and customisation of the language models." />
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -119,7 +125,7 @@ entity extraction and customisation of the language models." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../channels/">Messaging and Voice Channels</a></li>
@@ -129,6 +135,7 @@ entity extraction and customisation of the language models." />
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/languages/">Language Support</a></li>
@@ -212,6 +219,7 @@ pip install rasax --extra-index-url https://pypi.rasa.com
   </pre>
 <p>This will install both Rasa and Rasa X.
 If you don’t want to use Rasa X, run <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa</span></code> instead.</p>
+<p>Once you’re done installing, head over to the <a class="reference internal" href="../tutorial/#tutorial"><span class="std std-ref">Rasa Tutorial</span></a> .</p>
 Unless you've already got numpy & scipy installed, we highly recommend that you install and use <a class="reference external" href="https://www.anaconda.com/download/" target="_blank">Anaconda</a>.<p>If you want to use the development version of Rasa, you can get it from GitHub:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/RasaHQ/rasa.git
 <span class="nb">cd</span> rasa
@@ -287,6 +295,15 @@ somewhere, if you want to use mitie, you need to tell it where to
 find this file.</p>
 <p>The complete pipeline for mitie can be found here</p>
 <p>Using MITIE alone can be quite slow to train, but you can use it with this configuration</p>
+</div>
+<div class="section" id="next-step">
+<h3>Next Step<a class="headerlink" href="#next-step" title="Permalink to this headline">¶</a></h3>
+<p>Now that you have everything installed, head over to the tutorial:</p>
+
+ 
+  <a href="../tutorial/" >
+  <button class="button">Next Step: Tutorial</button>
+  </a>
 </div>
 </div>
 </div>
@@ -365,7 +382,7 @@ find this file.</p>
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
@@ -111,7 +112,12 @@ with your backend components." />
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -119,7 +125,7 @@ with your backend components." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../channels/">Messaging and Voice Channels</a></li>
@@ -129,6 +135,7 @@ with your backend components." />
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/languages/">Language Support</a></li>
@@ -218,12 +225,12 @@ with your backend components." />
 </div>
 <div class="section" id="running-the-http-server">
 <h2><a class="toc-backref" href="#id1">Running the HTTP server</a><a class="headerlink" href="#running-the-http-server" title="Permalink to this headline">¶</a></h2>
-<p>You can run a simple http server that handles requests using your
+<p>You can run a simple HTTP server that handles requests using your
 models with:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run <span class="se">\</span>
     --enable-api <span class="se">\</span>
     -m models <span class="se">\</span>
-    -o out.log
+    --log-file out.log
 </pre></div>
 </div>
 <p>All the endpoints this API exposes are documented in <a class="reference internal" href="../api/rasa-http-api/#http-api"><span class="std std-ref">HTTP API</span></a> .</p>
@@ -231,7 +238,7 @@ models with:</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">--enable-api</span></code>, enables this additional API</li>
 <li><code class="docutils literal notranslate"><span class="pre">-m</span></code>, which is the path to the folder containing your Rasa model.</li>
-<li><code class="docutils literal notranslate"><span class="pre">-o</span></code>, which is the path to the log file.</li>
+<li><code class="docutils literal notranslate"><span class="pre">--log-file</span></code>, which is the path to the log file.</li>
 </ul>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -247,9 +254,9 @@ to update your <code class="docutils literal notranslate"><span class="pre">endp
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">If you start the server with only a Rasa NLU model, not all the available endpoints
-can be called. Be aware that some endpoint will return a 409 status code, as a trained
-Rasa Core model is needed to process the request.</p>
+<p class="last">If you start the server with an NLU-only model, not all the available endpoints
+can be called. Be aware that some endpoints will return a 409 status code, as a trained
+Core model is needed to process the request.</p>
 </div>
 <div class="section" id="fetching-models-from-a-server">
 <h3><a class="toc-backref" href="#id2">Fetching Models from a Server</a><a class="headerlink" href="#fetching-models-from-a-server" title="Permalink to this headline">¶</a></h3>
@@ -258,7 +265,7 @@ Rasa Core model is needed to process the request.</p>
     --enable-api <span class="se">\</span>
     -m models <span class="se">\</span>
     --endpoints my_endpoints.yaml <span class="se">\</span>
-    -o out.log
+    --log-file out.log
 </pre></div>
 </div>
 <p>The model server is specified in the endpoint configuration
@@ -297,7 +304,7 @@ expects an empty response with a <code class="docutils literal notranslate"><spa
     --enable-api <span class="se">\</span>
     -m <span class="m">20190506</span>-100418.tar.gz <span class="se">\</span>
     --remote-storage aws <span class="se">\</span>
-    -o out.log
+    --log-file out.log
 </pre></div>
 </div>
 <p>The model will be downloaded and stored in a temporary directory on your local storage system.
@@ -375,7 +382,7 @@ please see <a class="reference internal" href="../api/tracker-stores/#tracker-st
 <h3><a class="toc-backref" href="#id7">Connecting an Event Broker</a><a class="headerlink" href="#connecting-an-event-broker" title="Permalink to this headline">¶</a></h3>
 <p>To configure an event broker within your endpoint configuration,
 please see <a class="reference internal" href="../api/brokers/#brokers"><span class="std std-ref">Event Brokers</span></a>.</p>
-<span class="target" id="http-api"></span></div>
+</div>
 </div>
 </div>
 
@@ -453,7 +460,7 @@ please see <a class="reference internal" href="../api/brokers/#brokers"><span cl
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -111,7 +112,12 @@ you to stream events to a message broker." />
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -119,7 +125,7 @@ you to stream events to a message broker." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -129,6 +135,7 @@ you to stream events to a message broker." />
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/languages/">Language Support</a></li>
@@ -202,10 +209,11 @@ you to stream events to a message broker." />
   <div class="section" id="event-brokers">
 <span id="brokers"></span><h1>Event Brokers<a class="headerlink" href="#event-brokers" title="Permalink to this headline">¶</a></h1>
 <p>Rasa Core allows you to stream events to a message broker. The event broker
-emits events into the event queue.</p>
+emits events into the event queue. It becomes part of the <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code>
+which you use when starting an <code class="docutils literal notranslate"><span class="pre">Agent</span></code> or launch <code class="docutils literal notranslate"><span class="pre">rasa.core.run</span></code>.</p>
 <p>All events are streamed to the broker as serialised dictionaries every time
-the tracker updates it state. An example event emitted in the conversation of
-a user <code class="docutils literal notranslate"><span class="pre">default</span></code> looks like this:</p>
+the tracker updates it state. An example event emitted from the <code class="docutils literal notranslate"><span class="pre">default</span></code>
+tracker looks like this:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;sender_id&quot;</span><span class="p">:</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
     <span class="nt">&quot;timestamp&quot;</span><span class="p">:</span> <span class="mf">1528402837.617099</span><span class="p">,</span>
@@ -216,9 +224,8 @@ a user <code class="docutils literal notranslate"><span class="pre">default</spa
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">event</span></code> field takes the event’s <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (for more on event
-types, check out the <a class="reference internal" href="../events/#events-classes"><span class="std std-ref">Events</span></a> docs).</p>
-<p>Rasa enables two possible brokers producers:
-<strong>Pika Event Broker</strong> and <strong>Kafka Event Broker</strong>.</p>
+types, check out the <span class="xref std std-doc">api/events</span> docs).</p>
+<p>Rasa enables two possible brokers producers: Pika Event Broker and Kafka Event Broker.</p>
 <div class="section" id="pika-event-broker">
 <h2>Pika Event Broker<a class="headerlink" href="#pika-event-broker" title="Permalink to this headline">¶</a></h2>
 <p>The example implementation we’re going to show you here uses <a class="reference external" href="pika.readthedocs.io">Pika</a>,
@@ -228,21 +235,25 @@ the Python client library for <a class="reference external" href="https://www.ra
 <p>You can use an endpoint configuration file to instruct Rasa Core to stream
 all events to your event broker. To do so, add the following section to your
 endpoint configuration, e.g. <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>:</p>
-<p># TODO: BROKEN
-.. literalinclude:: ../../data/test_endpoints/event_brokers/pika_endpoint.yml</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">event_broker</span><span class="p">:</span>
+  <span class="n">url</span><span class="p">:</span> <span class="n">localhost</span>
+  <span class="n">username</span><span class="p">:</span> <span class="n">username</span>
+  <span class="n">password</span><span class="p">:</span> <span class="n">password</span>
+  <span class="n">queue</span><span class="p">:</span> <span class="n">queue</span>
+  <span class="nb">type</span><span class="p">:</span> <span class="n">pika</span>
+</pre></div>
+</div>
 <p>Then instruct Rasa Core to use the endpoint configuration and Pika producer by adding
-<code class="docutils literal notranslate"><span class="pre">--event_broker</span> <span class="pre">pika_producer</span></code> and <code class="docutils literal notranslate"><span class="pre">--endpoints</span> <span class="pre">&lt;path</span> <span class="pre">to</span> <span class="pre">your</span> <span class="pre">endpoint</span> <span class="pre">configuration</span></code> as following example:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>rasa --event-broker pika_producer
+<code class="docutils literal notranslate"><span class="pre">--endpoints</span> <span class="pre">&lt;path</span> <span class="pre">to</span> <span class="pre">your</span> <span class="pre">endpoint</span> <span class="pre">configuration</span></code> as following example:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
 </pre></div>
 </div>
 </div>
 <div class="section" id="adding-a-pika-event-broker-in-python">
 <h3>Adding a Pika Event Broker in Python<a class="headerlink" href="#adding-a-pika-event-broker-in-python" title="Permalink to this headline">¶</a></h3>
-<p>To use a custom event broker, you need to pass an instance when creating
-a <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code> instance.
-Here is an example:</p>
+<p>Here is how you add it using Python code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.core.event_brokers.pika_producer</span> <span class="kn">import</span> <span class="n">PikaProducer</span>
-<span class="kn">from</span> <span class="nn">rasa.core.tracker_store</span> <span class="kn">import</span> <span class="n">InMemoryTrackerStore</span>
+<span class="kn">from</span> <span class="nn">rasa_platform.core.tracker_store</span> <span class="kn">import</span> <span class="n">InMemoryTrackerStore</span>
 
 <span class="n">pika_broker</span> <span class="o">=</span> <span class="n">PikaProducer</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
                             <span class="s1">&#39;username&#39;</span><span class="p">,</span>
@@ -290,7 +301,7 @@ example:</p>
 </div>
 <div class="section" id="kafka-event-broker">
 <h2>Kafka Event Broker<a class="headerlink" href="#kafka-event-broker" title="Permalink to this headline">¶</a></h2>
-<p>It is possible to use <a class="reference external" href="https://kafka.apache.org/">Kafka</a> as main broker of your events. In this example
+<p>It is possible to use <a class="reference external" href="https://kafka.apache.org/">Kafka</a> as main broker to you events. In this example
 we are going to use the <a class="reference external" href="https://kafka-python.readthedocs.io/en/master/usage.html">python-kafka</a>
 library, a Kafka client written in Python.</p>
 <div class="section" id="adding-a-kafka-event-broker-using-the-endpoint-configuration">
@@ -299,8 +310,8 @@ library, a Kafka client written in Python.</p>
 all events to this event broker. To do it, add the following section to your
 endpoint configuration.</p>
 <p>Pass the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> file as argument with <code class="docutils literal notranslate"><span class="pre">--endpoints</span> <span class="pre">&lt;path</span> <span class="pre">to</span> <span class="pre">your</span> <span class="pre">endpoint</span> <span class="pre">configuration&gt;</span></code>
-when running Rasa, and select Kafka producer with <code class="docutils literal notranslate"><span class="pre">--kafka_broker</span> <span class="pre">kafka_producer</span></code>, as following example:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>rasa run --event-broker kafka_producer
+when running Rasa, as following example:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
 </pre></div>
 </div>
 <p>Using <code class="docutils literal notranslate"><span class="pre">SASL_PLAINTEXT</span></code> protocol the endpoints file must have the following entries:</p>
@@ -338,7 +349,7 @@ when running Rasa, and select Kafka producer with <code class="docutils literal 
 <span class="n">tracker_store</span> <span class="o">=</span> <span class="n">InMemoryTrackerStore</span><span class="p">(</span><span class="n">event_broker</span><span class="o">=</span><span class="n">kafka_broker</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The host variable can be either a list of brokers addresses or a single one.
+<p>The host variable can be either a list of brokers adresses or a single one.
 If only one broker address is available, the client will connect to it and
 request the cluster Metadata.
 Therefore, the remain brokers in the cluster can be discovered
@@ -370,7 +381,7 @@ previously configured in the broker server.</p>
 </pre></div>
 </div>
 <p>If the clients or the brokers in the kafka cluster are located in different
-machines, it’s important to use the ssl protocol to ensure encryption of data and client
+machines, it’s important to use ssl protocal to assure encryption of data and client
 authentication. After generating valid certificates for the brokers and the
 clients, the path to the certificate and key generated for the producer must
 be provided as arguments, as well as the CA’s root certificate.</p>
@@ -485,7 +496,7 @@ according to the security protocol being used. The following implementation show
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

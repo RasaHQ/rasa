@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -111,7 +112,12 @@ like resetting slots, scheduling reminder or pausing a conversation." />
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -119,7 +125,7 @@ like resetting slots, scheduling reminder or pausing a conversation." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -129,6 +135,7 @@ like resetting slots, scheduling reminder or pausing a conversation." />
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/languages/">Language Support</a></li>
@@ -471,7 +478,7 @@ to be a fixed one.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.BotUttered">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">BotUttered</code><span class="sig-paren">(</span><em>text=None</em>, <em>data=None</em>, <em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.BotUttered" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">BotUttered</code><span class="sig-paren">(</span><em>text=None</em>, <em>data=None</em>, <em>metadata=None</em>, <em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.BotUttered" title="Permalink to this definition">¶</a></dt>
 <dd><p>The bot has said something to the user.</p>
 <p>This class is not used in the story training as it is contained in the</p>
 <p><code class="docutils literal notranslate"><span class="pre">ActionExecuted</span></code> class. An entry is made in the <code class="docutils literal notranslate"><span class="pre">Tracker</span></code>.</p>
@@ -530,7 +537,7 @@ and the bot is waiting for a new user message.</p>
 <dt id="rasa.core.events.ActionReverted">
 <em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ActionReverted</code><span class="sig-paren">(</span><em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ActionReverted" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bot undoes its last action.</p>
-<p>The bot everts everything until before the most recent action.
+<p>The bot reverts everything until before the most recent action.
 This includes the action itself, as well as any events that
 action created, like set slot events - the bot will now
 predict a new action using the state before the most recent
@@ -650,7 +657,7 @@ to the latest <code class="docutils literal notranslate"><span class="pre">Turn<
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

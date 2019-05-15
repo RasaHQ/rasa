@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
@@ -109,7 +110,12 @@ Rasa Core and how you can migrate from one version to another." />
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -117,7 +123,7 @@ Rasa Core and how you can migrate from one version to another." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../channels/">Messaging and Voice Channels</a></li>
@@ -127,6 +133,7 @@ Rasa Core and how you can migrate from one version to another." />
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/languages/">Language Support</a></li>
@@ -211,14 +218,14 @@ one of the old scripts in <code class="docutils literal notranslate"><span class
 should use instead.
 Mapping of old scripts to new commands:
 <code class="docutils literal notranslate"><span class="pre">rasa.core.run</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code>
-<code class="docutils literal notranslate"><span class="pre">rasa.core.server</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">core</span></code>
+<code class="docutils literal notranslate"><span class="pre">rasa.core.server</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.core.test</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.core.train</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.core.visualize</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">show</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.convert</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.evaluate</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.run</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code>
-<code class="docutils literal notranslate"><span class="pre">rasa.nlu.server</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">nlu</span></code>
+<code class="docutils literal notranslate"><span class="pre">rasa.nlu.server</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.test</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.train</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code></li>
 <li>All script parameter names have been unified to follow the same schema.
@@ -250,6 +257,10 @@ Due to change the following argument names changed:
 server will always run single threaded, but in an async way. If you want to
 make use of multiple processes, feel free to check out the sanic server
 documentation <a class="reference external" href="https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn">https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn</a></li>
+<li>To avoid conflicts in the script parameter names, connectors in the <code class="docutils literal notranslate"><span class="pre">run</span></code> command now need to be specified with
+<code class="docutils literal notranslate"><span class="pre">--connector</span></code>. <code class="docutils literal notranslate"><span class="pre">-c</span></code> is no longer supported. The maximum history in the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">show</span> <span class="pre">stories</span></code> command need to be
+defined with <code class="docutils literal notranslate"><span class="pre">--max-history</span></code>. Output paths and log files cannot be specified with <code class="docutils literal notranslate"><span class="pre">-o</span></code> anymore. <code class="docutils literal notranslate"><span class="pre">--output</span></code> and
+<code class="docutils literal notranslate"><span class="pre">--log-file</span></code> should be used.</li>
 </ul>
 </div>
 </div>
@@ -328,7 +339,7 @@ documentation <a class="reference external" href="https://sanic.readthedocs.io/e
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -107,7 +108,12 @@
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -115,7 +121,7 @@
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -125,6 +131,7 @@
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/languages/">Language Support</a></li>
@@ -203,9 +210,9 @@ To do this, run:</p>
 
 
   <pre data-executable>!rasa init --no-prompt</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper.min.js"></script>
+  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-    new Juniper({ repo: 'RasaHQ/rasa_x', branch: 'master', kernelType: 'bash', language: 'shell', isolateCells: false , theme: 'xq-light', eventName: '' })
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/rasa-x', branch: 'rasa_x_binder', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
     document.addEventListener('', event => {
       if (event.detail.status == 'executing') {
         console.error("");
@@ -231,9 +238,9 @@ Define some variables that contain these paths:</p>
 training_files = "data/"
 domain = "domain.yml"
 output = "models/"</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper.min.js"></script>
+  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-    new Juniper({ repo: 'RasaHQ/rasa_x', branch: 'master', kernelType: 'bash', language: 'shell', isolateCells: false , theme: 'xq-light', eventName: '' })
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/rasa-x', branch: 'rasa_x_binder', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
     document.addEventListener('', event => {
       if (event.detail.status == 'executing') {
         console.error("");
@@ -261,9 +268,9 @@ When training has finished, this returns the path where the trained model has be
   <pre data-executable>import rasa
 
 model_path = rasa.train(domain, config, [training_files], output)</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper.min.js"></script>
+  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-    new Juniper({ repo: 'RasaHQ/rasa_x', branch: 'master', kernelType: 'bash', language: 'shell', isolateCells: false , theme: 'xq-light', eventName: '' })
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/rasa-x', branch: 'rasa_x_binder', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
     document.addEventListener('', event => {
       if (event.detail.status == 'executing') {
         console.error("");
@@ -290,9 +297,9 @@ in the path to your saved model:</p>
 
   <pre data-executable>from rasa.jupyter import chat
 chat(model_path)</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper.min.js"></script>
+  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-    new Juniper({ repo: 'RasaHQ/rasa_x', branch: 'master', kernelType: 'bash', language: 'shell', isolateCells: false , theme: 'xq-light', eventName: '' })
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/rasa-x', branch: 'rasa_x_binder', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
     document.addEventListener('', event => {
       if (event.detail.status == 'executing') {
         console.error("");
@@ -322,9 +329,9 @@ The return values are the paths to these newly created directories.</p>
 
   <pre data-executable>import rasa.data as data
 stories_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper.min.js"></script>
+  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-    new Juniper({ repo: 'RasaHQ/rasa_x', branch: 'master', kernelType: 'bash', language: 'shell', isolateCells: false , theme: 'xq-light', eventName: '' })
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/rasa-x', branch: 'rasa_x_binder', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
     document.addEventListener('', event => {
       if (event.detail.status == 'executing') {
         console.error("");
@@ -348,9 +355,9 @@ to evaluate on.</p>
 
 
   <pre data-executable>rasa.test(model_path, stories_directory, nlu_data_directory)</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper.min.js"></script>
+  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-    new Juniper({ repo: 'RasaHQ/rasa_x', branch: 'master', kernelType: 'bash', language: 'shell', isolateCells: false , theme: 'xq-light', eventName: '' })
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/rasa-x', branch: 'rasa_x_binder', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
     document.addEventListener('', event => {
       if (event.detail.status == 'executing') {
         console.error("");
@@ -373,9 +380,9 @@ This contains information about the accuracy of your model and other metrics.</p
 
 
   <pre data-executable>!ls results</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper.min.js"></script>
+  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-    new Juniper({ repo: 'RasaHQ/rasa_x', branch: 'master', kernelType: 'bash', language: 'shell', isolateCells: false , theme: 'xq-light', eventName: '' })
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/rasa-x', branch: 'rasa_x_binder', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
     document.addEventListener('', event => {
       if (event.detail.status == 'executing') {
         console.error("");
@@ -470,7 +477,7 @@ This contains information about the accuracy of your model and other metrics.</p
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

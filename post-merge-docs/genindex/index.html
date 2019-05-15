@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
@@ -97,7 +98,8 @@
 
   
 
-  <div class="document">
+  
+
     
       
         <div class="documentwrapper">
@@ -330,7 +332,7 @@
 </li>
       <li><a href="../api/events/#rasa.core.events.Restarted">Restarted (class in rasa.core.events)</a>
 </li>
-      <li><a href="../core/run-code-in-custom-actions/#rasa_core_sdk.Action.run">run() (rasa_core_sdk.Action method)</a>
+      <li><a href="../core/run-code-in-custom-actions/#rasa_sdk.Action.run">run() (rasa_sdk.Action method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -460,7 +462,7 @@
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

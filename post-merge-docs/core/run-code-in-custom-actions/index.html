@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -111,7 +112,12 @@ Stack to integrate your contextual Assistant in your processes and databases." /
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -119,7 +125,7 @@ Stack to integrate your contextual Assistant in your processes and databases." /
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -129,6 +135,7 @@ Stack to integrate your contextual Assistant in your processes and databases." /
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/languages/">Language Support</a></li>
@@ -205,7 +212,7 @@ Stack to integrate your contextual Assistant in your processes and databases." /
 <p class="topic-title first">Contents</p>
 <ul class="simple">
 <li><a class="reference internal" href="#actions" id="id2">Actions</a><ul>
-<li><a class="reference internal" href="#utter-actions" id="id3">Utter Actions</a></li>
+<li><a class="reference internal" href="#utterance-actions" id="id3">Utterance Actions</a></li>
 <li><a class="reference internal" href="#id1" id="id4">Custom Actions</a></li>
 <li><a class="reference internal" href="#custom-actions-written-in-python" id="id5">Custom Actions Written in Python</a></li>
 <li><a class="reference internal" href="#default-actions" id="id6">Default Actions</a></li>
@@ -223,21 +230,21 @@ There are three kinds of actions in Rasa Core:</p>
 <div><ol class="arabic simple">
 <li><strong>default actions</strong> (<code class="docutils literal notranslate"><span class="pre">action_listen</span></code>, <code class="docutils literal notranslate"><span class="pre">action_restart</span></code>,
 <code class="docutils literal notranslate"><span class="pre">action_default_fallback</span></code>)</li>
-<li><strong>utter actions</strong>, starting with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>, which just sends a message
+<li><strong>utterance actions</strong>, starting with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>, which just send a message
 to the user (see <a class="reference internal" href="../responses/#responses"><span class="std std-ref">Responses</span></a>).</li>
 <li><strong>custom actions</strong> - any other action, these actions can run arbitrary code</li>
 </ol>
 </div></blockquote>
-<div class="section" id="utter-actions">
-<h2><a class="toc-backref" href="#id3">Utter Actions</a><a class="headerlink" href="#utter-actions" title="Permalink to this headline">¶</a></h2>
-<p>To define an <code class="docutils literal notranslate"><span class="pre">UtterAction</span></code>, add an utterance template to the domain file,
+<div class="section" id="utterance-actions">
+<h2><a class="toc-backref" href="#id3">Utterance Actions</a><a class="headerlink" href="#utterance-actions" title="Permalink to this headline">¶</a></h2>
+<p>To define an utterance action (<code class="docutils literal notranslate"><span class="pre">ActionUtterTemplate</span></code>), add an utterance template to the domain file
 that starts with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_my_message</span><span class="p p-Indicator">:</span>
     <span class="p p-Indicator">-</span> <span class="s">&quot;this</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">what</span><span class="nv"> </span><span class="s">I</span><span class="nv"> </span><span class="s">want</span><span class="nv"> </span><span class="s">my</span><span class="nv"> </span><span class="s">action</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">say!&quot;</span>
 </pre></div>
 </div>
-<p>It is conventional to start the name of an <code class="docutils literal notranslate"><span class="pre">UtterAction</span></code> with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>.
+<p>It is conventional to start the name of an utterance action with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>.
 If this prefix is missing, you can still use the template in your custom
 actions, but the template can not be directly predicted as its own action.
 See <a class="reference internal" href="../responses/#responses"><span class="std std-ref">Responses</span></a> for more details.</p>
@@ -262,33 +269,33 @@ the dialogue state.</p>
 <p>And pass it to the scripts using <code class="docutils literal notranslate"><span class="pre">--endpoints</span> <span class="pre">endpoints.yml</span></code>.</p>
 <p>You can create an action server in node.js, .NET, java, or any
 other language and define your actions there - but we provide
-a small python sdk to make development there even easier.</p>
+a small python SDK to make development there even easier.</p>
 </div>
 <div class="section" id="custom-actions-written-in-python">
 <h2><a class="toc-backref" href="#id5">Custom Actions Written in Python</a><a class="headerlink" href="#custom-actions-written-in-python" title="Permalink to this headline">¶</a></h2>
 <p>For actions written in python, we have a convenient SDK which starts
 this action server for you.</p>
-<p>The only thing your action server needs to install is <code class="docutils literal notranslate"><span class="pre">rasa_core_sdk</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install rasa_core_sdk
+<p>The only thing your action server needs to install is <code class="docutils literal notranslate"><span class="pre">rasa-sdk</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install rasa-sdk
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">You do not need to install <code class="docutils literal notranslate"><span class="pre">rasa</span></code> for your action server.
-E.g. it is recommended to run Rasa Core in a docker container and
+E.g. it is recommended to run Rasa in a docker container and
 create a separate container for your action server. In this
-separate container, you only need to install <code class="docutils literal notranslate"><span class="pre">rasa_core_sdk</span></code>.</p>
+separate container, you only need to install <code class="docutils literal notranslate"><span class="pre">rasa-sdk</span></code>.</p>
 </div>
 <p>If your actions are defined in a file
 called <code class="docutils literal notranslate"><span class="pre">actions.py</span></code>, run this command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m rasa_core_sdk.endpoint --actions actions
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m rasa_sdk --actions actions
 </pre></div>
 </div>
 <p id="custom-action-example">In a restaurant bot, if the user says “show me a Mexican restaurant”,
 your bot could execute the action <code class="docutils literal notranslate"><span class="pre">ActionCheckRestaurants</span></code>,
 which might look like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_core_sdk</span> <span class="kn">import</span> <span class="n">Action</span>
-<span class="kn">from</span> <span class="nn">rasa_core_sdk.events</span> <span class="kn">import</span> <span class="n">SlotSet</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_sdk</span> <span class="kn">import</span> <span class="n">Action</span>
+<span class="kn">from</span> <span class="nn">rasa_sdk.events</span> <span class="kn">import</span> <span class="n">SlotSet</span>
 
 <span class="k">class</span> <span class="nc">ActionCheckRestaurants</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -311,11 +318,11 @@ three arguments. You can access the values of slots and the latest message
 sent by the user using the <code class="docutils literal notranslate"><span class="pre">tracker</span></code> object, and you can send messages
 back to the user with the <code class="docutils literal notranslate"><span class="pre">dispatcher</span></code> object, by calling
 <code class="docutils literal notranslate"><span class="pre">dispatcher.utter_template</span></code>, <code class="docutils literal notranslate"><span class="pre">dispatcher.utter_message</span></code>, or any other
-<code class="docutils literal notranslate"><span class="pre">rasa_core_sdk.executor.CollectingDispatcher</span></code> method.</p>
+<code class="docutils literal notranslate"><span class="pre">rasa_sdk.executor.CollectingDispatcher</span></code> method.</p>
 <p>Details of the <code class="docutils literal notranslate"><span class="pre">run</span></code> method:</p>
 <dl class="method">
-<dt id="rasa_core_sdk.Action.run">
-<code class="descclassname">Action.</code><code class="descname">run</code><span class="sig-paren">(</span><em>dispatcher</em>, <em>tracker</em>, <em>domain</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_core_sdk.Action.run" title="Permalink to this definition">¶</a></dt>
+<dt id="rasa_sdk.Action.run">
+<code class="descclassname">Action.</code><code class="descname">run</code><span class="sig-paren">(</span><em>dispatcher</em>, <em>tracker</em>, <em>domain</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa_sdk.Action.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Execute the side effects of this action.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -325,20 +332,20 @@ back to the user with the <code class="docutils literal notranslate"><span class
 <li><strong>dispatcher</strong> (<em>CollectingDispatcher</em>) – the dispatcher which is used to
 send messages back to the user. Use
 <code class="docutils literal notranslate"><span class="pre">dipatcher.utter_message()</span></code> or any other
-<code class="docutils literal notranslate"><span class="pre">rasa_core_sdk.executor.CollectingDispatcher</span></code>
+<code class="docutils literal notranslate"><span class="pre">rasa_sdk.executor.CollectingDispatcher</span></code>
 method.</li>
 <li><strong>tracker</strong> (<em>Tracker</em>) – the state tracker for the current
 user. You can access slot values using
 <code class="docutils literal notranslate"><span class="pre">tracker.get_slot(slot_name)</span></code>, the most recent user message
 is <code class="docutils literal notranslate"><span class="pre">tracker.latest_message.text</span></code> and any other
-<code class="docutils literal notranslate"><span class="pre">rasa_core_sdk.Tracker</span></code> property.</li>
+<code class="docutils literal notranslate"><span class="pre">rasa_sdk.Tracker</span></code> property.</li>
 <li><strong>domain</strong> (<em>Dict</em><em>[</em><em>Text</em><em>, </em><em>Any</em><em>]</em>) – the bot’s domain</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
 <dt>A dictionary of</dt>
-<dd><p class="first last"><code class="docutils literal notranslate"><span class="pre">rasa_core_sdk.events.Event</span></code> instances that is
+<dd><p class="first last"><code class="docutils literal notranslate"><span class="pre">rasa_sdk.events.Event</span></code> instances that is
 returned through the endpoint</p>
 </dd>
 </dl>
@@ -480,7 +487,7 @@ There is a list of all possible event types in <span class="xref std std-ref">ev
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

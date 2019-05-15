@@ -5,7 +5,7 @@ info:
   description: >-
     The Rasa server provides endpoints to retrieve trackers of
     conversations as well as endpoints to modify them. Additionally,
-    endpoints for training and evaluating models are provided.
+    endpoints for training and testing models are provided.
 servers:
   - url: "http://localhost:5005"
     description: "Local development server"
@@ -175,7 +175,7 @@ paths:
       - Tracker
       summary: Append an event to a tracker
       description: >-
-        Append a new event to the tracker state of the conversation.
+        Appends a new event to the tracker state of the conversation.
         Any existing events will be kept and the new events will be
         appended, updating the existing state.
       parameters:
@@ -205,7 +205,7 @@ paths:
       - Tracker
       summary: Replace a trackers events
       description: >-
-        Replace all events of a tracker with the passed
+        Replaces all events of a tracker with the passed
         list of events. This endpoint should not be used to
         modify trackers in a production setup, but rather
         for creating training data.
@@ -262,7 +262,7 @@ paths:
       - JWT: []
       tags:
       - Tracker
-      summary: Run an action in a conversation.
+      summary: Run an action in a conversation
       description: >-
         Runs the action, calling the action server if necessary.
         Any responses sent by the executed action will be returned as
@@ -392,10 +392,10 @@ paths:
                     - user
                 parse_data:
                   $ref: '#/components/schemas/ParseResult'
-              required: ["message", "sender"]
+              required: ["text", "sender"]
             example:
               sender: user
-              message: hello
+              text: hello
               parse_data:
                 text: hello
                 entities: []
@@ -514,7 +514,9 @@ paths:
       - Model
       summary: Perform an intent evaluation
       description: >-
-        Evaluates intents against the currently loaded Rasa model.
+        Evaluates intents against the currently loaded Rasa model or the model specified in the query.
+      parameters:
+      - $ref: '#/components/parameters/model'
       requestBody:
         required: true
         content:
@@ -596,7 +598,7 @@ paths:
       - JWT: []
       tags:
       - Model
-      summary: Parse a message using the Rasa model.
+      summary: Parse a message using the Rasa model
       description: >-
         Predicts the intent and entities of the message
         posted to this endpoint. No messages will be stored
@@ -639,7 +641,7 @@ paths:
       - JWT: []
       tags:
       - Model
-      summary: Replace a trained model
+      summary: Replace the currently loaded model
       description: >-
         Updates the currently loaded model.
         First, tries to load the model from the local storage system.
@@ -665,9 +667,9 @@ paths:
       - JWT: []
       tags:
       - Model
-      summary: Unload a trained model
+      summary: Unload the trained model
       description: >-
-        Unload a trained model from the server.
+        Unloads the currently loaded trained model from the server.
       responses:
         204:
           description: Could sucessfully unload model.
@@ -683,9 +685,9 @@ paths:
       - JWT: []
       tags:
       - Domain
-      summary: Retrieve the loaded domain.
+      summary: Retrieve the loaded domain
       description: >-
-        Return the domain specification the currently loaded
+        Returns the domain specification the currently loaded
         model is using.
       responses:
         200:
@@ -755,6 +757,17 @@ components:
         type: boolean
         default: false
       required: false
+    model:
+      in: query
+      name: model
+      description: >-
+        Model that should be used for evaluation.
+        If the parameter is set, the model will be fetched with the currently loaded configuration setup. However,
+        the currently loaded model will not be updated. The state of the server will not change.
+        If the parameter is not set, the currently loaded model will be used for the evaluation.
+      schema:
+        type: string
+      required: false
     include_events:
       in: query
       name: include_events
@@ -799,9 +812,16 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Event'
-          example:
-            $ref: '#/components/examples/Event'
+            type: object
+            properties:
+              event:
+                type: string
+                description: Event name
+                example: "slot"
+              timestamp:
+                type: integer
+                description: Time of application
+            required: ["event"]
     EventList:
       required: true
       content:
@@ -809,10 +829,15 @@ components:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/Event'
-          example:
-            Events:
-              $ref: '#/components/examples/Events'
+              type: object
+              properties:
+                event:
+                  type: string
+                  description: Event name
+                  example: "action"
+                timestamp:
+                  type: integer
+                  description: Time of application
     ModelRequest:
       required: true
       content:
@@ -1215,7 +1240,7 @@ components:
     EvaluationIntentsResult:
       type: object
       properties:
-        intent_evaluattion:
+        intent_evaluation:
           type: object
           description: Rasa NLU intent evaluation
           properties:

@@ -48,7 +48,7 @@ you can evaluate your model against them. To do this, run:
 .. note::
 
   Make sure your model file in ``models`` contains both models, ``core``
-  and ``nlu``. If it does not contain a ``nlu`` model, Rasa Core will load
+  and ``nlu``. If it does not contain an NLU model, Core will use
   the default ``RegexInterpreter``.
 
 
@@ -60,24 +60,22 @@ Evaluating an NLU Model
 A standard technique in machine learning is to keep some data separate as a *test set*.
 If you've done this, you can see how well your NLU model predicts the test cases using this command:
 
-To evaluate your model against test data, run:
-
 .. code-block:: shell
 
-   rasa test nlu --data test_set.md \
-     --model models/model_20180323-145833.tar.gz
+   rasa test nlu -u test_set.md \
+     --model models/nlu-20180323-145833.tar.gz
 
 
 If you don't have a separate test set, you can
 still estimate how well your model generalises using cross-validation.
-To do this, add the ``--mode crossvalidation`` flag:
+To do this, add the flag ``--cross-validation``:
 
 .. code-block:: shell
 
    rasa test nlu
-         --data data/nlu.md \
+         -u data/nlu.md \
          --config config.yml \
-         --mode crossvalidation
+         --cross-validation
 
 
 
@@ -88,8 +86,8 @@ The evaluation script will produce a report, confusion matrix
 and confidence histogram for your model.
 
 The report logs precision, recall and f1 measure for
-each intent and entity, as well as provide an overall average.
-You can save these reports as JSON files using the `--report` flag.
+each intent and entity, as well as provides an overall average.
+You can save these reports as JSON files using the ``--report`` argument.
 
 The confusion matrix shows you which
 intents are mistaken for others; any samples which have been
@@ -115,6 +113,7 @@ to the left of the plot.
     For example, if you have an example for a ``name`` entity
     like ``[Brian](name)'s house``, this is only valid if your tokenizer splits ``Brian's`` into
     multiple tokens. A whitespace tokenizer would not work in this case.
+
 
 Entity Extraction
 ^^^^^^^^^^^^^^^^^
@@ -164,7 +163,7 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    rasa test core --stories test_stories.md -o results
+    rasa test core --stories test_stories.md --output results
 
 
 This will print the failed stories to ``results/failed_stories.md``.
@@ -179,6 +178,7 @@ incorrect action was predicted instead.
 The full list of options for the script is:
 
 .. program-output:: rasa test core --help
+
 
 Comparing Policies
 ------------------
@@ -199,7 +199,7 @@ the train script to train your models:
 .. code-block:: bash
 
   $ rasa train core -c policy_config1.yml policy_config2.yml \
-    -d domain.yml -s stories_folder -o comparison_models --runs 3 --percentages \
+    -d domain.yml -s stories_folder --out comparison_models --runs 3 --percentages \
     0 5 25 50 70 90 95
 
 For each policy configuration provided, Rasa Core will be trained multiple times
@@ -211,8 +211,8 @@ mode to evaluate the models you just trained:
 
 .. code-block:: bash
 
-  $ rasa test core --stories stories_folder \
-    -o comparison_results
+  $ rasa test core -m comparison_models/<model-1>.tar.gz comparison_models/<model-2>.tar.gz \
+    --stories stories_folder --out comparison_results
 
 This will evaluate each of the models on the training set, and plot some graphs
 to show you which policy is best.  By evaluating on the full set of stories, you

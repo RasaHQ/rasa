@@ -72,6 +72,10 @@ div.document {
     margin: 30px auto 0 auto;
 }
 
+div.document.wide {
+    width: 100%;
+}
+
 div.documentwrapper {
     float: left;
     width: 100%;
@@ -79,10 +83,13 @@ div.documentwrapper {
 
 .documentwrapper-wide div.body {
     max-width: 100%;
+    margin: 0;
 }
 
 .documentwrapper-wide div.section {
     max-width: 100%;
+    width: 100%;
+    margin: 0;
 }
 
 .documentwrapper-wide h1 {
@@ -1587,10 +1594,6 @@ div.body {
 
 div.section {
     max-width: 800px;
-}
-
-div.section[id*=api] {
-    max-width: 1200px;
 }
 
 .sidebar-collapse-button > span {

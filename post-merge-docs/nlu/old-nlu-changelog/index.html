@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -105,7 +106,12 @@
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -113,7 +119,7 @@
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -123,6 +129,7 @@
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../languages/">Language Support</a></li>
@@ -197,6 +204,15 @@
 <h1>NLU Change Log<a class="headerlink" href="#nlu-change-log" title="Permalink to this headline">¶</a></h1>
 <p>All notable changes to this project will be documented in this file.
 This project adheres to <a class="reference external" href="http://semver.org/">Semantic Versioning</a> starting with version 0.7.0.</p>
+<div class="section" id="unreleased">
+<h2>[0.15.1] - Unreleased<a class="headerlink" href="#unreleased" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="fixed">
+<h3>Fixed<a class="headerlink" href="#fixed" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>fixed bug in rasa_nlu.test script that appeared if no intent classifier was present</li>
+</ul>
+</div>
+</div>
 <div class="section" id="id1">
 <h2>[0.15.0] - 2019-04-23<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="added">
@@ -241,8 +257,8 @@ additionally take component’s meta/config dicts</li>
 <li><strong>removed python 2.7 support</strong></li>
 </ul>
 </div>
-<div class="section" id="fixed">
-<h3>Fixed<a class="headerlink" href="#fixed" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id2">
+<h3>Fixed<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">RegexFeaturizer</span></code> detects all regex in user message (not just first)</li>
 <li>do_extractors_support_overlap now correctly throws an exception only if no extractors are
@@ -252,31 +268,31 @@ code in <code class="docutils literal notranslate"><span class="pre">registry.py
 </ul>
 </div>
 </div>
-<div class="section" id="id2">
-<h2>[0.14.6] - 2019-03-20<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id3">
-<h3>Fixed<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<h2>[0.14.6] - 2019-03-20<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id4">
+<h3>Fixed<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed Changelog dates (dates had the wrong year attached)</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id4">
-<h2>[0.14.5] - 2019-03-19<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id5">
-<h3>Fixed<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<h2>[0.14.5] - 2019-03-19<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id6">
+<h3>Fixed<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>properly tag <code class="docutils literal notranslate"><span class="pre">stable</span></code> docker image (instead of alpha)</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id6">
-<h2>[0.14.3] - 2019-02-01<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id7">
+<h2>[0.14.3] - 2019-02-01<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li></li>
 </ul>
-<div class="section" id="id7">
-<h3>Changed<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id8">
+<h3>Changed<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>starter packs are now tested in parallel with the unittests,
 and only on branches ending in <code class="docutils literal notranslate"><span class="pre">.x</span></code> (i.e. new version releases)</li>
@@ -284,36 +300,36 @@ and only on branches ending in <code class="docutils literal notranslate"><span 
 </ul>
 </div>
 </div>
-<div class="section" id="id8">
-<h2>[0.14.2] - 2019-01-29<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id9">
-<h3>Added<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<h2>[0.14.2] - 2019-01-29<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id10">
+<h3>Added<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">rasa_nlu.evaluate</span></code> now exports reports into a folder and also
 includes the entity extractor reports</li>
 </ul>
 </div>
-<div class="section" id="id10">
-<h3>Changed<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id11">
+<h3>Changed<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>updated requirements to match Core and SDK</li>
 <li>pinned keras dependecies</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id11">
-<h2>[0.14.1] - 2019-01-23<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id12">
-<h3>Fixed<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<h2>[0.14.1] - 2019-01-23<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id13">
+<h3>Fixed<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>scikit-learn is a global requirement</li>
 </ul>
 </div>
 </div>
 <div class="section" id="v0-14-0">
-<span id="id13"></span><h2>[0.14.0] - 2019-01-23<a class="headerlink" href="#v0-14-0" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id14">
-<h3>Added<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<span id="id14"></span><h2>[0.14.0] - 2019-01-23<a class="headerlink" href="#v0-14-0" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id15">
+<h3>Added<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Ability to save successful predictions and classification results to a JSON
 file from <code class="docutils literal notranslate"><span class="pre">rasa_nlu.evaluate</span></code></li>
@@ -326,8 +342,8 @@ configure whether to use word or character n-grams</li>
 <li>Travis script now clones and tests the Rasa NLU starter pack</li>
 </ul>
 </div>
-<div class="section" id="id15">
-<h3>Changed<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id16">
+<h3>Changed<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> has been refactored, including changes to the
 config parameters as well as comments and types for all class functions.</li>
@@ -342,16 +358,16 @@ for both entities and intents</li>
 <li>pinned keras dependecies</li>
 </ul>
 </div>
-<div class="section" id="id16">
-<h3>Removed<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id17">
+<h3>Removed<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">/config</span></code> endpoint</li>
 <li>removed pinning of <code class="docutils literal notranslate"><span class="pre">msgpack</span></code> and unused package <code class="docutils literal notranslate"><span class="pre">python-msgpack</span></code></li>
 <li>removed support for <code class="docutils literal notranslate"><span class="pre">ner_duckling</span></code>. Now supports only <code class="docutils literal notranslate"><span class="pre">ner_duckling_http</span></code></li>
 </ul>
 </div>
-<div class="section" id="id17">
-<h3>Fixed<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id18">
+<h3>Fixed<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Should loading jieba custom dictionaries only once.</li>
 <li>Set attributes of custom components correctly if they defer from the default</li>
@@ -369,20 +385,20 @@ for nlu server</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id18">
-<h2>[0.13.8] - 2018-11-21<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id19">
-<h3>Fixed<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
+<h2>[0.13.8] - 2018-11-21<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id20">
+<h3>Fixed<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>pinned spacy version to <code class="docutils literal notranslate"><span class="pre">spacy&lt;=2.0.12,&gt;2.0</span></code> to avoid dependency conflicts
 with tensorflow</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id20">
-<h2>[0.13.7] - 2018-10-11<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id21">
-<h3>Fixed<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
+<h2>[0.13.7] - 2018-10-11<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id22">
+<h3>Fixed<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">rasa_nlu.server</span></code> allowed more than <code class="docutils literal notranslate"><span class="pre">max_training_processes</span></code>
 to be trained if they belong to different projects.
@@ -391,17 +407,17 @@ project the training process belongs to.</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id22">
-<h2>[0.13.6] - 2018-10-04<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id23">
-<h3>Changed<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
+<h2>[0.13.6] - 2018-10-04<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id24">
+<h3>Changed<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">boto3</span></code> is now loaded lazily in <code class="docutils literal notranslate"><span class="pre">AWSPersistor</span></code> and is not
 included in <code class="docutils literal notranslate"><span class="pre">requirements_bare.txt</span></code> anymore</li>
 </ul>
 </div>
-<div class="section" id="id24">
-<h3>Fixed<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id25">
+<h3>Fixed<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Allow training of pipelines containing <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> in
 a separate thread on python 3. This makes http server calls to <code class="docutils literal notranslate"><span class="pre">/train</span></code>
@@ -411,37 +427,37 @@ with the most recent scikit learn</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id25">
-<h2>[0.13.5] - 2018-09-28<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id26">
-<h3>Changed<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h3>
+<h2>[0.13.5] - 2018-09-28<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id27">
+<h3>Changed<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Training data is now validated after loading from files in <code class="docutils literal notranslate"><span class="pre">loading.py</span></code>
 instead of on initialisation of <code class="docutils literal notranslate"><span class="pre">TrainingData</span></code> object</li>
 </ul>
 </div>
-<div class="section" id="id27">
-<h3>Fixed<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id28">
+<h3>Fixed<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">Project</span></code> set up to pull models from a remote server only use
 the pulled model instead of searching for models locally</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id28">
-<h2>[0.13.4] - 2018-09-19<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id29">
-<h3>Fixed<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
+<h2>[0.13.4] - 2018-09-19<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id30">
+<h3>Fixed<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>pinned matplotlib to 2.x (not ready for 3.0 yet)</li>
 <li>pytest-services since it wasn’t used and caused issues on Windows</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id30">
-<h2>[0.13.3] - 2018-08-28<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id31">
-<h3>Added<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
+<h2>[0.13.3] - 2018-08-28<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id32">
+<h3>Added<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">EndpointConfig</span></code> class that handles authenticated requests
 (ported from Rasa Core)</li>
@@ -453,8 +469,8 @@ which it regularly queries to fetch NLU models</li>
 <li>ability to specify lookup tables in training data</li>
 </ul>
 </div>
-<div class="section" id="id32">
-<h3>Changed<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id33">
+<h3>Changed<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>loading training data from a URL requires an instance of <code class="docutils literal notranslate"><span class="pre">EndpointConfig</span></code></li>
 <li>Changed evaluate behaviour to plot two histogram bars per bin.
@@ -462,57 +478,57 @@ Plotting confidence of right predictions in a wine-ish colour
 and wrong ones in a blue-ish colour.</li>
 </ul>
 </div>
-<div class="section" id="id33">
-<h3>Removed<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
-</div>
 <div class="section" id="id34">
-<h3>Fixed<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
+<h3>Removed<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="id35">
+<h3>Fixed<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>re-added support for entity names with special characters in markdown format</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id35">
-<h2>[0.13.2] - 2018-08-28<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id36">
-<h3>Changed<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h3>
+<h2>[0.13.2] - 2018-08-28<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id37">
+<h3>Changed<a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>added information about migrating the CRF component from 0.12 to 0.13</li>
 </ul>
 </div>
-<div class="section" id="id37">
-<h3>Fixed<a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id38">
+<h3>Fixed<a class="headerlink" href="#id38" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>pipelines containing the <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> are not trained in a
 separate thread, as this may lead to freezing during training</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id38">
-<h2>[0.13.1] - 2018-08-07<a class="headerlink" href="#id38" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id39">
-<h3>Added<a class="headerlink" href="#id39" title="Permalink to this headline">¶</a></h3>
+<h2>[0.13.1] - 2018-08-07<a class="headerlink" href="#id39" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id40">
+<h3>Added<a class="headerlink" href="#id40" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>documentation example for creating a custom component</li>
 </ul>
 </div>
-<div class="section" id="id40">
-<h3>Fixed<a class="headerlink" href="#id40" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id41">
+<h3>Fixed<a class="headerlink" href="#id41" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>correctly pass reference time in miliseconds to duckling_http</li>
 </ul>
 </div>
 </div>
 <div class="section" id="v0-13-0">
-<span id="id41"></span><h2>[0.13.0] - 2018-08-02<a class="headerlink" href="#v0-13-0" title="Permalink to this headline">¶</a></h2>
+<span id="id42"></span><h2>[0.13.0] - 2018-08-02<a class="headerlink" href="#v0-13-0" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">This is a release <strong>breaking backwards compatibility</strong>.
 Unfortunately, it is not possible to load previously trained models as
 the parameters for the tensorflow and CRF models changed.</p>
 </div>
-<div class="section" id="id42">
-<h3>Added<a class="headerlink" href="#id42" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id43">
+<h3>Added<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>support for <cite>tokenizer_jieba</cite> load custom dictionary from config</li>
 <li>allow pure json including pipeline configuration on train endpoint</li>
@@ -539,8 +555,8 @@ previously trained models impossible to load)</li>
 <li>documentation for the <code class="docutils literal notranslate"><span class="pre">ner_duckling_http</span></code> component</li>
 </ul>
 </div>
-<div class="section" id="id43">
-<h3>Changed<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id44">
+<h3>Changed<a class="headerlink" href="#id44" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>renamed CRF features <code class="docutils literal notranslate"><span class="pre">wordX</span></code> to <code class="docutils literal notranslate"><span class="pre">suffixX</span></code> and <code class="docutils literal notranslate"><span class="pre">preX</span></code> to <code class="docutils literal notranslate"><span class="pre">suffixX</span></code></li>
 <li>L1 and L2 regularisation defaults in <code class="docutils literal notranslate"><span class="pre">ner_crf</span></code> both set to 0.1</li>
@@ -555,8 +571,8 @@ the version to compare the model version against</li>
 <li>confusion matrix plot gets saved to file automatically during evaluation</li>
 </ul>
 </div>
-<div class="section" id="id44">
-<h3>Removed<a class="headerlink" href="#id44" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id45">
+<h3>Removed<a class="headerlink" href="#id45" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>dependence on spaCy when training <code class="docutils literal notranslate"><span class="pre">ner_crf</span></code> without POS features</li>
 <li>documentation for the <code class="docutils literal notranslate"><span class="pre">ner_duckling</span></code> component - facebook doesn’t maintain
@@ -564,8 +580,8 @@ the underlying clojure version of duckling anymore. component will be
 removed in the next release.</li>
 </ul>
 </div>
-<div class="section" id="id45">
-<h3>Fixed<a class="headerlink" href="#id45" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id46">
+<h3>Fixed<a class="headerlink" href="#id46" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Fixed Luis emulation output to add start, end position and
 confidence for each entity.</li>
@@ -574,42 +590,42 @@ loaded by URL in python 3.</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id46">
-<h2>[0.12.3] - 2018-05-02<a class="headerlink" href="#id46" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id47">
-<h3>Added<a class="headerlink" href="#id47" title="Permalink to this headline">¶</a></h3>
+<h2>[0.12.3] - 2018-05-02<a class="headerlink" href="#id47" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id48">
+<h3>Added<a class="headerlink" href="#id48" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Returning used model name and project name in the response
 of <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/parse</span></code> and <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/parse</span></code> as <code class="docutils literal notranslate"><span class="pre">model</span></code> and <code class="docutils literal notranslate"><span class="pre">project</span></code>
 respectively.</li>
 </ul>
 </div>
-<div class="section" id="id48">
-<h3>Fixed<a class="headerlink" href="#id48" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id49">
+<h3>Fixed<a class="headerlink" href="#id49" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>readded possibility to set fixed model name from http train endpoint</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id49">
-<h2>[0.12.2] - 2018-04-20<a class="headerlink" href="#id49" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id50">
-<h3>Fixed<a class="headerlink" href="#id50" title="Permalink to this headline">¶</a></h3>
+<h2>[0.12.2] - 2018-04-20<a class="headerlink" href="#id50" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id51">
+<h3>Fixed<a class="headerlink" href="#id51" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed duckling text extraction for ner_duckling_http</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id51">
-<h2>[0.12.1] - 2018-04-18<a class="headerlink" href="#id51" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id52">
-<h3>Added<a class="headerlink" href="#id52" title="Permalink to this headline">¶</a></h3>
+<h2>[0.12.1] - 2018-04-18<a class="headerlink" href="#id52" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id53">
+<h3>Added<a class="headerlink" href="#id53" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>support for retrieving training data from a URL</li>
 </ul>
 </div>
-<div class="section" id="id53">
-<h3>Fixed<a class="headerlink" href="#id53" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id54">
+<h3>Fixed<a class="headerlink" href="#id54" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>properly set duckling http url through environment setting</li>
 <li>improvements and fixes to the configuration and pipeline
@@ -618,9 +634,9 @@ documentation</li>
 </div>
 </div>
 <div class="section" id="v0-12-0">
-<span id="id54"></span><h2>[0.12.0] - 2018-04-17<a class="headerlink" href="#v0-12-0" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id55">
-<h3>Added<a class="headerlink" href="#id55" title="Permalink to this headline">¶</a></h3>
+<span id="id55"></span><h2>[0.12.0] - 2018-04-17<a class="headerlink" href="#v0-12-0" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id56">
+<h3>Added<a class="headerlink" href="#id56" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>support for inline entity synonyms in markdown training format</li>
 <li>support for regex features in markdown training format</li>
@@ -642,8 +658,8 @@ distribution (faster install)</li>
 MITIE model</li>
 </ul>
 </div>
-<div class="section" id="id56">
-<h3>Changed<a class="headerlink" href="#id56" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id57">
+<h3>Changed<a class="headerlink" href="#id57" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>model configuration is separated from server / train configuration. This is a
 <strong>breaking change</strong> and models need to be retrained. See migrations guide.</li>
@@ -664,45 +680,45 @@ can not be empty</li>
 <li>made the NLU server’s <code class="docutils literal notranslate"><span class="pre">/evaluate</span></code> endpoint asynchronous</li>
 </ul>
 </div>
-<div class="section" id="id57">
-<h3>Fixed<a class="headerlink" href="#id57" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id58">
+<h3>Fixed<a class="headerlink" href="#id58" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed certain command line arguments not getting passed into
 the <code class="docutils literal notranslate"><span class="pre">data_router</span></code></li>
 </ul>
 </div>
 </div>
-<div class="section" id="id58">
-<h2>[0.11.4] - 2018-03-19<a class="headerlink" href="#id58" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id59">
-<h3>Fixed<a class="headerlink" href="#id59" title="Permalink to this headline">¶</a></h3>
+<h2>[0.11.4] - 2018-03-19<a class="headerlink" href="#id59" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id60">
+<h3>Fixed<a class="headerlink" href="#id60" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>google analytics docs survey code</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id60">
-<h2>[0.11.3] - 2018-02-13<a class="headerlink" href="#id60" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id61">
-<h3>Fixed<a class="headerlink" href="#id61" title="Permalink to this headline">¶</a></h3>
+<h2>[0.11.3] - 2018-02-13<a class="headerlink" href="#id61" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id62">
+<h3>Fixed<a class="headerlink" href="#id62" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>capitalization issues during spacy named entity recognition</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id62">
-<h2>[0.11.2] - 2018-02-06<a class="headerlink" href="#id62" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id63">
-<h3>Fixed<a class="headerlink" href="#id63" title="Permalink to this headline">¶</a></h3>
+<h2>[0.11.2] - 2018-02-06<a class="headerlink" href="#id63" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id64">
+<h3>Fixed<a class="headerlink" href="#id64" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Formatting of tokens without assigned entities in evaluation</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id64">
-<h2>[0.11.1] - 2018-02-02<a class="headerlink" href="#id64" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id65">
-<h3>Fixed<a class="headerlink" href="#id65" title="Permalink to this headline">¶</a></h3>
+<h2>[0.11.1] - 2018-02-02<a class="headerlink" href="#id65" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id66">
+<h3>Fixed<a class="headerlink" href="#id66" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Changelog doc formatting</li>
 <li>fixed project loading for newly added projects to a running server</li>
@@ -711,9 +727,9 @@ the <code class="docutils literal notranslate"><span class="pre">data_router</sp
 </div>
 </div>
 <div class="section" id="v0-11-0">
-<span id="id66"></span><h2>[0.11.0] - 2018-01-30<a class="headerlink" href="#v0-11-0" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id67">
-<h3>Added<a class="headerlink" href="#id67" title="Permalink to this headline">¶</a></h3>
+<span id="id67"></span><h2>[0.11.0] - 2018-01-30<a class="headerlink" href="#v0-11-0" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id68">
+<h3>Added<a class="headerlink" href="#id68" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>non ascii character support for anything that gets json dumped (e.g.
 training data received over HTTP endpoint)</li>
@@ -724,8 +740,8 @@ training data received over HTTP endpoint)</li>
 (markdown and JSON only)</li>
 </ul>
 </div>
-<div class="section" id="id68">
-<h3>Changed<a class="headerlink" href="#id68" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id69">
+<h3>Changed<a class="headerlink" href="#id69" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>removed <code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">.</span></code> from requirements files - if you want to install
 the app use <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code></li>
@@ -734,45 +750,45 @@ the app use <code class="docutils literal notranslate"><span class="pre">pip</sp
 </ul>
 </div>
 </div>
-<div class="section" id="id69">
-<h2>[0.10.6] - 2018-01-02<a class="headerlink" href="#id69" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id70">
-<h3>Added<a class="headerlink" href="#id70" title="Permalink to this headline">¶</a></h3>
+<h2>[0.10.6] - 2018-01-02<a class="headerlink" href="#id70" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id71">
+<h3>Added<a class="headerlink" href="#id71" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>support asterisk style annotation of examples in markdown format</li>
 </ul>
 </div>
-<div class="section" id="id71">
-<h3>Fixed<a class="headerlink" href="#id71" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id72">
+<h3>Fixed<a class="headerlink" href="#id72" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Preventing capitalized entities from becoming synonyms of the form
 lower-cased -&gt; capitalized</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id72">
-<h2>[0.10.5] - 2017-12-01<a class="headerlink" href="#id72" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id73">
-<h3>Fixed<a class="headerlink" href="#id73" title="Permalink to this headline">¶</a></h3>
+<h2>[0.10.5] - 2017-12-01<a class="headerlink" href="#id73" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id74">
+<h3>Fixed<a class="headerlink" href="#id74" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>read token in server from config instead of data router</li>
 <li>fixed reading of models with none date name prefix in server</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id74">
-<h2>[0.10.4] - 2017-10-27<a class="headerlink" href="#id74" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id75">
-<h3>Fixed<a class="headerlink" href="#id75" title="Permalink to this headline">¶</a></h3>
+<h2>[0.10.4] - 2017-10-27<a class="headerlink" href="#id75" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id76">
+<h3>Fixed<a class="headerlink" href="#id76" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>docker image build</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id76">
-<h2>[0.10.3] - 2017-10-26<a class="headerlink" href="#id76" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id77">
-<h3>Added<a class="headerlink" href="#id77" title="Permalink to this headline">¶</a></h3>
+<h2>[0.10.3] - 2017-10-26<a class="headerlink" href="#id77" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id78">
+<h3>Added<a class="headerlink" href="#id78" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>support for new dialogflow data format (previously api.ai)</li>
 <li>improved support for custom components (components are
@@ -781,8 +797,8 @@ that are not mentioned in the Rasa NLU registry)</li>
 <li>language option to convert script</li>
 </ul>
 </div>
-<div class="section" id="id78">
-<h3>Fixed<a class="headerlink" href="#id78" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id79">
+<h3>Fixed<a class="headerlink" href="#id79" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Fixed loading of default model from S3. Fixes #633</li>
 <li>fixed permanent training status when training fails #652</li>
@@ -790,10 +806,10 @@ that are not mentioned in the Rasa NLU registry)</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id79">
-<h2>[0.10.1] - 2017-10-06<a class="headerlink" href="#id79" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id80">
-<h3>Fixed<a class="headerlink" href="#id80" title="Permalink to this headline">¶</a></h3>
+<h2>[0.10.1] - 2017-10-06<a class="headerlink" href="#id80" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id81">
+<h3>Fixed<a class="headerlink" href="#id81" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>readme issues</li>
 <li>improved setup py welcome message</li>
@@ -801,9 +817,9 @@ that are not mentioned in the Rasa NLU registry)</li>
 </div>
 </div>
 <div class="section" id="v0-10-0">
-<span id="id81"></span><h2>[0.10.0] - 2017-09-27<a class="headerlink" href="#v0-10-0" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id82">
-<h3>Added<a class="headerlink" href="#id82" title="Permalink to this headline">¶</a></h3>
+<span id="id82"></span><h2>[0.10.0] - 2017-09-27<a class="headerlink" href="#v0-10-0" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id83">
+<h3>Added<a class="headerlink" href="#id83" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Support for training data in Markdown format</li>
 <li>Cors support. You can now specify allowed cors origins
@@ -816,8 +832,8 @@ be the basis for a restaurant search bot in German or a customer
 service bot in English. A model can be seen as a snapshot of a project.</li>
 </ul>
 </div>
-<div class="section" id="id83">
-<h3>Changed<a class="headerlink" href="#id83" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id84">
+<h3>Changed<a class="headerlink" href="#id84" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Root project directories have been slightly rearranged to
 clean up new docker support</li>
@@ -831,8 +847,8 @@ interpreter with metadata from a file</li>
 (backwards incompatible!)</li>
 </ul>
 </div>
-<div class="section" id="id84">
-<h3>Fixed<a class="headerlink" href="#id84" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id85">
+<h3>Fixed<a class="headerlink" href="#id85" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Fixed training data persistence. Fixes #510</li>
 <li>Fixed UTF-8 character handling when training through HTTP interface</li>
@@ -843,19 +859,19 @@ misaligned entities during mitie NER</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id85">
-<h2>[0.9.2] - 2017-08-16<a class="headerlink" href="#id85" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id86">
-<h3>Fixed<a class="headerlink" href="#id86" title="Permalink to this headline">¶</a></h3>
+<h2>[0.9.2] - 2017-08-16<a class="headerlink" href="#id86" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id87">
+<h3>Fixed<a class="headerlink" href="#id87" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>removed unnecessary <cite>ClassVar</cite> import</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id87">
-<h2>[0.9.1] - 2017-07-11<a class="headerlink" href="#id87" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id88">
-<h3>Fixed<a class="headerlink" href="#id88" title="Permalink to this headline">¶</a></h3>
+<h2>[0.9.1] - 2017-07-11<a class="headerlink" href="#id88" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id89">
+<h3>Fixed<a class="headerlink" href="#id89" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>removed obsolete <code class="docutils literal notranslate"><span class="pre">--output</span></code> parameter of <code class="docutils literal notranslate"><span class="pre">train.py</span></code>.
 use <code class="docutils literal notranslate"><span class="pre">--path</span></code> instead. fixes #473</li>
@@ -863,17 +879,17 @@ use <code class="docutils literal notranslate"><span class="pre">--path</span></
 </div>
 </div>
 <div class="section" id="v0-9-0">
-<span id="id89"></span><h2>[0.9.0] - 2017-07-07<a class="headerlink" href="#v0-9-0" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id90">
-<h3>Added<a class="headerlink" href="#id90" title="Permalink to this headline">¶</a></h3>
+<span id="id90"></span><h2>[0.9.0] - 2017-07-07<a class="headerlink" href="#v0-9-0" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id91">
+<h3>Added<a class="headerlink" href="#id91" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>increased test coverage to avoid regressions (ongoing)</li>
 <li>added regex featurization to support intent classification
 and entity extraction (<code class="docutils literal notranslate"><span class="pre">intent_entity_featurizer_regex</span></code>)</li>
 </ul>
 </div>
-<div class="section" id="id91">
-<h3>Changed<a class="headerlink" href="#id91" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id92">
+<h3>Changed<a class="headerlink" href="#id92" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>replaced existing CRF library (python-crfsuite) with
 sklearn-crfsuite (due to better windows support)</li>
@@ -893,15 +909,15 @@ pipeline architecture</li>
 <li>numpy is now a required dependency</li>
 </ul>
 </div>
-<div class="section" id="id92">
-<h3>Removed<a class="headerlink" href="#id92" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id93">
+<h3>Removed<a class="headerlink" href="#id93" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>luis data tokenizer configuration value (not used anymore,
 luis exports char offsets now)</li>
 </ul>
 </div>
-<div class="section" id="id93">
-<h3>Fixed<a class="headerlink" href="#id93" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id94">
+<h3>Fixed<a class="headerlink" href="#id94" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>properly update coveralls coverage report from travis</li>
 <li>persistence of duckling dimensions</li>
@@ -913,119 +929,119 @@ those whose name starts with <em>model</em></li>
 </ul>
 </div>
 </div>
-<div class="section" id="id94">
-<h2>[0.8.12] - 2017-06-29<a class="headerlink" href="#id94" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id95">
-<h3>Fixed<a class="headerlink" href="#id95" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.12] - 2017-06-29<a class="headerlink" href="#id95" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id96">
+<h3>Fixed<a class="headerlink" href="#id96" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed missing argument attribute error</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id96">
-<h2>[0.8.11] - 2017-06-07<a class="headerlink" href="#id96" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id97">
-<h3>Fixed<a class="headerlink" href="#id97" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.11] - 2017-06-07<a class="headerlink" href="#id97" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id98">
+<h3>Fixed<a class="headerlink" href="#id98" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>updated mitie installation documentation</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id98">
-<h2>[0.8.10] - 2017-05-31<a class="headerlink" href="#id98" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id99">
-<h3>Fixed<a class="headerlink" href="#id99" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.10] - 2017-05-31<a class="headerlink" href="#id99" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id100">
+<h3>Fixed<a class="headerlink" href="#id100" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed documentation about training data format</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id100">
-<h2>[0.8.9] - 2017-05-26<a class="headerlink" href="#id100" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id101">
-<h3>Fixed<a class="headerlink" href="#id101" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.9] - 2017-05-26<a class="headerlink" href="#id101" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id102">
+<h3>Fixed<a class="headerlink" href="#id102" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>properly handle response_log configuration variable being set to <code class="docutils literal notranslate"><span class="pre">null</span></code></li>
 </ul>
 </div>
 </div>
-<div class="section" id="id102">
-<h2>[0.8.8] - 2017-05-26<a class="headerlink" href="#id102" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id103">
-<h3>Fixed<a class="headerlink" href="#id103" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.8] - 2017-05-26<a class="headerlink" href="#id103" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id104">
+<h3>Fixed<a class="headerlink" href="#id104" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">/status</span></code> endpoint showing all available models instead of only
 those whose name starts with <em>model</em></li>
 </ul>
 </div>
 </div>
-<div class="section" id="id104">
-<h2>[0.8.7] - 2017-05-24<a class="headerlink" href="#id104" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id105">
-<h3>Fixed<a class="headerlink" href="#id105" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.7] - 2017-05-24<a class="headerlink" href="#id105" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id106">
+<h3>Fixed<a class="headerlink" href="#id106" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Fixed range calculation for crf #355</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id106">
-<h2>[0.8.6] - 2017-05-15<a class="headerlink" href="#id106" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id107">
-<h3>Fixed<a class="headerlink" href="#id107" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.6] - 2017-05-15<a class="headerlink" href="#id107" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id108">
+<h3>Fixed<a class="headerlink" href="#id108" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Fixed duckling dimension persistence. fixes #358</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id108">
-<h2>[0.8.5] - 2017-05-10<a class="headerlink" href="#id108" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id109">
-<h3>Fixed<a class="headerlink" href="#id109" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.5] - 2017-05-10<a class="headerlink" href="#id109" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id110">
+<h3>Fixed<a class="headerlink" href="#id110" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Fixed pypi installation dependencies (e.g. flask). fixes #354</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id110">
-<h2>[0.8.4] - 2017-05-10<a class="headerlink" href="#id110" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id111">
-<h3>Fixed<a class="headerlink" href="#id111" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.4] - 2017-05-10<a class="headerlink" href="#id111" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id112">
+<h3>Fixed<a class="headerlink" href="#id112" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Fixed CRF model training without entities. fixes #345</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id112">
-<h2>[0.8.3] - 2017-05-10<a class="headerlink" href="#id112" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id113">
-<h3>Fixed<a class="headerlink" href="#id113" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.3] - 2017-05-10<a class="headerlink" href="#id113" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id114">
+<h3>Fixed<a class="headerlink" href="#id114" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Fixed Luis emulation and added test to catch regression. Fixes #353</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id114">
-<h2>[0.8.2] - 2017-05-08<a class="headerlink" href="#id114" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id115">
-<h3>Fixed<a class="headerlink" href="#id115" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.2] - 2017-05-08<a class="headerlink" href="#id115" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id116">
+<h3>Fixed<a class="headerlink" href="#id116" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>deepcopy of context #343</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id116">
-<h2>[0.8.1] - 2017-05-08<a class="headerlink" href="#id116" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id117">
-<h3>Fixed<a class="headerlink" href="#id117" title="Permalink to this headline">¶</a></h3>
+<h2>[0.8.1] - 2017-05-08<a class="headerlink" href="#id117" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id118">
+<h3>Fixed<a class="headerlink" href="#id118" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>NER training reuses context inbetween requests</li>
 </ul>
 </div>
 </div>
 <div class="section" id="v0-8-0">
-<span id="id118"></span><h2>[0.8.0] - 2017-05-08<a class="headerlink" href="#v0-8-0" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="id119">
-<h3>Added<a class="headerlink" href="#id119" title="Permalink to this headline">¶</a></h3>
+<span id="id119"></span><h2>[0.8.0] - 2017-05-08<a class="headerlink" href="#v0-8-0" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id120">
+<h3>Added<a class="headerlink" href="#id120" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>ngram character featurizer (allows better handling of out-of-vocab words)</li>
 <li>replaced pre-wired backends with more flexible pipeline definitions</li>
@@ -1044,8 +1060,8 @@ messages on missing dependencies</li>
 <li>support for using multiple entity extractors and combining results downstream</li>
 </ul>
 </div>
-<div class="section" id="id121">
-<h3>Changed<a class="headerlink" href="#id121" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id122">
+<h3>Changed<a class="headerlink" href="#id122" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p class="first">unified tokenizers, classifiers and feature extractors to implement
 common component interface</p>
@@ -1092,8 +1108,8 @@ the spacy component (breaks existing spacy models!)</p>
 </li>
 </ul>
 </div>
-<div class="section" id="id122">
-<h3>Fixed<a class="headerlink" href="#id122" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id123">
+<h3>Fixed<a class="headerlink" href="#id123" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>properly parse <code class="docutils literal notranslate"><span class="pre">str</span></code> additionally to <code class="docutils literal notranslate"><span class="pre">unicode</span></code>
 <a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/issues/210">#210</a></li>
@@ -1106,39 +1122,39 @@ the spacy component (breaks existing spacy models!)</p>
 </ul>
 </div>
 </div>
-<div class="section" id="id127">
-<h2>[0.7.4] - 2017-03-27<a class="headerlink" href="#id127" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id128">
-<h3>Fixed<a class="headerlink" href="#id128" title="Permalink to this headline">¶</a></h3>
+<h2>[0.7.4] - 2017-03-27<a class="headerlink" href="#id128" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id129">
+<h3>Fixed<a class="headerlink" href="#id129" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed failed loading of example data after renaming attributes,
 i.e. “KeyError: ‘entities’”</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id129">
-<h2>[0.7.3] - 2017-03-15<a class="headerlink" href="#id129" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id130">
-<h3>Fixed<a class="headerlink" href="#id130" title="Permalink to this headline">¶</a></h3>
+<h2>[0.7.3] - 2017-03-15<a class="headerlink" href="#id130" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id131">
+<h3>Fixed<a class="headerlink" href="#id131" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed regression in mitie entity extraction on special characters</li>
 <li>fixed spacy fine tuning and entity recognition on passed language instance</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id131">
-<h2>[0.7.2] - 2017-03-13<a class="headerlink" href="#id131" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id132">
-<h3>Fixed<a class="headerlink" href="#id132" title="Permalink to this headline">¶</a></h3>
+<h2>[0.7.2] - 2017-03-13<a class="headerlink" href="#id132" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id133">
+<h3>Fixed<a class="headerlink" href="#id133" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>python documentation about calling rasa NLU from python</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id133">
-<h2>[0.7.1] - 2017-03-10<a class="headerlink" href="#id133" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id134">
-<h3>Fixed<a class="headerlink" href="#id134" title="Permalink to this headline">¶</a></h3>
+<h2>[0.7.1] - 2017-03-10<a class="headerlink" href="#id134" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id135">
+<h3>Fixed<a class="headerlink" href="#id135" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>mitie tokenization value generation
 <a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/pull/207">#207</a>, thanks &#64;cristinacaputo</li>
@@ -1148,11 +1164,11 @@ since the contained text is not proper json</li>
 </div>
 </div>
 <div class="section" id="v0-7-0">
-<span id="id136"></span><h2>[0.7.0] - 2017-03-10<a class="headerlink" href="#v0-7-0" title="Permalink to this headline">¶</a></h2>
+<span id="id137"></span><h2>[0.7.0] - 2017-03-10<a class="headerlink" href="#v0-7-0" title="Permalink to this headline">¶</a></h2>
 <p>This is a major version update. Please also have a look at the
 <a class="reference external" href="https://rasahq.github.io/rasa_nlu/migrations.html">Migration Guide</a>.</p>
-<div class="section" id="id137">
-<h3>Added<a class="headerlink" href="#id137" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id138">
+<h3>Added<a class="headerlink" href="#id138" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Changelog ;)</li>
 <li>option to use multi-threading during classifier training</li>
@@ -1165,8 +1181,8 @@ since the contained text is not proper json</li>
 share the same backend</li>
 </ul>
 </div>
-<div class="section" id="id138">
-<h3>Fixed<a class="headerlink" href="#id138" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id139">
+<h3>Fixed<a class="headerlink" href="#id139" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>error propagation on failed vector model loading (spacy)</li>
 <li>escaping of special characters during mitie tokenization</li>
@@ -1252,7 +1268,7 @@ share the same backend</li>
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

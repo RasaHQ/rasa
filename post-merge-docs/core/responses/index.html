@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -111,7 +112,12 @@ responses using Rasa Stack as an open source chatassistant platform." />
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -119,7 +125,7 @@ responses using Rasa Stack as an open source chatassistant platform." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -129,6 +135,7 @@ responses using Rasa Stack as an open source chatassistant platform." />
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/languages/">Language Support</a></li>
@@ -238,12 +245,16 @@ available entities, slots and intents.</p>
 
 <span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
-    <span class="p p-Indicator">-</span> <span class="s">&quot;hey</span><span class="nv"> </span><span class="s">there</span><span class="nv"> </span><span class="s">{name}!&quot;</span>  <span class="c1"># {name} will be filled by slot (same name) or by custom action code</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;hey</span><span class="nv"> </span><span class="s">there</span><span class="nv"> </span><span class="s">{name}!&quot;</span>  <span class="c1"># {name} will be filled by slot (same name) or by custom action</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_channel</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;this</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">default</span><span class="nv"> </span><span class="s">channel&quot;</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;you&#39;re</span><span class="nv"> </span><span class="s">talking</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">me</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">slack!&quot;</span>  <span class="c1"># if you define channel-specific utterances, the bot will pick</span>
+      <span class="l l-Scalar l-Scalar-Plain">channel</span><span class="p p-Indicator">:</span> <span class="s">&quot;slack&quot;</span>                        <span class="c1"># from those when talking on that specific channel</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span><span class="p p-Indicator">:</span>
-    <span class="p p-Indicator">-</span> <span class="s">&quot;goodbye</span><span class="nv"> </span><span class="s">😢&quot;</span>   <span class="c1"># multiple templates - bot will randomly pick one of them</span>
-    <span class="p p-Indicator">-</span> <span class="s">&quot;bye</span><span class="nv"> </span><span class="s">bye</span><span class="nv"> </span><span class="s">😢&quot;</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;goodbye</span><span class="nv"> </span><span class="s">😢&quot;</span>   <span class="c1"># multiple templates - bot will randomly pick one of them</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;bye</span><span class="nv"> </span><span class="s">bye</span><span class="nv"> </span><span class="s">😢&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_default</span><span class="p p-Indicator">:</span>   <span class="c1"># utterance sent by action_default_fallback</span>
-    <span class="p p-Indicator">-</span> <span class="s">&quot;sorry,</span><span class="nv"> </span><span class="s">I</span><span class="nv"> </span><span class="s">didn&#39;t</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">that,</span><span class="nv"> </span><span class="s">can</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">rephrase</span><span class="nv"> </span><span class="s">it?&quot;</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;sorry,</span><span class="nv"> </span><span class="s">I</span><span class="nv"> </span><span class="s">didn&#39;t</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">that,</span><span class="nv"> </span><span class="s">can</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">rephrase</span><span class="nv"> </span><span class="s">it?&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_default</span>
@@ -299,7 +310,11 @@ or <code class="docutils literal notranslate"><span class="pre">server</span></c
 </div>
 <p>Then pass the <code class="docutils literal notranslate"><span class="pre">enable-api</span></code> flag to the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> command when starting
 the server:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>rasa run --enable-api
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ rasa run <span class="se">\</span>
+   --enable-api <span class="se">\</span>
+   -m examples/babi/models <span class="se">\</span>
+   --log-file out.log <span class="se">\</span>
+   --endpoints endpoints.yml
 </pre></div>
 </div>
 <p>The body of the <code class="docutils literal notranslate"><span class="pre">POST</span></code> request sent to the endpoint will look
@@ -449,7 +464,7 @@ like this:</p>
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

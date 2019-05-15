@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -111,7 +112,12 @@ with open soruce chatbot framework Rasa Stack." />
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -119,7 +125,7 @@ with open soruce chatbot framework Rasa Stack." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -129,6 +135,7 @@ with open soruce chatbot framework Rasa Stack." />
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Language Support</a></li>
@@ -289,7 +296,7 @@ french (<code class="docutils literal notranslate"><span class="pre">fr</span></
 </tr>
 </tbody>
 </table>
-<p>These languages can be set as part of the <a class="reference internal" href="../../project-structure/#model-configuration"><span class="std std-ref">3. Define your model configuration</span></a>.</p>
+<p>These languages can be set as part of the <a class="reference internal" href="../../tutorial/#model-configuration"><span class="std std-ref">3. Define your model configuration</span></a>.</p>
 </div>
 <div class="section" id="adding-a-new-language">
 <h2>Adding a new language<a class="headerlink" href="#adding-a-new-language" title="Permalink to this headline">¶</a></h2>
@@ -301,7 +308,7 @@ you need to train that presentation on your own using a large corpus of text dat
 <p>spaCy already provides a really good documentation page about <a class="reference external" href="https://spacy.io/docs/usage/adding-languages">Adding languages</a>.
 This will help you train a tokenizer and vocabulary for a new language in spaCy.</p>
 <p>As described in the documentation, you need to register your language using <code class="docutils literal notranslate"><span class="pre">set_lang_class()</span></code> which will
-allow Rasa NLU to load and use your new language by passing in your language identifier as the <code class="docutils literal notranslate"><span class="pre">language</span></code> <a class="reference internal" href="../../project-structure/#model-configuration"><span class="std std-ref">3. Define your model configuration</span></a> option.</p>
+allow Rasa NLU to load and use your new language by passing in your language identifier as the <code class="docutils literal notranslate"><span class="pre">language</span></code> <a class="reference internal" href="../../tutorial/#model-configuration"><span class="std std-ref">3. Define your model configuration</span></a> option.</p>
 </div>
 <div class="section" id="mitie">
 <h3>MITIE<a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
@@ -406,7 +413,7 @@ a trained model from Chinese Wikipedia dump and Baidu Baike can be <a class="ref
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

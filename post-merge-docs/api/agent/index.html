@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -107,7 +108,12 @@
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -115,7 +121,7 @@
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -125,6 +131,7 @@
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/languages/">Language Support</a></li>
@@ -199,9 +206,9 @@
 <h1>Agent<a class="headerlink" href="#agent" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="rasa.core.agent.Agent">
-<em class="property">class </em><code class="descclassname">rasa.core.agent.</code><code class="descname">Agent</code><span class="sig-paren">(</span><em>domain=None</em>, <em>policies=None</em>, <em>interpreter=None</em>, <em>generator=None</em>, <em>tracker_store=None</em>, <em>action_endpoint=None</em>, <em>fingerprint=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.agent.</code><code class="descname">Agent</code><span class="sig-paren">(</span><em>domain=None</em>, <em>policies=None</em>, <em>interpreter=None</em>, <em>generator=None</em>, <em>tracker_store=None</em>, <em>action_endpoint=None</em>, <em>fingerprint=None</em>, <em>model_directory=None</em>, <em>model_server=None</em>, <em>remote_storage=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent" title="Permalink to this definition">¶</a></dt>
 <dd><p>The Agent class provides a convenient interface for the most important
-Rasa Core functionality.</p>
+Rasa functionality.</p>
 <p>This includes training, handling messages, loading a dialogue model,
 getting the next action, and handling a channel.</p>
 <dl class="method">
@@ -236,9 +243,6 @@ getting the next action, and handling a channel.</p>
 <dt id="rasa.core.agent.Agent.handle_channels">
 <code class="descname">handle_channels</code><span class="sig-paren">(</span><em>channels</em>, <em>http_port=5005</em>, <em>route='/webhooks/'</em>, <em>cors=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.handle_channels" title="Permalink to this definition">¶</a></dt>
 <dd><p>Start a webserver attaching the input channels and handling msgs.</p>
-<p>If <code class="docutils literal notranslate"><span class="pre">serve_forever</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, this call will be blocking.
-Otherwise the webserver will be started, and the method will
-return afterwards.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -280,10 +284,7 @@ the bot wants to respond.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.agent</span> <span class="k">import</span> <span class="n">Agent</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.interpreter</span> <span class="k">import</span> <span class="n">RasaNLUInterpreter</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">interpreter</span> <span class="o">=</span> <span class="n">RasaNLUInterpreter</span><span class="p">(</span>
-<span class="gp">... </span><span class="s2">&quot;examples/restaurantbot/models/nlu/current&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;examples/restaurantbot/models/dialogue&quot;</span><span class="p">,</span>
-<span class="gp">... </span><span class="n">interpreter</span><span class="o">=</span><span class="n">interpreter</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;examples/restaurantbot/models/current&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">handle_text</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
 <span class="go">[u&#39;how can I help you?&#39;]</span>
 </pre></div>
@@ -305,7 +306,7 @@ the bot wants to respond.</p>
 
 <dl class="classmethod">
 <dt id="rasa.core.agent.Agent.load">
-<em class="property">classmethod </em><code class="descname">load</code><span class="sig-paren">(</span><em>path</em>, <em>interpreter=None</em>, <em>generator=None</em>, <em>tracker_store=None</em>, <em>action_endpoint=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.load" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">load</code><span class="sig-paren">(</span><em>unpacked_model_path</em>, <em>interpreter=None</em>, <em>generator=None</em>, <em>tracker_store=None</em>, <em>action_endpoint=None</em>, <em>model_server=None</em>, <em>remote_storage=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load a persisted model from the passed path.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -495,7 +496,7 @@ trainer (e.g. keras parameters)</li>
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

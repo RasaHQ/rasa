@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -111,7 +112,12 @@ in open source bot framework Rasa Stack." />
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -119,7 +125,7 @@ in open source bot framework Rasa Stack." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -129,6 +135,7 @@ in open source bot framework Rasa Stack." />
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/languages/">Language Support</a></li>
@@ -207,15 +214,14 @@ in open source bot framework Rasa Stack." />
 </div>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#domain-file" id="id2">Domain File</a></li>
-<li><a class="reference internal" href="#configuration-file" id="id3">Configuration File</a></li>
-<li><a class="reference internal" href="#basics" id="id4">Basics</a></li>
-<li><a class="reference internal" href="#custom-slot-mappings" id="id5">Custom slot mappings</a></li>
-<li><a class="reference internal" href="#validating-user-input" id="id6">Validating user input</a></li>
-<li><a class="reference internal" href="#handling-unhappy-paths" id="id7">Handling unhappy paths</a></li>
-<li><a class="reference internal" href="#the-requested-slot-slot" id="id8">The requested_slot slot</a></li>
-<li><a class="reference internal" href="#handling-conditional-slot-logic" id="id9">Handling conditional slot logic</a></li>
-<li><a class="reference internal" href="#debugging" id="id10">Debugging</a></li>
+<li><a class="reference internal" href="#configuration-file" id="id2">Configuration File</a></li>
+<li><a class="reference internal" href="#basics" id="id3">Basics</a></li>
+<li><a class="reference internal" href="#custom-slot-mappings" id="id4">Custom slot mappings</a></li>
+<li><a class="reference internal" href="#validating-user-input" id="id5">Validating user input</a></li>
+<li><a class="reference internal" href="#handling-unhappy-paths" id="id6">Handling unhappy paths</a></li>
+<li><a class="reference internal" href="#the-requested-slot-slot" id="id7">The requested_slot slot</a></li>
+<li><a class="reference internal" href="#handling-conditional-slot-logic" id="id8">Handling conditional slot logic</a></li>
+<li><a class="reference internal" href="#debugging" id="id9">Debugging</a></li>
 </ul>
 </div>
 <p>One of the most common conversation patterns is to collect a few pieces of
@@ -226,8 +232,6 @@ that you create a <code class="docutils literal notranslate"><span class="pre">F
 logic to loop over the required slots and ask the user for this information.
 There is a full example using forms in the <code class="docutils literal notranslate"><span class="pre">examples/formbot</span></code> directory of
 Rasa Core.</p>
-<div class="section" id="domain-file">
-<h2><a class="toc-backref" href="#id2">Domain File</a><a class="headerlink" href="#domain-file" title="Permalink to this headline">¶</a></h2>
 <p>When you define a form, you need to add it to your domain file.
 If your form’s name is <code class="docutils literal notranslate"><span class="pre">restaurant_form</span></code>, your domain would look like this:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">forms</span><span class="p p-Indicator">:</span>
@@ -237,9 +241,8 @@ If your form’s name is <code class="docutils literal notranslate"><span class=
 </pre></div>
 </div>
 <p>See <code class="docutils literal notranslate"><span class="pre">examples/formbot/domain.yml</span></code> for an example.</p>
-</div>
 <div class="section" id="configuration-file">
-<h2><a class="toc-backref" href="#id3">Configuration File</a><a class="headerlink" href="#configuration-file" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2">Configuration File</a><a class="headerlink" href="#configuration-file" title="Permalink to this headline">¶</a></h2>
 <p>To use forms, you also need to include the <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> in your policy
 configuration file. For exmple:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
@@ -249,7 +252,7 @@ configuration file. For exmple:</p>
 <p>see <code class="docutils literal notranslate"><span class="pre">examples/formbot/domain.yml</span></code> for an example.</p>
 </div>
 <div class="section" id="basics">
-<span id="section-form-basics"></span><h2><a class="toc-backref" href="#id4">Basics</a><a class="headerlink" href="#basics" title="Permalink to this headline">¶</a></h2>
+<span id="section-form-basics"></span><h2><a class="toc-backref" href="#id3">Basics</a><a class="headerlink" href="#basics" title="Permalink to this headline">¶</a></h2>
 <p>Using a <code class="docutils literal notranslate"><span class="pre">FormAction</span></code>, you can describe <em>all</em> of the happy paths with a single
 story. By “happy path”, we mean that whenever you ask a user for some information,
 they respond with the information you asked for.</p>
@@ -295,7 +298,7 @@ After the submit method is called, the form is deactivated,
 and other policies in your Core model will be used to predict the next action.</p>
 </div>
 <div class="section" id="custom-slot-mappings">
-<h2><a class="toc-backref" href="#id5">Custom slot mappings</a><a class="headerlink" href="#custom-slot-mappings" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4">Custom slot mappings</a><a class="headerlink" href="#custom-slot-mappings" title="Permalink to this headline">¶</a></h2>
 <p>Some slots (like <code class="docutils literal notranslate"><span class="pre">cuisine</span></code>) can be picked up using a single entity, but a
 <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> can also support yes/no questions and free-text input.
 The <code class="docutils literal notranslate"><span class="pre">slot_mappings</span></code> method defines how to extract slot values from user responses.</p>
@@ -322,7 +325,7 @@ example above</li>
 </ul>
 </div>
 <div class="section" id="validating-user-input">
-<h2><a class="toc-backref" href="#id6">Validating user input</a><a class="headerlink" href="#validating-user-input" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">Validating user input</a><a class="headerlink" href="#validating-user-input" title="Permalink to this headline">¶</a></h2>
 <p>After extracting a slot value from user input, the form will try to validate the
 value of the slot. By default, this only checks if the requested slot was extracted.
 If you want to add custom validation, for example to check a value against a database,
@@ -364,7 +367,7 @@ was rejected and therefore Core will fall back onto a different policy to
 predict another action.</p>
 </div>
 <div class="section" id="handling-unhappy-paths">
-<span id="section-unhappy"></span><h2><a class="toc-backref" href="#id7">Handling unhappy paths</a><a class="headerlink" href="#handling-unhappy-paths" title="Permalink to this headline">¶</a></h2>
+<span id="section-unhappy"></span><h2><a class="toc-backref" href="#id6">Handling unhappy paths</a><a class="headerlink" href="#handling-unhappy-paths" title="Permalink to this headline">¶</a></h2>
 <p>Of course your users will not always respond with the information you ask of them.
 Typically, users will ask questions, make chitchat, change their mind, or otherwise
 stray from the happy path. The way this works with forms is that a form will raise
@@ -405,7 +408,7 @@ Please read <a class="reference internal" href="../interactive-learning/#section
 on how to use interactive learning with forms.</p>
 </div>
 <div class="section" id="the-requested-slot-slot">
-<h2><a class="toc-backref" href="#id8">The requested_slot slot</a><a class="headerlink" href="#the-requested-slot-slot" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">The requested_slot slot</a><a class="headerlink" href="#the-requested-slot-slot" title="Permalink to this headline">¶</a></h2>
 <p>The slot <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> is automatically added to the domain as an
 unfeaturized slot. If you want to make it featurized, you need to add it
 to your domain file as a categorical slot. You might want to do this if you
@@ -445,7 +448,7 @@ Please read <a class="reference internal" href="../interactive-learning/#section
 on how to use interactive learning with forms.</p>
 </div>
 <div class="section" id="handling-conditional-slot-logic">
-<span id="conditional-logic"></span><h2><a class="toc-backref" href="#id9">Handling conditional slot logic</a><a class="headerlink" href="#handling-conditional-slot-logic" title="Permalink to this headline">¶</a></h2>
+<span id="conditional-logic"></span><h2><a class="toc-backref" href="#id8">Handling conditional slot logic</a><a class="headerlink" href="#handling-conditional-slot-logic" title="Permalink to this headline">¶</a></h2>
 <p>Many forms require more logic than just requesting a list of fields.
 For example, if someone requests <code class="docutils literal notranslate"><span class="pre">greek</span></code> as their cuisine, you may want to
 ask if they are looking for somewhere with outside seating.</p>
@@ -468,7 +471,7 @@ for example:</p>
 kinds of logic into your forms.</p>
 </div>
 <div class="section" id="debugging">
-<h2><a class="toc-backref" href="#id10">Debugging</a><a class="headerlink" href="#debugging" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id9">Debugging</a><a class="headerlink" href="#debugging" title="Permalink to this headline">¶</a></h2>
 <p>The first thing to try is to run your bot with the <code class="docutils literal notranslate"><span class="pre">debug</span></code> flag, see <a class="reference internal" href="../../command-line-interface/#cli-usage"><span class="std std-ref">Command Line Interface</span></a> for details.
 If you are just getting started, you probably only have a few hand-written stories.
 This is a great starting point, but
@@ -555,7 +558,7 @@ Real user behavior will always surprise you!</p>
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

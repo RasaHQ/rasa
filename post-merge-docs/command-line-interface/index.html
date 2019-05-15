@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
@@ -18,7 +19,7 @@
     <link rel="index" title="Index" href="../genindex/" />
     <link rel="search" title="Search" href="../search/" />
     <link rel="next" title="Architecture" href="../architecture/" />
-    <link rel="prev" title="Project Structure" href="../project-structure/" />
+    <link rel="prev" title="Rasa Tutorial" href="../tutorial/" />
 
   <!-- Google Tag Manager -->
   <script type="application/javascript">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -107,7 +108,12 @@
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -115,7 +121,7 @@
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../channels/">Messaging and Voice Channels</a></li>
@@ -125,6 +131,7 @@
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../nlu/using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../nlu/languages/">Language Support</a></li>
@@ -230,7 +237,7 @@
 <td>Creates a new project, with example training data, actions, and config files.</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code></td>
-<td>Starts a server with your model loaded. See the <a class="reference internal" href="../api/rasa-http-api/#http-api"><span class="std std-ref">HTTP API</span></a> docs for details.</td>
+<td>Starts a server with your model loaded. See the <span class="xref std std-ref">_section_http</span> docs for details.</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">actions</span></code></td>
 <td>Starts an action server using the Rasa SDK.</td>
@@ -239,13 +246,19 @@
 <td>Loads your trained model and lets you talk to your assistant on the command line.</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code></td>
-<td>Trains a model using your nlu data and stories, saves trained model in <code class="docutils literal notranslate"><span class="pre">./models</span></code>.</td>
+<td>Trains a model using your NLU data and stories, saves trained model in <code class="docutils literal notranslate"><span class="pre">./models</span></code>.</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code></td>
-<td>Starts an interactive learning session, to create new training data by chatting.</td>
+<td>Starts an interactive learning session to create new training data by chatting.</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code></td>
-<td>Tests a trained model using your test nlu data and stories.</td>
+<td>Tests a trained model using your test NLU data and stories.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">visualize</span></code></td>
+<td>Visualize stories.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span></code></td>
+<td>Utils for the Rasa training files.</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">-h</span></code></td>
 <td>Shows all available commands.</td>
@@ -291,13 +304,33 @@ to test your model type <code class="docutils literal notranslate"><span class="
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">run</span>
 </pre></div>
 </div>
-<p>See the Rasa <a class="reference internal" href="../api/rasa-http-api/#http-api"><span class="std std-ref">HTTP API</span></a> docs for detailed documentation of all the endpoints.
-For more information on the additional parameters, see <span class="xref std std-ref">_section_http`</span></p>
+<p>Among others, the following arguments can be used to configure the server:</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">m</span> <span class="n">MODEL</span><span class="p">,</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span>
+                      <span class="n">Path</span> <span class="n">to</span> <span class="n">a</span> <span class="n">trained</span> <span class="n">Rasa</span> <span class="n">model</span><span class="o">.</span> <span class="n">If</span> <span class="n">a</span> <span class="n">directory</span> <span class="ow">is</span>
+                      <span class="n">specified</span><span class="p">,</span> <span class="n">it</span> <span class="n">will</span> <span class="n">use</span> <span class="n">the</span> <span class="n">latest</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">this</span>
+                      <span class="n">directory</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">models</span><span class="p">)</span>
+<span class="o">--</span><span class="n">endpoints</span> <span class="n">ENDPOINTS</span>
+                      <span class="n">Configuration</span> <span class="n">file</span> <span class="k">for</span> <span class="n">the</span> <span class="n">model</span> <span class="n">server</span> <span class="ow">and</span> <span class="n">the</span>
+                      <span class="n">connectors</span> <span class="k">as</span> <span class="n">a</span> <span class="n">yml</span> <span class="n">file</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+<span class="o">--</span><span class="n">enable</span><span class="o">-</span><span class="n">api</span>          <span class="n">Start</span> <span class="n">the</span> <span class="n">web</span> <span class="n">server</span> <span class="n">api</span> <span class="ow">in</span> <span class="n">addition</span> <span class="n">to</span> <span class="n">the</span> <span class="nb">input</span>
+                      <span class="n">channel</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For more information on the additional parameters, see <span class="xref std std-ref">_section_http</span>.
+See the Rasa <a class="reference internal" href="../api/rasa-http-api/#http-api"><span class="std std-ref">HTTP API</span></a> docs for detailed documentation of all the endpoints.</p>
 </div>
 <div class="section" id="start-an-action-server">
 <span id="run-action-server"></span><h2><a class="toc-backref" href="#id4">Start an Action Server</a><a class="headerlink" href="#start-an-action-server" title="Permalink to this headline">¶</a></h2>
 <p>To run your action server run</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">run</span> <span class="n">actions</span>
+</pre></div>
+</div>
+<p>The following arguments can be used to adapt the server settings:</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">p</span> <span class="n">PORT</span><span class="p">,</span> <span class="o">--</span><span class="n">port</span> <span class="n">PORT</span>  <span class="n">Port</span> <span class="n">to</span> <span class="n">run</span> <span class="n">the</span> <span class="n">server</span> <span class="n">at</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mi">5055</span><span class="p">)</span>
+<span class="o">--</span><span class="n">cors</span> <span class="p">[</span><span class="n">CORS</span> <span class="p">[</span><span class="n">CORS</span> <span class="o">...</span><span class="p">]]</span>
+                      <span class="n">Enable</span> <span class="n">CORS</span> <span class="k">for</span> <span class="n">the</span> <span class="n">passed</span> <span class="n">origin</span><span class="o">.</span> <span class="n">Use</span> <span class="o">*</span> <span class="n">to</span> <span class="n">whitelist</span>
+                      <span class="nb">all</span> <span class="n">origins</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+<span class="o">--</span><span class="n">actions</span> <span class="n">ACTIONS</span>     <span class="n">Name</span> <span class="n">of</span> <span class="n">action</span> <span class="n">package</span> <span class="n">to</span> <span class="n">be</span> <span class="n">loaded</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -307,10 +340,17 @@ For more information on the additional parameters, see <span class="xref std std
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">shell</span>
 </pre></div>
 </div>
-<p>In case you just have a trained NLU model in the <cite>models</cite> directory, <cite>rasa shell</cite> allows
+<p>The model that should be used to interact with your bot, can be specified by</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">m</span> <span class="n">MODEL</span><span class="p">,</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span>
+                      <span class="n">Path</span> <span class="n">to</span> <span class="n">a</span> <span class="n">trained</span> <span class="n">Rasa</span> <span class="n">model</span><span class="o">.</span> <span class="n">If</span> <span class="n">a</span> <span class="n">directory</span> <span class="ow">is</span>
+                      <span class="n">specified</span><span class="p">,</span> <span class="n">it</span> <span class="n">will</span> <span class="n">use</span> <span class="n">the</span> <span class="n">latest</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">this</span>
+                      <span class="n">directory</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">models</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In case you start the shell with an NLU-only model, <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> allows
 you to obtain the intent and entities of any text you type on the command line.
 If your model includes a trained Core model, you can chat with your bot and see
-what he predicts as a next action.</p>
+what the bot predicts as a next action.</p>
 <p>To increase the logging level for debugging, run:</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">shell</span> <span class="o">--</span><span class="n">debug</span>
 </pre></div>
@@ -322,10 +362,32 @@ what he predicts as a next action.</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">train</span>
 </pre></div>
 </div>
-<p>If you only want to train an NLU or a Core model,
-you can run <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>.
-However, Rasa will automatically skip training core or nlu
-if the training data and config haven’t changed.</p>
+<p>This command trains a Rasa model that combines a Rasa NLU and a Rasa Core model.
+The following arguments allow you to specify the data files, the configuration file, the domain file, and the
+output path.</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">data</span> <span class="n">DATA</span> <span class="p">[</span><span class="n">DATA</span> <span class="o">...</span><span class="p">]</span>
+                      <span class="n">Paths</span> <span class="n">to</span> <span class="n">the</span> <span class="n">Core</span> <span class="ow">and</span> <span class="n">NLU</span> <span class="n">data</span> <span class="n">files</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span>
+                      <span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+<span class="o">-</span><span class="n">c</span> <span class="n">CONFIG</span><span class="p">,</span> <span class="o">--</span><span class="n">config</span> <span class="n">CONFIG</span>
+                      <span class="n">The</span> <span class="n">policy</span> <span class="ow">and</span> <span class="n">NLU</span> <span class="n">pipeline</span> <span class="n">configuration</span> <span class="n">of</span> <span class="n">your</span> <span class="n">bot</span><span class="o">.</span>
+                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">yml</span><span class="p">)</span>
+<span class="o">-</span><span class="n">d</span> <span class="n">DOMAIN</span><span class="p">,</span> <span class="o">--</span><span class="n">domain</span> <span class="n">DOMAIN</span>
+                      <span class="n">Domain</span> <span class="n">specification</span> <span class="p">(</span><span class="n">yml</span> <span class="n">file</span><span class="p">)</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">domain</span><span class="o">.</span><span class="n">yml</span><span class="p">)</span>
+<span class="o">--</span><span class="n">out</span> <span class="n">OUT</span>             <span class="n">Directory</span> <span class="n">where</span> <span class="n">your</span> <span class="n">models</span> <span class="n">should</span> <span class="n">be</span> <span class="n">stored</span><span class="o">.</span>
+                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">models</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you only want to train an NLU or a Core model, you can run <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>.
+However, Rasa will automatically skip training Core or NLU if the training data and config haven’t changed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> will store the trained model in the directory defined by <code class="docutils literal notranslate"><span class="pre">--out</span></code>. The name of the model
+is per default <code class="docutils literal notranslate"><span class="pre">&lt;timestamp&gt;.tar.gz</span></code>. If you want to name your model differently, you can specify the name
+using <code class="docutils literal notranslate"><span class="pre">--fixed-model-name</span></code>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Make sure training data for Core and NLU are present when training a model using <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code>.
+If only training data for one model type are present, the command automatically falls back to
+<code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> depending on the provided training files.</p>
+</div>
 </div>
 <div class="section" id="interactive-learning">
 <h2><a class="toc-backref" href="#id7">Interactive Learning</a><a class="headerlink" href="#interactive-learning" title="Permalink to this headline">¶</a></h2>
@@ -333,9 +395,18 @@ if the training data and config haven’t changed.</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">interactive</span>
 </pre></div>
 </div>
-<p>This command will initially train a Rasa model with the data located in <cite>data</cite>. After training the
-first initial model, the interactive learning session starts. However, training will be skipped if
-the training data and config haven’t changed.</p>
+<p>If you provide a trained model using</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">m</span> <span class="n">MODEL</span><span class="p">,</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span>
+                      <span class="n">Path</span> <span class="n">to</span> <span class="n">a</span> <span class="n">trained</span> <span class="n">Rasa</span> <span class="n">model</span><span class="o">.</span> <span class="n">If</span> <span class="n">a</span> <span class="n">directory</span> <span class="ow">is</span>
+                      <span class="n">specified</span><span class="p">,</span> <span class="n">it</span> <span class="n">will</span> <span class="n">use</span> <span class="n">the</span> <span class="n">latest</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">this</span>
+                      <span class="n">directory</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>the interactive learning process is started with the provided model. If no model is specified,
+<code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> will initially train a Rasa model with the data located in <code class="docutils literal notranslate"><span class="pre">data</span></code>, if no
+other data directory was defined (parameter <code class="docutils literal notranslate"><span class="pre">--data</span></code>). After training the first initial model,
+the interactive learning session starts. However, training will be skipped if the training data
+and config haven’t changed.</p>
 </div>
 <div class="section" id="create-a-train-test-split">
 <h2><a class="toc-backref" href="#id8">Create a Train-Test Split</a><a class="headerlink" href="#create-a-train-test-split" title="Permalink to this headline">¶</a></h2>
@@ -343,27 +414,81 @@ the training data and config haven’t changed.</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">data</span> <span class="n">split</span> <span class="n">nlu</span>
 </pre></div>
 </div>
-<p>This will attempt to keep the proportions of intents the same in train and test.</p>
+<p>You can specify the training data, the fraction, and the output directory using the following arguments:</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">u</span> <span class="n">NLU</span><span class="p">,</span> <span class="o">--</span><span class="n">nlu</span> <span class="n">NLU</span>     <span class="n">File</span> <span class="ow">or</span> <span class="n">folder</span> <span class="n">containing</span> <span class="n">your</span> <span class="n">NLU</span> <span class="n">training</span> <span class="n">data</span><span class="o">.</span>
+                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span>
+<span class="o">--</span><span class="n">training</span><span class="o">-</span><span class="n">fraction</span> <span class="n">TRAINING_FRACTION</span>
+                      <span class="n">Percentage</span> <span class="n">of</span> <span class="n">the</span> <span class="n">data</span> <span class="n">which</span> <span class="n">should</span> <span class="n">be</span> <span class="n">the</span> <span class="n">training</span>
+                      <span class="n">data</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">)</span>
+<span class="o">--</span><span class="n">out</span> <span class="n">OUT</span>             <span class="n">Directory</span> <span class="n">where</span> <span class="n">the</span> <span class="n">split</span> <span class="n">files</span> <span class="n">should</span> <span class="n">be</span> <span class="n">stored</span><span class="o">.</span>
+                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">train_test_split</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This command will attempt to keep the proportions of intents the same in train and test.</p>
 </div>
 <div class="section" id="convert-data-between-markdown-and-json">
 <h2><a class="toc-backref" href="#id9">Convert Data Between Markdown and JSON</a><a class="headerlink" href="#convert-data-between-markdown-and-json" title="Permalink to this headline">¶</a></h2>
-<p>To convert nlu data from markdown to json (or back again), run:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">data</span> <span class="n">convert</span> <span class="n">nlu</span> <span class="o">-</span><span class="n">d</span> <span class="n">data</span><span class="o">/</span><span class="n">nlu</span><span class="o">.</span><span class="n">md</span> <span class="o">-</span><span class="n">o</span> <span class="n">nlu</span><span class="o">.</span><span class="n">json</span> <span class="o">-</span><span class="n">f</span> <span class="n">json</span>
+<p>To convert nlu data from LUIS data format, WIT data format, Dialogflow data format, json, or markdown
+to json or markdown, run:</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">data</span> <span class="n">convert</span> <span class="n">nlu</span>
 </pre></div>
 </div>
-<p>The flags are <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span> <span class="pre">convert</span> <span class="pre">nlu</span> <span class="pre">-d</span> <span class="pre">&lt;INPUT_FILE&gt;</span> <span class="pre">-o</span> <span class="pre">&lt;OUTPUT_FILE&gt;</span> <span class="pre">-f</span> <span class="pre">&lt;OUTPUT_FORMAT&gt;</span></code>.</p>
+<p>You can specify the input file, output file, and the output format with the following arguments:</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">data</span><span class="o">-</span><span class="n">file</span> <span class="n">DATA_FILE</span>
+                      <span class="n">File</span> <span class="ow">or</span> <span class="n">directory</span> <span class="n">containing</span> <span class="n">training</span> <span class="n">data</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span>
+                      <span class="kc">None</span><span class="p">)</span>
+<span class="o">--</span><span class="n">out</span><span class="o">-</span><span class="n">file</span> <span class="n">OUT_FILE</span>   <span class="n">File</span> <span class="n">where</span> <span class="n">to</span> <span class="n">save</span> <span class="n">training</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">Rasa</span> <span class="nb">format</span><span class="o">.</span>
+                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+<span class="o">-</span><span class="n">f</span> <span class="p">{</span><span class="n">json</span><span class="p">,</span><span class="n">md</span><span class="p">},</span> <span class="o">--</span><span class="nb">format</span> <span class="p">{</span><span class="n">json</span><span class="p">,</span><span class="n">md</span><span class="p">}</span>
+                      <span class="n">Output</span> <span class="nb">format</span> <span class="n">the</span> <span class="n">training</span> <span class="n">data</span> <span class="n">should</span> <span class="n">be</span> <span class="n">converted</span>
+                      <span class="n">into</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="visualize-your-stories">
 <h2><a class="toc-backref" href="#id10">Visualize your Stories</a><a class="headerlink" href="#visualize-your-stories" title="Permalink to this headline">¶</a></h2>
 <p>To open a browser tab with a graph showing your stories:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">show</span> <span class="n">stories</span>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">visualize</span>
+</pre></div>
+</div>
+<p>Normally, training stories in the directory <code class="docutils literal notranslate"><span class="pre">data</span></code> are visualized. If your training stories are located in a
+different location, you can specify the location with</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">s</span> <span class="n">STORIES</span><span class="p">,</span> <span class="o">--</span><span class="n">stories</span> <span class="n">STORIES</span>
+                      <span class="n">File</span> <span class="ow">or</span> <span class="n">folder</span> <span class="n">containing</span> <span class="n">training</span> <span class="n">stories</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span>
+                      <span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Additional arguments are:</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">d</span> <span class="n">DOMAIN</span><span class="p">,</span> <span class="o">--</span><span class="n">domain</span> <span class="n">DOMAIN</span>
+                      <span class="n">Domain</span> <span class="n">specification</span> <span class="p">(</span><span class="n">yml</span> <span class="n">file</span><span class="p">)</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">domain</span><span class="o">.</span><span class="n">yml</span><span class="p">)</span>
+<span class="o">-</span><span class="n">c</span> <span class="n">CONFIG</span><span class="p">,</span> <span class="o">--</span><span class="n">config</span> <span class="n">CONFIG</span>
+                      <span class="n">The</span> <span class="n">policy</span> <span class="ow">and</span> <span class="n">NLU</span> <span class="n">pipeline</span> <span class="n">configuration</span> <span class="n">of</span> <span class="n">your</span> <span class="n">bot</span><span class="o">.</span>
+                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">yml</span><span class="p">)</span>
+<span class="o">--</span><span class="n">output</span> <span class="n">OUTPUT</span>       <span class="n">Filename</span> <span class="n">of</span> <span class="n">the</span> <span class="n">output</span> <span class="n">path</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span> <span class="s1">&#39;graph.html&#39;</span><span class="o">.</span>
+                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">graph</span><span class="o">.</span><span class="n">html</span><span class="p">)</span>
+<span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">history</span> <span class="n">MAX_HISTORY</span>
+                      <span class="n">Max</span> <span class="n">history</span> <span class="n">to</span> <span class="n">consider</span> <span class="n">when</span> <span class="n">merging</span> <span class="n">paths</span> <span class="ow">in</span> <span class="n">the</span>
+                      <span class="n">output</span> <span class="n">graph</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="o">-</span><span class="n">nlu</span> <span class="n">NLU_DATA</span><span class="p">,</span> <span class="o">--</span><span class="n">nlu</span><span class="o">-</span><span class="n">data</span> <span class="n">NLU_DATA</span>
+                      <span class="n">Path</span> <span class="n">of</span> <span class="n">the</span> <span class="n">Rasa</span> <span class="n">NLU</span> <span class="n">training</span> <span class="n">data</span><span class="p">,</span> <span class="n">used</span> <span class="n">to</span> <span class="n">insert</span>
+                      <span class="n">example</span> <span class="n">messages</span> <span class="n">into</span> <span class="n">the</span> <span class="n">graph</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="evaluate-a-model-on-test-data">
 <span id="section-evaluation"></span><h2><a class="toc-backref" href="#id11">Evaluate a Model on Test Data</a><a class="headerlink" href="#evaluate-a-model-on-test-data" title="Permalink to this headline">¶</a></h2>
 <p>To evaluate your model on test data, run:</p>
-<p>Check out more details in <a class="reference internal" href="../evaluating-models/#nlu-evaluation"><span class="std std-ref">Evaluating an NLU Model</span></a> and <a class="reference internal" href="../evaluating-models/#core-evaluation"><span class="std std-ref">Evaluating a Core Model</span></a> .</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">test</span>
+</pre></div>
+</div>
+<p>Specify the model to test using:</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">m</span> <span class="n">MODEL</span><span class="p">,</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span>
+                      <span class="n">Path</span> <span class="n">to</span> <span class="n">a</span> <span class="n">trained</span> <span class="n">Rasa</span> <span class="n">model</span><span class="o">.</span> <span class="n">If</span> <span class="n">a</span> <span class="n">directory</span> <span class="ow">is</span>
+                      <span class="n">specified</span><span class="p">,</span> <span class="n">it</span> <span class="n">will</span> <span class="n">use</span> <span class="n">the</span> <span class="n">latest</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">this</span>
+                      <span class="n">directory</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">models</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Check out more details in <a class="reference internal" href="../evaluating-models/#nlu-evaluation"><span class="std std-ref">Evaluating an NLU Model</span></a> and <a class="reference internal" href="../evaluating-models/#core-evaluation"><span class="std std-ref">Evaluating a Core Model</span></a>.</p>
 </div>
 </div>
 
@@ -441,7 +566,7 @@ the training data and config haven’t changed.</p>
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

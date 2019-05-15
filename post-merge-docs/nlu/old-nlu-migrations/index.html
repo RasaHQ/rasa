@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -109,7 +110,12 @@ NLP engine and how to migrate from one version to another." />
     
   
 
-  <div class="document">
+  
+      
+      <div class="document">
+    
+  
+
     
       
         
@@ -117,7 +123,7 @@ NLP engine and how to migrate from one version to another." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../project-structure/">Project Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
@@ -127,6 +133,7 @@ NLP engine and how to migrate from one version to another." />
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../using-only-nlu/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data-format/">Training Data Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../choosing-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../languages/">Language Support</a></li>
@@ -260,7 +267,7 @@ instead. More info about <code class="docutils literal notranslate"><span class=
 <li><p class="first"><code class="docutils literal notranslate"><span class="pre">rasa_nlu.server</span></code> has to  be supplied with a <code class="docutils literal notranslate"><span class="pre">yml</span></code> file defining the
 model endpoint from which to retrieve training data. The file location has
 be passed with the <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> argument, e.g.
-<code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">nlu</span> <span class="pre">--endpoints</span> <span class="pre">endpoints.yml</span></code>
+<code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">--endpoints</span> <span class="pre">endpoints.yml</span></code>
 <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> needs to contain the <code class="docutils literal notranslate"><span class="pre">model</span></code> key
 with a <code class="docutils literal notranslate"><span class="pre">url</span></code> and an optional <code class="docutils literal notranslate"><span class="pre">token</span></code>. Here’s an example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span>
@@ -552,7 +559,7 @@ version prev to 0.7 you need to adapt the paths manually in <code class="docutil
         'event_category': 'code',
         'event_label': e.text
       });
-      const id = e.text.replace(' ','-');
+      const id = e.text.replace(/ /g,'-');
       document.getElementById(id).classList.add('visible');
       setTimeout(function(){
         document.getElementById(id).classList.remove('visible');},

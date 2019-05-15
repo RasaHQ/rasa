@@ -6,15 +6,13 @@
 Running the Server
 ==================
 
-
-
 .. contents::
    :local:
 
 Running the HTTP server
 -----------------------
 
-You can run a simple http server that handles requests using your
+You can run a simple HTTP server that handles requests using your
 models with:
 
 .. code-block:: bash
@@ -22,7 +20,7 @@ models with:
     rasa run \
         --enable-api \
         -m models \
-        -o out.log
+        --log-file out.log
 
 All the endpoints this API exposes are documented in :ref:`http-api` .
 
@@ -30,7 +28,7 @@ The different parameters are:
 
 - ``--enable-api``, enables this additional API
 - ``-m``, which is the path to the folder containing your Rasa model.
-- ``-o``, which is the path to the log file.
+- ``--log-file``, which is the path to the log file.
 
 
 .. warning::
@@ -41,7 +39,7 @@ The different parameters are:
 
 .. note::
 
-    If you are using custom actions - make sure your action server is 
+    If you are using custom actions - make sure your action server is
     running (see :ref:`run-action-server`). If your actions are running
     on a different machine, or you aren't using the Rasa SDk, make sure
     to update your ``endpoints.yml`` file.
@@ -49,9 +47,9 @@ The different parameters are:
 
 .. note::
 
-    If you start the server with only a Rasa NLU model, not all the available endpoints
-    can be called. Be aware that some endpoint will return a 409 status code, as a trained
-    Rasa Core model is needed to process the request.
+    If you start the server with an NLU-only model, not all the available endpoints
+    can be called. Be aware that some endpoints will return a 409 status code, as a trained
+    Core model is needed to process the request.
 
 
 Fetching Models from a Server
@@ -65,7 +63,7 @@ You can configure the http server to fetch models from another URL:
         --enable-api \
         -m models \
         --endpoints my_endpoints.yaml \
-        -o out.log
+        --log-file out.log
 
 The model server is specified in the endpoint configuration
 (``my_endpoints.yaml``), where you specify the server URL Rasa
@@ -112,7 +110,7 @@ You can also configure the Rasa server to fetch your model from a remote storage
         --enable-api \
         -m 20190506-100418.tar.gz \
         --remote-storage aws \
-        -o out.log
+        --log-file out.log
 
 The model will be downloaded and stored in a temporary directory on your local storage system.
 For more information see :ref:`_section_persistence`
@@ -212,6 +210,3 @@ Connecting an Event Broker
 
 To configure an event broker within your endpoint configuration,
 please see :ref:`brokers`.
-
-
-.. _http_api:
