@@ -102,5 +102,12 @@ def test_nlu(args: argparse.Namespace) -> None:
 
 
 def test(args: argparse.Namespace):
+    model = args.model
+
+    # expects a list of models
+    args.model = [model]
     test_core(args)
+
+    # expects a string as model
+    args.model = model
     test_nlu(args)
