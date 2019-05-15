@@ -5,7 +5,6 @@ import shutil
 import tarfile
 from typing import List, Optional, Text, Tuple
 
-from rasa.nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 

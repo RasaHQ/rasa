@@ -4,20 +4,21 @@ import importlib.util
 import logging
 import signal
 import sys
+import os
 from multiprocessing import get_context
 from typing import List, Text
 
-import rasa.utils.io
 import questionary
 
-import rasa.cli.run
-import rasa.core.utils
 from rasa.cli.utils import print_success, get_validated_path
+from rasa.cli.arguments import x as arguments
 
 from rasa.constants import (
     GLOBAL_USER_CONFIG_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_LOG_LEVEL,
+    ENV_LOG_LEVEL,
 )
 from rasa.utils.common import read_global_config_value, write_global_config_value
 
@@ -28,8 +29,6 @@ logger = logging.getLogger(__name__)
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
-    from rasa.core import cli
-
     x_parser_args = {
         "parents": parents,
         "conflict_handler": "resolve",
@@ -41,62 +40,15 @@ def add_subparser(
         x_parser_args["help"] = "Start Rasa X and the Interface"
 
     shell_parser = subparsers.add_parser("x", **x_parser_args)
-
-    shell_parser.add_argument(
-        "--no-prompt",
-        action="store_true",
-        help="Automatic yes or default options to prompts and oppressed warnings",
-    )
-
-    shell_parser.add_argument(
-        "--production",
-        action="store_true",
-        help="Run Rasa X in a production environment",
-    )
-
-    shell_parser.add_argument("--auth-token", type=str, help="Rasa API auth token")
-
-    shell_parser.add_argument(
-        "--nlg",
-        type=str,
-        default="http://localhost:5002/api/nlg",
-        help="Rasa NLG endpoint",
-    )
-
-    shell_parser.add_argument(
-        "--model-endpoint-url",
-        type=str,
-        default="http://localhost:5002/api/projects/default/models/tags/production",
-        help="Rasa model endpoint URL",
-    )
-
-    shell_parser.add_argument(
-        "--project-path",
-        type=str,
-        default=".",
-        help="Path to the Rasa project directory",
-    )
-    shell_parser.add_argument(
-        "--data-path",
-        type=str,
-        default="data",
-        help=(
-            "Path to the directory containing Rasa NLU training data "
-            "and Rasa Core stories"
-        ),
-    )
-
-    rasa.cli.run.add_run_arguments(shell_parser)
-
     shell_parser.set_defaults(func=rasa_x)
 
-    cli.arguments.add_logging_option_arguments(shell_parser)
+    arguments.set_x_arguments(shell_parser)
 
 
 def _event_service():
     """Start the event service."""
     # noinspection PyUnresolvedReferences
-    from rasa_platform.community.services.event_service import main
+    from rasax.community.services.event_service import main
 
     main()
 
@@ -129,11 +81,10 @@ def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
         .ask()
     )
 
-    print_success(
-        "Your decision has been stored into {}. " "".format(GLOBAL_USER_CONFIG_PATH)
-    )
-
     if not args.no_prompt:
+        print_success(
+            "Your decision has been stored into {}. " "".format(GLOBAL_USER_CONFIG_PATH)
+        )
         date = datetime.datetime.now()
         write_global_config_value("metrics", {"enabled": allow_metrics, "date": date})
 
@@ -209,7 +160,7 @@ def is_rasa_x_installed():
     # we could also do something like checking if `import rasa_platform` works,
     # the issue with that is that it actually does import the package and this
     # takes some time that we don't want to spend when booting the CLI
-    return importlib.util.find_spec("rasa_platform") is not None
+    return importlib.util.find_spec("rasax") is not None
 
 
 def generate_rasa_x_token(length=16):
@@ -226,9 +177,11 @@ def generate_rasa_x_token(length=16):
 def rasa_x(args: argparse.Namespace):
     from rasa.cli.utils import print_success, print_error, signal_handler
     from rasa.core.utils import configure_file_logging
-    from rasa.utils.io import configure_colored_logging
 
     signal.signal(signal.SIGINT, signal_handler)
+
+    args.log_level = args.loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+    configure_file_logging(args.log_level, args.log_file)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
@@ -238,12 +191,6 @@ def rasa_x(args: argparse.Namespace):
     if not args.loglevel == logging.DEBUG:
         logging.getLogger().setLevel(logging.WARNING)
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
-        logging.getLogger("apscheduler").setLevel(logging.ERROR)
-        logging.getLogger("rasa").setLevel(logging.WARNING)
-        logging.getLogger("sanic.root").setLevel(logging.ERROR)
-
-    configure_colored_logging(args.loglevel)
-    configure_file_logging(args.loglevel, args.log_file)
 
     metrics = is_metrics_collection_enabled(args)
 
@@ -260,7 +207,7 @@ def rasa_x(args: argparse.Namespace):
             sys.exit(1)
 
         # noinspection PyUnresolvedReferences
-        from rasa_platform.community.api.local import main_local
+        from rasax.community.api.local import main_local
 
         start_event_service()
 

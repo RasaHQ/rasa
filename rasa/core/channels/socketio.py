@@ -1,9 +1,9 @@
 import logging
-import socketio
 import uuid
 from sanic import Blueprint, response
+from sanic.request import Request
 from socketio import AsyncServer
-from typing import Optional, Text, Any, List, Dict
+from typing import Optional, Text, Any, List, Dict, Iterable
 
 from rasa.core.channels import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
@@ -38,15 +38,19 @@ class SocketIOOutput(OutputChannel):
 
         await self.sio.emit(self.bot_message_evt, response, room=socket_id)
 
-    async def send_text_message(self, recipient_id: Text, message: Text) -> None:
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         """Send a message through this channel."""
 
-        await self._send_message(self.sid, {"text": message})
+        await self._send_message(self.sid, {"text": text})
 
-    async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
-        """Sends an image. Default will just post the url as a string."""
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
+        """Sends an image to the output"""
 
-        message = {"attachment": {"type": "image", "payload": {"src": image_url}}}
+        message = {"attachment": {"type": "image", "payload": {"src": image}}}
         await self._send_message(self.sid, message)
 
     async def send_text_with_buttons(
@@ -71,8 +75,8 @@ class SocketIOOutput(OutputChannel):
 
         await self._send_message(self.sid, message)
 
-    async def send_custom_message(
-        self, recipient_id: Text, elements: List[Dict[Text, Any]]
+    async def send_elements(
+        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output."""
 
@@ -84,6 +88,15 @@ class SocketIOOutput(OutputChannel):
         }
 
         await self._send_message(self.sid, message)
+
+    async def send_custom_json(
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
+        """Sends custom json to the output"""
+
+        json_message.setdefault("room", self.sid)
+
+        await self.sio.emit(self.bot_message_evt, **json_message)
 
 
 class SocketIOInput(InputChannel):
@@ -125,7 +138,7 @@ class SocketIOInput(InputChannel):
         )
 
         @socketio_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)

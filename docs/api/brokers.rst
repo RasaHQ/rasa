@@ -7,11 +7,12 @@ Event Brokers
 =============
 
 Rasa Core allows you to stream events to a message broker. The event broker
-emits events into the event queue.
+emits events into the event queue. It becomes part of the ``TrackerStore``
+which you use when starting an ``Agent`` or launch ``rasa.core.run``.
 
 All events are streamed to the broker as serialised dictionaries every time
-the tracker updates it state. An example event emitted in the conversation of
-a user ``default`` looks like this:
+the tracker updates it state. An example event emitted from the ``default``
+tracker looks like this:
 
 .. code-block:: json
 
@@ -24,10 +25,9 @@ a user ``default`` looks like this:
     }
 
 The ``event`` field takes the event's ``type_name`` (for more on event
-types, check out the :ref:`events-classes` docs).
+types, check out the :doc:`api/events` docs).
 
-Rasa enables two possible brokers producers: 
-**Pika Event Broker** and **Kafka Event Broker**.
+Rasa enables two possible brokers producers: Pika Event Broker and Kafka Event Broker.
 
 Pika Event Broker
 -----------------
@@ -42,27 +42,24 @@ You can use an endpoint configuration file to instruct Rasa Core to stream
 all events to your event broker. To do so, add the following section to your
 endpoint configuration, e.g. ``endpoints.yml``:
 
-# TODO: BROKEN
 .. literalinclude:: ../../data/test_endpoints/event_brokers/pika_endpoint.yml
 
 Then instruct Rasa Core to use the endpoint configuration and Pika producer by adding
-``--event_broker pika_producer`` and ``--endpoints <path to your endpoint configuration`` as following example:
+``--endpoints <path to your endpoint configuration`` as following example:
 
 .. code-block:: shell
 
-    rasa --event-broker pika_producer
+    rasa run -m models --endpoints endpoints.yml
 
 Adding a Pika Event Broker in Python
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To use a custom event broker, you need to pass an instance when creating
-a ``TrackerStore`` instance.
-Here is an example:
+Here is how you add it using Python code:
 
 .. code-block:: python
 
     from rasa.core.event_brokers.pika_producer import PikaProducer
-    from rasa.core.tracker_store import InMemoryTrackerStore
+    from rasa_platform.core.tracker_store import InMemoryTrackerStore
 
     pika_broker = PikaProducer('localhost',
                                 'username',
@@ -111,7 +108,7 @@ example:
 Kafka Event Broker
 ------------------
 
-It is possible to use `Kafka <https://kafka.apache.org/>`_ as main broker of your events. In this example
+It is possible to use `Kafka <https://kafka.apache.org/>`_ as main broker to you events. In this example
 we are going to use the `python-kafka <https://kafka-python.readthedocs.io/en/master/usage.html>`_
 library, a Kafka client written in Python.
 
@@ -123,11 +120,11 @@ all events to this event broker. To do it, add the following section to your
 endpoint configuration.
 
 Pass the ``endpoints.yml`` file as argument with ``--endpoints <path to your endpoint configuration>``
-when running Rasa, and select Kafka producer with ``--kafka_broker kafka_producer``, as following example:
+when running Rasa, as following example:
 
 .. code-block:: shell
 
-    rasa run --event-broker kafka_producer
+    rasa run -m models --endpoints endpoints.yml
 
 Using ``SASL_PLAINTEXT`` protocol the endpoints file must have the following entries:
 
@@ -153,7 +150,7 @@ The code below shows an example on how to instantiate a Kafka producer in you sc
     tracker_store = InMemoryTrackerStore(event_broker=kafka_broker)
 
 
-The host variable can be either a list of brokers addresses or a single one.
+The host variable can be either a list of brokers adresses or a single one.
 If only one broker address is available, the client will connect to it and 
 request the cluster Metadata.
 Therefore, the remain brokers in the cluster can be discovered
@@ -192,7 +189,7 @@ previously configured in the broker server.
 
 
 If the clients or the brokers in the kafka cluster are located in different
-machines, it's important to use the ssl protocol to ensure encryption of data and client
+machines, it's important to use ssl protocal to assure encryption of data and client
 authentication. After generating valid certificates for the brokers and the
 clients, the path to the certificate and key generated for the producer must
 be provided as arguments, as well as the CA's root certificate.
@@ -235,3 +232,4 @@ according to the security protocol being used. The following implementation show
     for message in consumer:
         print(message.value)
 
+.. include:: feedback.inc

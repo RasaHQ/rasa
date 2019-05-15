@@ -1,6 +1,7 @@
 import copy
 import logging
 import re
+from collections import defaultdict
 
 from rasa.core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
@@ -19,15 +20,44 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     def __init__(self, templates: Dict[Text, List[Dict[Text, Any]]]) -> None:
         self.templates = templates
 
+    def _templates_for_utter_action(self, utter_action, output_channel):
+        """Return array of templates that fit the channel and action."""
+
+        channel_templates = []
+        default_templates = []
+
+        for template in self.templates[utter_action]:
+            if template.get("channel") == output_channel:
+                channel_templates.append(template)
+            elif not template.get("channel"):
+                default_templates.append(template)
+
+        # always prefer channel specific templates over default ones
+        if channel_templates:
+            return channel_templates
+        else:
+            return default_templates
+
     # noinspection PyUnusedLocal
     def _random_template_for(
         self, utter_action: Text, output_channel: Text
     ) -> Optional[Dict[Text, Any]]:
-        """Select random template for the utter action from available ones."""
+        """Select random template for the utter action from available ones.
+
+        If channel-specific templates for the current output channel are given,
+        only choose from channel-specific ones.
+        """
         import numpy as np
 
         if utter_action in self.templates:
-            return np.random.choice(self.templates[utter_action])
+            suitable_templates = self._templates_for_utter_action(
+                utter_action, output_channel
+            )
+
+            if suitable_templates:
+                return np.random.choice(suitable_templates)
+            else:
+                return None
         else:
             return None
 

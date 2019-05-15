@@ -52,6 +52,7 @@ def test_interpreter(pipeline_template, component_builder, tmpdir):
         {"rasa_version": "0.14.3"},
         {"rasa_version": "0.14.4"},
         {"rasa_version": "0.15.0a1"},
+        {"rasa_version": "1.0.0a1"},
     ],
 )
 def test_model_not_compatible(metadata):
@@ -59,9 +60,7 @@ def test_model_not_compatible(metadata):
         Interpreter.ensure_model_compatibility(metadata)
 
 
-@pytest.mark.parametrize(
-    "metadata", [{"rasa_version": "0.15.0a8"}, {"rasa_version": "0.15.0"}]
-)
+@pytest.mark.parametrize("metadata", [{"rasa_version": rasa.__version__}])
 def test_model_is_compatible(metadata):
     # should not raise an exception
     assert Interpreter.ensure_model_compatibility(metadata) is None

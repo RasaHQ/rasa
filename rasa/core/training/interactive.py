@@ -18,9 +18,14 @@ from terminaltables import AsciiTable, SingleTable
 import questionary
 import rasa.cli.utils
 from questionary import Choice, Form, Question
+
 from rasa.cli import utils as cliutils
 from rasa.core import constants, events, run, train, utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    default_action_names,
+    UTTER_PREFIX,
+)
 from rasa.core.channels import UserMessage
 from rasa.core.channels.channel import button_to_string, element_to_string
 from rasa.core.constants import (
@@ -40,6 +45,7 @@ from rasa.core.training.visualization import (
     visualize_neighborhood,
 )
 from rasa.core.utils import AvailableEndpoints
+from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 # noinspection PyProtectedMember
@@ -111,7 +117,7 @@ async def send_message(
 
     payload = {
         "sender": UserUttered.type_name,
-        "message": message,
+        "text": message,
         "parse_data": parse_data,
     }
 
@@ -631,7 +637,7 @@ async def _request_action_from_user(
     if is_new_action:
         # create new action
         action_name = await _request_free_text_action(sender_id, endpoint)
-        if "utter_" in action_name:
+        if action_name.startswith(UTTER_PREFIX):
             utter_message = await _request_free_text_utterance(
                 sender_id, endpoint, action_name
             )
@@ -746,7 +752,12 @@ async def _write_stories_to_file(
 
     sub_conversations = _split_conversation_at_restarts(evts)
 
-    with open(export_story_path, "a", encoding="utf-8") as f:
+    if os.path.exists(export_story_path):
+        append_write = "a"  # append if already exists
+    else:
+        append_write = "w"  # make a new file if not
+
+    with open(export_story_path, append_write, encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
@@ -1388,7 +1399,10 @@ def _serve_application(app, stories, finetune, skip_visualization):
         running_app.stop()  # kill the sanic server
 
     app.add_task(run_interactive_io)
-    app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT, access_log=True)
+
+    update_sanic_log_level()
+
+    app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT)
 
     return app
 
@@ -1416,6 +1430,8 @@ def start_visualization(image_path: Text = None) -> None:
             return response.file(os.path.abspath(image_path), headers=headers)
         except FileNotFoundError:
             return response.text("", 404)
+
+    update_sanic_log_level()
 
     app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT + 1, access_log=False)
 
@@ -1496,14 +1512,9 @@ def run_interactive_learning(
 
     # before_server_start handlers make sure the agent is loaded before the
     # interactive learning IO starts
-    if server_args.get("core"):
+    if server_args.get("model"):
         app.register_listener(
-            partial(
-                run.load_agent_on_start,
-                server_args.get("core"),
-                endpoints,
-                server_args.get("nlu"),
-            ),
+            partial(run.load_agent_on_start, server_args.get("model"), endpoints, None),
             "before_server_start",
         )
     else:

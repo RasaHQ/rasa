@@ -18,11 +18,13 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.common import obtain_verbosity
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +154,8 @@ class KerasPolicy(Policy):
             loss="categorical_crossentropy", optimizer="rmsprop", metrics=["accuracy"]
         )
 
-        logger.debug(model.summary())
+        if obtain_verbosity() > 0:
+            model.summary()
 
         return model
 
@@ -199,6 +202,7 @@ class KerasPolicy(Policy):
                     epochs=self.epochs,
                     batch_size=self.batch_size,
                     shuffle=False,
+                    verbose=obtain_verbosity(),
                     **self._train_params
                 )
                 # the default parameter for epochs in keras fit is 1
@@ -234,7 +238,7 @@ class KerasPolicy(Policy):
                     training_data.y,
                     epochs=self.current_epoch + 1,
                     batch_size=len(training_data.y),
-                    verbose=0,
+                    verbose=obtain_verbosity(),
                     initial_epoch=self.current_epoch,
                 )
 

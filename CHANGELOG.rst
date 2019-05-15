@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.0.aX] - `master`_
+[Unreleased 1.0.0rc4] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -27,7 +27,16 @@ Added
 - you can now choose actions previously created in the same session
 in ``interactive learning``
 - add formatter 'black'
-
+- channel-specific utterances via the ``- "channel":`` key in utterance templates
+- arbitrary json messages via the ``- "custom":`` key in utterance templates and
+  via ``utter_custom_json()`` method in custom actions
+- support to load sub skills (domain, stories, nlu data)
+- support to select which sub skills to load through ``import`` section in
+  ``config.yml``
+- support for spaCy 2.1
+- a model for an agent can now also be loaded from a remote storage
+- log level can be set via environment variable ``LOG_LEVEL``
+- add ``--store-uncompressed`` to train command to not compress Rasa model
 
 Changed
 -------
@@ -38,17 +47,28 @@ Changed
 - changed removing punctuation logic in ``WhitespaceTokenizer``
 - ``training_processes`` in the Rasa NLU data router have been renamed to ``worker_processes``
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
-- removed ``--num_threads`` from run command (server will be asyncronous but
+- removed ``--num_threads`` from run command (server will be asynchronous but
   running in a single thread)
-- removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be loaded by default)
+- the ``_check_token()`` method in ``RasaChat`` now authenticates against ``/auth/verify`` instead of ``/user``
+- removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be
+  loaded by default)
 - changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
-- ``rasa train`` uses fallback config if an invalid config is given
+- train command uses fallback config if an invalid config is given
+- test command now compares multiple models if a list of model files is provided for the argument ``--model``
+- Merged rasa.core and rasa.nlu server into a single server. See swagger file in ``docs/_static/spec/server.yaml`` for
+  available endpoints.
+- ``utter_custom_message()`` method in rasa_core_sdk has been renamed to ``utter_elements()``
+- updated dependencies. as part of this, models for spacy need to be reinstalled
+  for 2.1 (from 2.0)
+- make sure all command line arguments for ``rasa test`` and ``rasa interactive`` are actually used, removed arguments
+  that were not used at all (e.g. ``--core`` for ``rasa test``)
 
 Removed
 -------
 - removed possibility to execute ``python -m rasa_core.train`` etc. (e.g. scripts in ``rasa.core`` and ``rasa.nlu``).
   Use the CLI for rasa instead, e.g. ``rasa train core``.
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
+- removed ``Dispatcher`` class from core
 - removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.
 
 Fixed
@@ -58,9 +78,6 @@ Fixed
   in a parallel process, which prevents the currently loaded model unloading
 - added missing implementation of the ``keys()`` function for the Redis Tracker
   Store
-- ``rasa nlu test`` doesn't error anymore when a test file is passed with ``-u``
 - in interactive learning: only updates entity values if user changes annotation
-- ``SQLTrackerStore.keys()`` now returns the distinct stored sender ids
-  instead of the column names
-- ``rasa train core`` actually uses additional arguments, such as ``augmentation``
-- ``rasa test`` actually considers additional arguments, such as ``e2e`` or ``successes``
+- log options from the command line interface are applied (they overwrite the environment variable)
+- all message arguments (kwargs in dispatcher.utter methods, as well as template args) are now sent through to output channels

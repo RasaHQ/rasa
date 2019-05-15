@@ -7,9 +7,12 @@ import tarfile
 import tempfile
 from typing import Text, Tuple, Union, Optional, List, Dict, Any
 
+import rasa.utils.io
 from rasa.constants import DEFAULT_MODELS_PATH
 
 # Type alias for the fingerprint
+from rasa.core.domain import Domain
+
 Fingerprint = Dict[Text, Union[Text, List[Text]]]
 
 logger = logging.getLogger(__name__)
@@ -188,9 +191,26 @@ def create_package_rasa(
     return output_filename
 
 
+def decompress(model_path: Text):
+    """Decompresses the provided zipped Rasa model.
+
+    Args:
+        model_path: Path to the zipped Rasa model.
+
+    Returns:
+        Path to unzipped Rasa model.
+    """
+    zipped_path = model_path
+    output_path = model_path.replace(".tar.gz", "")
+    unpack_model(zipped_path, output_path)
+    os.remove(zipped_path)
+
+    return output_path
+
+
 def model_fingerprint(
     config_file: Text,
-    domain_file: Optional[Text] = None,
+    domain: Optional[Union[Domain, Text]] = None,
     nlu_data: Optional[Text] = None,
     stories: Optional[Text] = None,
 ) -> Fingerprint:
@@ -199,7 +219,7 @@ def model_fingerprint(
 
     Args:
         config_file: Path to the configuration file.
-        domain_file: Path to the models domain file.
+        domain: Path to the models domain file.
         nlu_data: Path to the used NLU training data.
         stories: Path to the used story training data.
 
@@ -207,14 +227,17 @@ def model_fingerprint(
         The fingerprint.
 
     """
-    import rasa.core
-    import rasa.nlu
     import rasa
     import time
 
+    if isinstance(domain, Domain):
+        domain_hash = hash(domain)
+    else:
+        domain_hash = _get_hashes_for_paths(domain)
+
     return {
         FINGERPRINT_CONFIG_KEY: _get_hashes_for_paths(config_file),
-        FINGERPRINT_DOMAIN_KEY: _get_hashes_for_paths(domain_file),
+        FINGERPRINT_DOMAIN_KEY: domain_hash,
         FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
         FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
@@ -245,12 +268,13 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     Returns:
         The fingerprint or an empty dict if no fingerprint was found.
     """
-    import rasa.core.utils
+    if not model_path or not os.path.exists(model_path):
+        return {}
 
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
-        return rasa.core.utils.read_json_file(fingerprint_path)
+        return rasa.utils.io.read_json_file(fingerprint_path)
     else:
         return {}
 
@@ -340,3 +364,37 @@ def merge_model(source: Text, target: Text) -> bool:
     except Exception as e:
         logging.debug(e)
         return False
+
+
+def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text):
+    """Checks which component of a model should be retrained.
+
+    Args:
+        new_fingerprint: The fingerprint of the new model to be trained.
+        old_model: Path to the old zipped model file.
+        train_path: Path to the directory in which the new model will be trained.
+
+    Returns:
+        A tuple of boolean values indicating whether Rasa Core and/or Rasa NLU needs
+        to be retrained or not.
+
+    """
+    retrain_nlu = retrain_core = True
+
+    if old_model is None or not os.path.exists(old_model):
+        return retrain_core, retrain_nlu
+
+    unpacked = unpack_model(old_model)
+    last_fingerprint = fingerprint_from_path(unpacked)
+
+    old_core, old_nlu = get_model_subdirectories(unpacked)
+
+    if not core_fingerprint_changed(last_fingerprint, new_fingerprint):
+        target_path = os.path.join(train_path, "core")
+        retrain_core = not merge_model(old_core, target_path)
+
+    if not nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
+        target_path = os.path.join(train_path, "nlu")
+        retrain_nlu = not merge_model(old_nlu, target_path)
+
+    return retrain_core, retrain_nlu

@@ -27,9 +27,13 @@ Run the following command to start interactive learning:
 
 .. code-block:: bash
 
-   rasa run actions &
+   python3 -m rasa_sdk --actions actions&
 
-   rasa interactive
+   rasa interactive \
+     -o models \
+     -d domain.yml \
+     -c policy_config.yml \
+     --endpoints endpoints.yml
 
 The first command starts the action server (see :ref:`custom-actions`).
 

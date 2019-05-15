@@ -1,9 +1,9 @@
-import argparse
-import asyncio
 import logging
 import os
 import typing
-from typing import Dict, Optional, Text
+from typing import Dict, Optional, Text, Union
+
+from rasa.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -11,46 +11,8 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def create_argument_parser():
-    """Parse all the command line arguments for the training script."""
-    from rasa.core import cli
-
-    parser = argparse.ArgumentParser(
-        description="Train a dialogue model for Rasa Core. "
-        "The training will use your conversations "
-        "in the story training data format and "
-        "your domain definition to train a dialogue "
-        "model to predict a bots actions."
-    )
-    parent_parser = argparse.ArgumentParser(add_help=False)
-    cli.train.add_general_args(parent_parser)
-
-    subparsers = parser.add_subparsers(help="Training mode of core.", dest="mode")
-    subparsers.required = True
-
-    train_parser = subparsers.add_parser(
-        "default", help="train a dialogue model", parents=[parent_parser]
-    )
-    compare_parser = subparsers.add_parser(
-        "compare",
-        help="train multiple dialogue models to compare policies",
-        parents=[parent_parser],
-    )
-    interactive_parser = subparsers.add_parser(
-        "interactive",
-        help="teach the bot with interactive learning",
-        parents=[parent_parser],
-    )
-
-    cli.train.add_compare_args(compare_parser)
-    cli.train.add_interactive_args(interactive_parser)
-    cli.train.add_train_args(train_parser)
-
-    return parser
-
-
 async def train(
-    domain_file: Text,
+    domain_file: Union[Domain, Text],
     stories_file: Text,
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
@@ -98,15 +60,6 @@ async def train(
     agent.persist(output_path, dump_stories)
 
     return agent
-
-
-def _additional_arguments(args):
-    additional = {
-        "augmentation_factor": args.augmentation,
-        "debug_plots": args.debug_plots,
-    }
-    # remove None values
-    return {k: v for k, v in additional.items() if v is not None}
 
 
 async def train_comparison_models(
@@ -172,19 +125,6 @@ async def get_no_of_stories(story_file, domain):
     return len(stories)
 
 
-async def do_default_training(cmdline_args, stories, additional_arguments):
-    """Train a model."""
-
-    await train(
-        domain_file=cmdline_args.domain,
-        stories_file=stories,
-        output_path=cmdline_args.out,
-        dump_stories=cmdline_args.dump_stories,
-        policy_config=cmdline_args.config[0],
-        kwargs=additional_arguments,
-    )
-
-
 async def do_compare_training(cmdline_args, stories, additional_arguments):
     from rasa.core import utils
 
@@ -226,42 +166,9 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
     )
 
 
-def main():
-    from rasa.utils.io import configure_colored_logging
-    import rasa.core.cli.train
-    from rasa.core.utils import set_default_subparser
-
-    # Running as standalone python application
-    arg_parser = create_argument_parser()
-    set_default_subparser(arg_parser, "default")
-    cmdline_arguments = arg_parser.parse_args()
-    additional_args = _additional_arguments(cmdline_arguments)
-
-    configure_colored_logging(cmdline_arguments.loglevel)
-
-    loop = asyncio.get_event_loop()
-
-    training_stories = loop.run_until_complete(
-        rasa.core.cli.train.stories_from_cli_args(cmdline_arguments)
-    )
-
-    if cmdline_arguments.mode == "default":
-        loop.run_until_complete(
-            do_default_training(cmdline_arguments, training_stories, additional_args)
-        )
-
-    elif cmdline_arguments.mode == "interactive":
-        do_interactive_learning(cmdline_arguments, training_stories, additional_args)
-
-    elif cmdline_arguments.mode == "compare":
-        loop.run_until_complete(
-            do_compare_training(cmdline_arguments, training_stories, additional_args)
-        )
-
-
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.core.train` directly is "
-        "no longer supported. "
-        "Please use `rasa train core` instead."
+        "Calling `rasa.core.train` directly is no longer supported. Please use "
+        "`rasa train` to train a combined Core and NLU model or `rasa train core` "
+        "to train a Core model."
     )

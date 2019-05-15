@@ -8,36 +8,36 @@
 Tracker Stores
 ==============
 
-All conversations are stored within a ``tracker store``.
+All conversations are stored within a `tracker store`.
 Rasa Core provides implementations for different store types out of the box.
-If you want to use another store, you can also build a custom tracker store by extending the ``TrackerStore`` class.
+If you want to use another store, you can also build a custom tracker store by extending the `TrackerStore` class.
 
 .. contents::
-   :local:
 
 InMemoryTrackerStore (default)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    ``InMemoryTrackerStore`` is the default tracker store. It is used if no other tracker store is configured.
+    `InMemoryTrackerStore` is the default tracker store. It is used if no other tracker store is configured.
     It stores the conversation history in memory.
 
-    .. note:: This store keeps all history in memory, so the entire history is **lost** if you restart Rasa.
+    .. note:: As this store keeps all history in memory the entire history is lost if you restart Rasa Core.
 
 :Configuration:
-    To use the ``InMemoryTrackerStore`` no configuration is needed.
+    To use the `InMemoryTrackerStore` no configuration is needed.
 
 SQLTrackerStore
 ~~~~~~~~~~~~~~~
 
 :Description:
     ``SQLTrackerStore`` can be used to store the conversation history in an SQL database.
-    Storing your trackers this way allows you to query the event database by 
-    ``sender_id``, ``timestamp``, ``action name``,
-    ``intent name`` and ``typename``
+    Storing your trackers this way allows you to query the event database by sender_id, timestamp, action name,
+    intent name and typename
 
 :Configuration:
-    To set up Rasa Core with SQL add this configuration to your ``endpoints.yml``
+    To set up Rasa Core with SQL the following steps are required:
+
+    1. Add required configuration to your `endpoints.yml`
 
         .. code-block:: yaml
 
@@ -49,8 +49,12 @@ SQLTrackerStore
                 username:  # username used for authentication
                 password:  # password used for authentication
 
-    make sure your SQL server is available, and then run ``rasa run``.
+    3. To start the Rasa Core server using your SQL backend,
+       add the ``--endpoints`` flag, e.g.:
 
+        .. code-block:: bash
+
+            rasa run -m models --endpoints endpoints.yml
 :Parameters:
     - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  `Consult the SQLAlchemy docs for available dialects <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_
     - ``url`` (default: ``None``): URL of your SQL database
@@ -64,11 +68,14 @@ RedisTrackerStore
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    ``RedisTrackerStore`` can be used to store the conversation history in `Redis <https://redis.io/>`_.
+    `RedisTrackerStore` can be used to store the conversation history in `Redis <https://redis.io/>`_.
     Redis is a fast in-memory key-value store which can optionally also persist data.
 
 :Configuration:
-    To set up Rasa Core with Redis add the following configuration to your ``endpoints.yml``
+    To set up Rasa Core with Redis the following steps are required:
+
+    1. Start your Redis instance
+    2. Add required configuration to your `endpoints.yml`
 
         .. code-block:: yaml
 
@@ -79,8 +86,12 @@ RedisTrackerStore
                 db: <number of your database within redis, e.g. 0>
                 password: <password used for authentication>
 
-    make sure your Redis instance is running, and run ``rasa run``.
+    3. To start the Rasa Core server using your configured Redis instance,
+       add the :code:`--endpoints` flag, e.g.:
 
+        .. code-block:: bash
+
+            rasa run -m models --endpoints endpoints.yml
 :Parameters:
     - ``url`` (default: ``localhost``): The url of your redis instance
     - ``port`` (default: ``6379``): The port which redis is running on
@@ -93,11 +104,12 @@ MongoTrackerStore
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    ``MongoTrackerStore`` can be used to store the conversation history in `Mongo <https://www.mongodb.com/>`_.
+    `MongoTrackerStore` can be used to store the conversation history in `Mongo <https://www.mongodb.com/>`_.
     MongoDB is a free and open-source cross-platform document-oriented NoSQL database.
 
 :Configuration:
-    To use your MongoDB tracker store, add the following configuration to your ``endpoints.yml``:
+    1. Start your MongoDB instance.
+    2. Add required configuration to your `endpoints.yml`
 
         .. code-block:: yaml
 
@@ -112,7 +124,12 @@ MongoTrackerStore
         You can also add more advanced configurations (like enabling ssl) by appending
         a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true
 
-    make sure your MongoDB instance is running, and run ``rasa run``.
+    3. To start the Rasa Core server using your configured MongoDB instance,
+           add the :code:`--endpoints` flag, e.g.:
+
+            .. code-block:: bash
+
+                rasa run -m models --endpoints endpoints.yml
 :Parameters:
     - ``url`` (default: ``mongodb://localhost:27017``): URL of your MongoDB
     - ``db`` (default: ``rasa``): The database name which should be used
@@ -127,12 +144,12 @@ Custom Tracker Store
 
 :Description:
     If you require a tracker store which is not available out of the box, you can implement your own.
-    This is done by extending the base class ``TrackerStore``.
+    This is done by extending the base class `TrackerStore`.
 
     .. autoclass:: rasa.core.tracker_store.TrackerStore
 
 :Steps:
-    1. Extend the ``TrackerStore`` base class. Note that your constructor has to
+    1. Extend the `TrackerStore` base class. Note that your constructor has to
        provide a parameter ``url``.
     2. In your endpoints.yml put in the module path to your custom tracker store
        and the parameters you require:

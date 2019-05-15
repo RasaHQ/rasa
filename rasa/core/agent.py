@@ -5,19 +5,24 @@ import tempfile
 import typing
 import uuid
 from asyncio import CancelledError
-from typing import Any, Callable, Dict, List, Optional, Text, Union
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
 
 import rasa
+import rasa.utils.io
 from rasa.constants import DEFAULT_DOMAIN_PATH
-from rasa.core import constants, jobs, training
-from rasa.core.channels import InputChannel, OutputChannel, UserMessage
+from rasa.core import constants, jobs, training, utils
+from rasa.core.channels import (
+    InputChannel,
+    OutputChannel,
+    UserMessage,
+    CollectingOutputChannel,
+)
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.dispatcher import Dispatcher
 from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
 from rasa.core.exceptions import AgentNotReady
-from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies import FormPolicy, Policy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
@@ -26,7 +31,9 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
+from rasa.model import get_model_subdirectories, get_latest_model, unpack_model
 from rasa.nlu.utils import is_url
+from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -60,17 +67,6 @@ async def load_from_server(
     return agent
 
 
-def _get_stack_model_directory(model_directory: Text) -> Optional[Text]:
-    """Decide whether a persisted model is a stack or a core model.
-
-    Return the root stack model directory if it's a stack model.
-    """
-
-    for root, _, files in os.walk(model_directory):
-        if "fingerprint.json" in files:
-            return root
-
-
 def _load_and_set_updated_model(
     agent: "Agent", model_directory: Text, fingerprint: Text
 ):
@@ -78,24 +74,29 @@ def _load_and_set_updated_model(
 
     logger.debug("Found new model with fingerprint {}. Loading...".format(fingerprint))
 
-    stack_model_directory = _get_stack_model_directory(model_directory)
-    if stack_model_directory:
+    core_path, nlu_path = get_model_subdirectories(model_directory)
+
+    if os.path.exists(nlu_path):
         from rasa.core.interpreter import RasaNLUInterpreter
 
-        nlu_model = os.path.join(stack_model_directory, "nlu")
-        core_model = os.path.join(stack_model_directory, "core")
-        interpreter = RasaNLUInterpreter(model_directory=nlu_model)
+        interpreter = RasaNLUInterpreter(model_directory=nlu_path)
     else:
-        interpreter = agent.interpreter
-        core_model = model_directory
+        interpreter = (
+            agent.interpreter if agent.interpreter is not None else RegexInterpreter()
+        )
 
-    domain_path = os.path.join(os.path.abspath(core_model), DEFAULT_DOMAIN_PATH)
-    domain = Domain.load(domain_path)
+    domain = None
+    if os.path.exists(core_path):
+        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
+        domain = Domain.load(domain_path)
 
-    # noinspection PyBroadException
     try:
-        policy_ensemble = PolicyEnsemble.load(core_model)
-        agent.update_model(domain, policy_ensemble, fingerprint, interpreter)
+        policy_ensemble = None
+        if os.path.exists(core_path):
+            policy_ensemble = PolicyEnsemble.load(core_path)
+        agent.update_model(
+            domain, policy_ensemble, fingerprint, interpreter, model_directory
+        )
         logger.debug("Finished updating agent to new model.")
     except Exception:
         logger.exception(
@@ -112,24 +113,24 @@ async def _update_model_from_server(
     if not is_url(model_server.url):
         raise aiohttp.InvalidURL(model_server.url)
 
-    model_directory = tempfile.mkdtemp()
-
-    new_model_fingerprint = await _pull_model_and_fingerprint(
-        model_server, model_directory, agent.fingerprint
+    model_directory_and_fingerprint = await _pull_model_and_fingerprint(
+        model_server, agent.fingerprint
     )
-    if new_model_fingerprint:
+    if model_directory_and_fingerprint:
+        model_directory, new_model_fingerprint = model_directory_and_fingerprint
         _load_and_set_updated_model(agent, model_directory, new_model_fingerprint)
     else:
         logger.debug("No new model found at URL {}".format(model_server.url))
 
 
 async def _pull_model_and_fingerprint(
-    model_server: EndpointConfig, model_directory: Text, fingerprint: Optional[Text]
-) -> Optional[Text]:
-    """Queries the model server and returns the value of the response's
+    model_server: EndpointConfig, fingerprint: Optional[Text]
+) -> Optional[Tuple[Text, Text]]:
+    """Queries the model server.
 
-     <ETag> header which contains the model hash.
-     """
+    Returns the temporary model directory and value of the response's <ETag> header
+    which contains the model hash. Returns `None` if no new model is found.
+    """
 
     headers = {"If-None-Match": fingerprint}
 
@@ -153,7 +154,7 @@ async def _pull_model_and_fingerprint(
                         "Current fingerprint: {}"
                         "".format(resp.status, fingerprint)
                     )
-                    return resp.headers.get("ETag")
+                    return None
                 elif resp.status == 404:
                     logger.debug(
                         "Model server didn't find a model for our request. "
@@ -169,13 +170,16 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
+                model_directory = tempfile.mkdtemp()
                 rasa.utils.io.unarchive(await resp.read(), model_directory)
                 logger.debug(
                     "Unzipped model to '{}'".format(os.path.abspath(model_directory))
                 )
 
                 # get the new fingerprint
-                return resp.headers.get("ETag")
+                new_fingerprint = resp.headers.get("ETag")
+                # return new tmp model directory and new fingerprint
+                return model_directory, new_fingerprint
 
         except aiohttp.ClientError as e:
             logger.info(
@@ -183,12 +187,11 @@ async def _pull_model_and_fingerprint(
                 "couldn't reach server. We'll retry later... "
                 "Error: {}.".format(e)
             )
-
             return None
 
 
 async def _run_model_pulling_worker(
-    model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
+    model_server: EndpointConfig, agent: "Agent"
 ) -> None:
     # noinspection PyBroadException
     try:
@@ -208,15 +211,69 @@ async def schedule_model_pulling(
         _run_model_pulling_worker,
         "interval",
         seconds=wait_time_between_pulls,
-        args=[model_server, wait_time_between_pulls, agent],
+        args=[model_server, agent],
         id="pull-model-from-server",
         replace_existing=True,
     )
 
 
+async def load_agent(
+    model_path: Optional[Text] = None,
+    model_server: Optional[EndpointConfig] = None,
+    remote_storage: Optional[Text] = None,
+    interpreter: Optional[NaturalLanguageInterpreter] = None,
+    generator: Union[EndpointConfig, "NLG"] = None,
+    tracker_store: Optional["TrackerStore"] = None,
+    action_endpoint: Optional[EndpointConfig] = None,
+):
+    try:
+        if model_path is not None and os.path.exists(model_path):
+            return Agent.load_local_model(
+                model_path,
+                interpreter=interpreter,
+                generator=generator,
+                tracker_store=tracker_store,
+                action_endpoint=action_endpoint,
+                model_server=model_server,
+                remote_storage=remote_storage,
+            )
+
+        elif model_server is not None:
+            return await load_from_server(
+                Agent(
+                    interpreter=interpreter,
+                    generator=generator,
+                    tracker_store=tracker_store,
+                    action_endpoint=action_endpoint,
+                    model_server=model_server,
+                    remote_storage=remote_storage,
+                ),
+                model_server,
+            )
+
+        elif remote_storage is not None:
+            return Agent.load_from_remote_storage(
+                remote_storage,
+                model_path,
+                interpreter=interpreter,
+                generator=generator,
+                tracker_store=tracker_store,
+                action_endpoint=action_endpoint,
+                model_server=model_server,
+            )
+
+        else:
+            logger.error("No valid configuration given to load agent.")
+            return None
+
+    except Exception as e:
+        logger.error("Could not load model due to {}.".format(e))
+        raise
+
+
 class Agent(object):
     """The Agent class provides a convenient interface for the most important
-     Rasa Core functionality.
+     Rasa functionality.
 
      This includes training, handling messages, loading a dialogue model,
      getting the next action, and handling a channel."""
@@ -230,6 +287,9 @@ class Agent(object):
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
+        model_directory: Optional[Text] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -250,6 +310,9 @@ class Agent(object):
         self.conversations_in_processing = {}
 
         self._set_fingerprint(fingerprint)
+        self.model_directory = model_directory
+        self.model_server = model_server
+        self.remote_storage = remote_storage
 
     def update_model(
         self,
@@ -257,6 +320,7 @@ class Agent(object):
         policy_ensemble: PolicyEnsemble,
         fingerprint: Optional[Text],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
+        model_directory: Optional[Text] = None,
     ) -> None:
         self.domain = domain
         self.policy_ensemble = policy_ensemble
@@ -271,40 +335,48 @@ class Agent(object):
         if hasattr(self.nlg, "templates"):
             self.nlg.templates = domain.templates or []
 
+        self.model_directory = model_directory
+
     @classmethod
     def load(
         cls,
-        path: Text,
+        unpacked_model_path: Text,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
-
-        if not path:
+        if not os.path.exists(unpacked_model_path) or not os.path.isdir(
+            unpacked_model_path
+        ):
             raise ValueError(
-                "You need to provide a valid directory where "
-                "to load the agent from when calling "
-                "`Agent.load`."
-            )
-
-        if os.path.isfile(path):
-            raise ValueError(
-                "You are trying to load a MODEL from a file "
+                "You are trying to load a MODEL from "
                 "('{}'), which is not possible. \n"
                 "The persisted path should be a directory "
-                "containing the various model files. \n\n"
+                "containing the various model files in the "
+                "sub-directories 'core' and 'nlu'. \n\n"
                 "If you want to load training data instead of "
                 "a model, use `agent.load_data(...)` "
-                "instead.".format(path)
+                "instead.".format(unpacked_model_path)
             )
 
-        domain = Domain.load(os.path.join(path, DEFAULT_DOMAIN_PATH))
-        ensemble = PolicyEnsemble.load(path) if path else None
+        core_model, nlu_model = get_model_subdirectories(unpacked_model_path)
 
-        # ensures the domain hasn't changed between test and train
-        domain.compare_with_specification(path)
+        if not interpreter and os.path.exists(nlu_model):
+            interpreter = NaturalLanguageInterpreter.create(nlu_model)
+
+        domain = None
+        ensemble = None
+
+        if os.path.exists(core_model):
+            domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
+            ensemble = PolicyEnsemble.load(core_model) if core_model else None
+
+            # ensures the domain hasn't changed between test and train
+            domain.compare_with_specification(core_model)
 
         return cls(
             domain=domain,
@@ -313,14 +385,17 @@ class Agent(object):
             generator=generator,
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
+            model_directory=unpacked_model_path,
+            model_server=model_server,
+            remote_storage=remote_storage,
         )
 
     def is_ready(self):
         """Check if all necessary components are instantiated to use agent."""
         return (
-            self.interpreter is not None
-            and self.tracker_store is not None
+            self.tracker_store is not None
             and self.policy_ensemble is not None
+            and self.interpreter is not None
         )
 
     async def handle_message(
@@ -354,7 +429,7 @@ class Agent(object):
         lock = self.conversations_in_processing.get(message.sender_id)
         if not lock:
             logger.debug(
-                "created a new lock for conversation '{}'".format(message.sender_id)
+                "Created a new lock for conversation '{}'".format(message.sender_id)
             )
             lock = LockCounter()
             self.conversations_in_processing[message.sender_id] = lock
@@ -375,7 +450,7 @@ class Agent(object):
                 # accumulating locks
                 del self.conversations_in_processing[message.sender_id]
                 logger.debug(
-                    "deleted lock for conversation '{}' (unused)"
+                    "Deleted lock for conversation '{}' (unused)"
                     "".format(message.sender_id)
                 )
 
@@ -402,16 +477,15 @@ class Agent(object):
         self,
         sender_id: Text,
         action: Text,
-        output_channel: OutputChannel,
+        output_channel: CollectingOutputChannel,
         policy: Text,
         confidence: float,
     ) -> DialogueStateTracker:
         """Handle a single message."""
 
         processor = self.create_processor()
-        dispatcher = Dispatcher(sender_id, output_channel, self.nlg)
         return await processor.execute_action(
-            sender_id, action, dispatcher, policy, confidence
+            sender_id, action, output_channel, self.nlg, policy, confidence
         )
 
     async def handle_text(
@@ -436,10 +510,7 @@ class Agent(object):
 
             >>> from rasa.core.agent import Agent
             >>> from rasa.core.interpreter import RasaNLUInterpreter
-            >>> interpreter = RasaNLUInterpreter(
-            ... "examples/restaurantbot/models/nlu/current")
-            >>> agent = Agent.load("examples/restaurantbot/models/dialogue",
-            ... interpreter=interpreter)
+            >>> agent = Agent.load("examples/restaurantbot/models/current")
             >>> await agent.handle_text("hello")
             [u'how can I help you?']
 
@@ -609,22 +680,17 @@ class Agent(object):
         route: Text = "/webhooks/",
         cors=None,
     ) -> "Sanic":
-        """Start a webserver attaching the input channels and handling msgs.
+        """Start a webserver attaching the input channels and handling msgs."""
 
-        If ``serve_forever`` is set to ``True``, this call will be blocking.
-        Otherwise the webserver will be started, and the method will
-        return afterwards."""
         from rasa.core import run
 
         app = run.configure_app(channels, cors, None, enable_api=False, route=route)
 
         app.agent = self
 
-        app.run(
-            host="0.0.0.0",
-            port=http_port,
-            access_log=logger.isEnabledFor(logging.DEBUG),
-        )
+        update_sanic_log_level()
+
+        app.run(host="0.0.0.0", port=http_port)
 
         # this might seem unnecessary (as run does not return until the server
         # is killed) - but we use it for tests where we mock `.run` to directly
@@ -671,6 +737,9 @@ class Agent(object):
 
         if not self.is_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
+
+        if not model_path.endswith("core"):
+            model_path = os.path.join(model_path, "core")
 
         self._clear_model_directory(model_path)
 
@@ -781,6 +850,68 @@ class Agent(object):
                 "of type '{}', but should be policy, an array of "
                 "policies, or a policy ensemble".format(passed_type)
             )
+
+    @staticmethod
+    def load_local_model(
+        model_path: Text,
+        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        generator: Union[EndpointConfig, "NLG"] = None,
+        tracker_store: Optional["TrackerStore"] = None,
+        action_endpoint: Optional[EndpointConfig] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
+    ) -> "Agent":
+        if os.path.isfile(model_path):
+            model_archive = model_path
+        else:
+            model_archive = get_latest_model(model_path)
+
+        if model_archive is None:
+            logger.warning("Could not load local model in '{}'".format(model_path))
+            return Agent()
+
+        working_directory = tempfile.mkdtemp()
+        unpacked_model = unpack_model(model_archive, working_directory)
+
+        return Agent.load(
+            unpacked_model,
+            interpreter=interpreter,
+            generator=generator,
+            tracker_store=tracker_store,
+            action_endpoint=action_endpoint,
+            model_server=model_server,
+            remote_storage=remote_storage,
+        )
+
+    @staticmethod
+    def load_from_remote_storage(
+        remote_storage: Text,
+        model_name: Text,
+        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        generator: Union[EndpointConfig, "NLG"] = None,
+        tracker_store: Optional["TrackerStore"] = None,
+        action_endpoint: Optional[EndpointConfig] = None,
+        model_server: Optional[EndpointConfig] = None,
+    ) -> "Agent":
+        from rasa.nlu.persistor import get_persistor
+
+        persistor = get_persistor(remote_storage)
+
+        if persistor is not None:
+            target_path = tempfile.mkdtemp()
+            persistor.retrieve(model_name, target_path)
+
+            return Agent.load(
+                target_path,
+                interpreter=interpreter,
+                generator=generator,
+                tracker_store=tracker_store,
+                action_endpoint=action_endpoint,
+                model_server=model_server,
+                remote_storage=remote_storage,
+            )
+
+        return None
 
     def _is_form_policy_present(self) -> bool:
         """Check whether form policy is present and used."""

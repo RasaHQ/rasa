@@ -7,7 +7,7 @@ import warnings
 sys.modules["rasa_nlu"] = rasa.nlu
 
 warnings.warn(
-    "The 'rasa_nlu' package hase been renamed. You should change "
+    "The 'rasa_nlu' package has been renamed. You should change "
     "your imports to use 'rasa.nlu' instead.",
     UserWarning,
 )
