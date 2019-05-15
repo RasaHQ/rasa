@@ -342,9 +342,7 @@ class BotUttered(Event):
 
     def __str__(self):
         return "BotUttered(text: {}, data: {}, metadata: {})".format(
-            self.text,
-            json.dumps(self.data, indent=2),
-            json.dumps(self.metadata, indent=2),
+            self.text, json.dumps(self.data), json.dumps(self.metadata)
         )
 
     def __repr__(self):
@@ -906,7 +904,7 @@ class AgentUttered(Event):
 
     def __str__(self):
         return "AgentUttered(text: {}, data: {})".format(
-            self.text, json.dumps(self.data, indent=2)
+            self.text, json.dumps(self.data)
         )
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
