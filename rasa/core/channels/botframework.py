@@ -188,7 +188,7 @@ class BotFrameworkInput(InputChannel):
         botframework_webhook = Blueprint("botframework_webhook", __name__)
 
         @botframework_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @botframework_webhook.route("/webhook", methods=["POST"])

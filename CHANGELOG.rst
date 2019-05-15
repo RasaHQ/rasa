@@ -37,6 +37,8 @@ in ``interactive learning``
 - support for spaCy 2.1
 - a model for an agent can now also be loaded from a remote storage
 - log level can be set via environment variable ``LOG_LEVEL``
+- add ``--fixed-model-name`` to ``rasa train`` to specify name of stored model
+- add ``--store-uncompressed`` to ``rasa train`` to not compress Rasa model
 
 Changed
 -------

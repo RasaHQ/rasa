@@ -1,6 +1,7 @@
 import logging
 import uuid
 from sanic import Blueprint, response
+from sanic.request import Request
 from socketio import AsyncServer
 from typing import Optional, Text, Any, List, Dict, Iterable
 
@@ -137,7 +138,7 @@ class SocketIOInput(InputChannel):
         )
 
         @socketio_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
