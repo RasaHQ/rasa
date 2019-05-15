@@ -660,41 +660,38 @@ async def test_slackbot_send_attachment_only():
     httpretty.enable()
 
     bot = SlackBot("DummyToken", "General")
-    attachment = json.dumps(
-        [
+    attachment = {
+        "fallback": "Financial Advisor Summary",
+        "color": "#36a64f",
+        "author_name": "ABE",
+        "title": "Financial Advisor Summary",
+        "title_link": "http://tenfactorialrocks.com",
+        "image_url": "https://r.com/cancel/r12",
+        "thumb_url": "https://r.com/cancel/r12",
+        "actions": [
             {
-                "fallback": "Financial Advisor Summary",
-                "color": "#36a64f",
-                "author_name": "ABE",
-                "title": "Financial Advisor Summary",
-                "title_link": "http://tenfactorialrocks.com",
-                "image_url": "https://r.com/cancel/r12",
-                "thumb_url": "https://r.com/cancel/r12",
-                "actions": [
-                    {
-                        "type": "button",
-                        "text": "\ud83d\udcc8 Dashboard",
-                        "url": "https://r.com/cancel/r12",
-                        "style": "primary",
-                    },
-                    {
-                        "type": "button",
-                        "text": "\ud83d\udccb Download XL",
-                        "url": "https://r.com/cancel/r12",
-                        "style": "danger",
-                    },
-                    {
-                        "type": "button",
-                        "text": "\ud83d\udce7 E-Mail",
-                        "url": "https://r.com/cancel/r12",
-                        "style": "danger",
-                    },
-                ],
-                "footer": "Powered by 1010rocks",
-                "ts": 1531889719,
-            }
-        ]
-    )
+                "type": "button",
+                "text": "\ud83d\udcc8 Dashboard",
+                "url": "https://r.com/cancel/r12",
+                "style": "primary",
+            },
+            {
+                "type": "button",
+                "text": "\ud83d\udccb Download XL",
+                "url": "https://r.com/cancel/r12",
+                "style": "danger",
+            },
+            {
+                "type": "button",
+                "text": "\ud83d\udce7 E-Mail",
+                "url": "https://r.com/cancel/r12",
+                "style": "danger",
+            },
+        ],
+        "footer": "Powered by 1010rocks",
+        "ts": 1531889719,
+    }
+
     await bot.send_attachment("ID", attachment)
 
     httpretty.disable()
@@ -704,7 +701,7 @@ async def test_slackbot_send_attachment_only():
     assert r.parsed_body == {
         "channel": ["General"],
         "as_user": ["True"],
-        "attachments": [attachment],
+        "attachments": [json.dumps([attachment])],
     }
 
 
@@ -721,44 +718,40 @@ async def test_slackbot_send_attachment_withtext():
     httpretty.enable()
 
     bot = SlackBot("DummyToken", "General")
-    text = "Sample text"
-    attachment = json.dumps(
-        [
+    kwargs = {"text": "Sample text"}
+    attachment = {
+        "fallback": "Financial Advisor Summary",
+        "color": "#36a64f",
+        "author_name": "ABE",
+        "title": "Financial Advisor Summary",
+        "title_link": "http://tenfactorialrocks.com",
+        "image_url": "https://r.com/cancel/r12",
+        "thumb_url": "https://r.com/cancel/r12",
+        "actions": [
             {
-                "fallback": "Financial Advisor Summary",
-                "color": "#36a64f",
-                "author_name": "ABE",
-                "title": "Financial Advisor Summary",
-                "title_link": "http://tenfactorialrocks.com",
-                "image_url": "https://r.com/cancel/r12",
-                "thumb_url": "https://r.com/cancel/r12",
-                "actions": [
-                    {
-                        "type": "button",
-                        "text": "\ud83d\udcc8 Dashboard",
-                        "url": "https://r.com/cancel/r12",
-                        "style": "primary",
-                    },
-                    {
-                        "type": "button",
-                        "text": "\ud83d\udccb XL",
-                        "url": "https://r.com/cancel/r12",
-                        "style": "danger",
-                    },
-                    {
-                        "type": "button",
-                        "text": "\ud83d\udce7 E-Mail",
-                        "url": "https://r.com/cancel/r123",
-                        "style": "danger",
-                    },
-                ],
-                "footer": "Powered by 1010rocks",
-                "ts": 1531889719,
-            }
-        ]
-    )
+                "type": "button",
+                "text": "\ud83d\udcc8 Dashboard",
+                "url": "https://r.com/cancel/r12",
+                "style": "primary",
+            },
+            {
+                "type": "button",
+                "text": "\ud83d\udccb XL",
+                "url": "https://r.com/cancel/r12",
+                "style": "danger",
+            },
+            {
+                "type": "button",
+                "text": "\ud83d\udce7 E-Mail",
+                "url": "https://r.com/cancel/r123",
+                "style": "danger",
+            },
+        ],
+        "footer": "Powered by 1010rocks",
+        "ts": 1531889719,
+    }
 
-    await bot.send_attachment("ID", attachment, text)
+    await bot.send_attachment("ID", attachment, **kwargs)
 
     httpretty.disable()
 
@@ -768,7 +761,7 @@ async def test_slackbot_send_attachment_withtext():
         "channel": ["General"],
         "as_user": ["True"],
         "text": ["Sample text"],
-        "attachments": [attachment],
+        "attachments": [json.dumps([attachment])],
     }
 
 
@@ -785,21 +778,20 @@ async def test_slackbot_send_image_url():
     httpretty.enable()
 
     bot = SlackBot("DummyToken", "General")
-    url = json.dumps([{"URL": "http://www.rasa.net"}])
+    url = "http://www.rasa.net"
     await bot.send_image_url("ID", url)
 
     httpretty.disable()
 
     r = httpretty.latest_requests[-1]
 
-    assert r.parsed_body["as_user"] == ["True"]
-    assert r.parsed_body["channel"] == ["General"]
-    assert len(r.parsed_body["attachments"]) == 1
-    assert '"text": ""' in r.parsed_body["attachments"][0]
-    assert (
-        '"image_url": "[{\\"URL\\": \\"http://www.rasa.net\\"}]"'
-        in r.parsed_body["attachments"][0]
-    )
+    assert r.parsed_body == {
+        "as_user": ["True"],
+        "channel": ["General"],
+        "blocks": [
+            '[{"type": "image", "image_url": "http://www.rasa.net", "alt_text": "http://www.rasa.net"}]'
+        ],
+    }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
@@ -823,7 +815,9 @@ async def test_slackbot_send_text():
     assert r.parsed_body == {
         "as_user": ["True"],
         "channel": ["General"],
-        "text": ["my message"],
+        "blocks": [
+            '[{"type": "section", "text": {"type": "plain_text", "text": "my message"}}]'
+        ],
     }
 
 
