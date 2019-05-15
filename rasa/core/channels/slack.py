@@ -25,18 +25,6 @@ class SlackBot(SlackClient, OutputChannel):
         super(SlackBot, self).__init__(token)
 
     @staticmethod
-    def _convert_to_slack_buttons(buttons):
-        return [
-            {
-                "text": b["title"],
-                "name": b["payload"],
-                "value": b["payload"],
-                "type": "button",
-            }
-            for b in buttons
-        ]
-
-    @staticmethod
     def _get_text_from_slack_buttons(buttons):
         return "".join([b.get("title", "") for b in buttons])
 
@@ -44,37 +32,36 @@ class SlackBot(SlackClient, OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
+        text_blocks = []
         for message_part in text.split("\n\n"):
-            super(SlackBot, self).api_call(
-                "chat.postMessage", channel=recipient, as_user=True, text=message_part
+            text_blocks.append(
+                {
+                    "type": "section",
+                    "text": {"type": "plain_text", "text": message_part},
+                }
             )
+        super(SlackBot, self).api_call(
+            "chat.postMessage", channel=recipient, as_user=True, blocks=text_blocks
+        )
 
     async def send_image_url(
-        self, recipient_id: Text, image: Text, text: Optional[Text] = "", **kwargs: Any
+        self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
-        image_attachment = [{"image_url": image, "text": text}]
         recipient = self.slack_channel or recipient_id
+        image_block = {"type": "image", "image_url": image, "alt_text": image}
         return super(SlackBot, self).api_call(
-            "chat.postMessage",
-            channel=recipient,
-            as_user=True,
-            attachments=image_attachment,
+            "chat.postMessage", channel=recipient, as_user=True, blocks=[image_block]
         )
 
     async def send_attachment(
-        self,
-        recipient_id: Text,
-        attachment: Text,
-        text: Optional[Text] = "",
-        **kwargs: Any
+        self, recipient_id: Text, attachment: Text, **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
         return super(SlackBot, self).api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
-            text=text,
-            attachments=attachment,
+            attachments=[attachment],
         )
 
     async def send_text_with_buttons(
@@ -86,6 +73,8 @@ class SlackBot(SlackClient, OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
 
+        text_block = {"type": "section", "text": {"type": "plain_text", "text": text}}
+
         if len(buttons) > 5:
             logger.warning(
                 "Slack API currently allows only up to 5 buttons. "
@@ -93,26 +82,21 @@ class SlackBot(SlackClient, OutputChannel):
             )
             return await self.send_text_message(recipient, text, **kwargs)
 
-        if text:
-            callback_string = text.replace(" ", "_")[:20]
-        else:
-            callback_string = self._get_text_from_slack_buttons(buttons)
-            callback_string = callback_string.replace(" ", "_")[:20]
-
-        button_attachment = [
-            {
-                "fallback": text,
-                "callback_id": callback_string,
-                "actions": self._convert_to_slack_buttons(buttons),
-            }
-        ]
-
+        button_block = {"type": "actions", "elements": []}
+        for button in buttons:
+            button_block["elements"].append(
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": button["title"]},
+                    "value": button["payload"],
+                }
+            )
         super(SlackBot, self).api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
             text=text,
-            attachments=button_attachment,
+            blocks=[text_block, button_block],
         )
 
     async def send_custom_json(
@@ -303,7 +287,7 @@ class SlackInput(InputChannel):
                 if self._is_interactive_message(payload):
                     sender_id = payload["user"]["id"]
                     text = self._get_interactive_repsonse(payload["actions"][0])
-                    if text is None:
+                    if text is not None:
                         return await self.process_message(
                             request, on_new_message, text=text, sender_id=sender_id
                         )
