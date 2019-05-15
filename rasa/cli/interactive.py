@@ -42,6 +42,8 @@ def add_subparser(
 
 def interactive(args: argparse.Namespace):
     args.finetune = False  # Don't support finetuning
+    args.fixed_model_name = None
+    args.store_uncompressed = False
 
     training_files = [
         get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
@@ -61,8 +63,9 @@ def interactive(args: argparse.Namespace):
 
 
 def interactive_core(args: argparse.Namespace):
-
     args.finetune = False  # Don't support finetuning
+    args.fixed_model_name = None
+    args.store_uncompressed = False
 
     zipped_model = train.train_core(args)
 
