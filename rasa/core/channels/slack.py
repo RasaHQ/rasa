@@ -201,6 +201,7 @@ class SlackInput(InputChannel):
             "button",
             "select",
             "static_select",
+            "external_select",
             "conversations_select",
             "users_select",
             "channels_select",
@@ -229,6 +230,8 @@ class SlackInput(InputChannel):
         elif action["type"] == "select":
             return action["selected_options"][0]["value"]
         elif action["type"] == "static_select":
+            return action["selected_option"]["value"]
+        elif action["type"] == "external_select":
             return action["selected_option"]["value"]
         elif action["type"] == "conversations_select":
             return action["selected_conversation"]
