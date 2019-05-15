@@ -19,8 +19,8 @@ linkcheck_timeout = 5
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx_autodoc_typehints',
+    "sphinx.ext.autodoc",
+    "sphinx_autodoc_typehints",
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
@@ -169,9 +169,7 @@ html_static_path = ["_static"]
 # html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-html_sidebars = {
-  "**": ["simpletoc.html"]
-}
+html_sidebars = {"**": ["simpletoc.html"]}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
@@ -314,14 +312,12 @@ os.chdir(os.path.abspath('..'))
 
 # Sphinxcontrib configuration
 scv_priority = "tags"
-scv_root_ref = 'post-merge-docs'
+scv_root_ref = "post-merge-docs"
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ("semver",)
-scv_whitelist_branches = ('post-merge-docs',)#(re.compile("^master$"),)
+scv_whitelist_branches = ("post-merge-docs",)  # (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
-scv_whitelist_tags = (
-    re.compile(r"^[123456789]+\.[0-9]+\.\d+$"),
-)
+scv_whitelist_tags = (re.compile(r"^[123456789]+\.[0-9]+\.\d+$"),)
 scv_greatest_tag = True

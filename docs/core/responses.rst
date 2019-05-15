@@ -64,7 +64,7 @@ the server:
     $ rasa run \
        --enable-api \
        -m examples/babi/models \
-       -o out.log \
+       --log-file out.log \
        --endpoints endpoints.yml
 
 
