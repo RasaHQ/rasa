@@ -4,7 +4,13 @@ from typing import Any, Callable, Dict, List, Text, Optional, Union
 
 import rasa.core.utils
 import rasa.utils.io
-from rasa.constants import GLOBAL_USER_CONFIG_PATH, DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
+from rasa.constants import (
+    GLOBAL_USER_CONFIG_PATH,
+    DEFAULT_LOG_LEVEL,
+    ENV_LOG_LEVEL,
+    DEFAULT_LOG_LEVEL_LIBRARIES,
+    ENV_LOG_LEVEL_LIBRARIES,
+)
 
 
 def arguments_of(func: Callable) -> List[Text]:
@@ -66,17 +72,26 @@ def set_log_level(log_level: Optional[int] = None):
 
     logging.getLogger("rasa").setLevel(log_level)
 
-    set_tensorflow_log_level(log_level)
+    update_tensorflow_log_level()
+    update_asyncio_log_level()
 
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
 
 
-def set_tensorflow_log_level(log_level: int):
-    """Set the log level of Tensorflow."""
+def update_tensorflow_log_level():
+    """Set the log level of Tensorflow to the log level specified in the environment
+    variable 'LOG_LEVEL_LIBRARIES'."""
     import tensorflow as tf
 
-    tf_log_level = tf.logging.WARN
-    if log_level == logging.ERROR:
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
+
+    if log_level == "DEBUG":
+        tf_log_level = tf.logging.DEBUG
+    elif log_level == "INFO":
+        tf_log_level = tf.logging.INFO
+    elif log_level == "WARNING":
+        tf_log_level = tf.logging.WARN
+    else:
         tf_log_level = tf.logging.ERROR
 
     tf.logging.set_verbosity(tf_log_level)
@@ -85,13 +100,10 @@ def set_tensorflow_log_level(log_level: int):
 
 def update_sanic_log_level():
     """Set the log level of sanic loggers to the log level specified in the environment
-    variable 'LOG_LEVEL'."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
+    variable 'LOG_LEVEL_LIBRARIES'."""
     from sanic.log import logger, error_logger, access_logger
 
-    if log_level == "INFO" or log_level == "DEBUG":
-        log_level = "WARNING"
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
     logger.setLevel(log_level)
     error_logger.setLevel(log_level)
@@ -100,6 +112,13 @@ def update_sanic_log_level():
     logger.propagate = False
     error_logger.propagate = False
     access_logger.propagate = False
+
+
+def update_asyncio_log_level():
+    """Set the log level of asyncio to the log level specified in the environment
+    variable 'LOG_LEVEL_LIBRARIES'."""
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
+    logging.getLogger("asyncio").setLevel(log_level)
 
 
 def obtain_verbosity() -> int:
