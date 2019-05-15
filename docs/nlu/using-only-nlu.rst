@@ -24,15 +24,23 @@ The name of the model will start with ``nlu-``.
 Testing your NLU model on the command line
 ------------------------------------------
 
-To try out your NLU model on the command line, use the ``rasa shell`` command,
-passing in the name of your model with the ``-m`` argument. For example:
+To try out your NLU model on the command line, use the ``rasa shell nlu`` command:
+
+
+.. code-block:: bash
+
+    rasa shell nlu
+
+
+This will start the rasa shell and ask you to type in a message to test.
+You can keep typing in as many messages as you like.
+
+Alternatively, you can leave out the ``nlu`` argument and pass in an nlu-only model directly:
 
 .. code-block:: bash
 
     rasa shell -m models/nlu-20190515-144445.tar.gz
 
-The rasa shell will open up and ask you to type in a message to test.
-You can keep typing in as many messages as you like.
 
 
 Running an NLU server
@@ -42,7 +50,7 @@ To start a server with your NLU model, pass in the model name at runtime:
 
 .. code-block:: bash
 
-    rasa run -m models/nlu-20190515-144445.tar.gz
+    rasa run --enable-api -m models/nlu-20190515-144445.tar.gz
 
 
 You can then request predictions from your model using the ``/model/parse`` endpoint.
