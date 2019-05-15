@@ -1,12 +1,6 @@
 import os
 
 
-def test_test(run_in_default_project):
-    run_in_default_project("test")
-
-    assert os.path.exists("results")
-
-
 def test_test_core(run_in_default_project):
     run_in_default_project("test", "core", "--stories", "data")
 
