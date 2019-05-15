@@ -13,7 +13,7 @@ your different projects. For example, one skill could handle chitchat while anot
 is responsible for greeting your users. You can develop skills in isolation, and then
 import them for the combined training of a contextual AI assistant.
 
-An example directory structure could e.g. look like this:
+An example directory structure could look like this:
 
 .. code-block:: bash
 
