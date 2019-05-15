@@ -26,7 +26,7 @@ train-core:
 	rasa train core -d domain.yml -s data/stories.md --out models -c config.yml
 
 train-interactive:
-	rasa interactive core -d domain.yml -m models -c config.yml --data data
+	rasa interactive core -d domain.yml -m models -c config.yml --stories data
 
 visualize:
 	rasa visualize
