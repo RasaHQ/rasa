@@ -1,3 +1,7 @@
+import rasa.utils.io as io_utils
+from rasa.cli import x
+
+
 def test_x_help(run):
     output = run("x", "--help")
 
@@ -15,3 +19,33 @@ def test_x_help(run):
 
     for i, line in enumerate(lines):
         assert output.outlines[i] == line
+
+
+def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir_factory):
+    directory = tmpdir_factory.mktemp("directory")
+    credentials_path = str(directory / "credentials.yml")
+
+    io_utils.write_yaml_file({}, credentials_path)
+
+    x._prepare_credentials_for_rasa_x(credentials_path)
+
+    actual = io_utils.read_yaml_file(credentials_path)
+
+    assert actual["rasa"]["url"] == "http://localhost:5002"
+
+
+def test_prepare_credentials_if_already_valid(tmpdir_factory):
+    directory = tmpdir_factory.mktemp("directory")
+    credentials_path = str(directory / "credentials.yml")
+
+    credentials = {
+        "rasa": {"url": "my-custom-url"},
+        "another-channel": {"url": "some-url"},
+    }
+    io_utils.write_yaml_file(credentials, credentials_path)
+
+    x._prepare_credentials_for_rasa_x(credentials_path)
+
+    actual = io_utils.read_yaml_file(credentials_path)
+
+    assert actual == credentials
