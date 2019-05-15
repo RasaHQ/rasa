@@ -38,24 +38,30 @@ how you want your project to be set up.
 
 This creates the following files:
 
-.. code:: bash
 
-   .
-   ├── __init__.py
-   ├── actions.py
-   ├── config.yml
-   ├── credentials.yml
-   ├── data
-   │   ├── nlu.md
-   │   └── stories.md
-   ├── domain.yml
-   ├── endpoints.yml
-   └── models
-       └── <timestamp>.tar.gz
++-------------------------------+--------------------------------------------------------+
+| ``__init__.py``               | an empty file that helps python find your actions      |
++-------------------------------+--------------------------------------------------------+
+| ``actions.py``                | code for your custom actions                           |
++-------------------------------+--------------------------------------------------------+
+| ``config.yml`` *              | configuration of your NLU and Core models              |
++-------------------------------+--------------------------------------------------------+
+| ``credentials.yml``           | details for connecting to other services               |
++-------------------------------+--------------------------------------------------------+
+| ``data/nlu.md`` *             | your NLU training data                                 |
++-------------------------------+--------------------------------------------------------+
+| ``data/stories.md`` *         | your stories                                           |
++-------------------------------+--------------------------------------------------------+
+| ``domain.yml`` *              | your assistant's domain                                |
++-------------------------------+--------------------------------------------------------+
+| ``endpoints.yml``             | details for connecting to channels like fb messenger   |
++-------------------------------+--------------------------------------------------------+
+| ``models/<timestamp>.tar.gz`` | your initial model                                     |
++-------------------------------+--------------------------------------------------------+
 
 
-The most important ones are your NLU training data (``data/nlu.md``)
-your stories (``data/stories.md``) and a domain file (``domain.yml``).
+
+The most important files are marked with a '*'.
 You will learn about all of these in this tutorial.
 
 
@@ -202,7 +208,7 @@ the training results for each training epoch.
 
    rasa train
 
-   print("Finished training! You can move on to the next step!")
+   echo "Finished training."
 
 The ``rasa train`` command will look for both NLU and Core data and will train a model for each.
 
@@ -213,20 +219,22 @@ The ``rasa train`` command will look for both NLU and Core data and will train a
 Congratulations 🚀! You just built an assistant
 powered entirely by machine learning.
 
-The easiest way to try it out and start collecting new training
-data is to use Rasa X.
-
-.. button::
-   :text: Try Rasa X
-   :link: ../../rasa-x/
-
-
-You don't need to use Rasa X to test your assistant, though.
+The next step is to try it out!
 First, repeat the steps in this tutorial on your own machine.
 Then, start talking to your assistant by running:
 
 .. copyable::
 
    rasa shell
+
+
+You can also use Rasa X to collect more conversations
+and improve your assistant:
+
+.. button::
+   :text: Try Rasa X
+   :link: ../../rasa-x/
+
+
 
 
