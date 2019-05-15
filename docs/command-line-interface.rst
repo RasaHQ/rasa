@@ -16,13 +16,13 @@ The command line interface (CLI) gives you easy-to-remember commands for common 
 Command                    Effect
 =========================  ===================================================================================
 ``rasa init``              Creates a new project, with example training data, actions, and config files.
-``rasa run``               Starts a server with your model loaded. See the :ref:`http-api` docs for details.
+``rasa run``               Starts a server with your model loaded. See the :ref:`_section_http` docs for details.
 ``rasa run actions``       Starts an action server using the Rasa SDK.
 ``rasa shell``             Loads your trained model and lets you talk to your assistant on the command line.
-``rasa train``             Trains a model using your nlu data and stories, saves trained model in ``./models``.
-``rasa interactive``       Starts an interactive learning session, to create new training data by chatting.
-``rasa test``              Tests a trained model using your test nlu data and stories.
-``rasa show``              Visualize Rasa Stack data.
+``rasa train``             Trains a model using your NLU data and stories, saves trained model in ``./models``.
+``rasa interactive``       Starts an interactive learning session to create new training data by chatting.
+``rasa test``              Tests a trained model using your test NLU data and stories.
+``rasa visualize``         Visualize Rasa Core stories.
 ``rasa data``              Utils for the Rasa training files.
 ``rasa -h``                Shows all available commands.
 =========================  ===================================================================================
@@ -110,11 +110,11 @@ The following arguments can be used to adapt the server settings:
 
 .. code:: bash
 
-  -p PORT, --port PORT  port to run the server at (default: 5055)
+  -p PORT, --port PORT  Port to run the server at. (default: 5055)
   --cors [CORS [CORS ...]]
-                        enable CORS for the passed origin. Use * to whitelist
-                        all origins (default: None)
-  --actions ACTIONS     name of action package to be loaded (default: actions)
+                        Enable CORS for the passed origin. Use * to whitelist
+                        all origins. (default: None)
+  --actions ACTIONS     Name of action package to be loaded. (default: None)
 
 
 Talk to your Assistant
@@ -137,7 +137,7 @@ The model that should be used to interact with your bot, can be specified by
                         directory. (default: models)
 
 
-In case you start the chat session only with a trained NLU model, `rasa shell` allows
+In case you start the chat session only with a trained NLU model, ``rasa shell` allows
 you to obtain the intent and entities of any text you type on the command line.
 If your model includes a trained Core model, you can chat with your bot and see
 what the bot predicts as a next action.
@@ -166,22 +166,29 @@ output path.
 .. code:: bash
 
   --data DATA [DATA ...]
-                        Paths to the Core and NLU training files (default: data).
+                        Paths to the Core and NLU data files. (default:
+                        ['data'])
   -c CONFIG, --config CONFIG
-                        The policy and NLU pipeline configuration of your bot (default: config.yml).
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
   -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file) (default: domain.yml).
-  --out OUT             Directory where your models should be stored (default: models).
+                        Domain specification (yml file). (default: domain.yml)
+  --out OUT             Directory where your models should be stored.
+                        (default: models)
 
 
 If you only want to train an NLU or a Core model, you can run ``rasa train nlu`` or ``rasa train core``.
 However, Rasa will automatically skip training Core or NLU if the training data and config haven't changed.
 
+``rasa train`` will store the trained model in the directory defined by ``--out``. The name of the model
+is per default ``<timestamp>.tar.gz``. If you want to name your model differently, you can specify the name
+using ``--fixed-model-name``.
+
 .. note::
 
-    Make sure training data for Core and NLU are present when training a model using `rasa train`.
+    Make sure training data for Core and NLU are present when training a model using ``rasa train``.
     If only training data for one model type are present, the command automatically falls back to
-    `rasa train nlu` or `rasa train core` depending on the provided training files.
+    ``rasa train nlu`` or ``rasa train core`` depending on the provided training files.
 
 
 Interactive Learning
@@ -194,25 +201,20 @@ To start an interactive learning session with your assistant, run
    rasa interactive
 
 
-This command will initially train a Rasa model with the data located in `data`, if no other data directory
-was specified. After training the first initial model, the interactive learning session starts. However,
-training will be skipped if the training data and config haven't changed.
-
-For training the initial model you can specify the same arguments as for ``rasa train``:
+If you provide a trained model using
 
 .. code:: bash
 
-  --data DATA [DATA ...]
-                        Paths to the Core and NLU training files (default: data).
-  -c CONFIG, --config CONFIG
-                        The policy and NLU pipeline configuration of your bot (default: config.yml).
-  -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file) (default: domain.yml).
-  --out OUT             Directory where your models should be stored (default: models).
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
 
-
-The interactive learning session starts a Rasa server in the background.
-For more information on the additional parameters for the server, see :ref:`_section_http`.
+the interactive learning process is started with the provided model. If no model is specified,
+``rasa interactive`` will initially train a Rasa model with the data located in ``data``, if no
+other data directory was defined (parameter ``--data``). After training the first initial model,
+the interactive learning session starts. However, training will be skipped if the training data
+and config haven't changed.
 
 
 Create a Train-Test Split
@@ -255,10 +257,10 @@ You can specify the input file, output file, and the output format with the foll
 
 .. code:: bash
 
-  -d DATA_FILE, --data_file DATA_FILE
+  --data-file DATA_FILE
                         File or directory containing training data. (default:
                         None)
-  --out_file OUT_FILE   File where to save training data in Rasa format.
+  --out-file OUT_FILE   File where to save training data in Rasa format.
                         (default: None)
   -f {json,md}, --format {json,md}
                         Output format the training data should be converted
@@ -272,7 +274,7 @@ To open a browser tab with a graph showing your stories:
 
 .. code:: bash
 
-   rasa show stories
+   rasa visualize
 
 Normally, training stories in the directory ``data`` are visualized. If your training stories are located in a
 different location, you can specify the location with
