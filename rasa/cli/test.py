@@ -68,9 +68,10 @@ def test_core(args: argparse.Namespace) -> None:
     if not os.path.exists(output):
         os.makedirs(output)
 
-    if len(args.model) == 1:
+    if isinstance(args.model, list) and len(args.model) == 1:
         args.model = args.model[0]
 
+    if isinstance(args.model, str):
         model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
         test_core(
@@ -91,7 +92,7 @@ def test_nlu(args: argparse.Namespace) -> None:
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
 
-    if args.model:
+    if not args.cross_validation:
         model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
         test_nlu(model_path, nlu_data, vars(args))
     else:
@@ -102,12 +103,5 @@ def test_nlu(args: argparse.Namespace) -> None:
 
 
 def test(args: argparse.Namespace):
-    model = args.model
-
-    # expects a list of models
-    args.model = [model]
     test_core(args)
-
-    # expects a string as model
-    args.model = model
     test_nlu(args)
