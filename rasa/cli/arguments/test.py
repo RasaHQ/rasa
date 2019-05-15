@@ -79,7 +79,7 @@ def add_test_nlu_argument_group(
         required=False,
         nargs="?",
         const="reports",
-        default=False,
+        default=None,
         help="Output path to save the intent/entity metrics report.",
     )
     parser.add_argument(
@@ -87,7 +87,7 @@ def add_test_nlu_argument_group(
         required=False,
         nargs="?",
         const="successes.json",
-        default=False,
+        default=None,
         help="Output path to save successful predictions.",
     )
     parser.add_argument(
