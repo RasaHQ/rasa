@@ -49,7 +49,7 @@ The different parameters are:
 
     If you start the server with an NLU-only model, not all the available endpoints
     can be called. Be aware that some endpoints will return a 409 status code, as a trained
-    Rasa Core model is needed to process the request.
+    Core model is needed to process the request.
 
 
 Fetching Models from a Server
