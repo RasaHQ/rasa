@@ -241,8 +241,7 @@ class SlackInput(InputChannel):
         """Parse the payload for the response value."""
 
         if action["type"] == "button":
-            # TODO: Support link buttons
-            return action["value"]
+            return action.get("value")  # No input payload for link buttons
         elif action["type"] == "select":
             return action["selected_options"][0]["value"]
         elif action["type"] == "static_select":
@@ -304,9 +303,12 @@ class SlackInput(InputChannel):
                 if self._is_interactive_message(payload):
                     sender_id = payload["user"]["id"]
                     text = self._get_interactive_repsonse(payload["actions"][0])
-                    return await self.process_message(
-                        request, on_new_message, text=text, sender_id=sender_id
-                    )
+                    if text is None:
+                        return await self.process_message(
+                            request, on_new_message, text=text, sender_id=sender_id
+                        )
+                    elif payload["actions"][0]["type"] == "button":
+                        return response.text("User clicked link button")
                 return response.text(
                     "The input message could not be processed.", status=500
                 )
@@ -326,6 +328,6 @@ class SlackInput(InputChannel):
                         sender_id=output.get("event").get("user"),
                     )
 
-            return response.text("Bot message successful")
+            return response.text("Bot message delivered")
 
         return slack_webhook
