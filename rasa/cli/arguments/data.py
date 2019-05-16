@@ -1,12 +1,14 @@
 import argparse
 
-from rasa.cli.arguments.default_arguments import add_nlu_data_param, add_out_param
+from rasa.cli.arguments.default_arguments import (
+    add_nlu_data_param,
+    add_out_param,
+    add_data_param,
+)
 
 
 def set_convert_arguments(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "--data", required=True, help="File or directory containing NLU data."
-    )
+    add_data_param(parser, required=True, default=None, data_type="Rasa NLU ")
 
     add_out_param(
         parser,
