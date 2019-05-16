@@ -8,9 +8,9 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
-.. _migration-to-0-15-0:
+.. _migration-to-rasa-1.0:
 
-0.14.x to 0.15.0
+0.x.x to Rasa 1.0
 
 General
 ~~~~~~~
@@ -32,6 +32,17 @@ General
   ``rasa.nlu.test`` -> ``rasa test nlu``
   ``rasa.nlu.train`` -> ``rasa train nlu``
 
+- If you have written a custom output channel, all ``send_`` methods subclassed
+  from the ``OutputChannel`` class need to take an additional ``**kwargs``
+  argument. You can use these keyword args from your custom action code or the
+  templates in your domain file to send any extra parameters used in your
+  channel's send methods.
+
+- If you were importing the ``Button`` or ``Element`` classes from
+  ``rasa_core.dispatcher``, these are now to be imported from ``rasa_sdk.utils``.
+
+Script parameters
+~~~~~~~~~~~~~~~~~
 - All script parameter names have been unified to follow the same schema.
   Any underscores (``_``) in arguments have been replaced with dashes (``-``).
   Due to change the following argument names changed:
@@ -53,8 +64,6 @@ General
   ``--skip_visualization`` -> ``--skip-visualization``
   ``--training_fraction`` -> ``--training-fraction``
 
-Script parameters
-~~~~~~~~~~~~~~~~~
 - the ``--num_threads`` parameter got removed from the ``run`` command. The
   server will always run single threaded, but in an async way. If you want to
   make use of multiple processes, feel free to check out the sanic server
