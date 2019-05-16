@@ -104,7 +104,7 @@ jobs:
     - cd starter-pack-rasa-stack
     - python -m pytest tests
   - stage: docs
-    if: fork = false AND branch = "post-merge-docs" # forked repository will skip building docs, only master & PRs to it
+    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
     - RASABASTER=rasabaster-0.7.20.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
