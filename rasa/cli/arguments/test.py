@@ -28,7 +28,7 @@ def set_test_core_arguments(parser: argparse.ArgumentParser):
 
 
 def set_test_nlu_arguments(parser: argparse.ArgumentParser):
-    add_test_nlu_model_param(parser)
+    add_model_param(parser, add_positional_arg=False)
     add_test_nlu_argument_group(parser)
 
 
@@ -79,7 +79,7 @@ def add_test_nlu_argument_group(
         required=False,
         nargs="?",
         const="reports",
-        default=False,
+        default=None,
         help="Output path to save the intent/entity metrics report.",
     )
     parser.add_argument(
@@ -87,7 +87,7 @@ def add_test_nlu_argument_group(
         required=False,
         nargs="?",
         const="successes.json",
-        default=False,
+        default=None,
         help="Output path to save successful predictions.",
     )
     parser.add_argument(
@@ -111,6 +111,12 @@ def add_test_nlu_argument_group(
 
     cross_validation_arguments = parser.add_argument_group("Cross Validation")
     cross_validation_arguments.add_argument(
+        "--cross-validation",
+        action="store_true",
+        default=False,
+        help="Switch on cross validation mode. Any provided model will be ignored.",
+    )
+    cross_validation_arguments.add_argument(
         "-c",
         "--config",
         type=str,
@@ -123,19 +129,6 @@ def add_test_nlu_argument_group(
         required=False,
         default=10,
         help="Number of cross validation folds (cross validation only).",
-    )
-
-
-def add_test_nlu_model_param(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "-m",
-        "--model",
-        type=str,
-        default=None,
-        help="Path to a trained Rasa model. If a directory "
-        "is specified, it will use the latest model "
-        "in this directory. If none is given it will "
-        "perform crossvalidation.",
     )
 
 

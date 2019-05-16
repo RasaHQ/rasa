@@ -101,7 +101,7 @@ async def test_http_interpreter():
 
         query = json_of_latest_request(r)
         response = {
-            "q": "message_text",
+            "text": "message_text",
             "message_id": "1134",
             "model": None,
             "token": None,
