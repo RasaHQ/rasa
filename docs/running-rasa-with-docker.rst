@@ -365,6 +365,27 @@ conversations are lost as soon as you restart the Rasa server.
 If you want to persist your conversations, you can use a different
 :ref:`tracker_store`.
 
+Using PostgresSQL as Tracker Store
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Start by adding PostgresSQL to your docker-compose file:
+
+.. code-block:: yaml
+
+  postgres:
+    image: postgres:latest
+
+Then add PostgresSQL to the ``tracker_store`` section of your endpoint
+configuration ``config/endpoints.yml``:
+
+.. code-block:: yaml
+
+  tracker_store:
+    type: sql
+    dialect: "postgresql"
+    url: postgres
+    db: rasa
+
 Using MongoDB as Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
