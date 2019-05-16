@@ -38,7 +38,7 @@ def add_subparser(
 
     if is_rasa_x_installed():
         # we'll only show the help msg for the command if Rasa X is actually installed
-        x_parser_args["help"] = "Starts Rasa X and the interface."
+        x_parser_args["help"] = "Starts the Rasa X interface."
 
     shell_parser = subparsers.add_parser("x", **x_parser_args)
     shell_parser.set_defaults(func=rasa_x)

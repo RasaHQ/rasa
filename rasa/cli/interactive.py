@@ -22,7 +22,8 @@ def add_subparser(
         conflict_handler="resolve",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Starts an interactive learning session to create new training data by chatting.",
+        help="Starts an interactive learning session to create new training data for a "
+        "Rasa model by chatting.",
     )
     interactive_parser.set_defaults(func=interactive)
 
@@ -32,7 +33,9 @@ def add_subparser(
         conflict_handler="resolve",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Trains a Rasa Core model in an interactive learning session.",
+        help="Starts an interactive learning session model to create new training data "
+        "for a Rasa Core model by chatting. Uses the 'RegexInterpreter', i.e. "
+        "`/<intent>` input format.",
     )
     interactive_core_parser.set_defaults(func=interactive_core)
 
