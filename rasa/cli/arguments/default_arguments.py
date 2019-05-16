@@ -76,12 +76,14 @@ def add_config_param(
     )
 
 
-def add_out_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
+def add_out_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    default: Optional[Text] = DEFAULT_MODELS_PATH,
+    help: Text = "Directory where your models should be stored.",
+    required: bool = False,
+):
     parser.add_argument(
-        "--out",
-        type=str,
-        default=DEFAULT_MODELS_PATH,
-        help="Directory where your models should be stored.",
+        "--out", type=str, default=default, help=help, required=required
     )
 
 

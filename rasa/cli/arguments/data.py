@@ -1,16 +1,17 @@
 import argparse
 
-from rasa.cli.arguments.default_arguments import add_nlu_data_param
+from rasa.cli.arguments.default_arguments import add_nlu_data_param, add_out_param
 
 
 def set_convert_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "--data-file", required=True, help="File or directory containing training data."
+        "--data", required=True, help="File or directory containing NLU data."
     )
 
-    parser.add_argument(
-        "--out-file",
+    add_out_param(
+        parser,
         required=True,
+        default=None,
         help="File where to save training data in Rasa format.",
     )
 
@@ -35,9 +36,8 @@ def set_split_arguments(parser: argparse.ArgumentParser):
         help="Percentage of the data which should be in the training data.",
     )
 
-    parser.add_argument(
-        "--out",
-        type=str,
+    add_out_param(
+        parser,
         default="train_test_split",
         help="Directory where the split files should be stored.",
     )

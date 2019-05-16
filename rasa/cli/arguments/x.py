@@ -41,7 +41,7 @@ def set_x_arguments(shell_parser: argparse.ArgumentParser):
     )
 
     shell_parser.add_argument(
-        "--data-path",
+        "--data",
         type=str,
         default="data",
         help=(

@@ -4,6 +4,7 @@ from rasa.cli.arguments.default_arguments import (
     add_config_param,
     add_domain_param,
     add_stories_param,
+    add_out_param,
 )
 
 
@@ -12,10 +13,9 @@ def set_visualize_stories_arguments(parser: argparse.ArgumentParser):
     add_stories_param(parser)
     add_config_param(parser)
 
-    parser.add_argument(
-        "--output",
+    add_out_param(
+        parser,
         default="graph.html",
-        type=str,
         help="Filename of the output path, e.g. 'graph.html'.",
     )
 

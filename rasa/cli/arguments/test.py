@@ -8,6 +8,7 @@ from rasa.cli.arguments.default_arguments import (
     add_model_param,
     add_nlu_data_param,
     add_endpoint_param,
+    add_out_param,
 )
 from rasa.model import get_latest_model
 
@@ -39,9 +40,8 @@ def add_test_core_argument_group(
     parser.add_argument(
         "--max-stories", type=int, help="Maximum number of stories to test on."
     )
-    parser.add_argument(
-        "--output",
-        type=str,
+    add_out_param(
+        parser,
         default="results",
         help="Output path for any files created during the evaluation.",
     )
