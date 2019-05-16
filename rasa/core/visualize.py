@@ -2,6 +2,9 @@ import logging
 import os
 from typing import Text
 
+from rasa.cli.utils import print_error
+
+from rasa.core.domain import InvalidDomain
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +20,23 @@ async def visualize(
     from rasa.core.agent import Agent
     from rasa.core import config
 
-    policies = config.load(config_path)
+    try:
+        policies = config.load(config_path)
+    except ValueError as e:
+        print_error(
+            "Could not load config due to: '{}'. To specify a valid config file use "
+            "the '--config' argument.".format(e)
+        )
+        return
 
-    agent = Agent(domain_path, policies=policies)
+    try:
+        agent = Agent(domain=domain_path, policies=policies)
+    except InvalidDomain as e:
+        print_error(
+            "Could not load domain due to: '{}'. To specify a valid domain path use "
+            "the '--domain' argument.".format(e)
+        )
+        return
 
     # this is optional, only needed if the `/greet` type of
     # messages in the stories should be replaced with actual
