@@ -28,7 +28,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Train a Rasa Core model using your stories.",
+        help="Trains a Rasa Core model using your stories.",
     )
     train_core_parser.set_defaults(func=train_core)
 
