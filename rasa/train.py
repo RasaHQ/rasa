@@ -193,8 +193,7 @@ async def _do_training(
         )
     else:
         print (
-            "Stories / configuration did not change. "
-            "No need to retrain Core model."
+            "Stories / configuration did not change. " "No need to retrain Core model."
         )
 
     if force_training or retrain_nlu:
