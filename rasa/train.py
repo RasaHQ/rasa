@@ -281,7 +281,7 @@ async def train_core_async(
 
     if not os.listdir(story_directory):
         print_error(
-            "No Core data given. Please provide Core data in order to "
+            "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."
         )
         return
