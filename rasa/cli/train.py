@@ -15,7 +15,7 @@ def add_subparser(
 
     train_parser = subparsers.add_parser(
         "train",
-        help="Train a Rasa model using your NLU data and stories.",
+        help="Trains a Rasa model using your NLU data and stories.",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
