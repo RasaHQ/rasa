@@ -136,7 +136,7 @@ Now you can train your own Rasa model by running:
     rasa/rasa:latest-full \
     train \
       --domain domain.yml \
-      --stories data/stories.md \
+      --data data/stories.md \
       --out models
 
 Here's what's happening in that command:
