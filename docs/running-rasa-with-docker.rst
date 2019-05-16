@@ -313,7 +313,7 @@ To spin it up together with the Rasa instance, add a service
        volumes:
          - ./actions:/app/actions
 
-This pulls the image for the Rasa Core SDK which includes the action server,
+This pulls the image for the Rasa SDK which includes the action server,
 mounts your custom actions into it, and starts the server.
 
 To instruct Rasa to use the action server you have to tell Rasa its location.
