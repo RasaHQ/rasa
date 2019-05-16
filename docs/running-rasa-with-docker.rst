@@ -1,5 +1,5 @@
-:desc: Run and ship your Rasa assistant with Docker containers as on any docker
-       compatible machine or cluster.
+:desc: Run and ship your Rasa assistant with Docker containers on any
+       Docker-compatible machine or cluster.
 
 .. _docker_guide:
 
@@ -24,7 +24,7 @@ If you're not sure if you have Docker installed, you can check by running:
     # docker-compose version 1.23.2, build 1110ad01
 
 If Docker is installed on your machine, the output should show you your installed
-versions of docker and docker-compose. If the command doesn't work, you'll have to install docker.
+versions of docker and docker-compose. If the command doesn't work, you'll have to install Docker.
 See `here <https://docs.docker.com/install/>`_ for details.
 
 Building an Assistant with Rasa and Docker
@@ -35,7 +35,7 @@ This section will cover the following:
     - Setting up your Rasa project and training an initial model
     - Talking to your AI assistant via Docker
 
-    - Choosing a Tag
+    - Choosing a Docker image tag
     - Training your Rasa models using Docker
     - Talking to your assistant using Docker
     - Running a Rasa server with Docker
@@ -110,9 +110,9 @@ The tags are:
 
 The plain ``latest`` tag includes all the dependencies you need to run the ``supervised_embeddings`` pipeline.
 If you are using components with pre-trained word vectors, you need to choose the corresponding tag.
-Alternatively, you can use the ``-full`` tag which includes everything.
+Alternatively, you can use the ``-full`` tag which includes all pipeline dependencies.
 
-.. note:: 
+.. note::
 
    You can see a list of all the versions and tags of the rasa docker image
    `here <https://hub.docker.com/r/rasa/rasa/>`_ .
@@ -123,7 +123,7 @@ Alternatively, you can use the ``-full`` tag which includes everything.
 Training a Custom Rasa Model with Docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Edit the ``config.yml`` file to use the pipeline you want, and place 
+Edit the ``config.yml`` file to use the pipeline you want, and place
 your NLU and Core data into the ``data/`` directory.
 Now you can train your own Rasa model by running:
 
@@ -149,6 +149,14 @@ Here's what's happening in that command:
 In this case, we've also passed values for the location of the domain file, stories file, and the models output
 directory to show how these can be customized.
 You can also leave these out since we are passing the default values.
+
+.. note::
+
+    If you are using a custom NLU component or policy, you have to add the module file to your
+    Docker container. You can do this by either mounting the file or by including it in your
+    own custom image (e.g. if the custom component or policy has extra dependencies). Make sure
+    that your module is in the Python module search path, e.g. by setting the
+    environment variable ``PYTHONPATH=$PYTHONPATH:<directory of your module>``.
 
 
 Running the Rasa Server
@@ -180,84 +188,13 @@ Command Description:
   - ``run``: Executes the ``rasa run`` command. For more information see
     :ref:`cli-usage`.
 
-Using a Custom Policy
-~~~~~~~~~~~~~~~~~~~~~
-
-If you have a custom policy configuration, you can set that in the ``config
-.yml``. If this file currently does not exist in your project directory, create it:
-
-.. code-block:: bash
-
-  touch config.yml
-
-Put your policy configuration in there, e.g.:
-
-.. code-block:: yaml
-
-  policies:
-  - name: MemoizationPolicy
-  - name: KerasPolicy
-
-Then make sure ``config.yml`` is mounted as file or through its parent directory (if
-you are following the guide it is mounted through the project directory).
-
-Using a Custom NLU Pipeline
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you want to configure the components of your :ref:`choosing_pipeline` you can
-configure that in the ``config.yml`` file. If this file currently does not exist in
-your project directory, create it:
-
-.. code-block:: bash
-
-  touch config.yml
-
-
-Put the description of your custom pipeline in there, e.g.:
-
-.. code-block:: yaml
-
-  pipeline:
-  - name: "SpacyNLP"
-  - name: "SpacyTokenizer"
-  - name: "RegexFeaturizer"
-  - name: "SpacyFeaturizer"
-  - name: "CRFEntityExtractor"
-  - name: "SklearnIntentClassifier"
-
-Then retrain your model as described earlier in :ref:`model_training_docker`.
-
-Depending on the selected
-`NLU Pipeline <https://rasa.com/docs/nlu/choosing_pipeline/>`_ you might
-have to use a different Rasa NLU image:
-
-  - ``rasa/rasa_nlu:latest-spacy``: To use the ``pretrained_embeddings_spacy`` pipeline
-  - ``rasa/rasa_nlu:latest-tensorflow``: To use the ``supervised_embeddings``
-    pipeline
-  - ``rasa/rasa_nlu:latest-mitie``: To use a pipeline which includes ``mitie``
-  - ``rasa/rasa_nlu:latest-full``: To build a pipeline with dependencies to
-    spaCy and TensorFlow
-  - ``rasa/rasa_nlu:latest-bare``: To start with minimal dependencies so
-    that you can then add your own
-
-Then make sure ``config.yml`` is mounted as file or through its parent directory (if
-you are following the guide it is mounted through the project directory).
-
-.. note::
-
-    If you are using a custom NLU component, you have to add the module file to your
-    Docker container. Either do this by mounting the file or by including it in the
-    image. Make sure that your module is in the Python module search path, e.g. by
-    setting the environment variable ``PYTHONPATH=$PYTHONPATH:<directory of your
-    module>``.
-
 
 Using Docker Compose to Run Multiple Services
 ---------------------------------------------
 
 To run Rasa together with other services, such as a server for custom actions, it is
-recommend to use `docker compose <https://docs.docker.com/compose/>`_.
-*docker-compose* provides an easy way to run multiple containers together without
+recommend to use `Docker Compose <https://docs.docker.com/compose/>`_.
+Docker Compose provides an easy way to run multiple containers together without
 having to run multiple commands.
 
 Start by creating a file called ``docker-compose.yml``:
@@ -296,7 +233,7 @@ This is the port of the :ref:`rest_channels` interface of Rasa.
 
 .. note::
 
-    Since Docker Compose starts a set of Docker containers it is not longer
+    Since Docker Compose starts a set of Docker containers, it is no longer
     possible to directly connect to one single container after executing the
     ``run`` command.
 
@@ -341,13 +278,13 @@ Then build a custom action using the Rasa Core SDK, e.g.:
       return "action_joke"
 
     def run(self, dispatcher, tracker, domain):
-      request = requests.get('http://api.icndb.com/jokes/random').json() #make an api call
-      joke = request['value']['joke'] #extract a joke from returned json response
-      dispatcher.utter_message(joke) #send the message back to the user
+      request = requests.get('http://api.icndb.com/jokes/random').json()  # make an api call
+      joke = request['value']['joke']  # extract a joke from returned json response
+      dispatcher.utter_message(joke)  # send the message back to the user
       return []
 
 Next add the custom action in your stories and your domain file.
-Continuing the example from above replace ``utter_cheer_up`` in
+Continuing with the example bot from ``rasa init``, replace ``utter_cheer_up`` in
 ``data/stories.md`` with the custom action ``action_joke`` and add
 ``action_joke`` to the actions in the domain file.
 
@@ -393,10 +330,10 @@ with Rasa.
 Adding Custom Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If your custom action has additional dependencies, either systems or python libraries,
+If your custom action has additional dependencies of systems or python libraries,
 you can add these by extending the official image.
 
-To do so create a Dockerfile, extend the official image and add your custom
+To do so create a file named ``Dockerfile``, extend the official image and add your custom
 dependencies, e.g.:
 
 .. code-block:: docker
@@ -412,7 +349,8 @@ dependencies, e.g.:
     RUN pip install --no-cache-dir \
         jupyter
 
-You can then build the image and use it in your ``docker-compose.yml``:
+You can then build the image via the following command, and use it in your
+``docker-compose.yml`` instead of the ``rasa/rasa`` image.
 
 .. code-block:: bash
 
@@ -421,9 +359,9 @@ You can then build the image and use it in your ``docker-compose.yml``:
 Adding a Custom Tracker Store
 -----------------------------
 
-By default all conversations are saved in memory. This mean that all
-conversations are lost as soon as you restart Rasa.
-If you want to persist your conversations, you can use different
+By default all conversations are saved in memory. This means that all
+conversations are lost as soon as you restart the Rasa server.
+If you want to persist your conversations, you can use a different
 :ref:`tracker_store`.
 
 Using MongoDB as Tracker Store
@@ -493,5 +431,5 @@ to add this store to Rasa:
 Then add the required configuration to your endpoint configuration
 ``endpoints.yml`` as it is described in :ref:`tracker_store`.
 If you want the tracker store component (e.g. a certain database) to be part
-of your docker compose file, add a corresponding service and configuration
+of your Docker Compose file, add a corresponding service and configuration
 there.
