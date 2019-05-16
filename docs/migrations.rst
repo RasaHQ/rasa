@@ -10,7 +10,7 @@ how you can migrate from one version to another.
 
 .. _migration-to-rasa-1.0:
 
-0.x.x to Rasa 1.0
+0.14.x to Rasa 1.0
 
 General
 ~~~~~~~
