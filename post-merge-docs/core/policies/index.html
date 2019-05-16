@@ -531,7 +531,8 @@ in the form are filled. For more information, see <a class="reference external" 
 the mapped action will always be executed. The mappings are assigned by giving
 and intent the property <cite>‘triggers’</cite>, e.g.:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
- <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="nv">triggers</span><span class="p p-Indicator">:</span> <span class="nv">utter_goodbye</span><span class="p p-Indicator">}</span>
+ <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span>
+     <span class="l l-Scalar l-Scalar-Plain">triggers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
 </pre></div>
 </div>
 <p>An intent can only be mapped to at most one action. The bot will run
@@ -540,17 +541,17 @@ it will listen for the next message.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>The mapping policy will predict the mapped action after the intent (e.g.
-<code class="docutils literal notranslate"><span class="pre">utter_goodbye</span></code> in the above example) and afterwards it will wait for
+<code class="docutils literal notranslate"><span class="pre">utter_greet</span></code> in the above example) and afterwards it will wait for
 the next user message (predicting <code class="docutils literal notranslate"><span class="pre">action_listen</span></code>). With the next
 user message normal prediction will resume.</p>
 <p>You should have an example like</p>
 <div class="highlight-story notranslate"><div class="highlight"><pre><span></span>* greet
-  - utter_goodbye
+  - utter_greet
 </pre></div>
 </div>
 <p class="last">in your stories. Otherwise any machine learning policy might be confused
-by the sudden appearance of the predicted <code class="docutils literal notranslate"><span class="pre">action_greet</span></code> in
-the dialouge history.</p>
+by the sudden appearance of the predicted <code class="docutils literal notranslate"><span class="pre">utter_greet</span></code> in
+the dialogue history.</p>
 </div>
 </div>
 <div class="section" id="fallback-policy">

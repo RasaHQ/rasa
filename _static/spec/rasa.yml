@@ -1455,8 +1455,8 @@ components:
 
                   goodbye        1.00      1.00      1.00         4
                   greet          1.00      1.00      1.00         6
-                  mood_affirm    1.00      1.00      1.00         5
-                  mood_deny      1.00      1.00      1.00         6
+                  affirm         1.00      1.00      1.00         5
+                  deny           1.00      1.00      1.00         6
                   mood_great     1.00      1.00      1.00         8
                   mood_unhappy   1.00      1.00      1.00        10
 
@@ -1494,8 +1494,8 @@ components:
           intents:
             - greet
             - goodbye
-            - mood_affirm
-            - mood_deny
+            - affirm
+            - deny
             - mood_great
             - mood_unhappy
 
