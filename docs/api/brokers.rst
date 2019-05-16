@@ -232,4 +232,3 @@ according to the security protocol being used. The following implementation show
     for message in consumer:
         print(message.value)
 
-.. include:: feedback.inc
