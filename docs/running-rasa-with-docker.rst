@@ -6,16 +6,16 @@
 Running Rasa with Docker
 ========================
 
-This is a guide on how to set up Rasa using Docker.
-If you have not used Rasa before it is recommended to read the :ref:`tutorial`.
+This is a guide on how to use Rasa with Docker.
+If you haven't used Rasa before, we'd recommend that you read the :ref:`tutorial`.
 
 .. contents::
+   :local:
 
-1. Installing Docker
---------------------
+Installing Docker
+-----------------
 
-If you are not sure whether Docker is installed on your machine execute the
-following command:
+If you're not sure if you have Docker installed, you can check by running:
 
   .. code-block:: bash
 
@@ -23,141 +23,109 @@ following command:
     # Docker version 18.09.2, build 6247962
     # docker-compose version 1.23.2, build 1110ad01
 
-If Docker is installed on your machine, the command above will print the
-versions of docker and docker-compose. If not -- please install Docker.
-See `this instruction page <https://docs.docker.com/install/>`_ for the
-instructions.
+If Docker is installed on your machine, the output should show you your installed
+versions of docker and docker-compose. If the command doesn't work, you'll have to install docker.
+See `here <https://docs.docker.com/install/>`_ for details.
 
-2. Creating a Chatbot Using Rasa
--------------------------------------
+Building an Assistant with Rasa and Docker
+------------------------------------------
 
 This section will cover the following:
 
-    - Setup of simple chatbot
-    - Training of the Rasa model using Docker
-    - Running the chatbot using Docker
+    - Setting up your Rasa project and training an initial model
+    - Talking to your AI assistant via Docker
 
-2.1 Setup
-~~~~~~~~~
-
-Start by creating a directory ``data`` in your project directory.
-Add a file ``nlu.md`` to your ``data`` directory which includes the training data
-for the natural language understanding:
-
-.. code-block:: bash
-
-  mkdir data
-  touch data/nlu.md
-
-Then add some examples to each intent, e.g.:
-
-.. code-block:: md
-
-  ## intent:greet
-  - hey
-  - hello
-  - hi
-  - good morning
-  - good evening
-  - hey there
-
-  ## intent:mood_happy
-  - perfect
-  - very good
-  - great
-  - amazing
-  - wonderful
-  - I am feeling very good
-  - I am great
-  - I'm good
-
-  ## intent:mood_unhappy
-  - sad
-  - very sad
-  - unhappy
-  - bad
-  - very bad
-  - awful
-  - terrible
-  - not very good
-  - extremely sad
-  - so sad
-
-  ## intent:goodbye
-  - bye
-  - goodbye
-  - see you around
-  - see you later
+    - Choosing a Tag
+    - Training your Rasa models using Docker
+    - Talking to your assistant using Docker
+    - Running a Rasa server with Docker
 
 
-Then create a file called ``stories.md`` in this directory which will contain the
-stories to train your chatbot:
+Setup
+~~~~~
+
+Just like in the :ref:`tutorial`, you'll use the ``rasa init`` command to create a project.
+The only difference is that you'll be running Rasa inside a docker container, using the image ``rasa/rasa``.
+To initialize your project, run:
 
 .. code-block:: bash
 
-  touch data/stories.md
+   docker run -v $(pwd):/app rasa/rasa init --no-prompt
 
-Next add some stories to ``data/stories.md``, e.g.:
+What does this command mean?
 
-.. code-block:: md
+- ``-v $(pwd):/app`` mounts your current working directory to the working directory in the docker container. This means
+   that files you create on your computer will be visible inside the container, and files created in the container will
+   get synced back to your computer.
+- ``rasa/rasa`` is the name of the docker image to run.
+- the docker image has the ``rasa`` command as its entrypoint, which means you don't have to type ``rasa init``, just ``init`` is enough.
 
-  ## happy_path
-  * greet
-    - utter_greet
-  * mood_happy
-    - utter_happy
-  * goodbye
-    - utter_goodbye
+Running this command will produce a lot of output. What happens is:
 
-  ## sad_path
-  * greet
-    - utter_greet
-  * mood_unhappy
-    - utter_cheer_up
-  * goodbye
-    - utter_goodbye
+- a Rasa project is created (see :ref:`tutorial`)
+- an initial model is trained using the project's training data.
 
-After defining the training data for your chatbot, you have to define its domain.
-To do so create a file ``domain.yml`` in your project directory:
+To check that the command completed correctly, look at the contents of your working directory:
 
 .. code-block:: bash
 
-  touch domain.yml
+   ls -1
 
-Then add the user intents, the actions of your chatbot, and the templates
-for the chatbot responses to ``domain.yml``:
+The initial project files should all be there, as well as a ``models`` directory that contains your trained model.
 
-.. code-block:: yaml
+Talking to Your Assistant
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    intents:
-      - greet
-      - mood_happy
-      - mood_unhappy
-      - goodbye
+To talk to your newly-trained assistant, run this command:
 
-    actions:
-      - utter_greet
-      - utter_happy
-      - utter_cheer_up
-      - utter_goodbye
 
-    templates:
-      utter_greet:
-        - text: "Hi, how is it going?"
-      utter_happy:
-        - text: "Great, carry on!"
-      utter_cheer_up:
-        - text: "Don't be sad. Keep smiling!"
-      utter_goodbye:
-        - text: "Goodbye!"
+.. code-block:: bash
+
+   docker run -it -v $(pwd):/app rasa/rasa shell
+
+This will start a shell where you can chat to your assistant.
+Note that this command includes the flags ``-it``, which means that your are running
+docker interactively, and you are able to give input via the command line.
+For commands which require interactive input, like ``rasa shell`` and ``rasa interactive``,
+you need to pass the ``-it`` flags.
+
+
+Customizing your Model
+----------------------
+
+Choosing a Tag
+~~~~~~~~~~~~~~
+
+To keep images as small as possible, we publish different tags of the ``rasa/rasa`` image
+with different dependencies installed. See :ref:`choosing_pipeline` for more information.
+
+All tags start with a version, the ``latest`` tag corresponds to the current master build.
+The tags are:
+
+- ``{version}``
+- ``{version}-spacy-en``
+- ``{version}-spacy-de``
+- ``{version}-mitie-en``
+- ``{version}-full``
+
+The plain ``latest`` tag includes all the dependencies you need to run the ``supervised_embeddings`` pipeline.
+If you are using components with pre-trained word vectors, you need to choose the corresponding tag.
+Alternatively, you can use the ``-full`` tag which includes everything.
+
+.. note:: 
+
+   You can see a list of all the versions and tags of the rasa docker image
+   `here <https://hub.docker.com/r/rasa/rasa/>`_ .
+
 
 .. _model_training_docker:
 
-2.2 Training the Rasa Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Training a Custom Rasa Model with Docker
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-Now you can train the Rasa model using the following command:
+Edit the ``config.yml`` file to use the pipeline you want, and place 
+your NLU and Core data into the ``data/`` directory.
+Now you can train your own Rasa model by running:
 
 .. code-block:: bash
 
@@ -165,11 +133,11 @@ Now you can train the Rasa model using the following command:
     -v $(pwd):/app \
     rasa/rasa:latest-full \
     train \
-      --domain project/domain.yml \
-      --stories project/data/stories.md \
+      --domain domain.yml \
+      --stories data/stories.md \
       --out models
 
-Command Description:
+Here's what's happening in that command:
 
   - ``-v $(pwd):/app``: Mounts your project directory into the Docker
     container so that Rasa can train a model on your training data
@@ -178,39 +146,16 @@ Command Description:
     the default locations for the configuration files and training data. For more
     information see :ref:`cli-usage`.
 
+In this case, we've also passed values for the location of the domain file, stories file, and the models output
+directory to show how these can be customized.
+You can also leave these out since we are passing the default values.
 
-This created a directory called ``models`` which contains the trained Rasa model.
 
-2.3 Speaking to the AI Assistant
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can now test the trained model.
-
-.. code-block:: bash
-
-  docker run \
-    -it \
-    -v $(pwd)/models:/app/models \
-    rasa/rasa:latest-full \
-    shell
-
-Command Description:
-
-  - ``-it``: Runs the Docker container in interactive mode so that you can
-    interact with the console of the container
-  - ``-v $(pwd)/models:/app/models``: Mounts the directory with the trained Rasa model
-    in the container
-  - ``rasa/rasa:latest-full``: Use the Rasa image with the tag ``latest-full``
-  - ``shell``: Executes the ``rasa shell`` command which connects to the chatbot on the
-    command line. For more information see :ref:`cli-usage`.
-
-.. _running_docker_container:
-
-2.4 Running the AI Assistant
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Running the Rasa Server
+-----------------------
 
 To run your AI assistant in production, configure your required
-:ref:`messaging-and-voice-channels` in ``credentials.yml``. If the files does not
+:ref:`messaging-and-voice-channels` in ``credentials.yml``. If this file does not
 exist, create it using:
 
 .. code-block:: bash
@@ -235,8 +180,8 @@ Command Description:
   - ``run``: Executes the ``rasa run`` command. For more information see
     :ref:`cli-usage`.
 
-2.5 Using a Custom Policy
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Using a Custom Policy
+~~~~~~~~~~~~~~~~~~~~~
 
 If you have a custom policy configuration, you can set that in the ``config
 .yml``. If this file currently does not exist in your project directory, create it:
@@ -256,8 +201,8 @@ Put your policy configuration in there, e.g.:
 Then make sure ``config.yml`` is mounted as file or through its parent directory (if
 you are following the guide it is mounted through the project directory).
 
-2.6 Using a Custom NLU Pipeline
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using a Custom NLU Pipeline
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you want to configure the components of your :ref:`choosing_pipeline` you can
 configure that in the ``config.yml`` file. If this file currently does not exist in
@@ -307,8 +252,8 @@ you are following the guide it is mounted through the project directory).
     module>``.
 
 
-3. docker-compose Setup
------------------------
+Using Docker Compose to Run Multiple Services
+---------------------------------------------
 
 To run Rasa together with other services, such as a server for custom actions, it is
 recommend to use `docker compose <https://docs.docker.com/compose/>`_.
@@ -321,18 +266,11 @@ Start by creating a file called ``docker-compose.yml``:
 
   touch docker-compose.yml
 
-The file starts with the version of the Docker Compose specification that you
-want to use, e.g.:
+Add the following content to the file:
 
 .. code-block:: yaml
 
   version: '3.0'
-
-Each container is declared as a ``service`` within the docker compose file.
-The first service is the ``rasa`` service.
-
-.. code-block:: yaml
-
   services:
     rasa:
       image: rasa/rasa:latest-full
@@ -342,6 +280,12 @@ The first service is the ``rasa`` service.
         - ./:/app
       command:
         - run
+
+
+The file starts with the version of the Docker Compose specification that you
+want to use.
+Each container is declared as a ``service`` within the docker compose file.
+The first service is the ``rasa`` service.
 
 
 The command is similar to the ``docker run`` command in :ref:`running_docker_container`.
@@ -363,15 +307,15 @@ To run the services configured in your ``docker-compose.yml`` execute:
     docker-compose up
 
 
-4. Adding Custom Actions
-------------------------
+Adding Custom Actions
+---------------------
 
-To create more sophisticated chatbots you will probably use :ref:`custom-actions`.
+To create more sophisticated assistants you will want to use :ref:`custom-actions`.
 Continuing the example from above you might want to add an action which tells
 the user a joke to cheer the user up.
 
-4.1 Creating a Custom Action
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Creating a Custom Action
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Start with creating the custom actions in a directory ``actions``:
 
@@ -407,19 +351,30 @@ Continuing the example from above replace ``utter_cheer_up`` in
 ``data/stories.md`` with the custom action ``action_joke`` and add
 ``action_joke`` to the actions in the domain file.
 
-4.2 Adding the Action Server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Adding the Action Server
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 The custom actions are run by the action server.
 To spin it up together with the Rasa instance, add a service
 ``action_server`` to the ``docker-compose.yml``:
 
 .. code-block:: yaml
+   :emphasize-lines: 11-14
 
-  action_server:
-    image: rasa/rasa_core_sdk:latest
-    volumes:
-      - ./actions:/app/actions
+   version: '3.0'
+   services:
+     rasa:
+       image: rasa/rasa:latest-full
+       ports:
+         - 5005:5005
+       volumes:
+         - ./:/app
+       command:
+         - run
+     action_server:
+       image: rasa/rasa_core_sdk:latest
+       volumes:
+         - ./actions:/app/actions
 
 This pulls the image for the Rasa Core SDK which includes the action server,
 mounts your custom actions into it, and starts the server.
@@ -435,8 +390,8 @@ Add this to your ``endpoints.yml`` (if it does not exist, create it):
 Run ``docker-compose up`` to start the action server together
 with Rasa.
 
-4.3 Adding Custom Dependencies
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Adding Custom Dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If your custom action has additional dependencies, either systems or python libraries,
 you can add these by extending the official image.
@@ -463,16 +418,16 @@ You can then build the image and use it in your ``docker-compose.yml``:
 
   docker build . -t <name of your custom image>:<tag of your custom image>
 
-5. Adding a Custom Tracker Store
---------------------------------
+Adding a Custom Tracker Store
+-----------------------------
 
-By default all conversations are saved in-memory. This mean that all
+By default all conversations are saved in memory. This mean that all
 conversations are lost as soon as you restart Rasa.
 If you want to persist your conversations, you can use different
 :ref:`tracker_store`.
 
-5.1 Using MongoDB as Tracker Store
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using MongoDB as Tracker Store
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Start by adding MongoDB to your docker-compose file. The following example
 adds the MongoDB as well as a UI (you can skip this), which will be available
@@ -507,8 +462,8 @@ configuration ``config/endpoints.yml``:
 
 Then start all components with ``docker-compose up``.
 
-5.2 Using Redis as Tracker Store
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using Redis as Tracker Store
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Start by adding Redis to your docker-compose file:
 
@@ -526,8 +481,8 @@ configuration ``config/endpoints.yml``:
     type: redis
     url: redis
 
-5.3 Using a Custom Tracker Store Implementation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using a Custom Tracker Store Implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you have a custom implementation of a tracker store you have two options
 to add this store to Rasa:
@@ -540,5 +495,3 @@ Then add the required configuration to your endpoint configuration
 If you want the tracker store component (e.g. a certain database) to be part
 of your docker compose file, add a corresponding service and configuration
 there.
-
-.. include:: feedback.inc
