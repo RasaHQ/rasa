@@ -681,15 +681,14 @@ to json or markdown, run:</p>
 </pre></div>
 </div>
 <p>You can specify the input file, output file, and the output format with the following arguments:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data-file DATA_FILE
-                             --out-file OUT_FILE [-l LANGUAGE] -f {json,md}
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data DATA --out OUT
+                             [-l LANGUAGE] -f {json,md}
 
 optional arguments:
   -h, --help            show this help message and exit
-  --data-file DATA_FILE
-                        File or directory containing training data. (default:
-                        None)
-  --out-file OUT_FILE   File where to save training data in Rasa format.
+  --data DATA           Path to the file or directory containing Rasa NLU
+                        data. (default: None)
+  --out OUT             File where to save training data in Rasa format.
                         (default: None)
   -l LANGUAGE, --language LANGUAGE
                         Language of data. (default: en)
@@ -717,8 +716,8 @@ Python Logging Options:
 different location, you can specify the location with <code class="docutils literal notranslate"><span class="pre">--stories</span></code>.</p>
 <p>Additional arguments are:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa visualize [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-s STORIES]
-                      [-c CONFIG] [--output OUTPUT]
-                      [--max-history MAX_HISTORY] [-nlu NLU_DATA]
+                      [-c CONFIG] [--out OUT] [--max-history MAX_HISTORY]
+                      [-u NLU]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -730,14 +729,14 @@ optional arguments:
   -c CONFIG, --config CONFIG
                         The policy and NLU pipeline configuration of your bot.
                         (default: config.yml)
-  --output OUTPUT       Filename of the output path, e.g. &#39;graph.html&#39;.
+  --out OUT             Filename of the output path, e.g. &#39;graph.html&#39;.
                         (default: graph.html)
   --max-history MAX_HISTORY
                         Max history to consider when merging paths in the
                         output graph. (default: 2)
-  -nlu NLU_DATA, --nlu-data NLU_DATA
-                        Path of the Rasa NLU training data, used to insert
-                        example messages into the graph. (default: None)
+  -u NLU, --nlu NLU     File or folder containing your NLU data, used to
+                        insert example messages into the graph. (default:
+                        None)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
@@ -759,7 +758,7 @@ Python Logging Options:
 Check out more details in <a class="reference internal" href="../evaluating-models/#nlu-evaluation"><span class="std std-ref">Evaluating an NLU Model</span></a> and <a class="reference internal" href="../evaluating-models/#core-evaluation"><span class="std std-ref">Evaluating a Core Model</span></a>.</p>
 <p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code>:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--output OUTPUT] [--e2e]
+                 [--max-stories MAX_STORIES] [--out OUT] [--e2e]
                  [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
                  [--url URL] [-u NLU] [--report [REPORT]]
                  [--successes [SUCCESSES]] [--errors ERRORS]
@@ -795,7 +794,7 @@ Core Test Arguments:
                         data)
   --max-stories MAX_STORIES
                         Maximum number of stories to test on. (default: None)
-  --output OUTPUT       Output path for any files created during the
+  --out OUT             Output path for any files created during the
                         evaluation. (default: results)
   --e2e, --end-to-end   Run an end-to-end evaluation for combined action and
                         intent prediction. Requires a story file in end-to-end
