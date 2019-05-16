@@ -249,7 +249,8 @@ class MessageProcessor(object):
         slot_values = "\n".join(
             ["\t{}: {}".format(s.name, s.value) for s in tracker.slots.values()]
         )
-        logger.debug("Current slot values: \n{}".format(slot_values))
+        if slot_values.strip():
+            logger.debug("Current slot values: \n{}".format(slot_values))
 
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
