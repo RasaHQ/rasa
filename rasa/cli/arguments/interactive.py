@@ -31,7 +31,9 @@ def set_interactive_arguments(parser: argparse.ArgumentParser):
     train_arguments = parser.add_argument_group("Train Arguments")
     add_config_param(train_arguments)
     add_domain_param(train_arguments)
-    add_out_param(train_arguments)
+    add_out_param(
+        train_arguments, help_text="Directory where your models should be stored."
+    )
     add_augmentation_param(train_arguments)
     add_debug_plots_param(train_arguments)
     add_dump_stories_param(train_arguments)
@@ -52,7 +54,9 @@ def set_interactive_core_arguments(parser: argparse.ArgumentParser):
     train_arguments = parser.add_argument_group("Train Arguments")
     add_config_param(train_arguments)
     add_domain_param(train_arguments)
-    add_out_param(train_arguments)
+    add_out_param(
+        train_arguments, help_text="Directory where your models should be stored."
+    )
     add_augmentation_param(train_arguments)
     add_debug_plots_param(train_arguments)
     add_dump_stories_param(train_arguments)

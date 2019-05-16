@@ -17,7 +17,7 @@ def set_visualize_stories_arguments(parser: argparse.ArgumentParser):
     add_out_param(
         parser,
         default="graph.html",
-        help="Filename of the output path, e.g. 'graph.html'.",
+        help_text="Filename of the output path, e.g. 'graph.html'.",
     )
 
     parser.add_argument(
@@ -30,6 +30,6 @@ def set_visualize_stories_arguments(parser: argparse.ArgumentParser):
     add_nlu_data_param(
         parser,
         default=None,
-        help="File or folder containing your NLU data, "
+        help_text="File or folder containing your NLU data, "
         "used to insert example messages into the graph.",
     )

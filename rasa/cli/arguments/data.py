@@ -14,7 +14,7 @@ def set_convert_arguments(parser: argparse.ArgumentParser):
         parser,
         required=True,
         default=None,
-        help="File where to save training data in Rasa format.",
+        help_text="File where to save training data in Rasa format.",
     )
 
     parser.add_argument("-l", "--language", default="en", help="Language of data.")
@@ -29,7 +29,7 @@ def set_convert_arguments(parser: argparse.ArgumentParser):
 
 
 def set_split_arguments(parser: argparse.ArgumentParser):
-    add_nlu_data_param(parser)
+    add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 
     parser.add_argument(
         "--training-fraction",
@@ -41,5 +41,5 @@ def set_split_arguments(parser: argparse.ArgumentParser):
     add_out_param(
         parser,
         default="train_test_split",
-        help="Directory where the split files should be stored.",
+        help_text="Directory where the split files should be stored.",
     )

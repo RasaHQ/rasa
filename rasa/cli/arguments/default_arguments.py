@@ -42,10 +42,10 @@ def add_stories_param(
 
 def add_nlu_data_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    help_text: Text,
     default: Optional[Text] = DEFAULT_DATA_PATH,
-    help: Text = "File or folder containing your NLU data.",
 ):
-    parser.add_argument("-u", "--nlu", type=str, default=default, help=help)
+    parser.add_argument("-u", "--nlu", type=str, default=default, help=help_text)
 
 
 def add_domain_param(
@@ -74,18 +74,17 @@ def add_config_param(
 
 def add_out_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    help_text: Text,
     default: Optional[Text] = DEFAULT_MODELS_PATH,
-    help: Text = "Directory where your models should be stored.",
     required: bool = False,
 ):
     parser.add_argument(
-        "--out", type=str, default=default, help=help, required=required
+        "--out", type=str, default=default, help=help_text, required=required
     )
 
 
 def add_endpoint_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
-    help_text="Configuration file for the connectors as a yml file.",
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer], help_text: Text
 ):
     parser.add_argument("--endpoints", type=str, default=None, help=help_text)
 

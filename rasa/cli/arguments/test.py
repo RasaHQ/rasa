@@ -43,7 +43,7 @@ def add_test_core_argument_group(
     add_out_param(
         parser,
         default="results",
-        help="Output path for any files created during the evaluation.",
+        help_text="Output path for any files created during the evaluation.",
     )
     parser.add_argument(
         "--e2e",
@@ -53,7 +53,9 @@ def add_test_core_argument_group(
         "intent prediction. Requires a story file in end-to-end "
         "format.",
     )
-    add_endpoint_param(parser)
+    add_endpoint_param(
+        parser, help_text="Configuration file for the connectors as a yml file."
+    )
     parser.add_argument(
         "--fail-on-prediction-errors",
         action="store_true",
@@ -73,7 +75,7 @@ def add_test_core_argument_group(
 def add_test_nlu_argument_group(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
-    add_nlu_data_param(parser)
+    add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
     parser.add_argument(
         "--report",
         required=False,
