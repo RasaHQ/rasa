@@ -1,5 +1,6 @@
 import logging
 from sanic import Blueprint, response
+from sanic.request import Request
 from typing import Text, Optional, Dict, Any
 from webexteamssdk import WebexTeamsAPI, Webhook
 
@@ -84,11 +85,11 @@ class WebexTeamsInput(InputChannel):
         webexteams_webhook = Blueprint("webexteams_webhook", __name__)
 
         @webexteams_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @webexteams_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request):
+        async def webhook(request: Request):
             """Respond to inbound webhook HTTP POST from Webex Teams."""
 
             logger.debug("Received webex webhook call")

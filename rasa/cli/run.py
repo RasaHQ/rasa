@@ -28,8 +28,6 @@ def add_subparser(
     )
     run_parser.set_defaults(func=run)
 
-    arguments.set_run_arguments(run_parser)
-
     run_subparsers = run_parser.add_subparsers()
     sdk_subparser = run_subparsers.add_parser(
         "actions",
@@ -40,6 +38,7 @@ def add_subparser(
     )
     sdk_subparser.set_defaults(func=run_actions)
 
+    arguments.set_run_arguments(run_parser)
     arguments.set_run_action_arguments(sdk_subparser)
 
 

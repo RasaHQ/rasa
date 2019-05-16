@@ -700,7 +700,7 @@ def remove_duckling_entities(entity_predictions):
 def run_evaluation(
     data_path: Text,
     model_path: Text,
-    report_folder: Optional[Text] = None,
+    report: Optional[Text] = None,
     successes: Optional[Text] = None,
     errors: Optional[Text] = "errors.json",
     confmat: Optional[Text] = None,
@@ -712,7 +712,7 @@ def run_evaluation(
 
     :param data_path: path to the test data
     :param model_path: path to the model
-    :param report_folder: path to folder where reports are stored
+    :param report: path to folder where reports are stored
     :param successes: path to file that will contain success cases
     :param errors: path to file that will contain error cases
     :param confmat: path to file that will show the confusion matrix
@@ -743,14 +743,14 @@ def run_evaluation(
 
     result = {"intent_evaluation": None, "entity_evaluation": None}
 
-    if report_folder:
-        utils.create_dir(report_folder)
+    if report:
+        utils.create_dir(report)
 
     if is_intent_classifier_present(interpreter):
 
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results, report_folder, successes, errors, confmat, histogram
+            intent_results, report, successes, errors, confmat, histogram
         )
 
     if extractors:
@@ -758,7 +758,7 @@ def run_evaluation(
 
         logger.info("Entity evaluation results:")
         result["entity_evaluation"] = evaluate_entities(
-            entity_targets, entity_predictions, tokens, extractors, report_folder
+            entity_targets, entity_predictions, tokens, extractors, report
         )
 
     return result

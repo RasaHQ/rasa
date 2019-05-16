@@ -260,13 +260,13 @@ class SlackInput(InputChannel):
         slack_webhook = Blueprint("slack_webhook", __name__)
 
         @slack_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request):
             if request.form:
-                output = dict(request.form)
+                output = request.form
                 if self._is_button_reply(output):
                     sender_id = json.loads(output["payload"])["user"]["id"]
                     return await self.process_message(

@@ -5,6 +5,7 @@ import logging
 import uuid
 from asyncio import Queue, CancelledError
 from sanic import Sanic, Blueprint, response
+from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 
 import rasa.utils.endpoints
@@ -421,11 +422,11 @@ class RestInput(InputChannel):
 
         # noinspection PyUnusedLocal
         @custom_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @custom_webhook.route("/webhook", methods=["POST"])
-        async def receive(request):
+        async def receive(request: Request):
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
             should_use_stream = rasa.utils.endpoints.bool_arg(

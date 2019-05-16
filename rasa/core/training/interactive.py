@@ -752,7 +752,12 @@ async def _write_stories_to_file(
 
     sub_conversations = _split_conversation_at_restarts(evts)
 
-    with open(export_story_path, "a", encoding="utf-8") as f:
+    if os.path.exists(export_story_path):
+        append_write = "a"  # append if already exists
+    else:
+        append_write = "w"  # make a new file if not
+
+    with open(export_story_path, append_write, encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)

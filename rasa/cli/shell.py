@@ -26,8 +26,6 @@ def add_subparser(
     )
     shell_parser.set_defaults(func=shell)
 
-    arguments.set_shell_arguments(shell_parser)
-
     run_subparsers = shell_parser.add_subparsers()
     shell_nlu_subparser = run_subparsers.add_parser(
         "nlu",
@@ -38,6 +36,7 @@ def add_subparser(
     )
     shell_nlu_subparser.set_defaults(func=shell_nlu)
 
+    arguments.set_shell_arguments(shell_parser)
     arguments.set_shell_nlu_arguments(shell_nlu_subparser)
 
 
