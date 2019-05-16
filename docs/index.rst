@@ -28,6 +28,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    channels
    evaluating-models
    server
+   running-rasa-with-docker
    cloud-storage
 
 .. toctree::
