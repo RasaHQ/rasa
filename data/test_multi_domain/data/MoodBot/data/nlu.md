@@ -1,11 +1,11 @@
-## intent:mood_affirm
+## intent:affirm
 - yes
 - indeed
 - of course
 - that sounds good
 - correct
 
-## intent:mood_deny
+## intent:deny
 - no
 - never
 - I don't think so
