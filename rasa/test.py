@@ -76,7 +76,7 @@ def test_core(
 
     if not os.path.exists(core_path):
         print_error(
-            "Not able to test: Could not find any Core model. Use 'rasa train' to "
+            "Unable to test: could not find a Core model. Use 'rasa train' to "
             "train a model."
         )
 
