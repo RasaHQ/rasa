@@ -1,5 +1,5 @@
 :desc: Follow a rule-based process of information gathering using FormActions
-       in open source bot framework Rasa Stack. 
+       in open source bot framework Rasa Stack.
 
 .. _slot-filling:
 
@@ -40,7 +40,7 @@ Configuration File
 ------------------
 
 To use forms, you also need to include the ``FormPolicy`` in your policy
-configuration file. For exmple:
+configuration file. For example:
 
 .. code-block:: yaml
 
@@ -51,8 +51,8 @@ see ``examples/formbot/domain.yml`` for an example.
 
 .. _section_form_basics:
 
-Basics
-------
+Form Basics
+-----------
 
 Using a ``FormAction``, you can describe *all* of the happy paths with a single
 story. By "happy path", we mean that whenever you ask a user for some information,
@@ -68,6 +68,14 @@ happy paths.
         - restaurant_form
         - form{"name": "restaurant_form"}
         - form{"name": null}
+
+In this story the user intent is ``request_restaurant``, which is followed by
+the form action ``restaurant_form``. With ``form{"name": "restaurant_form"}`` the
+form is activated and with ``form{"name": null}`` the form is deactivated again.
+As shown in the section :ref:`section_unhappy` the the bot can execute any kind of
+actions outside the form while the form is still active. On the "happy path",
+where the user is cooperating well and the system understands the user input correctly,
+the form is filling all requested slots without interruption.
 
 The ``FormAction`` will only request slots which haven't already been set.
 If a user starts the conversation with
@@ -121,7 +129,9 @@ and other policies in your Core model will be used to predict the next action.
 Custom slot mappings
 --------------------
 
-Some slots (like ``cuisine``) can be picked up using a single entity, but a
+If you do not define slot mappings, slots will be only filled by entities
+with the same name as the slot that are picked up from the user input.
+Some slots, like ``cuisine``, can be picked up using a single entity, but a
 ``FormAction`` can also support yes/no questions and free-text input.
 The ``slot_mappings`` method defines how to extract slot values from user responses.
 
@@ -156,20 +166,30 @@ Validating user input
 ---------------------
 
 After extracting a slot value from user input, the form will try to validate the
-value of the slot. By default, this only checks if the requested slot was extracted.
-If you want to add custom validation, for example to check a value against a database,
-you can do this by overwriting the ``validate()`` method.
-Here is an example which checks if the extracted cuisine slot belongs to a
-list of supported cuisines.
+value of the slot. Note that by default, validation only happens if the form
+action is executed immediately after user input. This can be changed in the
+``_validate_if_required()`` function of the ``FormAction`` class in Rasa SDK.
+Any required slots that were filled before the initial activation of a form
+are validated upon activation as well.
+
+By default, validation only checks if the requested slot was successfully
+extracted from the slot mappings. If you want to add custom validation, for
+example to check a value against a database, you can do this by writing a helper
+validation function with the name ``validate_{slot-name}``.
+
+Here is an example , ``validate_cuisine()``, which checks if the extracted cuisine slot
+belongs to a list of supported cuisines.
 
 .. literalinclude:: ../../examples/formbot/actions.py
    :pyobject: RestaurantForm.cuisine_db
 
 .. literalinclude:: ../../examples/formbot/actions.py
-   :pyobject: RestaurantForm.is_int
+   :pyobject: RestaurantForm.validate_cuisine
 
-.. literalinclude:: ../../examples/formbot/actions.py
-   :pyobject: RestaurantForm.validate
+As the helper validation functions return dictionaries of slot names and values
+to set, you can set more slots than just the one you are validating from inside
+a helper validation method. However, you are responsible for making sure that
+those extra slot values are valid.
 
 You can also deactivate the form directly during this validation step (in case the
 slot is filled with something that you are certain can't be handled) by returning
@@ -316,5 +336,3 @@ behind Rasa Core is:
 
 So don't try to cover every possibility in your hand-written stories before giving it to testers.
 Real user behavior will always surprise you!
-
-
