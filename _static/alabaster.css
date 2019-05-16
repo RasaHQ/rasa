@@ -156,7 +156,7 @@ div.body p, div.body dd, div.body li, div.body blockquote {
 
 div.footer {
     width: 1300px;
-    margin: 36px auto 30px auto;
+    margin: 36px 0 30px 12px;
     font-size: 14px;
     color: #617287;
     min-width: 450px;
@@ -359,6 +359,12 @@ a:hover {
   background:none;
   border: 1px solid #617287;
   color: #617287
+}
+
+.btn-ghost.white {
+  background:none;
+  border: 1px solid #fff;
+  color: #fff
 }
 
 .btn-small {
@@ -986,14 +992,12 @@ nav#breadcrumbs li+li:before {
 }
 
 .nav-top {
-    background-color: #fff;
+    background-color: #2c3951;
     color: #617287;
     padding:12px;
     font-size: 120%;
-    height:38px;
     z-index: 100;
     position: relative;
-    border-bottom: 1px solid #E8E8E8;
     position:fixed;
     width: 100%;
     top: 0;
@@ -1020,7 +1024,7 @@ nav#breadcrumbs li+li:before {
     line-height: 30px;
     font-weight:600;
     text-decoration:none;
-    color: #617287;
+    color: #fff;
 }
 
 a.brand-link {
@@ -1040,23 +1044,28 @@ a.brand-link {
 }
 
 .nav-top ul li {
-    display:inline;
+    display: inline;
+    padding: 0px 16px;
+    padding-top: 8px;
+    padding-bottom: 28px;
 }
 
 .nav-top ul li a {
-    font-size: 16px;
-    padding: 14px 8px;
+    font-size: 18px;
     text-decoration: none;
-    color: #617287;
+    color: #fff;
     transition: all .25s ease-out;
 }
 
 .nav-top ul li.active {
-    padding: 14px 8px;
+    background: #263146;
+    border-top:4px solid #5B17F0;
+    color:#fff;
 }
 
 .nav-top ul li.active a {
-    color: #5B17F0
+    color: #fff;
+    font-weight:600;
 }
 
 .nav-top ul li:hover {
@@ -1281,11 +1290,12 @@ input.jp-Stdin-input:focus {
     width: 250px;
     font-family: 'Source Sans Pro', 'Helvetica Neue', 'Arial', sans-serif;
     font-size: 16px;
-    padding: 4px 8px;
+    padding: 8px 16px;
     -webkit-border-radius: 8px;
     -moz-border-radius: 8px;
     border-radius: 8px;
     border: 1px solid #E8E8E8;
+    color: #617287
 }
 
 .search.ds-input:focus {
