@@ -134,7 +134,10 @@ Now you can train your own Rasa model by running:
   docker run \
     -v $(pwd):/app \
     rasa/rasa:latest-full \
-    train
+    train \
+      --domain domain.yml \
+      --stories data/stories.md \
+      --out models
 
 Here's what's happening in that command:
 
