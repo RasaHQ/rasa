@@ -36,7 +36,7 @@ def add_subparser(
         "nlu",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Converts NLU data between markdown and json.",
+        help="Converts NLU data between Markdown and json formats.",
     )
     convert_nlu_parser.set_defaults(func=convert.main)
 
