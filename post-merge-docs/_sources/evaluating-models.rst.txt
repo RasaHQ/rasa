@@ -163,7 +163,7 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    rasa test core --stories test_stories.md --output results
+    rasa test core --stories test_stories.md --out results
 
 
 This will print the failed stories to ``results/failed_stories.md``.

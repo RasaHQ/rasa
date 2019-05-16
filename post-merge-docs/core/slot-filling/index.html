@@ -131,6 +131,7 @@ in open source bot framework Rasa Stack." />
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../evaluating-models/">Evaluating Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../server/">Running the Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running-rasa-with-docker/">Running Rasa with Docker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../cloud-storage/">Storing Models in the Cloud</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
@@ -215,7 +216,7 @@ in open source bot framework Rasa Stack." />
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#configuration-file" id="id2">Configuration File</a></li>
-<li><a class="reference internal" href="#basics" id="id3">Basics</a></li>
+<li><a class="reference internal" href="#form-basics" id="id3">Form Basics</a></li>
 <li><a class="reference internal" href="#custom-slot-mappings" id="id4">Custom slot mappings</a></li>
 <li><a class="reference internal" href="#validating-user-input" id="id5">Validating user input</a></li>
 <li><a class="reference internal" href="#handling-unhappy-paths" id="id6">Handling unhappy paths</a></li>
@@ -244,15 +245,15 @@ If your form’s name is <code class="docutils literal notranslate"><span class=
 <div class="section" id="configuration-file">
 <h2><a class="toc-backref" href="#id2">Configuration File</a><a class="headerlink" href="#configuration-file" title="Permalink to this headline">¶</a></h2>
 <p>To use forms, you also need to include the <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> in your policy
-configuration file. For exmple:</p>
+configuration file. For example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;FormPolicy&quot;</span>
 </pre></div>
 </div>
 <p>see <code class="docutils literal notranslate"><span class="pre">examples/formbot/domain.yml</span></code> for an example.</p>
 </div>
-<div class="section" id="basics">
-<span id="section-form-basics"></span><h2><a class="toc-backref" href="#id3">Basics</a><a class="headerlink" href="#basics" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="form-basics">
+<span id="section-form-basics"></span><h2><a class="toc-backref" href="#id3">Form Basics</a><a class="headerlink" href="#form-basics" title="Permalink to this headline">¶</a></h2>
 <p>Using a <code class="docutils literal notranslate"><span class="pre">FormAction</span></code>, you can describe <em>all</em> of the happy paths with a single
 story. By “happy path”, we mean that whenever you ask a user for some information,
 they respond with the information you asked for.</p>
@@ -265,6 +266,13 @@ happy paths.</p>
     - form{&quot;name&quot;: null}
 </pre></div>
 </div>
+<p>In this story the user intent is <code class="docutils literal notranslate"><span class="pre">request_restaurant</span></code>, which is followed by
+the form action <code class="docutils literal notranslate"><span class="pre">restaurant_form</span></code>. With <code class="docutils literal notranslate"><span class="pre">form{&quot;name&quot;:</span> <span class="pre">&quot;restaurant_form&quot;}</span></code> the
+form is activated and with <code class="docutils literal notranslate"><span class="pre">form{&quot;name&quot;:</span> <span class="pre">null}</span></code> the form is deactivated again.
+As shown in the section <a class="reference internal" href="#section-unhappy"><span class="std std-ref">Handling unhappy paths</span></a> the the bot can execute any kind of
+actions outside the form while the form is still active. On the “happy path”,
+where the user is cooperating well and the system understands the user input correctly,
+the form is filling all requested slots without interruption.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> will only request slots which haven’t already been set.
 If a user starts the conversation with
 <cite>I’d like a vegetarian Chinese restaurant for 8 people</cite>, then they won’t be
@@ -299,7 +307,9 @@ and other policies in your Core model will be used to predict the next action.</
 </div>
 <div class="section" id="custom-slot-mappings">
 <h2><a class="toc-backref" href="#id4">Custom slot mappings</a><a class="headerlink" href="#custom-slot-mappings" title="Permalink to this headline">¶</a></h2>
-<p>Some slots (like <code class="docutils literal notranslate"><span class="pre">cuisine</span></code>) can be picked up using a single entity, but a
+<p>If you do not define slot mappings, slots will be only filled by entities
+with the same name as the slot that are picked up from the user input.
+Some slots, like <code class="docutils literal notranslate"><span class="pre">cuisine</span></code>, can be picked up using a single entity, but a
 <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> can also support yes/no questions and free-text input.
 The <code class="docutils literal notranslate"><span class="pre">slot_mappings</span></code> method defines how to extract slot values from user responses.</p>
 <p>Here’s an example for the restaurant bot:</p>
@@ -327,11 +337,17 @@ example above</li>
 <div class="section" id="validating-user-input">
 <h2><a class="toc-backref" href="#id5">Validating user input</a><a class="headerlink" href="#validating-user-input" title="Permalink to this headline">¶</a></h2>
 <p>After extracting a slot value from user input, the form will try to validate the
-value of the slot. By default, this only checks if the requested slot was extracted.
-If you want to add custom validation, for example to check a value against a database,
-you can do this by overwriting the <code class="docutils literal notranslate"><span class="pre">validate()</span></code> method.
-Here is an example which checks if the extracted cuisine slot belongs to a
-list of supported cuisines.</p>
+value of the slot. Note that by default, validation only happens if the form
+action is executed immediately after user input. This can be changed in the
+<code class="docutils literal notranslate"><span class="pre">_validate_if_required()</span></code> function of the <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> class in Rasa SDK.
+Any required slots that were filled before the initial activation of a form
+are validated upon activation as well.</p>
+<p>By default, validation only checks if the requested slot was successfully
+extracted from the slot mappings. If you want to add custom validation, for
+example to check a value against a database, you can do this by writing a helper
+validation function with the name <code class="docutils literal notranslate"><span class="pre">validate_{slot-name}</span></code>.</p>
+<p>Here is an example , <code class="docutils literal notranslate"><span class="pre">validate_cuisine()</span></code>, which checks if the extracted cuisine slot
+belongs to a list of supported cuisines.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">cuisine_db</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Database of supported cuisines&quot;&quot;&quot;</span>
@@ -347,17 +363,29 @@ list of supported cuisines.</p>
         <span class="p">]</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">is_int</span><span class="p">(</span><span class="n">string</span><span class="p">:</span> <span class="n">Text</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if a string is an integer&quot;&quot;&quot;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">validate_cuisine</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">dispatcher</span><span class="p">:</span> <span class="n">CollectingDispatcher</span><span class="p">,</span>
+        <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span>
+        <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Validate cuisine value.&quot;&quot;&quot;</span>
 
-        <span class="k">try</span><span class="p">:</span>
-            <span class="nb">int</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
-            <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cuisine_db</span><span class="p">():</span>
+            <span class="c1"># validation succeeded, set the value of the &quot;cuisine&quot; slot to value</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;cuisine&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_wrong_cuisine&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+            <span class="c1"># validation failed, set this slot to None, meaning the</span>
+            <span class="c1"># user will be asked for the slot again</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;cuisine&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
 </pre></div>
 </div>
+<p>As the helper validation functions return dictionaries of slot names and values
+to set, you can set more slots than just the one you are validating from inside
+a helper validation method. However, you are responsible for making sure that
+those extra slot values are valid.</p>
 <p>You can also deactivate the form directly during this validation step (in case the
 slot is filled with something that you are certain can’t be handled) by returning
 <code class="docutils literal notranslate"><span class="pre">self.deactivate()</span></code></p>

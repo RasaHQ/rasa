@@ -30,6 +30,14 @@ The different parameters are:
 - ``-m``, which is the path to the folder containing your Rasa model.
 - ``--log-file``, which is the path to the log file.
 
+Rasa can load your model in three different ways:
+
+1. Load the model specified via ``-m`` from your local storage system.
+2. Fetch the model from a server (see :ref:`_server_fetch_from_server`).
+3. Fetch the model from a remote storage (see :ref:`_server_fetch_from_remote_storage`).
+
+Rasa tries to load the model in above mentioned order. E.g. it only tries to load your model from a server
+if it could not find the model on your local storage system.
 
 .. warning::
 
@@ -51,6 +59,8 @@ The different parameters are:
     can be called. Be aware that some endpoints will return a 409 status code, as a trained
     Core model is needed to process the request.
 
+
+.. _server_fetch_from_server:
 
 Fetching Models from a Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,6 +108,8 @@ An example request Rasa might make to your model server looks like this:
 
       $ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default@latest
 
+
+.. _server_fetch_from_remote_storage:
 
 Fetching Models from a Remote Storage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

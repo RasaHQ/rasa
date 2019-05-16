@@ -135,6 +135,7 @@ AI Assistant." />
 <li class="toctree-l1"><a class="reference internal" href="../channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Evaluating Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../server/">Running the Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../running-rasa-with-docker/">Running Rasa with Docker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cloud-storage/">Storing Models in the Cloud</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
@@ -369,7 +370,7 @@ BILOU-based one.</p>
 <span id="core-evaluation"></span><h2><a class="toc-backref" href="#id7">Evaluating a Core Model</a><a class="headerlink" href="#evaluating-a-core-model" title="Permalink to this headline">¶</a></h2>
 <p>You can evaluate your trained model on a set of test stories
 by using the evaluate script:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">test</span> core --stories test_stories.md --output results
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">test</span> core --stories test_stories.md --out results
 </pre></div>
 </div>
 <p>This will print the failed stories to <code class="docutils literal notranslate"><span class="pre">results/failed_stories.md</span></code>.

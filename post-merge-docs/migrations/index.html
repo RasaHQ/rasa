@@ -129,6 +129,7 @@ Rasa Core and how you can migrate from one version to another." />
 <li class="toctree-l1"><a class="reference internal" href="../channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../evaluating-models/">Evaluating Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../server/">Running the Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../running-rasa-with-docker/">Running Rasa with Docker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cloud-storage/">Storing Models in the Cloud</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
@@ -221,7 +222,7 @@ Mapping of old scripts to new commands:
 <code class="docutils literal notranslate"><span class="pre">rasa.core.server</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.core.test</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.core.train</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>
-<code class="docutils literal notranslate"><span class="pre">rasa.core.visualize</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">show</span></code>
+<code class="docutils literal notranslate"><span class="pre">rasa.core.visualize</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">visualize</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.convert</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.evaluate</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.run</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code>
@@ -258,7 +259,7 @@ server will always run single threaded, but in an async way. If you want to
 make use of multiple processes, feel free to check out the sanic server
 documentation <a class="reference external" href="https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn">https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn</a></li>
 <li>To avoid conflicts in the script parameter names, connectors in the <code class="docutils literal notranslate"><span class="pre">run</span></code> command now need to be specified with
-<code class="docutils literal notranslate"><span class="pre">--connector</span></code>. <code class="docutils literal notranslate"><span class="pre">-c</span></code> is no longer supported. The maximum history in the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">show</span> <span class="pre">stories</span></code> command need to be
+<code class="docutils literal notranslate"><span class="pre">--connector</span></code>. <code class="docutils literal notranslate"><span class="pre">-c</span></code> is no longer supported. The maximum history in the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">visualize</span></code> command needs to be
 defined with <code class="docutils literal notranslate"><span class="pre">--max-history</span></code>. Output paths and log files cannot be specified with <code class="docutils literal notranslate"><span class="pre">-o</span></code> anymore. <code class="docutils literal notranslate"><span class="pre">--output</span></code> and
 <code class="docutils literal notranslate"><span class="pre">--log-file</span></code> should be used.</li>
 </ul>

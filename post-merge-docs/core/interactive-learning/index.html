@@ -135,6 +135,7 @@ open source dialogue management." />
 <li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../evaluating-models/">Evaluating Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../server/">Running the Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running-rasa-with-docker/">Running Rasa with Docker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../cloud-storage/">Storing Models in the Cloud</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
@@ -351,7 +352,7 @@ When you use interactive learning to generate stories containing a form,
 the conversation steps handled by the form
 get a <code class="code docutils literal notranslate"><span class="pre">form:</span></code> prefix. This tells Rasa Core to ignore these steps when training
 your other policies. There is nothing special you have to do here, all of the form’s
-happy paths are still covered by the basic story given in <a class="reference internal" href="../slot-filling/#section-form-basics"><span class="std std-ref">Basics</span></a>.</p>
+happy paths are still covered by the basic story given in <a class="reference internal" href="../slot-filling/#section-form-basics"><span class="std std-ref">Form Basics</span></a>.</p>
 <p>Here is an example:</p>
 <div class="highlight-story notranslate"><div class="highlight"><pre><span></span>* request_restaurant
     - restaurant_form

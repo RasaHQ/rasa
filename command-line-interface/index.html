@@ -127,6 +127,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../evaluating-models/">Evaluating Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../server/">Running the Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../running-rasa-with-docker/">Running Rasa with Docker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cloud-storage/">Storing Models in the Cloud</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
@@ -224,8 +225,8 @@
 <p>The command line interface (CLI) gives you easy-to-remember commands for common tasks.</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="23%" />
-<col width="77%" />
+<col width="21%" />
+<col width="79%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Command</th>
@@ -237,7 +238,7 @@
 <td>Creates a new project, with example training data, actions, and config files.</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code></td>
-<td>Starts a server with your model loaded. See the <span class="xref std std-ref">_section_http</span> docs for details.</td>
+<td>Starts a Rasa server with your trained model. See the <span class="xref std std-ref">_section_http</span> docs for details.</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">actions</span></code></td>
 <td>Starts an action server using the Rasa SDK.</td>
@@ -252,15 +253,18 @@
 <td>Starts an interactive learning session to create new training data by chatting.</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code></td>
-<td>Tests a trained model using your test NLU data and stories.</td>
+<td>Tests a trained Rasa model using your test NLU data and stories.</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">visualize</span></code></td>
-<td>Visualize stories.</td>
+<td>Visualizes stories.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span></code></td>
-<td>Utils for the Rasa training files.</td>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span> <span class="pre">split</span> <span class="pre">nlu</span></code></td>
+<td>Performs a split of your NLU data according to the specified percentages.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">-h</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span> <span class="pre">convert</span> <span class="pre">nlu</span></code></td>
+<td>Converts NLU training data between different formats.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">-h</span></code></td>
 <td>Shows all available commands.</td>
 </tr>
 </tbody>
@@ -304,16 +308,73 @@ to test your model type <code class="docutils literal notranslate"><span class="
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">run</span>
 </pre></div>
 </div>
-<p>Among others, the following arguments can be used to configure the server:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">m</span> <span class="n">MODEL</span><span class="p">,</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span>
-                      <span class="n">Path</span> <span class="n">to</span> <span class="n">a</span> <span class="n">trained</span> <span class="n">Rasa</span> <span class="n">model</span><span class="o">.</span> <span class="n">If</span> <span class="n">a</span> <span class="n">directory</span> <span class="ow">is</span>
-                      <span class="n">specified</span><span class="p">,</span> <span class="n">it</span> <span class="n">will</span> <span class="n">use</span> <span class="n">the</span> <span class="n">latest</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">this</span>
-                      <span class="n">directory</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">models</span><span class="p">)</span>
-<span class="o">--</span><span class="n">endpoints</span> <span class="n">ENDPOINTS</span>
-                      <span class="n">Configuration</span> <span class="n">file</span> <span class="k">for</span> <span class="n">the</span> <span class="n">model</span> <span class="n">server</span> <span class="ow">and</span> <span class="n">the</span>
-                      <span class="n">connectors</span> <span class="k">as</span> <span class="n">a</span> <span class="n">yml</span> <span class="n">file</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
-<span class="o">--</span><span class="n">enable</span><span class="o">-</span><span class="n">api</span>          <span class="n">Start</span> <span class="n">the</span> <span class="n">web</span> <span class="n">server</span> <span class="n">api</span> <span class="ow">in</span> <span class="n">addition</span> <span class="n">to</span> <span class="n">the</span> <span class="nb">input</span>
-                      <span class="n">channel</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">False</span><span class="p">)</span>
+<p>The following arguments can be used to configure your Rasa server:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
+                [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+                [--cors [CORS [CORS ...]]] [--enable-api]
+                [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
+                [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
+                [--jwt-method JWT_METHOD]
+                {actions} ... [model-as-positional-argument]
+
+positional arguments:
+  {actions}
+    actions             Runs the action server.
+  model-as-positional-argument
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+  --log-file LOG_FILE   Store logs in specified file. (default: rasa_core.log)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Server Settings:
+  -p PORT, --port PORT  Port to run the server at. (default: 5005)
+  -t AUTH_TOKEN, --auth-token AUTH_TOKEN
+                        Enable token based authentication. Requests need to
+                        provide the token to be accepted. (default: None)
+  --cors [CORS [CORS ...]]
+                        Enable CORS for the passed origin. Use * to whitelist
+                        all origins. (default: None)
+  --enable-api          Start the web server API in addition to the input
+                        channel. (default: False)
+  --remote-storage REMOTE_STORAGE
+                        Set the remote location where your Rasa model is
+                        stored, e.g. on AWS. (default: None)
+
+Channels:
+  --credentials CREDENTIALS
+                        Authentication credentials for the connector as a yml
+                        file. (default: None)
+  --connector CONNECTOR
+                        Service to connect to. (default: None)
+
+JWT Authentication:
+  --jwt-secret JWT_SECRET
+                        Public key for asymmetric JWT methods or shared
+                        secretfor symmetric methods. Please also make sure to
+                        use --jwt-method to select the method of the
+                        signature, otherwise this argument will be ignored.
+                        (default: None)
+  --jwt-method JWT_METHOD
+                        Method used for the signature of the JWT
+                        authentication payload. (default: HS256)
 </pre></div>
 </div>
 <p>For more information on the additional parameters, see <span class="xref std std-ref">_section_http</span>.
@@ -326,11 +387,24 @@ See the Rasa <a class="reference internal" href="../api/rasa-http-api/#http-api"
 </pre></div>
 </div>
 <p>The following arguments can be used to adapt the server settings:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">p</span> <span class="n">PORT</span><span class="p">,</span> <span class="o">--</span><span class="n">port</span> <span class="n">PORT</span>  <span class="n">Port</span> <span class="n">to</span> <span class="n">run</span> <span class="n">the</span> <span class="n">server</span> <span class="n">at</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mi">5055</span><span class="p">)</span>
-<span class="o">--</span><span class="n">cors</span> <span class="p">[</span><span class="n">CORS</span> <span class="p">[</span><span class="n">CORS</span> <span class="o">...</span><span class="p">]]</span>
-                      <span class="n">Enable</span> <span class="n">CORS</span> <span class="k">for</span> <span class="n">the</span> <span class="n">passed</span> <span class="n">origin</span><span class="o">.</span> <span class="n">Use</span> <span class="o">*</span> <span class="n">to</span> <span class="n">whitelist</span>
-                      <span class="nb">all</span> <span class="n">origins</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
-<span class="o">--</span><span class="n">actions</span> <span class="n">ACTIONS</span>     <span class="n">Name</span> <span class="n">of</span> <span class="n">action</span> <span class="n">package</span> <span class="n">to</span> <span class="n">be</span> <span class="n">loaded</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PORT, --port PORT  port to run the server at (default: 5055)
+  --cors [CORS [CORS ...]]
+                        enable CORS for the passed origin. Use * to whitelist
+                        all origins (default: None)
+  --actions ACTIONS     name of action package to be loaded (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
 </pre></div>
 </div>
 </div>
@@ -340,19 +414,85 @@ See the Rasa <a class="reference internal" href="../api/rasa-http-api/#http-api"
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">shell</span>
 </pre></div>
 </div>
-<p>The model that should be used to interact with your bot, can be specified by</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">m</span> <span class="n">MODEL</span><span class="p">,</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span>
-                      <span class="n">Path</span> <span class="n">to</span> <span class="n">a</span> <span class="n">trained</span> <span class="n">Rasa</span> <span class="n">model</span><span class="o">.</span> <span class="n">If</span> <span class="n">a</span> <span class="n">directory</span> <span class="ow">is</span>
-                      <span class="n">specified</span><span class="p">,</span> <span class="n">it</span> <span class="n">will</span> <span class="n">use</span> <span class="n">the</span> <span class="n">latest</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">this</span>
-                      <span class="n">directory</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">models</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>In case you start the shell with an NLU-only model, <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> allows
+<p>The model, that should be used to interact with your bot, can be specified by <code class="docutils literal notranslate"><span class="pre">--model</span></code>.
+In case you start the shell with an NLU-only model, <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> allows
 you to obtain the intent and entities of any text you type on the command line.
 If your model includes a trained Core model, you can chat with your bot and see
-what the bot predicts as a next action.</p>
+what the bot predicts as a next action.
+In case you have a combined Rasa model but nevertheless want to see what your model
+extracts as intents and entities from text, you can use the command <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span> <span class="pre">nlu</span></code>.</p>
 <p>To increase the logging level for debugging, run:</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">shell</span> <span class="o">--</span><span class="n">debug</span>
+</pre></div>
+</div>
+<p>The full list of options for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> is</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa shell [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
+                  [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+                  [--cors [CORS [CORS ...]]] [--enable-api]
+                  [--remote-storage REMOTE_STORAGE]
+                  [--credentials CREDENTIALS] [--connector CONNECTOR]
+                  [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]
+                  {nlu} ... [model-as-positional-argument]
+
+positional arguments:
+  {nlu}
+    nlu                 Interprets messages on the command line using your NLU
+                        model.
+  model-as-positional-argument
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+  --log-file LOG_FILE   Store logs in specified file. (default: rasa_core.log)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Server Settings:
+  -p PORT, --port PORT  Port to run the server at. (default: 5005)
+  -t AUTH_TOKEN, --auth-token AUTH_TOKEN
+                        Enable token based authentication. Requests need to
+                        provide the token to be accepted. (default: None)
+  --cors [CORS [CORS ...]]
+                        Enable CORS for the passed origin. Use * to whitelist
+                        all origins. (default: None)
+  --enable-api          Start the web server API in addition to the input
+                        channel. (default: False)
+  --remote-storage REMOTE_STORAGE
+                        Set the remote location where your Rasa model is
+                        stored, e.g. on AWS. (default: None)
+
+Channels:
+  --credentials CREDENTIALS
+                        Authentication credentials for the connector as a yml
+                        file. (default: None)
+  --connector CONNECTOR
+                        Service to connect to. (default: None)
+
+JWT Authentication:
+  --jwt-secret JWT_SECRET
+                        Public key for asymmetric JWT methods or shared
+                        secretfor symmetric methods. Please also make sure to
+                        use --jwt-method to select the method of the
+                        signature, otherwise this argument will be ignored.
+                        (default: None)
+  --jwt-method JWT_METHOD
+                        Method used for the signature of the JWT
+                        authentication payload. (default: HS256)
 </pre></div>
 </div>
 </div>
@@ -363,25 +503,63 @@ what the bot predicts as a next action.</p>
 </pre></div>
 </div>
 <p>This command trains a Rasa model that combines a Rasa NLU and a Rasa Core model.
-The following arguments allow you to specify the data files, the configuration file, the domain file, and the
-output path.</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">data</span> <span class="n">DATA</span> <span class="p">[</span><span class="n">DATA</span> <span class="o">...</span><span class="p">]</span>
-                      <span class="n">Paths</span> <span class="n">to</span> <span class="n">the</span> <span class="n">Core</span> <span class="ow">and</span> <span class="n">NLU</span> <span class="n">data</span> <span class="n">files</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span>
-                      <span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
-<span class="o">-</span><span class="n">c</span> <span class="n">CONFIG</span><span class="p">,</span> <span class="o">--</span><span class="n">config</span> <span class="n">CONFIG</span>
-                      <span class="n">The</span> <span class="n">policy</span> <span class="ow">and</span> <span class="n">NLU</span> <span class="n">pipeline</span> <span class="n">configuration</span> <span class="n">of</span> <span class="n">your</span> <span class="n">bot</span><span class="o">.</span>
-                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">yml</span><span class="p">)</span>
-<span class="o">-</span><span class="n">d</span> <span class="n">DOMAIN</span><span class="p">,</span> <span class="o">--</span><span class="n">domain</span> <span class="n">DOMAIN</span>
-                      <span class="n">Domain</span> <span class="n">specification</span> <span class="p">(</span><span class="n">yml</span> <span class="n">file</span><span class="p">)</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">domain</span><span class="o">.</span><span class="n">yml</span><span class="p">)</span>
-<span class="o">--</span><span class="n">out</span> <span class="n">OUT</span>             <span class="n">Directory</span> <span class="n">where</span> <span class="n">your</span> <span class="n">models</span> <span class="n">should</span> <span class="n">be</span> <span class="n">stored</span><span class="o">.</span>
-                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">models</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>If you only want to train an NLU or a Core model, you can run <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>.
+If you only want to train an NLU or a Core model, you can run <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>.
 However, Rasa will automatically skip training Core or NLU if the training data and config haven’t changed.</p>
 <p><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> will store the trained model in the directory defined by <code class="docutils literal notranslate"><span class="pre">--out</span></code>. The name of the model
 is per default <code class="docutils literal notranslate"><span class="pre">&lt;timestamp&gt;.tar.gz</span></code>. If you want to name your model differently, you can specify the name
 using <code class="docutils literal notranslate"><span class="pre">--fixed-model-name</span></code>.</p>
+<p>The following arguments can be used to configure the training process:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
+                  [-c CONFIG] [-d DOMAIN] [--out OUT]
+                  [--augmentation AUGMENTATION] [--debug-plots]
+                  [--dump-stories] [--fixed-model-name FIXED_MODEL_NAME]
+                  [--force] [--store-uncompressed]
+                  {core,nlu} ...
+
+positional arguments:
+  {core,nlu}
+    core                Trains a Rasa Core model using your stories.
+    nlu                 Trains a Rasa NLU model using your NLU data.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --data DATA [DATA ...]
+                        Paths to the Core and NLU data files. (default:
+                        [&#39;data&#39;])
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification (yml file). (default: domain.yml)
+  --out OUT             Directory where your models should be stored.
+                        (default: models)
+  --augmentation AUGMENTATION
+                        How much data augmentation to use during training.
+                        (default: 50)
+  --debug-plots         If enabled, will create plots showing checkpoints and
+                        their connections between story blocks in a file
+                        called `story_blocks_connections.html`. (default:
+                        False)
+  --dump-stories        If enabled, save flattened stories to a file.
+                        (default: False)
+  --fixed-model-name FIXED_MODEL_NAME
+                        If set, the name of the model file/directory will be
+                        set to the given name. (default: None)
+  --force               Force a model training even if the data has not
+                        changed. (default: False)
+  --store-uncompressed  If set the model is not compressed. Note: You need a
+                        compressed model file for running the Rasa Server,
+                        testing a model, etc. (default: False)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+</pre></div>
+</div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Make sure training data for Core and NLU are present when training a model using <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code>.
@@ -395,18 +573,74 @@ If only training data for one model type are present, the command automatically 
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">interactive</span>
 </pre></div>
 </div>
-<p>If you provide a trained model using</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">m</span> <span class="n">MODEL</span><span class="p">,</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span>
-                      <span class="n">Path</span> <span class="n">to</span> <span class="n">a</span> <span class="n">trained</span> <span class="n">Rasa</span> <span class="n">model</span><span class="o">.</span> <span class="n">If</span> <span class="n">a</span> <span class="n">directory</span> <span class="ow">is</span>
-                      <span class="n">specified</span><span class="p">,</span> <span class="n">it</span> <span class="n">will</span> <span class="n">use</span> <span class="n">the</span> <span class="n">latest</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">this</span>
-                      <span class="n">directory</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+<p>If you provide a trained model using the <code class="docutils literal notranslate"><span class="pre">--model</span></code> argument, the interactive learning process
+is started with the provided model. If no model is specified, <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> will initially
+train a Rasa model with the data located in <code class="docutils literal notranslate"><span class="pre">data</span></code>, if no other data directory was defined
+(parameter <code class="docutils literal notranslate"><span class="pre">--data</span></code>). After training the first initial model, the interactive learning session starts.
+However, training will be skipped if the training data and config haven’t changed.</p>
+<p>The full list of arguments that can be set for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa interactive [-h] [-v] [-vv] [--quiet] [-m MODEL]
+                        [--data DATA [DATA ...]] [--skip-visualization]
+                        [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
+                        [--out OUT] [--augmentation AUGMENTATION]
+                        [--debug-plots] [--dump-stories] [--force]
+                        {core} ... [model-as-positional-argument]
+
+positional arguments:
+  {core}
+    core                Starts an interactive learning session model to create
+                        new training data for a Rasa Core model by chatting.
+                        Uses the &#39;RegexInterpreter&#39;, i.e. `/&lt;intent&gt;` input
+                        format.
+  model-as-positional-argument
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+  --data DATA [DATA ...]
+                        Paths to the Core and NLU data files. (default:
+                        [&#39;data&#39;])
+  --skip-visualization  Disable plotting the visualization during interactive
+                        learning. (default: False)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Train Arguments:
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification (yml file). (default: domain.yml)
+  --out OUT             Directory where your models should be stored.
+                        (default: models)
+  --augmentation AUGMENTATION
+                        How much data augmentation to use during training.
+                        (default: 50)
+  --debug-plots         If enabled, will create plots showing checkpoints and
+                        their connections between story blocks in a file
+                        called `story_blocks_connections.html`. (default:
+                        False)
+  --dump-stories        If enabled, save flattened stories to a file.
+                        (default: False)
+  --force               Force a model training even if the data has not
+                        changed. (default: False)
 </pre></div>
 </div>
-<p>the interactive learning process is started with the provided model. If no model is specified,
-<code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> will initially train a Rasa model with the data located in <code class="docutils literal notranslate"><span class="pre">data</span></code>, if no
-other data directory was defined (parameter <code class="docutils literal notranslate"><span class="pre">--data</span></code>). After training the first initial model,
-the interactive learning session starts. However, training will be skipped if the training data
-and config haven’t changed.</p>
 </div>
 <div class="section" id="create-a-train-test-split">
 <h2><a class="toc-backref" href="#id8">Create a Train-Test Split</a><a class="headerlink" href="#create-a-train-test-split" title="Permalink to this headline">¶</a></h2>
@@ -415,13 +649,26 @@ and config haven’t changed.</p>
 </pre></div>
 </div>
 <p>You can specify the training data, the fraction, and the output directory using the following arguments:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">u</span> <span class="n">NLU</span><span class="p">,</span> <span class="o">--</span><span class="n">nlu</span> <span class="n">NLU</span>     <span class="n">File</span> <span class="ow">or</span> <span class="n">folder</span> <span class="n">containing</span> <span class="n">your</span> <span class="n">NLU</span> <span class="n">training</span> <span class="n">data</span><span class="o">.</span>
-                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span>
-<span class="o">--</span><span class="n">training</span><span class="o">-</span><span class="n">fraction</span> <span class="n">TRAINING_FRACTION</span>
-                      <span class="n">Percentage</span> <span class="n">of</span> <span class="n">the</span> <span class="n">data</span> <span class="n">which</span> <span class="n">should</span> <span class="n">be</span> <span class="n">the</span> <span class="n">training</span>
-                      <span class="n">data</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">)</span>
-<span class="o">--</span><span class="n">out</span> <span class="n">OUT</span>             <span class="n">Directory</span> <span class="n">where</span> <span class="n">the</span> <span class="n">split</span> <span class="n">files</span> <span class="n">should</span> <span class="n">be</span> <span class="n">stored</span><span class="o">.</span>
-                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">train_test_split</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
+                           [--training-fraction TRAINING_FRACTION] [--out OUT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
+                        data)
+  --training-fraction TRAINING_FRACTION
+                        Percentage of the data which should be in the training
+                        data. (default: 0.8)
+  --out OUT             Directory where the split files should be stored.
+                        (default: train_test_split)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
 </pre></div>
 </div>
 <p>This command will attempt to keep the proportions of intents the same in train and test.</p>
@@ -434,14 +681,29 @@ to json or markdown, run:</p>
 </pre></div>
 </div>
 <p>You can specify the input file, output file, and the output format with the following arguments:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">data</span><span class="o">-</span><span class="n">file</span> <span class="n">DATA_FILE</span>
-                      <span class="n">File</span> <span class="ow">or</span> <span class="n">directory</span> <span class="n">containing</span> <span class="n">training</span> <span class="n">data</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span>
-                      <span class="kc">None</span><span class="p">)</span>
-<span class="o">--</span><span class="n">out</span><span class="o">-</span><span class="n">file</span> <span class="n">OUT_FILE</span>   <span class="n">File</span> <span class="n">where</span> <span class="n">to</span> <span class="n">save</span> <span class="n">training</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">Rasa</span> <span class="nb">format</span><span class="o">.</span>
-                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
-<span class="o">-</span><span class="n">f</span> <span class="p">{</span><span class="n">json</span><span class="p">,</span><span class="n">md</span><span class="p">},</span> <span class="o">--</span><span class="nb">format</span> <span class="p">{</span><span class="n">json</span><span class="p">,</span><span class="n">md</span><span class="p">}</span>
-                      <span class="n">Output</span> <span class="nb">format</span> <span class="n">the</span> <span class="n">training</span> <span class="n">data</span> <span class="n">should</span> <span class="n">be</span> <span class="n">converted</span>
-                      <span class="n">into</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data-file DATA_FILE
+                             --out-file OUT_FILE [-l LANGUAGE] -f {json,md}
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --data-file DATA_FILE
+                        File or directory containing training data. (default:
+                        None)
+  --out-file OUT_FILE   File where to save training data in Rasa format.
+                        (default: None)
+  -l LANGUAGE, --language LANGUAGE
+                        Language of data. (default: en)
+  -f {json,md}, --format {json,md}
+                        Output format the training data should be converted
+                        into. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
 </pre></div>
 </div>
 </div>
@@ -452,26 +714,38 @@ to json or markdown, run:</p>
 </pre></div>
 </div>
 <p>Normally, training stories in the directory <code class="docutils literal notranslate"><span class="pre">data</span></code> are visualized. If your training stories are located in a
-different location, you can specify the location with</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">s</span> <span class="n">STORIES</span><span class="p">,</span> <span class="o">--</span><span class="n">stories</span> <span class="n">STORIES</span>
-                      <span class="n">File</span> <span class="ow">or</span> <span class="n">folder</span> <span class="n">containing</span> <span class="n">training</span> <span class="n">stories</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span>
-                      <span class="n">data</span><span class="p">)</span>
-</pre></div>
-</div>
+different location, you can specify the location with <code class="docutils literal notranslate"><span class="pre">--stories</span></code>.</p>
 <p>Additional arguments are:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">d</span> <span class="n">DOMAIN</span><span class="p">,</span> <span class="o">--</span><span class="n">domain</span> <span class="n">DOMAIN</span>
-                      <span class="n">Domain</span> <span class="n">specification</span> <span class="p">(</span><span class="n">yml</span> <span class="n">file</span><span class="p">)</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">domain</span><span class="o">.</span><span class="n">yml</span><span class="p">)</span>
-<span class="o">-</span><span class="n">c</span> <span class="n">CONFIG</span><span class="p">,</span> <span class="o">--</span><span class="n">config</span> <span class="n">CONFIG</span>
-                      <span class="n">The</span> <span class="n">policy</span> <span class="ow">and</span> <span class="n">NLU</span> <span class="n">pipeline</span> <span class="n">configuration</span> <span class="n">of</span> <span class="n">your</span> <span class="n">bot</span><span class="o">.</span>
-                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">yml</span><span class="p">)</span>
-<span class="o">--</span><span class="n">output</span> <span class="n">OUTPUT</span>       <span class="n">Filename</span> <span class="n">of</span> <span class="n">the</span> <span class="n">output</span> <span class="n">path</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span> <span class="s1">&#39;graph.html&#39;</span><span class="o">.</span>
-                      <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">graph</span><span class="o">.</span><span class="n">html</span><span class="p">)</span>
-<span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">history</span> <span class="n">MAX_HISTORY</span>
-                      <span class="n">Max</span> <span class="n">history</span> <span class="n">to</span> <span class="n">consider</span> <span class="n">when</span> <span class="n">merging</span> <span class="n">paths</span> <span class="ow">in</span> <span class="n">the</span>
-                      <span class="n">output</span> <span class="n">graph</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
-<span class="o">-</span><span class="n">nlu</span> <span class="n">NLU_DATA</span><span class="p">,</span> <span class="o">--</span><span class="n">nlu</span><span class="o">-</span><span class="n">data</span> <span class="n">NLU_DATA</span>
-                      <span class="n">Path</span> <span class="n">of</span> <span class="n">the</span> <span class="n">Rasa</span> <span class="n">NLU</span> <span class="n">training</span> <span class="n">data</span><span class="p">,</span> <span class="n">used</span> <span class="n">to</span> <span class="n">insert</span>
-                      <span class="n">example</span> <span class="n">messages</span> <span class="n">into</span> <span class="n">the</span> <span class="n">graph</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa visualize [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-s STORIES]
+                      [-c CONFIG] [--output OUTPUT]
+                      [--max-history MAX_HISTORY] [-nlu NLU_DATA]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification (yml file). (default: domain.yml)
+  -s STORIES, --stories STORIES
+                        File or folder containing your training stories.
+                        (default: data)
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  --output OUTPUT       Filename of the output path, e.g. &#39;graph.html&#39;.
+                        (default: graph.html)
+  --max-history MAX_HISTORY
+                        Max history to consider when merging paths in the
+                        output graph. (default: 2)
+  -nlu NLU_DATA, --nlu-data NLU_DATA
+                        Path of the Rasa NLU training data, used to insert
+                        example messages into the graph. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
 </pre></div>
 </div>
 </div>
@@ -481,14 +755,79 @@ different location, you can specify the location with</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rasa</span> <span class="n">test</span>
 </pre></div>
 </div>
-<p>Specify the model to test using:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">m</span> <span class="n">MODEL</span><span class="p">,</span> <span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span>
-                      <span class="n">Path</span> <span class="n">to</span> <span class="n">a</span> <span class="n">trained</span> <span class="n">Rasa</span> <span class="n">model</span><span class="o">.</span> <span class="n">If</span> <span class="n">a</span> <span class="n">directory</span> <span class="ow">is</span>
-                      <span class="n">specified</span><span class="p">,</span> <span class="n">it</span> <span class="n">will</span> <span class="n">use</span> <span class="n">the</span> <span class="n">latest</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">this</span>
-                      <span class="n">directory</span><span class="o">.</span> <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">models</span><span class="p">)</span>
+<p>Specify the model to test using <code class="docutils literal notranslate"><span class="pre">--model</span></code>.
+Check out more details in <a class="reference internal" href="../evaluating-models/#nlu-evaluation"><span class="std std-ref">Evaluating an NLU Model</span></a> and <a class="reference internal" href="../evaluating-models/#core-evaluation"><span class="std std-ref">Evaluating a Core Model</span></a>.</p>
+<p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
+                 [--max-stories MAX_STORIES] [--output OUTPUT] [--e2e]
+                 [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
+                 [--url URL] [-u NLU] [--report [REPORT]]
+                 [--successes [SUCCESSES]] [--errors ERRORS]
+                 [--histogram HISTOGRAM] [--confmat CONFMAT]
+                 [--cross-validation] [-c CONFIG] [-f FOLDS]
+                 {core,nlu} ...
+
+positional arguments:
+  {core,nlu}
+    core                Tests a trained Rasa Core model using your test
+                        stories.
+    nlu                 Tests a trained Rasa NLU model using your test NLU
+                        data.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Core Test Arguments:
+  -s STORIES, --stories STORIES
+                        File or folder containing your test stories. (default:
+                        data)
+  --max-stories MAX_STORIES
+                        Maximum number of stories to test on. (default: None)
+  --output OUTPUT       Output path for any files created during the
+                        evaluation. (default: results)
+  --e2e, --end-to-end   Run an end-to-end evaluation for combined action and
+                        intent prediction. Requires a story file in end-to-end
+                        format. (default: False)
+  --endpoints ENDPOINTS
+                        Configuration file for the connectors as a yml file.
+                        (default: None)
+  --fail-on-prediction-errors
+                        If a prediction error is encountered, an exception is
+                        thrown. This can be used to validate stories during
+                        tests, e.g. on travis. (default: False)
+  --url URL             If supplied, downloads a story file from a URL and
+                        trains on it. Fetches the data by sending a GET
+                        request to the supplied URL. (default: None)
+
+NLU Test Arguments:
+  -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
+                        data)
+  --report [REPORT]     Output path to save the intent/entity metrics report.
+                        (default: None)
+  --successes [SUCCESSES]
+                        Output path to save successful predictions. (default:
+                        None)
+  --errors ERRORS       Output path to save model errors. (default:
+                        errors.json)
+  --histogram HISTOGRAM
+                        Output path for the confidence histogram. (default:
+                        hist.png)
+  --confmat CONFMAT     Output path for the confusion matrix plot. (default:
+                        confmat.png)
 </pre></div>
 </div>
-<p>Check out more details in <a class="reference internal" href="../evaluating-models/#nlu-evaluation"><span class="std std-ref">Evaluating an NLU Model</span></a> and <a class="reference internal" href="../evaluating-models/#core-evaluation"><span class="std std-ref">Evaluating a Core Model</span></a>.</p>
 </div>
 </div>
 
