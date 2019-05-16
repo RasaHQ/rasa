@@ -83,8 +83,8 @@ jobs:
     install:
     - npm install -g swagger-cli
     script:
-    - swagger-cli validate docs/core/_static/spec/server.yml
-    - swagger-cli validate docs/core/_static/spec/action_server.yml
+    - swagger-cli validate docs/_static/spec/action-server.yml
+    - swagger-cli validate docs/_static/spec/rasa.yml
     after_success:
     - coveralls
   - stage: test
@@ -103,26 +103,31 @@ jobs:
     - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
     - python -m pytest tests
-  - stage: integration
-    name: "Test Docs Core"
+  - stage: docs
+    if: fork = false AND branch = "post-merge-docs" # forked repository will skip building docs, only master & PRs to it
     install:
-    - pip install -r requirements-docs.txt
-    - pip install -e .[sql]
-    - pip list
-    script:
-      # be strict about warnings --> they will be treated as errors
-    - cd docs/core
-    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
-  - stage: integration
-    name: "Test Docs NLU"
-    install:
-    - pip install -r requirements-docs.txt
+    - RASABASTER=rasabaster-0.7.20.tar.gz
+    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
+    - pip install $RASABASTER
+    - pip install --no-cache-dir -r requirements-docs.txt
+    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
     - pip install -e .
     - pip list
     script:
-      # be strict about warnings --> they will be treated as errors
-    - cd docs/nlu
-    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+    - eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
+    - openssl aes-256-cbc
+      -K $encrypted_1708c37fe733_key
+      -iv $encrypted_1708c37fe733_iv
+      -in secrets.tar.enc
+      -out secrets.tar
+      -d
+    - tar -xvf secrets.tar
+    - ssh-add docs_key
+    - git config --global user.email "builds@travis-ci.com"
+    - git config --global user.name "Travis CI"
+    - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
+    - export ${!TRAVIS*}
+    - sphinx-versioning push docs docs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: deploy
     name: "Deploy to PyPI"
     python: 3.6

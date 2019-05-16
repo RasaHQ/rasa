@@ -24,7 +24,7 @@ General
   ``rasa.core.server`` -> ``rasa run``
   ``rasa.core.test`` -> ``rasa test core``
   ``rasa.core.train`` -> ``rasa train core``
-  ``rasa.core.visualize`` -> ``rasa show``
+  ``rasa.core.visualize`` -> ``rasa visualize``
   ``rasa.nlu.convert`` -> ``rasa data``
   ``rasa.nlu.evaluate`` -> ``rasa test nlu``
   ``rasa.nlu.run`` -> ``rasa shell``
@@ -61,6 +61,6 @@ Script parameters
   documentation https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn
 
 - To avoid conflicts in the script parameter names, connectors in the ``run`` command now need to be specified with
-  ``--connector``. ``-c`` is no longer supported. The maximum history in the ``rasa show stories`` command need to be
+  ``--connector``. ``-c`` is no longer supported. The maximum history in the ``rasa visualize`` command needs to be
   defined with ``--max-history``. Output paths and log files cannot be specified with ``-o`` anymore. ``--output`` and
   ``--log-file`` should be used.
