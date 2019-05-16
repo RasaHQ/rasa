@@ -8,7 +8,7 @@ def test_x_help(run):
     help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--no-prompt]
               [--production] [--nlg NLG]
               [--model-endpoint-url MODEL_ENDPOINT_URL]
-              [--project-path PROJECT_PATH] [--data-path DATA_PATH]
+              [--project-path PROJECT_PATH] [--data DATA]
               [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
               [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
               [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
