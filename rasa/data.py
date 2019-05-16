@@ -26,7 +26,7 @@ def get_core_directory(
     Returns:
         Path to temporary directory containing all found Core training files.
     """
-    core_files, _ = _get_core_nlu_files(paths, skill_imports)
+    core_files, _ = get_core_nlu_files(paths, skill_imports)
     return _copy_files_to_new_dir(core_files)
 
 
@@ -44,7 +44,7 @@ def get_nlu_directory(
     Returns:
         Path to temporary directory containing all found NLU training files.
     """
-    _, nlu_files = _get_core_nlu_files(paths, skill_imports)
+    _, nlu_files = get_core_nlu_files(paths, skill_imports)
     return _copy_files_to_new_dir(nlu_files)
 
 
@@ -63,7 +63,8 @@ def get_core_nlu_directories(
         Path to directory containing the Core files and path to directory
         containing the NLU training files.
     """
-    story_files, nlu_data_files = _get_core_nlu_files(paths, skill_imports)
+
+    story_files, nlu_data_files = get_core_nlu_files(paths, skill_imports)
 
     story_directory = _copy_files_to_new_dir(story_files)
     nlu_directory = _copy_files_to_new_dir(nlu_data_files)
@@ -71,10 +72,21 @@ def get_core_nlu_directories(
     return story_directory, nlu_directory
 
 
-def _get_core_nlu_files(
+def get_core_nlu_files(
     paths: Optional[Union[Text, List[Text]]],
     skill_imports: Optional[SkillSelector] = None,
 ) -> Tuple[Set[Text], Set[Text]]:
+    """Recursively collects all training files from a list of paths.
+
+    Args:
+        paths: List of paths to training files or folders containing them.
+        skill_imports: `SkillSelector` instance which determines which files should
+                       be loaded.
+
+    Returns:
+        Tuple of paths to story and NLU files.
+    """
+
     story_files = set()
     nlu_data_files = set()
 
