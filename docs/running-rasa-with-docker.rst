@@ -350,7 +350,7 @@ dependencies, e.g.:
         jupyter
 
 You can then build the image via the following command, and use it in your
-``docker-compose.yml`` instead of the ``rasa/rasa`` image.
+``docker-compose.yml`` instead of the ``rasa/rasa_sdk`` image.
 
 .. code-block:: bash
 
