@@ -46,7 +46,7 @@ def add_subparser(
         "split",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Splits Rasa data in training and test data.",
+        help="Splits Rasa data into training and test data.",
     )
     split_parser.set_defaults(func=lambda _: split_parser.print_help(None))
 
