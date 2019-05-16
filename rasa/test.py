@@ -67,7 +67,7 @@ def test_core(
     unpacked_model = get_model(model)
     if unpacked_model is None:
         print_error(
-            "Not able to test: Could not find any model. Use 'rasa train' to train a "
+            "Unable to test: could not find a model. Use 'rasa train' to train a "
             "Rasa model."
         )
         return
