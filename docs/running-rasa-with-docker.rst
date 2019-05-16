@@ -110,7 +110,7 @@ The tags are:
 - ``{version}-mitie-en``
 - ``{version}-full``
 
-The plain ``latest`` tag includes all the dependencies you need to run the ``supervised_embeddings`` pipeline.
+The plain ``{version}`` tag includes all the dependencies you need to run the ``supervised_embeddings`` pipeline.
 If you are using components with pre-trained word vectors, you need to choose the corresponding tag.
 Alternatively, you can use the ``-full`` tag which includes all pipeline dependencies.
 
