@@ -309,7 +309,7 @@ To spin it up together with the Rasa instance, add a service
        command:
          - run
      action_server:
-       image: rasa/rasa_core_sdk:latest
+       image: rasa/rasa_sdk:latest
        volumes:
          - ./actions:/app/actions
 
