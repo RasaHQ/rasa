@@ -88,7 +88,7 @@ def test_core(
             _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
         else:
             print_warning(
-                "No NLU model found. Use default 'RegexInterpreter' for end-to-end "
+                "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
                 "evaluation."
             )
 
