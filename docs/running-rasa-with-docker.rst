@@ -264,7 +264,7 @@ Start with creating the custom actions in a directory ``actions``:
   touch actions/__init__.py
   touch actions/actions.py
 
-Then build a custom action using the Rasa Core SDK, e.g.:
+Then build a custom action using the Rasa SDK, e.g.:
 
 .. code-block:: python
 
