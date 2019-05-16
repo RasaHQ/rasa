@@ -63,7 +63,7 @@ def test_core(args: argparse.Namespace) -> None:
     )
     stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
     stories = data.get_core_directory(stories)
-    output = args.output or DEFAULT_RESULTS_PATH
+    output = args.out or DEFAULT_RESULTS_PATH
 
     if not os.path.exists(output):
         os.makedirs(output)
