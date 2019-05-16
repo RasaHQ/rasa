@@ -27,10 +27,10 @@ def set_visualize_stories_arguments(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-nlu",
-        "--nlu-data",
+        "-u",
+        "--nlu",
         default=None,
         type=str,
-        help="Path of the Rasa NLU training data, "
+        help="File or folder containing your NLU data, "
         "used to insert example messages into the graph.",
     )

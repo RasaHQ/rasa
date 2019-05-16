@@ -35,11 +35,6 @@ def visualize_stories(args: argparse.Namespace):
 
     loop.run_until_complete(
         rasa.core.visualize(
-            args.config,
-            args.domain,
-            args.stories,
-            args.nlu_data,
-            args.output,
-            args.max_history,
+            args.config, args.domain, args.stories, args.nlu, args.out, args.max_history
         )
     )

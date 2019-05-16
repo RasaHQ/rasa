@@ -1,5 +1,4 @@
 import argparse
-import datetime
 import importlib.util
 import logging
 import signal
@@ -209,6 +208,4 @@ def rasa_x(args: argparse.Namespace):
         # noinspection PyUnresolvedReferences
         from rasax.community.api.local import main_local
 
-        main_local(
-            args.project_path, args.data_path, token=rasa_x_token, metrics=metrics
-        )
+        main_local(args.project_path, args.data, token=rasa_x_token, metrics=metrics)
