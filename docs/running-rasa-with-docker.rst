@@ -136,7 +136,7 @@ Now you can train your own Rasa model by running:
     rasa/rasa:latest-full \
     train \
       --domain domain.yml \
-      --data data/stories.md \
+      --data your-data-directory \
       --out models
 
 Here's what's happening in that command:
@@ -148,8 +148,8 @@ Here's what's happening in that command:
     the default locations for the configuration files and training data. For more
     information see :ref:`cli-usage`.
 
-In this case, we've also passed values for the location of the domain file, stories file, and the models output
-directory to show how these can be customized.
+In this case, we've also passed values for the location of the domain file, training
+data and the models output directory to show how these can be customized.
 You can also leave these out since we are passing the default values.
 
 .. note::
