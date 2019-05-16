@@ -382,8 +382,8 @@ your domain, how often that action was predicted, and how often an
 incorrect action was predicted instead.</p>
 <p>The full list of options for the script is:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
-                      [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
-                      [--e2e] [--endpoints ENDPOINTS]
+                      [-s STORIES] [--max-stories MAX_STORIES]
+                      [--output OUTPUT] [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
 
 optional arguments:
@@ -399,7 +399,7 @@ optional arguments:
                         data)
   --max-stories MAX_STORIES
                         Maximum number of stories to test on. (default: None)
-  --out OUT             Output path for any files created during the
+  --output OUTPUT       Output path for any files created during the
                         evaluation. (default: results)
   --e2e, --end-to-end   Run an end-to-end evaluation for combined action and
                         intent prediction. Requires a story file in end-to-end
