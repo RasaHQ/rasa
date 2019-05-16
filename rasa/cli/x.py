@@ -99,7 +99,7 @@ def _prepare_credentials_for_rasa_x(credentials_path: Optional[Text]) -> Text:
         credentials_path = DEFAULT_CREDENTIALS_PATH
 
     if not credentials.get("rasa"):
-        credentials["rasa"] = {"url": "http://localhost:5002"}
+        credentials["rasa"] = {"url": "http://localhost:5002/api"}
 
         io_utils.write_yaml_file(credentials, credentials_path)
 

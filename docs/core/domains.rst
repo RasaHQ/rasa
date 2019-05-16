@@ -1,5 +1,5 @@
 :desc: Define intents, entities, slots and actions in Rasa to build contextual
-       AI Assistants and chatbots using open source bot framework Rasa Stack. 
+       AI Assistants and chatbots using open source bot framework Rasa Stack.
 
 .. _domain:
 
@@ -14,7 +14,7 @@ for the things your bot can say.
 
 As an example, the ``DefaultDomain`` has the following yaml definition:
 
-                    
+
 .. literalinclude:: ../../../rasa/cli/initial_project/domain.yml
    :language: yaml
 
@@ -106,7 +106,7 @@ two ways to use these templates:
 
 2. You can use the templates to generate response messages from your
    custom actions using the dispatcher:
-   ``dispatcher.utter_template("utter_greet")``.
+   ``dispatcher.utter_template("utter_greet", tracker)``.
    This allows you to separate the logic of generating
    the messages from the actual copy. In you custom action code, you can
    send a message based on the template like this:
@@ -120,13 +120,13 @@ two ways to use these templates:
             return 'action_greet'
 
         def run(self, dispatcher, tracker, domain):
-            dispatcher.utter_template("utter_greet")
+            dispatcher.utter_template("utter_greet", tracker)
             return []
 
 Images and Buttons
 ------------------
 
-Templates defined in a domains yaml file can contain images and
+Templates defined in a domain's yaml file can contain images and
 buttons as well:
 
 .. code-block:: yaml
@@ -141,7 +141,7 @@ buttons as well:
          payload: "super sad"
      utter_cheer_up:
      - text: "Here is something to cheer you up:"
-       image: "https://cdn77.eatliver.com/wp-content/uploads/2017/10/trump-frog.jpg"
+       image: "https://i.imgur.com/nGF1K8f.jpg"
 
 .. note::
 
@@ -150,13 +150,77 @@ buttons as well:
    interface can not display buttons or images, but tries to mimic them in
    the command line.
 
+Custom Output Payloads
+----------------------
+
+You can also send any arbitrary output to the output channel using the
+``custom:`` key. Note that since the domain is in yaml format, the json
+payload should first be converted to yaml format.
+
+For example, although date pickers are not a defined parameter in utterance
+templates because they are not supported by most channels, a slack date picker
+can be sent like so:
+
+.. code-block:: yaml
+
+   templates:
+     utter_take_bet:
+     - custom:
+         blocks:
+         - type: section
+           text:
+             text: "Make a bet on when the world will end:"
+             type: mrkdwn
+           accessory:
+             type: datepicker
+             initial_date: '2019-05-21'
+             placeholder:
+               type: plain_text
+               text: Select a date
+
+
+Channel-Specific Utterances
+---------------------------
+
+If you have certain utterances that you would like sent only to specific
+channels, you can specify this with the ``channel:`` key. The value should match
+the name defined in the ``name()`` method of the channel's ``OutputChannel``
+class. Channel-specific utterances are especially useful if creating custom
+output payloads that will only work on certain channels.
+
+
+.. code-block:: yaml
+
+  templates:
+    utter_ask_game:
+    - text: "Which game would you like to play?"
+      channel: "slack"
+      custom:
+        {payload for slack dropdown menu to choose a game}
+    - text: "Which game would you like to play?"
+      buttons:
+      - title: "Chess"
+        payload: "/inform{"game": "chess"}"
+      - title: "Checkers"
+        payload: "/inform{"game": "checkers"}"
+      - title: "Fortnite"
+        payload: "/inform{"game": "fortnite"}"
+
+Each time your bot looks for utterances, it will first check to see if there
+are any channel-specific templates for the connected channel. If there are, it
+will choose **only** from these utterances. If no channel-specific templates are
+found, it will choose from any utterances that do not have a defined ``channel``.
+Therefore, it is good practice to always have at least one template for each
+utterance that has no ``channel`` specified so that your bot can respond in all
+environments, including the shell and in interactive learning.
+
 Variables
 ---------
 
 You can also use **variables** in your templates to insert information
 collected during the dialogue. You can either do that in your custom python
-code or by using the automatic slot filling mechanism. E.g if you
-got a template like this:
+code or by using the automatic slot filling mechanism. For example, if you
+have a template like this:
 
 .. code-block:: yaml
 
@@ -186,7 +250,7 @@ In custom code, you can retrieve a template by using:
          return []
 
 If the template contains variables denoted with ``{my_variable}``
-you can supply values for the fields by passing them as key word
+you can supply values for the fields by passing them as keyword
 arguments to ``utter_template``:
 
 .. code-block:: python
@@ -227,6 +291,4 @@ featurized as normal.
 .. note::
 
     If you really want these entities not to influence action prediction we
-    suggest you make the slots with the same name of type ``unfeaturized``
-
-
+    suggest you make the slots with the same name of type ``unfeaturized``.
