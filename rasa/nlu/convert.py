@@ -26,8 +26,8 @@ def convert_training_data(
         output = td.as_markdown()
     else:
         print_error(
-            "Did not recognize data format. Supported data formats: 'json' and 'md'. "
-            "Specify the desired data format with '--format'."
+            "Did not recognize output format. Supported output formats: 'json' and "
+            "'md'. Specify the desired output format with '--format'."
         )
         return
 
