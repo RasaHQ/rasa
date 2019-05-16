@@ -102,7 +102,7 @@ async def train_async(
 
     if dialogue_data_not_present and nlu_data_not_present:
         print_error(
-            "No training data given. Please provide Core and NLU data in "
+            "No training data given. Please provide stories and NLU data in "
             "order to train a Rasa model using the '--data' argument."
         )
         return
