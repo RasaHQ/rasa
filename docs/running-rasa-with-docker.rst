@@ -35,7 +35,6 @@ This section will cover the following:
 
     - Setting up your Rasa project and training an initial model
     - Talking to your AI assistant via Docker
-
     - Choosing a Docker image tag
     - Training your Rasa models using Docker
     - Talking to your assistant using Docker
