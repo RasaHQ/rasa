@@ -83,7 +83,7 @@ and save it in a file called ``stories.md``.
    * mood_unhappy
      - utter_cheer_up
      - utter_did_that_help
-   * mood_affirm
+   * affirm
      - utter_happy
 
    ## sad path 2
@@ -92,7 +92,7 @@ and save it in a file called ``stories.md``.
    * mood_unhappy
      - utter_cheer_up
      - utter_did_that_help
-   * mood_deny
+   * deny
      - utter_goodbye
 
    ## say goodbye
@@ -120,8 +120,8 @@ file called ``domain.yml``:
    intents:
      - greet
      - goodbye
-     - mood_affirm
-     - mood_deny
+     - affirm
+     - deny
      - mood_great
      - mood_unhappy
 
@@ -294,14 +294,14 @@ Let's create some intent examples in a file called ``nlu.md``:
    - see you around
    - see you later
 
-   ## intent:mood_affirm
+   ## intent:affirm
    - yes
    - indeed
    - of course
    - that sounds good
    - correct
 
-   ## intent:mood_deny
+   ## intent:deny
    - no
    - never
    - I don't think so

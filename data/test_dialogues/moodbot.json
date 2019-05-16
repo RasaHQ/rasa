@@ -48,11 +48,11 @@
           },
           {
             "confidence":0.04903582960375451,
-            "name":"mood_deny"
+            "name":"deny"
           },
           {
             "confidence":0.04204397361497238,
-            "name":"mood_affirm"
+            "name":"affirm"
           }
         ],
         "text":"Hi talk to me"
@@ -133,11 +133,11 @@
           },
           {
             "confidence":0.017715563733253295,
-            "name":"mood_affirm"
+            "name":"affirm"
           },
           {
             "confidence":0.013017137225390567,
-            "name":"mood_deny"
+            "name":"deny"
           }
         ],
         "text":"Super sad"
@@ -197,7 +197,7 @@
       "input_channel":null,
       "intent":{
         "confidence":0.8162296627642036,
-        "name":"mood_deny"
+        "name":"deny"
       },
       "message_id":null,
       "parse_data":{
@@ -206,12 +206,12 @@
         ],
         "intent":{
           "confidence":0.8162296627642036,
-          "name":"mood_deny"
+          "name":"deny"
         },
         "intent_ranking":[
           {
             "confidence":0.8162296627642036,
-            "name":"mood_deny"
+            "name":"deny"
           },
           {
             "confidence":0.07152463661481759,
@@ -223,7 +223,7 @@
           },
           {
             "confidence":0.02662414324721426,
-            "name":"mood_affirm"
+            "name":"affirm"
           },
           {
             "confidence":0.024343883584915963,
