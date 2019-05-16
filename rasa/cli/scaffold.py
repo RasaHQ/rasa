@@ -15,7 +15,7 @@ def add_subparser(
     scaffold_parser = subparsers.add_parser(
         "init",
         parents=parents,
-        help="Create a new project.",
+        help="Creates a new project, with example training data, actions, and config files.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     scaffold_parser.add_argument(

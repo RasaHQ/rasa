@@ -22,7 +22,7 @@ def add_subparser(
         conflict_handler="resolve",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Teach the bot with interactive learning.",
+        help="Starts an interactive learning session to create new training data by chatting.",
     )
     interactive_parser.set_defaults(func=interactive)
 
@@ -32,7 +32,7 @@ def add_subparser(
         conflict_handler="resolve",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Train a Rasa Core model with interactive learning.",
+        help="Trains a Rasa Core model in an interactive learning session.",
     )
     interactive_core_parser.set_defaults(func=interactive_core)
 
