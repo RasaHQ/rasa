@@ -85,7 +85,7 @@ async def train_async(
         domain = Domain.load(domain, skill_imports)
     except InvalidDomain as e:
         print_error(
-            "Could not load domain due to : '{}'. To specify a valid domain path use "
+            "Could not load domain due to: '{}'. To specify a valid domain path use "
             "the '--domain' argument.".format(e)
         )
         return None
@@ -272,7 +272,7 @@ async def train_core_async(
             domain = Domain.load(domain, skill_imports)
         except InvalidDomain as e:
             print_error(
-                "Could not load domain due to : '{}'. To specify a valid domain path "
+                "Could not load domain due to: '{}'. To specify a valid domain path "
                 "use the '--domain' argument.".format(e)
             )
             return None

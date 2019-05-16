@@ -64,7 +64,7 @@ def add_test_core_argument_group(
     parser.add_argument(
         "--url",
         type=str,
-        help="If supplied, downloads a story file from a URL and "
+        help="If supplied, downloads a story file from an URL and "
         "trains on it. Fetches the data by sending a GET request "
         "to the supplied URL.",
     )

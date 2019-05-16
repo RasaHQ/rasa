@@ -51,14 +51,11 @@ def add_server_arguments(parser: argparse.ArgumentParser):
     server_arguments.add_argument(
         "--enable-api",
         action="store_true",
-        help="Start the web server api in addition to the input channel.",
+        help="Start the web server API in addition to the input channel.",
     )
     server_arguments.add_argument(
         "--remote-storage",
-        help="Set the remote location where models are stored. "
-        "E.g. on AWS. If nothing is configured, the "
-        "server will only serve the models that are "
-        "on disk in the configured model path.",
+        help="Set the remote location where your Rasa model is stored, " "e.g. on AWS.",
     )
 
     channel_arguments = parser.add_argument_group("Channels")
