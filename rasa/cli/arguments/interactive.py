@@ -63,5 +63,5 @@ def add_skip_visualization_param(parser: argparse.ArgumentParser):
         "--skip-visualization",
         default=False,
         action="store_true",
-        help="Disables plotting the visualization during interactive learning.",
+        help="Disable plotting the visualization during interactive learning.",
     )
