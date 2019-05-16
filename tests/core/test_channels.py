@@ -815,10 +815,8 @@ async def test_slackbot_send_text():
     assert r.parsed_body["channel"] == ["General"]
     assert len(r.parsed_body["blocks"]) == 1
     assert '"type": "section"' in r.parsed_body["blocks"][0]
-    assert (
-        '"text": {"type": "plain_text", "text": "my message"}'
-        in r.parsed_body["blocks"][0]
-    )
+    assert '"type": "plain_text"' in r.parsed_body["blocks"][0]
+    assert '"text": "my message"' in r.parsed_body["blocks"][0]
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
