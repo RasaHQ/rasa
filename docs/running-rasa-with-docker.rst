@@ -24,7 +24,8 @@ If you're not sure if you have Docker installed, you can check by running:
     # docker-compose version 1.23.2, build 1110ad01
 
 If Docker is installed on your machine, the output should show you your installed
-versions of docker and docker-compose. If the command doesn't work, you'll have to install Docker.
+versions of Docker and docker-compose. If the command doesn't work, you'll have to
+install Docker.
 See `here <https://docs.docker.com/install/>`_ for details.
 
 Building an Assistant with Rasa and Docker
@@ -45,8 +46,8 @@ Setup
 ~~~~~
 
 Just like in the :ref:`tutorial`, you'll use the ``rasa init`` command to create a project.
-The only difference is that you'll be running Rasa inside a docker container, using the image ``rasa/rasa``.
-To initialize your project, run:
+The only difference is that you'll be running Rasa inside a Docker container, using
+the image ``rasa/rasa``. To initialize your project, run:
 
 .. code-block:: bash
 
@@ -54,11 +55,13 @@ To initialize your project, run:
 
 What does this command mean?
 
-- ``-v $(pwd):/app`` mounts your current working directory to the working directory in the docker container. This means
-   that files you create on your computer will be visible inside the container, and files created in the container will
-   get synced back to your computer.
+- ``-v $(pwd):/app`` mounts your current working directory to the working directory
+  in the Docker container. This means that files you create on your computer will be
+  visible inside the container, and files created in the container will
+  get synced back to your computer.
 - ``rasa/rasa`` is the name of the docker image to run.
-- the docker image has the ``rasa`` command as its entrypoint, which means you don't have to type ``rasa init``, just ``init`` is enough.
+- the Docker image has the ``rasa`` command as its entrypoint, which means you don't
+  have to type ``rasa init``, just ``init`` is enough.
 
 Running this command will produce a lot of output. What happens is:
 
@@ -85,7 +88,7 @@ To talk to your newly-trained assistant, run this command:
 
 This will start a shell where you can chat to your assistant.
 Note that this command includes the flags ``-it``, which means that your are running
-docker interactively, and you are able to give input via the command line.
+Docker interactively, and you are able to give input via the command line.
 For commands which require interactive input, like ``rasa shell`` and ``rasa interactive``,
 you need to pass the ``-it`` flags.
 
@@ -114,7 +117,7 @@ Alternatively, you can use the ``-full`` tag which includes all pipeline depende
 
 .. note::
 
-   You can see a list of all the versions and tags of the rasa docker image
+   You can see a list of all the versions and tags of the Rasa Docker image
    `here <https://hub.docker.com/r/rasa/rasa/>`_ .
 
 
@@ -218,7 +221,7 @@ Add the following content to the file:
 
 The file starts with the version of the Docker Compose specification that you
 want to use.
-Each container is declared as a ``service`` within the docker compose file.
+Each container is declared as a ``service`` within the docker-compose file.
 The first service is the ``rasa`` service.
 
 
