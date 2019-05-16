@@ -36,7 +36,7 @@ def add_subparser(
         "nlu",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Train a Rasa NLU model using your NLU data.",
+        help="Trains a Rasa NLU model using your NLU data.",
     )
     train_nlu_parser.set_defaults(func=train_nlu)
 
