@@ -140,6 +140,8 @@ def test_validate_on_invalid_domain():
             rasa.utils.io.read_file("data/test_domains/invalid_format.yml")
         )
 
+
+def test_validate_on_fails_on_nlu_data():
     with pytest.raises(InvalidDomain):
         Domain.validate_domain_yaml(
             rasa.utils.io.read_file("examples/restaurantbot/data/nlu.md")
