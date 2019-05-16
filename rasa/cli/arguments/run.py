@@ -55,7 +55,7 @@ def add_server_arguments(parser: argparse.ArgumentParser):
     )
     server_arguments.add_argument(
         "--remote-storage",
-        help="Set the remote location where your Rasa model is stored, " "e.g. on AWS.",
+        help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
     )
 
     channel_arguments = parser.add_argument_group("Channels")
