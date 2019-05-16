@@ -175,8 +175,8 @@ async def test_multi_skill_training():
     expected_intents = [
         "greet",
         "goodbye",
-        "mood_affirm",
-        "mood_deny",
+        "affirm",
+        "deny",
         "mood_great",
         "mood_unhappy",
     ]

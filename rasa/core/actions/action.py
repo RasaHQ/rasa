@@ -126,7 +126,7 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
     """Create BotUttered event from message."""
 
     bot_message = BotUttered(
-        text=message.pop("text"),
+        text=message.pop("text", None),
         data={
             "elements": message.pop("elements", None),
             "quick_replies": message.pop("quick_replies", None),
