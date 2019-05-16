@@ -30,16 +30,11 @@ def visualize_stories(args: argparse.Namespace):
     loop = asyncio.get_event_loop()
 
     args.stories = data.get_core_directory(args.stories)
-    if args.nlu_data is None and os.path.exists(DEFAULT_DATA_PATH):
-        args.nlu_data = data.get_nlu_directory(DEFAULT_DATA_PATH)
+    if args.nlu is None and os.path.exists(DEFAULT_DATA_PATH):
+        args.nlu = data.get_nlu_directory(DEFAULT_DATA_PATH)
 
     loop.run_until_complete(
         rasa.core.visualize(
-            args.config,
-            args.domain,
-            args.stories,
-            args.nlu_data,
-            args.output,
-            args.max_history,
+            args.config, args.domain, args.stories, args.nlu, args.out, args.max_history
         )
     )
