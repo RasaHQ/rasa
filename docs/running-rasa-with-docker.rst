@@ -235,7 +235,7 @@ This is the port of the :ref:`rest_channels` interface of Rasa.
 .. note::
 
     Since Docker Compose starts a set of Docker containers, it is no longer
-    possible to directly connect to one single container after executing the
+    possible to connect to the command line of a single container after executing the
     ``run`` command.
 
 To run the services configured in your ``docker-compose.yml`` execute:
