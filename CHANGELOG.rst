@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.0rc4] - `master`_
+[Unreleased 1.0.0rc5] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -37,6 +37,7 @@ in ``interactive learning``
 - a model for an agent can now also be loaded from a remote storage
 - log level can be set via environment variable ``LOG_LEVEL``
 - add ``--store-uncompressed`` to train command to not compress Rasa model
+- log level of libraries, such as tensorflow, can be set via environment variable ``LOG_LEVEL_LIBRARIES``
 
 Changed
 -------

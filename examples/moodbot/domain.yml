@@ -1,8 +1,8 @@
 intents:
   - greet
   - goodbye
-  - mood_affirm
-  - mood_deny
+  - affirm
+  - deny
   - mood_great
   - mood_unhappy
 
