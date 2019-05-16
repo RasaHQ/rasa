@@ -36,7 +36,7 @@ def add_stories_param(
         "--stories",
         type=str,
         default=DEFAULT_DATA_PATH,
-        help="File or folder containing {} stories.".format(stories_name),
+        help="File or folder containing your {} stories.".format(stories_name),
     )
 
 
@@ -48,7 +48,7 @@ def add_nlu_data_param(
         "--nlu",
         type=str,
         default=DEFAULT_DATA_PATH,
-        help="File or folder containing your NLU training data.",
+        help="File or folder containing your NLU data.",
     )
 
 

@@ -79,7 +79,7 @@ def add_core_config_param(parser: argparse.ArgumentParser):
         nargs="+",
         default=[DEFAULT_CONFIG_PATH],
         help="The policy and NLU pipeline configuration of your bot. "
-        "If multiple configuration files are provided, multiple dialogue "
+        "If multiple configuration files are provided, multiple Rasa Core "
         "models are trained to compare policies.",
     )
 
@@ -92,7 +92,7 @@ def add_compare_params(
         nargs="*",
         type=int,
         default=[0, 5, 25, 50, 70, 90, 95],
-        help="Range of exclusion percentages",
+        help="Range of exclusion percentages.",
     )
     parser.add_argument(
         "--runs", type=int, default=3, help="Number of runs for experiments."
