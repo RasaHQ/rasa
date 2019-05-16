@@ -331,7 +331,7 @@ with Rasa.
 Adding Custom Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If your custom action has additional dependencies of systems or python libraries,
+If your custom action has additional dependencies of systems or Python libraries,
 you can add these by extending the official image.
 
 To do so create a file named ``Dockerfile``, extend the official image and add your custom
