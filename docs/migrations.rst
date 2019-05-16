@@ -61,6 +61,7 @@ Script parameters
   documentation https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn
 
 - To avoid conflicts in the script parameter names, connectors in the ``run`` command now need to be specified with
-  ``--connector``. ``-c`` is no longer supported. The maximum history in the ``rasa visualize`` command needs to be
-  defined with ``--max-history``. Output paths and log files cannot be specified with ``-o`` anymore. ``--output`` and
-  ``--log-file`` should be used.
+  ``--connector``. ``-c`` is no longer supported. The maximum history in the ``rasa visualize`` command need to be
+  defined with ``--max-history``. Output paths and log files cannot be specified with ``-o`` anymore. ``--out`` and
+  ``--log-file`` should be used. Furthermore, we standardized the name of NLU data to be ``--nlu`` and the name of
+  any kind of data files or directory to be ``--data``.

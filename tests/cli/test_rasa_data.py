@@ -3,7 +3,7 @@ import os
 
 def test_data_split_nlu(run_in_default_project):
     run_in_default_project(
-        "data", "split", "nlu", "--nlu", "data/nlu.md", "--training-fraction", "0.75"
+        "data", "split", "nlu", "-u", "data/nlu.md", "--training-fraction", "0.75"
     )
 
     assert os.path.exists("train_test_split")
@@ -16,9 +16,9 @@ def test_data_convert_nlu(run_in_default_project):
         "data",
         "convert",
         "nlu",
-        "--data-file",
+        "--data",
         "data/nlu.md",
-        "--out-file",
+        "--out",
         "out_nlu_data.json",
         "-f",
         "json",
@@ -42,8 +42,8 @@ def test_data_split_help(run):
 def test_data_convert_help(run):
     output = run("data", "convert", "nlu", "--help")
 
-    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data-file DATA_FILE
-                             --out-file OUT_FILE [-l LANGUAGE] -f {json,md}"""
+    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data DATA --out OUT
+                             [-l LANGUAGE] -f {json,md}"""
 
     lines = help_text.split("\n")
 

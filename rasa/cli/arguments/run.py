@@ -24,7 +24,8 @@ def add_server_arguments(parser: argparse.ArgumentParser):
     )
     add_endpoint_param(
         parser,
-        help_text="Configuration file for the model server and the connectors as a yml file.",
+        help_text="Configuration file for the model server and the connectors as a "
+        "yml file.",
     )
 
     server_arguments = parser.add_argument_group("Server Settings")
