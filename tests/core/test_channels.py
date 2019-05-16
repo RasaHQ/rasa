@@ -123,7 +123,7 @@ def test_facebook_channel():
         # the above marker marks the end of the code snipped included
         # in the docs
         routes_list = utils.list_routes(s)
-        print(routes_list)
+        print (routes_list)
         assert routes_list.get("fb_webhook.health").startswith("/webhooks/facebook")
         assert routes_list.get("fb_webhook.webhook").startswith(
             "/webhooks/facebook/webhook"
@@ -785,13 +785,12 @@ async def test_slackbot_send_image_url():
 
     r = httpretty.latest_requests[-1]
 
-    assert r.parsed_body == {
-        "as_user": ["True"],
-        "channel": ["General"],
-        "blocks": [
-            '[{"alt_text": "http://www.rasa.net", "type": "image", "image_url": "http://www.rasa.net"}]'
-        ],
-    }
+    assert r.parsed_body["as_user"] == ["True"]
+    assert r.parsed_body["channel"] == ["General"]
+    assert len(r.parsed_body["blocks"]) == 1
+    assert '"type": "image"' in r.parsed_body["blocks"][0]
+    assert '"alt_text": "http://www.rasa.net"' in r.parsed_body["blocks"][0]
+    assert '"image_url": "http://www.rasa.net"' in r.parsed_body["blocks"][0]
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
@@ -812,13 +811,14 @@ async def test_slackbot_send_text():
 
     r = httpretty.latest_requests[-1]
 
-    assert r.parsed_body == {
-        "as_user": ["True"],
-        "channel": ["General"],
-        "blocks": [
-            '[{"type": "section", "text": {"type": "plain_text", "text": "my message"}}]'
-        ],
-    }
+    assert r.parsed_body["as_user"] == ["True"]
+    assert r.parsed_body["channel"] == ["General"]
+    assert len(r.parsed_body["blocks"]) == 1
+    assert '"type": "section"' in r.parsed_body["blocks"][0]
+    assert (
+        '"text": {"type": "plain_text", "text": "my message"}'
+        in r.parsed_body["blocks"][0]
+    )
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
