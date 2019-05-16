@@ -17,7 +17,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Visualize stories",
+        help="Visualize stories.",
     )
     visualize_parser.set_defaults(func=visualize_stories)
 
