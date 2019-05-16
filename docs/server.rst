@@ -36,7 +36,7 @@ Rasa can load your model in three different ways:
 2. Fetch the model from a server (see :ref:`_server_fetch_from_server`).
 3. Fetch the model from a remote storage (see :ref:`_server_fetch_from_remote_storage`).
 
-Rasa tries to load the model in above mentioned order. E.g. it only tires to load your model from a server
+Rasa tries to load the model in above mentioned order. E.g. it only tries to load your model from a server
 if it could not find the model on your local storage system.
 
 .. warning::
