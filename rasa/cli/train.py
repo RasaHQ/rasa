@@ -15,7 +15,7 @@ def add_subparser(
 
     train_parser = subparsers.add_parser(
         "train",
-        help="Train the Rasa bot",
+        help="Train a Rasa model.",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -28,7 +28,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Train Rasa Core",
+        help="Train a Rasa Core model.",
     )
     train_core_parser.set_defaults(func=train_core)
 
@@ -36,7 +36,7 @@ def add_subparser(
         "nlu",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Train Rasa NLU",
+        help="Train a Rasa NLU model.",
     )
     train_nlu_parser.set_defaults(func=train_nlu)
 

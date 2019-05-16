@@ -27,7 +27,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Test a trained model",
+        help="Test a trained model.",
     )
 
     arguments.set_test_arguments(test_parser)
@@ -38,7 +38,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Test Rasa Core",
+        help="Test a trained Rasa Core model.",
     )
     arguments.set_test_core_arguments(test_core_parser)
 
@@ -46,7 +46,7 @@ def add_subparser(
         "nlu",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Test Rasa NLU",
+        help="Test a trained Rasa NLU model.",
     )
     arguments.set_test_nlu_arguments(test_nlu_parser)
 

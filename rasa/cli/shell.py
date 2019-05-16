@@ -22,7 +22,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Speak to a trained model on the command line",
+        help="Speak to a trained model on the command line.",
     )
     shell_parser.set_defaults(func=shell)
 

@@ -15,13 +15,13 @@ def add_subparser(
     scaffold_parser = subparsers.add_parser(
         "init",
         parents=parents,
-        help="Create a new project",
+        help="Create a new project.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     scaffold_parser.add_argument(
         "--no-prompt",
         action="store_true",
-        help="Automatically choose default options for prompts and suppress warnings",
+        help="Automatically choose default options for prompts and suppress warnings.",
     )
     scaffold_parser.set_defaults(func=run)
 
