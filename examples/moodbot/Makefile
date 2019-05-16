@@ -10,7 +10,7 @@ help:
 	@echo "        Test the latest stacked model located in /models."
 
 train:
-	rasa train -d domain.yml -c config.yml -o models
+	rasa train -d domain.yml -c config.yml --out models
 
 train-interactive:
 	rasa interactive -d domain.yml -m models -c config.yml --data data
@@ -43,4 +43,4 @@ evaluate:
 	rasa test -m models
 
 visualize:
-	rasa show stories
+	rasa visualize

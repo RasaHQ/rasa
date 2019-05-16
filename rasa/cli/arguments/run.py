@@ -1,6 +1,6 @@
 import argparse
 
-from rasa.cli.arguments.default_arguments import add_model_param
+from rasa.cli.arguments.default_arguments import add_model_param, add_endpoint_param
 from rasa.core import constants
 
 
@@ -22,10 +22,9 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         default="rasa_core.log",
         help="Store logs in specified file.",
     )
-    parser.add_argument(
-        "--endpoints",
-        default=None,
-        help="Configuration file for the model server and the connectors as a yml file.",
+    add_endpoint_param(
+        parser,
+        help_text="Configuration file for the model server and the connectors as a yml file.",
     )
 
     server_arguments = parser.add_argument_group("Server Settings")
@@ -52,14 +51,11 @@ def add_server_arguments(parser: argparse.ArgumentParser):
     server_arguments.add_argument(
         "--enable-api",
         action="store_true",
-        help="Start the web server api in addition to the input channel.",
+        help="Start the web server API in addition to the input channel.",
     )
     server_arguments.add_argument(
         "--remote-storage",
-        help="Set the remote location where models are stored. "
-        "E.g. on AWS. If nothing is configured, the "
-        "server will only serve the models that are "
-        "on disk in the configured model path.",
+        help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
     )
 
     channel_arguments = parser.add_argument_group("Channels")

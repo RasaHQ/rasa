@@ -12,7 +12,10 @@ def convert_training_data(
     data_file: Text, out_file: Text, output_format: Text, language: Text
 ):
     if not os.path.exists(data_file):
-        print_error("Data file '{}' does not exist.".format(data_file))
+        print_error(
+            "Data file '{}' does not exist. Provide a valid NLU data file using "
+            "the '--data-file' argument.".format(data_file)
+        )
         return
 
     if output_format == "json":
@@ -23,7 +26,8 @@ def convert_training_data(
         output = td.as_markdown()
     else:
         print_error(
-            "Did not recognize data format. Supported data formats: 'json' and 'md'."
+            "Did not recognize output format. Supported output formats: 'json' and "
+            "'md'. Specify the desired output format with '--format'."
         )
         return
 

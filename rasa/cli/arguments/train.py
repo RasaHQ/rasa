@@ -55,7 +55,7 @@ def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_compress_param(parser)
 
 
-def add_force_param(parser: argparse.ArgumentParser):
+def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
     parser.add_argument(
         "--force",
         action="store_true",
@@ -63,12 +63,12 @@ def add_force_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_data_param(parser: argparse.ArgumentParser):
+def add_data_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
     parser.add_argument(
         "--data",
         default=[DEFAULT_DATA_PATH],
         nargs="+",
-        help="Paths to the Core and NLU training files.",
+        help="Paths to the Core and NLU data files.",
     )
 
 
@@ -79,7 +79,7 @@ def add_core_config_param(parser: argparse.ArgumentParser):
         nargs="+",
         default=[DEFAULT_CONFIG_PATH],
         help="The policy and NLU pipeline configuration of your bot. "
-        "If multiple configuration files are provided, multiple dialogue "
+        "If multiple configuration files are provided, multiple Rasa Core "
         "models are trained to compare policies.",
     )
 
@@ -92,14 +92,16 @@ def add_compare_params(
         nargs="*",
         type=int,
         default=[0, 5, 25, 50, 70, 90, 95],
-        help="Range of exclusion percentages",
+        help="Range of exclusion percentages.",
     )
     parser.add_argument(
         "--runs", type=int, default=3, help="Number of runs for experiments."
     )
 
 
-def add_augmentation_param(parser: argparse.ArgumentParser):
+def add_augmentation_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "--augmentation",
         type=int,
@@ -108,7 +110,9 @@ def add_augmentation_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_dump_stories_param(parser: argparse.ArgumentParser):
+def add_dump_stories_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "--dump-stories",
         default=False,
@@ -117,7 +121,9 @@ def add_dump_stories_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_debug_plots_param(parser: argparse.ArgumentParser):
+def add_debug_plots_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "--debug-plots",
         default=False,

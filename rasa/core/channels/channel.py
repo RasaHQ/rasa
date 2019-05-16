@@ -29,7 +29,7 @@ class UserMessage(object):
 
     def __init__(
         self,
-        text: Optional[Text],
+        text: Optional[Text] = None,
         output_channel: Optional["OutputChannel"] = None,
         sender_id: Text = None,
         parse_data: Dict[Text, Any] = None,

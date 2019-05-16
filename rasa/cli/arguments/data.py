@@ -5,14 +5,11 @@ from rasa.cli.arguments.default_arguments import add_nlu_data_param
 
 def set_convert_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "-d",
-        "--data_file",
-        required=True,
-        help="File or directory containing training data.",
+        "--data-file", required=True, help="File or directory containing training data."
     )
 
     parser.add_argument(
-        "--out_file",
+        "--out-file",
         required=True,
         help="File where to save training data in Rasa format.",
     )
@@ -35,7 +32,7 @@ def set_split_arguments(parser: argparse.ArgumentParser):
         "--training-fraction",
         type=float,
         default=0.8,
-        help="Percentage of the data which should be the training data.",
+        help="Percentage of the data which should be in the training data.",
     )
 
     parser.add_argument(

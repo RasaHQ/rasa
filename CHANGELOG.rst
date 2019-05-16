@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.0rc4] - `master`_
+[Unreleased 1.0.0rc6] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -33,12 +33,11 @@ in ``interactive learning``
 - support to load sub skills (domain, stories, nlu data)
 - support to select which sub skills to load through ``import`` section in
   ``config.yml``
-- add ``rasa interactive core`` to command line interface
 - support for spaCy 2.1
 - a model for an agent can now also be loaded from a remote storage
 - log level can be set via environment variable ``LOG_LEVEL``
-- add ``--fixed-model-name`` to ``rasa train`` to specify name of stored model
-- add ``--store-uncompressed`` to ``rasa train`` to not compress Rasa model
+- add ``--store-uncompressed`` to train command to not compress Rasa model
+- log level of libraries, such as tensorflow, can be set via environment variable ``LOG_LEVEL_LIBRARIES``
 
 Changed
 -------
@@ -55,14 +54,15 @@ Changed
 - removed ``--pre_load`` from run command (Rasa NLU server will just have a maximum of one model and that model will be
   loaded by default)
 - changed file format of a stored trained model from the Rasa NLU server to ``tar.gz``
-- ``rasa train`` uses fallback config if an invalid config is given
-- ``rasa test core`` compares multiple models if a list of model files is provided for the argument ``--model``
-- ``rasa train`` falls back to ``rasa train core``/``rasa train nlu`` if the corresponding training data are missing
+- train command uses fallback config if an invalid config is given
+- test command now compares multiple models if a list of model files is provided for the argument ``--model``
 - Merged rasa.core and rasa.nlu server into a single server. See swagger file in ``docs/_static/spec/server.yaml`` for
   available endpoints.
 - ``utter_custom_message()`` method in rasa_core_sdk has been renamed to ``utter_elements()``
 - updated dependencies. as part of this, models for spacy need to be reinstalled
   for 2.1 (from 2.0)
+- make sure all command line arguments for ``rasa test`` and ``rasa interactive`` are actually used, removed arguments
+  that were not used at all (e.g. ``--core`` for ``rasa test``)
 
 Removed
 -------

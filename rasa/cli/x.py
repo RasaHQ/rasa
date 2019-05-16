@@ -6,7 +6,7 @@ import signal
 import sys
 import os
 from multiprocessing import get_context
-from typing import List, Text
+from typing import List, Text, Optional
 
 import questionary
 
@@ -21,6 +21,7 @@ from rasa.constants import (
     ENV_LOG_LEVEL,
 )
 from rasa.utils.common import read_global_config_value, write_global_config_value
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ def add_subparser(
 
     if is_rasa_x_installed():
         # we'll only show the help msg for the command if Rasa X is actually installed
-        x_parser_args["help"] = "Start Rasa X and the Interface"
+        x_parser_args["help"] = "Starts the Rasa X interface."
 
     shell_parser = subparsers.add_parser("x", **x_parser_args)
     shell_parser.set_defaults(func=rasa_x)
@@ -91,17 +92,15 @@ def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
     return allow_metrics
 
 
-def _core_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
-    """Starts the Rasa Core application."""
+def _rasa_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
+    """Starts the Rasa application."""
     from rasa.core.run import serve_application
     from rasa.nlu.utils import configure_colored_logging
 
     configure_colored_logging(args.loglevel)
     logging.getLogger("apscheduler.executors.default").setLevel(logging.WARNING)
 
-    args.credentials = get_validated_path(
-        args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
-    )
+    credentials_path = _prepare_credentials_for_rasa_x(args.credentials)
 
     if endpoints is None:
         args.endpoints = get_validated_path(
@@ -114,7 +113,7 @@ def _core_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = No
     serve_application(
         endpoints=endpoints,
         port=args.port,
-        credentials=args.credentials,
+        credentials=credentials_path,
         cors=args.cors,
         auth_token=args.auth_token,
         enable_api=True,
@@ -123,7 +122,31 @@ def _core_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = No
     )
 
 
-def start_core_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
+def _prepare_credentials_for_rasa_x(credentials_path: Optional[Text]) -> Text:
+    credentials_path = get_validated_path(
+        credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
+    )
+    if credentials_path:
+        credentials = io_utils.read_yaml_file(credentials_path)
+    else:
+        credentials = {}
+        # If no credentials are given, create a new credentials file.
+        credentials_path = DEFAULT_CREDENTIALS_PATH
+
+    if not credentials.get("rasa"):
+        credentials["rasa"] = {"url": "http://localhost:5002"}
+
+        io_utils.write_yaml_file(credentials, credentials_path)
+
+        logging.debug(
+            "No Rasa credentials given. Creating one in '{}'"
+            "".format(credentials_path)
+        )
+
+    return credentials_path
+
+
+def start_rasa_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
     """Starts the Rasa X API with Rasa as a background process."""
 
     from rasa.core.utils import AvailableEndpoints
@@ -140,8 +163,6 @@ def start_core_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
     vars(args).update(
         dict(
             nlu_model=None,
-            channel="rasa",
-            credentials="credentials.yml",
             cors="*",
             auth_token=args.auth_token,
             enable_api=True,
@@ -150,7 +171,7 @@ def start_core_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
     )
 
     ctx = get_context("spawn")
-    p = ctx.Process(target=_core_service, args=(args, endpoints))
+    p = ctx.Process(target=_rasa_service, args=(args, endpoints))
     p.start()
 
 
@@ -196,7 +217,7 @@ def rasa_x(args: argparse.Namespace):
 
     if args.production:
         print_success("Starting Rasa X in production mode... 🚀")
-        _core_service(args)
+        _rasa_service(args)
     else:
         print_success("Starting Rasa X in local mode... 🚀")
         if not is_rasa_x_installed():
@@ -213,7 +234,7 @@ def rasa_x(args: argparse.Namespace):
 
         rasa_x_token = generate_rasa_x_token()
 
-        start_core_for_local_platform(args, rasa_x_token=rasa_x_token)
+        start_rasa_for_local_platform(args, rasa_x_token=rasa_x_token)
 
         main_local(
             args.project_path, args.data_path, token=rasa_x_token, metrics=metrics

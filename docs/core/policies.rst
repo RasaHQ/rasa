@@ -440,7 +440,8 @@ and intent the property `'triggers'`, e.g.:
 .. code-block:: yaml
 
   intents:
-   - greet: {triggers: utter_goodbye}
+   - greet:
+       triggers: utter_greet
 
 An intent can only be mapped to at most one action. The bot will run
 the action once it receives a message of the mapped intent. Afterwards,
@@ -449,7 +450,7 @@ it will listen for the next message.
 .. note::
 
   The mapping policy will predict the mapped action after the intent (e.g.
-  ``utter_goodbye`` in the above example) and afterwards it will wait for
+  ``utter_greet`` in the above example) and afterwards it will wait for
   the next user message (predicting ``action_listen``). With the next
   user message normal prediction will resume.
 
@@ -458,11 +459,11 @@ it will listen for the next message.
   .. code-block:: story
 
     * greet
-      - utter_goodbye
+      - utter_greet
 
   in your stories. Otherwise any machine learning policy might be confused
-  by the sudden appearance of the predicted ``action_greet`` in
-  the dialouge history.
+  by the sudden appearance of the predicted ``utter_greet`` in
+  the dialogue history.
 
 .. _fallback_policy:
 
