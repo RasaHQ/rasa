@@ -259,7 +259,7 @@ Start with creating the custom actions in a directory ``actions``:
 .. code-block:: bash
 
   mkdir actions
-  # Rasa Core SDK expects a python module.
+  # Rasa SDK expects a python module.
   # Therefore, make sure that you have this file in the directory.
   touch actions/__init__.py
   touch actions/actions.py
