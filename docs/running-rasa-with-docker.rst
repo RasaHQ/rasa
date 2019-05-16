@@ -338,7 +338,7 @@ dependencies, e.g.:
 
 .. code-block:: docker
 
-    # Extend the official Rasa Core SDK image
+    # Extend the official Rasa SDK image
     FROM rasa/rasa_core_sdk:latest
 
     # Add a custom system library (e.g. git)
