@@ -56,7 +56,7 @@ def add_subparser(
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Performs a split of your NLU data into training and test data "
-        "percentages.",
+        "according to the specified percentages.",
     )
     nlu_split_parser.set_defaults(func=split_nlu_data)
 
