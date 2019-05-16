@@ -193,7 +193,7 @@ async def _do_training(
         )
     else:
         print (
-            "Core data / configuration did not change. "
+            "Stories / configuration did not change. "
             "No need to retrain Core model."
         )
 
