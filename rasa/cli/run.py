@@ -24,11 +24,9 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Start a Rasa server which loads a trained model.",
+        help="Starts a Rasa server with your trained model.",
     )
     run_parser.set_defaults(func=run)
-
-    arguments.set_run_arguments(run_parser)
 
     run_subparsers = run_parser.add_subparsers()
     sdk_subparser = run_subparsers.add_parser(
@@ -36,15 +34,16 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Run the action server",
+        help="Runs the action server.",
     )
     sdk_subparser.set_defaults(func=run_actions)
 
+    arguments.set_run_arguments(run_parser)
     arguments.set_run_action_arguments(sdk_subparser)
 
 
 def run_actions(args: argparse.Namespace):
-    import rasa_core_sdk.endpoint as sdk
+    import rasa_sdk.__main__ as sdk
     import sys
 
     args.actions = args.actions or DEFAULT_ACTIONS_PATH
@@ -54,7 +53,7 @@ def run_actions(args: argparse.Namespace):
     path = args.actions.replace(".", os.sep) + ".py"
     _ = get_validated_path(path, "action", DEFAULT_ACTIONS_PATH)
 
-    sdk.main(args)
+    sdk.main_from_args(args)
 
 
 def run(args: argparse.Namespace):

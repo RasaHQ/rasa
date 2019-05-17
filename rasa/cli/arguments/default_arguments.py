@@ -1,6 +1,6 @@
 import argparse
 import logging
-from typing import Text, Union
+from typing import Text, Union, Optional
 
 from rasa.constants import (
     DEFAULT_DATA_PATH,
@@ -14,14 +14,13 @@ def add_model_param(
     parser: argparse.ArgumentParser,
     model_name: Text = "Rasa",
     add_positional_arg: bool = True,
+    default: Optional[Text] = DEFAULT_MODELS_PATH,
 ):
     help_text = (
         "Path to a trained {} model. If a directory is specified, it will "
         "use the latest model in this directory.".format(model_name)
     )
-    parser.add_argument(
-        "-m", "--model", type=str, default=DEFAULT_MODELS_PATH, help=help_text
-    )
+    parser.add_argument("-m", "--model", type=str, default=default, help=help_text)
     if add_positional_arg:
         parser.add_argument(
             "model-as-positional-argument", nargs="?", type=str, help=help_text
@@ -37,21 +36,21 @@ def add_stories_param(
         "--stories",
         type=str,
         default=DEFAULT_DATA_PATH,
-        help="File or folder containing {} stories.".format(stories_name),
+        help="File or folder containing your {} stories.".format(stories_name),
     )
 
 
-def add_nlu_data_param(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "-u",
-        "--nlu",
-        type=str,
-        default=DEFAULT_DATA_PATH,
-        help="File or folder containing your NLU training data.",
-    )
+def add_nlu_data_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    help_text: Text,
+    default: Optional[Text] = DEFAULT_DATA_PATH,
+):
+    parser.add_argument("-u", "--nlu", type=str, default=default, help=help_text)
 
 
-def add_domain_param(parser: argparse.ArgumentParser):
+def add_domain_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "-d",
         "--domain",
@@ -61,7 +60,9 @@ def add_domain_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_config_param(parser: argparse.ArgumentParser):
+def add_config_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "-c",
         "--config",
@@ -71,18 +72,35 @@ def add_config_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_out_param(parser: argparse.ArgumentParser):
+def add_out_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    help_text: Text,
+    default: Optional[Text] = DEFAULT_MODELS_PATH,
+    required: bool = False,
+):
     parser.add_argument(
-        "--out",
-        type=str,
-        default=DEFAULT_MODELS_PATH,
-        help="Directory where your models should be stored.",
+        "--out", type=str, default=default, help=help_text, required=required
     )
 
 
-def add_core_model_param(parser: argparse.ArgumentParser):
+def add_endpoint_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer], help_text: Text
+):
+    parser.add_argument("--endpoints", type=str, default=None, help=help_text)
+
+
+def add_data_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    default: Optional[Text] = DEFAULT_MODELS_PATH,
+    required: bool = False,
+    data_type: Text = "Rasa ",
+):
     parser.add_argument(
-        "--core", type=str, help="Path to a pre-trained Rasa Core model (tar.gz file)."
+        "--data",
+        type=str,
+        default=default,
+        help="Path to the file or directory containing {}data.".format(data_type),
+        required=required,
     )
 
 

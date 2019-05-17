@@ -5,7 +5,7 @@ import typing
 from typing import Dict, Text
 
 from rasa.cli.utils import minimal_kwargs, print_warning, print_error
-from rasa.model import get_model, get_model_subdirectories
+from rasa.model import get_model
 
 logger = logging.getLogger(__name__)
 

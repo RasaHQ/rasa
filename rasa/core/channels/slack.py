@@ -25,18 +25,6 @@ class SlackBot(SlackClient, OutputChannel):
         super(SlackBot, self).__init__(token)
 
     @staticmethod
-    def _convert_to_slack_buttons(buttons):
-        return [
-            {
-                "text": b["title"],
-                "name": b["payload"],
-                "value": b["payload"],
-                "type": "button",
-            }
-            for b in buttons
-        ]
-
-    @staticmethod
     def _get_text_from_slack_buttons(buttons):
         return "".join([b.get("title", "") for b in buttons])
 
@@ -44,37 +32,37 @@ class SlackBot(SlackClient, OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
+        text_blocks = []
         for message_part in text.split("\n\n"):
-            super(SlackBot, self).api_call(
-                "chat.postMessage", channel=recipient, as_user=True, text=message_part
+            text_blocks.append(
+                {
+                    "type": "section",
+                    "text": {"type": "plain_text", "text": message_part},
+                }
             )
+        super(SlackBot, self).api_call(
+            "chat.postMessage", channel=recipient, as_user=True, blocks=text_blocks
+        )
 
     async def send_image_url(
-        self, recipient_id: Text, image: Text, text: Optional[Text] = "", **kwargs: Any
+        self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
-        image_attachment = [{"image_url": image, "text": text}]
         recipient = self.slack_channel or recipient_id
+        image_block = {"type": "image", "image_url": image, "alt_text": image}
         return super(SlackBot, self).api_call(
-            "chat.postMessage",
-            channel=recipient,
-            as_user=True,
-            attachments=image_attachment,
+            "chat.postMessage", channel=recipient, as_user=True, blocks=[image_block]
         )
 
     async def send_attachment(
-        self,
-        recipient_id: Text,
-        attachment: Text,
-        text: Optional[Text] = "",
-        **kwargs: Any
+        self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
         return super(SlackBot, self).api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
-            text=text,
-            attachments=attachment,
+            attachments=[attachment],
+            **kwargs
         )
 
     async def send_text_with_buttons(
@@ -86,6 +74,8 @@ class SlackBot(SlackClient, OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
 
+        text_block = {"type": "section", "text": {"type": "plain_text", "text": text}}
+
         if len(buttons) > 5:
             logger.warning(
                 "Slack API currently allows only up to 5 buttons. "
@@ -93,26 +83,21 @@ class SlackBot(SlackClient, OutputChannel):
             )
             return await self.send_text_message(recipient, text, **kwargs)
 
-        if text:
-            callback_string = text.replace(" ", "_")[:20]
-        else:
-            callback_string = self._get_text_from_slack_buttons(buttons)
-            callback_string = callback_string.replace(" ", "_")[:20]
-
-        button_attachment = [
-            {
-                "fallback": text,
-                "callback_id": callback_string,
-                "actions": self._convert_to_slack_buttons(buttons),
-            }
-        ]
-
+        button_block = {"type": "actions", "elements": []}
+        for button in buttons:
+            button_block["elements"].append(
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": button["title"]},
+                    "value": button["payload"],
+                }
+            )
         super(SlackBot, self).api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
             text=text,
-            attachments=button_attachment,
+            blocks=[text_block, button_block],
         )
 
     async def send_custom_json(
@@ -180,25 +165,6 @@ class SlackInput(InputChannel):
         )
 
     @staticmethod
-    def _is_interactive_message(payload):
-        return payload["type"] == "interactive_message"
-
-    @staticmethod
-    def _is_button(payload):
-        return payload["actions"][0]["type"] == "button"
-
-    @staticmethod
-    def _is_button_reply(slack_event):
-        payload = json.loads(slack_event["payload"])
-        return SlackInput._is_interactive_message(payload) and SlackInput._is_button(
-            payload
-        )
-
-    @staticmethod
-    def _get_button_reply(slack_event):
-        return json.loads(slack_event["payload"])["actions"][0]["name"]
-
-    @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
         """Remove superfluous/wrong/problematic tokens from a message.
 
@@ -226,7 +192,58 @@ class SlackInput(InputChannel):
             ]:
                 text = re.sub(regex, replacement, text)
 
-        return text.rstrip().lstrip()  # drop extra spaces at beginning and end
+        return text.strip()
+
+    @staticmethod
+    def _is_interactive_message(payload):
+        """Check wheter the input is a supported interactive input type."""
+
+        supported = [
+            "button",
+            "select",
+            "static_select",
+            "external_select",
+            "conversations_select",
+            "users_select",
+            "channels_select",
+            "overflow",
+            "datepicker",
+        ]
+        if payload.get("actions"):
+            action_type = payload["actions"][0].get("type")
+            if action_type in supported:
+                return True
+            elif action_type:
+                logger.warning(
+                    "Received input from a Slack interactive component of type "
+                    + "'{}', for which payload parsing is not yet supported.".format(
+                        payload["actions"][0]["type"]
+                    )
+                )
+        return False
+
+    @staticmethod
+    def _get_interactive_repsonse(action):
+        """Parse the payload for the response value."""
+
+        if action["type"] == "button":
+            return action.get("value")
+        elif action["type"] == "select":
+            return action.get("selected_options", [{}])[0].get("value")
+        elif action["type"] == "static_select":
+            return action.get("selected_option", {}).get("value")
+        elif action["type"] == "external_select":
+            return action.get("selected_option", {}).get("value")
+        elif action["type"] == "conversations_select":
+            return action.get("selected_conversation")
+        elif action["type"] == "users_select":
+            return action.get("selected_user")
+        elif action["type"] == "channels_select":
+            return action.get("selected_channel")
+        elif action["type"] == "overflow":
+            return action.get("selected_option", {}).get("value")
+        elif action["type"] == "datepicker":
+            return action.get("selected_date")
 
     async def process_message(self, request: Request, on_new_message, text, sender_id):
         """Slack retries to post messages up to 3 times based on
@@ -260,21 +277,29 @@ class SlackInput(InputChannel):
         slack_webhook = Blueprint("slack_webhook", __name__)
 
         @slack_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request):
             if request.form:
-                output = dict(request.form)
-                if self._is_button_reply(output):
-                    sender_id = json.loads(output["payload"])["user"]["id"]
-                    return await self.process_message(
-                        request,
-                        on_new_message,
-                        text=self._get_button_reply(output),
-                        sender_id=sender_id,
-                    )
+                output = request.form
+                payload = json.loads(output["payload"][0])
+
+                if self._is_interactive_message(payload):
+                    sender_id = payload["user"]["id"]
+                    text = self._get_interactive_repsonse(payload["actions"][0])
+                    if text is not None:
+                        return await self.process_message(
+                            request, on_new_message, text=text, sender_id=sender_id
+                        )
+                    elif payload["actions"][0]["type"] == "button":
+                        # link buttons don't have "value", don't send their clicks to bot
+                        return response.text("User clicked link button")
+                return response.text(
+                    "The input message could not be processed.", status=500
+                )
+
             elif request.json:
                 output = request.json
                 if "challenge" in output:
@@ -290,6 +315,6 @@ class SlackInput(InputChannel):
                         sender_id=output.get("event").get("user"),
                     )
 
-            return response.text("")
+            return response.text("Bot message delivered")
 
         return slack_webhook

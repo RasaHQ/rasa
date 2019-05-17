@@ -620,8 +620,8 @@ def is_entity_extractor_present(interpreter):
 def is_intent_classifier_present(interpreter):
     """Checks whether intent classifier is present"""
 
-    intent_classifier = [c.name for c in interpreter.pipeline if "intent" in c.provides]
-    return intent_classifier != []
+    intent_classifiers = [c.name for c in interpreter.pipeline if "intent" in c.provides]
+    return intent_classifiers != []
 
 
 def remove_pretrained_extractors(pipeline):
@@ -635,7 +635,7 @@ def remove_pretrained_extractors(pipeline):
 def run_evaluation(
     data_path: Text,
     model_path: Text,
-    report_folder: Optional[Text] = None,
+    report: Optional[Text] = None,
     successes: Optional[Text] = None,
     errors: Optional[Text] = "errors.json",
     confmat: Optional[Text] = None,
@@ -647,7 +647,7 @@ def run_evaluation(
 
     :param data_path: path to the test data
     :param model_path: path to the model
-    :param report_folder: path to folder where reports are stored
+    :param report: path to folder where reports are stored
     :param successes: path to file that will contain success cases
     :param errors: path to file that will contain error cases
     :param confmat: path to file that will show the confusion matrix
@@ -658,10 +658,7 @@ def run_evaluation(
     """
 
     # get the metadata config from the package data
-    if isinstance(model, Interpreter):
-        interpreter = model
-    else:
-        interpreter = Interpreter.load(model, component_builder)
+    interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data = training_data.load_data(data_path,
@@ -672,22 +669,22 @@ def run_evaluation(
         "entity_evaluation": None
     }
 
-    if report_folder:
-        utils.create_dir(report_folder)
+    if report:
+        utils.create_dir(report)
 
     intent_results, entity_results = get_eval_data(interpreter, test_data)
 
     if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results, report_folder, successes, errors, confmat, histogram
+            intent_results, report, successes, errors, confmat, histogram
         )
 
     if entity_results:
         logger.info("Entity evaluation results:")
-        result['entity_evaluation'] = evaluate_entities(entity_results,
+        result["entity_evaluation"] = evaluate_entities(entity_results,
                                                         interpreter,
-                                                        report_folder)
+                                                        report)
 
     return result
 

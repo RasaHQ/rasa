@@ -42,6 +42,17 @@ def test_get_nlu_file(project):
     assert original.intent_examples == copied.intent_examples
 
 
+def test_get_core_nlu_files(project):
+    data_dir = os.path.join(project, "data")
+    core_files, nlu_files = data.get_core_nlu_files([data_dir])
+
+    assert len(nlu_files) == 1
+    assert list(nlu_files)[0].endswith("nlu.md")
+
+    assert len(core_files) == 1
+    assert list(core_files)[0].endswith("stories.md")
+
+
 def test_get_core_nlu_directories(project):
     data_dir = os.path.join(project, "data")
     core_directory, nlu_directory = data.get_core_nlu_directories([data_dir])

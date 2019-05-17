@@ -22,11 +22,9 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Speak to a trained model on the command line",
+        help="Loads your trained model and lets you talk to your assistant on the command line.",
     )
     shell_parser.set_defaults(func=shell)
-
-    arguments.set_shell_arguments(shell_parser)
 
     run_subparsers = shell_parser.add_subparsers()
     shell_nlu_subparser = run_subparsers.add_parser(
@@ -34,10 +32,11 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Interpret messages on the command line using your NLU model.",
+        help="Interprets messages on the command line using your NLU model.",
     )
     shell_nlu_subparser.set_defaults(func=shell_nlu)
 
+    arguments.set_shell_arguments(shell_parser)
     arguments.set_shell_nlu_arguments(shell_nlu_subparser)
 
 

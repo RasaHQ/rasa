@@ -27,4 +27,4 @@ train-interactive:
 	rasa interactive -d domain.yml -m models -c config.yml --data data --verbose --endpoints endpoints.yml
 
 visualize:
-	rasa show stories
+	rasa visualize

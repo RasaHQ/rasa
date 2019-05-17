@@ -7,7 +7,7 @@
 Using Slots
 ===========
 
-:ref:`Here <slot_types>` is the full list of slot types defined by Rasa Core.
+See :ref:`slot-classes` for the full list of slot types defined by Rasa Core.
 
 **Slots are your bot's memory.** They act as a key-value store
 which can be used to store information the user provided (e.g their home city)
@@ -33,8 +33,8 @@ of the conversation, use an ``unfeaturized`` slot.
 How Rasa Uses Slots
 -------------------
 
-The :class:`rasa.core.policies.Policy` doesn't have access to the
-value of your slots. It receives a ``featurized`` representation.
+The ``Policy`` doesn't have access to the
+value of your slots. It receives a featurized representation.
 As mentioned above, for a ``text`` slot the value is irrelevant.
 The policy just sees a ``1`` or ``0`` depending on whether it is set.
 
@@ -117,13 +117,13 @@ When the ``fetch_profile`` action is run, it returns a
 
 .. code-block:: python
 
-   from rasa_core_sdk.actions import Action
-   from rasa_core_sdk.events import SlotSet
+   from rasa_sdk.actions import Action
+   from rasa_sdk.events import SlotSet
    import requests
 
    class FetchProfileAction(Action):
        def name(self):
-           return "action_fetch_profile"
+           return "fetch_profile"
 
        def run(self, dispatcher, tracker, domain):
            url = "http://myprofileurl.com"
@@ -214,4 +214,3 @@ can learn from these how to handle the different situations:
    - action_explain_table_limit
 
 
-.. include:: feedback.inc

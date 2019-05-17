@@ -1,8 +1,12 @@
 import os
 import sys
 from typing import Any, Callable, Dict, Optional, Text, List
+import logging
 
 from rasa.constants import DEFAULT_MODELS_PATH
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_validated_path(
@@ -31,8 +35,8 @@ def get_validated_path(
             if current is None:
                 reason_str = "Parameter '{}' not set.".format(parameter)
 
-            print_warning(
-                "{} Using default location '{}' instead." "".format(reason_str, default)
+            logger.debug(
+                "{} Using default location '{}' instead.".format(reason_str, default)
             )
             current = default
         elif none_is_valid:
@@ -91,12 +95,15 @@ def parse_last_positional_argument_as_model_path() -> None:
 
 
 def create_output_path(
-    output_path: Text = DEFAULT_MODELS_PATH, prefix: Text = ""
+    output_path: Text = DEFAULT_MODELS_PATH,
+    prefix: Text = "",
+    fixed_name: Optional[Text] = None,
 ) -> Text:
     """Creates an output path which includes the current timestamp.
 
     Args:
         output_path: The path where the model should be stored.
+        fixed_name: Name of the model.
         prefix: A prefix which should be included in the output path.
 
     Returns:
@@ -107,8 +114,12 @@ def create_output_path(
     if output_path.endswith("tar.gz"):
         return output_path
     else:
-        time_format = "%Y%m%d-%H%M%S"
-        file_name = "{}{}.tar.gz".format(prefix, time.strftime(time_format))
+        if fixed_name:
+            name = fixed_name
+        else:
+            time_format = "%Y%m%d-%H%M%S"
+            name = time.strftime(time_format)
+        file_name = "{}{}.tar.gz".format(prefix, name)
         return os.path.join(output_path, file_name)
 
 

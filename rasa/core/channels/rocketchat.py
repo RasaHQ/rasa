@@ -1,5 +1,6 @@
 import logging
 from sanic import Blueprint, response
+from sanic.request import Request
 from typing import Text, Dict, Any, List, Iterable
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
@@ -130,11 +131,11 @@ class RocketChatInput(InputChannel):
         rocketchat_webhook = Blueprint("rocketchat_webhook", __name__)
 
         @rocketchat_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @rocketchat_webhook.route("/webhook", methods=["GET", "POST"])
-        async def webhook(request):
+        async def webhook(request: Request):
             output = request.json
             if output:
                 if "visitor" not in output:
