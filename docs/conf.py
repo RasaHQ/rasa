@@ -318,7 +318,6 @@ extlinks = {
 
 # Sphinxcontrib configuration
 scv_priority = "tags"
-scv_root_ref = "post-merge-docs"
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ("semver",)
