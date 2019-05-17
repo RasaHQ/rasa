@@ -24,7 +24,7 @@ Rasa is an open source machine learning framework to automate text-and voice-bas
 - Twilio
 - Your own custom conversational channels
 
-or voice assistants on:
+or voice assistants as:
 - Alexa Skills
 - Google Home Actions
 
