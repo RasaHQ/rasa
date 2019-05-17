@@ -61,7 +61,7 @@ def check_domain_sanity(domain):
     def get_exception_message(
         duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
         mappings: List[Tuple[Text, Text]] = None,
-        templates: List[Text] = None
+        templates: List[Text] = None,
     ):
         """Return a message given a list of error locations."""
 
@@ -76,7 +76,9 @@ def check_domain_sanity(domain):
             for template in templates:
                 if message:
                     message += "\n"
-                message += "Utterance template '{}' is listed in as an action in the domain file, but there is no matching utterance template".format(template)
+                message += "Utterance template '{}' is listed in as an action in the domain file, but there is no matching utterance template".format(
+                    template
+                )
         return message
 
     def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
@@ -109,8 +111,9 @@ def check_domain_sanity(domain):
                 )
         return message
 
-    def get_missing_templates(action_names: List[Text], templates: Dict[Text, Any]
-        ) -> List[Text]:
+    def get_missing_templates(
+        action_names: List[Text], templates: Dict[Text, Any]
+    ) -> List[Text]:
         """Return utterance names which have no specified template."""
 
         utters = [act for act in action_names if act.startswith(action.UTTER_PREFIX)]
@@ -140,7 +143,7 @@ def check_domain_sanity(domain):
                     (duplicate_entities, "entities"),
                 ],
                 incorrect_mappings,
-                missing_templates
+                missing_templates,
             )
         )
 
@@ -361,7 +364,9 @@ class Domain(object):
         for template_key, template_variations in yml_templates.items():
             validated_variations = []
             if template_variations is None:
-                raise InvalidDomain("Utterance {} has no '- text: ' attribute".format(template_key))
+                raise InvalidDomain(
+                    "Utterance {} has no '- text: ' attribute".format(template_key)
+                )
 
             for t in template_variations:
                 # templates can either directly be strings or a dict with
@@ -376,7 +381,6 @@ class Domain(object):
                     )
                 else:
                     validated_variations.append(t)
-
 
             templates[template_key] = validated_variations
         return templates

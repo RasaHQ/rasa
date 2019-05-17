@@ -170,14 +170,17 @@ async def test_load_agent_on_not_existing_path():
 
 @pytest.mark.parametrize(
     "domain_missing_template",
-    [(
-        """
+    [
+        (
+            """
     templates:
         utter_greet:
          - you meant to write utter_greet!
 
     actions:
-        - utter_gredsfat""")]
+        - utter_gredsfat"""
+        )
+    ],
 )
 async def test_agent_train(tmpdir, domain_missing_template):
     training_data_file = "examples/moodbot/data/stories.md"
@@ -185,9 +188,7 @@ async def test_agent_train(tmpdir, domain_missing_template):
         tmpdir, "domain.yml", domain_missing_template
     )
 
-    agent = Agent(
-        domain_path, policies=[AugmentedMemoizationPolicy()]
-    )
+    agent = Agent(domain_path, policies=[AugmentedMemoizationPolicy()])
 
     training_data = await agent.load_data(training_data_file)
     with pytest.raises(InvalidDomain):
