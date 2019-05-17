@@ -3,13 +3,12 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
-import jsonpickle
-
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
+from sklearn.feature_extraction.text import CountVectorizer
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +141,7 @@ class CountVectorsFeaturizer(Featurizer):
     def __init__(
         self,
         component_config: Dict[Text, Any] = None,
-        vectorizer: Optional["CountVectorsFeaturizer"] = None,
+        vectorizer: Optional["CountVectorizer"] = None,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
 
@@ -160,36 +159,28 @@ class CountVectorsFeaturizer(Featurizer):
         # declare class instance for CountVectorizer
         self.vectorizer = vectorizer
 
-    def _tokenizer(self, text):
-        """Override tokenizer in CountVectorizer."""
-
-        text = re.sub(r"\b[0-9]+\b", "__NUMBER__", text)
-
-        token_pattern = re.compile(self.token_pattern)
-        tokens = token_pattern.findall(text)
+    def _get_message_text(self, message):
+        if message.get("spacy_doc"):  # if lemmatize is possible
+            text_tokens = [t.lemma_ for t in message.get("spacy_doc")]
+            # text = " ".join([t.lemma_ for t in message.get("spacy_doc")])
+        elif message.get("tokens"):  # if directly tokens is provided
+            text_tokens = [t.text for t in message.get("tokens")]
+        else:
+            text_tokens = message.text.split()
 
         if self.OOV_token:
             if hasattr(self.vectorizer, "vocabulary_"):
                 # CountVectorizer is trained, process for prediction
                 if self.OOV_token in self.vectorizer.vocabulary_:
-                    tokens = [
+                    text_tokens = [
                         t if t in self.vectorizer.vocabulary_.keys() else self.OOV_token
-                        for t in tokens
+                        for t in text_tokens
                     ]
             elif self.OOV_words:
                 # CountVectorizer is not trained, process for train
-                tokens = [self.OOV_token if t in self.OOV_words else t for t in tokens]
+                text_tokens = [self.OOV_token if t in self.OOV_words else t for t in text_tokens]
 
-        return tokens
-
-    @staticmethod
-    def _get_message_text(message):
-        if message.get("spacy_doc"):  # if lemmatize is possible
-            return " ".join([t.lemma_ for t in message.get("spacy_doc")])
-        elif message.get("tokens"):  # if directly tokens is provided
-            return " ".join([t.text for t in message.get("tokens")])
-        else:
-            return message.text
+        return re.sub(r"\b[0-9]+\b", "__NUMBER__", " ".join(text_tokens))
 
     # noinspection PyPep8Naming
     def _check_OOV_present(self, examples):
@@ -215,8 +206,6 @@ class CountVectorsFeaturizer(Featurizer):
         construct a new count vectorizer using the sklearn framework.
         """
 
-        from sklearn.feature_extraction.text import CountVectorizer
-
         spacy_nlp = kwargs.get("spacy_nlp")
         if spacy_nlp is not None:
             # create spacy lemma_ for OOV_words
@@ -231,7 +220,6 @@ class CountVectorsFeaturizer(Featurizer):
             max_df=self.max_df,
             min_df=self.min_df,
             max_features=self.max_features,
-            tokenizer=self._tokenizer,
             analyzer=self.analyzer,
         )
 
@@ -291,7 +279,6 @@ class CountVectorsFeaturizer(Featurizer):
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         **kwargs: Any
     ) -> "CountVectorsFeaturizer":
-        from sklearn.feature_extraction.text import CountVectorizer
 
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
@@ -299,7 +286,17 @@ class CountVectorsFeaturizer(Featurizer):
         if os.path.exists(featurizer_file):
             vocabulary = utils.json_unpickle(featurizer_file)
 
-            vectorizer = CountVectorizer()
+            vectorizer = CountVectorizer(
+                token_pattern=meta["token_pattern"],
+                strip_accents=meta["strip_accents"],
+                lowercase=meta["lowercase"],
+                stop_words=meta["stop_words"],
+                ngram_range=(meta["min_ngram"], meta["max_ngram"]),
+                max_df=meta["max_df"],
+                min_df=meta["min_df"],
+                max_features=meta["max_features"],
+                analyzer=meta["analyzer"],
+            )
             vectorizer.vocabulary_ = vocabulary
             return cls(meta, vectorizer)
         else:
