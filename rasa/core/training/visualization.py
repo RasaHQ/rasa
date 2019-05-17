@@ -361,7 +361,7 @@ def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
 
 def sanitize(s):
     if s:
-        return re.sub(r"""[^a-zA-Z0-9\s,.'!@?_-]""", "", s)
+        return re.sub(r"""[&\\\<\>"'%();+]""", "", s)
     else:
         return s
 
