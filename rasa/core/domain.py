@@ -344,6 +344,9 @@ class Domain(object):
         templates = {}
         for template_key, template_variations in yml_templates.items():
             validated_variations = []
+            if template_variations is None:
+                raise InvalidDomain("Utterance {} has no '- text: ' attribute".format(template_key))
+
             for t in template_variations:
                 # templates can either directly be strings or a dict with
                 # options we will always create a dict out of them
@@ -357,6 +360,7 @@ class Domain(object):
                     )
                 else:
                     validated_variations.append(t)
+
 
             templates[template_key] = validated_variations
         return templates
