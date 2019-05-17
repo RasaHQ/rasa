@@ -215,7 +215,7 @@ def test_run_evaluation(trained_moodbot_path):
     data = DEFAULT_DATA_PATH
     model = trained_moodbot_path
 
-    result = run_evaluation(data, model, errors_filename=None)
+    result = run_evaluation(data, model, errors=None)
     assert result.get("intent_evaluation")
     assert result.get("entity_evaluation").get("CRFEntityExtractor")
 

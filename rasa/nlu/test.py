@@ -149,7 +149,7 @@ def remove_empty_intent_examples(intent_results):
         # substitute None values with empty string
         # to enable sklearn evaluation
         if r.intent_prediction is None:
-            r = r._replace(prediction="")
+            r = r._replace(intent_prediction="")
 
         if r.intent_target != "" and r.intent_target is not None:
             filtered.append(r)
@@ -545,7 +545,9 @@ def align_all_entity_predictions(entity_results, extractors):
 
 def extract_intent(result):  # pragma: no cover
     """Extracts the intent from a parsing result."""
-    return result.get("intent", {}).get("name")
+
+    intent = result.get("intent", {}) or {}
+    return intent.get("name")
 
 
 def extract_entities(result):  # pragma: no cover
@@ -565,7 +567,9 @@ def extract_message(result):  # pragma: no cover
 
 def extract_confidence(result):  # pragma: no cover
     """Extracts the confidence from a parsing result."""
-    return result.get("intent", {}).get("confidence")
+
+    intent = result.get("intent", {}) or {}
+    return intent.get("confidence")
 
 
 def get_eval_data(interpreter, test_data):  # pragma: no cover
@@ -579,7 +583,8 @@ def get_eval_data(interpreter, test_data):  # pragma: no cover
 
     intent_results, entity_results = [], []
 
-    should_eval_intents = is_intent_classifier_present(interpreter)
+    intent_labels = [e.get("intent") for e in test_data.intent_examples]
+    should_eval_intents = is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
     should_eval_entities = is_entity_extractor_present(interpreter)
 
     for example in tqdm(test_data.training_examples):
