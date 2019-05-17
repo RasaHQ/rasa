@@ -82,8 +82,8 @@ as in story files, e.g. ``/intent{entities}``. For example, if you let
 users choose a color by clicking a button, the button payloads might
 be ``/choose{"color": "blue"}`` and ``/choose{"color": "red"}``.
 
-You can specify this in your domain file like this:
-(see details in :ref:`domain`)
+You can specify this in your domain file like this
+(see details in :ref:`domain`):
 
 .. code-block:: yaml
 

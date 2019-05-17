@@ -9,7 +9,7 @@ You need to create a project if you don't already have one.
 To do this, run:
 
 .. runnable::
-   !rasa init --no-prompt
+   rasa init --no-prompt
 
 Now that you have a project, the relevant files and folders exist.
 Define some variables that contain these paths:
@@ -74,5 +74,5 @@ This contains information about the accuracy of your model and other metrics.
 
 .. runnable::
 
-   !ls results
+   ls results
 
