@@ -147,6 +147,7 @@ async def _pull_model_and_fingerprint(
                 headers=headers,
                 params=params,
             ) as resp:
+
                 if resp.status in [204, 304]:
                     logger.debug(
                         "Model server returned {} status code, "
