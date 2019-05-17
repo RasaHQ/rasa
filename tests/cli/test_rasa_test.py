@@ -11,7 +11,7 @@ def test_test_help(run):
     output = run("test", "--help")
 
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--output OUTPUT] [--e2e]
+                 [--max-stories MAX_STORIES] [--out OUT] [--e2e]
                  [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
                  [--url URL] [-u NLU] [--report [REPORT]]
                  [--successes [SUCCESSES]] [--errors ERRORS]
@@ -44,8 +44,8 @@ def test_test_core_help(run):
     output = run("test", "core", "--help")
 
     help_text = """usage: rasa test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
-                      [-s STORIES] [--max-stories MAX_STORIES]
-                      [--output OUTPUT] [--e2e] [--endpoints ENDPOINTS]
+                      [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
+                      [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]"""
 
     lines = help_text.split("\n")

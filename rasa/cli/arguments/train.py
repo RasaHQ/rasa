@@ -15,7 +15,7 @@ def set_train_arguments(parser: argparse.ArgumentParser):
     add_data_param(parser)
     add_config_param(parser)
     add_domain_param(parser)
-    add_out_param(parser)
+    add_out_param(parser, help_text="Directory where your models should be stored.")
 
     add_augmentation_param(parser)
     add_debug_plots_param(parser)
@@ -30,7 +30,7 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
     add_stories_param(parser)
     add_domain_param(parser)
     add_core_config_param(parser)
-    add_out_param(parser)
+    add_out_param(parser, help_text="Directory where your models should be stored.")
 
     add_augmentation_param(parser)
     add_debug_plots_param(parser)
@@ -47,9 +47,9 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
 
 def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
-    add_out_param(parser)
+    add_out_param(parser, help_text="Directory where your models should be stored.")
 
-    add_nlu_data_param(parser)
+    add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 
     add_model_name_param(parser)
     add_compress_param(parser)

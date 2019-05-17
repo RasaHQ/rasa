@@ -14,7 +14,7 @@ def convert_training_data(
     if not os.path.exists(data_file):
         print_error(
             "Data file '{}' does not exist. Provide a valid NLU data file using "
-            "the '--data-file' argument.".format(data_file)
+            "the '--data' argument.".format(data_file)
         )
         return
 
@@ -35,7 +35,7 @@ def convert_training_data(
 
 
 def main(args: argparse.Namespace):
-    convert_training_data(args.data_file, args.out_file, args.format, args.language)
+    convert_training_data(args.data, args.out, args.format, args.language)
 
 
 if __name__ == "__main__":

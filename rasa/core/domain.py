@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import pkg_resources
 from pykwalify.errors import SchemaError
+from ruamel.yaml import YAMLError
+from ruamel.yaml.scanner import ScannerError
 
 import rasa.utils.io
 from rasa import data
@@ -282,10 +284,19 @@ class Domain(object):
         log = logging.getLogger("pykwalify")
         log.setLevel(logging.WARN)
 
-        schema_file = pkg_resources.resource_filename(__name__, "schemas/domain.yml")
-        source_data = rasa.utils.io.read_yaml(yaml)
-        c = Core(source_data=source_data, schema_files=[schema_file])
         try:
+            schema_file = pkg_resources.resource_filename(
+                __name__, "schemas/domain.yml"
+            )
+            source_data = rasa.utils.io.read_yaml(yaml)
+        except YAMLError:
+            raise InvalidDomain(
+                "The provided domain file is invalid. You can use "
+                "http://www.yamllint.com/ to validate your domain file."
+            )
+
+        try:
+            c = Core(source_data=source_data, schema_files=[schema_file])
             c.validate(raise_exception=True)
         except SchemaError:
             raise InvalidDomain(
@@ -293,6 +304,8 @@ class Domain(object):
                 "Make sure the file is correct, to do so"
                 "take a look at the errors logged during "
                 "validation previous to this exception. "
+                "You can also validate your domain file "
+                "using http://www.yamllint.com/."
             )
 
     @staticmethod
