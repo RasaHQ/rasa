@@ -17,9 +17,9 @@ from rasa.nlu.model import Interpreter, Trainer, TrainingData
 
 logger = logging.getLogger(__name__)
 
-pretrained_extractors = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
+PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 
-entity_processors = {"EntitySynonymMapper"}
+ENTITY_PROCESSORS = {"EntitySynonymMapper"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
@@ -612,7 +612,7 @@ def get_entity_extractors(interpreter):
     detect the boundaries themselves."""
 
     extractors = set([c.name for c in interpreter.pipeline if "entities" in c.provides])
-    return extractors - entity_processors
+    return extractors - ENTITY_PROCESSORS
 
 
 def is_entity_extractor_present(interpreter):
@@ -633,7 +633,7 @@ def remove_pretrained_extractors(pipeline):
     """Removes pretrained extractors from the pipeline so that entities
        from pre-trained extractors are not predicted upon parsing"""
     pipeline = [c for c in pipeline if c.name not in
-                pretrained_extractors]
+                PRETRAINED_EXTRACTORS]
     return pipeline
 
 
