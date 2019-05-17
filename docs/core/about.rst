@@ -6,17 +6,46 @@
 The Rasa Core dialogue engine
 =============================
 
-.. conversations:: 
-   examples:
-     - 
-       - What am I looking at?
-       - ( Rasa Core is a dialogue engine for building AI assistants
-       - What's cool about it?
-       - ( Rather than a bunch of if/else statements, it uses a machine learning model trained on example conversations.
-       - That sounds harder than writing a few if statements.
-       - ( In the beginning of a project, it seems easier to just hard code some logic.
-       - ( Rasa helps you when you want to go past that, and let your assistant handle more complexity.
-       - Can I see it in action?
-       - ( We thought you'd never ask!
-       - ( Check out the tutorial for an interactive example.
+.. chat-bubble::
+   :text: What am I looking at?
+   :sender: user
 
+
+.. chat-bubble::
+   :text: Rasa Core is a dialogue engine for building AI assistants
+   :sender: bot
+
+.. chat-bubble::
+   :text: What's cool about it?
+   :sender: user
+
+.. chat-bubble::
+   :text: Rather than a bunch of if/else statements, it uses a machine learning model trained on example conversations.
+   :sender: bot
+
+.. chat-bubble::
+   :text: That sounds harder than writing a few if statements.
+   :sender: user
+
+
+.. chat-bubble::
+   :text: In the beginning of a project, it seems easier to just hard code some logic.
+   :sender: bot
+
+.. chat-bubble::
+   :text: Rasa helps you when you want to go past that and create a bot that can handle more complexity.
+      This <a href="https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a" target="_blank">blog post </a> explains the philosophy behind Rasa Core.
+   :sender: bot
+
+
+.. chat-bubble::
+   :text: Can I see it in action?
+   :sender: user
+
+.. chat-bubble::
+   :text: We thought you'd never ask!
+   :sender: bot
+
+.. chat-bubble::
+   :text: Head over to the Rasa Tutorial for an interactive example.
+   :sender: bot

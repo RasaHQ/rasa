@@ -29,6 +29,7 @@ extensions = [
     "sphinxcontrib.httpdomain",
     "rasabaster.button",
     "rasabaster.card",
+    "rasabaster.chatbubble",
     "rasabaster.copyable",
     "rasabaster.runnable",
     "rasabaster.conversations",
