@@ -16,6 +16,10 @@ The Rasa Core dialogue engine
    :sender: bot
 
 .. chat-bubble::
+   :text: It's part of the open source Rasa framework.
+   :sender: bot
+
+.. chat-bubble::
    :text: What's cool about it?
    :sender: user
 
@@ -49,3 +53,4 @@ The Rasa Core dialogue engine
 .. chat-bubble::
    :text: Head over to the Rasa Tutorial for an interactive example.
    :sender: bot
+
