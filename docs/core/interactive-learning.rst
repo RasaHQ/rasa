@@ -27,7 +27,7 @@ Run the following command to start interactive learning:
 
 .. code-block:: bash
 
-   python3 -m rasa_sdk --actions actions&
+   rasa run actions --actions actions&
 
    rasa interactive \
      -m models/20190515-135859.tar.gz \
