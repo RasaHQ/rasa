@@ -96,15 +96,15 @@ You need to define three methods:
 - ``required_slots``: a list of slots that need to be filled for the ``submit`` method to work.
 - ``submit``: what to do at the end of the form, when all the slots have been filled.
 
-.. literalinclude:: ../../../examples/formbot/actions.py
+.. literalinclude:: ../../examples/formbot/actions.py
    :dedent: 4
    :pyobject: RestaurantForm.name
 
-.. literalinclude:: ../../../examples/formbot/actions.py
+.. literalinclude:: ../../examples/formbot/actions.py
    :dedent: 4
    :pyobject: RestaurantForm.required_slots
 
-.. literalinclude:: ../../../examples/formbot/actions.py
+.. literalinclude:: ../../examples/formbot/actions.py
    :dedent: 4
    :pyobject: RestaurantForm.submit
 
@@ -137,7 +137,7 @@ The ``slot_mappings`` method defines how to extract slot values from user respon
 
 Here's an example for the restaurant bot:
 
-.. literalinclude:: ../../../examples/formbot/actions.py
+.. literalinclude:: ../../examples/formbot/actions.py
    :dedent: 4
    :pyobject: RestaurantForm.slot_mappings
 

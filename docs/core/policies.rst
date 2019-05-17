@@ -124,13 +124,13 @@ The default architecture is based on an LSTM, but you can override the
 ``KerasPolicy.model_architecture`` method to implement your own architecture.
 
 
-.. literalinclude:: ../../../rasa/core/policies/keras_policy.py
+.. literalinclude:: ../../rasa/core/policies/keras_policy.py
    :dedent: 4
    :pyobject: KerasPolicy.model_architecture
 
 and the training is run here:
 
-.. literalinclude:: ../../../rasa/core/policies/keras_policy.py
+.. literalinclude:: ../../rasa/core/policies/keras_policy.py
    :dedent: 4
    :pyobject: KerasPolicy.train
 
@@ -310,7 +310,7 @@ It is recommended to use
     These parameters can be specified in the policy configuration file.
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
-    .. literalinclude:: ../../../rasa/core/policies/embedding_policy.py
+    .. literalinclude:: ../../rasa/core/policies/embedding_policy.py
        :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)
