@@ -1,26 +1,33 @@
-import aiohttp
 import copy
 import json
-
 import logging
 import typing
 from typing import List, Text, Optional, Dict, Any
+
+import aiohttp
 
 import rasa.core
 from rasa.core import events
 from rasa.core.constants import (
     DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
-    REQUESTED_SLOT, USER_INTENT_OUT_OF_SCOPE)
+    REQUESTED_SLOT,
+    USER_INTENT_OUT_OF_SCOPE,
+)
 from rasa.core.events import (
-    UserUtteranceReverted, UserUttered,
-    ActionExecuted, Event)
-from rasa.core.utils import EndpointConfig, ClientResponseError
+    UserUtteranceReverted,
+    UserUttered,
+    ActionExecuted,
+    Event,
+    BotUttered,
+)
+from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
-    from rasa.core.dispatcher import Dispatcher
     from rasa.core.domain import Domain
+    from rasa.core.nlg import NaturalLanguageGenerator
+    from rasa.core.channels.channel import OutputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -32,21 +39,29 @@ ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
 ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
 
-ACTION_REVERT_FALLBACK_EVENTS_NAME = 'action_revert_fallback_events'
+ACTION_REVERT_FALLBACK_EVENTS_NAME = "action_revert_fallback_events"
 
-ACTION_DEFAULT_ASK_AFFIRMATION_NAME = 'action_default_ask_affirmation'
+ACTION_DEFAULT_ASK_AFFIRMATION_NAME = "action_default_ask_affirmation"
 
-ACTION_DEFAULT_ASK_REPHRASE_NAME = 'action_default_ask_rephrase'
+ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 
-ACTION_BACK_NAME = 'action_back'
+ACTION_BACK_NAME = "action_back"
+
+UTTER_PREFIX = "utter_"
 
 
-def default_actions() -> List['Action']:
+def default_actions() -> List["Action"]:
     """List default actions."""
-    return [ActionListen(), ActionRestart(),
-            ActionDefaultFallback(), ActionDeactivateForm(),
-            ActionRevertFallbackEvents(), ActionDefaultAskAffirmation(),
-            ActionDefaultAskRephrase(), ActionBack()]
+    return [
+        ActionListen(),
+        ActionRestart(),
+        ActionDefaultFallback(),
+        ActionDeactivateForm(),
+        ActionRevertFallbackEvents(),
+        ActionDefaultAskAffirmation(),
+        ActionDefaultAskRephrase(),
+        ActionBack(),
+    ]
 
 
 def default_action_names() -> List[Text]:
@@ -62,9 +77,7 @@ def combine_user_with_default_actions(user_actions):
     # implicitly assume that e.g. "action_listen" is always at location
     # 0 in this array. to keep it that way, we remove the duplicate
     # action names from the users list instead of the defaults
-    unique_user_actions = [a
-                           for a in user_actions
-                           if a not in default_action_names()]
+    unique_user_actions = [a for a in user_actions if a not in default_action_names()]
     return default_action_names() + unique_user_actions
 
 
@@ -76,32 +89,60 @@ def ensure_action_name_uniqueness(action_names: List[Text]) -> None:
         if a in unique_action_names:
             raise ValueError(
                 "Action names are not unique! Found two actions with name"
-                " '{}'. Either rename or remove one of them.".format(a))
+                " '{}'. Either rename or remove one of them.".format(a)
+            )
         else:
             unique_action_names.add(a)
 
 
-def action_from_name(name: Text, action_endpoint: Optional[EndpointConfig],
-                     user_actions: List[Text]) -> 'Action':
+def action_from_name(
+    name: Text, action_endpoint: Optional[EndpointConfig], user_actions: List[Text]
+) -> "Action":
     """Return an action instance for the name."""
 
     defaults = {a.name(): a for a in default_actions()}
 
     if name in defaults and name not in user_actions:
         return defaults.get(name)
-    elif name.startswith("utter_"):
-        return UtterAction(name)
+    elif name.startswith(UTTER_PREFIX):
+        return ActionUtterTemplate(name)
     else:
         return RemoteAction(name, action_endpoint)
 
 
-def actions_from_names(action_names: List[Text],
-                       action_endpoint: Optional[EndpointConfig],
-                       user_actions: List[Text]) -> List['Action']:
+def actions_from_names(
+    action_names: List[Text],
+    action_endpoint: Optional[EndpointConfig],
+    user_actions: List[Text],
+) -> List["Action"]:
     """Converts the names of actions into class instances."""
 
-    return [action_from_name(name, action_endpoint, user_actions)
-            for name in action_names]
+    return [
+        action_from_name(name, action_endpoint, user_actions) for name in action_names
+    ]
+
+
+def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
+    """Create BotUttered event from message."""
+
+    bot_message = BotUttered(
+        text=message.pop("text", None),
+        data={
+            "elements": message.pop("elements", None),
+            "quick_replies": message.pop("quick_replies", None),
+            "buttons": message.pop("buttons", None),
+            # for legacy / compatibility reasons we need to set the image to be the attachment if there
+            # is no other attachment (the `.get` is intentional - no `pop` as we still need the image`
+            # property to set it in the following line)
+            "attachment": message.pop("attachment", None) or message.get("image", None),
+            "image": message.pop("image", None),
+            "custom": message.pop("custom", None),
+        },
+        metadata=message,
+    )
+
+    logger.debug("Bot utterance '{}'".format(bot_message))
+    return bot_message
 
 
 class Action(object):
@@ -112,17 +153,19 @@ class Action(object):
 
         raise NotImplementedError
 
-    async def run(self,
-                  dispatcher: 'Dispatcher',
-                  tracker: 'DialogueStateTracker',
-                  domain: 'Domain') -> List['Event']:
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List["Event"]:
         """
         Execute the side effects of this action.
 
         Args:
-            dispatcher (Dispatcher): the dispatcher which is used to send
-                messages back to the user. Use ``dispatcher.utter_message()``
-                or any other :class:`rasa.core.dispatcher.Dispatcher` method.
+            nlg: which ``nlg`` to use for response generation
+            output_channel: ``output_channel`` to which to send the resulting message.
             tracker (DialogueStateTracker): the state tracker for the current
                 user. You can access slot values using
                 ``tracker.get_slot(slot_name)`` and the most recent user
@@ -139,40 +182,51 @@ class Action(object):
         return "Action('{}')".format(self.name())
 
 
-class UtterAction(Action):
+class ActionUtterTemplate(Action):
     """An action which only effect is to utter a template when it is run.
 
     Both, name and utter template, need to be specified using
     the `name` method."""
 
-    def __init__(self, name):
-        self._name = name
+    def __init__(self, name, silent_fail: Optional[bool] = False):
+        self.template_name = name
+        self.silent_fail = silent_fail
 
-    async def run(self, dispatcher, tracker, domain):
+    async def run(self, output_channel, nlg, tracker, domain):
         """Simple run implementation uttering a (hopefully defined) template."""
 
-        await dispatcher.utter_template(self.name(),
-                                        tracker)
-        return []
+        message = await nlg.generate(self.template_name, tracker, output_channel.name())
+        if message is None:
+            if not self.silent_fail:
+                logger.error(
+                    "Couldn't create message for template '{}'."
+                    "".format(self.template_name)
+                )
+            return []
+
+        return [create_bot_utterance(message)]
 
     def name(self) -> Text:
-        return self._name
+        return self.template_name
 
     def __str__(self) -> Text:
-        return "UtterAction('{}')".format(self.name())
+        return "ActionUtterTemplate('{}')".format(self.name())
 
 
-class ActionBack(Action):
+class ActionBack(ActionUtterTemplate):
     """Revert the tracker state by two user utterances."""
 
     def name(self) -> Text:
         return ACTION_BACK_NAME
 
-    def run(self, dispatcher, tracker, domain):
+    def __init__(self):
+        super(ActionBack, self).__init__("utter_back", silent_fail=True)
+
+    async def run(self, output_channel, nlg, tracker, domain):
         # only utter the template if it is available
-        dispatcher.utter_template("utter_back", tracker,
-                                  silent_fail=True)
-        return [UserUtteranceReverted(), UserUtteranceReverted()]
+        events = await super(ActionBack, self).run(output_channel, nlg, tracker, domain)
+
+        return events + [UserUtteranceReverted(), UserUtteranceReverted()]
 
 
 class ActionListen(Action):
@@ -184,11 +238,11 @@ class ActionListen(Action):
     def name(self) -> Text:
         return ACTION_LISTEN_NAME
 
-    async def run(self, dispatcher, tracker, domain):
+    async def run(self, output_channel, nlg, tracker, domain):
         return []
 
 
-class ActionRestart(Action):
+class ActionRestart(ActionUtterTemplate):
     """Resets the tracker to its initial state.
 
     Utters the restart template if available."""
@@ -196,29 +250,39 @@ class ActionRestart(Action):
     def name(self) -> Text:
         return ACTION_RESTART_NAME
 
-    async def run(self, dispatcher, tracker, domain):
+    def __init__(self):
+        super(ActionRestart, self).__init__("utter_restart", silent_fail=True)
+
+    async def run(self, output_channel, nlg, tracker, domain):
         from rasa.core.events import Restarted
 
         # only utter the template if it is available
-        await dispatcher.utter_template("utter_restart", tracker,
-                                        silent_fail=True)
-        return [Restarted()]
+        events = await super(ActionRestart, self).run(
+            output_channel, nlg, tracker, domain
+        )
+
+        return events + [Restarted()]
 
 
-class ActionDefaultFallback(Action):
+class ActionDefaultFallback(ActionUtterTemplate):
     """Executes the fallback action and goes back to the previous state
     of the dialogue"""
 
     def name(self) -> Text:
         return ACTION_DEFAULT_FALLBACK_NAME
 
-    async def run(self, dispatcher, tracker, domain):
+    def __init__(self):
+        super(ActionDefaultFallback, self).__init__("utter_default", silent_fail=True)
+
+    async def run(self, output_channel, nlg, tracker, domain):
         from rasa.core.events import UserUtteranceReverted
 
-        await dispatcher.utter_template("utter_default", tracker,
-                                        silent_fail=True)
+        # only utter the template if it is available
+        events = await super(ActionDefaultFallback, self).run(
+            output_channel, nlg, tracker, domain
+        )
 
-        return [UserUtteranceReverted()]
+        return events + [UserUtteranceReverted()]
 
 
 class ActionDeactivateForm(Action):
@@ -227,20 +291,21 @@ class ActionDeactivateForm(Action):
     def name(self) -> Text:
         return ACTION_DEACTIVATE_FORM_NAME
 
-    async def run(self, dispatcher, tracker, domain):
+    async def run(self, output_channel, nlg, tracker, domain):
         from rasa.core.events import Form, SlotSet
+
         return [Form(None), SlotSet(REQUESTED_SLOT, None)]
 
 
 class RemoteAction(Action):
-    def __init__(self, name: Text,
-                 action_endpoint: Optional[EndpointConfig]) -> None:
+    def __init__(self, name: Text, action_endpoint: Optional[EndpointConfig]) -> None:
 
         self._name = name
         self.action_endpoint = action_endpoint
 
-    def _action_call_format(self, tracker: 'DialogueStateTracker',
-                            domain: 'Domain') -> Dict[Text, Any]:
+    def _action_call_format(
+        self, tracker: "DialogueStateTracker", domain: "Domain"
+    ) -> Dict[Text, Any]:
         """Create the request json send to the action server."""
         from rasa.core.trackers import EventVerbosity
 
@@ -251,7 +316,7 @@ class RemoteAction(Action):
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
             "domain": domain.as_dict(),
-            "version": rasa.__version__
+            "version": rasa.__version__,
         }
 
     @staticmethod
@@ -267,18 +332,10 @@ class RemoteAction(Action):
                     "type": "array",
                     "items": {
                         "type": "object",
-                        "properties": {
-                            "event": {"type": "string"}
-                        }
-                    }
-
+                        "properties": {"event": {"type": "string"}},
+                    },
                 },
-                "responses": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                    }
-                }
+                "responses": {"type": "array", "items": {"type": "object"}},
             },
         }
 
@@ -294,28 +351,27 @@ class RemoteAction(Action):
                 ". Failed to validate Action server response from API, "
                 "make sure your response from the Action endpoint is valid. "
                 "For more information about the format visit "
-                "{}/customactions/".format(DOCS_BASE_URL))
+                "{}/customactions/".format(DOCS_BASE_URL)
+            )
             raise e
 
     @staticmethod
-    async def _utter_responses(responses: List[Dict[Text, Any]],
-                               dispatcher: 'Dispatcher',
-                               tracker: 'DialogueStateTracker'
-                               ) -> None:
-        """Use the responses generated by the action endpoint and utter them.
+    async def _utter_responses(
+        responses: List[Dict[Text, Any]],
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+    ) -> List[BotUttered]:
+        """Use the responses generated by the action endpoint and utter them."""
 
-        Uses the normal dispatcher to utter the responses from the action
-        endpoint."""
-
+        bot_messages = []
         for response in responses:
             if "template" in response:
                 kwargs = response.copy()
                 del kwargs["template"]
-                draft = await dispatcher.nlg.generate(
-                    response["template"],
-                    tracker,
-                    dispatcher.output_channel.name(),
-                    **kwargs)
+                draft = await nlg.generate(
+                    response["template"], tracker, output_channel.name(), **kwargs
+                )
                 if not draft:
                     continue
 
@@ -330,39 +386,46 @@ class RemoteAction(Action):
                 del response["buttons"]
 
             draft.update(response)
-            await dispatcher.utter_response(draft)
 
-    async def run(self, dispatcher, tracker, domain):
+            bot_messages.append(create_bot_utterance(draft))
+        return bot_messages
+
+    async def run(self, output_channel, nlg, tracker, domain):
         json_body = self._action_call_format(tracker, domain)
 
         if not self.action_endpoint:
-            raise Exception("The model predicted the custom action '{}' "
-                            "but you didn't configure an endpoint to "
-                            "run this custom action. Please take a look at "
-                            "the docs and set an endpoint configuration. "
-                            "{}/customactions/"
-                            "".format(self.name(), DOCS_BASE_URL))
+            raise Exception(
+                "The model predicted the custom action '{}' "
+                "but you didn't configure an endpoint to "
+                "run this custom action. Please take a look at "
+                "the docs and set an endpoint configuration. "
+                "{}/customactions/"
+                "".format(self.name(), DOCS_BASE_URL)
+            )
 
         try:
-            logger.debug("Calling action endpoint to run action '{}'."
-                         "".format(self.name()))
+            logger.debug(
+                "Calling action endpoint to run action '{}'.".format(self.name())
+            )
             response = await self.action_endpoint.request(
-                json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT)
+                json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
+            )
             self._validate_action_result(response)
 
             events_json = response.get("events", [])
             responses = response.get("responses", [])
-            await self._utter_responses(responses, dispatcher, tracker)
+            bot_messages = await self._utter_responses(
+                responses, output_channel, nlg, tracker
+            )
 
             evts = events.deserialise_events(events_json)
-            return evts
+            return bot_messages + evts
 
         except ClientResponseError as e:
             if e.status == 400:
                 response_data = json.loads(e.text)
                 exception = ActionExecutionRejection(
-                    response_data["action_name"],
-                    response_data.get("error")
+                    response_data["action_name"], response_data.get("error")
                 )
                 logger.debug(exception.message)
                 raise exception
@@ -370,11 +433,11 @@ class RemoteAction(Action):
                 raise Exception("Failed to execute custom action.") from e
 
         except aiohttp.ClientConnectionError as e:
-            logger.error("Failed to run custom action '{}'. Couldn't connect "
-                         "to the server at '{}'. Is the server running? "
-                         "Error: {}".format(self.name(),
-                                            self.action_endpoint.url,
-                                            e))
+            logger.error(
+                "Failed to run custom action '{}'. Couldn't connect "
+                "to the server at '{}'. Is the server running? "
+                "Error: {}".format(self.name(), self.action_endpoint.url, e)
+            )
             raise Exception("Failed to execute custom action.")
 
         except aiohttp.ClientError as e:
@@ -382,12 +445,14 @@ class RemoteAction(Action):
             # helpful to log if they got it
 
             # noinspection PyUnresolvedReferences
-            status = getattr(e, 'status', None)
-            logger.error("Failed to run custom action '{}'. Action server "
-                         "responded with a non 200 status code of {}. "
-                         "Make sure your action server properly runs actions "
-                         "and returns a 200 once the action is executed. "
-                         "Error: {}".format(self.name(), status, e))
+            status = getattr(e, "status", None)
+            logger.error(
+                "Failed to run custom action '{}'. Action server "
+                "responded with a non 200 status code of {}. "
+                "Make sure your action server properly runs actions "
+                "and returns a 200 once the action is executed. "
+                "Error: {}".format(self.name(), status, e)
+            )
             raise Exception("Failed to execute custom action.")
 
     def name(self) -> Text:
@@ -400,9 +465,9 @@ class ActionExecutionRejection(Exception):
 
     def __init__(self, action_name, message=None):
         self.action_name = action_name
-        self.message = (message or
-                        "Custom action '{}' rejected to run"
-                        "".format(action_name))
+        self.message = message or "Custom action '{}' rejected to run".format(
+            action_name
+        )
 
     def __str__(self):
         return self.message
@@ -420,12 +485,14 @@ class ActionRevertFallbackEvents(Action):
     def name(self) -> Text:
         return ACTION_REVERT_FALLBACK_EVENTS_NAME
 
-    async def run(self,
-                  dispatcher: 'Dispatcher',
-                  tracker: 'DialogueStateTracker',
-                  domain: 'Domain') -> List[Event]:
-        from rasa.core.policies.two_stage_fallback import (
-            has_user_rephrased)
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        from rasa.core.policies.two_stage_fallback import has_user_rephrased
 
         revert_events = []
 
@@ -439,22 +506,21 @@ class ActionRevertFallbackEvents(Action):
         return revert_events
 
 
-def has_user_affirmed(tracker: 'DialogueStateTracker') -> bool:
-    return tracker.last_executed_action_has(
-        ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
+def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
+    return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
 
 
-def _revert_affirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
+def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
     revert_events = _revert_single_affirmation_events()
 
     last_user_event = tracker.get_last_event_for(UserUttered)
     last_user_event = copy.deepcopy(last_user_event)
-    last_user_event.parse_data['intent']['confidence'] = 1.0
+    last_user_event.parse_data["intent"]["confidence"] = 1.0
 
     # User affirms the rephrased intent
     rephrased_intent = tracker.last_executed_action_has(
-        name=ACTION_DEFAULT_ASK_REPHRASE_NAME,
-        skip=1)
+        name=ACTION_DEFAULT_ASK_REPHRASE_NAME, skip=1
+    )
     if rephrased_intent:
         revert_events += _revert_rephrasing_events()
 
@@ -462,11 +528,13 @@ def _revert_affirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
 
 
 def _revert_single_affirmation_events() -> List[Event]:
-    return [UserUtteranceReverted(),  # revert affirmation and request
-            # revert original intent (has to be re-added later)
-            UserUtteranceReverted(),
-            # add action listen intent
-            ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+    return [
+        UserUtteranceReverted(),  # revert affirmation and request
+        # revert original intent (has to be re-added later)
+        UserUtteranceReverted(),
+        # add action listen intent
+        ActionExecuted(action_name=ACTION_LISTEN_NAME),
+    ]
 
 
 def _revert_successful_rephrasing(tracker) -> List[Event]:
@@ -476,13 +544,15 @@ def _revert_successful_rephrasing(tracker) -> List[Event]:
 
 
 def _revert_rephrasing_events() -> List[Event]:
-    return [UserUtteranceReverted(),  # remove rephrasing
-            # remove feedback and rephrase request
-            UserUtteranceReverted(),
-            # remove affirmation request and false intent
-            UserUtteranceReverted(),
-            # replace action with action listen
-            ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+    return [
+        UserUtteranceReverted(),  # remove rephrasing
+        # remove feedback and rephrase request
+        UserUtteranceReverted(),
+        # remove affirmation request and false intent
+        UserUtteranceReverted(),
+        # replace action with action listen
+        ActionExecuted(action_name=ACTION_LISTEN_NAME),
+    ]
 
 
 class ActionDefaultAskAffirmation(Action):
@@ -496,34 +566,34 @@ class ActionDefaultAskAffirmation(Action):
     def name(self) -> Text:
         return ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
-    async def run(self,
-                  dispatcher: 'Dispatcher',
-                  tracker: 'DialogueStateTracker',
-                  domain: 'Domain') -> List[Event]:
-        intent_to_affirm = tracker.latest_message.intent.get('name')
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        intent_to_affirm = tracker.latest_message.intent.get("name")
         affirmation_message = "Did you mean '{}'?".format(intent_to_affirm)
 
-        await dispatcher.utter_button_message(
-            text=affirmation_message,
-            buttons=[{'title': 'Yes',
-                      'payload': '/{}'.format(intent_to_affirm)},
-                     {'title': 'No',
-                      'payload': '/{}'.format(USER_INTENT_OUT_OF_SCOPE)}])
+        message = {
+            "text": affirmation_message,
+            "buttons": [
+                {"title": "Yes", "payload": "/{}".format(intent_to_affirm)},
+                {"title": "No", "payload": "/{}".format(USER_INTENT_OUT_OF_SCOPE)},
+            ],
+        }
 
-        return []
+        return [create_bot_utterance(message)]
 
 
-class ActionDefaultAskRephrase(Action):
+class ActionDefaultAskRephrase(ActionUtterTemplate):
     """Default implementation which asks the user to rephrase his intent."""
 
     def name(self) -> Text:
         return ACTION_DEFAULT_ASK_REPHRASE_NAME
 
-    async def run(self,
-                  dispatcher: 'Dispatcher',
-                  tracker: 'DialogueStateTracker',
-                  domain: 'Domain') -> List[Event]:
-        await dispatcher.utter_template("utter_ask_rephrase", tracker,
-                                        silent_fail=True)
-
-        return []
+    def __init__(self):
+        super(ActionDefaultAskRephrase, self).__init__(
+            "utter_ask_rephrase", silent_fail=True
+        )

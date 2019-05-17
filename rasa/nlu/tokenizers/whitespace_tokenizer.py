@@ -11,8 +11,9 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
     provides = ["tokens"]
 
-    def train(self, training_data: TrainingData, config: RasaNLUModelConfig,
-              **kwargs: Any) -> None:
+    def train(
+        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+    ) -> None:
 
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
@@ -21,11 +22,22 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
         message.set("tokens", self.tokenize(message.text))
 
-    def tokenize(self, text: Text) -> List[Token]:
-
-        # there is space or end of string after punctuation
-        # because we do not want to replace 10.000 with 10 000
-        words = re.sub(r'[.,!?]+(\s|$)', ' ', text).split()
+    @staticmethod
+    def tokenize(text: Text) -> List[Token]:
+        # remove 'not a word character' if
+        words = re.sub(
+            # there is a space or an end of a string after it
+            r"[^\w#@&]+(?=\s|$)|"
+            # there is a space or beginning of a string before it
+            # not followed by a number
+            r"(\s|^)[^\w#@&]+(?=[^0-9\s])|"
+            # not in between numbers and not . or @ or & or - or #
+            # e.g. 10'000.00 or blabla@gmail.com
+            # and not url characters
+            r"(?<=[^0-9\s])[^\w._~:/?#\[\]()@!$&*+,;=-]+(?=[^0-9\s])",
+            " ",
+            text,
+        ).split()
 
         running_offset = 0
         tokens = []

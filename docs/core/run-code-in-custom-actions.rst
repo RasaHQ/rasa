@@ -1,7 +1,7 @@
 :desc: Read more about how to run custom actions and code with open source Rasa
-       Stack to integrate your contextual Assistant in your processes and databases. 
+       Stack to integrate your contextual Assistant in your processes and databases.
 
-.. _customactions:
+.. _custom-actions:
 
 Actions
 =======
@@ -13,14 +13,14 @@ There are three kinds of actions in Rasa Core:
 
  1. **default actions** (``action_listen``, ``action_restart``,
     ``action_default_fallback``)
- 2. **utter actions**, starting with ``utter_``, which just sends a message
+ 2. **utterance actions**, starting with ``utter_``, which just send a message
     to the user (see :ref:`responses`).
  3. **custom actions** - any other action, these actions can run arbitrary code
 
-Utter Actions
--------------
+Utterance Actions
+-----------------
 
-To define an ``UtterAction``, add an utterance template to the domain file,
+To define an utterance action (``ActionUtterTemplate``), add an utterance template to the domain file
 that starts with ``utter_``:
 
 .. code-block:: yaml
@@ -29,7 +29,7 @@ that starts with ``utter_``:
       utter_my_message:
         - "this is what I want my action to say!"
 
-It is conventional to start the name of an ``UtterAction`` with ``utter_``.
+It is conventional to start the name of an utterance action with ``utter_``.
 If this prefix is missing, you can still use the template in your custom
 actions, but the template can not be directly predicted as its own action.
 See :ref:`responses` for more details.
@@ -61,7 +61,7 @@ And pass it to the scripts using ``--endpoints endpoints.yml``.
 
 You can create an action server in node.js, .NET, java, or any
 other language and define your actions there - but we provide
-a small python sdk to make development there even easier.
+a small python SDK to make development there even easier.
 
 Custom Actions Written in Python
 --------------------------------
@@ -69,25 +69,25 @@ Custom Actions Written in Python
 For actions written in python, we have a convenient SDK which starts
 this action server for you.
 
-The only thing your action server needs to install is ``rasa_core_sdk``:
+The only thing your action server needs to install is ``rasa-sdk``:
 
 .. code-block:: bash
 
-    pip install rasa_core_sdk
+    pip install rasa-sdk
 
 .. note::
 
     You do not need to install ``rasa`` for your action server.
-    E.g. it is recommended to run Rasa Core in a docker container and
+    E.g. it is recommended to run Rasa in a docker container and
     create a separate container for your action server. In this
-    separate container, you only need to install ``rasa_core_sdk``.
+    separate container, you only need to install ``rasa-sdk``.
 
 If your actions are defined in a file
 called ``actions.py``, run this command:
 
 .. code-block:: bash
 
-    python -m rasa_core_sdk.endpoint --actions actions
+    python -m rasa_sdk --actions actions
 
 .. _custom_action_example:
 
@@ -97,8 +97,8 @@ which might look like this:
 
 .. testcode::
 
-   from rasa_core_sdk import Action
-   from rasa_core_sdk.events import SlotSet
+   from rasa_sdk import Action
+   from rasa_sdk.events import SlotSet
 
    class ActionCheckRestaurants(Action):
       def name(self):
@@ -121,16 +121,16 @@ three arguments. You can access the values of slots and the latest message
 sent by the user using the ``tracker`` object, and you can send messages
 back to the user with the ``dispatcher`` object, by calling
 ``dispatcher.utter_template``, ``dispatcher.utter_message``, or any other
-``rasa_core_sdk.executor.CollectingDispatcher`` method.
+``rasa_sdk.executor.CollectingDispatcher`` method.
 
 Details of the ``run`` method:
 
-.. automethod:: rasa_core_sdk.Action.run
+.. automethod:: rasa_sdk.Action.run
 
 
 There is an example of a ``SlotSet`` event
 :ref:`below <custom_action_example>`, and a full list of possible
-events in :ref:`events`.
+events in :ref:`events-classes`.
 
 Default Actions
 ---------------
@@ -182,4 +182,3 @@ Documentation of the action server API as
 .. apidoc::
    :path: ../_static/spec/action_server.yml
 
-.. include:: feedback.inc

@@ -25,7 +25,7 @@ services:
     - config/endpoints.yml
 
   action_server:
-    image: rasa/rasa_core_sdk:latest
+    image: rasa/rasa-sdk:latest
     networks: ['rasa-network']
     ports:
     - "5055:5055"

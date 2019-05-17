@@ -20,10 +20,7 @@ class MitieEntityExtractor(EntityExtractor):
 
     requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
 
-    def __init__(self,
-                 component_config: Dict[Text, Any] = None,
-                 ner=None
-                 ):
+    def __init__(self, component_config: Dict[Text, Any] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
 
         super(MitieEntityExtractor, self).__init__(component_config)
@@ -37,34 +34,36 @@ class MitieEntityExtractor(EntityExtractor):
         ents = []
         tokens_strs = [token.text for token in tokens]
         if self.ner:
-            entities = self.ner.extract_entities(tokens_strs,
-                                                 feature_extractor)
+            entities = self.ner.extract_entities(tokens_strs, feature_extractor)
             for e in entities:
                 if len(e[0]):
                     start = tokens[e[0][0]].offset
                     end = tokens[e[0][-1]].end
 
-                    ents.append({
-                        "entity": e[1],
-                        "value": text[start:end],
-                        "start": start,
-                        "end": end,
-                        "confidence": None,
-                    })
+                    ents.append(
+                        {
+                            "entity": e[1],
+                            "value": text[start:end],
+                            "start": start,
+                            "end": end,
+                            "confidence": None,
+                        }
+                    )
 
         return ents
 
-    def train(self,
-              training_data: TrainingData,
-              config: RasaNLUModelConfig,
-              **kwargs: Any) -> None:
+    def train(
+        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+    ) -> None:
         import mitie
 
         model_file = kwargs.get("mitie_file")
         if not model_file:
-            raise Exception("Can not run MITIE entity extractor without a "
-                            "language model. Make sure this component is "
-                            "preceeded by the 'MitieNLP' component.")
+            raise Exception(
+                "Can not run MITIE entity extractor without a "
+                "language model. Make sure this component is "
+                "preceeded by the 'MitieNLP' component."
+            )
 
         trainer = mitie.ner_trainer(model_file)
         trainer.num_threads = kwargs.get("num_threads", 1)
@@ -72,7 +71,8 @@ class MitieEntityExtractor(EntityExtractor):
 
         # filter out pre-trained entity examples
         filtered_entity_examples = self.filter_trainable_entities(
-            training_data.training_examples)
+            training_data.training_examples
+        )
 
         for example in filtered_entity_examples:
             sample = self._prepare_mitie_sample(example)
@@ -93,8 +93,7 @@ class MitieEntityExtractor(EntityExtractor):
         for ent in training_example.get("entities", []):
             try:
                 # if the token is not aligned an exception will be raised
-                start, end = MitieEntityExtractor.find_entity(
-                    ent, text, tokens)
+                start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
                 logger.warning("Example skipped: {}".format(str(e)))
                 continue
@@ -103,9 +102,11 @@ class MitieEntityExtractor(EntityExtractor):
                 # input - e.g. on overlapping entities
                 sample.add_entity(list(range(start, end)), ent["entity"])
             except Exception as e:
-                logger.warning("Failed to add entity example "
-                               "'{}' of sentence '{}'. Reason: "
-                               "{}".format(str(e), str(text), e))
+                logger.warning(
+                    "Failed to add entity example "
+                    "'{}' of sentence '{}'. Reason: "
+                    "{}".format(str(e), str(text), e)
+                )
                 continue
         return sample
 
@@ -113,23 +114,28 @@ class MitieEntityExtractor(EntityExtractor):
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            raise Exception("Failed to train 'MitieFeaturizer'. "
-                            "Missing a proper MITIE feature extractor.")
+            raise Exception(
+                "Failed to train 'MitieFeaturizer'. "
+                "Missing a proper MITIE feature extractor."
+            )
 
-        ents = self.extract_entities(message.text, message.get("tokens"),
-                                     mitie_feature_extractor)
+        ents = self.extract_entities(
+            message.text, message.get("tokens"), mitie_feature_extractor
+        )
         extracted = self.add_extractor_name(ents)
-        message.set("entities", message.get("entities", []) + extracted,
-                    add_to_output=True)
+        message.set(
+            "entities", message.get("entities", []) + extracted, add_to_output=True
+        )
 
     @classmethod
-    def load(cls,
-             meta: Dict[Text, Any],
-             model_dir: Text = None,
-             model_metadata: Metadata = None,
-             cached_component: Optional['MitieEntityExtractor'] = None,
-             **kwargs: Any
-             ) -> 'MitieEntityExtractor':
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Text = None,
+        model_metadata: Metadata = None,
+        cached_component: Optional["MitieEntityExtractor"] = None,
+        **kwargs: Any
+    ) -> "MitieEntityExtractor":
         import mitie
 
         file_name = meta.get("file")
@@ -144,9 +150,7 @@ class MitieEntityExtractor(EntityExtractor):
         else:
             return cls(meta)
 
-    def persist(self,
-                file_name: Text,
-                model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
 
         if self.ner:
             file_name = file_name + ".dat"
