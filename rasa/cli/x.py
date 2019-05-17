@@ -1,5 +1,4 @@
 import argparse
-import datetime
 import importlib.util
 import logging
 import signal
@@ -8,19 +7,15 @@ import os
 from multiprocessing import get_context
 from typing import List, Text, Optional
 
-import questionary
-
-from rasa.cli.utils import print_success, get_validated_path
+from rasa.cli.utils import get_validated_path
 from rasa.cli.arguments import x as arguments
 
 from rasa.constants import (
-    GLOBAL_USER_CONFIG_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
 )
-from rasa.utils.common import read_global_config_value, write_global_config_value
 import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
@@ -38,7 +33,7 @@ def add_subparser(
 
     if is_rasa_x_installed():
         # we'll only show the help msg for the command if Rasa X is actually installed
-        x_parser_args["help"] = "Start Rasa X and the Interface"
+        x_parser_args["help"] = "Starts the Rasa X interface."
 
     shell_parser = subparsers.add_parser("x", **x_parser_args)
     shell_parser.set_defaults(func=rasa_x)
@@ -60,36 +55,6 @@ def start_event_service():
     ctx = get_context("spawn")
     p = ctx.Process(target=_event_service)
     p.start()
-
-
-def is_metrics_collection_enabled(args: argparse.Namespace) -> bool:
-    """Make sure the user consents to any metrics collection."""
-
-    try:
-        allow_metrics = read_global_config_value("metrics", unavailable_ok=False)
-        return allow_metrics.get("enabled", False)
-    except ValueError:
-        pass  # swallow the error and ask the user
-
-    allow_metrics = (
-        questionary.confirm(
-            "Rasa will track a minimal amount of anonymized usage information "
-            "(like how often you use the 'train' button) to help us improve Rasa X. "
-            "None of your training data or conversations will ever be sent to Rasa. "
-            "Are you OK with Rasa collecting anonymized usage data?"
-        )
-        .skip_if(args.no_prompt, default=True)
-        .ask()
-    )
-
-    if not args.no_prompt:
-        print_success(
-            "Your decision has been stored into {}. " "".format(GLOBAL_USER_CONFIG_PATH)
-        )
-        date = datetime.datetime.now()
-        write_global_config_value("metrics", {"enabled": allow_metrics, "date": date})
-
-    return allow_metrics
 
 
 def _rasa_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
@@ -134,7 +99,7 @@ def _prepare_credentials_for_rasa_x(credentials_path: Optional[Text]) -> Text:
         credentials_path = DEFAULT_CREDENTIALS_PATH
 
     if not credentials.get("rasa"):
-        credentials["rasa"] = {"url": "http://localhost:5002"}
+        credentials["rasa"] = {"url": "http://localhost:5002/api"}
 
         io_utils.write_yaml_file(credentials, credentials_path)
 
@@ -213,13 +178,10 @@ def rasa_x(args: argparse.Namespace):
         logging.getLogger().setLevel(logging.WARNING)
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
 
-    metrics = is_metrics_collection_enabled(args)
-
     if args.production:
         print_success("Starting Rasa X in production mode... 🚀")
         _rasa_service(args)
     else:
-        print_success("Starting Rasa X in local mode... 🚀")
         if not is_rasa_x_installed():
             print_error(
                 "Rasa X is not installed. The `rasa x` "
@@ -228,7 +190,14 @@ def rasa_x(args: argparse.Namespace):
             sys.exit(1)
 
         # noinspection PyUnresolvedReferences
-        from rasax.community.api.local import main_local
+        import rasax.community.utils as rasa_x_utils
+
+        if not rasa_x_utils.are_terms_accepted():
+            rasa_x_utils.accept_terms_or_quit(args)
+
+        metrics = rasa_x_utils.is_metrics_collection_enabled(args)
+
+        print_success("Starting Rasa X in local mode... 🚀")
 
         start_event_service()
 
@@ -236,6 +205,7 @@ def rasa_x(args: argparse.Namespace):
 
         start_rasa_for_local_platform(args, rasa_x_token=rasa_x_token)
 
-        main_local(
-            args.project_path, args.data_path, token=rasa_x_token, metrics=metrics
-        )
+        # noinspection PyUnresolvedReferences
+        from rasax.community.api.local import main_local
+
+        main_local(args.project_path, args.data, token=rasa_x_token, metrics=metrics)

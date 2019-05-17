@@ -15,7 +15,7 @@ def set_train_arguments(parser: argparse.ArgumentParser):
     add_data_param(parser)
     add_config_param(parser)
     add_domain_param(parser)
-    add_out_param(parser)
+    add_out_param(parser, help_text="Directory where your models should be stored.")
 
     add_augmentation_param(parser)
     add_debug_plots_param(parser)
@@ -30,7 +30,7 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
     add_stories_param(parser)
     add_domain_param(parser)
     add_core_config_param(parser)
-    add_out_param(parser)
+    add_out_param(parser, help_text="Directory where your models should be stored.")
 
     add_augmentation_param(parser)
     add_debug_plots_param(parser)
@@ -47,9 +47,9 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
 
 def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
-    add_out_param(parser)
+    add_out_param(parser, help_text="Directory where your models should be stored.")
 
-    add_nlu_data_param(parser)
+    add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 
     add_model_name_param(parser)
     add_compress_param(parser)
@@ -79,7 +79,7 @@ def add_core_config_param(parser: argparse.ArgumentParser):
         nargs="+",
         default=[DEFAULT_CONFIG_PATH],
         help="The policy and NLU pipeline configuration of your bot. "
-        "If multiple configuration files are provided, multiple dialogue "
+        "If multiple configuration files are provided, multiple Rasa Core "
         "models are trained to compare policies.",
     )
 
@@ -92,7 +92,7 @@ def add_compare_params(
         nargs="*",
         type=int,
         default=[0, 5, 25, 50, 70, 90, 95],
-        help="Range of exclusion percentages",
+        help="Range of exclusion percentages.",
     )
     parser.add_argument(
         "--runs", type=int, default=3, help="Number of runs for experiments."

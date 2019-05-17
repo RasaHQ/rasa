@@ -4,9 +4,11 @@ import tempfile
 from typing import Text, Dict, Optional, List
 import os
 
+from rasa.core.interpreter import RegexInterpreter
+
 from rasa.constants import DEFAULT_RESULTS_PATH
 from rasa.model import get_model, get_model_subdirectories, unpack_model
-from rasa.cli.utils import minimal_kwargs, print_error
+from rasa.cli.utils import minimal_kwargs, print_error, print_warning
 
 logger = logging.getLogger(__name__)
 
@@ -62,24 +64,42 @@ def test_core(
     if output:
         nlu_utils.create_dir(output)
 
-    loop = asyncio.get_event_loop()
-    model_path = get_model(model)
-    core_path, nlu_path = get_model_subdirectories(model_path)
-
-    if os.path.exists(core_path) and os.path.exists(nlu_path):
-        _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
-
-        _agent = Agent.load(model_path, interpreter=_interpreter)
-
-        kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
-
-        loop.run_until_complete(
-            rasa.core.test(stories, _agent, out_directory=output, **kwargs)
-        )
-    else:
+    unpacked_model = get_model(model)
+    if unpacked_model is None:
         print_error(
-            "Not able to test. Make sure both models - core and nlu - are available."
+            "Unable to test: could not find a model. Use 'rasa train' to train a "
+            "Rasa model."
         )
+        return
+
+    core_path, nlu_path = get_model_subdirectories(unpacked_model)
+
+    if not os.path.exists(core_path):
+        print_error(
+            "Unable to test: could not find a Core model. Use 'rasa train' to "
+            "train a model."
+        )
+
+    use_e2e = kwargs["e2e"] if "e2e" in kwargs else False
+
+    _interpreter = RegexInterpreter()
+    if use_e2e:
+        if os.path.exists(nlu_path):
+            _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
+        else:
+            print_warning(
+                "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
+                "evaluation."
+            )
+
+    _agent = Agent.load(unpacked_model, interpreter=_interpreter)
+
+    kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(
+        rasa.core.test(stories, _agent, out_directory=output, **kwargs)
+    )
 
 
 def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict]):

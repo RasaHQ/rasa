@@ -84,7 +84,10 @@ async def train_async(
     try:
         domain = Domain.load(domain, skill_imports)
     except InvalidDomain as e:
-        print_error(e)
+        print_error(
+            "Could not load domain due to: '{}'. To specify a valid domain path use "
+            "the '--domain' argument.".format(e)
+        )
         return None
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
@@ -99,8 +102,8 @@ async def train_async(
 
     if dialogue_data_not_present and nlu_data_not_present:
         print_error(
-            "No training data given. Please provide dialogue and NLU data in "
-            "order to train a Rasa model."
+            "No training data given. Please provide stories and NLU data in "
+            "order to train a Rasa model using the '--data' argument."
         )
         return
 
@@ -189,10 +192,7 @@ async def _do_training(
             kwargs=kwargs,
         )
     else:
-        print (
-            "Dialogue data / configuration did not change. "
-            "No need to retrain dialogue model."
-        )
+        print ("Stories / configuration did not change. No need to retrain Core model.")
 
     if force_training or retrain_nlu:
         _train_nlu_with_validated_data(
@@ -268,15 +268,18 @@ async def train_core_async(
         try:
             domain = Domain.load(domain, skill_imports)
         except InvalidDomain as e:
-            print_error(e)
+            print_error(
+                "Could not load domain due to: '{}'. To specify a valid domain path "
+                "use the '--domain' argument.".format(e)
+            )
             return None
 
     story_directory = data.get_core_directory(stories, skill_imports)
 
     if not os.listdir(story_directory):
         print_error(
-            "No dialogue data given. Please provide dialogue data in order to "
-            "train a Rasa Core model."
+            "No stories given. Please provide stories in order to "
+            "train a Rasa Core model using the '--stories' argument."
         )
         return
 
@@ -369,7 +372,7 @@ def train_nlu(
     if not os.listdir(nlu_data_directory):
         print_error(
             "No NLU data given. Please provide NLU data in order to train "
-            "a Rasa NLU model."
+            "a Rasa NLU model using the '--nlu' argument."
         )
         return
 

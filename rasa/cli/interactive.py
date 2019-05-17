@@ -22,7 +22,8 @@ def add_subparser(
         conflict_handler="resolve",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Teach the bot with interactive learning",
+        help="Starts an interactive learning session to create new training data for a "
+        "Rasa model by chatting.",
     )
     interactive_parser.set_defaults(func=interactive)
 
@@ -32,7 +33,9 @@ def add_subparser(
         conflict_handler="resolve",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Train a Rasa Core model with interactive learning",
+        help="Starts an interactive learning session model to create new training data "
+        "for a Rasa Core model by chatting. Uses the 'RegexInterpreter', i.e. "
+        "`/<intent>` input format.",
     )
     interactive_core_parser.set_defaults(func=interactive_core)
 
@@ -81,8 +84,8 @@ def perform_interactive_learning(args, zipped_model):
         shutil.rmtree(model_path)
     else:
         print_error(
-            "No initial zipped trained model found. Interactive learning process "
-            "cannot be started."
+            "Interactive learning process cannot be started as no initial model was "
+            "found.  Use 'rasa train' to train a model."
         )
 
 
@@ -103,6 +106,7 @@ def check_training_data(args):
     story_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
     if not os.listdir(story_directory) or not os.listdir(nlu_data_directory):
         print_error(
-            "Cannot train initial Rasa model. Please provide NLU data and Core data."
+            "Cannot train initial Rasa model. Please provide NLU and Core data "
+            "using the '--data' argument."
         )
         exit(1)

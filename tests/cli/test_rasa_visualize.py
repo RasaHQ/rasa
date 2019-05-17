@@ -1,9 +1,9 @@
-def test_show_stories_help(run):
+def test_visualize_help(run):
     output = run("visualize", "--help")
 
     help_text = """usage: rasa visualize [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-s STORIES]
-                      [-c CONFIG] [--output OUTPUT]
-                      [--max-history MAX_HISTORY] [-nlu NLU_DATA]"""
+                      [-c CONFIG] [--out OUT] [--max-history MAX_HISTORY]
+                      [-u NLU]"""
 
     lines = help_text.split("\n")
 

@@ -4,7 +4,7 @@ from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
 from rasa.core import training, utils
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot
 from tests.core import utilities
@@ -132,6 +132,20 @@ def test_restaurant_domain_is_valid():
     Domain.validate_domain_yaml(
         rasa.utils.io.read_file("examples/restaurantbot/domain.yml")
     )
+
+
+def test_validate_on_invalid_domain():
+    with pytest.raises(InvalidDomain):
+        Domain.validate_domain_yaml(
+            rasa.utils.io.read_file("data/test_domains/invalid_format.yml")
+        )
+
+
+def test_validate_on_fails_on_nlu_data():
+    with pytest.raises(InvalidDomain):
+        Domain.validate_domain_yaml(
+            rasa.utils.io.read_file("examples/restaurantbot/data/nlu.md")
+        )
 
 
 def test_custom_slot_type(tmpdir):

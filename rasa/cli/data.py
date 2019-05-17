@@ -18,7 +18,7 @@ def add_subparser(
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Utils for the Rasa training files",
+        help="Utils for the Rasa training files.",
     )
     data_parser.set_defaults(func=lambda _: data_parser.print_help(None))
 
@@ -27,7 +27,7 @@ def add_subparser(
         "convert",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Convert Rasa data between different formats",
+        help="Converts Rasa data between different formats.",
     )
     convert_parser.set_defaults(func=lambda _: convert_parser.print_help(None))
 
@@ -36,7 +36,7 @@ def add_subparser(
         "nlu",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Convert NLU training data between markdown and json",
+        help="Converts NLU data between Markdown and json formats.",
     )
     convert_nlu_parser.set_defaults(func=convert.main)
 
@@ -46,7 +46,7 @@ def add_subparser(
         "split",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Split Rasa data in training and test data",
+        help="Splits Rasa data into training and test data.",
     )
     split_parser.set_defaults(func=lambda _: split_parser.print_help(None))
 
@@ -55,8 +55,8 @@ def add_subparser(
         "nlu",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Perform a split of your NLU data according to the specified "
-        "percentages",
+        help="Performs a split of your NLU data into training and test data "
+        "according to the specified percentages.",
     )
     nlu_split_parser.set_defaults(func=split_nlu_data)
 
