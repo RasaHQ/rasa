@@ -181,13 +181,13 @@ like resetting slots, scheduling reminder or pausing a conversation." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href="../.././post-merge-docs/api/events/">post-merge-docs</a>
+              <a href="../.././master/api/events/">master</a>
           </div>
       </div>
     </div>
@@ -207,7 +207,13 @@ like resetting slots, scheduling reminder or pausing a conversation." />
 
           <div class="body" role="main">
             
-  <div class="section" id="events">
+  
+
+
+
+
+
+<div class="section" id="events">
 <span id="events-classes"></span><h1>Events<a class="headerlink" href="#events" title="Permalink to this headline">¶</a></h1>
 <p>Conversations in Rasa are represented as a sequence of events.
 This page lists the event types defined in Rasa Core.</p>
@@ -251,7 +257,10 @@ your events should be formatted like the JSON objects on this page.</p>
 <tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Event to set a slot on a tracker</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;slot&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;departure_airport&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;BER&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.SlotSet">
@@ -265,7 +274,11 @@ that <code class="docutils literal notranslate"><span class="pre">tracker.slots[
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">_set_slot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -280,7 +293,10 @@ that <code class="docutils literal notranslate"><span class="pre">tracker.slots[
 <tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Resets anything logged on the tracker.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;restart&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.Restarted">
@@ -293,7 +309,14 @@ the slots).</p>
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">rasa.core.actions.action</span> <span class="k">import</span> <span class="n">ACTION_LISTEN_NAME</span>
+
+    <span class="n">tracker</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">trigger_followup_action</span><span class="p">(</span><span class="n">ACTION_LISTEN_NAME</span><span class="p">)</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -308,7 +331,10 @@ the slots).</p>
 <tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Resets all the slots of a conversation.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;reset_slots&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.AllSlotsReset">
@@ -321,7 +347,11 @@ values.</p>
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">_reset_slots</span><span class="p">()</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -336,7 +366,16 @@ values.</p>
 <tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Schedule an action to be executed in the future.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;reminder&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;my_action&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;date_time&quot;</span><span class="p">:</span> <span class="s2">&quot;2018-09-03T11:41:10.128172&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_reminder&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;kill_on_user_msg&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ReminderScheduled">
@@ -365,7 +404,10 @@ run in the future.</p>
 will be halted until resumed.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;pause&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ConversationPaused">
@@ -377,7 +419,11 @@ be set to <code class="docutils literal notranslate"><span class="pre">True</spa
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">_paused</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -393,7 +439,10 @@ be set to <code class="docutils literal notranslate"><span class="pre">True</spa
 predicting actions again.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;resume&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ConversationResumed">
@@ -405,7 +454,11 @@ predicting actions again.</p>
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">_paused</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -421,7 +474,10 @@ predicting actions again.</p>
 to be a fixed one.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;followup&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_action&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.FollowupAction">
@@ -431,7 +487,11 @@ to be a fixed one.</p>
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">trigger_followup_action</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">action_name</span><span class="p">)</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -449,7 +509,20 @@ to be a fixed one.</p>
 <tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Message a user sent to the bot.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Hey&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;parse_data&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.9</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[]</span>
+  <span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.UserUttered">
@@ -460,7 +533,12 @@ to be a fixed one.</p>
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">latest_message</span> <span class="o">=</span> <span class="bp">self</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">clear_followup_action</span><span class="p">()</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -475,7 +553,10 @@ to be a fixed one.</p>
 <tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Message a bot sent to the user.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;bot&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Hey there!&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.BotUttered">
@@ -487,7 +568,12 @@ to be a fixed one.</p>
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+    <span class="n">tracker</span><span class="o">.</span><span class="n">latest_bot_utterance</span> <span class="o">=</span> <span class="bp">self</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -503,7 +589,10 @@ to be a fixed one.</p>
 (including the <code class="docutils literal notranslate"><span class="pre">user</span></code> event of the message).</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;rewind&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.UserUtteranceReverted">
@@ -516,7 +605,12 @@ and the bot is waiting for a new user message.</p>
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">replay_events</span><span class="p">()</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -532,7 +626,10 @@ and the bot is waiting for a new user message.</p>
 (including the <code class="docutils literal notranslate"><span class="pre">action</span></code> event of the action).</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;undo&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ActionReverted">
@@ -547,7 +644,12 @@ action.</p>
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">replay_events</span><span class="p">()</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -563,7 +665,10 @@ action.</p>
 action created are logged separately.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"></td>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;action&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_action&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ActionExecuted">
@@ -575,7 +680,13 @@ to the latest <code class="docutils literal notranslate"><span class="pre">Turn<
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, this is the code used to update the tracker:</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+    <span class="n">tracker</span><span class="o">.</span><span class="n">set_latest_action_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">action_name</span><span class="p">)</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">clear_followup_action</span><span class="p">()</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>

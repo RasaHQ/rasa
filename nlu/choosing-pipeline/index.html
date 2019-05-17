@@ -185,13 +185,13 @@ for open source NLU." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href="../.././post-merge-docs/nlu/choosing-pipeline/">post-merge-docs</a>
+              <a href="../.././master/nlu/choosing-pipeline/">master</a>
           </div>
       </div>
     </div>
@@ -211,7 +211,13 @@ for open source NLU." />
 
           <div class="body" role="main">
             
-  <div class="section" id="choosing-a-pipeline">
+  
+
+
+
+
+
+<div class="section" id="choosing-a-pipeline">
 <span id="choosing-pipeline"></span><h1>Choosing a Pipeline<a class="headerlink" href="#choosing-a-pipeline" title="Permalink to this headline">¶</a></h1>
 <p>Choosing an NLU pipeline allows you to customize your model and finetune
 it on your dataset.</p>
@@ -389,6 +395,11 @@ a full list of components. For example, these two configurations are equivalent:
 <div class="section" id="pretrained-embeddings-spacy">
 <span id="section-pretrained-embeddings-spacy-pipeline"></span><h3>pretrained_embeddings_spacy<a class="headerlink" href="#pretrained-embeddings-spacy" title="Permalink to this headline">¶</a></h3>
 <p>To use the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> template:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;pretrained_embeddings_spacy&quot;</span>
+</pre></div>
+</div>
 <p>See <a class="reference internal" href="../languages/#section-languages"><span class="std std-ref">Language Support</span></a> for possible values for <code class="docutils literal notranslate"><span class="pre">language</span></code>. To use
 the components and configure them separately:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
@@ -431,6 +442,19 @@ tokenizer with something more accurate.</p>
 <span id="section-mitie-pipeline"></span><h3>mitie<a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
 <p>There is no pipeline template, as you need to configure the location
 of MITIE’s featurizer. To use the components and configure them separately:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieNLP&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="mitie-2">
 <h3>mitie 2<a class="headerlink" href="#mitie-2" title="Permalink to this headline">¶</a></h3>
@@ -438,6 +462,18 @@ of MITIE’s featurizer. To use the components and configure them separately:</p
 Training can be quite slow, so this is not recommended for large datasets.
 There is no pipeline template, as you need to configure the location
 of MITIE’s featurizer. To use the components and configure them separately:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieNLP&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieIntentClassifier&quot;</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="custom-pipelines">

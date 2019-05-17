@@ -181,13 +181,13 @@ AI Assistants and chatbots using open source bot framework Rasa Stack." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href="../.././post-merge-docs/core/domains/">post-merge-docs</a>
+              <a href="../.././master/core/domains/">master</a>
           </div>
       </div>
     </div>
@@ -207,13 +207,52 @@ AI Assistants and chatbots using open source bot framework Rasa Stack." />
 
           <div class="body" role="main">
             
-  <div class="section" id="domains">
+  
+
+
+
+
+
+<div class="section" id="domains">
 <span id="domain"></span><h1>Domains<a class="headerlink" href="#domains" title="Permalink to this headline">¶</a></h1>
 <p>The <code class="docutils literal notranslate"><span class="pre">Domain</span></code> defines the universe in which your assistant operates.
 It specifies the <code class="docutils literal notranslate"><span class="pre">intents</span></code>, <code class="docutils literal notranslate"><span class="pre">entities</span></code>, <code class="docutils literal notranslate"><span class="pre">slots</span></code>, and <code class="docutils literal notranslate"><span class="pre">actions</span></code>
 your bot should know about. Optionally, it can also include <code class="docutils literal notranslate"><span class="pre">templates</span></code>
 for the things your bot can say.</p>
 <p>As an example, the <code class="docutils literal notranslate"><span class="pre">DefaultDomain</span></code> has the following yaml definition:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">goodbye</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">affirm</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">deny</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_great</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_unhappy</span>
+
+<span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_cheer_up</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_did_that_help</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_happy</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span>
+
+<span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Hey!</span><span class="nv"> </span><span class="s">How</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">you?&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_cheer_up</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Here</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">something</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">cheer</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">up:&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://i.imgur.com/nGF1K8f.jpg&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_did_that_help</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Did</span><span class="nv"> </span><span class="s">that</span><span class="nv"> </span><span class="s">help</span><span class="nv"> </span><span class="s">you?&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_happy</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Great</span><span class="nv"> </span><span class="s">carry</span><span class="nv"> </span><span class="s">on!&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Bye&quot;</span>
+</pre></div>
+</div>
 <p><strong>What does this mean?</strong></p>
 <p>Your NLU model will define the <code class="docutils literal notranslate"><span class="pre">intents</span></code> and <code class="docutils literal notranslate"><span class="pre">entities</span></code> that you
 need to include in the domain.</p>
@@ -283,7 +322,7 @@ the template back to the user.</p>
 </li>
 <li><p class="first">You can use the templates to generate response messages from your
 custom actions using the dispatcher:
-<code class="docutils literal notranslate"><span class="pre">dispatcher.utter_template(&quot;utter_greet&quot;)</span></code>.
+<code class="docutils literal notranslate"><span class="pre">dispatcher.utter_template(&quot;utter_greet&quot;,</span> <span class="pre">tracker)</span></code>.
 This allows you to separate the logic of generating
 the messages from the actual copy. In you custom action code, you can
 send a message based on the template like this:</p>
@@ -294,7 +333,7 @@ send a message based on the template like this:</p>
       <span class="k">return</span> <span class="s1">&#39;action_greet&#39;</span>
 
   <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
-      <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_greet&quot;</span><span class="p">)</span>
+      <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_greet&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
       <span class="k">return</span> <span class="p">[]</span>
 </pre></div>
 </div>
@@ -302,7 +341,7 @@ send a message based on the template like this:</p>
 </ol>
 <div class="section" id="images-and-buttons">
 <h3>Images and Buttons<a class="headerlink" href="#images-and-buttons" title="Permalink to this headline">¶</a></h3>
-<p>Templates defined in a domains yaml file can contain images and
+<p>Templates defined in a domain’s yaml file can contain images and
 buttons as well:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
@@ -314,7 +353,7 @@ buttons as well:</p>
       <span class="l l-Scalar l-Scalar-Plain">payload</span><span class="p p-Indicator">:</span> <span class="s">&quot;super</span><span class="nv"> </span><span class="s">sad&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_cheer_up</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Here</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">something</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">cheer</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">up:&quot;</span>
-    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://cdn77.eatliver.com/wp-content/uploads/2017/10/trump-frog.jpg&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://i.imgur.com/nGF1K8f.jpg&quot;</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -325,12 +364,68 @@ interface can not display buttons or images, but tries to mimic them in
 the command line.</p>
 </div>
 </div>
+<div class="section" id="custom-output-payloads">
+<h3>Custom Output Payloads<a class="headerlink" href="#custom-output-payloads" title="Permalink to this headline">¶</a></h3>
+<p>You can also send any arbitrary output to the output channel using the
+<code class="docutils literal notranslate"><span class="pre">custom:</span></code> key. Note that since the domain is in yaml format, the json
+payload should first be converted to yaml format.</p>
+<p>For example, although date pickers are not a defined parameter in utterance
+templates because they are not supported by most channels, a slack date picker
+can be sent like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">utter_take_bet</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">custom</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">blocks</span><span class="p p-Indicator">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">section</span>
+        <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Make</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">bet</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">when</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">world</span><span class="nv"> </span><span class="s">will</span><span class="nv"> </span><span class="s">end:&quot;</span>
+          <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mrkdwn</span>
+        <span class="l l-Scalar l-Scalar-Plain">accessory</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">datepicker</span>
+          <span class="l l-Scalar l-Scalar-Plain">initial_date</span><span class="p p-Indicator">:</span> <span class="s">&#39;2019-05-21&#39;</span>
+          <span class="l l-Scalar l-Scalar-Plain">placeholder</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">plain_text</span>
+            <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">Select a date</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="channel-specific-utterances">
+<h3>Channel-Specific Utterances<a class="headerlink" href="#channel-specific-utterances" title="Permalink to this headline">¶</a></h3>
+<p>If you have certain utterances that you would like sent only to specific
+channels, you can specify this with the <code class="docutils literal notranslate"><span class="pre">channel:</span></code> key. The value should match
+the name defined in the <code class="docutils literal notranslate"><span class="pre">name()</span></code> method of the channel’s <code class="docutils literal notranslate"><span class="pre">OutputChannel</span></code>
+class. Channel-specific utterances are especially useful if creating custom
+output payloads that will only work on certain channels.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span>templates:
+  utter_ask_game:
+  - text: &quot;Which game would you like to play?&quot;
+    channel: &quot;slack&quot;
+    custom:
+      {payload for slack dropdown menu to choose a game}
+  - text: &quot;Which game would you like to play?&quot;
+    buttons:
+    - title: &quot;Chess&quot;
+      payload: &quot;/inform{&quot;game&quot;: &quot;chess&quot;}&quot;
+    - title: &quot;Checkers&quot;
+      payload: &quot;/inform{&quot;game&quot;: &quot;checkers&quot;}&quot;
+    - title: &quot;Fortnite&quot;
+      payload: &quot;/inform{&quot;game&quot;: &quot;fortnite&quot;}&quot;
+</pre></div>
+</div>
+<p>Each time your bot looks for utterances, it will first check to see if there
+are any channel-specific templates for the connected channel. If there are, it
+will choose <strong>only</strong> from these utterances. If no channel-specific templates are
+found, it will choose from any utterances that do not have a defined <code class="docutils literal notranslate"><span class="pre">channel</span></code>.
+Therefore, it is good practice to always have at least one template for each
+utterance that has no <code class="docutils literal notranslate"><span class="pre">channel</span></code> specified so that your bot can respond in all
+environments, including the shell and in interactive learning.</p>
+</div>
 <div class="section" id="variables">
 <h3>Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h3>
 <p>You can also use <strong>variables</strong> in your templates to insert information
 collected during the dialogue. You can either do that in your custom python
-code or by using the automatic slot filling mechanism. E.g if you
-got a template like this:</p>
+code or by using the automatic slot filling mechanism. For example, if you
+have a template like this:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Hey,</span><span class="nv"> </span><span class="s">{name}.</span><span class="nv"> </span><span class="s">How</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">you?&quot;</span>
@@ -351,7 +446,7 @@ got a template like this:</p>
 </pre></div>
 </div>
 <p>If the template contains variables denoted with <code class="docutils literal notranslate"><span class="pre">{my_variable}</span></code>
-you can supply values for the fields by passing them as key word
+you can supply values for the fields by passing them as keyword
 arguments to <code class="docutils literal notranslate"><span class="pre">utter_template</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_default&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">my_variable</span><span class="o">=</span><span class="s2">&quot;my text&quot;</span><span class="p">)</span>
 </pre></div>
@@ -386,7 +481,7 @@ featurized as normal.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">If you really want these entities not to influence action prediction we
-suggest you make the slots with the same name of type <code class="docutils literal notranslate"><span class="pre">unfeaturized</span></code></p>
+suggest you make the slots with the same name of type <code class="docutils literal notranslate"><span class="pre">unfeaturized</span></code>.</p>
 </div>
 </div>
 </div>

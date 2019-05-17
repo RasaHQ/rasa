@@ -185,13 +185,13 @@ open source dialogue management." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href="../.././post-merge-docs/core/interactive-learning/">post-merge-docs</a>
+              <a href="../.././master/core/interactive-learning/">master</a>
           </div>
       </div>
     </div>
@@ -211,21 +211,30 @@ open source dialogue management." />
 
           <div class="body" role="main">
             
-  <div class="section" id="interactive-learning">
+  
+
+
+
+
+
+<div class="section" id="interactive-learning">
 <span id="id1"></span><h1>Interactive Learning<a class="headerlink" href="#interactive-learning" title="Permalink to this headline">¶</a></h1>
-<p>Rasa X provides a UI for interactive learning, and you can use any user conversation
-as a starting point. See <span class="xref std std-ref">improve</span> for details.
-This page shows how to use interactive learning on the command line.</p>
+<p>This page shows how to use interactive learning on the command line.</p>
 <p>In interactive learning mode, you provide feedback to your bot while you talk
 to it. This is a powerful way
 to explore what your bot can do, and the easiest way to fix any mistakes
 it makes. One advantage of machine learning-based dialogue is that when
 your bot doesn’t know how to do something yet, you can just teach it!
 Some people call this <a class="reference external" href="https://medium.com/&#64;karpathy/software-2-0-a64152b37c35">Software 2.0</a>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Rasa X provides a UI for interactive learning, and you can use any user conversation
+as a starting point. See <a class="reference external" href="https://rasa.com/docs/rasa-x/annotate-conversations/">here</a> .</p>
+</div>
 <div class="section" id="running-interactive-learning">
 <h2>Running Interactive Learning<a class="headerlink" href="#running-interactive-learning" title="Permalink to this headline">¶</a></h2>
 <p>Run the following command to start interactive learning:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3 -m rasa_sdk --actions actions<span class="p">&amp;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run actions --actions actions<span class="p">&amp;</span>
 
 rasa interactive <span class="se">\</span>
   -m models/20190515-135859.tar.gz <span class="se">\</span>
@@ -270,7 +279,7 @@ until the bot chooses the wrong action.</p>
 <h2>Providing feedback on errors<a class="headerlink" href="#providing-feedback-on-errors" title="Permalink to this headline">¶</a></h2>
 <p>For this example we are going to use the <code class="docutils literal notranslate"><span class="pre">concertbot</span></code> example,
 so make sure you have the domain &amp; data for it. You can download
-the data from <a href="#id2"><span class="problematic" id="id3">:gh-code:`examples/concertbot`</span></a>.</p>
+the data from <a class="reference external" href="https://github.com/RasaHQ/rasa/tree/1.0.0rc8/examples/concertbot">github examples/concertbot</a>.</p>
 <p>If you ask <code class="docutils literal notranslate"><span class="pre">/search_concerts</span></code>, the bot should suggest
 <code class="docutils literal notranslate"><span class="pre">action_search_concerts</span></code> and then <code class="docutils literal notranslate"><span class="pre">action_listen</span></code> (the confidence at which
 the policy selected its next action will be displayed next to the action name).
@@ -336,7 +345,7 @@ keep track of where you are.</p>
 <p>You can view the visualization at <a class="reference external" href="http://localhost:5005/visualization.html">http://localhost:5005/visualization.html</a>
 as soon as you’ve started interactive learning.</p>
 <p>To skip the visualization, run <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span> <span class="pre">--skip-visualization</span></code>.</p>
-<img alt="_static/images/interactive_learning_graph.gif" src="_static/images/interactive_learning_graph.gif" />
+<img alt="../../_images/interactive_learning_graph.gif" src="../../_images/interactive_learning_graph.gif" />
 </div>
 <div class="section" id="interactive-learning-with-forms">
 <span id="section-interactive-learning-forms"></span><h2>Interactive Learning with Forms<a class="headerlink" href="#interactive-learning-with-forms" title="Permalink to this headline">¶</a></h2>

@@ -181,13 +181,13 @@ with open soruce chatbot framework Rasa Stack." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href="../.././post-merge-docs/nlu/languages/">post-merge-docs</a>
+              <a href="../.././master/nlu/languages/">master</a>
           </div>
       </div>
     </div>
@@ -207,7 +207,13 @@ with open soruce chatbot framework Rasa Stack." />
 
           <div class="body" role="main">
             
-  <div class="section" id="language-support">
+  
+
+
+
+
+
+<div class="section" id="language-support">
 <span id="section-languages"></span><h1>Language Support<a class="headerlink" href="#language-support" title="Permalink to this headline">¶</a></h1>
 <p><strong>You can use Rasa NLU to build assistants in any language you want!</strong> The
 <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline can be used for <strong>any language</strong> because
@@ -315,11 +321,9 @@ allow Rasa NLU to load and use your new language by passing in your language ide
 <h3>MITIE<a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
 <ol class="arabic simple">
 <li>Get a clean language corpus (a Wikipedia dump works) as a set of text files</li>
+<li>Build and run <a class="reference external" href="https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep">MITIE Wordrep Tool</a> on your corpus. This can take several hours/days depending on your dataset and your workstation. You’ll need something like 128GB of RAM for wordrep to run - yes that’s a lot: try to extend your swap.</li>
+<li>Set the path of your new <code class="docutils literal notranslate"><span class="pre">total_word_feature_extractor.dat</span></code> as value of the <em>mitie_file</em> parameter in <code class="docutils literal notranslate"><span class="pre">config_mitie.json</span></code></li>
 </ol>
-<p>2. Build and run <a class="reference external" href="https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep">MITIE Wordrep Tool</a> on your corpus.
-This can take several hours/days depending on your dataset and your workstation.
-You’ll need something like 128GB of RAM for wordrep to run - yes that’s a lot: try to extend your swap.
-3. Set the path of your new <code class="docutils literal notranslate"><span class="pre">total_word_feature_extractor.dat</span></code> as value of the <em>mitie_file</em> parameter in <code class="docutils literal notranslate"><span class="pre">config_mitie.json</span></code></p>
 </div>
 <div class="section" id="jieba-mitie">
 <span id="jieba"></span><h3>Jieba-MITIE<a class="headerlink" href="#jieba-mitie" title="Permalink to this headline">¶</a></h3>

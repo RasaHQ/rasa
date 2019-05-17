@@ -179,13 +179,13 @@ Rasa Core and how you can migrate from one version to another." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href=".././post-merge-docs/migrations/">post-merge-docs</a>
+              <a href=".././master/migrations/">master</a>
           </div>
       </div>
     </div>
@@ -205,11 +205,17 @@ Rasa Core and how you can migrate from one version to another." />
 
           <div class="body" role="main">
             
-  <div class="section" id="migration-guide">
+  
+
+
+
+
+
+<div class="section" id="migration-guide">
 <span id="migration"></span><h1>Migration Guide<a class="headerlink" href="#migration-guide" title="Permalink to this headline">¶</a></h1>
 <p>This page contains information about changes between major versions and
 how you can migrate from one version to another.</p>
-<p id="migration-to-0-15-0">0.14.x to 0.15.0</p>
+<p id="migration-to-rasa-1-0">0.14.x to Rasa 1.0</p>
 <div class="section" id="general">
 <h2>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -229,6 +235,18 @@ Mapping of old scripts to new commands:
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.server</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.test</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code>
 <code class="docutils literal notranslate"><span class="pre">rasa.nlu.train</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code></li>
+<li>If you have written a custom output channel, all <code class="docutils literal notranslate"><span class="pre">send_</span></code> methods subclassed
+from the <code class="docutils literal notranslate"><span class="pre">OutputChannel</span></code> class need to take an additional <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>
+argument. You can use these keyword args from your custom action code or the
+templates in your domain file to send any extra parameters used in your
+channel’s send methods.</li>
+<li>If you were importing the <code class="docutils literal notranslate"><span class="pre">Button</span></code> or <code class="docutils literal notranslate"><span class="pre">Element</span></code> classes from
+<code class="docutils literal notranslate"><span class="pre">rasa_core.dispatcher</span></code>, these are now to be imported from <code class="docutils literal notranslate"><span class="pre">rasa_sdk.utils</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="script-parameters">
+<h2>Script parameters<a class="headerlink" href="#script-parameters" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
 <li>All script parameter names have been unified to follow the same schema.
 Any underscores (<code class="docutils literal notranslate"><span class="pre">_</span></code>) in arguments have been replaced with dashes (<code class="docutils literal notranslate"><span class="pre">-</span></code>).
 Due to change the following argument names changed:
@@ -249,19 +267,15 @@ Due to change the following argument names changed:
 <code class="docutils literal notranslate"><span class="pre">--auth_token</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">--auth-token</span></code>
 <code class="docutils literal notranslate"><span class="pre">--skip_visualization</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">--skip-visualization</span></code>
 <code class="docutils literal notranslate"><span class="pre">--training_fraction</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">--training-fraction</span></code></li>
-</ul>
-</div>
-<div class="section" id="script-parameters">
-<h2>Script parameters<a class="headerlink" href="#script-parameters" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
 <li>the <code class="docutils literal notranslate"><span class="pre">--num_threads</span></code> parameter got removed from the <code class="docutils literal notranslate"><span class="pre">run</span></code> command. The
 server will always run single threaded, but in an async way. If you want to
 make use of multiple processes, feel free to check out the sanic server
 documentation <a class="reference external" href="https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn">https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn</a></li>
 <li>To avoid conflicts in the script parameter names, connectors in the <code class="docutils literal notranslate"><span class="pre">run</span></code> command now need to be specified with
-<code class="docutils literal notranslate"><span class="pre">--connector</span></code>. <code class="docutils literal notranslate"><span class="pre">-c</span></code> is no longer supported. The maximum history in the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">visualize</span></code> command needs to be
-defined with <code class="docutils literal notranslate"><span class="pre">--max-history</span></code>. Output paths and log files cannot be specified with <code class="docutils literal notranslate"><span class="pre">-o</span></code> anymore. <code class="docutils literal notranslate"><span class="pre">--output</span></code> and
-<code class="docutils literal notranslate"><span class="pre">--log-file</span></code> should be used.</li>
+<code class="docutils literal notranslate"><span class="pre">--connector</span></code>. <code class="docutils literal notranslate"><span class="pre">-c</span></code> is no longer supported. The maximum history in the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">visualize</span></code> command need to be
+defined with <code class="docutils literal notranslate"><span class="pre">--max-history</span></code>. Output paths and log files cannot be specified with <code class="docutils literal notranslate"><span class="pre">-o</span></code> anymore. <code class="docutils literal notranslate"><span class="pre">--out</span></code> and
+<code class="docutils literal notranslate"><span class="pre">--log-file</span></code> should be used. Furthermore, we standardized the name of NLU data to be <code class="docutils literal notranslate"><span class="pre">--nlu</span></code> and the name of
+any kind of data files or directory to be <code class="docutils literal notranslate"><span class="pre">--data</span></code>.</li>
 </ul>
 </div>
 </div>

@@ -181,13 +181,13 @@ with your backend components." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href=".././post-merge-docs/server/">post-merge-docs</a>
+              <a href=".././master/server/">master</a>
           </div>
       </div>
     </div>
@@ -207,7 +207,13 @@ with your backend components." />
 
           <div class="body" role="main">
             
-  <div class="section" id="running-the-server">
+  
+
+
+
+
+
+<div class="section" id="running-the-server">
 <span id="section-http"></span><h1>Running the Server<a class="headerlink" href="#running-the-server" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
@@ -227,7 +233,7 @@ with your backend components." />
 <div class="section" id="running-the-http-server">
 <h2><a class="toc-backref" href="#id1">Running the HTTP server</a><a class="headerlink" href="#running-the-http-server" title="Permalink to this headline">¶</a></h2>
 <p>You can run a simple HTTP server that handles requests using your
-models with:</p>
+trained Rasa model with:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run <span class="se">\</span>
     --enable-api <span class="se">\</span>
     -m models <span class="se">\</span>
@@ -244,8 +250,8 @@ models with:</p>
 <p>Rasa can load your model in three different ways:</p>
 <ol class="arabic simple">
 <li>Load the model specified via <code class="docutils literal notranslate"><span class="pre">-m</span></code> from your local storage system.</li>
-<li>Fetch the model from a server (see <span class="xref std std-ref">_server_fetch_from_server</span>).</li>
-<li>Fetch the model from a remote storage (see <span class="xref std std-ref">_server_fetch_from_remote_storage</span>).</li>
+<li>Fetch the model from a server (see <a class="reference internal" href="#server-fetch-from-server"><span class="std std-ref">Fetching Models from a Server</span></a>).</li>
+<li>Fetch the model from a remote storage (see <a class="reference internal" href="#server-fetch-from-remote-storage"><span class="std std-ref">Fetching Models from a Remote Storage</span></a>).</li>
 </ol>
 <p>Rasa tries to load the model in above mentioned order. E.g. it only tries to load your model from a server
 if it could not find the model on your local storage system.</p>
@@ -329,11 +335,11 @@ between docker containers).</p>
 <p><strong>Token Based Auth:</strong></p>
 <p>Pass in the token using <code class="docutils literal notranslate"><span class="pre">--auth-token</span> <span class="pre">thisismysecret</span></code> when starting
 the server:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa run core <span class="se">\</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa run <span class="se">\</span>
     --enable-api <span class="se">\</span>
     --auth-token thisismysecret <span class="se">\</span>
     -m models <span class="se">\</span>
-    -o out.log
+    --log-file out.log
 </pre></div>
 </div>
 <p>Your requests should pass the token, in our case <code class="docutils literal notranslate"><span class="pre">thisismysecret</span></code>,
@@ -350,11 +356,11 @@ and the <code class="docutils literal notranslate"><span class="pre">HS256</span
 If the <code class="docutils literal notranslate"><span class="pre">role</span></code> is <code class="docutils literal notranslate"><span class="pre">admin</span></code>, all endpoints are accessible.
 If the <code class="docutils literal notranslate"><span class="pre">role</span></code> is <code class="docutils literal notranslate"><span class="pre">user</span></code>, endpoints with a <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> parameter are only accessible
 if the <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> matches the user’s <code class="docutils literal notranslate"><span class="pre">username</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa run core <span class="se">\</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa run <span class="se">\</span>
     --enable-api <span class="se">\</span>
     --jwt-secret thisismysecret <span class="se">\</span>
     -m models <span class="se">\</span>
-    -o out.log
+    --log-file out.log
 </pre></div>
 </div>
 <p>Your requests should have set a proper JWT header:</p>

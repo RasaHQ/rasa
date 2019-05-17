@@ -181,13 +181,13 @@ in open source bot framework Rasa Stack." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href="../.././post-merge-docs/core/slot-filling/">post-merge-docs</a>
+              <a href="../.././master/core/slot-filling/">master</a>
           </div>
       </div>
     </div>
@@ -207,7 +207,13 @@ in open source bot framework Rasa Stack." />
 
           <div class="body" role="main">
             
-  <div class="section" id="slot-filling">
+  
+
+
+
+
+
+<div class="section" id="slot-filling">
 <span id="id1"></span><h1>Slot Filling<a class="headerlink" href="#slot-filling" title="Permalink to this headline">¶</a></h1>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -277,7 +283,7 @@ the form is filling all requested slots without interruption.</p>
 If a user starts the conversation with
 <cite>I’d like a vegetarian Chinese restaurant for 8 people</cite>, then they won’t be
 asked about the <code class="docutils literal notranslate"><span class="pre">cuisine</span></code> and <code class="docutils literal notranslate"><span class="pre">num_people</span></code> slots.</p>
-<p>Note that for this story to work, your slots should be <a class="reference external" href="https://rasa.com/docs/core/api/slots_api/#unfeaturized-slot">unfeaturized</a>.
+<p>Note that for this story to work, your slots should be <a class="reference external" href="http://rasa.com/docs/rasa/core/slot-filling/#the-requested-slot-slot">unfeaturized</a>.
 If any of these slots are featurized, your story needs to include <code class="docutils literal notranslate"><span class="pre">slot{}</span></code> events
 to show these slots being set. In that case, the easiest way to create valid stories
 is to use <span class="xref std std-ref">interactive-learning</span> .</p>
@@ -289,6 +295,33 @@ You need to define three methods:</p>
 <li><code class="docutils literal notranslate"><span class="pre">required_slots</span></code>: a list of slots that need to be filled for the <code class="docutils literal notranslate"><span class="pre">submit</span></code> method to work.</li>
 <li><code class="docutils literal notranslate"><span class="pre">submit</span></code>: what to do at the end of the form, when all the slots have been filled.</li>
 </ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Unique identifier of the form&quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="s2">&quot;restaurant_form&quot;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@staticmethod</span>
+<span class="k">def</span> <span class="nf">required_slots</span><span class="p">(</span><span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;A list of required slots that the form has to fill&quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;cuisine&quot;</span><span class="p">,</span> <span class="s2">&quot;num_people&quot;</span><span class="p">,</span> <span class="s2">&quot;outdoor_seating&quot;</span><span class="p">,</span> <span class="s2">&quot;preferences&quot;</span><span class="p">,</span> <span class="s2">&quot;feedback&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">submit</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">dispatcher</span><span class="p">:</span> <span class="n">CollectingDispatcher</span><span class="p">,</span>
+    <span class="n">tracker</span><span class="p">:</span> <span class="n">Tracker</span><span class="p">,</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Define what the form has to do</span>
+<span class="sd">        after all required slots are filled&quot;&quot;&quot;</span>
+
+    <span class="c1"># utter submit template</span>
+    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_submit&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</pre></div>
+</div>
 <p>Once the form action gets called for the first time,
 the form gets activated and the <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> jumps in.
 The <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> is extremely simple and just always predicts the form action.
@@ -313,6 +346,34 @@ Some slots, like <code class="docutils literal notranslate"><span class="pre">cu
 <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> can also support yes/no questions and free-text input.
 The <code class="docutils literal notranslate"><span class="pre">slot_mappings</span></code> method defines how to extract slot values from user responses.</p>
 <p>Here’s an example for the restaurant bot:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">slot_mappings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]]:</span>
+    <span class="sd">&quot;&quot;&quot;A dictionary to map required slots to</span>
+<span class="sd">        - an extracted entity</span>
+<span class="sd">        - intent: value pairs</span>
+<span class="sd">        - a whole message</span>
+<span class="sd">        or a list of them, where a first match will be picked&quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;cuisine&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_entity</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="s2">&quot;cuisine&quot;</span><span class="p">,</span> <span class="n">not_intent</span><span class="o">=</span><span class="s2">&quot;chitchat&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;num_people&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_entity</span><span class="p">(</span>
+                <span class="n">entity</span><span class="o">=</span><span class="s2">&quot;num_people&quot;</span><span class="p">,</span> <span class="n">intent</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;inform&quot;</span><span class="p">,</span> <span class="s2">&quot;request_restaurant&quot;</span><span class="p">]</span>
+            <span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_entity</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="s2">&quot;number&quot;</span><span class="p">),</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;outdoor_seating&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_entity</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="s2">&quot;seating&quot;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_intent</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="s2">&quot;affirm&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_intent</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="s2">&quot;deny&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;preferences&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_intent</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="s2">&quot;deny&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;no additional preferences&quot;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_text</span><span class="p">(</span><span class="n">not_intent</span><span class="o">=</span><span class="s2">&quot;affirm&quot;</span><span class="p">),</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;feedback&quot;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">from_entity</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="s2">&quot;feedback&quot;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_text</span><span class="p">()],</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
 <p>The predefined functions work as follows:</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">self.from_entity(entity=entity_name,</span> <span class="pre">intent=intent_name)</span></code>

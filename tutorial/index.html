@@ -181,13 +181,13 @@ chatbot or AI assistant using open source Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href=".././post-merge-docs/tutorial/">post-merge-docs</a>
+              <a href=".././master/tutorial/">master</a>
           </div>
       </div>
     </div>
@@ -207,7 +207,13 @@ chatbot or AI assistant using open source Rasa." />
 
           <div class="body" role="main">
             
-  <div class="section" id="rasa-tutorial">
+  
+
+
+
+
+
+<div class="section" id="rasa-tutorial">
 <span id="tutorial"></span><h1>Rasa Tutorial<a class="headerlink" href="#rasa-tutorial" title="Permalink to this headline">¶</a></h1>
 <p>This page explains the basics of building an assistant with Rasa and
 shows the structure of a rasa project.</p>
@@ -360,7 +366,7 @@ your assistant. You can find all the details of the data format in <a class="ref
 <p>The configuration file defines the NLU and Core components that your model
 will use. In this example, your NLU model will use the
 <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline. You can learn all about NLU pipelines
-<a class="reference external" href="https://rasa.com/docs/nlu/choosing_pipeline/">here</a>.</p>
+<a class="reference external" href="http://rasa.com/docs/rasa/nlu/choosing-pipeline/">here</a>.</p>
 <p>Let’s take a look at your model configuration file.</p>
 
 
@@ -386,7 +392,7 @@ will use. In this example, your NLU model will use the
       }
     })
   </script><p>The <code class="docutils literal notranslate"><span class="pre">pipeline</span></code> and <code class="docutils literal notranslate"><span class="pre">language</span></code> keys specify how the NLU model should be built.
-You can read more about this in <a class="reference internal" href="../nlu/choosing-pipeline/#choosing-pipeline"><span class="std std-ref">Choosing a Pipeline</span></a>
+You can read more about this in <a class="reference internal" href="../nlu/choosing-pipeline/#choosing-pipeline"><span class="std std-ref">Choosing a Pipeline</span></a>.
 The <code class="docutils literal notranslate"><span class="pre">policies</span></code> key defines the <a class="reference internal" href="../core/policies/#policies"><span class="std std-ref">Training and Policies</span></a> that the Core model will use.</p>
 </div>
 <div class="section" id="write-your-first-stories">
@@ -405,7 +411,7 @@ This is how it looks as a story:</p>
    - utter_greet
 </pre></div>
 </div>
-<p>You can see the full details in <a class="reference internal" href="../core/stories/#stories-data-format"><span class="std std-ref">Story Data Format</span></a></p>
+<p>You can see the full details in <a class="reference internal" href="../core/stories/#stories-data-format"><span class="std std-ref">Story Data Format</span></a>.</p>
 <p>Lines that start with <code class="docutils literal notranslate"><span class="pre">-</span></code> are actions taken by the assistant.
 In this case, all of our actions are messages sent back to the user,
 like <code class="docutils literal notranslate"><span class="pre">utter_greet</span></code>, but in general, an action can do anything,
@@ -474,7 +480,7 @@ file called <code class="docutils literal notranslate"><span class="pre">domain.
 </colgroup>
 <tbody valign="top">
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">intents</span></code></td>
-<td>things you expect users to say.</td>
+<td>things you expect users to say</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">actions</span></code></td>
 <td>things your assistant can do and say</td>
@@ -489,9 +495,9 @@ Rasa Core’s job is to choose the right action to execute at each step
 of the conversation. Simple actions are sending a message to a user.
 These simple actions are the <code class="docutils literal notranslate"><span class="pre">actions</span></code> in the domain, which start
 with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>. They will respond with a message based on a template
-from the <code class="docutils literal notranslate"><span class="pre">templates</span></code> section. See <a class="reference external" href="https://rasa.com/docs/core/customactions/">Custom Actions</a> for how to build</p>
-<blockquote>
-<div>actions that do more than just send a message.</div></blockquote>
+from the <code class="docutils literal notranslate"><span class="pre">templates</span></code> section. See
+<a class="reference external" href="http://rasa.com/docs/rasa/core/run-code-in-custom-actions/#id1">Custom Actions</a>
+for how to build actions that do more than just send a message.</p>
 </div>
 <div class="section" id="train-a-model">
 <h2><a class="toc-backref" href="#id6">7. Train a Model</a><a class="headerlink" href="#train-a-model" title="Permalink to this headline">¶</a></h2>

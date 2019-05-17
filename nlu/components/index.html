@@ -181,13 +181,13 @@ processes performed on the user input of your contextual assistant." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href="../.././post-merge-docs/nlu/components/">post-merge-docs</a>
+              <a href="../.././master/nlu/components/">master</a>
           </div>
       </div>
     </div>
@@ -207,7 +207,13 @@ processes performed on the user input of your contextual assistant." />
 
           <div class="body" role="main">
             
-  <div class="section" id="component-configuration">
+  
+
+
+
+
+
+<div class="section" id="component-configuration">
 <span id="section-pipeline"></span><h1>Component Configuration<a class="headerlink" href="#component-configuration" title="Permalink to this headline">¶</a></h1>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -430,18 +436,25 @@ character sequence is present in the word sequence or not.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">regex feature creation to support intent and entity classification</td>
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">regex feature creation to support intent and entity classification</p>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">text_features</span></code> and <code class="docutils literal notranslate"><span class="pre">tokens.pattern</span></code></td>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">text_features</span></code> and <code class="docutils literal notranslate"><span class="pre">tokens.pattern</span></code></p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body">nothing</td>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">nothing</p>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body">During training, the regex intent featurizer creates a list of <cite>regular expressions</cite> defined in the training data format.
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">During training, the regex intent featurizer creates a list of <cite>regular expressions</cite> defined in the training data format.
 For each regex, a feature will be set marking whether this expression was found in the input, which will later be fed into intent classifier / entity
 extractor to simplify classification (assuming the classifier has learned during the training phase, that this set
 feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
-<code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component!
-.. note:: There needs to be a tokenizer previous to this featurizer in the pipeline!</td>
+<code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component!</p>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There needs to be a tokenizer previous to this featurizer in the pipeline!</p>
+</div>
+</td>
 </tr>
 </tbody>
 </table>

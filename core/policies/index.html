@@ -181,13 +181,13 @@ for longer context or unseen utterances which require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: post-merge-docs
+          viewing: master
         </span>
       </div>
       <div class="other-versions">
           <p>branches</p>
           <div class="dropdown-content">
-              <a href="../.././post-merge-docs/core/policies/">post-merge-docs</a>
+              <a href="../.././master/core/policies/">master</a>
           </div>
       </div>
     </div>
@@ -207,24 +207,30 @@ for longer context or unseen utterances which require generalization." />
 
           <div class="body" role="main">
             
-  <div class="section" id="training-and-policies">
+  
+
+
+
+
+
+<div class="section" id="training-and-policies">
 <span id="policies"></span><h1>Training and Policies<a class="headerlink" href="#training-and-policies" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#data-augmentation" id="id6">Data Augmentation</a></li>
-<li><a class="reference internal" href="#configuring-policies" id="id7">Configuring Policies</a></li>
-<li><a class="reference internal" href="#max-history" id="id8">Max History</a></li>
-<li><a class="reference internal" href="#keras-policy" id="id9">Keras Policy</a></li>
-<li><a class="reference internal" href="#embedding-policy" id="id10">Embedding Policy</a></li>
-<li><a class="reference internal" href="#memoization-policy" id="id11">Memoization Policy</a></li>
-<li><a class="reference internal" href="#form-policy" id="id12">Form Policy</a></li>
-<li><a class="reference internal" href="#mapping-policy" id="id13">Mapping Policy</a></li>
-<li><a class="reference internal" href="#fallback-policy" id="id14">Fallback Policy</a></li>
-<li><a class="reference internal" href="#two-stage-fallback-policy" id="id15">Two-Stage Fallback Policy</a></li>
+<li><a class="reference internal" href="#data-augmentation" id="id3">Data Augmentation</a></li>
+<li><a class="reference internal" href="#configuring-policies" id="id4">Configuring Policies</a></li>
+<li><a class="reference internal" href="#max-history" id="id5">Max History</a></li>
+<li><a class="reference internal" href="#keras-policy" id="id6">Keras Policy</a></li>
+<li><a class="reference internal" href="#embedding-policy" id="id7">Embedding Policy</a></li>
+<li><a class="reference internal" href="#memoization-policy" id="id8">Memoization Policy</a></li>
+<li><a class="reference internal" href="#form-policy" id="id9">Form Policy</a></li>
+<li><a class="reference internal" href="#mapping-policy" id="id10">Mapping Policy</a></li>
+<li><a class="reference internal" href="#fallback-policy" id="id11">Fallback Policy</a></li>
+<li><a class="reference internal" href="#two-stage-fallback-policy" id="id12">Two-Stage Fallback Policy</a></li>
 </ul>
 </div>
 <div class="section" id="data-augmentation">
-<h2><a class="toc-backref" href="#id6">Data Augmentation</a><a class="headerlink" href="#data-augmentation" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id3">Data Augmentation</a><a class="headerlink" href="#data-augmentation" title="Permalink to this headline">¶</a></h2>
 <p>When you train a model, by default Rasa Core will create
 longer stories by randomly gluing together
 the ones in your stories files.
@@ -242,10 +248,20 @@ This is because if you have stories like:</p>
 when it isn’t relevant and just respond with the same action no matter
 what happened before.</p>
 <p>You can alter this behaviour with the <code class="docutils literal notranslate"><span class="pre">--augmentation</span></code> flag.
-<code class="docutils literal notranslate"><span class="pre">--augmentation</span> <span class="pre">0</span></code> disables this behavior.</p>
+Which allows you to set the <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code> determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since their number
+can become very large quickly.
+The number of sampled stories is <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code> x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.</p>
+<p><code class="docutils literal notranslate"><span class="pre">--augmentation</span> <span class="pre">0</span></code> disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code>) and will automatically
+ignore all augmented stories.</p>
 </div>
 <div class="section" id="configuring-policies">
-<span id="policy-file"></span><h2><a class="toc-backref" href="#id7">Configuring Policies</a><a class="headerlink" href="#configuring-policies" title="Permalink to this headline">¶</a></h2>
+<span id="policy-file"></span><h2><a class="toc-backref" href="#id4">Configuring Policies</a><a class="headerlink" href="#configuring-policies" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.core.policies.Policy</span></code> class decides which action to take
 at every step in the conversation.</p>
 <p>There are different policies to choose from, and you can include
@@ -276,7 +292,7 @@ policy class and pass arguments to it.</p>
 </div>
 </div>
 <div class="section" id="max-history">
-<h2><a class="toc-backref" href="#id8">Max History</a><a class="headerlink" href="#max-history" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">Max History</a><a class="headerlink" href="#max-history" title="Permalink to this headline">¶</a></h2>
 <p>One important hyperparameter for Rasa Core policies is the <code class="docutils literal notranslate"><span class="pre">max_history</span></code>.
 This controls how much dialogue history the model looks at to decide which
 action to take next.</p>
@@ -308,19 +324,129 @@ affect the dialogue very far into the future, you should store it as a
 slot. Slot information is always available for every featurizer.</p>
 </div>
 <div class="section" id="keras-policy">
-<h2><a class="toc-backref" href="#id9">Keras Policy</a><a class="headerlink" href="#keras-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id6">Keras Policy</a><a class="headerlink" href="#keras-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> uses a neural network implemented in
 <a class="reference external" href="http://keras.io">Keras</a> to select the next action.
 The default architecture is based on an LSTM, but you can override the
 <code class="docutils literal notranslate"><span class="pre">KerasPolicy.model_architecture</span></code> method to implement your own architecture.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">model_architecture</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">output_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Sequential</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Build a keras model and return a compiled model.&quot;&quot;&quot;</span>
+
+    <span class="kn">from</span> <span class="nn">tensorflow.keras.models</span> <span class="k">import</span> <span class="n">Sequential</span>
+    <span class="kn">from</span> <span class="nn">tensorflow.keras.layers</span> <span class="k">import</span> <span class="p">(</span>
+        <span class="n">Masking</span><span class="p">,</span>
+        <span class="n">LSTM</span><span class="p">,</span>
+        <span class="n">Dense</span><span class="p">,</span>
+        <span class="n">TimeDistributed</span><span class="p">,</span>
+        <span class="n">Activation</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Build Model</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Sequential</span><span class="p">()</span>
+
+    <span class="c1"># the shape of the y vector of the labels,</span>
+    <span class="c1"># determines which output from rnn will be used</span>
+    <span class="c1"># to calculate the loss</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># y is (num examples, num features) so</span>
+        <span class="c1"># only the last output from the rnn is used to</span>
+        <span class="c1"># calculate the loss</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Masking</span><span class="p">(</span><span class="n">mask_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="n">input_shape</span><span class="p">))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">LSTM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.2</span><span class="p">))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Dense</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_size</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">output_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># y is (num examples, max_dialogue_len, num features) so</span>
+        <span class="c1"># all the outputs from the rnn are used to</span>
+        <span class="c1"># calculate the loss, therefore a sequence is returned and</span>
+        <span class="c1"># time distributed layer is used</span>
+
+        <span class="c1"># the first value in input_shape is max dialogue_len,</span>
+        <span class="c1"># it is set to None, to allow dynamic_rnn creation</span>
+        <span class="c1"># during prediction</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Masking</span><span class="p">(</span><span class="n">mask_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">LSTM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_size</span><span class="p">,</span> <span class="n">return_sequences</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.2</span><span class="p">))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">TimeDistributed</span><span class="p">(</span><span class="n">Dense</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="n">output_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Cannot construct the model because&quot;</span>
+            <span class="s2">&quot;length of output_shape = </span><span class="si">{}</span><span class="s2"> &quot;</span>
+            <span class="s2">&quot;should be 1 or 2.&quot;</span>
+            <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output_shape</span><span class="p">))</span>
+        <span class="p">)</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Activation</span><span class="p">(</span><span class="s2">&quot;softmax&quot;</span><span class="p">))</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="n">loss</span><span class="o">=</span><span class="s2">&quot;categorical_crossentropy&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;rmsprop&quot;</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">obtain_verbosity</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">model</span>
+</pre></div>
+</div>
 <p>and the training is run here:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">train</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">training_trackers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DialogueStateTracker</span><span class="p">],</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+    <span class="c1"># set numpy random seed</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
+
+    <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">featurize_for_training</span><span class="p">(</span><span class="n">training_trackers</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="c1"># noinspection PyPep8Naming</span>
+    <span class="n">shuffled_X</span><span class="p">,</span> <span class="n">shuffled_y</span> <span class="o">=</span> <span class="n">training_data</span><span class="o">.</span><span class="n">shuffled_X_y</span><span class="p">()</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+        <span class="c1"># set random seed in tf</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">set_random_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tf_config</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_architecture</span><span class="p">(</span>
+                    <span class="n">shuffled_X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">shuffled_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Fitting model with </span><span class="si">{}</span><span class="s2"> total samples and a &quot;</span>
+                <span class="s2">&quot;validation split of </span><span class="si">{}</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">training_data</span><span class="o">.</span><span class="n">num_examples</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">validation_split</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="c1"># filter out kwargs that cannot be passed to fit</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_valid_params</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+                <span class="n">shuffled_X</span><span class="p">,</span>
+                <span class="n">shuffled_y</span><span class="p">,</span>
+                <span class="n">epochs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="n">obtain_verbosity</span><span class="p">(),</span>
+                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span>
+            <span class="p">)</span>
+            <span class="c1"># the default parameter for epochs in keras fit is 1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;epochs&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Done fitting keras policy model&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>You can implement the model of your choice by overriding these methods,
 or initialize <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> with pre-defined <code class="docutils literal notranslate"><span class="pre">keras</span> <span class="pre">model</span></code>.</p>
 <p>In order to get reproducible training results for the same inputs you can
 set the <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> attribute of the <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> to any integer.</p>
 </div>
 <div class="section" id="embedding-policy">
-<span id="id1"></span><h2><a class="toc-backref" href="#id10">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id1"></span><h2><a class="toc-backref" href="#id7">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
 <p>The Recurrent Embedding Dialogue Policy (REDP)
 described in our paper: <a class="reference external" href="https://arxiv.org/abs/1811.11707">https://arxiv.org/abs/1811.11707</a></p>
 <p>This policy has a pre-defined architecture, which comprises the
@@ -503,6 +629,75 @@ In order to do it pass a list to <code class="docutils literal notranslate"><spa
 </div>
 <p>These parameters can be specified in the policy configuration file.
 The default values are defined in <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy.defaults</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1"># nn architecture</span>
+    <span class="c1"># a list of hidden layers sizes before user embed layer</span>
+    <span class="c1"># number of hidden layers is equal to the length of this list</span>
+    <span class="s2">&quot;hidden_layers_sizes_a&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="c1"># a list of hidden layers sizes before bot embed layer</span>
+    <span class="c1"># number of hidden layers is equal to the length of this list</span>
+    <span class="s2">&quot;hidden_layers_sizes_b&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="c1"># number of units in rnn cell</span>
+    <span class="s2">&quot;rnn_size&quot;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span>
+    <span class="c1"># training parameters</span>
+    <span class="c1"># flag if to turn on layer normalization for lstm cell</span>
+    <span class="s2">&quot;layer_norm&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># initial and final batch sizes - batch size will be</span>
+    <span class="c1"># linearly increased for each epoch</span>
+    <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
+    <span class="c1"># number of epochs</span>
+    <span class="s2">&quot;epochs&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="c1"># set random seed to any int to get reproducible results</span>
+    <span class="s2">&quot;random_seed&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="c1"># embedding parameters</span>
+    <span class="c1"># dimension size of embedding vectors</span>
+    <span class="s2">&quot;embed_dim&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="c1"># how similar the algorithm should try</span>
+    <span class="c1"># to make embedding vectors for correct actions</span>
+    <span class="s2">&quot;mu_pos&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
+    <span class="c1"># maximum negative similarity for incorrect actions</span>
+    <span class="s2">&quot;mu_neg&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># should be -1.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
+    <span class="c1"># the type of the similarity</span>
+    <span class="s2">&quot;similarity_type&quot;</span><span class="p">:</span> <span class="s2">&quot;cosine&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;cosine&#39; or &#39;inner&#39;</span>
+    <span class="c1"># the number of incorrect actions, the algorithm will minimize</span>
+    <span class="c1"># their similarity to the user input during training</span>
+    <span class="s2">&quot;num_neg&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="c1"># flag if minimize only maximum similarity over incorrect actions</span>
+    <span class="s2">&quot;use_max_sim_neg&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># flag which loss function to use</span>
+    <span class="c1"># regularization</span>
+    <span class="c1"># the scale of L2 regularization</span>
+    <span class="s2">&quot;C2&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>
+    <span class="c1"># the scale of how important is to minimize the maximum similarity</span>
+    <span class="c1"># between embeddings of different actions</span>
+    <span class="s2">&quot;C_emb&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
+    <span class="c1"># scale loss with inverse frequency of bot actions</span>
+    <span class="s2">&quot;scale_loss_by_action_counts&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># dropout rate for user nn</span>
+    <span class="s2">&quot;droprate_a&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="c1"># dropout rate for bot nn</span>
+    <span class="s2">&quot;droprate_b&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="c1"># dropout rate for rnn</span>
+    <span class="s2">&quot;droprate_rnn&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="c1"># attention parameters</span>
+    <span class="c1"># flag to use attention over user input</span>
+    <span class="c1"># as an input to rnn</span>
+    <span class="s2">&quot;attn_before_rnn&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># flag to use attention over prev bot actions</span>
+    <span class="c1"># and copy it to output bypassing rnn</span>
+    <span class="s2">&quot;attn_after_rnn&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># flag to use `sparsemax` instead of `softmax` for attention</span>
+    <span class="s2">&quot;sparse_attention&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># flag to use sparsemax for probs</span>
+    <span class="c1"># the range of allowed location-based attention shifts</span>
+    <span class="s2">&quot;attn_shift_range&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># if None, set to mean dialogue length / 2</span>
+    <span class="c1"># visualization of accuracy</span>
+    <span class="c1"># how often calculate train accuracy</span>
+    <span class="s2">&quot;evaluate_every_num_epochs&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>  <span class="c1"># small values may hurt performance</span>
+    <span class="c1"># how many examples to use for calculation of train accuracy</span>
+    <span class="s2">&quot;evaluate_on_num_examples&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>  <span class="c1"># large values may hurt performance</span>
+<span class="p">}</span>
+
+</pre></div>
+</div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Parameter <code class="docutils literal notranslate"><span class="pre">mu_neg</span></code> is set to a negative value to mimic
@@ -513,21 +708,21 @@ the original starspace algorithm in the case
 </div></blockquote>
 </div>
 <div class="section" id="memoization-policy">
-<h2><a class="toc-backref" href="#id11">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id8">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> just memorizes the conversations in your
 training data. It predicts the next action with confidence <code class="docutils literal notranslate"><span class="pre">1.0</span></code>
 if this exact conversation exists in the training data, otherwise it
 predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
 </div>
 <div class="section" id="form-policy">
-<h2><a class="toc-backref" href="#id12">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id9">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> is an extension of the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> which
 handles the filling of forms. Once a <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> is called, the
 <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> will continually predict the <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> until all slots
-in the form are filled. For more information, see <a class="reference external" href="https://rasa.com/docs/core/slotfilling/">Slot Filling</a>.</p>
+in the form are filled. For more information, see <a class="reference internal" href="../slot-filling/#slot-filling"><span class="std std-ref">Slot Filling</span></a>.</p>
 </div>
 <div class="section" id="mapping-policy">
-<h2><a class="toc-backref" href="#id13">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id10">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> can be used to directly map intents to actions such that
 the mapped action will always be executed. The mappings are assigned by giving
 and intent the property <cite>‘triggers’</cite>, e.g.:</p>
@@ -556,8 +751,8 @@ the dialogue history.</p>
 </div>
 </div>
 <div class="section" id="fallback-policy">
-<span id="id2"></span><h2><a class="toc-backref" href="#id14">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference external" href="https://rasa.com/docs/core/fallbacks/">fallback action</a> if the intent recognition
+<span id="id2"></span><h2><a class="toc-backref" href="#id11">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallbacks/#fallbacks"><span class="std std-ref">Fallback Actions</span></a> if the intent recognition
 has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code> or if none of the dialogue
 policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</p>
 <p><strong>Configuration:</strong></p>
@@ -586,9 +781,9 @@ prediction</td>
 prediction from Rasa Core</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">fallback_action_name</span></code></td>
-<td>Name of the <a class="reference external" href="https://rasa.com/docs/core/fallbacks/">fallback action</a>
-to be called if the confidence of intent
-or action is below the respective threshold</td>
+<td>Name of the <a class="reference internal" href="../fallbacks/#fallbacks"><span class="std std-ref">Fallback Actions</span></a> to be called
+if the confidence of intent or action is
+below the respective threshold</td>
 </tr>
 </tbody>
 </table>
@@ -612,7 +807,7 @@ or action is below the respective threshold</td>
 </div></blockquote>
 </div>
 <div class="section" id="two-stage-fallback-policy">
-<h2><a class="toc-backref" href="#id15">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id12">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.</p>
 <ul>
@@ -676,15 +871,15 @@ prediction</td>
 prediction from Rasa Core</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">fallback_core_action_name</span></code></td>
-<td>Name of the <a class="reference external" href="https://rasa.com/docs/core/fallbacks/">fallback action</a>
-to be called if the confidence of Rasa
-Core action prediction is below the
+<td>Name of the <a class="reference internal" href="../fallbacks/#fallbacks"><span class="std std-ref">Fallback Actions</span></a> to be
+called if the confidence of Rasa Core
+action prediction is below the
 <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">fallback_nlu_action_name</span></code></td>
-<td>Name of the <a class="reference external" href="https://rasa.com/docs/core/fallbacks/">fallback action</a>
-to be called if the confidence of Rasa
-NLU intent classification is below the
+<td>Name of the <a class="reference internal" href="../fallbacks/#fallbacks"><span class="std std-ref">Fallback Actions</span></a> to be
+called if the confidence of Rasa NLU
+intent classification is below the
 <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code></td>
