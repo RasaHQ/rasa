@@ -337,8 +337,7 @@ Form Policy
 The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which
 handles the filling of forms. Once a ``FormAction`` is called, the
 ``FormPolicy`` will continually predict the ``FormAction`` until all slots
-in the form are filled. For more information, see `Slot Filling
-<https://rasa.com/docs/core/slotfilling/>`_.
+in the form are filled. For more information, see :ref:`slot-filling.
 
 
 Mapping Policy
@@ -381,8 +380,7 @@ it will listen for the next message.
 Fallback Policy
 ^^^^^^^^^^^^^^^
 
-The ``FallbackPolicy`` invokes a `fallback action
-<https://rasa.com/docs/core/fallbacks/>`_ if the intent recognition
+The ``FallbackPolicy`` invokes a :ref:`fallbacks` if the intent recognition
 has a confidence below ``nlu_threshold`` or if none of the dialogue
 policies predict an action with confidence higher than ``core_threshold``.
 
@@ -406,10 +404,9 @@ policies predict an action with confidence higher than ``core_threshold``.
     | ``core_threshold``         | Min confidence needed to accept an action   |
     |                            | prediction from Rasa Core                   |
     +----------------------------+---------------------------------------------+
-    | ``fallback_action_name``   | Name of the `fallback action                |
-    |                            | <https://rasa.com/docs/core/fallbacks/>`_   |
-    |                            | to be called if the confidence of intent    |
-    |                            | or action is below the respective threshold |
+    | ``fallback_action_name``   | Name of the :ref:`fallbacks` to be called   |
+    |                            | if the confidence of intent or action is    |
+    |                            | below the respective threshold              |
     +----------------------------+---------------------------------------------+
 
     You can also configure the ``FallbackPolicy`` in your python code:
@@ -482,16 +479,14 @@ by trying to disambiguate the user input.
     | ``core_threshold``            | Min confidence needed to accept an action|
     |                               | prediction from Rasa Core                |
     +-------------------------------+------------------------------------------+
-    | ``fallback_core_action_name`` | Name of the `fallback action             |
-    |                               | <https://rasa.com/docs/core/fallbacks/>`_|
-    |                               | to be called if the confidence of Rasa   |
-    |                               | Core action prediction is below the      |
+    | ``fallback_core_action_name`` | Name of the :ref:`fallbacks` to be       |
+    |                               | called if the confidence of Rasa Core    |
+    |                               | action prediction is below the           |
     |                               | ``core_threshold``                       |
     +-------------------------------+------------------------------------------+
-    | ``fallback_nlu_action_name``  | Name of the `fallback action             |
-    |                               | <https://rasa.com/docs/core/fallbacks/>`_|
-    |                               | to be called if the confidence of Rasa   |
-    |                               | NLU intent classification is below the   |
+    | ``fallback_nlu_action_name``  | Name of the :ref:`fallbacks` to be       |
+    |                               | called if the confidence of Rasa NLU     |
+    |                               | intent classification is below the       |
     |                               | ``nlu_threshold``                        |
     +-------------------------------+------------------------------------------+
     |``deny_suggestion_intent_name``| The name of the intent which is used to  |
