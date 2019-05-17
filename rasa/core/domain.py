@@ -61,6 +61,7 @@ def check_domain_sanity(domain):
     def get_exception_message(
         duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
         mappings: List[Tuple[Text, Text]] = None,
+        templates: List[Text] = None
     ):
         """Return a message given a list of error locations."""
 
@@ -71,6 +72,11 @@ def check_domain_sanity(domain):
             if message:
                 message += "\n"
             message += get_mapping_exception_message(mappings)
+        if templates:
+            for template in templates:
+                if message:
+                    message += "\n"
+                message += "Utterance template '{}' is listed in as an action in the domain file, but there is no matching utterance template".format(template)
         return message
 
     def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
@@ -103,6 +109,14 @@ def check_domain_sanity(domain):
                 )
         return message
 
+    def get_missing_templates(action_names: List[Text], templates: Dict[Text, Any]
+        ) -> List[Text]:
+        """Return utterance names which have no specified template."""
+
+        utters = [act for act in action_names if act.startswith(action.UTTER_PREFIX)]
+        return [t for t in utters if t not in templates.keys()]
+
+    missing_templates = get_missing_templates(domain.action_names, domain.templates)
     duplicate_actions = get_duplicates(domain.action_names)
     duplicate_intents = get_duplicates(domain.intents)
     duplicate_slots = get_duplicates([s.name for s in domain.slots])
@@ -115,6 +129,7 @@ def check_domain_sanity(domain):
         or duplicate_slots
         or duplicate_entities
         or incorrect_mappings
+        or missing_templates
     ):
         raise InvalidDomain(
             get_exception_message(
@@ -125,6 +140,7 @@ def check_domain_sanity(domain):
                     (duplicate_entities, "entities"),
                 ],
                 incorrect_mappings,
+                missing_templates
             )
         )
 
