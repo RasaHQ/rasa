@@ -147,7 +147,7 @@ jobs:
     - git clone -b master --single-branch git@github.com:RasaHQ/rasa-website.git
     - cd rasa-website
     - git commit --allow-empty -m "trigger rasa docs update"
-- git push origin master
+    - git push origin master
   - stage: deploy
     name: "Deploy to PyPI"
     python: 3.6
