@@ -76,9 +76,11 @@ def check_domain_sanity(domain):
             for template in templates:
                 if message:
                     message += "\n"
-                message += "Utterance template '{}' is listed in as an action in the domain file, but there is no matching utterance template".format(
-                    template
-                )
+                message += (
+                    "Utterance template '{}' is listed in as an "
+                    "action in the domain file, but there is "
+                    "no matching utterance template"
+                ).format(template)
         return message
 
     def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
