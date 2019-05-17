@@ -103,7 +103,7 @@ your assistant. You can find all the details of the data format in :ref:`nlu-dat
 The configuration file defines the NLU and Core components that your model
 will use. In this example, your NLU model will use the
 ``supervised_embeddings`` pipeline. You can learn all about NLU pipelines
-`here <http://x-docs.rasa.com/docs/rasa/nlu/choosing-pipeline/>`_.
+`here <http://rasa.com/docs/rasa/nlu/choosing-pipeline/>`_.
 
 Let's take a look at your model configuration file.
 
@@ -190,7 +190,7 @@ of the conversation. Simple actions are sending a message to a user.
 These simple actions are the ``actions`` in the domain, which start
 with ``utter_``. They will respond with a message based on a template
 from the ``templates`` section. See
-`Custom Actions <http://x-docs.rasa.com/docs/rasa/core/run-code-in-custom-actions/#id1>`_
+`Custom Actions <http://rasa.com/docs/rasa/core/run-code-in-custom-actions/#id1>`_
 for how to build actions that do more than just send a message.
 
 

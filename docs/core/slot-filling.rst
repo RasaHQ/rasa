@@ -83,7 +83,7 @@ If a user starts the conversation with
 asked about the ``cuisine`` and ``num_people`` slots.
 
 Note that for this story to work, your slots should be `unfeaturized
-<http://x-docs.rasa.com/docs/rasa/core/slot-filling/#the-requested-slot-slot>`_.
+<http://rasa.com/docs/rasa/core/slot-filling/#the-requested-slot-slot>`_.
 If any of these slots are featurized, your story needs to include ``slot{}`` events
 to show these slots being set. In that case, the easiest way to create valid stories
 is to use :ref:`interactive-learning` .
