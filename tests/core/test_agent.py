@@ -182,14 +182,13 @@ async def test_load_agent_on_not_existing_path():
         )
     ],
 )
-async def test_agent_train(tmpdir, domain_missing_template):
+async def test_missing_template_breaks_training(tmpdir, domain_missing_template):
     training_data_file = "examples/moodbot/data/stories.md"
     domain_path = utilities.write_text_to_file(
         tmpdir, "domain.yml", domain_missing_template
     )
 
     agent = Agent(domain_path, policies=[AugmentedMemoizationPolicy()])
-
     training_data = await agent.load_data(training_data_file)
     with pytest.raises(InvalidDomain):
         agent.train(training_data)
