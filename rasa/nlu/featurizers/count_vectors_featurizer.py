@@ -150,7 +150,7 @@ class CountVectorsFeaturizer(Featurizer):
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()
 
-        # handling Out-Of-Vacabulary (OOV) words
+        # handling Out-Of-Vocabulary (OOV) words
         self._load_OOV_params()
 
         # warn that some of config parameters might be ignored
