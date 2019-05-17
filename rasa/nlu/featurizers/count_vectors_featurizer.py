@@ -183,7 +183,9 @@ class CountVectorsFeaturizer(Featurizer):
                     ]
             elif self.OOV_words:
                 # CountVectorizer is not trained, process for train
-                text_tokens = [self.OOV_token if t in self.OOV_words else t for t in text_tokens]
+                text_tokens = [
+                    self.OOV_token if t in self.OOV_words else t for t in text_tokens
+                ]
             text = " ".join(text_tokens)
 
         return text
