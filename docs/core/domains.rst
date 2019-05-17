@@ -15,7 +15,7 @@ for the things your bot can say.
 As an example, the ``DefaultDomain`` has the following yaml definition:
 
 
-.. literalinclude:: ../../../rasa/cli/initial_project/domain.yml
+.. literalinclude:: ../../rasa/cli/initial_project/domain.yml
    :language: yaml
 
 **What does this mean?**
