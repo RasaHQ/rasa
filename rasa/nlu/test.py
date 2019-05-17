@@ -23,16 +23,14 @@ ENTITY_PROCESSORS = {"EntitySynonymMapper"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
-IntentEvaluationResult = namedtuple('IntentEvaluationResult',
-                                    'intent_target '
-                                    'intent_prediction '
-                                    'message '
-                                    'confidence')
+IntentEvaluationResult = namedtuple(
+    "IntentEvaluationResult",
+    "intent_target " "intent_prediction " "message " "confidence",
+)
 
-EntityEvaluationResult = namedtuple('EntityEvaluationResult',
-                                    'entity_targets '
-                                    'entity_predictions '
-                                    'tokens')
+EntityEvaluationResult = namedtuple(
+    "EntityEvaluationResult", "entity_targets " "entity_predictions " "tokens"
+)
 
 
 def plot_confusion_matrix(
@@ -185,11 +183,18 @@ def collect_nlu_successes(intent_results, successes_filename):
     """Log messages which result in successful predictions
     and save them to file"""
 
-    successes = [{"text": r.message,
-                  "intent": r.intent_target,
-                  "intent_prediction": {"name": r.intent_prediction,
-                                        "confidence": r.confidence}}
-                 for r in intent_results if r.intent_target == r.intent_prediction]
+    successes = [
+        {
+            "text": r.message,
+            "intent": r.intent_target,
+            "intent_prediction": {
+                "name": r.intent_prediction,
+                "confidence": r.confidence,
+            },
+        }
+        for r in intent_results
+        if r.intent_target == r.intent_prediction
+    ]
 
     if successes:
         save_json(successes, successes_filename)
@@ -206,11 +211,18 @@ def collect_nlu_successes(intent_results, successes_filename):
 def collect_nlu_errors(intent_results, errors_filename):
     """Log messages which result in wrong predictions and save them to file"""
 
-    errors = [{"text": r.message,
-               "intent": r.intent_target,
-               "intent_prediction": {"name": r.intent_prediction,
-                                     "confidence": r.confidence}}
-              for r in intent_results if r.intent_target != r.intent_prediction]
+    errors = [
+        {
+            "text": r.message,
+            "intent": r.intent_target,
+            "intent_prediction": {
+                "name": r.intent_prediction,
+                "confidence": r.confidence,
+            },
+        }
+        for r in intent_results
+        if r.intent_target != r.intent_prediction
+    ]
 
     if errors:
         save_json(errors, errors_filename)
@@ -229,12 +241,12 @@ def plot_intent_confidences(intent_results, intent_hist_filename):
     # create histogram of confidence distribution, save to file and display
     plt.gcf().clear()
     pos_hist = [
-        r.confidence
-        for r in intent_results if r.intent_target == r.intent_prediction]
+        r.confidence for r in intent_results if r.intent_target == r.intent_prediction
+    ]
 
     neg_hist = [
-        r.confidence
-        for r in intent_results if r.intent_target != r.intent_prediction]
+        r.confidence for r in intent_results if r.intent_target != r.intent_prediction
+    ]
 
     plot_histogram([pos_hist, neg_hist], intent_hist_filename)
 
@@ -314,8 +326,9 @@ def evaluate_intents(
             "text": res.message,
             "intent": res.intent_target,
             "predicted": res.intent_prediction,
-            "confidence": res.confidence
-        } for res in intent_results
+            "confidence": res.confidence,
+        }
+        for res in intent_results
     ]
 
     return {
@@ -514,8 +527,7 @@ def align_entity_predictions(result: EntityEvaluationResult, extractors):
         entities_by_extractors[p["extractor"]].append(p)
     extractor_labels = {extractor: [] for extractor in extractors}
     for t in result.tokens:
-        true_token_labels.append(
-            determine_token_labels(t, result.entity_targets, None))
+        true_token_labels.append(determine_token_labels(t, result.entity_targets, None))
         for extractor, entities in entities_by_extractors.items():
             extracted = determine_token_labels(t, entities, extractor)
             extractor_labels[extractor].append(extracted)
@@ -557,7 +569,7 @@ def extract_entities(result):  # pragma: no cover
 
 def extract_tokens(result):  # pragma: no cover
     """Extracts tokens from a parsing result."""
-    return result.get('tokens', [])
+    return result.get("tokens", [])
 
 
 def extract_message(result):  # pragma: no cover
@@ -584,7 +596,9 @@ def get_eval_data(interpreter, test_data):  # pragma: no cover
     intent_results, entity_results = [], []
 
     intent_labels = [e.get("intent") for e in test_data.intent_examples]
-    should_eval_intents = is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
+    should_eval_intents = (
+        is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
+    )
     should_eval_entities = is_entity_extractor_present(interpreter)
 
     for example in tqdm(test_data.training_examples):
@@ -592,16 +606,22 @@ def get_eval_data(interpreter, test_data):  # pragma: no cover
 
         if should_eval_intents:
             intent_target = example.get("intent", "")
-            intent_results.append(IntentEvaluationResult(intent_target,
-                                                         extract_intent(result),
-                                                         extract_message(result),
-                                                         extract_confidence(result)))
+            intent_results.append(
+                IntentEvaluationResult(
+                    intent_target,
+                    extract_intent(result),
+                    extract_message(result),
+                    extract_confidence(result),
+                )
+            )
 
         if should_eval_entities:
             entity_targets = example.get("entities", [])
-            entity_results.append(EntityEvaluationResult(entity_targets,
-                                                         extract_entities(result),
-                                                         extract_tokens(result)))
+            entity_results.append(
+                EntityEvaluationResult(
+                    entity_targets, extract_entities(result), extract_tokens(result)
+                )
+            )
 
     return intent_results, entity_results
 
@@ -625,15 +645,16 @@ def is_entity_extractor_present(interpreter):
 def is_intent_classifier_present(interpreter):
     """Checks whether intent classifier is present"""
 
-    intent_classifiers = [c.name for c in interpreter.pipeline if "intent" in c.provides]
+    intent_classifiers = [
+        c.name for c in interpreter.pipeline if "intent" in c.provides
+    ]
     return intent_classifiers != []
 
 
 def remove_pretrained_extractors(pipeline):
     """Removes pretrained extractors from the pipeline so that entities
        from pre-trained extractors are not predicted upon parsing"""
-    pipeline = [c for c in pipeline if c.name not in
-                PRETRAINED_EXTRACTORS]
+    pipeline = [c for c in pipeline if c.name not in PRETRAINED_EXTRACTORS]
     return pipeline
 
 
@@ -666,13 +687,9 @@ def run_evaluation(
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-    test_data = training_data.load_data(data_path,
-                                        interpreter.model_metadata.language)
+    test_data = training_data.load_data(data_path, interpreter.model_metadata.language)
 
-    result = {
-        "intent_evaluation": None,
-        "entity_evaluation": None
-    }
+    result = {"intent_evaluation": None, "entity_evaluation": None}
 
     if report:
         utils.create_dir(report)
@@ -687,9 +704,9 @@ def run_evaluation(
 
     if entity_results:
         logger.info("Entity evaluation results:")
-        result["entity_evaluation"] = evaluate_entities(entity_results,
-                                                        interpreter,
-                                                        report)
+        result["entity_evaluation"] = evaluate_entities(
+            entity_results, interpreter, report
+        )
 
     return result
 
@@ -797,8 +814,7 @@ def compute_metrics(interpreter, corpus):
 
     intent_results = remove_empty_intent_examples(intent_results)
 
-    intent_metrics = _compute_intent_metrics(intent_results,
-                                             interpreter, corpus)
+    intent_metrics = _compute_intent_metrics(intent_results, interpreter, corpus)
     entity_metrics = _compute_entity_metrics(entity_results, interpreter, corpus)
 
     return intent_metrics, entity_metrics
@@ -832,10 +848,10 @@ def _compute_entity_metrics(entity_results, interpreter, corpus):
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O",
-                                               "no_entity")
-        _, precision, f1, accuracy = get_evaluation_metrics(merged_targets,
-                                                            merged_predictions)
+        merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
+        _, precision, f1, accuracy = get_evaluation_metrics(
+            merged_targets, merged_predictions
+        )
         entity_metric_results[extractor]["Accuracy"].append(accuracy)
         entity_metric_results[extractor]["F1-score"].append(f1)
         entity_metric_results[extractor]["Precision"].append(precision)

@@ -102,8 +102,20 @@ EN_targets = [
 ]
 
 EN_predicted = [
-    {"start": 4, "end": 9, "value": "Robot", "entity": "person", "extractor": "EntityExtractorA"},
-    {"start": 31, "end": 36, "value": "pizza", "entity": "food", "extractor": "EntityExtractorA"},
+    {
+        "start": 4,
+        "end": 9,
+        "value": "Robot",
+        "entity": "person",
+        "extractor": "EntityExtractorA",
+    },
+    {
+        "start": 31,
+        "end": 36,
+        "value": "pizza",
+        "entity": "food",
+        "extractor": "EntityExtractorA",
+    },
     {
         "start": 42,
         "end": 56,
@@ -192,7 +204,10 @@ def test_determine_token_labels_with_extractors():
 
 def test_label_merging():
     aligned_predictions = [
-        {"target_labels": ["O", "O"], "extractor_labels": {"EntityExtractorA": ["O", "O"]}},
+        {
+            "target_labels": ["O", "O"],
+            "extractor_labels": {"EntityExtractorA": ["O", "O"]},
+        },
         {
             "target_labels": ["LOC", "O", "O"],
             "extractor_labels": {"EntityExtractorA": ["O", "O", "O"]},
@@ -200,7 +215,10 @@ def test_label_merging():
     ]
 
     assert all(merge_labels(aligned_predictions) == ["O", "O", "LOC", "O", "O"])
-    assert all(merge_labels(aligned_predictions, "EntityExtractorA") == ["O", "O", "O", "O", "O"])
+    assert all(
+        merge_labels(aligned_predictions, "EntityExtractorA")
+        == ["O", "O", "O", "O", "O"]
+    )
 
 
 def test_drop_intents_below_freq():
@@ -280,15 +298,11 @@ def test_intent_evaluation_report(tmpdir_factory):
 
 
 def test_entity_evaluation_report(tmpdir_factory):
-
     class EntityExtractorA(EntityExtractor):
 
         provides = ["entities"]
 
-        def __init__(
-            self,
-            component_config=None,
-        ) -> None:
+        def __init__(self, component_config=None) -> None:
 
             super(EntityExtractorA, self).__init__(component_config)
 
@@ -296,10 +310,7 @@ def test_entity_evaluation_report(tmpdir_factory):
 
         provides = ["entities"]
 
-        def __init__(
-            self,
-            component_config=None,
-        ) -> None:
+        def __init__(self, component_config=None) -> None:
 
             super(EntityExtractorB, self).__init__(component_config)
 
@@ -310,12 +321,14 @@ def test_entity_evaluation_report(tmpdir_factory):
     report_filename_b = os.path.join(report_folder, "EntityExtractorB_report.json")
 
     utils.create_dir(report_folder)
-    mock_interpreter = Interpreter([EntityExtractorA({"provides": ["entities"]}),
-                                    EntityExtractorB({"provides": ["entities"]})],
-                                   None)
-    result = evaluate_entities(
-        [EN_entity_result], mock_interpreter, report_folder
+    mock_interpreter = Interpreter(
+        [
+            EntityExtractorA({"provides": ["entities"]}),
+            EntityExtractorB({"provides": ["entities"]}),
+        ],
+        None,
     )
+    result = evaluate_entities([EN_entity_result], mock_interpreter, report_folder)
 
     report_a = json.loads(rasa.utils.io.read_file(report_filename_a))
     report_b = json.loads(rasa.utils.io.read_file(report_filename_b))
@@ -384,7 +397,20 @@ def test_evaluate_entities_cv():
                 "location",
                 "O",
             ],
-            "EntityExtractorB": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "movie", "movie"],
+            "EntityExtractorB": [
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "movie",
+                "movie",
+            ],
         },
     }, "Wrong entity prediction alignment"
 
