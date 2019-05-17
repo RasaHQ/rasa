@@ -325,5 +325,5 @@ scv_sort = ("semver",)
 scv_whitelist_branches = ("master",)  # (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
-scv_whitelist_tags = (re.compile(r'^[1-9]+\.[0-9]+\.\d+$'),)
+scv_whitelist_tags = (re.compile(r"^[1-9]+\.[0-9]+\.\d+$"),)
 scv_greatest_tag = True
