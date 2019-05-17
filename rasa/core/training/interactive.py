@@ -57,6 +57,7 @@ from rasa.nlu.training_data.message import Message
 # automatically. If you change anything in here, please make sure to
 # run the interactive learning and check if your part of the "ui"
 # still works.
+from rasa.utils.io import create_path
 
 logger = logging.getLogger(__name__)
 
@@ -752,6 +753,8 @@ async def _write_stories_to_file(
 
     sub_conversations = _split_conversation_at_restarts(evts)
 
+    create_path(export_story_path)
+
     if os.path.exists(export_story_path):
         append_write = "a"  # append if already exists
     else:
@@ -825,6 +828,8 @@ async def _write_domain_to_file(
     domain_path: Text, evts: List[Dict[Text, Any]], endpoint: EndpointConfig
 ) -> None:
     """Write an updated domain file to the file path."""
+
+    create_path(domain_path)
 
     domain = await retrieve_domain(endpoint)
     old_domain = Domain.from_dict(domain)
