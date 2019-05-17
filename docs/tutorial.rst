@@ -103,7 +103,7 @@ your assistant. You can find all the details of the data format in :ref:`nlu-dat
 The configuration file defines the NLU and Core components that your model
 will use. In this example, your NLU model will use the
 ``supervised_embeddings`` pipeline. You can learn all about NLU pipelines
-`here <https://rasa.com/docs/nlu/choosing_pipeline/>`_.
+`here <http://rasa.com/docs/rasa/nlu/choosing-pipeline/>`_.
 
 Let's take a look at your model configuration file.
 
@@ -114,7 +114,7 @@ Let's take a look at your model configuration file.
 
 
 The ``pipeline`` and ``language`` keys specify how the NLU model should be built.
-You can read more about this in :ref:`choosing_pipeline`
+You can read more about this in :ref:`choosing_pipeline`.
 The ``policies`` key defines the :ref:`policies` that the Core model will use.
 
 
@@ -141,7 +141,7 @@ This is how it looks as a story:
       - utter_greet
 
 
-You can see the full details in :ref:`stories-data-format`
+You can see the full details in :ref:`stories-data-format`.
 
 Lines that start with ``-`` are actions taken by the assistant.
 In this case, all of our actions are messages sent back to the user,
@@ -176,7 +176,7 @@ So what do the different parts mean?
 
 
 +---------------+-------------------------------------------------------------+
-| ``intents``   | things you expect users to say.                             |
+| ``intents``   | things you expect users to say                              |
 +---------------+-------------------------------------------------------------+
 | ``actions``   | things your assistant can do and say                        |
 +---------------+-------------------------------------------------------------+
@@ -189,8 +189,9 @@ Rasa Core's job is to choose the right action to execute at each step
 of the conversation. Simple actions are sending a message to a user.
 These simple actions are the ``actions`` in the domain, which start
 with ``utter_``. They will respond with a message based on a template
-from the ``templates`` section. See `Custom Actions <https://rasa.com/docs/core/customactions/>`_ for how to build
- actions that do more than just send a message.
+from the ``templates`` section. See
+`Custom Actions <http://rasa.com/docs/rasa/core/run-code-in-custom-actions/#id1>`_
+for how to build actions that do more than just send a message.
 
 
 

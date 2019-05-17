@@ -24,6 +24,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
+    "sphinx.ext.extlinks",
     "sphinxcontrib.programoutput",
     "sphinxcontrib.httpdomain",
     "rasabaster.button",
@@ -309,6 +310,11 @@ import os
 os.chdir(os.path.abspath('..'))
 """
 
+# extlinks configuration
+
+extlinks = {
+    "gh-code": ("https://github.com/RasaHQ/rasa/tree/{}/%s".format(release), "github ")
+}
 
 # Sphinxcontrib configuration
 scv_priority = "tags"
