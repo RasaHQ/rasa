@@ -18,8 +18,6 @@ class KeywordIntentClassifier(Component):
 
     """
 
-    name = "intent_classifier_keyword"
-
     provides = ["intent"]
 
     intent_keyword_map = {}
@@ -28,30 +26,22 @@ class KeywordIntentClassifier(Component):
               training_data: 'TrainingData',
               cfg: Optional['RasaNLUModelConfig'] = None,
               **kwargs: Any) -> None:
-
-        all_intents = list(training_data.intents)
-
-        for intent in all_intents:
-            self.intent_keyword_map[intent] = []
-            for example in training_data.intent_examples:
-                if example.data['intent'] == intent:
-                    self.intent_keyword_map[intent].append(example.text.lower())
+        self.intent_keyword_map.update(training_data.intent_keywords)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        intent = {"name": self.parse(message.text), "confidence": 1.0}
-        message.set("intent", intent, add_to_output=True)
+        intent_name = self.parse(message.text)
+        if intent_name is not None:
+            intent = {"name": intent_name, "confidence": 1.0}
+            message.set("intent", intent, add_to_output=True)
 
     def parse(self, text: Text) -> Optional[Text]:
         _text = text.lower()
 
-        def is_present(x):
-            return x in _text
+        for intent, keywords in self.intent_keyword_map.items():
+            for word in keywords:
+                if word.lower() in _text:
+                    return intent
 
-        for intent in self.intent_keyword_map.keys():
-            if any(map(is_present, self.intent_keyword_map[intent])):
-                return intent
-
-        # If none of the keywords is in the text:
         return None
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
@@ -79,6 +69,6 @@ class KeywordIntentClassifier(Component):
             if os.path.exists(keyword_file):
                 self.intent_keyword_map = utils.read_json_file(keyword_file)
             else:
-                logger.warning("Failed to load IntentKeywordClassifier, maybe {}"
-                               "does not exist.".format(keyword_file))
+                logger.warning("Failed to load IntentKeywordClassifier, maybe "
+                               "{} does not exist.".format(keyword_file))
         return self()
