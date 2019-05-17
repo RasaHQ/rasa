@@ -168,7 +168,12 @@ class CountVectorsFeaturizer(Featurizer):
         else:
             text_tokens = message.text.split()
 
+        text = re.sub(r"\b[0-9]+\b", "__NUMBER__", " ".join(text_tokens))
+        if self.lowercase:
+            text = text.lower()
+
         if self.OOV_token:
+            text_tokens = text.split()
             if hasattr(self.vectorizer, "vocabulary_"):
                 # CountVectorizer is trained, process for prediction
                 if self.OOV_token in self.vectorizer.vocabulary_:
@@ -179,8 +184,9 @@ class CountVectorsFeaturizer(Featurizer):
             elif self.OOV_words:
                 # CountVectorizer is not trained, process for train
                 text_tokens = [self.OOV_token if t in self.OOV_words else t for t in text_tokens]
+            text = " ".join(text_tokens)
 
-        return re.sub(r"\b[0-9]+\b", "__NUMBER__", " ".join(text_tokens))
+        return text
 
     # noinspection PyPep8Naming
     def _check_OOV_present(self, examples):
