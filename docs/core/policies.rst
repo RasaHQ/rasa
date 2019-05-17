@@ -34,7 +34,18 @@ when it isn't relevant and just respond with the same action no matter
 what happened before.
 
 You can alter this behaviour with the ``--augmentation`` flag.
-``--augmentation 0`` disables this behavior.
+Which allows you to set the ``augmentation_factor``.
+The ``augmentation_factor`` determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since their number
+can become very large quickly.
+The number of sampled stories is ``augmentation_factor`` x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+
+``--augmentation 0`` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the ``augmentation_factor``) and will automatically
+ignore all augmented stories.
 
 
 .. _policy_file:
