@@ -38,8 +38,10 @@ class InvalidDomain(Exception):
 def check_domain_sanity(domain):
     """Make sure the domain is properly configured.
 
-    Checks the settings and checks if there are duplicate actions,
-    intents, slots and entities."""
+    If the domain contains any duplicate slots, intents, actions
+    or entities, an InvalidDomain error is raised.  This error
+    is also raised when intent-action mappings are incorrectly
+    named or an utterance template is missing."""
 
     def get_duplicates(my_items):
         """Returns a list of duplicate items in my_items."""
