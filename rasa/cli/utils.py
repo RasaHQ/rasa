@@ -150,6 +150,7 @@ def minimal_kwargs(
         if k in possible_arguments and k not in excluded_keys
     }
 
+
 class bcolors(object):
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
