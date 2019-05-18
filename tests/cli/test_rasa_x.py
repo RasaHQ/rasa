@@ -25,7 +25,9 @@ def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir_factory
 
     io_utils.write_yaml_file({}, credentials_path)
 
-    tmp_credentials = x._prepare_credentials_for_rasa_x(credentials_path, "http://localhost:5002")
+    tmp_credentials = x._prepare_credentials_for_rasa_x(
+        credentials_path, "http://localhost:5002"
+    )
 
     actual = io_utils.read_yaml_file(tmp_credentials)
 
