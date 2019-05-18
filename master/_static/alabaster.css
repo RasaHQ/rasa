@@ -59,7 +59,7 @@ body {
     color: #617287;
     margin: 0;
     padding: 0;
-    margin-top: 63px;
+    margin-top: 64px;
 }
 
 * {
@@ -130,7 +130,7 @@ div.body {
     color: #617287;
     padding: 0;
     margin-left: 24px;
-    margin-top:36px;
+    margin-top:84px;
 }
 
 div.body > .section {
@@ -210,11 +210,11 @@ div.sphinxsidebar a {
 
 div.sphinxsidebar a:hover {
     border-bottom: none;
-    color: #5B17F0;
+    color: #574ae2;
 }
 
 div.sphinxsidebar a.current {
-    color:#5B17F0;
+    color:#574ae2;
     font-weight:600;
 }
 
@@ -343,14 +343,14 @@ a:hover {
 }
 
 .button {
-  background: #03C3FF;
+  background: #574ae2;
   color:#fff;
   -webkit-border-radius: 8px;
   -moz-border-radius: 8px;
   border-radius: 8px;
   padding:12px;
   font-size:15px;
-  border:0;
+  border: 1px solid transparent;
   cursor:pointer;
   font-weight:600;
 }
@@ -503,17 +503,22 @@ div.body p, div.body dd, div.body li {
 }
 
 .card {
-  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.03);
-  border:1px solid #E8E8E8;
+  box-shadow: 0 2px 4px 0 rgba(47, 17, 92, 0.1);
+  border: 1px solid #fafafa;
   -webkit-border-radius: 8px;
   -moz-border-radius: 8px;
   border-radius: 8px;
-  padding: 24px;
-  min-height: 170px;
+  padding: 30px 24px;
+  min-height: 150px;
 }
 
-.card h4 {
-  margin-top: 0!important;
+.card__title {
+  margin: 16px 0 5px !important;
+}
+
+.card__subtitle {
+  font-size: 88.889%;
+  margin: 0;
 }
 
 a.card-link {
@@ -994,7 +999,6 @@ nav#breadcrumbs li+li:before {
 .nav-top {
     background-color: #2c3951;
     color: #617287;
-    padding:12px;
     font-size: 120%;
     z-index: 100;
     position: relative;
@@ -1004,6 +1008,10 @@ nav#breadcrumbs li+li:before {
 }
 
 .nav-top .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
     margin: 0 auto;
 }
 
@@ -1012,7 +1020,6 @@ nav#breadcrumbs li+li:before {
 }
 
 .nav-top .brand {
-    float:left;
     margin:0;
     padding:0;
 }
@@ -1029,47 +1036,62 @@ nav#breadcrumbs li+li:before {
 
 a.brand-link {
     text-decoration: none;
+    font-weight: bold;
+}
+
+a.brand-link img {
+    vertical-align: -19px;
+    filter: brightness(0) invert(1);
+    margin-right: 2px;
 }
 
 .nav-top .nav {
-    float:right;
-    font-weight:600;
-    margin-right:24px;
-}
-
-.nav-top ul {
+    display: flex;
+    flex-shrink: 0;
     list-style-type: none;
     margin: 0;
     padding: 0;
 }
 
-.nav-top ul li {
-    display: inline;
-    padding: 0px 16px;
-    padding-top: 8px;
-    padding-bottom: 28px;
+.nav-top .nav > li > a {
+    transition: opacity .2s ease;
 }
 
-.nav-top ul li a {
+
+.nav-top .nav > li > a:hover {
+    opacity: .8;
+}
+
+.nav-top .main-nav li a {
+    display: block;
     font-size: 18px;
     text-decoration: none;
     color: #fff;
-    transition: all .25s ease-out;
+    border-top: 3px solid transparent;
+    padding: 17px 16px 21px;
 }
 
-.nav-top ul li.active {
+.nav-top .main-nav li.active a {
     background: #263146;
-    border-top:4px solid #5B17F0;
-    color:#fff;
-}
-
-.nav-top ul li.active a {
+    border-top-color: #574ae2;
     color: #fff;
     font-weight:600;
 }
 
-.nav-top ul li:hover {
-    opacity:0.6;
+.nav-top .main-nav li a.brand-link {
+    padding: 15px 16px 6px;
+}
+
+.nav-top .secondary-nav {
+    margin: 12px 10px;
+}
+
+.nav-top .secondary-nav li {
+    margin: 0 6px;
+}
+
+.nav-top .secondary-nav .button {
+    padding: 10px;
 }
 
 .columns {
@@ -1285,7 +1307,6 @@ input.jp-Stdin-input:focus {
     outline:none;
 }
 .search.ds-input {
-    height: 1.5em;
     vertical-align: middle!important;
     width: 250px;
     font-family: 'Source Sans Pro', 'Helvetica Neue', 'Arial', sans-serif;
@@ -1295,7 +1316,8 @@ input.jp-Stdin-input:focus {
     -moz-border-radius: 8px;
     border-radius: 8px;
     border: 1px solid #E8E8E8;
-    color: #617287
+    color: #617287;
+    line-height: 1.4;
 }
 
 .search.ds-input:focus {
@@ -1478,7 +1500,7 @@ div .copyable {
 }
 
 .progress ul li.current a {
-  color:#5B17F0;
+  color:#574ae2;
 }
 
 /* Current step */
@@ -1486,12 +1508,12 @@ div .copyable {
 	display: inline-block;
 	width: 100%;
 	z-index: -3;
-	color: #5B17F0;
+	color: #574ae2;
 	position: relative;
 }
 
 .progress ul li.current::before {
-	border: solid 3px #5B17F0; /* Current Step Circle Color */
+	border: solid 3px #574ae2; /* Current Step Circle Color */
 	background-color: #FFF;
 }
 
@@ -1516,14 +1538,14 @@ div .copyable {
   font-family: 'Source Sans Pro', 'Helvetica Neue', 'Arial', sans-serif;
   overflow: hidden;
   border: 1px solid #ccc;
-  background: #5B17F0;
+  background: #574ae2;
   color: #444;
   font-size: 14px;
 }
 
 /* Style the buttons that are used to open the tab content */
 .dialogue-element .tab button {
-  background-color: #5B17F0;
+  background-color: #574ae2;
   font-family: 'Source Sans Pro', 'Helvetica Neue', 'Arial', sans-serif;
   color: #fff;
   font-size: 16px;
@@ -1611,5 +1633,5 @@ div.section {
 }
 
 .sidebar-collapse-button > span:hover {
-    color: #5B17F0;
+    color: #574ae2;
 }    

@@ -65,12 +65,10 @@
 
 <div class="nav-top">
   <div class="nav-container">
-    <ul>
+    <ul class="main-nav nav">
       <li>
     	<a href="/docs" class="brand-link">
-    	    <h1 class="brand">
-    	        <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
-    	    </h1>
+          <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
     	    <span class="logo extension">docs</span>
     	</a>
       </li>
@@ -88,16 +86,16 @@
       	  
       	
     </ul>
-    <ul class="nav">
-      <input type="text" class="search" placeholder="Search documentation...">
+    <ul class="secondary-nav nav">
+      <li>
+        <input type="text" class="search ds-input" placeholder="Search documentation...">
+      </li>
       <li>
         <a href="https://github.com/rasaHQ/" target="_blank"><button class="button btn-ghost white"> <i class="fab fa-github"></i>GitHub</button></a>
       </li>
-
       <li>
         <a href="https://forum.rasa.com" target="_blank"><button class="button"><i class="fas fa-comments"></i> Ask the Community</button></a>
       </li>
-
     </ul>
   </div>
 </div>
@@ -264,7 +262,7 @@ the user who sent them.</p>
 	    <script type="text/javascript"> docsearch({
 	     apiKey: '1f9e0efb89e98543f6613a60f847b176',
 	     indexName: 'rasa',
-	     inputSelector: 'body > div.nav-top > .nav-container > .nav > input',
+	     inputSelector: 'body > div.nav-top > .nav-container > .nav > li > input',
 	     debug: false // Set debug to true if you want to inspect the dropdown
 	    });
 	    </script>
