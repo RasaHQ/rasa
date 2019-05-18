@@ -17,14 +17,12 @@ def run_cmdline(model_path, component_builder=None):
     print_success("NLU model loaded. Type a message and press enter to parse it.")
     while True:
         print_success("Next message:")
-        message = input()
+        message = input().strip()
         if message.startswith(INTENT_MESSAGE_PREFIX):
-            text = message.rstrip()
             loop = asyncio.get_event_loop()
-            result = loop.run_until_complete(regex_interpreter.parse(text))
+            result = loop.run_until_complete(regex_interpreter.parse(message))
         else:
-            text = message.strip()
-            result = interpreter.parse(text)
+            result = interpreter.parse(message)
 
         print (json.dumps(result, indent=2))
 
