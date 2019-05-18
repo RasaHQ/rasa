@@ -150,11 +150,6 @@ def minimal_kwargs(
         if k in possible_arguments and k not in excluded_keys
     }
 
-
-def print_success(*args: Any):
-    print_color(*args, color=bcolors.OKGREEN)
-
-
 class bcolors(object):
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
@@ -172,6 +167,14 @@ def wrap_with_color(*args: Any, color: Text):
 
 def print_color(*args: Any, color: Text):
     print (wrap_with_color(*args, color=color))
+
+
+def print_success(*args: Any):
+    print_color(*args, color=bcolors.OKGREEN)
+
+
+def print_info(*args: Any):
+    print_color(*args, color=bcolors.OKBLUE)
 
 
 def print_warning(*args: Any):
