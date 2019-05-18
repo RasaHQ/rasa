@@ -74,8 +74,18 @@ def set_log_level(log_level: Optional[int] = None):
 
     update_tensorflow_log_level()
     update_asyncio_log_level()
+    update_apscheduler_log_level()
 
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
+
+
+def update_apscheduler_log_level():
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
+
+    logging.getLogger("apscheduler.scheduler").setLevel(log_level)
+    logging.getLogger("apscheduler.scheduler").propagate = False
+    logging.getLogger("apscheduler.executors.default").setLevel(log_level)
+    logging.getLogger("apscheduler.executors.default").propagate = False
 
 
 def update_tensorflow_log_level():

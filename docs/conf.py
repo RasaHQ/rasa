@@ -318,12 +318,11 @@ extlinks = {
 
 # Sphinxcontrib configuration
 scv_priority = "tags"
-scv_root_ref = "post-merge-docs"
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ("semver",)
-scv_whitelist_branches = ("post-merge-docs",)  # (re.compile("^master$"),)
+scv_whitelist_branches = ("master",)  # (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
-scv_whitelist_tags = (re.compile(r"^[123456789]+\.[0-9]+\.\d+$"),)
+scv_whitelist_tags = (re.compile(r"^[1-9]+\.[0-9]+\.\d+$"),)
 scv_greatest_tag = True
