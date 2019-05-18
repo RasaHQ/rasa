@@ -12,6 +12,8 @@ from rasa.constants import (
     ENV_LOG_LEVEL_LIBRARIES,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def arguments_of(func: Callable) -> List[Text]:
     """Return the parameters of the function `func` as a list of names."""
@@ -33,11 +35,15 @@ def read_global_config() -> Dict[Text, Any]:
 def write_global_config_value(name: Text, value: Any) -> None:
     """Read global Rasa configuration."""
 
-    os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
+    try:
+        os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
 
-    c = read_global_config()
-    c[name] = value
-    rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
+        c = read_global_config()
+        c[name] = value
+        rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
+    except Exception as e:
+        logger.warning("Failed to write global config. Error: {}. Skipping."
+                       "".format(e))
 
 
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
