@@ -171,7 +171,7 @@ def wrap_with_color(*args: Any, color: Text):
 
 
 def print_color(*args: Any, color: Text):
-    print (wrap_with_color(*args, color=color))
+    print(wrap_with_color(*args, color=color))
 
 
 def print_warning(*args: Any):
@@ -183,5 +183,5 @@ def print_error(*args: Any):
 
 
 def signal_handler(sig, frame):
-    print ("Goodbye 👋")
+    print("Goodbye 👋")
     sys.exit(0)

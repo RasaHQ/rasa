@@ -46,7 +46,7 @@ def chat(
             "You either have to define a model path or an agent and an interpreter."
         )
 
-    print ("Your bot is ready to talk! Type your messages here or send '/stop'.")
+    print("Your bot is ready to talk! Type your messages here or send '/stop'.")
     loop = asyncio.get_event_loop()
     while True:
         message = input()

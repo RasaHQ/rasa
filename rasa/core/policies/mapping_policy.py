@@ -31,7 +31,7 @@ class MappingPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
 

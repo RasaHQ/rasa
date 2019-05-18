@@ -87,7 +87,7 @@ class MitieIntentClassifier(Component):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["MitieIntentClassifier"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "MitieIntentClassifier":
         import mitie
 

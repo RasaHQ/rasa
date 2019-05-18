@@ -164,7 +164,7 @@ class EmbeddingPolicy(Policy):
         attn_embed: Optional[tf.Tensor] = None,
         copy_attn_debug: Optional[tf.Tensor] = None,
         all_time_masks: Optional[tf.Tensor] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if featurizer:
             if not isinstance(featurizer, FullDialogueTrackerFeaturizer):
@@ -945,7 +945,7 @@ class EmbeddingPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
 
@@ -1293,7 +1293,7 @@ class EmbeddingPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Continue training an already trained policy."""
 

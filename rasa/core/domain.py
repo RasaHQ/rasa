@@ -208,7 +208,7 @@ class Domain(object):
             utter_templates,
             data.get("actions", []),
             data.get("forms", []),
-            **additional_arguments
+            **additional_arguments,
         )
 
     @classmethod

@@ -192,7 +192,7 @@ async def _do_training(
             kwargs=kwargs,
         )
     else:
-        print ("Stories / configuration did not change. No need to retrain Core model.")
+        print("Stories / configuration did not change. No need to retrain Core model.")
 
     if force_training or retrain_nlu:
         _train_nlu_with_validated_data(
@@ -204,7 +204,7 @@ async def _do_training(
             uncompress=uncompress,
         )
     else:
-        print ("NLU data / configuration did not change. No need to retrain NLU model.")
+        print("NLU data / configuration did not change. No need to retrain NLU model.")
 
 
 def train_core(

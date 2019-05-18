@@ -103,7 +103,7 @@ class SpacyNLP(Component):
         model_dir: Text = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["SpacyNLP"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "SpacyNLP":
         import spacy
 

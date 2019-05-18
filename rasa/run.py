@@ -18,7 +18,7 @@ def run(
     endpoints: Text,
     connector: Text = None,
     credentials: Text = None,
-    **kwargs: Dict
+    **kwargs: Dict,
 ):
     """Runs a Rasa model.
 
