@@ -70,7 +70,7 @@ def train(
     storage: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
-    **kwargs: Any,
+    **kwargs: Any
 ) -> Tuple[Trainer, Interpreter, Text]:
     """Loads the trainer and the data and runs the training of the model."""
 

@@ -509,7 +509,7 @@ class EmbeddingIntentClassifier(Component):
         self,
         training_data: "TrainingData",
         cfg: Optional["RasaNLUModelConfig"] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> None:
         """Train the embedding intent classifier on a data set."""
 
@@ -688,7 +688,7 @@ class EmbeddingIntentClassifier(Component):
         model_dir: Text = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["EmbeddingIntentClassifier"] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> "EmbeddingIntentClassifier":
 
         if model_dir and meta.get("file"):

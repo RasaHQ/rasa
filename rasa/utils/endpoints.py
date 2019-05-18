@@ -47,7 +47,7 @@ class EndpointConfig(object):
         basic_auth: Dict[Text, Text] = None,
         token: Optional[Text] = None,
         token_name: Text = "token",
-        **kwargs,
+        **kwargs
     ):
         self.url = url
         self.params = params if params else {}
@@ -110,7 +110,7 @@ class EndpointConfig(object):
         method: Text = "post",
         subpath: Optional[Text] = None,
         content_type: Optional[Text] = "application/json",
-        **kwargs: Any,
+        **kwargs: Any
     ):
         """Send a HTTP request to the endpoint.
 
@@ -133,7 +133,7 @@ class EndpointConfig(object):
                 url,
                 headers=headers,
                 params=self.combine_parameters(kwargs),
-                **kwargs,
+                **kwargs
             ) as resp:
                 if resp.status >= 400:
                     raise ClientResponseError(

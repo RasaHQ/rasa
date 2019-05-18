@@ -93,7 +93,7 @@ class NGramFeaturizer(Featurizer):
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["NGramFeaturizer"] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> "NGramFeaturizer":
 
         file_name = meta.get("file")

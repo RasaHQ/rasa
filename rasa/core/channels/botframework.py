@@ -128,7 +128,7 @@ class BotFramework(OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any,
+        **kwargs: Any
     ) -> None:
         hero_content = {
             "contentType": "application/vnd.microsoft.card.hero",

@@ -167,7 +167,7 @@ def load_component_by_meta(
     model_dir: Text,
     metadata: Metadata,
     cached_component: Optional["Component"],
-    **kwargs: Any,
+    **kwargs: Any
 ) -> Optional["Component"]:
     """Resolves a component and calls its load method.
 

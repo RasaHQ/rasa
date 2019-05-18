@@ -181,7 +181,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["DucklingHTTPExtractor"] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> "DucklingHTTPExtractor":
 
         return cls(meta, model_metadata.get("language"))
