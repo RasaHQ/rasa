@@ -155,10 +155,9 @@ def generate_rasa_x_token(length=16):
 
 def _configure_logging(args):
     from rasa.core.utils import configure_file_logging
-    from tensorflow.python.util import lazy_loader
-    import builtins
 
     args.log_level = args.loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+    logging.basicConfig(level=args.log_level)
     configure_file_logging(args.log_level, args.log_file)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
