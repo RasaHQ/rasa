@@ -181,4 +181,3 @@ Documentation of the action server API as
 
 .. apidoc::
    :path: ../_static/spec/action_server.yml
-

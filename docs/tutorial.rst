@@ -134,7 +134,7 @@ Below is an example of a simple conversation.
 The user says hello, and the assistant says hello back.
 This is how it looks as a story:
 
-.. code-block:: story
+.. code-block:: md
 
    ## story1
    * greet

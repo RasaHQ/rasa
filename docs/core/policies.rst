@@ -13,12 +13,12 @@ Training and Policies
 Data Augmentation
 ^^^^^^^^^^^^^^^^^
 
-When you train a model, by default Rasa Core will create 
+When you train a model, by default Rasa Core will create
 longer stories by randomly gluing together
 the ones in your stories files.
 This is because if you have stories like:
 
-.. code-block:: story
+.. code-block:: md
 
     # thanks
     * thankyou
@@ -97,7 +97,7 @@ describes off-topic user messages. If your bot sees this intent multiple
 times in a row, you might want to tell the user what you `can` help them
 with. So your story might look like this:
 
-.. code-block:: story
+.. code-block:: md
 
    * out_of_scope
       - utter_default
@@ -367,7 +367,7 @@ it will listen for the next message.
 
   You should have an example like
 
-  .. code-block:: story
+  .. code-block:: md
 
     * greet
       - utter_greet

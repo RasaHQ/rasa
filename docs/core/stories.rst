@@ -1,5 +1,5 @@
 :desc: Stories are used to teach Rasa Stack real conversation designs to learn
-       from providing the basis for a scalable machine learning dialogue management. 
+       from providing the basis for a scalable machine learning dialogue management.
 
 .. _stories-data-format:
 
@@ -24,7 +24,7 @@ Format
 Here's an example from the `bAbI <https://research.fb.com/downloads/babi/>`_
 data (converted into Rasa stories):
 
-.. code-block:: story
+.. code-block:: md
 
    ## story_07715946    <!-- name of the story - just for debugging -->
    * greet
@@ -66,7 +66,7 @@ very often in different stories, but stories *without* checkpoints
 are easier to read and write. Here is an example story file which
 contains checkpoints:
 
-.. code-block:: story
+.. code-block:: md
 
     ## first story
     * hello
@@ -100,12 +100,10 @@ converted into two stories at training time. Just like checkpoints,
 ``OR`` statements can be useful, but if you are using a lot of them,
 it is probably better to restructure your domain and/or intents:
 
-.. code-block:: story
+.. code-block:: md
 
     ## story
     ...
       - utter_ask_confirm
     * affirm OR thankyou
       - action_handle_affirmation
-
-

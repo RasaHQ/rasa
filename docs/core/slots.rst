@@ -1,6 +1,6 @@
 :desc: Store information the user provided as well as information from database
        queries in slots to influence how the machine learning based dialogue
-       continues. 
+       continues.
 
 .. _slots:
 
@@ -61,7 +61,7 @@ Slots Set from NLU
 If your NLU model picks up an entity, and your domain contains a
 slot with the same name, the slot will be set automatically. For example:
 
-.. code-block:: story
+.. code-block:: md
 
    # story_01
    * greet{"name": "Ali"}
@@ -131,7 +131,7 @@ When the ``fetch_profile`` action is run, it returns a
            return [SlotSet("account_type", data["account_type"])]
 
 
-.. code-block:: story
+.. code-block:: md
 
    # story_01
    * greet
@@ -202,7 +202,7 @@ Now we also need some training stories, so that Rasa Core
 can learn from these how to handle the different situations:
 
 
-.. code-block:: story
+.. code-block:: md
 
    # story1
    ...
@@ -212,5 +212,3 @@ can learn from these how to handle the different situations:
    # story2
    * inform{"people": "9"}
    - action_explain_table_limit
-
-

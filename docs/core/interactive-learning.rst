@@ -183,7 +183,7 @@ happy paths are still covered by the basic story given in :ref:`section_form_bas
 
 Here is an example:
 
-.. code-block:: story
+.. code-block:: md
 
     * request_restaurant
         - restaurant_form

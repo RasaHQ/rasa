@@ -95,7 +95,7 @@ two ways to use these templates:
    Afterwards, you can use the template as if it were an action in the
    stories:
 
-   .. code-block:: story
+   .. code-block:: md
 
       ## greet the user
       * intent_greet
