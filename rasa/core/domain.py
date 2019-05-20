@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import pkg_resources
 from pykwalify.errors import SchemaError
 from ruamel.yaml import YAMLError
-from ruamel.yaml.scanner import ScannerError
 
 import rasa.utils.io
 from rasa import data

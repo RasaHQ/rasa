@@ -3,8 +3,8 @@ import logging
 import typing
 from collections import deque
 from enum import Enum
-from typing import Generator, Dict, Text, Any, Optional, Iterator, Type
-from typing import List
+import typing
+from typing import Dict, Text, Any, Optional, Iterator, Type, List
 
 from rasa.core import events
 from rasa.core.actions.action import ACTION_LISTEN_NAME

@@ -321,3 +321,45 @@ scv_whitelist_branches = ("post-merge-docs",)  # (re.compile("^master$"),)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
 scv_whitelist_tags = (re.compile(r"^[123456789]+\.[0-9]+\.\d+$"),)
 scv_greatest_tag = True
+
+# type classes for nitpicky to ignore
+nitpick_ignore = [
+    # non-rasa typing
+    ("py:class", "str"),
+    ("py:class", "bool"),
+    ("py:class", "int"),
+    ("py:class", "Any"),
+    ("py:class", "Dict"),
+    ("py:class", "List"),
+    ("py:class", "Text"),
+    ("py:class", "Optional"),
+    ("py:class", "Iterator"),
+    ("py:class", "typing.Any"),
+    ("py:class", "typing.Dict"),
+    ("py:class", "typing.List"),
+    ("py:class", "typing.Optional"),
+    ("py:class", "typing.Iterator"),
+    ("py:class", "collections.deque"),
+    ("py:data", "typing.Any"),
+    ("py:data", "typing.Dict"),
+    ("py:data", "typing.List"),
+    ("py:data", "typing.Optional"),
+    ("py:data", "typing.Iterator"),
+    ("py:obj", "None"),
+    # rasa typing
+    ("py:class", "Action"),
+    ("py:class", "CollectingDispatcher"),
+    ("py:class", "Tracker"),
+    ("py:class", "NLG"),
+    ("py:class", "TrainingData"),
+    ("py:class", "Sanic"),
+    ("py:class", "Message"),
+    ("py:class", "Domain"),
+    ("py:class", "rasa.core.agent.Agent"),
+    ("py:class", "rasa.core.conversation.Dialogue"),
+    ("py:class", "rasa.core.policies.Policy"),
+    ("py:class", "rasa.core.events.Event"),
+    ("py:class", "rasa.core.events.SlotSet"),
+    ("py:class", "rasa.core.processor.MessageProcessor"),
+    ("py:class", "rasa.nlu.components.Component"),
+]
