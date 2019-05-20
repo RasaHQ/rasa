@@ -1,7 +1,6 @@
 import itertools
 from collections import defaultdict, namedtuple
 
-import json
 import os
 import logging
 import numpy as np
@@ -173,12 +172,6 @@ def drop_intents_below_freq(td: TrainingData, cutoff: int = 5):
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
 
-def save_json(data, filename):
-    """Write out nlu classification to a file."""
-
-    utils.write_to_file(filename, json.dumps(data, indent=4, ensure_ascii=False))
-
-
 def collect_nlu_successes(intent_results, successes_filename):
     """Log messages which result in successful predictions
     and save them to file"""
@@ -197,7 +190,7 @@ def collect_nlu_successes(intent_results, successes_filename):
     ]
 
     if successes:
-        save_json(successes, successes_filename)
+        utils.write_json_to_file(successes_filename, successes)
         logger.info(
             "Model prediction successes saved to {}.".format(successes_filename)
         )
@@ -225,7 +218,7 @@ def collect_nlu_errors(intent_results, errors_filename):
     ]
 
     if errors:
-        save_json(errors, errors_filename)
+        utils.write_json_to_file(errors_filename, errors)
         logger.info("Model prediction errors saved to {}.".format(errors_filename))
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -287,7 +280,7 @@ def evaluate_intents(
 
         report_filename = os.path.join(report_folder, "intent_report.json")
 
-        save_json(report, report_filename)
+        utils.write_json_to_file(report_filename, report)
         logger.info("Classification report saved to {}.".format(report_filename))
 
     else:
@@ -380,12 +373,12 @@ def evaluate_entities(entity_results, interpreter, report_folder):  # pragma: no
             )
 
             report_filename = extractor + "_report.json"
-            extractor_report = os.path.join(report_folder, report_filename)
+            extractor_report_filename = os.path.join(report_folder, report_filename)
 
-            save_json(report, extractor_report)
+            utils.write_json_to_file(extractor_report_filename, report)
             logger.info(
                 "Classification report for '{}' saved to '{}'."
-                "".format(extractor, extractor_report)
+                "".format(extractor, extractor_report_filename)
             )
 
         else:
@@ -555,35 +548,6 @@ def align_all_entity_predictions(entity_results, extractors):
     return aligned_predictions
 
 
-def extract_intent(result):  # pragma: no cover
-    """Extracts the intent from a parsing result."""
-
-    intent = result.get("intent", {}) or {}
-    return intent.get("name")
-
-
-def extract_entities(result):  # pragma: no cover
-    """Extracts entities from a parsing result."""
-    return result.get("entities", [])
-
-
-def extract_tokens(result):  # pragma: no cover
-    """Extracts tokens from a parsing result."""
-    return result.get("tokens", [])
-
-
-def extract_message(result):  # pragma: no cover
-    """Extracts the original message from a parsing result."""
-    return result.get("text", {})
-
-
-def extract_confidence(result):  # pragma: no cover
-    """Extracts the confidence from a parsing result."""
-
-    intent = result.get("intent", {}) or {}
-    return intent.get("confidence")
-
-
 def get_eval_data(interpreter, test_data):  # pragma: no cover
     """Runs the model for the test set and extracts targets and predictions.
 
@@ -605,21 +569,22 @@ def get_eval_data(interpreter, test_data):  # pragma: no cover
         result = interpreter.parse(example.text, only_output_properties=False)
 
         if should_eval_intents:
-            intent_target = example.get("intent", "")
+            intent_prediction = result.get("intent", {}) or {}
             intent_results.append(
                 IntentEvaluationResult(
-                    intent_target,
-                    extract_intent(result),
-                    extract_message(result),
-                    extract_confidence(result),
+                    example.get("intent", ""),
+                    intent_prediction.get("name"),
+                    result.get("text", {}),
+                    intent_prediction.get("confidence"),
                 )
             )
 
         if should_eval_entities:
-            entity_targets = example.get("entities", [])
             entity_results.append(
                 EntityEvaluationResult(
-                    entity_targets, extract_entities(result), extract_tokens(result)
+                    example.get("entities", []),
+                    result.get("entities", []),
+                    result.get("tokens", []),
                 )
             )
 
