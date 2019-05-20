@@ -8,7 +8,7 @@ Responses
 
 If you want your assistant to respond to user messages, you need to manage
 these responses. In the training data for your bot,
-:ref:`your stories<stories-data-format>`, you specify the actions your bot
+:ref:`your stories<stories>`, you specify the actions your bot
 should execute. These actions
 can use utterances to send messages back to the user.
 

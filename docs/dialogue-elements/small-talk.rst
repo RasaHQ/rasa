@@ -1,4 +1,4 @@
-.. _elements-small-talk:
+.. _small-talk:
 
 ==========
 Small Talk

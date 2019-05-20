@@ -1,4 +1,4 @@
-.. _elements-guiding-users:
+.. _guiding-users:
 
 =============
 Guiding Users

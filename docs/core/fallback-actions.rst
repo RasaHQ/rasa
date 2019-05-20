@@ -42,7 +42,7 @@ You can take a look at the source of the action below:
 
 
 You can also create your own custom action to use as a fallback (see
-:ref:`customactions` for more info on custom actions). If you
+:ref:`custom actions <custom-actions>` for more info on custom actions). If you
 do, make sure to pass the custom fallback action to ``FallbackPolicy`` inside
 your policy configuration file. For example:
 
@@ -105,7 +105,7 @@ Rasa Core provides the default implementations of
 The default implementation of ``action_default_ask_rephrase`` action utters
 the response template ``utter_ask_rephrase``, so be sure to specify this
 template in your domain file.
-The implementation of both actions can be overwritten with :ref:`customactions`.
+The implementation of both actions can be overwritten with :ref:`custom actions <custom-actions>`.
 
 You can specify the core fallback action as well as the ultimate NLU
 fallback action as parameters to ``TwoStageFallbackPolicy`` in your

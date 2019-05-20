@@ -1,7 +1,7 @@
 :desc: Use events in open source library Rasa Core to support functionalities
        like resetting slots, scheduling reminder or pausing a conversation.
 
-.. _events-classes:
+.. _events:
 
 Events
 ======
@@ -269,5 +269,3 @@ Log an executed action
     .. literalinclude:: ../../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: ActionExecuted.apply_to
-
-

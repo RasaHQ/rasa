@@ -145,7 +145,7 @@ Evaluation script
 Forms
 ~~~~~
 
-- Forms were completely reworked, please follow :ref:`slotfilling`
+- Forms were completely reworked, please follow :ref:`forms`
   for instructions how to use them.
 - ``FormField`` class and its subclasses were removed,
   overwrite ``FormAction.slot_mapping()`` method to specify the mapping between
@@ -184,7 +184,7 @@ General
   them. If your actions are written in python (in a file called actions.py) you
   can do this by running ``python -m rasa_core_sdk.endpoint --actions actions``
   and specifying the action endpoint in the ``endpoints.yml``
-  For more information please read :ref:`customactions`.
+  For more information please read :ref:`custom actions <custom-actions>`.
 - For your custom actions, the imports have changed from
   ``from rasa_core.actions import Action`` to ``from rasa_core_sdk import Action`` and
   from ``from rasa_core.events import *`` to ``from rasa_core_sdk.events import *``
@@ -201,7 +201,7 @@ HTTP Server endpoints
   for these two, as the flow of information has been changed: Instead of you
   calling Rasa Core to update the tracker and receive the next action to be
   executed, Rasa Core will call your action server once it predicted an action.
-  More information can be found in the updated docs for :ref:`customactions`.
+  More information can be found in the updated docs for :ref:`custom actions <custom-actions>`.
 
 
 Webhooks
@@ -430,5 +430,3 @@ There have been some API changes to classes and methods:
       * inform{"location": "rome", "price": "cheap"}
          - action_on_it                     <!-- user utterance, in format _intent[entities] -->
          - action_ask_cuisine
-
-

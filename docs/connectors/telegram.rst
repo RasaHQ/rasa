@@ -1,6 +1,6 @@
 :desc: Build a Rasa Chat Bot on Telegram
 
-.. _telegram_connector:
+.. _telegram:
 
 Telegram
 ========

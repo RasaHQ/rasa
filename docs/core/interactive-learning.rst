@@ -1,15 +1,15 @@
 :desc: Use Interactive learning to continuously validate and improve the
        performance of your AI Assistant using machine learning based
-       open source dialogue management. 
+       open source dialogue management.
 
-.. _interactive_learning:
+.. _interactive-learning:
 
 Interactive Learning
 ====================
 
-
 Rasa X provides a UI for interactive learning, and you can use any user conversation
-as a starting point. See :ref:`improve` for details.
+as a starting point. See `Copy to Interactive Learning
+<../../rasa-x/annotate-conversations/#copy-to-interactive-learning>`_ for details.
 This page shows how to use interactive learning on the command line.
 
 In interactive learning mode, you provide feedback to your bot while you talk
@@ -179,7 +179,7 @@ When you use interactive learning to generate stories containing a form,
 the conversation steps handled by the form
 get a :code:`form:` prefix. This tells Rasa Core to ignore these steps when training
 your other policies. There is nothing special you have to do here, all of the form's
-happy paths are still covered by the basic story given in :ref:`section_form_basics`.
+happy paths are still covered by the basic story given in :ref:`forms`.
 
 Here is an example:
 
@@ -263,5 +263,3 @@ should not be validated. The bot will then continue to ask for the
 
     Once you've removed that story, you can press enter and continue with
     interactive learning
-
-

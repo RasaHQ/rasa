@@ -1,10 +1,10 @@
 :desc: Configure the custom components of your ML model to optimise the
        processes performed on the user input of your contextual assistant.
 
-.. _section_pipeline:
+.. _components:
 
-Component Configuration
-=======================
+Components
+==========
 
 .. note::
    For clarity, we have renamed the pre-defined pipelines to reflect
@@ -15,7 +15,7 @@ Component Configuration
 
 This is a reference of the configuration options for every built-in
 component in Rasa NLU. If you want to build a custom component, check
-out :ref:`section_customcomponents`.
+out :ref:`custom-nlu-components`.
 
 .. contents::
    :local:
@@ -743,5 +743,3 @@ DucklingHTTPExtractor
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
-
-

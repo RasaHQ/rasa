@@ -1,6 +1,6 @@
 :desc: Build a Rasa Chat Bot on Twilio
 
-.. _twilio_connector:
+.. _twilio:
 
 Twilio
 ======
@@ -44,4 +44,3 @@ you need to supply a ``credentials.yml`` with the following content:
      account_sid: "ACbc2dxxxxxxxxxxxx19d54bdcd6e41186"
      auth_token: "e231c197493a7122d475b4xxxxxxxxxx"
      twilio_number: "+440123456789"
-

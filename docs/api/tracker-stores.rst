@@ -2,8 +2,7 @@
        library Rasa Core provides implementations for different store types out
        of the box.
 
-.. _tracker_store:
-
+.. _tracker-stores:
 
 Tracker Stores
 ==============

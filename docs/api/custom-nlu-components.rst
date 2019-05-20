@@ -1,7 +1,7 @@
 :desc: Create custom components to create additional features like sentiment
        analysis to integrate with open source bot framework Rasa Stack.
 
-.. _section_customcomponents:
+.. _custom-nlu-components:
 
 Custom NLU Components
 =====================
@@ -55,4 +55,3 @@ Component
    .. automethod:: partially_process
 
    .. automethod:: can_handle_language
-

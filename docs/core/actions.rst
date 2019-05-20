@@ -11,11 +11,11 @@ Actions
 Actions are the things your bot runs in response to user input.
 There are three kinds of actions in Rasa Core:
 
- 1. **default actions** (``action_listen``, ``action_restart``,
-    ``action_default_fallback``)
- 2. **utterance actions**, starting with ``utter_``, which just send a message
-    to the user (see :ref:`responses`).
- 3. **custom actions** - any other action, these actions can run arbitrary code
+ 1. **Default actions**: ``action_listen``, ``action_back``, ``action_restart``,
+    ``action_default_fallback``
+ 2. **Utterance actions**: start with ``utter_``, just send a message
+    to the user (see :ref:`responses`)
+ 3. **Custom actions**: any other action, these actions can run arbitrary code
 
 Utterance Actions
 -----------------
@@ -123,14 +123,14 @@ back to the user with the ``dispatcher`` object, by calling
 ``dispatcher.utter_template``, ``dispatcher.utter_message``, or any other
 ``rasa_sdk.executor.CollectingDispatcher`` method.
 
-Details of the ``run`` method:
+Details of the ``run()`` method:
 
 .. automethod:: rasa_sdk.Action.run
 
 
 There is an example of a ``SlotSet`` event
-:ref:`below <custom_action_example>`, and a full list of possible
-events in :ref:`events-classes`.
+:ref:`above <custom_action_example>`, and a full list of possible
+events in :ref:`Events <events-classes>`.
 
 Default Actions
 ---------------
@@ -170,7 +170,7 @@ information about the conversation.
 As a response to the action call from Core, you can modify the tracker,
 e.g. by setting slots and send responses back to the user.
 All of the modifications are done using events.
-There is a list of all possible event types in :ref:`events`.
+There is a list of all possible event types in :ref:`events-classes`.
 
 
 Action Server API

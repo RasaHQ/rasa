@@ -1,6 +1,6 @@
 :desc: Build a Rasa Chat Bot on Mattermost
 
-.. _mattermost_connector:
+.. _mattermost:
 
 Mattermost
 ----------

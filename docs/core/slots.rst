@@ -4,8 +4,8 @@
 
 .. _slots:
 
-Using Slots
-===========
+Slots
+=====
 
 See :ref:`slot-classes` for the full list of slot types defined by Rasa Core.
 
@@ -83,7 +83,7 @@ users choose a color by clicking a button, the button payloads might
 be ``/choose{"color": "blue"}`` and ``/choose{"color": "red"}``.
 
 You can specify this in your domain file like this:
-(see details in :ref:`domain`)
+(see details in :ref:`domains`)
 
 .. code-block:: yaml
 
@@ -99,7 +99,7 @@ You can specify this in your domain file like this:
 Slots Set by Actions
 ~~~~~~~~~~~~~~~~~~~~
 
-The second option is to set slots by returning events in :ref:`customactions`.
+The second option is to set slots by returning events in :ref:`custom actions <custom-actions>`.
 In this case, your stories need to include the slots.
 For example, you have a custom action to fetch a user's profile, and
 you have a ``categorical`` slot called ``account_type``.
@@ -148,12 +148,12 @@ When the ``fetch_profile`` action is run, it returns a
 
 In this case you **do** have to include the ``- slot{}`` part in your stories.
 Rasa Core will learn to use this information to decide on the correct action to
-take (in this case, ``utter_welcome_premuim`` or ``utter_welcome_basic``).
+take (in this case, ``utter_welcome_premium`` or ``utter_welcome_basic``).
 
 .. note::
    It is **very easy** to forget about slots if you are writing
    stories by hand. We strongly recommend that you build up these
-   stories using :ref:`interactive_learning` rather than writing them.
+   stories using :ref:`interactive-learning` rather than writing them.
 
 
 

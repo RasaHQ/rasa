@@ -1,6 +1,6 @@
 :desc: Build a Rasa Chat Bot on Slack
 
-.. _slack-connector:
+.. _slack:
 
 Slack
 =====
@@ -44,7 +44,7 @@ you need to supply a ``credentials.yml`` with the following content:
 
    slack:
      slack_token: "xoxb-286425452756-safjasdf7sl38KLls"
-     slack_channel: "#my_channel" <!-- or "@my_app" -->
+     slack_channel: "#my_channel"
 
 
 The endpoint for receiving slack messages is
@@ -54,7 +54,6 @@ you should add in the OAuth & Permissions section.
 
 .. note::
 
-   If you do not set the slack_channel keyword
-   argument, messages will by delivered back to
-   the user who sent them.
-
+   If you do not set the ``slack_channel`` keyword
+   argument, messages will by delivered back to the
+   direct messages with the bot app.

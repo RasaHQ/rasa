@@ -1,9 +1,9 @@
 :desc: Build a Rasa Chat Bot on Rocketchat
 
-.. _rocketchat_connector:
+.. _rocketchat:
 
-RocketChat Setup
-================
+RocketChat
+==========
 
 Getting Credentials
 ^^^^^^^^^^^^^^^^^^^
@@ -48,4 +48,3 @@ you need to supply a ``credentials.yml`` with the following content:
      user: "yourbotname"
      password: "YOUR_PASSWORD"
      server_url: "https://demo.rocket.chat"
-

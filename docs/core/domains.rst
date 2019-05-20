@@ -1,7 +1,7 @@
 :desc: Define intents, entities, slots and actions in Rasa to build contextual
        AI Assistants and chatbots using open source bot framework Rasa Stack.
 
-.. _domain:
+.. _domains:
 
 Domains
 =======
@@ -49,7 +49,7 @@ For example, an ``action`` can:
 * make an external API call
 * query a database
 
-see :ref:`customactions` .
+see :ref:`custom-actions`.
 
 Custom Actions and Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -72,7 +72,7 @@ a class ``MyAwesomeAction``, and module ``my_slots`` containing
 
 The ``name`` function of ``MyAwesomeAction`` needs to return
 ``my_custom_action`` in this example (for more details,
-see :ref:`customactions`).
+see :ref:`custom actions <custom-actions>`).
 
 .. _utter_templates:
 
