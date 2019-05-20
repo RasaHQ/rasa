@@ -164,7 +164,7 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
                 elif resp.status != 200:
-                    logger.warning(
+                    logger.debug(
                         "Tried to fetch model from server, but server response "
                         "status code is {}. We'll retry later..."
                         "".format(resp.status)
@@ -183,7 +183,7 @@ async def _pull_model_and_fingerprint(
                 return model_directory, new_fingerprint
 
         except aiohttp.ClientError as e:
-            logger.info(
+            logger.debug(
                 "Tried to fetch model from server, but "
                 "couldn't reach server. We'll retry later... "
                 "Error: {}.".format(e)
