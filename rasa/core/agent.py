@@ -33,7 +33,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
 from rasa.model import get_model_subdirectories, get_latest_model, unpack_model
 from rasa.nlu.utils import is_url
-from rasa.utils.common import update_sanic_log_level
+from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -138,6 +138,7 @@ async def _pull_model_and_fingerprint(
 
     async with model_server.session() as session:
         try:
+            set_log_level()
             params = model_server.combine_parameters()
             async with session.request(
                 "GET",
@@ -163,7 +164,7 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
                 elif resp.status != 200:
-                    logger.warning(
+                    logger.debug(
                         "Tried to fetch model from server, but server response "
                         "status code is {}. We'll retry later..."
                         "".format(resp.status)
@@ -182,7 +183,7 @@ async def _pull_model_and_fingerprint(
                 return model_directory, new_fingerprint
 
         except aiohttp.ClientError as e:
-            logger.info(
+            logger.debug(
                 "Tried to fetch model from server, but "
                 "couldn't reach server. We'll retry later... "
                 "Error: {}.".format(e)

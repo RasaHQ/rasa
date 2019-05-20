@@ -188,3 +188,11 @@ def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Te
 
     f.close()
     return f.name
+
+
+def create_path(file_path: Text):
+    """Makes sure all directories in the 'file_path' exists."""
+
+    parent_dir = os.path.dirname(os.path.abspath(file_path))
+    if not os.path.exists(parent_dir):
+        os.makedirs(parent_dir)

@@ -3,7 +3,6 @@ import time
 import logging
 import os
 import requests
-import simplejson
 from typing import Any, List, Optional, Text, Dict
 
 from rasa.nlu.config import RasaNLUModelConfig
@@ -116,7 +115,7 @@ class DucklingHTTPExtractor(EntityExtractor):
                 self._url() + "/parse", data=payload, headers=headers
             )
             if response.status_code == 200:
-                return simplejson.loads(response.text)
+                return response.json()
             else:
                 logger.error(
                     "Failed to get a proper response from remote "
