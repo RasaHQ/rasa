@@ -116,8 +116,7 @@ Train script
 ~~~~~~~~~~~~
 
 - You **must** pass a policy config flag with ``-c/--config`` now when training
-  a model, see :ref:`policy_file`. There is a default config file in the
-  documentation :ref:`default_config`.
+  a model, see :ref:`policy_file`.
 - Interactive learning is now started with
   ``python -m rasa_core.train interactive`` rather than the
   ``--interactive`` flag
@@ -131,8 +130,7 @@ Visualisation script
 ~~~~~~~~~~~~~~~~~~~~
 
 - You **must** pass a policy config flag with ``-c/--config`` now,
-  see :ref:`policy_file`. There is a default config file in the
-  documentation :ref:`default_config`.
+  see :ref:`policy_file`.
 
 Evaluation script
 ~~~~~~~~~~~~~~~~~

@@ -6,7 +6,6 @@
 Cloud Storage
 =============
 
-
 Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ and
 `GCS <https://cloud.google.com/storage/>`_ to save your models.
 

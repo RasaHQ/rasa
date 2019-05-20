@@ -226,7 +226,7 @@ want to use.
 Each container is declared as a ``service`` within the docker-compose file.
 The first service is the ``rasa`` service.
 
-The command is similar to the ``docker run`` command in :ref:`running_docker_container`.
+The command is similar to the ``docker run`` command in :ref:`running-rasa-with-docker`.
 The ``ports`` part defines a port mapping between the container and your host
 system. In this case it makes ``5005`` of the ``rasa`` service available on
 port ``5005`` of your host.

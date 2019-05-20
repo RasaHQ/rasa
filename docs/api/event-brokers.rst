@@ -25,7 +25,7 @@ tracker looks like this:
     }
 
 The ``event`` field takes the event's ``type_name`` (for more on event
-types, check out the :doc:`api/events` docs).
+types, check out the :ref:`events` docs).
 
 Rasa enables two possible brokers producers: Pika Event Broker and Kafka Event Broker.
 

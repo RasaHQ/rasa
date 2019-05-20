@@ -9,7 +9,7 @@ Interactive Learning
 
 Rasa X provides a UI for interactive learning, and you can use any user conversation
 as a starting point. See `Copy to Interactive Learning
-<../../rasa-x/annotate-conversations/#copy-to-interactive-learning>`_ for details.
+<../../rasa-x/docs/annotate-conversations/#copy-to-interactive-learning>`_ for details.
 This page shows how to use interactive learning on the command line.
 
 In interactive learning mode, you provide feedback to your bot while you talk

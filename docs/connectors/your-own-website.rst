@@ -6,7 +6,8 @@ Your Own Website
 ================
 
 If you just want an easy way for users to test your bot, the best option
-is usually the chat interface that ships with Rasa X, see :ref:`your_first_testers` .
+is usually the chat interface that ships with Rasa X, see `Invite Users To Test
+<../../rasa-x/docs/get-feedback-from-test-users>`_.
 
 If you actually have an existing website and want to add a Rasa assistant to it,
 you have a couple of options:

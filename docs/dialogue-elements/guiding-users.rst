@@ -7,7 +7,7 @@ Guiding Users
 .. contents::
    :local:
 
-.. _simple-questions:
+.. _explicit-confirmation:
 
 Explicit Confirmation
 ---------------------
@@ -97,7 +97,7 @@ Storing this feedback is a powerful way to figure out how you can improve your a
 
 
 Use a form to collect user feedback. To do this, define a custom form action
-(see :ref:`business-logic` for more details about forms).
+(see :ref:`forms` for more details about forms).
 
 .. code-block:: python
 

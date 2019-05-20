@@ -101,6 +101,8 @@ To do this, run the following command:
     pip install rasa
 
 
+.. _install-mitie:
+
 Second Alternative: MITIE
 -------------------------
 

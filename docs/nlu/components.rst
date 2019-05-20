@@ -48,7 +48,7 @@ MitieNLP
           model: "data/total_word_feature_extractor.dat"
 
     For more information where to get that file from, head over to
-    :ref:`section_backends`.
+    :ref:`installing MITIE <install-mitie>`.
 
 .. _SpacyNLP:
 
