@@ -39,7 +39,7 @@ in ``interactive learning``
 - add ``--store-uncompressed`` to train command to not compress Rasa model
 - log level of libraries, such as tensorflow, can be set via environment variable ``LOG_LEVEL_LIBRARIES``
 - if no spaCy model is linked upon building a spaCy pipeline, an appropriate error message
-  is now raised prompting the user to do so
+  is now raised with instructions for linking one
 
 Changed
 -------
