@@ -24,7 +24,7 @@ You need to set up a Facebook app and a page.
 
   1. To create the app head over to
      `Facebook for Developers <https://developers.facebook.com/>`_
-     and click on *My Apps* -> *Add New App*.
+     and click on *My Apps* → *Add New App*.
   2. Go onto the dashboard for the app and under *Products*,
      find the *Messenger* section and click *Set Up*. Scroll down to
      *Token Generation* and click on the link to create a new page for your
@@ -32,7 +32,7 @@ You need to set up a Facebook app and a page.
   3. Create your page and select it in the dropdown menu for the
      *Token Generation*. The shown *Page Access Token* is the
      ``page-access-token`` needed later on.
-  4. Locate the *App Secret* in the app dashboard under *Settings* -> *Basic*.
+  4. Locate the *App Secret* in the app dashboard under *Settings* → *Basic*.
      This will be your ``secret``.
   5. Use the collected ``secret`` and ``page-access-token`` in your
      ``credentials.yml``, and add a field called ``verify`` containing
@@ -71,4 +71,3 @@ The endpoint for receiving facebook messenger messages is
 ``http://localhost:5005/webhooks/facebook/webhook``, replacing
 the host and port with the appropriate values. This is the URL
 you should add in the configuration of the webhook.
-
