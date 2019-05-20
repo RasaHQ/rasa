@@ -81,7 +81,7 @@ def check_domain_sanity(domain):
                 message += (
                     "Utterance template '{}' is listed in as an "
                     "action in the domain file, but there is "
-                    "no matching utterance template"
+                    "no matching utterance template."
                 ).format(template)
         return message
 
@@ -369,7 +369,7 @@ class Domain(object):
             validated_variations = []
             if template_variations is None:
                 raise InvalidDomain(
-                    "Utterance {} has no '- text: ' attribute".format(template_key)
+                    "Utterance '{}' has no '- text: ' attribute".format(template_key)
                 )
 
             for t in template_variations:
