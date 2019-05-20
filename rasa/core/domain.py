@@ -375,7 +375,9 @@ class Domain(object):
             validated_variations = []
             if template_variations is None:
                 raise InvalidDomain(
-                    "Utterance '{}' does not have any defined templates.".format(template_key)
+                    "Utterance '{}' does not have any defined templates.".format(
+                        template_key
+                    )
                 )
 
             for t in template_variations:
