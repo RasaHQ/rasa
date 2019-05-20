@@ -3,7 +3,7 @@ info:
   title: "Rasa SDK - Action Server Endpoint"
   version: "0.0.0"
   description: >-
-    API of the action server which is used by Rasa 
+    API of the action server which is used by Rasa
     to execute custom actions.
 servers:
   - url: "http://localhost:5055/webhook"
@@ -19,8 +19,8 @@ paths:
         back to the user.
       operationId: call_action
       requestBody:
-        description: >- 
-          Describes the action to be called and provides information on the 
+        description: >-
+          Describes the action to be called and provides information on the
           current state of the conversation.
         required: true
         content:

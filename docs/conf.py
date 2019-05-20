@@ -81,7 +81,17 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    # ignore doc pages that we don't show to appease keep_warnings
+    "multi-skill-assistants.rst",
+    "core/old-core-change-log.rst",
+    "core/old-core-migration-guide.rst",
+    "nlu/old-nlu-change-log.rst",
+    "nlu/old-nlu-migration-guide.rst",
+]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

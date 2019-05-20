@@ -17,7 +17,7 @@ Message Handling
 This diagram shows the basic steps of how an assistant built with Rasa Stack
 responds to a message:
 
-.. image:: ../../_static/images/rasa-message-processing.png
+.. image:: ../_static/images/rasa-message-processing.png
 
 The steps are:
 
