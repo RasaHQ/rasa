@@ -38,13 +38,11 @@ after_success:
 jobs:
   include:
   - stage: test
-    if: fork = false AND branch = master
     name: "Black Formatting"
     python: 3.6
     script: pip install black; black --check .
   - &test-core
     stage: test
-    if: fork = false AND branch = master
     name: "Test Core 3.6"
     python: "3.6"
     script:
@@ -57,7 +55,6 @@ jobs:
     python: '3.7'
   - &test-nlu-base
     stage: test
-    if: fork = false AND branch = master
     name: "Test NLU 3.6"
     python: "3.6"
     script:
@@ -70,7 +67,6 @@ jobs:
     python: '3.7'
   - &test-nlu-training
     stage: test
-    if: fork = false AND branch = master
     name: "Test NLU training 3.6"
     python: "3.6"
     script:
@@ -82,7 +78,6 @@ jobs:
     name: "Test NLU training 3.7"
     python: '3.7'
   - stage: integration
-    if: fork = false AND branch = master
     name: "Test API specification"
     language: python
     install:
@@ -109,7 +104,7 @@ jobs:
     - cd starter-pack-rasa-stack
     - python -m pytest tests
   - stage: docs
-    if: fork = false # forked repository will skip building docs, only master & PRs to it
+    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
     - RASABASTER=rasabaster-0.7.20.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
@@ -154,7 +149,6 @@ jobs:
     - git commit --allow-empty -m "trigger rasa docs update"
     - git push origin master
   - stage: deploy
-    if: fork = false AND branch = master
     name: "Deploy to PyPI"
     python: 3.6
     install: skip
