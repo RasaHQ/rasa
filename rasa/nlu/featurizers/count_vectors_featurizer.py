@@ -304,8 +304,9 @@ class CountVectorsFeaturizer(Featurizer):
                 min_df=meta["min_df"],
                 max_features=meta["max_features"],
                 analyzer=meta["analyzer"],
+                vocabulary=vocabulary,
             )
-            vectorizer.vocabulary_ = vocabulary
+
             return cls(meta, vectorizer)
         else:
             return cls(meta)
