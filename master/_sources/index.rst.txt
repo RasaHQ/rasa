@@ -36,6 +36,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    :caption: NLU
    :hidden:
 
+   About <nlu/about>
    nlu/using-only-nlu
    nlu/data-format
    nlu/choosing-pipeline
@@ -48,6 +49,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    :caption: Core
    :hidden:
 
+   About <core/about>
    core/stories
    core/domains
    core/responses
