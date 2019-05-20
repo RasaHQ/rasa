@@ -84,7 +84,7 @@ def check_domain_sanity(domain):
                 if message:
                     message += "\n"
                 message += (
-                    "Utterance template '{}' is listed in as an "
+                    "Utterance '{}' is listed in as an "
                     "action in the domain file, but there is "
                     "no matching utterance template."
                 ).format(template)
