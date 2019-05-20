@@ -9,7 +9,7 @@ from typing import List, Text, Optional
 
 import ruamel.yaml as yaml
 
-from rasa.cli.utils import get_validated_path
+from rasa.cli.utils import get_validated_path, print_warning
 from rasa.cli.arguments import x as arguments
 
 from rasa.constants import (
@@ -17,6 +17,8 @@ from rasa.constants import (
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CONFIG_PATH,
 )
 import rasa.utils.io as io_utils
 
@@ -170,6 +172,16 @@ def _configure_logging(args):
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
 
 
+def is_rasa_project_setup(project_path: Text):
+    mandatory_files = [DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH]
+
+    for f in mandatory_files:
+        if not os.path.exists(os.path.join(project_path, f)):
+            return False
+
+    return True
+
+
 def rasa_x(args: argparse.Namespace):
     from rasa.cli.utils import print_success, print_error, signal_handler
     from rasa.core.utils import AvailableEndpoints
@@ -194,9 +206,24 @@ def rasa_x(args: argparse.Namespace):
             )
             sys.exit(1)
 
+        project_path = "."
+
+        if not is_rasa_project_setup(project_path):
+            print_error(
+                "This directory is not a valid Rasa project. Use 'rasa init' "
+                "to create a fresh Rasa project."
+            )
+            sys.exit(1)
+
+        if args.data and not os.path.exists(args.data):
+            print_warning(
+                "The provided data path ('{}') does not exists. Rasa X will start "
+                "without any data.".format(args.data)
+            )
+
         # noinspection PyUnresolvedReferences
         from rasax.community import local
 
         rasa_x_token = generate_rasa_x_token()
         start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
-        local.main(args, ".", args.data, token=rasa_x_token)
+        local.main(args, project_path, args.data, token=rasa_x_token)
