@@ -8,8 +8,10 @@ from sanic import Sanic, response
 import rasa.utils.io
 import rasa.core
 from rasa.core import jobs, utils
+from tests.core import utilities
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
+from rasa.core.domain import InvalidDomain
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
@@ -164,3 +166,29 @@ async def test_load_agent_on_not_existing_path():
     agent = await load_agent(model_path="some-random-path")
 
     assert agent is None
+
+
+@pytest.mark.parametrize(
+    "domain_missing_template",
+    [
+        (
+            """
+    templates:
+        utter_greet:
+         - you meant to write utter_greet!
+
+    actions:
+        - utter_gredsfat"""
+        )
+    ],
+)
+async def test_missing_template_breaks_training(tmpdir, domain_missing_template):
+    training_data_file = "examples/moodbot/data/stories.md"
+    domain_path = utilities.write_text_to_file(
+        tmpdir, "domain.yml", domain_missing_template
+    )
+
+    agent = Agent(domain_path, policies=[AugmentedMemoizationPolicy()])
+    training_data = await agent.load_data(training_data_file)
+    with pytest.raises(InvalidDomain):
+        agent.train(training_data)
