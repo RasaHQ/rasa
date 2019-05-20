@@ -81,10 +81,8 @@ def check_domain_sanity(domain):
             message += get_mapping_exception_message(mappings)
         if templates:
             for template in templates:
-                if message:
-                    message += "\n"
                 message += (
-                    "Utterance '{}' is listed in as an "
+                    "\nUtterance '{}' is listed as an "
                     "action in the domain file, but there is "
                     "no matching utterance template."
                 ).format(template)
@@ -322,7 +320,8 @@ class Domain(object):
         except YAMLError:
             raise InvalidDomain(
                 "The provided domain file is invalid. You can use "
-                "http://www.yamllint.com/ to validate your domain file."
+                "http://www.yamllint.com/ to validate the yaml syntax "
+                "of your domain file."
             )
 
         try:
@@ -331,11 +330,11 @@ class Domain(object):
         except SchemaError:
             raise InvalidDomain(
                 "Failed to validate your domain yaml. "
-                "Make sure the file is correct, to do so"
+                "Please make sure the file is correct; to do so, "
                 "take a look at the errors logged during "
                 "validation previous to this exception. "
-                "You can also validate your domain file "
-                "using http://www.yamllint.com/."
+                "You can also validate your domain file's yaml "
+                "syntax using http://www.yamllint.com/."
             )
 
     @staticmethod
@@ -376,7 +375,7 @@ class Domain(object):
             validated_variations = []
             if template_variations is None:
                 raise InvalidDomain(
-                    "Utterance '{}' has no '- text: ' attribute".format(template_key)
+                    "Utterance '{}' does not have any defined templates.".format(template_key)
                 )
 
             for t in template_variations:
@@ -388,7 +387,7 @@ class Domain(object):
                     raise InvalidDomain(
                         "Utter template '{}' needs to contain either "
                         "'- text: '  or '- custom: ' attribute to be a proper "
-                        "template".format(template_key)
+                        "template.".format(template_key)
                     )
                 else:
                     validated_variations.append(t)
