@@ -174,7 +174,7 @@ Fixed
 - fixed domain persistence after exiting interactive learning
 - fix form validation question error in interactive learning
 
-.. _v0-13-0:
+.. _corev0-13-0:
 
 [0.13.0] - 2019-01-23
 ^^^^^^^^^^^^^^^^^^^^^
@@ -284,7 +284,7 @@ Fixed
 - fix reading of batch_size parameter in keras policy
 
 
-.. _v0-12-0:
+.. _corev0-12-0:
 
 [0.12.0] - 2018-11-11
 ^^^^^^^^^^^^^^^^^^^^^
@@ -532,7 +532,7 @@ Fixed
 -----
 - increased minimal compatible model version to 0.11.0
 
-.. _v0-11-0:
+.. _corev0-11-0:
 
 [0.11.0] - 2018-08-30
 ^^^^^^^^^^^^^^^^^^^^^
@@ -627,7 +627,7 @@ Changed
 
 - documentation changes
 
-.. _v0-10-0:
+.. _corev0-10-0:
 
 [0.10.0] - 2018-07-17
 ^^^^^^^^^^^^^^^^^^^^^
@@ -716,7 +716,7 @@ Fixed
   re-run at every new call of the ``ensure_loaded_agent`` decorator
 - fixed OR usage of intents
 
-.. _v0-9-0:
+.. _corev0-9-0:
 
 [0.9.0] - 2018-05-24
 ^^^^^^^^^^^^^^^^^^^^
@@ -808,7 +808,7 @@ Fixed
 - Documentation improvements to tutorials
 - serialisation of date time value for ``ReminderScheduled`` event
 
-.. _v0-8-0:
+.. _corev0-8-0:
 
 [0.8.0] - 2018-01-30
 ^^^^^^^^^^^^^^^^^^^^
@@ -952,7 +952,7 @@ Fixed
   wrong predictions
 
 
-.. _v0-7-0:
+.. _corev0-7-0:
 
 [0.7.0] - 2017-10-04
 ^^^^^^^^^^^^^^^^^^^^
@@ -972,7 +972,7 @@ Changed
 - use hashing when writing memorized turns into persistence - requires retraining of all models that are trained with a version prior to this
 - changed ``agent.handle_message(...)`` interface for easier usage
 
-.. _v0-6-0:
+.. _corev0-6-0:
 
 [0.6.0] - 2017-08-27
 ^^^^^^^^^^^^^^^^^^^^
@@ -988,7 +988,7 @@ Changed
 -------
 - large refactoring of code base
 
-.. _v0-5-0:
+.. _corev0-5-0:
 
 [0.5.0] - 2017-06-18
 ^^^^^^^^^^^^^^^^^^^^
@@ -1013,7 +1013,7 @@ Fixed
 - ``str`` implementation for all events
 - ``Controller`` can be started without an input channel (e.g. messages need to be fed into the queue manually)
 
-.. _v0-2-0:
+.. _corev0-2-0:
 
 [0.2.0] - 2017-05-18
 ^^^^^^^^^^^^^^^^^^^^

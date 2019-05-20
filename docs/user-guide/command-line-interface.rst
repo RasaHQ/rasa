@@ -111,12 +111,12 @@ To start a chat session with your assistant on the command line, run:
 
    rasa shell
 
-The model, that should be used to interact with your bot, can be specified by ``--model``.
+The model that should be used to interact with your bot, can be specified by ``--model``.
 In case you start the shell with an NLU-only model, ``rasa shell`` allows
 you to obtain the intent and entities of any text you type on the command line.
 If your model includes a trained Core model, you can chat with your bot and see
 what the bot predicts as a next action.
-In case you have a combined Rasa model but nevertheless want to see what your model
+If you have trained a combined Rasa model but nevertheless want to see what your model
 extracts as intents and entities from text, you can use the command ``rasa shell nlu``.
 
 To increase the logging level for debugging, run:

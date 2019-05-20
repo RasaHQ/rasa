@@ -38,7 +38,7 @@ documentation about the domain file format: :ref:`utter_templates`.
 
 
 Managing assistant utterances using an external CMS
----------------------------------------------
+---------------------------------------------------
 
 Retraining the bot, just to change the text copy can be suboptimal for
 some workflows. That's why Core also allows you to outsource the
@@ -56,7 +56,7 @@ or ``server`` script. The content of the ``endpoints.yml`` should be
 .. literalinclude:: ../../data/test_endpoints/example_endpoints.yml
    :language: yaml
 
-Then pass the ``enable-api`` flag to the ``rasa run`` command when starting 
+Then pass the ``enable-api`` flag to the ``rasa run`` command when starting
 the server:
 
 .. code-block:: shell
@@ -142,5 +142,3 @@ The endpoint then needs to respond with the generated response:
   }
 
 Rasa will then use this response and sent it back to the user.
-
-

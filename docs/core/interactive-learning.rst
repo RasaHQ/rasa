@@ -78,13 +78,14 @@ Providing feedback on errors
 
 For this example we are going to use the ``concertbot`` example,
 so make sure you have the domain & data for it. You can download
-the data from :gh-code:`examples/concertbot`.
+the data from our `github repo
+<https://github.com/RasaHQ/rasa/tree/master/examples/concertbot>`_.
 
 If you ask ``/search_concerts``, the bot should suggest
 ``action_search_concerts`` and then ``action_listen`` (the confidence at which
 the policy selected its next action will be displayed next to the action name).
 Now let's enter ``/compare_reviews`` as the next user message.
-The bot **might** choose the wrong one out of the two
+The bot *might* choose the wrong one out of the two
 possibilities (depending on the training run, it might also be correct):
 
 .. code-block:: text

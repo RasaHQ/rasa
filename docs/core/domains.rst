@@ -196,15 +196,15 @@ output payloads that will only work on certain channels.
     - text: "Which game would you like to play?"
       channel: "slack"
       custom:
-        {payload for slack dropdown menu to choose a game}
+        - # payload for slack dropdown menu to choose a game goes here
     - text: "Which game would you like to play?"
       buttons:
       - title: "Chess"
-        payload: "/inform{"game": "chess"}"
+        payload: '/inform{"game": "chess"}'
       - title: "Checkers"
-        payload: "/inform{"game": "checkers"}"
+        payload: '/inform{"game": "checkers"}'
       - title: "Fortnite"
-        payload: "/inform{"game": "fortnite"}"
+        payload: '/inform{"game": "fortnite"}'
 
 Each time your bot looks for utterances, it will first check to see if there
 are any channel-specific templates for the connected channel. If there are, it

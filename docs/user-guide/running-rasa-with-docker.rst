@@ -26,7 +26,7 @@ If you're not sure if you have Docker installed, you can check by running:
 If Docker is installed on your machine, the output should show you your installed
 versions of Docker and docker-compose. If the command doesn't work, you'll have to
 install Docker.
-See `here <https://docs.docker.com/install/>`_ for details.
+See `Docker Installation <https://docs.docker.com/install/>`_ for details.
 
 Building an Assistant with Rasa and Docker
 ------------------------------------------
