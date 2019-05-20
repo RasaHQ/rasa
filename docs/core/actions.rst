@@ -174,13 +174,3 @@ As a response to the action call from Core, you can modify the tracker,
 e.g. by setting slots and send responses back to the user.
 All of the modifications are done using events.
 There is a list of all possible event types in :ref:`events`.
-
-
-Action Server API
-~~~~~~~~~~~~~~~~~
-
-Documentation of the action server API as
-:download:`OpenAPI Spec <_static/spec/action_server.yml>`.
-
-.. apidoc::
-   :path: ../_static/spec/action_server.yml
