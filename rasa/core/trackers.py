@@ -148,7 +148,7 @@ class DialogueStateTracker(object):
             "latest_action_name": self.latest_action_name,
         }
 
-    def past_states(self, domain: "Domain") -> deque:
+    def past_states(self, domain) -> deque:
         """Generate the past states of this tracker based on the history."""
 
         generated_states = domain.states_for_tracker_history(self)

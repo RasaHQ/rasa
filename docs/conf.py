@@ -356,6 +356,7 @@ nitpick_ignore = [
     ("py:class", "typing.Optional"),
     ("py:class", "typing.Iterator"),
     ("py:class", "collections.deque"),
+    ("py:class", "sanic.app.Sanic"),
     ("py:data", "typing.Any"),
     ("py:data", "typing.Dict"),
     ("py:data", "typing.List"),
@@ -363,14 +364,8 @@ nitpick_ignore = [
     ("py:data", "typing.Iterator"),
     ("py:obj", "None"),
     # rasa typing
-    ("py:class", "Action"),
     ("py:class", "CollectingDispatcher"),
     ("py:class", "Tracker"),
-    ("py:class", "NLG"),
-    ("py:class", "TrainingData"),
-    ("py:class", "Sanic"),
-    ("py:class", "Message"),
-    ("py:class", "Domain"),
     ("py:class", "rasa.core.agent.Agent"),
     ("py:class", "rasa.core.conversation.Dialogue"),
     ("py:class", "rasa.core.policies.Policy"),
@@ -378,4 +373,5 @@ nitpick_ignore = [
     ("py:class", "rasa.core.events.SlotSet"),
     ("py:class", "rasa.core.processor.MessageProcessor"),
     ("py:class", "rasa.nlu.components.Component"),
+    ("py:class", "rasa.nlu.training_data.message.Message"),
 ]
