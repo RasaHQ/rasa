@@ -314,3 +314,32 @@ def test_count_vector_featurizer(sentence, expected):
     ftr.process(test_message)
 
     assert np.all(test_message.get("text_features") == expected)
+
+
+def test_count_vector_featurizer_persist_load(tmpdir):
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    config = {"min_ngram": 1, "max_ngram": 2, "analyzer": "char"}
+    ftr = CountVectorsFeaturizer(config)
+    sentence = "ababab 123 13xc лаомтгцу sfjv"
+    train_message = Message(sentence)
+
+    # this is needed for a valid training example
+    train_message.set("intent", "bla")
+    data = TrainingData([train_message])
+    ftr.train(data)
+    # persist featurizer
+    file_dict = ftr.persist("ftr", tmpdir)
+
+    # load featurizer
+    meta = ftr.component_config.copy()
+    meta.update(file_dict)
+    ftr = CountVectorsFeaturizer.load(meta, tmpdir)
+
+    test_message = Message(sentence)
+    ftr.process(test_message)
+
+    # check that train features and test features after loading are the same
+    assert np.all(
+        train_message.get("text_features") == test_message.get("text_features")
+    )
