@@ -19,6 +19,7 @@ from rasa.constants import (
     ENV_LOG_LEVEL,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CONFIG_PATH,
+    DEFAULT_LOG_LEVEL_RASA_X,
 )
 import rasa.utils.io as io_utils
 
@@ -159,17 +160,24 @@ def generate_rasa_x_token(length=16):
 
 def _configure_logging(args):
     from rasa.core.utils import configure_file_logging
+    from rasa.utils.common import set_log_level
 
-    args.log_level = args.loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-    logging.basicConfig(level=args.log_level)
-    configure_file_logging(args.log_level, args.log_file)
+    log_level = args.loglevel or DEFAULT_LOG_LEVEL_RASA_X
+
+    if isinstance(log_level, str):
+        log_level = logging.getLevelName(log_level)
+
+    set_log_level(log_level)
+    configure_file_logging(log_level, args.log_file)
+
+    logging.basicConfig(level=log_level)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
     logging.getLogger("pika").setLevel(logging.WARNING)
     logging.getLogger("socketio").setLevel(logging.ERROR)
 
-    if not args.loglevel == logging.DEBUG:
+    if not log_level == logging.DEBUG:
         logging.getLogger().setLevel(logging.WARNING)
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
 
@@ -226,6 +234,8 @@ def rasa_x(args: argparse.Namespace):
 
         # noinspection PyUnresolvedReferences
         from rasax.community import local
+
+        local.check_license_and_metrics(args)
 
         rasa_x_token = generate_rasa_x_token()
         process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
