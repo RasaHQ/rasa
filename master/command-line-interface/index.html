@@ -30,7 +30,6 @@
   <!-- End Google Tag Manager -->
    
   
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
   <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
   <meta property="og:title" content="Command Line Interface" />
   <meta property="og:type" content="website" />
@@ -519,7 +518,7 @@ using <code class="docutils literal notranslate"><span class="pre">--fixed-model
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--dump-stories] [--fixed-model-name FIXED_MODEL_NAME]
-                  [--force] [--store-uncompressed]
+                  [--force]
                   {core,nlu} ...
 
 positional arguments:
@@ -553,9 +552,6 @@ optional arguments:
                         set to the given name. (default: None)
   --force               Force a model training even if the data has not
                         changed. (default: False)
-  --store-uncompressed  If set the model is not compressed. Note: You need a
-                        compressed model file for running the Rasa Server,
-                        testing a model, etc. (default: False)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
