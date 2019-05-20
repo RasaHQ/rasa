@@ -7,9 +7,6 @@
 Interactive Learning
 ====================
 
-Rasa X provides a UI for interactive learning, and you can use any user conversation
-as a starting point. See `Copy to Interactive Learning
-<../../rasa-x/docs/annotate-conversations/#copy-to-interactive-learning>`_ for details.
 This page shows how to use interactive learning on the command line.
 
 In interactive learning mode, you provide feedback to your bot while you talk
@@ -20,6 +17,12 @@ your bot doesn't know how to do something yet, you can just teach it!
 Some people call this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a64152b37c35>`_.
 
 
+.. note::
+
+    Rasa X provides a UI for interactive learning, and you can use any user conversation
+    as a starting point. See `here <https://rasa.com/docs/rasa-x/annotate-conversations/>`_ .
+
+
 Running Interactive Learning
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -27,7 +30,7 @@ Run the following command to start interactive learning:
 
 .. code-block:: bash
 
-   python3 -m rasa_sdk --actions actions&
+   rasa run actions --actions actions&
 
    rasa interactive \
      -m models/20190515-135859.tar.gz \

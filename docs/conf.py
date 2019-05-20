@@ -24,10 +24,12 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
+    "sphinx.ext.extlinks",
     "sphinxcontrib.programoutput",
     "sphinxcontrib.httpdomain",
     "rasabaster.button",
     "rasabaster.card",
+    "rasabaster.chatbubble",
     "rasabaster.copyable",
     "rasabaster.runnable",
     "rasabaster.conversations",
@@ -309,17 +311,21 @@ import os
 os.chdir(os.path.abspath('..'))
 """
 
+# extlinks configuration
+
+extlinks = {
+    "gh-code": ("https://github.com/RasaHQ/rasa/tree/{}/%s".format(release), "github ")
+}
 
 # Sphinxcontrib configuration
 scv_priority = "tags"
-scv_root_ref = "post-merge-docs"
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ("semver",)
-scv_whitelist_branches = ("post-merge-docs",)  # (re.compile("^master$"),)
+scv_whitelist_branches = ("master",)  # (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
-scv_whitelist_tags = (re.compile(r"^[123456789]+\.[0-9]+\.\d+$"),)
+scv_whitelist_tags = (re.compile(r"^[1-9]+\.[0-9]+\.\d+$"),)
 scv_greatest_tag = True
 
 # type classes for nitpicky to ignore

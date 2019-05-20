@@ -176,7 +176,7 @@ So what do the different parts mean?
 
 
 +---------------+-------------------------------------------------------------+
-| ``intents``   | things you expect users to say.                             |
+| ``intents``   | things you expect users to say                              |
 +---------------+-------------------------------------------------------------+
 | ``actions``   | things your assistant can do and say                        |
 +---------------+-------------------------------------------------------------+
@@ -189,8 +189,9 @@ Rasa Core's job is to choose the right action to execute at each step
 of the conversation. Simple actions are sending a message to a user.
 These simple actions are the ``actions`` in the domain, which start
 with ``utter_``. They will respond with a message based on a template
-from the ``templates`` section. See `Custom Actions <https://rasa.com/docs/core/customactions/>`_ for how to build
- actions that do more than just send a message.
+from the ``templates`` section. See
+`Custom Actions <http://rasa.com/docs/rasa/core/run-code-in-custom-actions/#id1>`_
+for how to build actions that do more than just send a message.
 
 
 

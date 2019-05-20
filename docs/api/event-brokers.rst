@@ -32,7 +32,7 @@ Rasa enables two possible brokers producers: Pika Event Broker and Kafka Event B
 Pika Event Broker
 -----------------
 
-The example implementation we're going to show you here uses `Pika <pika.readthedocs.io>`_,
+The example implementation we're going to show you here uses `Pika <https://pika.readthedocs.io>`_ ,
 the Python client library for `RabbitMQ <https://www.rabbitmq.com>`_.
 
 Adding a Pika Event Broker Using the Endpoint Configuration

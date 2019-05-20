@@ -13,7 +13,7 @@ Running the HTTP server
 -----------------------
 
 You can run a simple HTTP server that handles requests using your
-models with:
+trained Rasa model with:
 
 .. code-block:: bash
 
@@ -146,11 +146,11 @@ the server:
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         --auth-token thisismysecret \
         -m models \
-        -o out.log
+        --log-file out.log
 
 Your requests should pass the token, in our case ``thisismysecret``,
 as a parameter:
@@ -173,11 +173,11 @@ if the ``sender_id`` matches the user's ``username``.
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         --jwt-secret thisismysecret \
         -m models \
-        -o out.log
+        --log-file out.log
 
 Your requests should have set a proper JWT header:
 

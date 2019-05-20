@@ -128,8 +128,8 @@ The list of supported langauges is `here <https://github.com/facebook/duckling/t
 Duckling can also handle durations like "two hours",
 amounts of money, distances, and ordinals.
 Fortunately, there is a duckling docker container ready to use,
-that you just need to spin up and connect to Rasa NLU.
-(see :ref:`DucklingHTTPExtractor`)
+that you just need to spin up and connect to Rasa NLU
+(see :ref:`DucklingHTTPExtractor`).
 
 
 Regular Expressions (regex)

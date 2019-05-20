@@ -151,7 +151,7 @@ take (in this case, ``utter_welcome_premium`` or ``utter_welcome_basic``).
 .. note::
    It is **very easy** to forget about slots if you are writing
    stories by hand. We strongly recommend that you build up these
-   stories using :ref:`interactive-learning` rather than writing them.
+   stories using :ref:`section_interactive_learning_forms` rather than writing them.
 
 
 .. _slot-classes:

@@ -17,7 +17,7 @@ no matter what happened previously in the conversation.
 Users will often ask a basic set of questions
 and your assistant should answer them reliably.
 
-.. conversations:: 
+.. conversations::
    examples:
      -
        - what's your email address?
@@ -41,7 +41,7 @@ The answers you get will impact the rest of the conversation; for example, some 
 be limited to users in a certain country or above a certain age. It is good practice to
 implement that logic inside a form, separating it from the learned behaviour. A single form
 can cover all the happy paths (e.g. all the ways that a user can provide the required information).
-You can read more about forms in `this tutorial <https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/>`_
+You can read more about forms in `this tutorial <https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/>`_.
 
 .. conversations::
    examples:
@@ -95,7 +95,7 @@ and a simple interruption shouldn't throw off your assistant completely.
 This is a key reason for building an assistant that can learn from real data.
 
 The best way to collect training data for unhappy paths is to use
-:ref:`section_interactive_learning_forms`
+:ref:`interactive-learning`.
 
 .. conversations::
    examples:

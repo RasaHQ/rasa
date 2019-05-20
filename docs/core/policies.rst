@@ -35,7 +35,18 @@ when it isn't relevant and just respond with the same action no matter
 what happened before.
 
 You can alter this behaviour with the ``--augmentation`` flag.
-``--augmentation 0`` disables this behavior.
+Which allows you to set the ``augmentation_factor``.
+The ``augmentation_factor`` determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since their number
+can become very large quickly.
+The number of sampled stories is ``augmentation_factor`` x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+
+``--augmentation 0`` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the ``augmentation_factor``) and will automatically
+ignore all augmented stories.
 
 
 .. _policy_file:
@@ -125,13 +136,13 @@ The default architecture is based on an LSTM, but you can override the
 ``KerasPolicy.model_architecture`` method to implement your own architecture.
 
 
-.. literalinclude:: ../../../rasa/core/policies/keras_policy.py
+.. literalinclude:: ../../rasa/core/policies/keras_policy.py
    :dedent: 4
    :pyobject: KerasPolicy.model_architecture
 
 and the training is run here:
 
-.. literalinclude:: ../../../rasa/core/policies/keras_policy.py
+.. literalinclude:: ../../rasa/core/policies/keras_policy.py
    :dedent: 4
    :pyobject: KerasPolicy.train
 
@@ -311,7 +322,7 @@ It is recommended to use
     These parameters can be specified in the policy configuration file.
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
-    .. literalinclude:: ../../../rasa/core/policies/embedding_policy.py
+    .. literalinclude:: ../../rasa/core/policies/embedding_policy.py
        :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)

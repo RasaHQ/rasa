@@ -6,11 +6,9 @@ def test_x_help(run):
     output = run("x", "--help")
 
     help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--no-prompt]
-              [--production] [--nlg NLG]
-              [--model-endpoint-url MODEL_ENDPOINT_URL]
-              [--project-path PROJECT_PATH] [--data DATA]
-              [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
-              [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
+              [--production] [--data DATA] [--log-file LOG_FILE]
+              [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+              [--cors [CORS [CORS ...]]] [--enable-api]
               [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
               [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
               [--jwt-method JWT_METHOD]"""
@@ -27,9 +25,11 @@ def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir_factory
 
     io_utils.write_yaml_file({}, credentials_path)
 
-    x._prepare_credentials_for_rasa_x(credentials_path)
+    tmp_credentials = x._prepare_credentials_for_rasa_x(
+        credentials_path, "http://localhost:5002"
+    )
 
-    actual = io_utils.read_yaml_file(credentials_path)
+    actual = io_utils.read_yaml_file(tmp_credentials)
 
     assert actual["rasa"]["url"] == "http://localhost:5002"
 
