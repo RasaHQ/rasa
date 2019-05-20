@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import pkg_resources
 from pykwalify.errors import SchemaError
 from ruamel.yaml import YAMLError
-from ruamel.yaml.scanner import ScannerError
 
 import rasa.utils.io
+from rasa.cli.utils import bcolors
 from rasa import data
 from rasa.core import utils
 from rasa.core.actions import Action, action
@@ -32,7 +32,12 @@ if typing.TYPE_CHECKING:
 class InvalidDomain(Exception):
     """Exception that can be raised when domain is not valid."""
 
-    pass
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        # return message in error colours
+        return bcolors.FAIL + self.message + bcolors.ENDC
 
 
 def check_domain_sanity(domain):
@@ -120,8 +125,10 @@ def check_domain_sanity(domain):
     ) -> List[Text]:
         """Return utterance names which have no specified template."""
 
-        utters = [act for act in action_names if act.startswith(action.UTTER_PREFIX)]
-        return [t for t in utters if t not in templates.keys()]
+        utterances = [
+            act for act in action_names if act.startswith(action.UTTER_PREFIX)
+        ]
+        return [t for t in utterances if t not in templates.keys()]
 
     missing_templates = get_missing_templates(domain.action_names, domain.templates)
     duplicate_actions = get_duplicates(domain.action_names)
