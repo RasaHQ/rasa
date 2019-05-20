@@ -15,24 +15,29 @@ assistant on your local machine. The formbot consists of the following files:
 - **actions.py** contains the implementation of a custom FormAction  
 - **domain.yml** contains the domain of the assistant  
 - **endpoints.yml** contains the webhook configuration for the custom action  
-- **config.yml** contains the pipeline configuration of the NLU model  
-- **Makefile** contains the shell commands which you can use to run this example  
-
+- **config.yml** contains the model configuration
 
 ## How to use this example?
 
 Using this example you can build an actual assistant which demonstrates the
-functionality of the FormAction. You can use the example using the following 
+functionality of the `FormAction`. You can use the example using the following 
 steps:
 
-1. Train a stacked model containing the Rasa NLU and Rasa Core models by running:
-```make train```
-The model will be stored in the `/models` directory as a zipped file.
+1. Train a Rasa model containing the Rasa NLU and Rasa Core models by running:
+    ```
+    rasa train
+    ```
+    The model will be stored in the `/models` directory as a zipped file.
 
 2. Test the assistant by running:
-```make run```
-This will load the assistant in your command line for you to chat.
+    ```
+    rasa run actions&
+    rasa shell -m models --endpoints endpoints.yml
+    ```
+    This will load the assistant in your command line for you to chat.
 
+For more information about the individual commands, please check out our 
+[documentation](http://rasa.com/docs/rasa/command-line-interface/).
 
 ## Encountered any issues?
 Let us know about it by posting on [Rasa Community Forum](https://forum.rasa.com)!
