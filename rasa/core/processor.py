@@ -164,7 +164,9 @@ class MessageProcessor(object):
         action_confidences, policy = self._get_next_action_probabilities(tracker)
 
         max_confidence_index = int(np.argmax(action_confidences))
-        action = self.domain.action_for_index(max_confidence_index, self.action_endpoint)
+        action = self.domain.action_for_index(
+            max_confidence_index, self.action_endpoint
+        )
         logger.debug(
             "Predicted next action '{}' with confidence {:.2f}.".format(
                 action.name(), action_confidences[max_confidence_index]
