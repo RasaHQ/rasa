@@ -25,14 +25,14 @@ tracker looks like this:
     }
 
 The ``event`` field takes the event's ``type_name`` (for more on event
-types, check out the :doc:`api/events` docs).
+types, check out the :ref:`events-classes` docs).
 
 Rasa enables two possible brokers producers: Pika Event Broker and Kafka Event Broker.
 
 Pika Event Broker
 -----------------
 
-The example implementation we're going to show you here uses `Pika <pika.readthedocs.io>`_,
+The example implementation we're going to show you here uses `Pika <https://pika.readthedocs.io>`_ ,
 the Python client library for `RabbitMQ <https://www.rabbitmq.com>`_.
 
 Adding a Pika Event Broker Using the Endpoint Configuration

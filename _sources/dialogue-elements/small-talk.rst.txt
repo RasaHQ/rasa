@@ -5,7 +5,7 @@ Small Talk
 ==========
 
 Small talk includes the back-and-forth that makes conversations natural, 
-but doesn’t directly relate directly to the user's goal. This includes greetings,
+but doesn’t directly relate to the user's goal. This includes greetings,
 acknowledgements, reactions, and off-topic chitchat.
 
 .. contents::
