@@ -1,6 +1,6 @@
 :desc: Build a Rasa Chat Bot on Cisco Webex
 
-.. _webexteams_connector:
+.. _cisco-webex-teams:
 
 Cisco Webex Teams
 =================
@@ -55,4 +55,3 @@ you should add in the OAuth & Permissions section.
    If you do not set the ``room`` keyword
    argument, messages will by delivered back to
    the user who sent them.
-

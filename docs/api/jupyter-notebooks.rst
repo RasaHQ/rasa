@@ -1,4 +1,4 @@
-
+.. _jupyter-notebooks:
 
 Jupyter Notebooks
 =================
@@ -53,7 +53,7 @@ Evaluate your model against test data
 Rasa has a convenience function for getting your training data.
 Rasa's ``get_core_nlu_directories`` is a convenience function which
 recursively finds all the stories and nlu data files in a directory,
-and copies them into two directories. 
+and copies them into two directories.
 The return values are the paths to these newly created directories.
 
 .. runnable::
@@ -75,4 +75,3 @@ This contains information about the accuracy of your model and other metrics.
 .. runnable::
 
    !ls results
-

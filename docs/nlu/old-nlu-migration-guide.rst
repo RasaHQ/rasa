@@ -1,7 +1,7 @@
 :desc: Read more about changes between major versions of our open source
        NLP engine and how to migrate from one version to another.
 
-.. _section_migration_guide:
+.. _old-nlu-migration-guide:
 
 Migration Guide
 ===============
@@ -21,8 +21,8 @@ how you can migrate from one version to another.
 
 model configuration
 ~~~~~~~~~~~~~~~~~~~
-- The standard pipelines have been renamed. ``spacy_sklearn`` is now 
-  ``pretrained_embeddings_spacy`` and ``tensorflow_embedding`` is now 
+- The standard pipelines have been renamed. ``spacy_sklearn`` is now
+  ``pretrained_embeddings_spacy`` and ``tensorflow_embedding`` is now
   ``supervised_embeddings``.
 - Components names used for nlu config have been changed.
   Use component class name in nlu config file.
@@ -166,9 +166,8 @@ parameters. Example:
 
 
 All other parameters have either been moved to the scripts
-for training, serving models
-(:ref:`server_parameters`), or put into the pipeline
-configuration (:ref:`section_pipeline`).
+for training, :ref:`serving models <running-the-server>`, or put into the
+:ref:`pipeline configuration <components>`.
 
 persistors:
 ~~~~~~~~~~~

@@ -1,13 +1,9 @@
 :desc: Build a Rasa Chat Bot on Facebook Messenger
 
-.. _messenger-connector:
+.. _facebook-messenger:
 
 Facebook Messenger
 ==================
-
-
-
-.. _facebook_connector:
 
 Facebook Setup
 --------------

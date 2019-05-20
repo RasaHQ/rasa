@@ -1,6 +1,6 @@
 :desc: Build a Rasa Chat Bot on Microsoft Bot Framework
 
-.. _botframework_connector:
+.. _microsoft-bot-framework:
 
 Microsoft Bot Framework
 =======================
@@ -25,4 +25,3 @@ you need to supply a ``credentials.yml`` with the following content:
    botframework:
      app_id: "MICROSOFT_APP_ID"
      app_password: "MICROSOFT_APP_PASSWORD"
-

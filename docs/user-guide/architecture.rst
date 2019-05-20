@@ -36,9 +36,3 @@ The steps are:
 
   Messages can be text typed by a human, or structured input
   like a button press.
-
-Detailed Architecture
-^^^^^^^^^^^^^^^^^^^^^
-
-.. image:: ../../_static/images/rasa-detailed-architecture.png
-

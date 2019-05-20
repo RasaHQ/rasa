@@ -1,6 +1,6 @@
 :desc: Deploy and Run a Rasa Chat Bot on a custom chat interface
 
-.. _custom_connector:
+.. _custom-connectors:
 
 Custom Connectors
 =================
@@ -62,5 +62,3 @@ posted this message to the channel:
 
 .. literalinclude:: ../../rasa/core/channels/channel.py
    :pyobject: RestInput
-
-

@@ -1,5 +1,7 @@
 :desc: Rasa Core Changelog
 
+.. _old-core-change-log:
+
 Core Change Log
 ===============
 
@@ -291,7 +293,7 @@ Fixed
 
     This is major new version with a lot of changes under the hood as well
     as on the API level. Please take a careful look at the
-    :ref:`migration` guide before updating. **You need to retrain your models.**
+    :ref:`migration-guide` guide before updating. **You need to retrain your models.**
 
 Added
 -----
@@ -539,7 +541,7 @@ Fixed
 
     This is major new version with a lot of changes under the hood as well
     as on the API level. Please take a careful look at the
-    :ref:`migration` guide before updating. You need to retrain your models.
+    :ref:`migration-guide` guide before updating. You need to retrain your models.
 
 
 Added
@@ -634,7 +636,7 @@ Changed
 
     This is a major new release with backward incompatible changes. Old trained
     models can not be read with the new version - you need to retrain your model.
-    View the :ref:`migration` for details.
+    View the :ref:`migration-guide` for details.
 
 Added
 -----
@@ -812,7 +814,7 @@ Fixed
 ^^^^^^^^^^^^^^^^^^^^
 
 This is a major version change. Make sure to take a look at the
-:ref:`migration` in the documentation for advice on how to
+:ref:`migration-guide` in the documentation for advice on how to
 update existing projects.
 
 Added

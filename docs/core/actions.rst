@@ -1,7 +1,7 @@
 :desc: Read more about how to run custom actions and code with open source Rasa
        Stack to integrate your contextual Assistant in your processes and databases.
 
-.. _custom-actions:
+.. _actions:
 
 Actions
 =======
@@ -37,6 +37,8 @@ See :ref:`responses` for more details.
 If you use an external NLG service, you don't need to specify the
 templates in the domain, but you still need to add the utterance names
 to the actions list of the domain.
+
+.. _custom-actions:
 
 Custom Actions
 --------------
@@ -130,7 +132,7 @@ Details of the ``run()`` method:
 
 There is an example of a ``SlotSet`` event
 :ref:`above <custom_action_example>`, and a full list of possible
-events in :ref:`Events <events-classes>`.
+events in :ref:`Events <events>`.
 
 Default Actions
 ---------------
@@ -146,7 +148,8 @@ There are three default actions:
 +-----------------------------+------------------------------------------------+
 | ``action_default_fallback`` | undoes the last user message (as if the user   |
 |                             | did not send it) and utters a message that the |
-|                             | bot did not understand. See :ref:`fallbacks`.  |
+|                             | bot did not understand. See                    |
+|                             | :ref:`fallback-actions`.                       |
 +-----------------------------+------------------------------------------------+
 
 All the default actions can be overwritten. To do so, add the action name
@@ -170,7 +173,7 @@ information about the conversation.
 As a response to the action call from Core, you can modify the tracker,
 e.g. by setting slots and send responses back to the user.
 All of the modifications are done using events.
-There is a list of all possible event types in :ref:`events-classes`.
+There is a list of all possible event types in :ref:`events`.
 
 
 Action Server API

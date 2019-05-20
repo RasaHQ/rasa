@@ -1,7 +1,7 @@
 :desc: Use open source named entity recognition like spacy and duckling
        for building contextual AI Assistants.
 
-.. _section_entities:
+.. _entity-extraction:
 
 Entity Extraction
 =================
@@ -94,11 +94,11 @@ Custom Entities
 ^^^^^^^^^^^^^^^
 
 Almost every chatbot and voice app will have some custom entities.
-A restaurant assistant should understand ``chinese`` as a cuisine, 
+A restaurant assistant should understand ``chinese`` as a cuisine,
 but to a language-learning assistant it would mean something very different.
 The ``CRFEntityExtractor`` component can learn custom entities in any language, given
 some training data.
-See :ref:`nlu-data-format` for details on how to include entities in your training data.
+See :ref:`training-data-format` for details on how to include entities in your training data.
 
 
 Extracting Places, Dates, People, Organisations
@@ -136,7 +136,7 @@ Regular Expressions (regex)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can use regular expressions to help the CRF model learn to recognize entities.
-In your training data (see :ref:`nlu-data-format`) you can provide a list of regular expressions, each of which provides
+In your training data (see :ref:`training-data-format`) you can provide a list of regular expressions, each of which provides
 the ``CRFEntityExtractor`` with an extra binary feature, which says if the regex was found (1) or not (0).
 
 For example, the names of German streets often end in ``strasse``. By adding this as a regex,
@@ -145,4 +145,3 @@ associate that with a location entity.
 
 If you just want to match regular expressions exactly, you can do this in your code,
 as a postprocessing step after receiving the response form Rasa NLU.
-

@@ -1,10 +1,10 @@
-.. _cli-usage:
+.. _command-line-interface:
 
 Command Line Interface
 ======================
 
 
-.. contents:: 
+.. contents::
    :local:
 
 Cheat Sheet
@@ -16,7 +16,7 @@ The command line interface (CLI) gives you easy-to-remember commands for common 
 Command                    Effect
 =========================  =============================================================================================
 ``rasa init``              Creates a new project, with example training data, actions, and config files.
-``rasa run``               Starts a Rasa server with your trained model. See the :ref:`_section_http` docs for details.
+``rasa run``               Starts a Rasa server with your trained model. See the :ref:`_running-the-server` docs for details.
 ``rasa run actions``       Starts an action server using the Rasa SDK.
 ``rasa shell``             Loads your trained model and lets you talk to your assistant on the command line.
 ``rasa train``             Trains a model using your NLU data and stories, saves trained model in ``./models``.
@@ -30,7 +30,7 @@ Command                    Effect
 
 .. note::
 
-    You can also see the available options for each subcommand 
+    You can also see the available options for each subcommand
     by adding the ``-h`` flag, e.g. ``rasa train -h``
 
 
@@ -66,7 +66,7 @@ If you answer no, the ``models`` directory will be empty.
 
 With this project setup, common commands are very easy to remember.
 To train a model, type ``rasa train``, to talk to your model on the command line, ``rasa shell``,
-to test your model type ``rasa test``. 
+to test your model type ``rasa test``.
 
 
 Start a Server
@@ -82,7 +82,7 @@ The following arguments can be used to configure your Rasa server:
 
 .. program-output:: rasa run --help
 
-For more information on the additional parameters, see :ref:`_section_http`.
+For more information on the additional parameters, see :ref:`_running-the-server`.
 See the Rasa :ref:`http-api` docs for detailed documentation of all the endpoints.
 
 

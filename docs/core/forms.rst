@@ -1,10 +1,10 @@
 :desc: Follow a rule-based process of information gathering using FormActions
        in open source bot framework Rasa Stack.
 
-.. _slot-filling:
+.. _forms:
 
-Slot Filling
-============
+Forms
+=====
 
 .. note::
    There is an in-depth tutorial `here <https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/>`_ about how to use Rasa Forms for slot filling.
@@ -48,8 +48,6 @@ configuration file. For example:
     - name: "FormPolicy"
 
 see ``examples/formbot/domain.yml`` for an example.
-
-.. _section_form_basics:
 
 Form Basics
 -----------
@@ -326,7 +324,7 @@ kinds of logic into your forms.
 Debugging
 ---------
 
-The first thing to try is to run your bot with the ``debug`` flag, see :ref:`cli-usage` for details.
+The first thing to try is to run your bot with the ``debug`` flag, see :ref:`command-line-interface` for details.
 If you are just getting started, you probably only have a few hand-written stories.
 This is a great starting point, but
 you should give your bot to people to test **as soon as possible**. One of the guiding principles

@@ -1,7 +1,7 @@
 :desc: This tutorial will show you the different parts needed to build a
        chatbot or AI assistant using open source Rasa.
 
-.. _tutorial:
+.. _rasa-tutorial:
 
 Rasa Tutorial
 =============
@@ -32,7 +32,7 @@ The first step is to create a new Rasa project. To do this, run:
 
    rasa init --no-prompt
 
-The ``rasa init`` command creates the files that a Rasa project needs. 
+The ``rasa init`` command creates the files that a Rasa project needs.
 If you leave out the ``--no-prompt`` flag you will be asked some questions about
 how you want your project to be set up.
 
@@ -80,9 +80,9 @@ The first piece of a Rasa assistant is an NLU model.
 NLU stands for Natural Language Understanding and means turning
 user messages into structured data. To do this with Rasa,
 you provide training examples that show how Rasa should understand
-user messages, and then train a model by showing it those examples. 
+user messages, and then train a model by showing it those examples.
 
-Run the code cell below to see the NLU training data created by 
+Run the code cell below to see the NLU training data created by
 the ``rasa init`` command:
 
 .. runnable::
@@ -93,7 +93,7 @@ the ``rasa init`` command:
 The lines starting with ``##`` define the names of your ``intents``, which
 are groups of messages with the same meaning. Rasa's job will be to
 predict the correct intent when your users send new, unseen messages to
-your assistant. You can find all the details of the data format in :ref:`nlu-data-format`.
+your assistant. You can find all the details of the data format in :ref:`training-data-format`.
 
 .. _model-configuration:
 
@@ -103,7 +103,7 @@ your assistant. You can find all the details of the data format in :ref:`nlu-dat
 The configuration file defines the NLU and Core components that your model
 will use. In this example, your NLU model will use the
 ``supervised_embeddings`` pipeline. You can learn all about NLU pipelines
-`here <https://rasa.com/docs/nlu/choosing_pipeline/>`_.
+:ref:`here <choosing-a-pipeline>`.
 
 Let's take a look at your model configuration file.
 
@@ -114,7 +114,7 @@ Let's take a look at your model configuration file.
 
 
 The ``pipeline`` and ``language`` keys specify how the NLU model should be built.
-You can read more about this in :ref:`choosing_pipeline`
+You can read more about this in :ref:`choosing-a-pipeline`
 The ``policies`` key defines the :ref:`policies` that the Core model will use.
 
 
@@ -130,7 +130,7 @@ A story is a real conversation between a user and an assistant.
 Lines with intents and entities reflect the user's input and action names show what the
 assistant should do in response.
 
-Below is an example of a simple conversation. 
+Below is an example of a simple conversation.
 The user says hello, and the assistant says hello back.
 This is how it looks as a story:
 
@@ -141,7 +141,7 @@ This is how it looks as a story:
       - utter_greet
 
 
-You can see the full details in :ref:`stories-data-format`
+You can see the full details in :ref:`stories`
 
 Lines that start with ``-`` are actions taken by the assistant.
 In this case, all of our actions are messages sent back to the user,
@@ -163,7 +163,7 @@ The next thing we need to do is define a ``Domain``.
 The domain defines the universe your assistant lives in - what user inputs it
 should expect to get, what actions it should be able to predict, how to
 respond and what information to store.
-Here is the domain for our assistant, it's saved in a 
+Here is the domain for our assistant, it's saved in a
 file called ``domain.yml``:
 
 .. runnable::
@@ -234,7 +234,3 @@ and improve your assistant:
 .. button::
    :text: Try Rasa X
    :link: ../../rasa-x/
-
-
-
-

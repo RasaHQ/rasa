@@ -2,7 +2,7 @@
        or fit them specifically on your dataset using the tensorflow pipeline
        for open source NLU.
 
-.. _choosing_pipeline:
+.. _choosing-a-pipeline:
 
 Choosing a Pipeline
 ===================
@@ -13,7 +13,7 @@ it on your dataset.
 The Short Answer
 ----------------
 
-If you have less than 1000 total training examples, and there is a spaCy model for your 
+If you have less than 1000 total training examples, and there is a spaCy model for your
 language, use the ``pretrained_embeddings_spacy`` pipeline:
 
 .. code-block:: yaml
@@ -101,7 +101,7 @@ In Rasa NLU, incoming messages are processed by a sequence of components.
 These components are executed one after another
 in a so-called processing pipeline. There are components for entity extraction, for intent classification,
 pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out :ref:`section_customcomponents`.
+do sentiment analysis, check out :ref:`custom-nlu-components`.
 
 Each component processes the input and creates an output. The output can be used by any component that comes after
 this component in the pipeline. There are components which only produce information that is used by other components
@@ -227,7 +227,7 @@ To use the ``pretrained_embeddings_spacy`` template:
 .. literalinclude:: ../../../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
-See :ref:`section_languages` for possible values for ``language``. To use
+See :ref:`language-support` for possible values for ``language``. To use
 the components and configure them separately:
 
 .. code-block:: yaml
@@ -313,8 +313,6 @@ by listing the names of the components you want to use:
 
 This creates a pipeline that only does entity recognition, but no
 intent classification. So Rasa NLU will not predict any intents.
-You can find the details of each component in :ref:`section_pipeline`.
+You can find the details of each component in :ref:`components`.
 
-If you want to use custom components in your pipeline, see :ref:`section_customcomponents`.
-
-
+If you want to use custom components in your pipeline, see :ref:`custom-nlu-components`.

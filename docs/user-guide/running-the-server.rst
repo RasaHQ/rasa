@@ -1,7 +1,7 @@
 :desc: Find out how to use the HTTP API of Rasa to integrate
        with your backend components.
 
-.. _section_http:
+.. _running-the-server:
 
 Running the Server
 ==================
@@ -125,7 +125,7 @@ You can also configure the Rasa server to fetch your model from a remote storage
         --log-file out.log
 
 The model will be downloaded and stored in a temporary directory on your local storage system.
-For more information see :ref:`_section_persistence`
+For more information see :ref:`_cloud-storage`
 
 
 .. _server_security:
@@ -215,10 +215,10 @@ Connecting a Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To configure a tracker store within your endpoint configuration,
-please see :ref:`tracker_store`.
+please see :ref:`tracker-stores`.
 
 Connecting an Event Broker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To configure an event broker within your endpoint configuration,
-please see :ref:`brokers`.
+please see :ref:`event-brokers`.

@@ -1,7 +1,8 @@
 :desc: Evaluate and validate your machine learning models for open source
        library Rasa Core to improve the dialogue management of your contextual
-       AI Assistant. 
+       AI Assistant.
 
+.. _evaluating-models:
 
 Evaluating Models
 =================
@@ -23,7 +24,7 @@ End-to-end evaluation
 Rasa lets you evaluate dialogues end-to-end, running through
 test conversations and making sure the NLU and Core predict the right things.
 
-To do this, you need some stories in the end-to-end format, 
+To do this, you need some stories in the end-to-end format,
 which includes both the NLU output and the original text.
 Here is an example:
 

@@ -1,7 +1,7 @@
 :desc: Define custom fallback actions with thresholds for NLU and Core for letting
        your conversation fail gracefully with open source dialogue management.
 
-.. _fallbacks:
+.. _fallback-actions:
 
 Fallback Actions
 ================
@@ -120,4 +120,3 @@ policy configuration file.
         fallback_core_action_name: "action_default_fallback"
         fallback_nlu_action_name: "action_default_fallback"
         deny_suggestion_intent_name: "out_of_scope"
-

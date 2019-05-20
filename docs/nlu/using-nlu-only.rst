@@ -1,6 +1,6 @@
 :desc: Find out how to use only Rasa NLU as a standalone NLU service for your chatbot or virtual assistant.
 
-.. _using-only-nlu:
+.. _using-nlu-only:
 
 Using NLU Only
 ==============
@@ -18,7 +18,7 @@ To train an NLU model only, run:
    rasa train nlu
 
 This will look for NLU training data files in the ``data/`` directory
-and saves a trained model in the ``models/`` directory. 
+and saves a trained model in the ``models/`` directory.
 The name of the model will start with ``nlu-``.
 
 Testing your NLU model on the command line
@@ -59,4 +59,3 @@ To do this, run:
 .. code-block:: bash
 
    curl localhost:5005/model/parse -d '{"text":"hello"}'
-

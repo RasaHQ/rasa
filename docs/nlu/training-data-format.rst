@@ -1,11 +1,10 @@
 :desc: Read more about how to format training data with Rasa NLU for open
        source natural language processing.
 
-.. _nlu-data-format:
+.. _training-data-format:
 
 Training Data Format
 ====================
-
 
 Data Format
 ~~~~~~~~~~~
@@ -53,7 +52,7 @@ The training data for Rasa NLU is structured into different parts:
 
 - examples
 - synonyms
-- regex features and 
+- regex features and
 - lookup tables
 
 Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
@@ -167,7 +166,7 @@ and end index of the entity, you can define a synonym. Whenever the same text wi
 synonym instead of the actual text in the message.
 
 To use the synonyms defined in your training data, you need to make sure the pipeline contains the ``EntitySynonymMapper``
-component (see :ref:`section_pipeline`).
+component (see :ref:`components`).
 
 Alternatively, you can add an "entity_synonyms" array to define several synonyms to one entity value. Here is an example of that:
 
@@ -232,8 +231,8 @@ for these extractors. Currently, all intent classifiers make use of available re
 
 Lookup Tables
 -------------
-Lookup tables in the form of external files or lists of elements may also be specified in the training data.  
-The externally supplied lookup tables must be in a newline-separated format.  
+Lookup tables in the form of external files or lists of elements may also be specified in the training data.
+The externally supplied lookup tables must be in a newline-separated format.
 For example, ``data/test/lookup_tables/plates.txt`` may contain
 
 # TODO: This is broken
@@ -269,11 +268,11 @@ Alternatively, lookup elements may be directly included as a list
         }
     }
 
-When lookup tables are supplied in training data, the contents are combined 
-into a large, case-insensitive regex pattern that looks for exact matches in 
-the training examples. These regexes match over multiple tokens, so 
-``lettuce wrap`` would match ``get me a lettuce wrap ASAP`` as ``[0 0 0 1 1 0]``. 
-These regexes are processed identically to the regular regex patterns 
+When lookup tables are supplied in training data, the contents are combined
+into a large, case-insensitive regex pattern that looks for exact matches in
+the training examples. These regexes match over multiple tokens, so
+``lettuce wrap`` would match ``get me a lettuce wrap ASAP`` as ``[0 0 0 1 1 0]``.
+These regexes are processed identically to the regular regex patterns
 directly specified in the training data.
 
 .. note::
@@ -285,5 +284,3 @@ directly specified in the training data.
     For example if there are false positives or other noise in the table,
     this can hurt performance. So make sure your lookup tables contain
     clean data.
-
-

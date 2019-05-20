@@ -1,13 +1,13 @@
 :desc: Run and ship your Rasa assistant with Docker containers on any
        Docker-compatible machine or cluster.
 
-.. _docker_guide:
+.. _running-rasa-with-docker:
 
 Running Rasa with Docker
 ========================
 
 This is a guide on how to use Rasa with Docker.
-If you haven't used Rasa before, we'd recommend that you read the :ref:`tutorial`.
+If you haven't used Rasa before, we'd recommend that you read the :ref:`rasa-tutorial`.
 
 .. contents::
    :local:
@@ -44,7 +44,7 @@ This section will cover the following:
 Setup
 ~~~~~
 
-Just like in the :ref:`tutorial`, you'll use the ``rasa init`` command to create a project.
+Just like in the :ref:`rasa-tutorial`, you'll use the ``rasa init`` command to create a project.
 The only difference is that you'll be running Rasa inside a Docker container, using
 the image ``rasa/rasa``. To initialize your project, run:
 
@@ -64,7 +64,7 @@ What does this command mean?
 
 Running this command will produce a lot of output. What happens is:
 
-- a Rasa project is created (see :ref:`tutorial`)
+- a Rasa project is created (see :ref:`rasa-tutorial`)
 - an initial model is trained using the project's training data.
 
 To check that the command completed correctly, look at the contents of your working directory:
@@ -99,7 +99,7 @@ Choosing a Tag
 ~~~~~~~~~~~~~~
 
 To keep images as small as possible, we publish different tags of the ``rasa/rasa`` image
-with different dependencies installed. See :ref:`choosing_pipeline` for more information.
+with different dependencies installed. See :ref:`choosing-a-pipeline` for more information.
 
 All tags start with a version, the ``latest`` tag corresponds to the current master build.
 The tags are:
@@ -146,7 +146,7 @@ Here's what's happening in that command:
   - ``rasa/rasa:latest-full``: Use the Rasa image with the tag ``latest-full``
   - ``train``: Execute the ``rasa train`` command within the container. This requires
     the default locations for the configuration files and training data. For more
-    information see :ref:`cli-usage`.
+    information see :ref:`command-line-interface`.
 
 In this case, we've also passed values for the location of the domain file, training
 data and the models output directory to show how these can be customized.
@@ -188,7 +188,7 @@ Command Description:
     in the container
   - ``rasa/rasa:latest-full``: Use the Rasa image with the tag ``latest-full``
   - ``run``: Executes the ``rasa run`` command. For more information see
-    :ref:`cli-usage`.
+    :ref:`command-line-interface`.
 
 
 Using Docker Compose to Run Multiple Services
@@ -363,10 +363,10 @@ Adding a Custom Tracker Store
 By default all conversations are saved in memory. This means that all
 conversations are lost as soon as you restart the Rasa server.
 If you want to persist your conversations, you can use a different
-:ref:`tracker_store`.
+:ref:`tracker-stores`.
 
 Using PostgresSQL as Tracker Store
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Start by adding PostgresSQL to your docker-compose file:
 
@@ -451,7 +451,7 @@ to add this store to Rasa:
   - mounting it as volume
 
 Then add the required configuration to your endpoint configuration
-``endpoints.yml`` as it is described in :ref:`tracker_store`.
+``endpoints.yml`` as it is described in :ref:`tracker-stores`.
 If you want the tracker store component (e.g. a certain database) to be part
 of your Docker Compose file, add a corresponding service and configuration
 there.

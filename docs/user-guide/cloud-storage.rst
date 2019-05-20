@@ -1,10 +1,10 @@
 :desc: Handle Rasa models on premise or in your private cloud for
        gdpr compliant intent recognition and entity extraction.
 
-.. _section_persistence:
+.. _cloud-storage:
 
-Storing Models in the Cloud
-===========================
+Cloud Storage
+=============
 
 
 Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ and

@@ -1,7 +1,7 @@
 :desc: Find out how open source chatbot framework Rasa Stack allows
        you to stream events to a message broker.
 
-.. _brokers:
+.. _event-brokers:
 
 Event Brokers
 =============
@@ -151,7 +151,7 @@ The code below shows an example on how to instantiate a Kafka producer in you sc
 
 
 The host variable can be either a list of brokers adresses or a single one.
-If only one broker address is available, the client will connect to it and 
+If only one broker address is available, the client will connect to it and
 request the cluster Metadata.
 Therefore, the remain brokers in the cluster can be discovered
 automatically through the data served by the first connected broker.
@@ -231,4 +231,3 @@ according to the security protocol being used. The following implementation show
 
     for message in consumer:
         print(message.value)
-

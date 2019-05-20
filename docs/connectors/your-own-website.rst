@@ -1,6 +1,6 @@
 :desc: Deploy and Run a Rasa Chat Bot on a Website
 
-.. _website_connector:
+.. _your-own-website:
 
 Your Own Website
 ================
@@ -106,7 +106,7 @@ Here is an example on how to connect the
 
 .. code-block:: bash
 
- rasa run 
+ rasa run
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -135,5 +135,3 @@ and the following ``JSON`` body:
    [
      {"text": "Hey Rasa!"}, {"image": "http://example.com/image.jpg"}
    ]
-
-

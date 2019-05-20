@@ -1,5 +1,7 @@
 :desc: Rasa NLU Changelog
 
+.. _old-nlu-change-log:
+
 NLU Change Log
 ==============
 
