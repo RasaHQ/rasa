@@ -235,6 +235,8 @@ def rasa_x(args: argparse.Namespace):
         # noinspection PyUnresolvedReferences
         from rasax.community import local
 
+        local.check_license_and_metrics(args)
+
         rasa_x_token = generate_rasa_x_token()
         process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
         try:
