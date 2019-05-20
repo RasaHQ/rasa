@@ -211,14 +211,15 @@ def rasa_x(args: argparse.Namespace):
         if not is_rasa_project_setup(project_path):
             print_error(
                 "This directory is not a valid Rasa project. Use 'rasa init' "
-                "to create a fresh Rasa project."
+                "to create a new Rasa project or switch to a valid Rasa project "
+                "directory."
             )
             sys.exit(1)
 
         if args.data and not os.path.exists(args.data):
             print_warning(
                 "The provided data path ('{}') does not exists. Rasa X will start "
-                "without any data.".format(args.data)
+                "without any training data.".format(args.data)
             )
 
         # noinspection PyUnresolvedReferences
