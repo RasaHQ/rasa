@@ -132,8 +132,9 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs docs . -- -b dirhtml -W -A html_theme=rasabaster
+    - sphinx-versioning push docs docs . -- -b dirhtml -W --keep-going -A html_theme=rasabaster
   - stage: deploy
+    if: fork = false AND branch = master
     name: "Deploy to PyPI"
     python: 3.6
     install: skip
