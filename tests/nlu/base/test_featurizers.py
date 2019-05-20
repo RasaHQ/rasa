@@ -345,7 +345,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     data = TrainingData([train_message1, train_message2])
     train_ftr.train(data)
     # persist featurizer
-    file_dict = train_ftr.persist("ftr", tmpdir)
+    file_dict = train_ftr.persist("ftr", tmpdir.strpath)
     train_vect_params = train_ftr.vectorizer.get_params()
     # add trained vocabulary to vectorizer params
     train_vect_params.update({"vocabulary": train_ftr.vectorizer.vocabulary_})
@@ -353,7 +353,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     # load featurizer
     meta = train_ftr.component_config.copy()
     meta.update(file_dict)
-    test_ftr = CountVectorsFeaturizer.load(meta, tmpdir)
+    test_ftr = CountVectorsFeaturizer.load(meta, tmpdir.strpath)
     test_vect_params = test_ftr.vectorizer.get_params()
 
     assert train_vect_params == test_vect_params
