@@ -132,7 +132,9 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
 
     ctx = get_context("spawn")
     p = ctx.Process(target=_rasa_service, args=(args, endpoints, rasa_x_url))
+    p.daemon = True
     p.start()
+    return p
 
 
 def is_rasa_x_installed():
@@ -226,5 +228,8 @@ def rasa_x(args: argparse.Namespace):
         from rasax.community import local
 
         rasa_x_token = generate_rasa_x_token()
-        start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
-        local.main(args, project_path, args.data, token=rasa_x_token)
+        process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
+        try:
+            local.main(args, project_path, args.data, token=rasa_x_token)
+        finally:
+            process.terminate()
