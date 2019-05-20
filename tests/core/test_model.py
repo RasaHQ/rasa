@@ -28,7 +28,6 @@ from rasa.model import (
     nlu_fingerprint_changed,
     Fingerprint,
     should_retrain,
-    decompress,
 )
 
 
@@ -241,11 +240,3 @@ def set_fingerprint(
     create_package_rasa(unpacked_model_path, output_path, fingerprint)
 
     return output_path
-
-
-def test_decompress(trained_model):
-    output_path = decompress(trained_model)
-
-    assert os.path.exists(output_path)
-    assert os.path.isdir(output_path)
-    assert not os.path.exists(trained_model)

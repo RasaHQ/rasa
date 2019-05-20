@@ -348,8 +348,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 probabilities[
                     domain.index_for_action(tracker.events[-1].action_name)
                 ] = 0.0
-            confidence = np.max(probabilities)
 
+            confidence = np.max(probabilities)
             if (confidence, p.priority) > (max_confidence, best_policy_priority):
                 max_confidence = confidence
                 result = probabilities
@@ -388,10 +388,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 best_policy_name = "policy_{}_{}".format(
                     fallback_idx, type(fallback_policy).__name__
                 )
-
-        # normalize probabilities
-        if np.sum(result) != 0:
-            result = result / np.nansum(result)
 
         logger.debug("Predicted next action using {}".format(best_policy_name))
         return result, best_policy_name

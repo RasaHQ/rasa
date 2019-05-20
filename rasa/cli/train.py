@@ -66,7 +66,6 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         output=args.out,
         force_training=args.force,
         fixed_model_name=args.fixed_model_name,
-        uncompress=args.store_uncompressed,
         kwargs=extract_additional_arguments(args),
     )
 
@@ -104,7 +103,6 @@ def train_core(
             output=output,
             train_path=train_path,
             fixed_model_name=args.fixed_model_name,
-            uncompress=args.store_uncompressed,
             kwargs=extract_additional_arguments(args),
         )
     else:
@@ -132,7 +130,6 @@ def train_nlu(
         output=output,
         train_path=train_path,
         fixed_model_name=args.fixed_model_name,
-        uncompress=args.store_uncompressed,
     )
 
 

@@ -5,7 +5,7 @@ from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.model import decompress, Fingerprint, should_retrain
+from rasa.model import Fingerprint, should_retrain
 from rasa.skill import SkillSelector
 
 from rasa.cli.utils import (
@@ -34,7 +34,6 @@ def train(
     output: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
-    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
@@ -46,7 +45,6 @@ def train(
             output_path=output,
             force_training=force_training,
             fixed_model_name=fixed_model_name,
-            uncompress=uncompress,
             kwargs=kwargs,
         )
     )
@@ -59,7 +57,6 @@ async def train_async(
     output_path: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
-    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
@@ -85,8 +82,8 @@ async def train_async(
         domain = Domain.load(domain, skill_imports)
     except InvalidDomain as e:
         print_error(
-            "Could not load domain due to: '{}'. To specify a valid domain path use "
-            "the '--domain' argument.".format(e)
+            "Could not load domain due to error: {} \nTo specify a valid domain "
+            "path, use the '--domain' argument.".format(e)
         )
         return None
 
@@ -116,7 +113,6 @@ async def train_async(
             nlu_data_directory=nlu_data_directory,
             output=output_path,
             fixed_model_name=fixed_model_name,
-            uncompress=uncompress,
         )
 
     if nlu_data_not_present:
@@ -127,7 +123,6 @@ async def train_async(
             story_directory=story_directory,
             output=output_path,
             fixed_model_name=fixed_model_name,
-            uncompress=uncompress,
             kwargs=kwargs,
         )
 
@@ -146,7 +141,6 @@ async def train_async(
             retrain_core=retrain_core,
             retrain_nlu=retrain_nlu,
             fixed_model_name=fixed_model_name,
-            uncompress=uncompress,
             kwargs=kwargs,
         )
 
@@ -155,7 +149,6 @@ async def train_async(
             output_path=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
-            uncompress=uncompress,
         )
 
     print_success(
@@ -176,7 +169,6 @@ async def _do_training(
     retrain_core: bool = True,
     retrain_nlu: bool = True,
     fixed_model_name: Optional[Text] = None,
-    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ):
 
@@ -188,7 +180,6 @@ async def _do_training(
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
-            uncompress=uncompress,
             kwargs=kwargs,
         )
     else:
@@ -201,7 +192,6 @@ async def _do_training(
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
-            uncompress=uncompress,
         )
     else:
         print ("NLU data / configuration did not change. No need to retrain NLU model.")
@@ -214,7 +204,6 @@ def train_core(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
-    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
@@ -226,7 +215,6 @@ def train_core(
             output=output,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
-            uncompress=uncompress,
             kwargs=kwargs,
         )
     )
@@ -239,7 +227,6 @@ async def train_core_async(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
-    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Core model.
@@ -290,7 +277,6 @@ async def train_core_async(
         output=output,
         train_path=train_path,
         fixed_model_name=fixed_model_name,
-        uncompress=uncompress,
         kwargs=kwargs,
     )
 
@@ -302,7 +288,6 @@ async def _train_core_with_validated_data(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
-    uncompress: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
@@ -333,7 +318,6 @@ async def _train_core_with_validated_data(
             train_path=_train_path,
             fixed_model_name=fixed_model_name,
             model_prefix="core-",
-            uncompress=uncompress,
         )
 
     return _train_path
@@ -345,7 +329,6 @@ def train_nlu(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
-    uncompress: bool = False,
 ) -> Optional[Text]:
     """Trains an NLU model.
 
@@ -382,7 +365,6 @@ def train_nlu(
         output=output,
         train_path=train_path,
         fixed_model_name=fixed_model_name,
-        uncompress=uncompress,
     )
 
 
@@ -392,7 +374,6 @@ def _train_nlu_with_validated_data(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
-    uncompress: bool = False,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
 
@@ -416,7 +397,6 @@ def _train_nlu_with_validated_data(
             train_path=_train_path,
             fixed_model_name=fixed_model_name,
             model_prefix="nlu-",
-            uncompress=uncompress,
         )
 
     return _train_path
@@ -458,15 +438,11 @@ def _package_model(
     train_path: Text,
     fixed_model_name: Optional[Text] = None,
     model_prefix: Text = "",
-    uncompress: bool = False,
 ):
     output_path = create_output_path(
         output_path, prefix=model_prefix, fixed_name=fixed_model_name
     )
     model.create_package_rasa(train_path, output_path, new_fingerprint)
-
-    if uncompress:
-        output_path = decompress(output_path)
 
     print_success(
         "Your Rasa model is trained and saved at '{}'.".format(

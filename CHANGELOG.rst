@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.0rc10] - `master`_
+[Unreleased 1.0.0rc11] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -38,6 +38,8 @@ Added
 - log level can be set via environment variable ``LOG_LEVEL``
 - add ``--store-uncompressed`` to train command to not compress Rasa model
 - log level of libraries, such as tensorflow, can be set via environment variable ``LOG_LEVEL_LIBRARIES``
+- if no spaCy model is linked upon building a spaCy pipeline, an appropriate error message
+  is now raised with instructions for linking one
 
 Changed
 -------
@@ -82,6 +84,7 @@ Fixed
 - in interactive learning: only updates entity values if user changes annotation
 - log options from the command line interface are applied (they overwrite the environment variable)
 - all message arguments (kwargs in dispatcher.utter methods, as well as template args) are now sent through to output channels
+- utterance templates defined in actions are checked for existence upon training a new agent, and training is aborted if one is missing
 
 .. _`master`: https://github.com/RasaHQ/rasa/
 
