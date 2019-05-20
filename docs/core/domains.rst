@@ -49,7 +49,7 @@ For example, an ``action`` can:
 * make an external API call
 * query a database
 
-see :ref:`customactions` .
+see :ref:`custom-actions`.
 
 Custom Actions and Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^

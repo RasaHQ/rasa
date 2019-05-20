@@ -141,7 +141,6 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
         metadata=message,
     )
 
-    logger.debug("Bot utterance '{}'".format(bot_message))
     return bot_message
 
 
