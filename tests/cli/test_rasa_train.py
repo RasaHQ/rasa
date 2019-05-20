@@ -70,7 +70,7 @@ def test_train_with_only_nlu_data(run_in_default_project):
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
-    assert os.path.basename(files[0]) == "nlu-test-model.tar.gz"
+    assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
 def test_train_with_only_core_data(run_in_default_project):
@@ -85,7 +85,7 @@ def test_train_with_only_core_data(run_in_default_project):
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = list_files(os.path.join(temp_dir, "models"))
     assert len(files) == 1
-    assert os.path.basename(files[0]) == "core-test-model.tar.gz"
+    assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
 def test_train_core(run_in_default_project):
@@ -100,13 +100,12 @@ def test_train_core(run_in_default_project):
         "data",
         "--out",
         "train_rasa_models",
-        "--store-uncompressed",
         "--fixed-model-name",
         "rasa-model",
     )
 
-    assert os.path.exists("train_rasa_models/core-rasa-model")
-    assert os.path.isdir("train_rasa_models/core-rasa-model")
+    assert os.path.exists("train_rasa_models/rasa-model.tar.gz")
+    assert os.path.isfile("train_rasa_models/rasa-model.tar.gz")
 
 
 def test_train_nlu(run_in_default_project):
@@ -134,7 +133,7 @@ def test_train_help(run):
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--dump-stories] [--fixed-model-name FIXED_MODEL_NAME]
-                  [--force] [--store-uncompressed]
+                  [--force]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -147,8 +146,7 @@ def test_train_nlu_help(run):
     output = run("train", "nlu", "--help")
 
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [--out OUT]
-                      [-u NLU] [--fixed-model-name FIXED_MODEL_NAME]
-                      [--store-uncompressed]"""
+                      [-u NLU] [--fixed-model-name FIXED_MODEL_NAME]"""
 
     lines = help_text.split("\n")
 
@@ -164,7 +162,6 @@ def test_train_core_help(run):
                        [--augmentation AUGMENTATION] [--debug-plots]
                        [--dump-stories] [--force]
                        [--fixed-model-name FIXED_MODEL_NAME]
-                       [--store-uncompressed]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
                        [--runs RUNS]"""
 
