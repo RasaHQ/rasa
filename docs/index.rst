@@ -86,7 +86,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/event-brokers
    api/featurization
    migration-guide
-   ../../CHANGELOG
+   changelog
 
 .. toctree:
    :maxdepth: 1
