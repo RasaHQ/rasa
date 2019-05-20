@@ -95,7 +95,7 @@ and a simple interruption shouldn't throw off your assistant completely.
 This is a key reason for building an assistant that can learn from real data.
 
 The best way to collect training data for unhappy paths is to use 
-:ref:`section_interactive_learning_forms`
+:ref:`interactive_learning`.
 
 .. conversations:: 
    examples:
