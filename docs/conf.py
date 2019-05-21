@@ -381,7 +381,7 @@ def setup(sphinx):
     sphinx.add_stylesheet("css/custom.css")
 
     try:
-        utils_path = os.path.abspath(os.path.join(__file__, "..", "util"))
+        utils_path = os.path.abspath(os.path.join(__file__, "..", "utils"))
         sys.path.insert(0, utils_path)
         from StoryLexer import StoryLexer
 
