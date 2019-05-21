@@ -10,10 +10,6 @@
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
-**Note** This repository now contains the code for both Rasa NLU **AND** Rasa Core.
-Nothing has changed yet in terms of usage, but we are in the process of simplifying
-everything ahead of the next major release. 
-
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build chatbots on:
 - Facebook Messenger
 - Slack
