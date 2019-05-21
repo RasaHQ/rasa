@@ -20,8 +20,11 @@ Markdown Format
 Markdown is the easiest Rasa NLU format for humans to read and write.
 Examples are listed using the unordered
 list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
-Examples are grouped by intent, and entities are annotated as markdown links,
-e.g. ``[entity](entity name)``.
+Examples are grouped by intent. Within examples entities and keywords can annotated.
+Entities are annotated as markdown links, e.g. ``[entity](entity name)``.
+Keyword are annoted using double brackets, e.g. ``[intent[keyword]]``. The ``intent``
+does not need to be specified, if it is not given the keyword will be treated as
+a keyword for the intent under which the example is given.
 
 .. code-block:: md
 
@@ -33,7 +36,7 @@ e.g. ``[entity](entity name)``.
 
     ## intent:greet
     - hey
-    - hello
+    - [greet[hello]] <!-- keyword for intent greet>
 
     ## synonym:savings   <!-- synonyms, method 2 -->
     - pink pig
@@ -65,7 +68,7 @@ JSON Format
 -----------
 
 The JSON format consists of a top-level object called ``rasa_nlu_data``, with the keys
-``common_examples``, ``entity_synonyms`` and ``regex_features``.
+``common_examples``, ``entity_synonyms``, ``regex_features`` and ``intent_keywords``.
 The most important one is ``common_examples``.
 
 .. code-block:: json
@@ -75,7 +78,8 @@ The most important one is ``common_examples``.
             "common_examples": [],
             "regex_features" : [],
             "lookup_tables"  : [],
-            "entity_synonyms": []
+            "entity_synonyms": [],
+            "intent_keywords": {}
         }
     }
 
@@ -287,3 +291,16 @@ directly specified in the training data.
     clean data.
 
 
+Intent Keywords
+---------------
+Intent Keywords can be specified if the :ref:`KeywordIntentClassifier` is being used.
+
+.. code-block:: json
+
+    {
+        "rasa_nlu_data": {
+            "intent_keywords": {
+                    "intent": ["keyword1", "keyword2", "keyword3"]
+            }
+        }
+    }

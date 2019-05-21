@@ -255,10 +255,13 @@ CountVectorsFeaturizer
 Intent Classifiers
 ------------------
 
+
+.. _KeywordIntentClassifier:
+
 KeywordIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Simple keyword matching intent classifier. Not intended to be used.
+:Short: Simple keyword matching intent classifier.
 :Outputs: ``intent``
 :Requires: nothing
 :Output-Example:
@@ -266,12 +269,23 @@ KeywordIntentClassifier
     .. code-block:: json
 
         {
-            "intent": {"name": "greet", "confidence": 0.98343}
+            "intent": {"name": "greet", "confidence": 1.0}
         }
 
 :Description:
-    This classifier is mostly used as a placeholder. It is able to recognize `hello` and
-    `goodbye` intents by searching for these keywords in the passed messages.
+    This classifier works by searching a message for user-defined keywords.
+    The matching is case insensitive and search only for exact matches of the keyword-string.
+    This is intended to augment the other classifiers. In order to use it it must be
+    added to the pipeline after the other classifier.
+
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "SomeIntentClassifier"
+        - name: "KeywordIntentClassifier"
+
 
 MitieIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~

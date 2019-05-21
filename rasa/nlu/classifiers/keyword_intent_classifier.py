@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 from typing import Any, Dict, Optional, Text
 
 from rasa.nlu import utils
@@ -39,7 +40,7 @@ class KeywordIntentClassifier(Component):
 
         for intent, keywords in self.intent_keyword_map.items():
             for word in keywords:
-                if word.lower() in _text:
+                if re.search(r"\b"+word.lower()+r"\b", _text):
                     return intent
 
         return None
