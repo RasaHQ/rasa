@@ -137,7 +137,7 @@ class SlackInput(InputChannel):
 
         Args:
             slack_token: Your Slack Authentication token. You can create a
-                slack app and get your Bot User OAuth Access Token
+                Slack app and get your Bot User OAuth Access Token
                 `here <https://api.slack.com/slack-apps>`_.
             slack_channel: the string identifier for a channel to which
                 the bot posts, or channel name (e.g. '#bot-test')

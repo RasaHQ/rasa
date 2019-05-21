@@ -99,8 +99,8 @@ def validate_rasa_nlu_data(data: Dict[Text, Any]) -> None:
         e.message += (
             ". Failed to validate training data, make sure your data "
             "is valid. For more information about the format visit "
-            "{}/nlu/training-data-format/"
-        ).format(DOCS_BASE_URL)
+            "{}/nlu/training-data-format/".format(DOCS_BASE_URL)
+        )
         raise e
 
 
