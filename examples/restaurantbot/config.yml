@@ -9,7 +9,6 @@ pipeline:
   - name: "EntitySynonymMapper"
 
 policies:
-    max_history: 3
   - name: "examples.restaurantbot.policy.RestaurantPolicy"
     batch_size: 100
     epochs: 400
