@@ -1,15 +1,12 @@
 :desc: Use Interactive learning to continuously validate and improve the
        performance of your AI Assistant using machine learning based
-       open source dialogue management. 
+       open source dialogue management.
 
-.. _interactive_learning:
+.. _interactive-learning:
 
 Interactive Learning
 ====================
 
-
-Rasa X provides a UI for interactive learning, and you can use any user conversation
-as a starting point. See :ref:`improve` for details.
 This page shows how to use interactive learning on the command line.
 
 In interactive learning mode, you provide feedback to your bot while you talk
@@ -20,6 +17,13 @@ your bot doesn't know how to do something yet, you can just teach it!
 Some people call this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a64152b37c35>`_.
 
 
+.. note::
+
+    Rasa X provides a UI for interactive learning, and you can use any user conversation
+    as a starting point. See `Copy to Interactive Learning
+    <../../rasa-x/docs/annotate-conversations/>`_ in the Rasa X docs.
+
+
 Running Interactive Learning
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -27,7 +31,7 @@ Run the following command to start interactive learning:
 
 .. code-block:: bash
 
-   python3 -m rasa_sdk --actions actions&
+   rasa run actions --actions actions&
 
    rasa interactive \
      -m models/20190515-135859.tar.gz \
@@ -78,13 +82,14 @@ Providing feedback on errors
 
 For this example we are going to use the ``concertbot`` example,
 so make sure you have the domain & data for it. You can download
-the data from :gh-code:`examples/concertbot`.
+the data from our `github repo
+<https://github.com/RasaHQ/rasa/tree/master/examples/concertbot>`_.
 
 If you ask ``/search_concerts``, the bot should suggest
 ``action_search_concerts`` and then ``action_listen`` (the confidence at which
 the policy selected its next action will be displayed next to the action name).
 Now let's enter ``/compare_reviews`` as the next user message.
-The bot **might** choose the wrong one out of the two
+The bot *might* choose the wrong one out of the two
 possibilities (depending on the training run, it might also be correct):
 
 .. code-block:: text
@@ -179,7 +184,7 @@ When you use interactive learning to generate stories containing a form,
 the conversation steps handled by the form
 get a :code:`form:` prefix. This tells Rasa Core to ignore these steps when training
 your other policies. There is nothing special you have to do here, all of the form's
-happy paths are still covered by the basic story given in :ref:`section_form_basics`.
+happy paths are still covered by the basic story given in :ref:`forms`.
 
 Here is an example:
 
@@ -263,5 +268,3 @@ should not be validated. The bot will then continue to ask for the
 
     Once you've removed that story, you can press enter and continue with
     interactive learning
-
-

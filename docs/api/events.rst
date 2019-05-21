@@ -1,7 +1,7 @@
 :desc: Use events in open source library Rasa Core to support functionalities
        like resetting slots, scheduling reminder or pausing a conversation.
 
-.. _events-classes:
+.. _events:
 
 Events
 ======
@@ -28,9 +28,9 @@ Set a Slot
 
 :Short: Event to set a slot on a tracker
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER SetSlot
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.SlotSet
@@ -38,7 +38,7 @@ Set a Slot
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: SlotSet.apply_to
 
@@ -48,9 +48,9 @@ Restart a conversation
 
 :Short: Resets anything logged on the tracker.
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER Restarted
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.Restarted
@@ -58,7 +58,7 @@ Restart a conversation
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: Restarted.apply_to
 
@@ -68,9 +68,9 @@ Reset all Slots
 
 :Short: Resets all the slots of a conversation.
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER AllSlotsReset
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.AllSlotsReset
@@ -78,7 +78,7 @@ Reset all Slots
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: AllSlotsReset.apply_to
 
@@ -88,10 +88,10 @@ Schedule a reminder
 
 :Short: Schedule an action to be executed in the future.
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
+    .. literalinclude:: ../../tests/core/test_events.py
       :lines: 1-
-      :dedent: 8
       :start-after: # DOCS MARKER ReminderScheduled
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ReminderScheduled
@@ -106,9 +106,9 @@ Pause a conversation
 :Short: Stops the bot from responding to messages. Action prediction
         will be halted until resumed.
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER ConversationPaused
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ConversationPaused
@@ -116,7 +116,7 @@ Pause a conversation
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: ConversationPaused.apply_to
 
@@ -127,9 +127,9 @@ Resume a conversation
 :Short: Resumes a previously paused conversation. The bot will start
         predicting actions again.
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER ConversationResumed
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ConversationResumed
@@ -137,7 +137,7 @@ Resume a conversation
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: ConversationResumed.apply_to
 
@@ -148,9 +148,9 @@ Force a followup action
 :Short: Instead of predicting the next action, force the next action
         to be a fixed one.
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER FollowupAction
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.FollowupAction
@@ -158,7 +158,7 @@ Force a followup action
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: FollowupAction.apply_to
 
@@ -172,10 +172,10 @@ User sent message
 
 :Short: Message a user sent to the bot.
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
+    .. literalinclude:: ../../tests/core/test_events.py
       :lines: 1-
-      :dedent: 8
       :start-after: # DOCS MARKER UserUttered
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.UserUttered
@@ -183,7 +183,7 @@ User sent message
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: UserUttered.apply_to
 
@@ -193,9 +193,9 @@ Bot responded message
 
 :Short: Message a bot sent to the user.
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER BotUttered
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.BotUttered
@@ -203,7 +203,7 @@ Bot responded message
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: BotUttered.apply_to
 
@@ -214,9 +214,9 @@ Undo a user message
 :Short: Undoes all side effects that happened after the last user message
         (including the ``user`` event of the message).
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER UserUtteranceReverted
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.UserUtteranceReverted
@@ -224,7 +224,7 @@ Undo a user message
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: UserUtteranceReverted.apply_to
 
@@ -235,9 +235,9 @@ Undo an action
 :Short: Undoes all side effects that happened after the last action
         (including the ``action`` event of the action).
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER ActionReverted
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ActionReverted
@@ -245,7 +245,7 @@ Undo an action
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: ActionReverted.apply_to
 
@@ -256,9 +256,9 @@ Log an executed action
 :Short: Logs an action the bot executed to the conversation. Events that
         action created are logged separately.
 :JSON:
-    .. literalinclude:: ../../../tests/core/test_events.py
-      :dedent: 10
+    .. literalinclude:: ../../tests/core/test_events.py
       :start-after: # DOCS MARKER ActionExecuted
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ActionExecuted
@@ -266,8 +266,6 @@ Log an executed action
 :Effect:
     When added to a tracker, this is the code used to update the tracker:
 
-    .. literalinclude:: ../../../rasa/core/events/__init__.py
+    .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: ActionExecuted.apply_to
-
-

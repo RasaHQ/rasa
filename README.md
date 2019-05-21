@@ -1,4 +1,4 @@
-# Rasa (Rasa Core + Rasa NLU)
+# Rasa (formerly Rasa Core + Rasa NLU)
 
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://badge.fury.io/py/rasa-nlu.svg)](https://badge.fury.io/py/rasa-nlu)
@@ -14,8 +14,7 @@
 Nothing has changed yet in terms of usage, but we are in the process of simplifying
 everything ahead of the next major release. 
 
-Rasa is a framework for building conversational software, which includes
-chatbots on:
+Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build chatbots on:
 - Facebook Messenger
 - Slack
 - Microsoft Bot Framework
@@ -23,8 +22,9 @@ chatbots on:
 - Mattermost
 - Telegram
 - Twilio
+- Your own custom conversational channels
 
-But you can also build assistants using:
+or voice assistants as:
 - Alexa Skills
 - Google Home Actions
 
@@ -37,14 +37,14 @@ There's a lot more background information in this
 [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
 
 ---
-- **What do Rasa Core & NLU do? 🤔**
-  [Read About Rasa](https://rasa.com/products/rasa-stack/)
+- **What does Rasa do? 🤔**
+  [Check out our Website](https://rasa.com/)
 
 - **I'd like to read the detailed docs 🤓**
   [Read The Docs](https://rasa.com/docs)
 
-- **I'm ready to install Rasa! 🚀**
-  [Installation](https://rasa.com/docs/core/installation/)
+- **I'm ready to install Rasa and get started! 🚀**
+  [Installation](https://rasa.com/docs/docs/getting-started/)
 
 - **I have a question ❓**
   [Rasa Community Forum](https://forum.rasa.com)

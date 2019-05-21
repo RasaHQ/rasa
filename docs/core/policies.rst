@@ -1,10 +1,11 @@
-:desc: Define and train custom policies to optimize your contextual assistant
-       for longer context or unseen utterances which require generalization.
+:desc: Define and train customized policy configurations to optimize your
+       contextual assistant for longer context or unseen utterances which
+       require generalization.
 
 .. _policies:
 
-Training and Policies
-=====================
+Policies
+========
 
 .. contents::
    :local:
@@ -13,7 +14,7 @@ Training and Policies
 Data Augmentation
 ^^^^^^^^^^^^^^^^^
 
-When you train a model, by default Rasa Core will create 
+When you train a model, by default Rasa Core will create
 longer stories by randomly gluing together
 the ones in your stories files.
 This is because if you have stories like:
@@ -34,7 +35,18 @@ when it isn't relevant and just respond with the same action no matter
 what happened before.
 
 You can alter this behaviour with the ``--augmentation`` flag.
-``--augmentation 0`` disables this behavior.
+Which allows you to set the ``augmentation_factor``.
+The ``augmentation_factor`` determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since their number
+can become very large quickly.
+The number of sampled stories is ``augmentation_factor`` x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+
+``--augmentation 0`` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the ``augmentation_factor``) and will automatically
+ignore all augmented stories.
 
 
 .. _policy_file:
@@ -124,13 +136,13 @@ The default architecture is based on an LSTM, but you can override the
 ``KerasPolicy.model_architecture`` method to implement your own architecture.
 
 
-.. literalinclude:: ../../../rasa/core/policies/keras_policy.py
+.. literalinclude:: ../../rasa/core/policies/keras_policy.py
    :dedent: 4
    :pyobject: KerasPolicy.model_architecture
 
 and the training is run here:
 
-.. literalinclude:: ../../../rasa/core/policies/keras_policy.py
+.. literalinclude:: ../../rasa/core/policies/keras_policy.py
    :dedent: 4
    :pyobject: KerasPolicy.train
 
@@ -180,7 +192,7 @@ following steps:
     - for each LSTM time step, calculate the similarity between the
       dialogue embedding and embedded system actions.
       This step is based on the
-      `starspace idea <https://arxiv.org/abs/1709.03856>`_.
+      `StarSpace <https://arxiv.org/abs/1709.03856>`_ idea.
 
 .. note::
 
@@ -310,7 +322,7 @@ It is recommended to use
     These parameters can be specified in the policy configuration file.
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
-    .. literalinclude:: ../../../rasa/core/policies/embedding_policy.py
+    .. literalinclude:: ../../rasa/core/policies/embedding_policy.py
        :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)
@@ -337,8 +349,7 @@ Form Policy
 The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which
 handles the filling of forms. Once a ``FormAction`` is called, the
 ``FormPolicy`` will continually predict the ``FormAction`` until all slots
-in the form are filled. For more information, see `Slot Filling
-<https://rasa.com/docs/core/slotfilling/>`_.
+in the form are filled. For more information, see :ref:`forms`.
 
 
 Mapping Policy
@@ -381,8 +392,8 @@ it will listen for the next message.
 Fallback Policy
 ^^^^^^^^^^^^^^^
 
-The ``FallbackPolicy`` invokes a `fallback action
-<https://rasa.com/docs/core/fallbacks/>`_ if the intent recognition
+The ``FallbackPolicy`` invokes a :ref:`fallback action
+<fallback-actions>` if the intent recognition
 has a confidence below ``nlu_threshold`` or if none of the dialogue
 policies predict an action with confidence higher than ``core_threshold``.
 
@@ -406,8 +417,8 @@ policies predict an action with confidence higher than ``core_threshold``.
     | ``core_threshold``         | Min confidence needed to accept an action   |
     |                            | prediction from Rasa Core                   |
     +----------------------------+---------------------------------------------+
-    | ``fallback_action_name``   | Name of the `fallback action                |
-    |                            | <https://rasa.com/docs/core/fallbacks/>`_   |
+    | ``fallback_action_name``   | Name of the :ref:`fallback action           |
+    |                            | <fallback-actions>`                         |
     |                            | to be called if the confidence of intent    |
     |                            | or action is below the respective threshold |
     +----------------------------+---------------------------------------------+
@@ -482,14 +493,14 @@ by trying to disambiguate the user input.
     | ``core_threshold``            | Min confidence needed to accept an action|
     |                               | prediction from Rasa Core                |
     +-------------------------------+------------------------------------------+
-    | ``fallback_core_action_name`` | Name of the `fallback action             |
-    |                               | <https://rasa.com/docs/core/fallbacks/>`_|
+    | ``fallback_core_action_name`` | Name of the :ref:`fallback action        |
+    |                               | <fallback-actions>`                      |
     |                               | to be called if the confidence of Rasa   |
     |                               | Core action prediction is below the      |
     |                               | ``core_threshold``                       |
     +-------------------------------+------------------------------------------+
-    | ``fallback_nlu_action_name``  | Name of the `fallback action             |
-    |                               | <https://rasa.com/docs/core/fallbacks/>`_|
+    | ``fallback_nlu_action_name``  | Name of the :ref:`fallback action        |
+    |                               | <fallback-actions>`                      |
     |                               | to be called if the confidence of Rasa   |
     |                               | NLU intent classification is below the   |
     |                               | ``nlu_threshold``                        |

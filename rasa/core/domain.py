@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import pkg_resources
 from pykwalify.errors import SchemaError
 from ruamel.yaml import YAMLError
-from ruamel.yaml.scanner import ScannerError
 
 import rasa.utils.io
+from rasa.cli.utils import bcolors
 from rasa import data
 from rasa.core import utils
 from rasa.core.actions import Action, action
@@ -32,14 +32,21 @@ if typing.TYPE_CHECKING:
 class InvalidDomain(Exception):
     """Exception that can be raised when domain is not valid."""
 
-    pass
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        # return message in error colours
+        return bcolors.FAIL + self.message + bcolors.ENDC
 
 
 def check_domain_sanity(domain):
     """Make sure the domain is properly configured.
 
-    Checks the settings and checks if there are duplicate actions,
-    intents, slots and entities."""
+    If the domain contains any duplicate slots, intents, actions
+    or entities, an InvalidDomain error is raised.  This error
+    is also raised when intent-action mappings are incorrectly
+    named or an utterance template is missing."""
 
     def get_duplicates(my_items):
         """Returns a list of duplicate items in my_items."""
@@ -61,6 +68,7 @@ def check_domain_sanity(domain):
     def get_exception_message(
         duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
         mappings: List[Tuple[Text, Text]] = None,
+        templates: List[Text] = None,
     ):
         """Return a message given a list of error locations."""
 
@@ -71,6 +79,13 @@ def check_domain_sanity(domain):
             if message:
                 message += "\n"
             message += get_mapping_exception_message(mappings)
+        if templates:
+            for template in templates:
+                message += (
+                    "\nUtterance '{}' is listed as an "
+                    "action in the domain file, but there is "
+                    "no matching utterance template."
+                ).format(template)
         return message
 
     def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
@@ -103,6 +118,17 @@ def check_domain_sanity(domain):
                 )
         return message
 
+    def get_missing_templates(
+        action_names: List[Text], templates: Dict[Text, Any]
+    ) -> List[Text]:
+        """Return utterance names which have no specified template."""
+
+        utterances = [
+            act for act in action_names if act.startswith(action.UTTER_PREFIX)
+        ]
+        return [t for t in utterances if t not in templates.keys()]
+
+    missing_templates = get_missing_templates(domain.action_names, domain.templates)
     duplicate_actions = get_duplicates(domain.action_names)
     duplicate_intents = get_duplicates(domain.intents)
     duplicate_slots = get_duplicates([s.name for s in domain.slots])
@@ -115,6 +141,7 @@ def check_domain_sanity(domain):
         or duplicate_slots
         or duplicate_entities
         or incorrect_mappings
+        or missing_templates
     ):
         raise InvalidDomain(
             get_exception_message(
@@ -125,6 +152,7 @@ def check_domain_sanity(domain):
                     (duplicate_entities, "entities"),
                 ],
                 incorrect_mappings,
+                missing_templates,
             )
         )
 
@@ -292,7 +320,8 @@ class Domain(object):
         except YAMLError:
             raise InvalidDomain(
                 "The provided domain file is invalid. You can use "
-                "http://www.yamllint.com/ to validate your domain file."
+                "http://www.yamllint.com/ to validate the yaml syntax "
+                "of your domain file."
             )
 
         try:
@@ -301,11 +330,11 @@ class Domain(object):
         except SchemaError:
             raise InvalidDomain(
                 "Failed to validate your domain yaml. "
-                "Make sure the file is correct, to do so"
+                "Please make sure the file is correct; to do so, "
                 "take a look at the errors logged during "
                 "validation previous to this exception. "
-                "You can also validate your domain file "
-                "using http://www.yamllint.com/."
+                "You can also validate your domain file's yaml "
+                "syntax using http://www.yamllint.com/."
             )
 
     @staticmethod
@@ -344,6 +373,13 @@ class Domain(object):
         templates = {}
         for template_key, template_variations in yml_templates.items():
             validated_variations = []
+            if template_variations is None:
+                raise InvalidDomain(
+                    "Utterance '{}' does not have any defined templates.".format(
+                        template_key
+                    )
+                )
+
             for t in template_variations:
                 # templates can either directly be strings or a dict with
                 # options we will always create a dict out of them
@@ -353,7 +389,7 @@ class Domain(object):
                     raise InvalidDomain(
                         "Utter template '{}' needs to contain either "
                         "'- text: '  or '- custom: ' attribute to be a proper "
-                        "template".format(template_key)
+                        "template.".format(template_key)
                     )
                 else:
                     validated_variations.append(t)
