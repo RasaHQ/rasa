@@ -23,10 +23,12 @@ class KeywordIntentClassifier(Component):
 
     intent_keyword_map = {}
 
-    def train(self,
-              training_data: 'TrainingData',
-              cfg: Optional['RasaNLUModelConfig'] = None,
-              **kwargs: Any) -> None:
+    def train(
+        self,
+        training_data: "TrainingData",
+        cfg: Optional["RasaNLUModelConfig"] = None,
+        **kwargs: Any
+    ) -> None:
         self.intent_keyword_map.update(training_data.intent_keywords)
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -40,7 +42,7 @@ class KeywordIntentClassifier(Component):
 
         for intent, keywords in self.intent_keyword_map.items():
             for word in keywords:
-                if re.search(r"\b"+word.lower()+r"\b", _text):
+                if re.search(r"\b" + word.lower() + r"\b", _text):
                     return intent
 
         return None
@@ -57,12 +59,14 @@ class KeywordIntentClassifier(Component):
         return {"file": file_name}
 
     @classmethod
-    def load(self,
-             meta: Optional['Metadata'] = None,
-             model_dir: Optional[Text] = None,
-             model_metadata: 'Metadata' = None,
-             cached_component: Optional['KeywordIntentClassifier'] = None,
-             **kwargs: Any) -> 'KeywordIntentClassifier':
+    def load(
+        self,
+        meta: Optional["Metadata"] = None,
+        model_dir: Optional[Text] = None,
+        model_metadata: "Metadata" = None,
+        cached_component: Optional["KeywordIntentClassifier"] = None,
+        **kwargs: Any
+    ) -> "KeywordIntentClassifier":
 
         file_name = meta.get("file")
         if file_name is not None:
@@ -70,6 +74,8 @@ class KeywordIntentClassifier(Component):
             if os.path.exists(keyword_file):
                 self.intent_keyword_map = utils.read_json_file(keyword_file)
             else:
-                logger.warning("Failed to load IntentKeywordClassifier, maybe "
-                               "{} does not exist.".format(keyword_file))
+                logger.warning(
+                    "Failed to load IntentKeywordClassifier, maybe "
+                    "{} does not exist.".format(keyword_file)
+                )
         return self()

@@ -52,8 +52,12 @@ class RasaReader(JsonTrainingDataReader):
             training_examples.append(msg)
 
         return TrainingData(
-            training_examples, entity_synonyms, regex_features, lookup_tables,
-                intent_keywords)
+            training_examples,
+            entity_synonyms,
+            regex_features,
+            lookup_tables,
+            intent_keywords,
+        )
 
 
 class RasaWriter(TrainingDataWriter):

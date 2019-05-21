@@ -107,8 +107,9 @@ class MarkdownReader(TrainingDataReader):
             if self.current_section == INTENT:
                 parsed = self._parse_training_example(item)
                 self.training_examples.append(parsed)
-                intents_kw = self._find_keywords_in_training_example(item,
-                                                         self.current_title)
+                intents_kw = self._find_keywords_in_training_example(
+                    item, self.current_title
+                )
                 self.intent_keywords.update(intents_kw)
             elif self.current_section == SYNONYM:
                 self._add_synonym(item, self.current_title)
@@ -143,7 +144,6 @@ class MarkdownReader(TrainingDataReader):
             else:
                 intent_keywords[intent] = [keyword]
         return intent_keywords
-
 
     @staticmethod
     def _find_entities_in_training_example(example):
