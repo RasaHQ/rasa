@@ -1,5 +1,7 @@
 :pagetype: full
 
+.. _action-server:
+
 Action Server
 =============
 

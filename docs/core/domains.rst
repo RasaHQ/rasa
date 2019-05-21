@@ -1,7 +1,7 @@
 :desc: Define intents, entities, slots and actions in Rasa to build contextual
        AI Assistants and chatbots using open source bot framework Rasa Stack.
 
-.. _domain:
+.. _domains:
 
 Domains
 =======
@@ -23,8 +23,8 @@ As an example, the ``DefaultDomain`` has the following yaml definition:
 Your NLU model will define the ``intents`` and ``entities`` that you
 need to include in the domain.
 
-``slots`` are the things you want to keep track of during a conversation,
-see :ref:`slots` . A categorical slot called ``risk_level`` would be
+:ref:`slots` hold information you want to keep track of during a conversation.
+A categorical slot called ``risk_level`` would be
 defined like this:
 
 .. code-block:: yaml
@@ -38,18 +38,17 @@ defined like this:
                - high
 
 
-:ref:`Here <slot-classes>` is the full list of slot types defined by
+:ref:`Here <slot-classes>` you can find the full list of slot types defined by
 Rasa Core, along with syntax for including them in your domain file.
 
 
-``actions`` are the things your bot can actually do.
-For example, an ``action`` can:
+:ref:`actions` are the things your bot can actually do.
+For example, an action could:
 
-* respond to a user
-* make an external API call
-* query a database
-
-see :ref:`custom-actions`.
+* respond to a user,
+* make an external API call,
+* query a database, or
+* just about anything!
 
 Custom Actions and Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -72,7 +71,7 @@ a class ``MyAwesomeAction``, and module ``my_slots`` containing
 
 The ``name`` function of ``MyAwesomeAction`` needs to return
 ``my_custom_action`` in this example (for more details,
-see :ref:`customactions`).
+see :ref:`custom-actions`).
 
 .. _utter_templates:
 
@@ -82,9 +81,9 @@ Utterance templates
 Utterance templates are messages the bot will send back to the user. There are
 two ways to use these templates:
 
-1. if the name of the template starts with ``utter_``, the utterance can
-   directly be used like an action. You would add the utterance template
-   to the domain
+1. If the name of the template starts with ``utter_``, the utterance can
+   directly be used as an action. You would add the utterance template
+   to the domain:
 
    .. code-block:: yaml
 
@@ -92,7 +91,7 @@ two ways to use these templates:
         utter_greet:
         - text: "Hey! How are you?"
 
-   Afterwards, you can use the template as if it were an action in the
+   Afterwards, you can use the template as an action in the
    stories:
 
    .. code-block:: story
@@ -146,9 +145,9 @@ buttons as well:
 .. note::
 
    Please keep in mind that it is up to the implementation of the output
-   channel on how to display the defined buttons. E.g. the cmdline
-   interface can not display buttons or images, but tries to mimic them in
-   the command line.
+   channel on how to display the defined buttons. The command line, for
+   example, can't display buttons or images, but tries to mimic them by
+   printing the options.
 
 Custom Output Payloads
 ----------------------
@@ -186,7 +185,7 @@ If you have certain utterances that you would like sent only to specific
 channels, you can specify this with the ``channel:`` key. The value should match
 the name defined in the ``name()`` method of the channel's ``OutputChannel``
 class. Channel-specific utterances are especially useful if creating custom
-output payloads that will only work on certain channels.
+output payloads that will only work in certain channels.
 
 
 .. code-block:: yaml
@@ -196,15 +195,15 @@ output payloads that will only work on certain channels.
     - text: "Which game would you like to play?"
       channel: "slack"
       custom:
-        {payload for slack dropdown menu to choose a game}
+        - # payload for slack dropdown menu to choose a game
     - text: "Which game would you like to play?"
       buttons:
       - title: "Chess"
-        payload: "/inform{"game": "chess"}"
+        payload: '/inform{"game": "chess"}'
       - title: "Checkers"
-        payload: "/inform{"game": "checkers"}"
+        payload: '/inform{"game": "checkers"}'
       - title: "Fortnite"
-        payload: "/inform{"game": "fortnite"}"
+        payload: '/inform{"game": "fortnite"}'
 
 Each time your bot looks for utterances, it will first check to see if there
 are any channel-specific templates for the connected channel. If there are, it
@@ -212,7 +211,7 @@ will choose **only** from these utterances. If no channel-specific templates are
 found, it will choose from any utterances that do not have a defined ``channel``.
 Therefore, it is good practice to always have at least one template for each
 utterance that has no ``channel`` specified so that your bot can respond in all
-environments, including the shell and in interactive learning.
+environments, including in the shell and in interactive learning.
 
 Variables
 ---------
@@ -280,7 +279,8 @@ file like this:
 .. code-block:: yaml
 
   intents:
-    - greet: {use_entities: false}
+    - greet:
+        use_entities: false
 
 This means that entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have

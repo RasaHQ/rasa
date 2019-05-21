@@ -25,7 +25,7 @@ Added
   This endpoints performs an intent evaluation of a Rasa Stack model
 - option to create template for new utterance action in ``interactive learning``
 - you can now choose actions previously created in the same session
-in ``interactive learning``
+  in ``interactive learning``
 - add formatter 'black'
 - channel-specific utterances via the ``- "channel":`` key in utterance templates
 - arbitrary json messages via the ``- "custom":`` key in utterance templates and
@@ -85,3 +85,7 @@ Fixed
 - log options from the command line interface are applied (they overwrite the environment variable)
 - all message arguments (kwargs in dispatcher.utter methods, as well as template args) are now sent through to output channels
 - utterance templates defined in actions are checked for existence upon training a new agent, and training is aborted if one is missing
+
+.. _`master`: https://github.com/RasaHQ/rasa/
+
+.. _`Semantic Versioning`: http://semver.org/

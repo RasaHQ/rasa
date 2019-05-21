@@ -1,7 +1,7 @@
 :desc: Use events in open source library Rasa Core to support functionalities
        like resetting slots, scheduling reminder or pausing a conversation.
 
-.. _events-classes:
+.. _events:
 
 Events
 ======
@@ -29,8 +29,8 @@ Set a Slot
 :Short: Event to set a slot on a tracker
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER SetSlot
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.SlotSet
@@ -49,8 +49,8 @@ Restart a conversation
 :Short: Resets anything logged on the tracker.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER Restarted
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.Restarted
@@ -69,8 +69,8 @@ Reset all Slots
 :Short: Resets all the slots of a conversation.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER AllSlotsReset
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.AllSlotsReset
@@ -90,8 +90,8 @@ Schedule a reminder
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
       :lines: 1-
-      :dedent: 8
       :start-after: # DOCS MARKER ReminderScheduled
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ReminderScheduled
@@ -107,8 +107,8 @@ Pause a conversation
         will be halted until resumed.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER ConversationPaused
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ConversationPaused
@@ -128,8 +128,8 @@ Resume a conversation
         predicting actions again.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER ConversationResumed
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ConversationResumed
@@ -149,8 +149,8 @@ Force a followup action
         to be a fixed one.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER FollowupAction
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.FollowupAction
@@ -174,8 +174,8 @@ User sent message
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
       :lines: 1-
-      :dedent: 8
       :start-after: # DOCS MARKER UserUttered
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.UserUttered
@@ -194,8 +194,8 @@ Bot responded message
 :Short: Message a bot sent to the user.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER BotUttered
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.BotUttered
@@ -215,8 +215,8 @@ Undo a user message
         (including the ``user`` event of the message).
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER UserUtteranceReverted
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.UserUtteranceReverted
@@ -236,8 +236,8 @@ Undo an action
         (including the ``action`` event of the action).
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER ActionReverted
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ActionReverted
@@ -257,8 +257,8 @@ Log an executed action
         action created are logged separately.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :dedent: 10
       :start-after: # DOCS MARKER ActionExecuted
+      :dedent: 4
       :end-before: # DOCS END
 :Class:
     .. autoclass:: rasa.core.events.ActionExecuted
@@ -269,5 +269,3 @@ Log an executed action
     .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: ActionExecuted.apply_to
-
-

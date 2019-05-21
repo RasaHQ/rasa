@@ -2,7 +2,7 @@
 #
 # -- General configuration ------------------------------------------------
 import re
-import rasabaster
+import sys
 
 nitpicky = True
 linkcheck_anchors_ignore = [".*"]
@@ -81,7 +81,17 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    # ignore doc pages that we don't show to appease keep_warnings
+    "multi-skill-assistants.rst",
+    "core/old-core-change-log.rst",
+    "core/old-core-migration-guide.rst",
+    "nlu/old-nlu-change-log.rst",
+    "nlu/old-nlu-migration-guide.rst",
+]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -327,3 +337,54 @@ scv_whitelist_branches = ("master",)  # (re.compile("^master$"),)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
 scv_whitelist_tags = (re.compile(r"^[1-9]+\.[0-9]+\.\d+$"),)
 scv_greatest_tag = True
+
+# type classes for nitpicky to ignore
+nitpick_ignore = [
+    # non-rasa typing
+    ("py:class", "str"),
+    ("py:class", "bool"),
+    ("py:class", "int"),
+    ("py:class", "Any"),
+    ("py:class", "Dict"),
+    ("py:class", "List"),
+    ("py:class", "Text"),
+    ("py:class", "Optional"),
+    ("py:class", "Iterator"),
+    ("py:class", "typing.Any"),
+    ("py:class", "typing.Dict"),
+    ("py:class", "typing.List"),
+    ("py:class", "typing.Optional"),
+    ("py:class", "typing.Iterator"),
+    ("py:class", "collections.deque"),
+    ("py:class", "sanic.app.Sanic"),
+    ("py:data", "typing.Any"),
+    ("py:data", "typing.Dict"),
+    ("py:data", "typing.List"),
+    ("py:data", "typing.Optional"),
+    ("py:data", "typing.Iterator"),
+    ("py:obj", "None"),
+    # rasa typing
+    ("py:class", "CollectingDispatcher"),
+    ("py:class", "Tracker"),
+    ("py:class", "rasa.core.agent.Agent"),
+    ("py:class", "rasa.core.conversation.Dialogue"),
+    ("py:class", "rasa.core.policies.Policy"),
+    ("py:class", "rasa.core.events.Event"),
+    ("py:class", "rasa.core.events.SlotSet"),
+    ("py:class", "rasa.core.processor.MessageProcessor"),
+    ("py:class", "rasa.nlu.components.Component"),
+    ("py:class", "rasa.nlu.training_data.message.Message"),
+]
+
+
+def setup(sphinx):
+    sphinx.add_stylesheet("css/custom.css")
+
+    try:
+        utils_path = os.path.abspath(os.path.join(__file__, "..", "utils"))
+        sys.path.insert(0, utils_path)
+        from StoryLexer import StoryLexer
+
+        sphinx.add_lexer("story", StoryLexer())
+    except ImportError:
+        print ("No Story Lexer :( Sad times!")

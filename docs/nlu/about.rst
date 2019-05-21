@@ -3,7 +3,7 @@
 
 .. _about-rasa-nlu:
 
-Rasa NLU: Language Understanding for chatbots and AI assistants
+Rasa NLU: Language Understanding for Chatbots and AI assistants
 ===============================================================
 
 
