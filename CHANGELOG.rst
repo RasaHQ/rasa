@@ -6,25 +6,14 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.2.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Added
------
-- added ``domain_warnings()`` method to ``Domain`` which returns a dict containing the
-  diff between supplied {actions, intents, entities, slots} and what's contained in the
-  domain
-
-Changed
--------
-
-Removed
--------
+[1.0.2] - unreleased
+^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
-- buttons can now be properly selected during cmdline chat or when in interactive learning
-- set slots correctly when events are added through the API
+- fallback policies now take priority over FormPolicy and MappingPolicy
+  if the NLU threshold is not reached
 
 
 [1.0.1] - 2019-05-21
@@ -32,7 +21,8 @@ Fixed
 
 Fixed
 -----
-- updated installation command in docs for Rasa X
+- fixed rasa-x installation instruction
+
 
 [1.0.0] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
