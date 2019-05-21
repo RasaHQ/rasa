@@ -6,6 +6,24 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+
+[1.0.2] - unreleased
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fallback policies now take priority over FormPolicy and MappingPolicy
+  if the NLU threshold is not reached
+
+
+[1.0.1] - 2019-05-21
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed rasa-x installation instruction
+
+
 [1.0.0] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
 
