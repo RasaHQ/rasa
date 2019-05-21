@@ -293,7 +293,7 @@ directly specified in the training data.
 
 Intent Keywords
 ---------------
-Intent Keywords can be specified if the :ref:`KeywordIntentClassifier` is being used.
+Intent Keywords can be specified if the :ref:`keyword_intent_classifier` is being used.
 
 .. code-block:: json
 

@@ -257,7 +257,7 @@ Intent Classifiers
 ------------------
 
 
-.. _KeywordIntentClassifier:
+.. _keyword_intent_classifier:
 
 KeywordIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~
