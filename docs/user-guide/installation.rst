@@ -11,7 +11,7 @@ The recommended way to get started with Rasa is via ``pip``:
 
 .. copyable::
 
-    pip install rasa-x --extra-index-url https://pypi.rasa.com
+    pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
 
 This will install both Rasa and Rasa X.
 If you don't want to use Rasa X, run ``pip install rasa`` instead.

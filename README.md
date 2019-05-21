@@ -10,10 +10,6 @@
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
-**Note** This repository now contains the code for both Rasa NLU **AND** Rasa Core.
-Nothing has changed yet in terms of usage, but we are in the process of simplifying
-everything ahead of the next major release. 
-
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build chatbots on:
 - Facebook Messenger
 - Slack
@@ -40,23 +36,29 @@ There's a lot more background information in this
 - **What does Rasa do? 🤔**
   [Check out our Website](https://rasa.com/)
 
-- **I'd like to read the detailed docs 🤓**
-  [Read The Docs](https://rasa.com/docs)
+- **I'm new to Rasa 😄**
+  [Get Started with Rasa](https://rasa.com/docs/getting-started/)
 
-- **I'm ready to install Rasa and get started! 🚀**
-  [Installation](https://rasa.com/docs/docs/getting-started/)
+- **I'd like to read the detailed docs 🤓**
+  [Read The Docs](https://rasa.com/docs/)
+
+- **I'm ready to install Rasa 🚀**
+  [Installation](https://rasa.com/docs/rasa/installation/)
+
+- **I want to learn how to use Rasa 🚀**
+  [Tutorial](https://rasa.com/docs/rasa/tutorial/)
 
 - **I have a question ❓**
-  [Rasa Community Forum](https://forum.rasa.com)
+  [Rasa Community Forum](https://forum.rasa.com/)
 
 - **I would like to contribute 🤗**
-  [How to contribute](#how-to-contribute)
-  
+  [How to Contribute](#how-to-contribute)
+
 ---  
 ## Where to get help
 
-There is extensive documentation at [Rasa Docs](https://rasa.com/docs). 
-Make sure to select the correct version so you are looking at 
+There is extensive documentation in the [Rasa Docs](https://rasa.com/docs/rasa).
+Make sure to select the correct version so you are looking at
 the docs for the version you installed.
 
 Please use [Rasa Community Forum](https://forum.rasa.com) for quick answers to
@@ -68,18 +70,19 @@ questions.
 - [License](#license)
 
 ### How to contribute
-We are very happy to receive and merge your contributions. There is
-some more information about the style of the code and docs in the
-[documentation](https://rasa.com/docs/contributing/).
+We are very happy to receive and merge your contributions. You can
+find more information about how to contribute to Rasa (in lots of
+different ways!) [here](http://rasa.com/community/contribute).
 
-In general the process is rather simple:
-1. create an issue describing the feature you want to work on (or
+To contribute via pull request, follow these steps:
+
+1. Create an issue describing the feature you want to work on (or
    have a look at issues with the label
    [help wanted](https://github.com/RasaHQ/rasa/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
-2. write your code, tests and documentation
-3. create a pull request describing your changes
+2. Write your code, tests and documentation, and format them with ``black``
+3. Create a pull request describing your changes
 
-Your pull request will be reviewed by a maintainer, who might get
+Your pull request will be reviewed by a maintainer, who will get
 back to you about any necessary changes or questions. You will
 also be asked to sign a
 [Contributor License Agreement](https://cla-assistant.io/RasaHQ/rasa).
@@ -113,10 +116,10 @@ make test
 
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by travis. The following things need to be done to release a new version
-1. update [rasa/version.py](https://github.com/RasaHQ/rasa/blob/master/rasa/version.py) to reflect the correct version number
-2. edit the [CHANGELOG.rst](https://github.com/RasaHQ/rasa/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
-3. edit the [migration guide](https://github.com/RasaHQ/rasa/blob/master/docs/migrations.rst) to provide assistance for users updating to the new version 
-4. commit all the above changes and tag a new release, e.g. using 
+1. Update [rasa/version.py](https://github.com/RasaHQ/rasa/blob/master/rasa/version.py) to reflect the correct version number
+2. Edit the [CHANGELOG.rst](https://github.com/RasaHQ/rasa/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
+3. Edit the [migration guide](https://github.com/RasaHQ/rasa/blob/master/docs/migration-guide.rst) to provide assistance for users updating to the new version
+4. Commit all the above changes and tag a new release, e.g. using
     ```
     git tag -f 0.7.0 -m "Some helpful line describing the release"
     git push origin 0.7.0

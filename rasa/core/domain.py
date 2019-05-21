@@ -10,7 +10,7 @@ from pykwalify.errors import SchemaError
 from ruamel.yaml import YAMLError
 
 import rasa.utils.io
-from rasa.cli.utils import bcolors
+from rasa.cli.utils import print_warning, bcolors
 from rasa import data
 from rasa.core import utils
 from rasa.core.actions import Action, action
@@ -68,7 +68,6 @@ def check_domain_sanity(domain):
     def get_exception_message(
         duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
         mappings: List[Tuple[Text, Text]] = None,
-        templates: List[Text] = None,
     ):
         """Return a message given a list of error locations."""
 
@@ -79,13 +78,6 @@ def check_domain_sanity(domain):
             if message:
                 message += "\n"
             message += get_mapping_exception_message(mappings)
-        if templates:
-            for template in templates:
-                message += (
-                    "\nUtterance '{}' is listed as an "
-                    "action in the domain file, but there is "
-                    "no matching utterance template."
-                ).format(template)
         return message
 
     def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
@@ -118,17 +110,29 @@ def check_domain_sanity(domain):
                 )
         return message
 
-    def get_missing_templates(
+    def warn_missing_templates(
         action_names: List[Text], templates: Dict[Text, Any]
-    ) -> List[Text]:
-        """Return utterance names which have no specified template."""
+    ) -> None:
+        """Warn user of utterance names which have no specified template."""
 
         utterances = [
             act for act in action_names if act.startswith(action.UTTER_PREFIX)
         ]
-        return [t for t in utterances if t not in templates.keys()]
 
-    missing_templates = get_missing_templates(domain.action_names, domain.templates)
+        missing_templates = [t for t in utterances if t not in templates.keys()]
+
+        if missing_templates:
+            message = ""
+            for template in missing_templates:
+                message += (
+                    "\nUtterance '{}' is listed as an "
+                    "action in the domain file, but there is "
+                    "no matching utterance template.   Please "
+                    "check your domain."
+                ).format(template)
+            print_warning(message)
+
+    warn_missing_templates(domain.action_names, domain.templates)
     duplicate_actions = get_duplicates(domain.action_names)
     duplicate_intents = get_duplicates(domain.intents)
     duplicate_slots = get_duplicates([s.name for s in domain.slots])
@@ -141,7 +145,6 @@ def check_domain_sanity(domain):
         or duplicate_slots
         or duplicate_entities
         or incorrect_mappings
-        or missing_templates
     ):
         raise InvalidDomain(
             get_exception_message(
@@ -152,7 +155,6 @@ def check_domain_sanity(domain):
                     (duplicate_entities, "entities"),
                 ],
                 incorrect_mappings,
-                missing_templates,
             )
         )
 

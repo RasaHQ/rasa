@@ -6,8 +6,8 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.0rc11] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[1.0.0] - 2019-05-21
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -85,7 +85,8 @@ Fixed
 - in interactive learning: only updates entity values if user changes annotation
 - log options from the command line interface are applied (they overwrite the environment variable)
 - all message arguments (kwargs in dispatcher.utter methods, as well as template args) are now sent through to output channels
-- utterance templates defined in actions are checked for existence upon training a new agent, and training is aborted if one is missing
+- utterance templates defined in actions are checked for existence upon training a new agent, and a warning
+  is thrown before training if one is missing
 
 .. _`master`: https://github.com/RasaHQ/rasa/
 
