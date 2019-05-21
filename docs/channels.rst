@@ -5,7 +5,7 @@ Messaging and Voice Channels
 
 If you're testing this on your local computer (e.g. not a server), you
 will need to `use ngrok </docs/rasa-x/get-feedback-from-test-users/#use-ngrok-for-local-testing>`_ . 
-This gives your machine a domain name and so that facebook, slack, etc. know where to send messages.
+This gives your machine a domain name so that facebook, slack, etc. know where to send messages.
 
 
 To make your assistant available on a messaging platform you need to provide credentials 

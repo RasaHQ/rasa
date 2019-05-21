@@ -83,7 +83,7 @@ If a user starts the conversation with
 asked about the ``cuisine`` and ``num_people`` slots.
 
 Note that for this story to work, your slots should be `unfeaturized
-<https://rasa.com/docs/core/api/slots_api/#unfeaturized-slot>`_.
+<http://rasa.com/docs/rasa/core/slot-filling/#the-requested-slot-slot>`_.
 If any of these slots are featurized, your story needs to include ``slot{}`` events
 to show these slots being set. In that case, the easiest way to create valid stories
 is to use :ref:`interactive-learning` .
@@ -96,15 +96,15 @@ You need to define three methods:
 - ``required_slots``: a list of slots that need to be filled for the ``submit`` method to work.
 - ``submit``: what to do at the end of the form, when all the slots have been filled.
 
-.. literalinclude:: ../../../examples/formbot/actions.py
+.. literalinclude:: ../../examples/formbot/actions.py
    :dedent: 4
    :pyobject: RestaurantForm.name
 
-.. literalinclude:: ../../../examples/formbot/actions.py
+.. literalinclude:: ../../examples/formbot/actions.py
    :dedent: 4
    :pyobject: RestaurantForm.required_slots
 
-.. literalinclude:: ../../../examples/formbot/actions.py
+.. literalinclude:: ../../examples/formbot/actions.py
    :dedent: 4
    :pyobject: RestaurantForm.submit
 
@@ -137,7 +137,7 @@ The ``slot_mappings`` method defines how to extract slot values from user respon
 
 Here's an example for the restaurant bot:
 
-.. literalinclude:: ../../../examples/formbot/actions.py
+.. literalinclude:: ../../examples/formbot/actions.py
    :dedent: 4
    :pyobject: RestaurantForm.slot_mappings
 

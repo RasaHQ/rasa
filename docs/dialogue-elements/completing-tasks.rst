@@ -41,7 +41,7 @@ The answers you get will impact the rest of the conversation; for example, some 
 be limited to users in a certain country or above a certain age. It is good practice to
 implement that logic inside a form, separating it from the learned behaviour. A single form
 can cover all the happy paths (e.g. all the ways that a user can provide the required information).
-You can read more about forms in `this tutorial <https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/>`_
+You can read more about forms in `this tutorial <https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/>`_.
 
 .. conversations:: 
    examples:

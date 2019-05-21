@@ -151,6 +151,7 @@ RegexFeaturizer
     extractor to simplify classification (assuming the classifier has learned during the training phase, that this set
     feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
     ``CRFEntityExtractor`` component!
+
     .. note:: There needs to be a tokenizer previous to this featurizer in the pipeline!
 
 

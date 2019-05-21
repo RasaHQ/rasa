@@ -13,7 +13,7 @@ Running the HTTP server
 -----------------------
 
 You can run a simple HTTP server that handles requests using your
-models with:
+trained Rasa model with:
 
 .. code-block:: bash
 
@@ -33,8 +33,8 @@ The different parameters are:
 Rasa can load your model in three different ways:
 
 1. Load the model specified via ``-m`` from your local storage system.
-2. Fetch the model from a server (see :ref:`_server_fetch_from_server`).
-3. Fetch the model from a remote storage (see :ref:`_server_fetch_from_remote_storage`).
+2. Fetch the model from a server (see :ref:`server_fetch_from_server`).
+3. Fetch the model from a remote storage (see :ref:`server_fetch_from_remote_storage`).
 
 Rasa tries to load the model in above mentioned order. E.g. it only tries to load your model from a server
 if it could not find the model on your local storage system.
@@ -146,11 +146,11 @@ the server:
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         --auth-token thisismysecret \
         -m models \
-        -o out.log
+        --log-file out.log
 
 Your requests should pass the token, in our case ``thisismysecret``,
 as a parameter:
@@ -173,11 +173,11 @@ if the ``sender_id`` matches the user's ``username``.
 
 .. code-block:: bash
 
-    $ rasa run core \
+    $ rasa run \
         --enable-api \
         --jwt-secret thisismysecret \
         -m models \
-        -o out.log
+        --log-file out.log
 
 Your requests should have set a proper JWT header:
 

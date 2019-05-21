@@ -16,7 +16,7 @@ The command line interface (CLI) gives you easy-to-remember commands for common 
 Command                    Effect
 =========================  =============================================================================================
 ``rasa init``              Creates a new project, with example training data, actions, and config files.
-``rasa run``               Starts a Rasa server with your trained model. See the :ref:`_section_http` docs for details.
+``rasa run``               Starts a Rasa server with your trained model. See the :ref:`section_http` docs for details.
 ``rasa run actions``       Starts an action server using the Rasa SDK.
 ``rasa shell``             Loads your trained model and lets you talk to your assistant on the command line.
 ``rasa train``             Trains a model using your NLU data and stories, saves trained model in ``./models``.
@@ -82,7 +82,7 @@ The following arguments can be used to configure your Rasa server:
 
 .. program-output:: rasa run --help
 
-For more information on the additional parameters, see :ref:`_section_http`.
+For more information on the additional parameters, see :ref:`section_http`.
 See the Rasa :ref:`http-api` docs for detailed documentation of all the endpoints.
 
 
