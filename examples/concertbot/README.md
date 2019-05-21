@@ -9,9 +9,9 @@ assistant on your local machine. The `concertbot` consists of the following file
 
 - **data/stories.md** contains training stories for the Core model  
 - **actions.py** contains some custom actions
+- **config.yml** contains the model configuration
 - **domain.yml** contains the domain of the assistant  
 - **endpoints.yml** contains the webhook configuration for the custom actions 
-- **config.yml** contains the model configuration
 
 ## How to use this example?
 
@@ -36,13 +36,14 @@ rasa run actions&
 rasa run -m models --endpoints endpoints.yml
 ```
 
-To chat with your bot on the command, run
+To chat with your bot on the command line, run
 ```
+rasa run actions&
 rasa shell -m models
 ```
 
 For more information about the individual commands, please check out our 
-[documentation](http://rasa.com/docs/rasa/command-line-interface/).
+[documentation](http://rasa.com/docs/rasa/user-guide/command-line-interface/).
 
 ## Encountered any issues?
 Let us know about it by posting on [Rasa Community Forum](https://forum.rasa.com)!
