@@ -67,7 +67,7 @@ def ensure_loaded_agent(app: Sanic):
                     "Conflict",
                     "No agent loaded. To continue processing, a "
                     "model of a trained agent needs to be loaded.",
-                    help_url=_docs("user-guide/running-the-server/"),
+                    help_url=_docs("/user-guide/running-the-server/"),
                 )
 
             return f(*args, **kwargs)
