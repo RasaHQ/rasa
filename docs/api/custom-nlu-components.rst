@@ -10,7 +10,8 @@ You can create a custom component to perform a specific task which NLU doesn't c
 Below is the specification of the :class:`rasa.nlu.components.Component` class with the methods you'll need to implement.
 
 .. note::
-    There is a detailed tutorial on building custom components `here <https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/>`_.
+    There is a detailed tutorial on building custom components `here
+    <https://blog.rasa.com/enhancing-rasa-nlu-with-custom-components/>`_.
 
 
 You can add a custom component to your pipeline by adding the module path.

@@ -252,6 +252,8 @@ List Slot
       set value, the feature will be ``0``. The **length of the list stored in
       the slot does not influence the dialogue**.
 
+.. _unfeaturized-slot:
+
 Unfeaturized Slot
 ~~~~~~~~~~~~~~~~~
 

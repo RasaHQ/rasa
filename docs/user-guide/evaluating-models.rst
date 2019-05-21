@@ -21,7 +21,7 @@ Evaluating an NLU Model
 -----------------------
 
 A standard technique in machine learning is to keep some data separate as a *test set*.
-You can `split your NLU training data <command-line-interface.html#create-a-train-test-split>`_
+You can :ref:`split your NLU training data <train-test-split>`
 into train and test sets using:
 
 .. code-block:: bash

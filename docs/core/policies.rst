@@ -192,7 +192,7 @@ following steps:
     - for each LSTM time step, calculate the similarity between the
       dialogue embedding and embedded system actions.
       This step is based on the
-      `starspace idea <https://arxiv.org/abs/1709.03856>`_.
+      `StarSpace <https://arxiv.org/abs/1709.03856>`_ idea.
 
 .. note::
 

@@ -55,7 +55,7 @@ SQLTrackerStore
 
             rasa run -m models --endpoints endpoints.yml
 :Parameters:
-    - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  `Consult the SQLAlchemy docs for available dialects <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_
+    - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects. 
     - ``url`` (default: ``None``): URL of your SQL database
     - ``db`` (default: ``rasa.db``): The path to the database to be used
     - ``username`` (default: ``None``): The username which is used for authentication

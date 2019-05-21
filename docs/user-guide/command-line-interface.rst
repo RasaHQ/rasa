@@ -210,6 +210,8 @@ The following arguments are available for ``rasa test``:
 .. program-output:: rasa test --help
 
 
+.. _train-test-split:
+
 Create a Train-Test Split
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

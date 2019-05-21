@@ -185,7 +185,7 @@ Endpoint Configuration
 ----------------------
 
 To connect Rasa to other endpoints, you can specify an endpoint
-configuration within a `YAML <https://en.wikipedia.org/wiki/YAML>`_ file.
+configuration within a YAML file.
 Then run Rasa with the flag
 ``--endpoints <path to endpoint configuration.yml>``.
 

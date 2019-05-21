@@ -185,8 +185,7 @@ Rasa Core's job is to choose the right action to execute at each step
 of the conversation. In this case, our actions simply send a message to the user.
 These simple utterance actions are the ``actions`` in the domain that start
 with ``utter_``. The assistant will respond with a message based on a template
-from the ``templates`` section. See
-`Custom Actions <http://rasa.com/docs/rasa/core/run-code-in-custom-actions/#id1>`_
+from the ``templates`` section. See :ref:`custom-actions`
 to build actions that do more than just send a message.
 
 
