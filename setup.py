@@ -108,8 +108,9 @@ setup(
     tests_require=tests_requires,
     extras_require=extras_requires,
     include_package_data=True,
-    description="Machine learning based dialogue engine "
-    "for conversational software.",
+    description="Open source machine learning framework to automate text- and "
+    "voice-based conversations: NLU, dialogue management, connect to "
+    "Slack, Facebook, and more - Create chatbots and voice assistants",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Rasa Technologies GmbH",
