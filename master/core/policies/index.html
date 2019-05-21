@@ -6,10 +6,11 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Training and Policies</title>
+    <title>Policies</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -18,8 +19,8 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
-    <link rel="next" title="Using Slots" href="../slots/" />
-    <link rel="prev" title="Actions" href="../run-code-in-custom-actions/" />
+    <link rel="next" title="Slots" href="../slots/" />
+    <link rel="prev" title="Actions" href="../actions/" />
 
   <!-- Google Tag Manager -->
   <script type="application/javascript">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -31,23 +32,27 @@
    
   
   <meta itemprop="image" content="https://rasa.com/assets/img/facebook-og.png">
-  <meta property="og:title" content="Training and Policies" />
+  <meta property="og:title" content="Policies" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
   <meta property="og:url" content="https://rasa.com/docs/rasa/core/policies" />
   
-    <meta name="description" content="Define and train custom policies to optimize your contextual assistant
-for longer context or unseen utterances which require generalization." />
-    <meta itemprop="description" content="Define and train custom policies to optimize your contextual assistant
-for longer context or unseen utterances which require generalization.">
-    <meta name="twitter:description" content="Define and train custom policies to optimize your contextual assistant
-for longer context or unseen utterances which require generalization." />
-    <meta property="og:description" content="Define and train custom policies to optimize your contextual assistant
-for longer context or unseen utterances which require generalization." />
+    <meta name="description" content="Define and train customized policy configurations to optimize your
+contextual assistant for longer context or unseen utterances which
+require generalization." />
+    <meta itemprop="description" content="Define and train customized policy configurations to optimize your
+contextual assistant for longer context or unseen utterances which
+require generalization.">
+    <meta name="twitter:description" content="Define and train customized policy configurations to optimize your
+contextual assistant for longer context or unseen utterances which
+require generalization." />
+    <meta property="og:description" content="Define and train customized policy configurations to optimize your
+contextual assistant for longer context or unseen utterances which
+require generalization." />
   
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@Rasa_HQ">
-  <meta name="twitter:title" content="Training and Policies">
+  <meta name="twitter:title" content="Policies">
   <meta name="twitter:creator" content="@Rasa_HQ">
   <meta name="twitter:image" content="https://rasa.com/assets/img/facebook-og.png">
 
@@ -121,42 +126,42 @@ for longer context or unseen utterances which require generalization." />
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../tutorial/">Rasa Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../command-line-interface/">Command Line Interface</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../channels/">Messaging and Voice Channels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../evaluating-models/">Evaluating Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../server/">Running the Server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../running-rasa-with-docker/">Running Rasa with Docker</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../cloud-storage/">Storing Models in the Cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Rasa Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/evaluating-models/">Evaluating Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/running-the-server/">Running the Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/running-rasa-with-docker/">Running Rasa with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../nlu/about/">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-only-nlu/">Using NLU Only</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../nlu/data-format/">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-pipeline/">Choosing a Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../nlu/languages/">Language Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../nlu/entities/">Entity Extraction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Component Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/using-nlu-only/">Using NLU Only</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/training-data-format/">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/choosing-a-pipeline/">Choosing a Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/language-support/">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/entity-extraction/">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nlu/components/">Components</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Core</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../about/">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../stories/">Story Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stories/">Stories</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../responses/">Responses</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../run-code-in-custom-actions/">Actions</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Training and Policies</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../slots/">Using Slots</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../slot-filling/">Slot Filling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../interactive-learning/">Interactive Learning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../fallbacks/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fallback-actions/">Fallback Actions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Conversation Design</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/about/">Dialogue Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/dialogue-elements/">Dialogue Elements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/small-talk/">Small Talk</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/completing-tasks/">Completing Tasks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../dialogue-elements/guiding-users/">Guiding Users</a></li>
@@ -164,15 +169,17 @@ for longer context or unseen utterances which require generalization." />
 <p class="caption"><span class="caption-text">API Reference</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../api/action-server/">Action Server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-http-api/">HTTP API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter/">Jupyter Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/http-api/">HTTP API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../api/brokers/">Event Brokers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../api/featurizer/">Featurization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/featurization/">Featurization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Change Log</a></li>
 </ul>
 
 <div class="versions">
@@ -212,35 +219,35 @@ for longer context or unseen utterances which require generalization." />
 
 
 
-<div class="section" id="training-and-policies">
-<span id="policies"></span><h1>Training and Policies<a class="headerlink" href="#training-and-policies" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="policies">
+<span id="id1"></span><h1>Policies<a class="headerlink" href="#policies" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#data-augmentation" id="id3">Data Augmentation</a></li>
-<li><a class="reference internal" href="#configuring-policies" id="id4">Configuring Policies</a></li>
-<li><a class="reference internal" href="#max-history" id="id5">Max History</a></li>
-<li><a class="reference internal" href="#keras-policy" id="id6">Keras Policy</a></li>
-<li><a class="reference internal" href="#embedding-policy" id="id7">Embedding Policy</a></li>
-<li><a class="reference internal" href="#memoization-policy" id="id8">Memoization Policy</a></li>
-<li><a class="reference internal" href="#form-policy" id="id9">Form Policy</a></li>
-<li><a class="reference internal" href="#mapping-policy" id="id10">Mapping Policy</a></li>
-<li><a class="reference internal" href="#fallback-policy" id="id11">Fallback Policy</a></li>
-<li><a class="reference internal" href="#two-stage-fallback-policy" id="id12">Two-Stage Fallback Policy</a></li>
+<li><a class="reference internal" href="#data-augmentation" id="id4">Data Augmentation</a></li>
+<li><a class="reference internal" href="#configuring-policies" id="id5">Configuring Policies</a></li>
+<li><a class="reference internal" href="#max-history" id="id6">Max History</a></li>
+<li><a class="reference internal" href="#keras-policy" id="id7">Keras Policy</a></li>
+<li><a class="reference internal" href="#embedding-policy" id="id8">Embedding Policy</a></li>
+<li><a class="reference internal" href="#memoization-policy" id="id9">Memoization Policy</a></li>
+<li><a class="reference internal" href="#form-policy" id="id10">Form Policy</a></li>
+<li><a class="reference internal" href="#mapping-policy" id="id11">Mapping Policy</a></li>
+<li><a class="reference internal" href="#fallback-policy" id="id12">Fallback Policy</a></li>
+<li><a class="reference internal" href="#two-stage-fallback-policy" id="id13">Two-Stage Fallback Policy</a></li>
 </ul>
 </div>
 <div class="section" id="data-augmentation">
-<h2><a class="toc-backref" href="#id3">Data Augmentation</a><a class="headerlink" href="#data-augmentation" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4">Data Augmentation</a><a class="headerlink" href="#data-augmentation" title="Permalink to this headline">¶</a></h2>
 <p>When you train a model, by default Rasa Core will create
 longer stories by randomly gluing together
 the ones in your stories files.
 This is because if you have stories like:</p>
-<div class="highlight-story notranslate"><div class="highlight"><pre><span></span># thanks
-* thankyou
-   - utter_youarewelcome
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="gh"># thanks</span>
+<span class="vm">* thankyou</span>
+<span class="vm">   </span>- utter_youarewelcome
 
-# bye
-* goodbye
-   - utter_goodbye
+<span class="gh"># bye</span>
+<span class="vm">* goodbye</span>
+<span class="vm">   </span>- utter_goodbye
 </pre></div>
 </div>
 <p>You actually want to teach your policy to <strong>ignore</strong> the dialogue history
@@ -260,7 +267,7 @@ The memoization based policies are not affected by augmentation
 ignore all augmented stories.</p>
 </div>
 <div class="section" id="configuring-policies">
-<span id="policy-file"></span><h2><a class="toc-backref" href="#id4">Configuring Policies</a><a class="headerlink" href="#configuring-policies" title="Permalink to this headline">¶</a></h2>
+<span id="policy-file"></span><h2><a class="toc-backref" href="#id5">Configuring Policies</a><a class="headerlink" href="#configuring-policies" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.core.policies.Policy</span></code> class decides which action to take
 at every step in the conversation.</p>
 <p>There are different policies to choose from, and you can include
@@ -291,7 +298,7 @@ policy class and pass arguments to it.</p>
 </div>
 </div>
 <div class="section" id="max-history">
-<h2><a class="toc-backref" href="#id5">Max History</a><a class="headerlink" href="#max-history" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id6">Max History</a><a class="headerlink" href="#max-history" title="Permalink to this headline">¶</a></h2>
 <p>One important hyperparameter for Rasa Core policies is the <code class="docutils literal notranslate"><span class="pre">max_history</span></code>.
 This controls how much dialogue history the model looks at to decide which
 action to take next.</p>
@@ -301,18 +308,18 @@ in the policy configuration yaml file.</p>
 <p class="first admonition-title">Note</p>
 <p class="last">Only the <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code> uses a max history,
 whereas the <code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code> always looks at
-the full conversation history. See <a class="reference internal" href="../../api/featurizer/#featurization"><span class="std std-ref">Featurization</span></a> for details.</p>
+the full conversation history. See <a class="reference internal" href="../../api/featurization/#featurization"><span class="std std-ref">Featurization</span></a> for details.</p>
 </div>
 <p>As an example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent which
 describes off-topic user messages. If your bot sees this intent multiple
 times in a row, you might want to tell the user what you <cite>can</cite> help them
 with. So your story might look like this:</p>
-<div class="highlight-story notranslate"><div class="highlight"><pre><span></span>* out_of_scope
-   - utter_default
-* out_of_scope
-   - utter_default
-* out_of_scope
-   - utter_help_message
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="vm">* out_of_scope</span>
+<span class="vm">   </span>- utter_default
+<span class="vm">* out_of_scope</span>
+<span class="vm">   </span>- utter_default
+<span class="vm">* out_of_scope</span>
+<span class="vm">   </span>- utter_help_message
 </pre></div>
 </div>
 <p>For Rasa Core to learn this pattern, the <code class="docutils literal notranslate"><span class="pre">max_history</span></code>
@@ -323,7 +330,7 @@ affect the dialogue very far into the future, you should store it as a
 slot. Slot information is always available for every featurizer.</p>
 </div>
 <div class="section" id="keras-policy">
-<h2><a class="toc-backref" href="#id6">Keras Policy</a><a class="headerlink" href="#keras-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Keras Policy</a><a class="headerlink" href="#keras-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> uses a neural network implemented in
 <a class="reference external" href="http://keras.io">Keras</a> to select the next action.
 The default architecture is based on an LSTM, but you can override the
@@ -445,7 +452,7 @@ or initialize <code class="docutils literal notranslate"><span class="pre">Keras
 set the <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> attribute of the <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> to any integer.</p>
 </div>
 <div class="section" id="embedding-policy">
-<span id="id1"></span><h2><a class="toc-backref" href="#id7">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id2"></span><h2><a class="toc-backref" href="#id8">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
 <p>The Recurrent Embedding Dialogue Policy (REDP)
 described in our paper: <a class="reference external" href="https://arxiv.org/abs/1811.11707">https://arxiv.org/abs/1811.11707</a></p>
 <p>This policy has a pre-defined architecture, which comprises the
@@ -480,7 +487,7 @@ state with the one from the time when this action happened;</li>
 <li>for each LSTM time step, calculate the similarity between the
 dialogue embedding and embedded system actions.
 This step is based on the
-<a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace idea</a>.</li>
+<a class="reference external" href="https://arxiv.org/abs/1709.03856">StarSpace</a> idea.</li>
 </ul>
 </div></blockquote>
 <div class="admonition note">
@@ -490,7 +497,7 @@ This step is based on the
 </div>
 <p>It is recommended to use
 <code class="docutils literal notranslate"><span class="pre">state_featurizer=LabelTokenizerSingleStateFeaturizer(...)</span></code>
-(see <a class="reference internal" href="../../api/featurizer/#featurization"><span class="std std-ref">Featurization</span></a> for details).</p>
+(see <a class="reference internal" href="../../api/featurization/#featurization"><span class="std std-ref">Featurization</span></a> for details).</p>
 <p><strong>Configuration:</strong></p>
 <blockquote>
 <div><p>Configuration parameters can be passed as parameters to the
@@ -707,21 +714,21 @@ the original starspace algorithm in the case
 </div></blockquote>
 </div>
 <div class="section" id="memoization-policy">
-<h2><a class="toc-backref" href="#id8">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id9">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> just memorizes the conversations in your
 training data. It predicts the next action with confidence <code class="docutils literal notranslate"><span class="pre">1.0</span></code>
 if this exact conversation exists in the training data, otherwise it
 predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
 </div>
 <div class="section" id="form-policy">
-<h2><a class="toc-backref" href="#id9">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id10">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> is an extension of the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> which
 handles the filling of forms. Once a <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> is called, the
 <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> will continually predict the <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> until all slots
-in the form are filled. For more information, see <a class="reference internal" href="../slot-filling/#slot-filling"><span class="std std-ref">Slot Filling</span></a>.</p>
+in the form are filled. For more information, see <a class="reference internal" href="../forms/#forms"><span class="std std-ref">Forms</span></a>.</p>
 </div>
 <div class="section" id="mapping-policy">
-<h2><a class="toc-backref" href="#id10">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id11">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> can be used to directly map intents to actions such that
 the mapped action will always be executed. The mappings are assigned by giving
 and intent the property <cite>‘triggers’</cite>, e.g.:</p>
@@ -740,8 +747,8 @@ it will listen for the next message.</p>
 the next user message (predicting <code class="docutils literal notranslate"><span class="pre">action_listen</span></code>). With the next
 user message normal prediction will resume.</p>
 <p>You should have an example like</p>
-<div class="highlight-story notranslate"><div class="highlight"><pre><span></span>* greet
-  - utter_greet
+<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="vm">* greet</span>
+<span class="vm">  </span>- utter_greet
 </pre></div>
 </div>
 <p class="last">in your stories. Otherwise any machine learning policy might be confused
@@ -750,8 +757,8 @@ the dialogue history.</p>
 </div>
 </div>
 <div class="section" id="fallback-policy">
-<span id="id2"></span><h2><a class="toc-backref" href="#id11">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallbacks/#fallbacks"><span class="std std-ref">Fallback Actions</span></a> if the intent recognition
+<span id="id3"></span><h2><a class="toc-backref" href="#id12">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if the intent recognition
 has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code> or if none of the dialogue
 policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</p>
 <p><strong>Configuration:</strong></p>
@@ -780,9 +787,9 @@ prediction</td>
 prediction from Rasa Core</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">fallback_action_name</span></code></td>
-<td>Name of the <a class="reference internal" href="../fallbacks/#fallbacks"><span class="std std-ref">Fallback Actions</span></a> to be called
-if the confidence of intent or action is
-below the respective threshold</td>
+<td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
+to be called if the confidence of intent
+or action is below the respective threshold</td>
 </tr>
 </tbody>
 </table>
@@ -806,7 +813,7 @@ below the respective threshold</td>
 </div></blockquote>
 </div>
 <div class="section" id="two-stage-fallback-policy">
-<h2><a class="toc-backref" href="#id12">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id13">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.</p>
 <ul>
@@ -870,15 +877,15 @@ prediction</td>
 prediction from Rasa Core</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">fallback_core_action_name</span></code></td>
-<td>Name of the <a class="reference internal" href="../fallbacks/#fallbacks"><span class="std std-ref">Fallback Actions</span></a> to be
-called if the confidence of Rasa Core
-action prediction is below the
+<td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
+to be called if the confidence of Rasa
+Core action prediction is below the
 <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">fallback_nlu_action_name</span></code></td>
-<td>Name of the <a class="reference internal" href="../fallbacks/#fallbacks"><span class="std std-ref">Fallback Actions</span></a> to be
-called if the confidence of Rasa NLU
-intent classification is below the
+<td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
+to be called if the confidence of Rasa
+NLU intent classification is below the
 <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code></td>

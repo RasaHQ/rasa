@@ -1,10 +1,10 @@
 :desc: Configure the custom components of your ML model to optimise the
        processes performed on the user input of your contextual assistant.
 
-.. _section_pipeline:
+.. _components:
 
-Component Configuration
-=======================
+Components
+==========
 
 .. note::
    For clarity, we have renamed the pre-defined pipelines to reflect
@@ -15,7 +15,7 @@ Component Configuration
 
 This is a reference of the configuration options for every built-in
 component in Rasa NLU. If you want to build a custom component, check
-out :ref:`section_customcomponents`.
+out :ref:`custom-nlu-components`.
 
 .. contents::
    :local:
@@ -48,7 +48,7 @@ MitieNLP
           model: "data/total_word_feature_extractor.dat"
 
     For more information where to get that file from, head over to
-    :ref:`section_backends`.
+    :ref:`installing MITIE <install-mitie>`.
 
 .. _SpacyNLP:
 
@@ -176,7 +176,7 @@ CountVectorsFeaturizer
 
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
-    for detailed description of the configuration parameters
+    for detailed description of the configuration parameters.
 
     This featurizer can be configured to use word or character n-grams, using ``analyzer`` config parameter.
     By default ``analyzer`` is set to ``word`` so word token counts are used as features.
@@ -290,7 +290,7 @@ MitieIntentClassifier
 
 :Description:
     This classifier uses MITIE to perform intent classification. The underlying classifier
-    is using a multi class linear SVM with a sparse linear kernel (see `mitie trainer code <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222>`_).
+    is using a multi-class linear SVM with a sparse linear kernel (see `MITIE trainer code <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222>`_).
 
 :Configuration:
 
@@ -372,7 +372,7 @@ EmbeddingIntentClassifier
 :Description:
     The embedding intent classifier embeds user inputs and intent labels into the same space. Supervised embeddings are
     trained by maximizing similarity between them. This algorithm is based on
-    the starspace idea from: `<https://arxiv.org/abs/1709.03856>`_. However, in this implementation
+    `StarSpace <https://arxiv.org/abs/1709.03856>`_. However, in this implementation
     the ``mu`` parameter is treated differently and additional hidden layers are added together with dropout.
     This algorithm also provides similarity rankings of the labels that did not "win".
 
@@ -522,7 +522,7 @@ Entity Extractors
 MitieEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
 
-:Short: MITIE entity extraction (using a `mitie ner trainer <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp>`_)
+:Short: MITIE entity extraction (using a `MITIE NER trainer <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp>`_)
 :Outputs: appends ``entities``
 :Requires: :ref:`MitieNLP`
 :Output-Example:
@@ -552,7 +552,7 @@ MitieEntityExtractor
 SpacyEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
 
-:Short: spacy entity extraction
+:Short: spaCy entity extraction
 :Outputs: appends ``entities``
 :Requires: :ref:`SpacyNLP`
 :Output-Example:
@@ -576,7 +576,7 @@ SpacyEntityExtractor
 :Configuration:
     Configure which dimensions, i.e. entity types, the spacy component
     should extract. A full list of available dimensions can be found in
-    the `spacy documentation <https://spacy.io/api/annotation#section-named-entities>`_.
+    the `spaCy documentation <https://spacy.io/api/annotation#section-named-entities>`_.
     Leaving the dimensions option unspecified will extract all available dimensions.
 
     .. code-block:: yaml
@@ -620,7 +620,7 @@ EntitySynonymMapper
                        }]
         }]
 
-    this component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entitiy
+    This component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entitiy
     extraction will return ``nyc`` even though the message contains ``NYC``. When this component changes an
     exisiting entity, it appends itself to the processor list of this entity.
 
@@ -710,12 +710,11 @@ DucklingHTTPExtractor
     option is to spin up a docker container using
     ``docker run -p 8000:8000 rasa/duckling``.
 
-    Alternatively, you can install duckling directly on your
-    `machine and start the server <https://github.com/facebook/duckling#quickstart>`_.
+    Alternatively, you can `install duckling directly on your
+    machine <https://github.com/facebook/duckling#quickstart>`_ and start the server.
 
     Duckling allows to recognize dates, numbers, distances and other structured entities
-    and normalizes them (for a reference of all available entities
-    see `the duckling documentation <https://duckling.wit.ai/#getting-started>`_).
+    and normalizes them.
     Please be aware that duckling tries to extract as many entity types as possible without
     providing a ranking. For example, if you specify both ``number`` and ``time`` as dimensions
     for the duckling component, the component will extract two entities: ``10`` as a number and
@@ -744,5 +743,3 @@ DucklingHTTPExtractor
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
-
-

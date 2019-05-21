@@ -1,4 +1,4 @@
-.. _elements-completing-tasks:
+.. _completing-tasks:
 
 ================
 Completing Tasks
@@ -14,20 +14,20 @@ Simple Questions
 
 Simple questions, or FAQs, should receive the same answer
 no matter what happened previously in the conversation.
-Users will often ask a basic set of questions 
+Users will often ask a basic set of questions
 and your assistant should answer them reliably.
 
-.. conversations:: 
+.. conversations::
    examples:
-     - 
+     -
        - what's your email address?
        - ( it's contact@example.com
-     - 
+     -
        - do you have a loyalty program?
        - ( unfortunately we don't
 
 Just like greetings and goodbyes, you can use the mapping policy to achieve this.
-See :ref:`greetings` .
+See :ref:`greetings`.
 
 Business Logic
 --------------
@@ -43,14 +43,14 @@ implement that logic inside a form, separating it from the learned behaviour. A 
 can cover all the happy paths (e.g. all the ways that a user can provide the required information).
 You can read more about forms in `this tutorial <https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/>`_.
 
-.. conversations:: 
+.. conversations::
    examples:
-     - 
+     -
        - I'd like to apply for a loan
        - ( I'd love to help. Which state are you in?
        - Alaska
        - ( Unfortunately, we only operate in the continental U.S.
-     - 
+     -
        - I'd like to apply for a loan
        - ( I'd love to help. Which state are you in?
        - California
@@ -68,16 +68,16 @@ on their own.
 Real users will often ask questions like "which is better?" and "why?".
 It is frustrating for users if your assistant doesn't understand this,
 and can only answer full questions like "which of your savings accounts has a better interest rate?"
-Understanding contextual questions is a key difference between `level 2 and level 3 assistants <https://www.oreilly.com/ideas/the-next-generation-of-ai-assistants-in-enterprise>`_ .
+Understanding contextual questions is a key difference between `level 2 and level 3 assistants <https://www.oreilly.com/ideas/the-next-generation-of-ai-assistants-in-enterprise>`_.
 
 
-.. conversations:: 
+.. conversations::
    examples:
-     - 
+     -
        - ( what's your email address?
        - why do you need to know that?
        - ( I need your email so I can send you a confirmation
-     - 
+     -
        - ( are you currently a premium customer?
        - what do you mean?
        - ( We have different memberships. Check your statement to see if you are a premium member.
@@ -94,21 +94,20 @@ are so many things a user might say other than provide you the information you a
 and a simple interruption shouldn't throw off your assistant completely.
 This is a key reason for building an assistant that can learn from real data.
 
-The best way to collect training data for unhappy paths is to use 
-:ref:`interactive_learning`.
+The best way to collect training data for unhappy paths is to use
+:ref:`interactive-learning`.
 
-.. conversations:: 
+.. conversations::
    examples:
-     - 
+     -
        - ( what's your email address?
        - no.
        - ( I will need your email address in order to create an account.
        - ( what's your email address?
-     - 
+     -
        - ( what's your email address?
        - work@example.com
        - ( thanks, and your phone number?
        - no wait, please use personal@example.com
        - ( ok, I'll use that email.
        - ( thanks, and your phone number?
-

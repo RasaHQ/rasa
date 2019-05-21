@@ -1,4 +1,4 @@
-.. _elements-guiding-users:
+.. _guiding-users:
 
 =============
 Guiding Users
@@ -7,7 +7,7 @@ Guiding Users
 .. contents::
    :local:
 
-.. _simple-questions:
+.. _explicit-confirmation:
 
 Explicit Confirmation
 ---------------------
@@ -19,9 +19,9 @@ even if your assistant is not sure how to help them.
 If the user goal is ambiguous to your assistant, ask for clarification.
 
 
-.. conversations:: 
+.. conversations::
    examples:
-     - 
+     -
        - I just moved
        - ( I'm not sure I understood you correctly. Do you mean ...
        - ^ I want to cancel my contract
@@ -53,9 +53,9 @@ tasks, and should be able to explain to a user what they can do.
 That includes coherently responding to requests that are out of scope.
 
 
-.. conversations:: 
+.. conversations::
    examples:
-     - 
+     -
        - What can you do?
        - ( I can help you update your personal details, change your plan, and answer any questions you have about our products.
      -
@@ -67,7 +67,7 @@ That includes coherently responding to requests that are out of scope.
 When to explain the limitations of your assistant is specific to your application,
 but these example stories show some common cases:
 
-.. code-block:: yaml
+.. code-block:: story
 
     ## user asks whats possible
     * ask_whatspossible
@@ -82,13 +82,13 @@ but these example stories show some common cases:
 Collecting User Feedback
 ------------------------
 
-Asking for feedback is one of the best tools you have to understand 
+Asking for feedback is one of the best tools you have to understand
 your users and determine whether you solved their problem!
 Storing this feedback is a powerful way to figure out how you can improve your assistant.
 
-.. conversations:: 
+.. conversations::
    examples:
-     - 
+     -
        - ( Was that helpful?
        - no.
        - ( Thanks. Why wasnt I able to help?
@@ -97,7 +97,7 @@ Storing this feedback is a powerful way to figure out how you can improve your a
 
 
 Use a form to collect user feedback. To do this, define a custom form action
-(see :ref:`business-logic` for more details about forms).
+(see :ref:`forms` for more details about forms).
 
 .. code-block:: python
 
@@ -148,14 +148,14 @@ There are multiple reasons why you might trigger a human handoff:
 * the user asks to speak to a human
 * the assistant is struggling to understand the user
 * the assistant understands what the user wants, but a human is required to resolve the issue.
-    
 
-.. conversations:: 
+
+.. conversations::
    examples:
-     - 
+     -
        - let me speak to a human
        - ( let me put you in touch with someone.
-     - 
+     -
        - I want to cancel
        - ( I'm afraid I can't help you with that.
        - ( let me put you in touch with someone.
