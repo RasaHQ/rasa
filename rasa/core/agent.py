@@ -11,7 +11,7 @@ import aiohttp
 
 import rasa
 import rasa.utils.io
-from rasa.constants import DEFAULT_DOMAIN_PATH
+from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
 from rasa.core import constants, jobs, training
 from rasa.core.channels import (
     InputChannel,
@@ -636,7 +636,7 @@ class Agent(object):
                 "to `agent.train(...)` is not supported anymore. "
                 "Pass appropriate featurizer directly "
                 "to the policy configuration instead. More info "
-                "https://rasa.com/docs/core/migrations.html"
+                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
             )
         if (
             kwargs.get("epochs")
@@ -648,7 +648,7 @@ class Agent(object):
                 "to `agent.train(...)` is not supported "
                 "anymore. Specify parameters directly in the "
                 "policy configuration instead. More info "
-                "https://rasa.com/docs/core/migrations.html"
+                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
             )
 
         if isinstance(training_trackers, str):

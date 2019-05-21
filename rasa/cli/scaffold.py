@@ -5,7 +5,12 @@ from typing import List, Text
 import rasa.train
 from rasa.cli.shell import shell
 from rasa.cli.utils import create_output_path, print_success
-from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.constants import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DOCS_BASE_URL,
+)
 
 
 # noinspection PyProtectedMember
@@ -156,15 +161,15 @@ def run(args: argparse.Namespace) -> None:
             "To get started quickly, an "
             "initial project will be created.\n"
             "If you need some help, check out "
-            "the documentation at https://rasa.com/docs\n"
+            "the documentation at {}.\n".format(DOCS_BASE_URL)
         )
     else:
         print (
             "To get started quickly, an "
             "initial project will be created.\n"
             "If you need some help, check out "
-            "the documentation at https://rasa.com/docs\n"
-            "Now let's start! 👇🏽\n"
+            "the documentation at {}.\n"
+            "Now let's start! 👇🏽\n".format(DOCS_BASE_URL)
         )
 
     path = (
