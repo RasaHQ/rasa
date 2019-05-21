@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.model import InvalidModelError
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,17 @@ class SpacyNLP(Component):
             "Trying to load spacy model with name '{}'".format(spacy_model_name)
         )
 
-        nlp = spacy.load(spacy_model_name, disable=["parser"])
+        try:
+            nlp = spacy.load(spacy_model_name, disable=["parser"])
+        except OSError:
+            raise InvalidModelError(
+                "Model '{}' is not a linked spaCy model.  "
+                "Please download and/or link a spaCy model, "
+                "e.g. by running:\npython -m spacy download "
+                "en_core_web_md\npython -m spacy link "
+                "en_core_web_md en".format(spacy_model_name)
+            )
+
         cls.ensure_proper_language_model(nlp)
         return cls(component_config, nlp)
 

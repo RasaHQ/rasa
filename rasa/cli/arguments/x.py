@@ -21,27 +21,6 @@ def set_x_arguments(parser: argparse.ArgumentParser):
         help="Run Rasa X in a production environment.",
     )
 
-    parser.add_argument(
-        "--nlg",
-        type=str,
-        default="http://localhost:5002/api/nlg",
-        help="Rasa NLG endpoint.",
-    )
-
-    parser.add_argument(
-        "--model-endpoint-url",
-        type=str,
-        default="http://localhost:5002/api/projects/default/models/tags/production",
-        help="Rasa model endpoint URL.",
-    )
-
-    parser.add_argument(
-        "--project-path",
-        type=str,
-        default=".",
-        help="Path to the Rasa project directory.",
-    )
-
     add_data_param(parser, default=DEFAULT_DATA_PATH, data_type="stories and Rasa NLU ")
 
     add_server_arguments(parser)

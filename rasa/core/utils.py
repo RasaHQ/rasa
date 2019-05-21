@@ -426,8 +426,13 @@ def get_file_hash(path: Text) -> Text:
 
 
 def get_text_hash(text: Text, encoding: Text = "utf-8") -> Text:
-    """Calculate the md5 hash of a file."""
+    """Calculate the md5 hash for a text."""
     return md5(text.encode(encoding)).hexdigest()
+
+
+def get_dict_hash(data: Dict, encoding: Text = "utf-8") -> Text:
+    """Calculate the md5 hash of a dictionary."""
+    return md5(json.dumps(data, sort_keys=True).encode(encoding)).hexdigest()
 
 
 async def download_file_from_url(url: Text) -> Text:

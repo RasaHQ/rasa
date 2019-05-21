@@ -119,7 +119,8 @@ def create_output_path(
         else:
             time_format = "%Y%m%d-%H%M%S"
             name = time.strftime(time_format)
-        file_name = "{}{}.tar.gz".format(prefix, name)
+            name = "{}{}".format(prefix, name)
+        file_name = "{}.tar.gz".format(name)
         return os.path.join(output_path, file_name)
 
 
@@ -151,10 +152,6 @@ def minimal_kwargs(
     }
 
 
-def print_success(*args: Any):
-    print_color(*args, color=bcolors.OKGREEN)
-
-
 class bcolors(object):
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
@@ -172,6 +169,14 @@ def wrap_with_color(*args: Any, color: Text):
 
 def print_color(*args: Any, color: Text):
     print (wrap_with_color(*args, color=color))
+
+
+def print_success(*args: Any):
+    print_color(*args, color=bcolors.OKGREEN)
+
+
+def print_info(*args: Any):
+    print_color(*args, color=bcolors.OKBLUE)
 
 
 def print_warning(*args: Any):
