@@ -3,6 +3,3 @@ action_endpoint:
 
 #nlg:
 #  url: http://localhost:5056/nlg
-
-core_endpoint:
-  url: http://localhost:5005
