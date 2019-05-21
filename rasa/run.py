@@ -4,6 +4,7 @@ import shutil
 import typing
 from typing import Dict, Text
 
+from rasa.constants import DOCS_BASE_URL
 from rasa.cli.utils import minimal_kwargs, print_warning, print_error
 from rasa.model import get_model
 
@@ -51,7 +52,8 @@ def run(
         print_warning(
             "No chat connector configured, falling back to the "
             "REST input channel. To connect your bot to another channel, "
-            "read the docs here: https://rasa.com/docs/core/connectors"
+            "read the docs here: {}/user-guide/"
+            "messaging-and-voice-channels".format(DOCS_BASE_URL)
         )
 
     kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)

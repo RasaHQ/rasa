@@ -2,7 +2,7 @@
 # custom Python code.
 #
 # See this guide on how to implement these action:
-# https://rasa.com/docs/core/customactions/#custom-actions-written-in-python
+# https://rasa.com/docs/rasa/core/actions/#custom-actions/
 
 
 # This is a simple example for a custom action which utters "Hello World!"
