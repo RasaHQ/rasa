@@ -96,11 +96,11 @@ First Alternative: Tensorflow
 
 To use the ``supervised_embeddings`` pipeline you will need to install
 Tensorflow and, for entity recognition, the sklearn-crfsuite library.
-To do this, run the following command:
+To do this, simply run the following command:
 
 .. code-block:: bash
 
-    pip install rasa # ASK
+    pip install rasa
 
 
 .. _install-mitie:

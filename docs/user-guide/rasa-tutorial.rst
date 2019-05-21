@@ -62,8 +62,6 @@ This creates the following files:
 The most important files are marked with a '*'.
 You will learn about all of these in this tutorial.
 
-#ASK: is code runnable?
-
 To check that all the files were created, run:
 
 .. runnable::
@@ -207,7 +205,7 @@ the training results for each training epoch.
 
    rasa train
 
-   echo "Finished training." #ASK
+   echo "Finished training."
 
 The ``rasa train`` command will look for both NLU and Core data and will train a combined model.
 

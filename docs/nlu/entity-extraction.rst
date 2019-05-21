@@ -106,7 +106,7 @@ Extracting Places, Dates, People, Organisations
 
 spaCy has excellent pre-trained named-entity recognisers for a few different languages.
 You can test them out in this
-`awesome interactive demo <https://demos.explosion.ai/displacy-ent/>`_.
+`interactive demo <https://demos.explosion.ai/displacy-ent/>`_.
 We don't recommend that you try to train your own NER using spaCy,
 unless you have a lot of data and know what you are doing.
 Note that some spaCy models are highly case-sensitive.
@@ -124,7 +124,8 @@ objects that you can use, e.g.
    => {"value":"2018-05-31T20:00:00.000+01:00"}
 
 
-The list of supported langauges is `here <https://github.com/facebook/duckling/tree/master/Duckling/Dimensions>`_.
+The list of supported langauges can be found `here 
+<https://github.com/facebook/duckling/tree/master/Duckling/Dimensions>`_.
 Duckling can also handle durations like "two hours",
 amounts of money, distances, and ordinals.
 Fortunately, there is a duckling docker container ready to use,

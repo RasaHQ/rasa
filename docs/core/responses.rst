@@ -8,14 +8,14 @@ Responses
 
 If you want your assistant to respond to user messages, you need to manage
 these responses. In the training data for your bot,
-:ref:`your stories<stories>`, you specify the actions your bot
+your stories, you specify the actions your bot
 should execute. These actions
 can use utterances to send messages back to the user.
 
 There are two ways to manage these utterances:
 
-1. include your assistant utterances in your domain file or
-2. use an external service to generate the responses
+1. Include your assistant utterances in your domain file, or
+2. Use an external service to generate the responses.
 
 Including the utterances in the domain
 --------------------------------------
@@ -40,7 +40,7 @@ documentation about the domain file format: :ref:`utter_templates`.
 Managing assistant utterances using an external CMS
 ---------------------------------------------------
 
-Retraining the bot, just to change the text copy can be suboptimal for
+Retraining the bot just to change the text copy can be suboptimal for
 some workflows. That's why Core also allows you to outsource the
 response generation and separate it from the dialogue learning.
 

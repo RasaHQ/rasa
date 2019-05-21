@@ -135,7 +135,7 @@ base class; in a pipeline these different methods
 will be called in a specific order. Lets assume, we added the following
 pipeline to our config:
 ``"pipeline": ["Component A", "Component B", "Last Component"]``.
-The image shows the call order during the training of this pipeline :
+The image shows the call order during the training of this pipeline:
 
 .. image:: /_static/images/component_lifecycle.png
 

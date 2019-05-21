@@ -14,7 +14,7 @@ There are three kinds of actions in Rasa Core:
  1. **Default actions**: ``action_listen``, ``action_back``, ``action_restart``,
     ``action_default_fallback``
  2. **Utterance actions**: start with ``utter_``, just send a message
-    to the user (see :ref:`responses`)
+    to the user
  3. **Custom actions**: any other action, these actions can run arbitrary code
 
 Utterance Actions

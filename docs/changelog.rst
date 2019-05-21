@@ -1,3 +1,3 @@
-:desc: Rasa NLU Changelog
+.. _changelog:
 
 .. include:: ../CHANGELOG.rst
