@@ -1,7 +1,7 @@
 import os
 import tempfile
 import time
-from typing import Text
+from typing import Text, Optional, List
 
 import pytest
 
@@ -28,6 +28,8 @@ from rasa.model import (
     nlu_fingerprint_changed,
     Fingerprint,
     should_retrain,
+    FINGERPRINT_CONFIG_CORE_KEY,
+    FINGERPRINT_CONFIG_NLU_KEY,
 )
 
 
@@ -57,9 +59,21 @@ def test_get_model_from_directory_with_subdirectories(trained_model):
     assert os.path.exists(unpacked_nlu)
 
 
-def _fingerprint(config=None, domain=None, rasa_version="1.0", stories=None, nlu=None):
+def _fingerprint(
+    config: Optional[Text] = None,
+    config_nlu: Optional[Text] = None,
+    config_core: Optional[Text] = None,
+    domain: Optional[List[Text]] = None,
+    rasa_version: Text = "1.0",
+    stories: Optional[List[Text]] = None,
+    nlu: Optional[List[Text]] = None,
+):
     return {
         FINGERPRINT_CONFIG_KEY: config if config is not None else ["test"],
+        FINGERPRINT_CONFIG_CORE_KEY: config_core
+        if config_core is not None
+        else ["test"],
+        FINGERPRINT_CONFIG_NLU_KEY: config_nlu if config_nlu is not None else ["test"],
         FINGERPRINT_DOMAIN_KEY: domain if domain is not None else ["test"],
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa_version,
@@ -146,7 +160,15 @@ def test_create_fingerprint_from_paths(project):
 def test_create_fingerprint_from_invalid_paths(project, project_files):
     project_files = _project_files(project, *project_files)
 
-    expected = _fingerprint([], [], rasa_version=rasa.__version__, stories=[], nlu=[])
+    expected = _fingerprint(
+        config="",
+        config_nlu="",
+        config_core="",
+        domain=[],
+        rasa_version=rasa.__version__,
+        stories=[],
+        nlu=[],
+    )
 
     actual = model_fingerprint(**project_files)
     assert actual[FINGERPRINT_TRAINED_AT_KEY] is not None
@@ -199,9 +221,21 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
             "retrain_nlu": True,
         },
         {
-            "new": _fingerprint(config=["others"]),
+            "new": _fingerprint(config="others"),
             "old": _fingerprint(),
             "retrain_core": True,
+            "retrain_nlu": True,
+        },
+        {
+            "new": _fingerprint(config_core="others"),
+            "old": _fingerprint(),
+            "retrain_core": True,
+            "retrain_nlu": False,
+        },
+        {
+            "new": _fingerprint(),
+            "old": _fingerprint(config_nlu="others"),
+            "retrain_core": False,
             "retrain_nlu": True,
         },
         {
