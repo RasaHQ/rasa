@@ -1,6 +1,6 @@
-# Formbot - an example which demonstrates the implementation of FormAction
+# Formbot
 
-Formbot example is designed to help you understand how the FormAction works and how
+`formbot` example is designed to help you understand how the `FormAction` works and how
 to implement it in practice. Using the code and data files in this directory you
 can build a simple restaurant search assistant capable of recommending
 restaurants based on user preferences.
@@ -8,19 +8,19 @@ restaurants based on user preferences.
 ## What’s inside this example?
 
 This example contains some training data and the main files needed to build an 
-assistant on your local machine. The formbot consists of the following files:
+assistant on your local machine. The `formbot` consists of the following files:
 
 - **data/nlu.md** contains training examples for NLU model  
 - **data/stories.md** contains training stories for Core model  
-- **actions.py** contains the implementation of a custom FormAction  
+- **actions.py** contains the implementation of a custom `FormAction`
 - **domain.yml** contains the domain of the assistant  
-- **endpoints.yml** contains the webhook configuration for the custom action  
+- **endpoints.yml** contains the webhook configuration for the custom actions
 - **config.yml** contains the model configuration
 
 ## How to use this example?
 
 Using this example you can build an actual assistant which demonstrates the
-functionality of the `FormAction`. You can use the example using the following 
+functionality of the `FormAction`. You can test the example using the following 
 steps:
 
 1. Train a Rasa model containing the Rasa NLU and Rasa Core models by running:

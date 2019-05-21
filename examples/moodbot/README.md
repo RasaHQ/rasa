@@ -1,11 +1,11 @@
 # Moodbot
 
-Moodbot example simulates how you can use your bot on different channels.
+`moodbot` example simulates how you can use your bot on different channels.
 
 ## What’s inside this example?
 
 This example contains some training data and the main files needed to build an 
-assistant on your local machine. The moddbot consists of the following files:
+assistant on your local machine. The `moddbot` consists of the following files:
 
 - **data/nlu.md** contains training examples for NLU model  
 - **data/stories.md** contains training stories for Core model  
@@ -16,7 +16,7 @@ assistant on your local machine. The moddbot consists of the following files:
 ## How to use this example?
 
 Using this example you can build an actual assistant and chat with it on 
-different channels.
+different channels. To do so execute the following steps:
 
 1. Train a Rasa model containing the Rasa NLU and Rasa Core models by running:
     ```
@@ -34,7 +34,7 @@ different channels.
     For more information on the different channels read our 
     [documentation](http://x-docs.rasa.com/docs/rasa/channels/).
 
-    If you don't want to use any of the channels, you can chat with your bot 
+    If you don't want to use any channel, you can chat with your bot 
     on the command line, using the following command:
     ```
     rasa shell
