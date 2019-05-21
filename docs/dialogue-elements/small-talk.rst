@@ -57,7 +57,7 @@ response if the user says goodbye immediately after saying hello, remove the
 ``triggers`` metadata from the domain file, and include relevant stories in your
 training data:
 
-.. code-block:: md
+.. code-block:: story
 
    * greet
      - utter_greet
@@ -107,7 +107,7 @@ First, you need NLU data for reactions and acknowledgements:
 
 And then you need training stories to teach Rasa how to respond:
 
-.. code-block:: md
+.. code-block:: story
 
     ## price reaction
     * opinion+negative{"price": "expensive"}

@@ -59,7 +59,7 @@ Slots Set from NLU
 If your NLU model picks up an entity, and your domain contains a
 slot with the same name, the slot will be set automatically. For example:
 
-.. code-block:: md
+.. code-block:: story
 
    # story_01
    * greet{"name": "Ali"}
@@ -129,7 +129,7 @@ When the ``fetch_profile`` action is run, it returns a
            return [SlotSet("account_type", data["account_type"])]
 
 
-.. code-block:: md
+.. code-block:: story
 
    # story_01
    * greet
@@ -314,13 +314,13 @@ Now we also need some training stories, so that Rasa Core
 can learn from these how to handle the different situations:
 
 
-.. code-block:: md
+.. code-block:: story
 
    # story1
    ...
    * inform{"people": "3"}
-   - action_book_table
+     - action_book_table
    ...
    # story2
    * inform{"people": "9"}
-   - action_explain_table_limit
+     - action_explain_table_limit

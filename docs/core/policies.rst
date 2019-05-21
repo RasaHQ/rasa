@@ -19,7 +19,7 @@ longer stories by randomly gluing together
 the ones in your stories files.
 This is because if you have stories like:
 
-.. code-block:: md
+.. code-block:: story
 
     # thanks
     * thankyou
@@ -109,7 +109,7 @@ describes off-topic user messages. If your bot sees this intent multiple
 times in a row, you might want to tell the user what you `can` help them
 with. So your story might look like this:
 
-.. code-block:: md
+.. code-block:: story
 
    * out_of_scope
       - utter_default
@@ -378,7 +378,7 @@ it will listen for the next message.
 
   You should have an example like
 
-  .. code-block:: md
+  .. code-block:: story
 
     * greet
       - utter_greet

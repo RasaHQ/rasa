@@ -63,7 +63,7 @@ your policy configuration file. For example:
 If you have a specific intent, let's say it's called ``out_of_scope``, that
 should always trigger the fallback action, you should add this as a story:
 
-.. code-block:: md
+.. code-block:: story
 
     ## fallback story
     * out_of_scope

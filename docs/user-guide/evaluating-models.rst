@@ -210,7 +210,7 @@ To do this, you need some stories in the end-to-end format,
 which includes both the NLU output and the original text.
 Here is an example:
 
-.. code-block:: md
+.. code-block:: story
 
   ## end-to-end story 1
   * greet: hello

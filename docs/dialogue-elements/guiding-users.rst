@@ -67,7 +67,7 @@ That includes coherently responding to requests that are out of scope.
 When to explain the limitations of your assistant is specific to your application,
 but these example stories show some common cases:
 
-.. code-block:: md
+.. code-block:: story
 
     ## user asks whats possible
     * ask_whatspossible

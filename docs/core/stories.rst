@@ -23,7 +23,7 @@ Format
 Here's an example from the `bAbI <https://research.fb.com/downloads/babi/>`_
 dataset (converted into Rasa stories):
 
-.. code-block:: md
+.. code-block:: story
 
    ## story_07715946    <!-- name of the story - just for debugging -->
    * greet
@@ -65,7 +65,7 @@ very often in different stories, but stories *without* checkpoints
 are easier to read and write. Here is an example story file which
 contains checkpoints:
 
-.. code-block:: md
+.. code-block:: story
 
     ## first story
     * hello
@@ -94,7 +94,7 @@ converted into two stories at training time. Just like checkpoints,
 ``OR`` statements can be useful, but if you are using a lot of them,
 it is probably better to restructure your domain and/or intents:
 
-.. code-block:: md
+.. code-block:: story
 
     ## story
     ...

@@ -59,7 +59,7 @@ they respond with the information you asked for.
 If we take the example of the restaurant bot, this single story describes all of the
 happy paths.
 
-.. code-block:: md
+.. code-block:: story
 
     ## happy path
     * request_restaurant
@@ -211,7 +211,7 @@ You need to handle events that might cause ``ActionExecutionRejection`` errors
 in your stories. For example, if you expect your users to chitchat with your bot,
 you could add a story like this:
 
-.. code-block:: md
+.. code-block:: story
 
     ## chitchat
     * request_restaurant
@@ -229,7 +229,7 @@ gracefully using a default action ``action_deactivate_form`` which will deactiva
 the form and reset the requested slot. An example story of such conversation could
 look as follows:
 
-.. code-block:: md
+.. code-block:: story
 
     ## chitchat
     * request_restaurant
@@ -259,7 +259,7 @@ to one of the bot's questions with another question, like *why do you need to kn
 The response to this ``explain`` intent depends on where we are in the story.
 In the restaurant case, your stories would look something like this:
 
-.. code-block:: md
+.. code-block:: story
 
     ## explain cuisine slot
     * request_restaurant

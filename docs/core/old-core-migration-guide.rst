@@ -409,7 +409,7 @@ There have been some API changes to classes and methods:
   to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
   deprecated). Instead of writing:
 
-  .. code-block:: md
+  .. code-block:: story
 
       ## story_07715946                     <!-- name of the story - just for debugging -->
       * _greet
@@ -420,7 +420,7 @@ There have been some API changes to classes and methods:
 
   The new format looks like this:
 
-  .. code-block:: md
+  .. code-block:: story
 
       ## story_07715946                     <!-- name of the story - just for debugging -->
       * greet

@@ -187,7 +187,7 @@ happy paths are still covered by the basic story given in :ref:`forms`.
 
 Here is an example:
 
-.. code-block:: md
+.. code-block:: story
 
     * request_restaurant
         - restaurant_form

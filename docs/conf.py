@@ -2,7 +2,7 @@
 #
 # -- General configuration ------------------------------------------------
 import re
-import rasabaster
+import sys
 
 nitpicky = True
 linkcheck_anchors_ignore = [".*"]
@@ -375,3 +375,15 @@ nitpick_ignore = [
     ("py:class", "rasa.nlu.components.Component"),
     ("py:class", "rasa.nlu.training_data.message.Message"),
 ]
+
+
+def setup(sphinx):
+    sphinx.add_stylesheet('css/custom.css')
+
+    try:
+        utils_path = os.path.abspath(os.path.join(__file__, '..', 'util'))
+        sys.path.insert(0, utils_path)
+        from StoryLexer import StoryLexer
+        sphinx.add_lexer("story", StoryLexer())
+    except ImportError:
+        print("No Story Lexer :( Sad times!")
