@@ -108,7 +108,7 @@ class FallbackPolicy(Policy):
         elif self.should_nlu_fallback(nlu_confidence, tracker.latest_action_name):
             logger.debug(
                 "NLU confidence {} is lower "
-                "than NLU threshold {}. "
+                "than NLU threshold {:.2f}. "
                 "".format(nlu_confidence, self.nlu_threshold)
             )
             result = self.fallback_scores(domain)
