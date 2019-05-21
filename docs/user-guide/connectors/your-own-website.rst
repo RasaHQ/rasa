@@ -6,15 +6,15 @@ Your Own Website
 ================
 
 If you just want an easy way for users to test your bot, the best option
-is usually the chat interface that ships with Rasa X, see `Invite Users To Test
-<../../rasa-x/docs/get-feedback-from-test-users>`_.
+is usually the chat interface that ships with Rasa X, where you can `invite users
+to test your bot <../../rasa-x/docs/get-feedback-from-test-users>`_.
 
-If you actually have an existing website and want to add a Rasa assistant to it,
+If you already have an existing website and want to add a Rasa assistant to it,
 you have a couple of options:
 
-- `Rasa Webchat <https://github.com/mrbot-ai/rasa-webchat>`_
+- `Rasa Webchat <https://github.com/mrbot-ai/rasa-webchat>`_, which
   uses websockets.
-- `Chatroom <https://github.com/scalableminds/chatroom>`_
+- `Chatroom <https://github.com/scalableminds/chatroom>`_, which
   uses regular HTTP requests.
 
 Websocket Channel
@@ -33,7 +33,7 @@ a ``credentials.yml`` with the following content:
 The first two configuration values define the event names used by Rasa Core
 when sending or receiving messages over socket.io.
 
-By default, the socketio channel uses the socket id as sender_id which causes
+By default, the socketio channel uses the socket id as ``sender_id``, which causes
 the session to restart at every page reload. ``session_persistence`` can be
 set to ``true`` to avoid that. In that case, the frontend is responsible
 for generating a session id and sending it to the Rasa Core server by
@@ -51,14 +51,14 @@ REST Channels
 
 
 The ``RestInput`` and ``CallbackInput`` channels can be used for custom integrations.
-They provide a URL where you can post messages, and either receive response messages
-directly or asynchronously via a webhook.
+They provide a URL where you can post messages and either receive response messages
+directly, or asynchronously via a webhook.
 
 
 RestInput
 ^^^^^^^^^
 
-The ``rest`` channel, will provide you with a REST endpoint to post messages
+The ``rest`` channel will provide you with a REST endpoint to post messages
 to and in response to that request will send back the bots messages.
 Here is an example on how to connect the ``rest`` input channel
 using the run script:

@@ -3,15 +3,16 @@
 Messaging and Voice Channels
 ============================
 
-If you're testing this on your local computer (e.g. not a server), you
-will need to `use ngrok </docs/rasa-x/get-feedback-from-test-users/#use-ngrok-for-local-testing>`_ .
-This gives your machine a domain name so that facebook, slack, etc. know where to send messages.
+If you're testing this on your local computer (i.e. not a server), you
+will need to use `ngrok </docs/rasa-x/get-feedback-from-test-users/#use-ngrok-for-local-testing>`_.
+This gives your machine a domain name so that Facebook, Slack, etc. know where to send messages to
+reach your local machine.
 
 
 To make your assistant available on a messaging platform you need to provide credentials
 in a ``credentials.yml`` file.
 An example file is created when you run ``rasa init``, so it's easiest to edit that file
-and add your credentials there. Here is an example with facebook credentials:
+and add your credentials there. Here is an example with Facebook credentials:
 
 
 .. code-block:: yaml
@@ -28,13 +29,13 @@ Learn how to make your assistant available on:
    :titlesonly:
    :maxdepth: 1
 
-   ../connectors/your-own-website
-   ../connectors/facebook-messenger
-   ../connectors/slack
-   ../connectors/telegram
-   ../connectors/twilio
-   ../connectors/microsoft-bot-framework
-   ../connectors/cisco-webex-teams
-   ../connectors/rocketchat
-   ../connectors/mattermost
-   ../connectors/custom-connectors
+   connectors/your-own-website
+   connectors/facebook-messenger
+   connectors/slack
+   connectors/telegram
+   connectors/twilio
+   connectors/microsoft-bot-framework
+   connectors/cisco-webex-teams
+   connectors/rocketchat
+   connectors/mattermost
+   connectors/custom-connectors

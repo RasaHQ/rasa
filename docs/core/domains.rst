@@ -24,7 +24,7 @@ Your NLU model will define the ``intents`` and ``entities`` that you
 need to include in the domain.
 
 ``slots`` are the things you want to keep track of during a conversation,
-see :ref:`slots` . A categorical slot called ``risk_level`` would be
+see :ref:`slots`. A categorical slot called ``risk_level`` would be
 defined like this:
 
 .. code-block:: yaml

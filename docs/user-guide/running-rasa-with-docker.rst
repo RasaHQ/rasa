@@ -6,8 +6,8 @@
 Running Rasa with Docker
 ========================
 
-This is a guide on how to use Rasa with Docker.
-If you haven't used Rasa before, we'd recommend that you read the :ref:`rasa-tutorial`.
+This is a guide on how to build a Rasa assistant with Docker.
+If you haven't used Rasa before, we'd recommend that you start with the :ref:`rasa-tutorial`.
 
 .. contents::
    :local:
@@ -24,7 +24,7 @@ If you're not sure if you have Docker installed, you can check by running:
     # docker-compose version 1.23.2, build 1110ad01
 
 If Docker is installed on your machine, the output should show you your installed
-versions of Docker and docker-compose. If the command doesn't work, you'll have to
+versions of Docker and Docker Compose. If the command doesn't work, you'll have to
 install Docker.
 See `Docker Installation <https://docs.docker.com/install/>`_ for details.
 
@@ -44,7 +44,7 @@ This section will cover the following:
 Setup
 ~~~~~
 
-Just like in the :ref:`rasa-tutorial`, you'll use the ``rasa init`` command to create a project.
+Just like in the :ref:`tutorial <rasa-tutorial>`, you'll use the ``rasa init`` command to create a project.
 The only difference is that you'll be running Rasa inside a Docker container, using
 the image ``rasa/rasa``. To initialize your project, run:
 
@@ -64,7 +64,7 @@ What does this command mean?
 
 Running this command will produce a lot of output. What happens is:
 
-- a Rasa project is created (see :ref:`rasa-tutorial`)
+- a Rasa project is created
 - an initial model is trained using the project's training data.
 
 To check that the command completed correctly, look at the contents of your working directory:
@@ -86,7 +86,7 @@ To talk to your newly-trained assistant, run this command:
    docker run -it -v $(pwd):/app rasa/rasa shell
 
 This will start a shell where you can chat to your assistant.
-Note that this command includes the flags ``-it``, which means that your are running
+Note that this command includes the flags ``-it``, which means that you are running
 Docker interactively, and you are able to give input via the command line.
 For commands which require interactive input, like ``rasa shell`` and ``rasa interactive``,
 you need to pass the ``-it`` flags.
@@ -99,9 +99,10 @@ Choosing a Tag
 ~~~~~~~~~~~~~~
 
 To keep images as small as possible, we publish different tags of the ``rasa/rasa`` image
-with different dependencies installed. See :ref:`choosing-a-pipeline` for more information.
+with different dependencies installed. See :ref:`choosing-a-pipeline` for more information
+about depedencies.
 
-All tags start with a version, the ``latest`` tag corresponds to the current master build.
+All tags start with a version -- the ``latest`` tag corresponds to the current master build.
 The tags are:
 
 - ``{version}``
@@ -112,12 +113,12 @@ The tags are:
 
 The plain ``{version}`` tag includes all the dependencies you need to run the ``supervised_embeddings`` pipeline.
 If you are using components with pre-trained word vectors, you need to choose the corresponding tag.
-Alternatively, you can use the ``-full`` tag which includes all pipeline dependencies.
+Alternatively, you can use the ``-full`` tag, which includes all pipeline dependencies.
 
 .. note::
 
    You can see a list of all the versions and tags of the Rasa Docker image
-   `here <https://hub.docker.com/r/rasa/rasa/>`_ .
+   `here <https://hub.docker.com/r/rasa/rasa/>`_.
 
 
 .. _model_training_docker:
@@ -127,7 +128,7 @@ Training a Custom Rasa Model with Docker
 
 Edit the ``config.yml`` file to use the pipeline you want, and place
 your NLU and Core data into the ``data/`` directory.
-Now you can train your own Rasa model by running:
+Now you can train your Rasa model by running:
 
 .. code-block:: bash
 
@@ -136,7 +137,7 @@ Now you can train your own Rasa model by running:
     rasa/rasa:latest-full \
     train \
       --domain domain.yml \
-      --data your-data-directory \
+      --data data \
       --out models
 
 Here's what's happening in that command:
@@ -144,12 +145,11 @@ Here's what's happening in that command:
   - ``-v $(pwd):/app``: Mounts your project directory into the Docker
     container so that Rasa can train a model on your training data
   - ``rasa/rasa:latest-full``: Use the Rasa image with the tag ``latest-full``
-  - ``train``: Execute the ``rasa train`` command within the container. This requires
-    the default locations for the configuration files and training data. For more
+  - ``train``: Execute the ``rasa train`` command within the container. For more
     information see :ref:`command-line-interface`.
 
 In this case, we've also passed values for the location of the domain file, training
-data and the models output directory to show how these can be customized.
+data, and the models output directory to show how these can be customized.
 You can also leave these out since we are passing the default values.
 
 .. note::
@@ -157,7 +157,7 @@ You can also leave these out since we are passing the default values.
     If you are using a custom NLU component or policy, you have to add the module file to your
     Docker container. You can do this by either mounting the file or by including it in your
     own custom image (e.g. if the custom component or policy has extra dependencies). Make sure
-    that your module is in the Python module search path, e.g. by setting the
+    that your module is in the Python module search path by setting the
     environment variable ``PYTHONPATH=$PYTHONPATH:<directory of your module>``.
 
 
@@ -173,7 +173,7 @@ exist, create it using:
   touch credentials.yml
 
 Then edit it according to your connected channels.
-After this run the trained model with:
+After, run the trained model with:
 
 .. code-block:: bash
 
@@ -226,11 +226,11 @@ want to use.
 Each container is declared as a ``service`` within the docker-compose file.
 The first service is the ``rasa`` service.
 
-The command is similar to the ``docker run`` command in :ref:`running-rasa-with-docker`.
+The command is similar to the ``docker run`` command.
 The ``ports`` part defines a port mapping between the container and your host
 system. In this case it makes ``5005`` of the ``rasa`` service available on
 port ``5005`` of your host.
-This is the port of the :ref:`rest_channels` interface of Rasa.
+This is the port of the :ref:`REST Channel <rest_channels>` interface of Rasa.
 
 .. note::
 
@@ -248,14 +248,14 @@ To run the services configured in your ``docker-compose.yml`` execute:
 Adding Custom Actions
 ---------------------
 
-To create more sophisticated assistants you will want to use :ref:`custom-actions`.
-Continuing the example from above you might want to add an action which tells
-the user a joke to cheer the user up.
+To create more sophisticated assistants, you will want to use :ref:`custom-actions`.
+Continuing the example from above, you might want to add an action which tells
+the user a joke to cheer them up.
 
 Creating a Custom Action
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Start with creating the custom actions in a directory ``actions``:
+Start by creating the custom actions in a directory ``actions``:
 
 .. code-block:: bash
 
@@ -284,9 +284,9 @@ Then build a custom action using the Rasa SDK, e.g.:
       dispatcher.utter_message(joke)  # send the message back to the user
       return []
 
-Next add the custom action in your stories and your domain file.
+Next, add the custom action in your stories and your domain file.
 Continuing with the example bot from ``rasa init``, replace ``utter_cheer_up`` in
-``data/stories.md`` with the custom action ``action_joke`` and add
+``data/stories.md`` with the custom action ``action_joke``, and add
 ``action_joke`` to the actions in the domain file.
 
 Adding the Action Server
@@ -334,8 +334,8 @@ Adding Custom Dependencies
 If your custom action has additional dependencies of systems or Python libraries,
 you can add these by extending the official image.
 
-To do so create a file named ``Dockerfile``, extend the official image and add your custom
-dependencies, e.g.:
+To do so, create a file named ``Dockerfile`` in which you extend the official
+image and add your custom dependencies. For example:
 
 .. code-block:: docker
 
@@ -347,8 +347,7 @@ dependencies, e.g.:
         apt-get install -y git
 
     # Add a custom python library (e.g. jupyter)
-    RUN pip install --no-cache-dir \
-        jupyter
+    RUN pip install --no-cache-dir jupyter
 
 You can then build the image via the following command, and use it in your
 ``docker-compose.yml`` instead of the ``rasa/rasa_sdk`` image.
@@ -360,22 +359,22 @@ You can then build the image via the following command, and use it in your
 Adding a Custom Tracker Store
 -----------------------------
 
-By default all conversations are saved in memory. This means that all
+By default, all conversations are saved in memory. This means that all
 conversations are lost as soon as you restart the Rasa server.
 If you want to persist your conversations, you can use a different
-:ref:`tracker-stores`.
+:ref:`Tracker Store <tracker-stores>`.
 
-Using PostgresSQL as Tracker Store
+Using PostgreSQL as Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Start by adding PostgresSQL to your docker-compose file:
+Start by adding PostgreSQL to your docker-compose file:
 
 .. code-block:: yaml
 
   postgres:
     image: postgres:latest
 
-Then add PostgresSQL to the ``tracker_store`` section of your endpoint
+Then add PostgreSQL to the ``tracker_store`` section of your endpoint
 configuration ``config/endpoints.yml``:
 
 .. code-block:: yaml
@@ -392,7 +391,7 @@ Using MongoDB as Tracker Store
 Start by adding MongoDB to your docker-compose file. The following example
 adds the MongoDB as well as a UI (you can skip this), which will be available
 at ``localhost:8081``. Username and password for the MongoDB instance are
-specified as ``rasa`` and ``example``. For example:
+specified as ``rasa`` and ``example``.
 
 .. code-block:: yaml
 
@@ -410,7 +409,7 @@ specified as ``rasa`` and ``example``. For example:
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
 
 Then add the MongoDB to the ``tracker_store`` section of your endpoints
-configuration ``config/endpoints.yml``:
+configuration ``endpoints.yml``:
 
 .. code-block:: yaml
 
@@ -433,7 +432,7 @@ Start by adding Redis to your docker-compose file:
     image: redis:latest
 
 Then add Redis to the ``tracker_store`` section of your endpoint
-configuration ``config/endpoints.yml``:
+configuration ``endpoints.yml``:
 
 .. code-block:: yaml
 

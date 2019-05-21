@@ -5,7 +5,7 @@
 Twilio
 ======
 
-You first have to create a twilio app to get credentials.
+You first have to create a Twilio app to get credentials.
 Once you have them you can add these to your ``credentials.yml``.
 
 Getting Credentials
@@ -18,18 +18,18 @@ You need to set up a Twilio account.
      project. The basic important product to select here
      is ``Programmable SMS``.
   2. Once you have created the project, navigate to the Dashboard of
-     ``Programmable SMS`` and click on ``Get Started`` and follow the
+     ``Programmable SMS`` and click on ``Get Started``. Follow the
      steps to connect a phone number to the project.
-  3. Now you can use the ``Account SID``, ``Auth Token`` and the phone
-     number you purchased in your credentials yml.
+  3. Now you can use the ``Account SID``, ``Auth Token``, and the phone
+     number you purchased in your ``credentials.yml``.
 
-For more information on the Twilio REST API, go to
-https://www.twilio.com/docs/iam/api
+For more information, see the `Twilio REST API
+<https://www.twilio.com/docs/iam/api>`_.
 
 Using run script
 ^^^^^^^^^^^^^^^^
 
-If you want to connect to the twilio input channel using the run
+If you want to connect to the Twilio input channel using the run
 script, e.g. using:
 
 .. code-block:: bash

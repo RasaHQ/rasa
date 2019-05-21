@@ -7,9 +7,6 @@
 Architecture
 ============
 
-.. contents::
-   :local:
-
 
 Message Handling
 ^^^^^^^^^^^^^^^^

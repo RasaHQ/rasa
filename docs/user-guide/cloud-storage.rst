@@ -23,11 +23,11 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ and
     - ``BUCKET_NAME``
     - ``AWS_ENDPOINT_URL``
 
-    If there is no bucket with the name ``BUCKET_NAME`` Rasa will create it.
+    If there is no bucket with the name ``BUCKET_NAME``, Rasa will create it.
 
 * Google Cloud Storage
-    GCS is supported using the ``google-cloud-storage`` package
-    which you can install with ``pip install google-cloud-storage``
+    GCS is supported using the ``google-cloud-storage`` package,
+    which you can install with ``pip install google-cloud-storage``.
 
     Start the Rasa server with ``remote-storage`` option set to ``gcs``.
 
@@ -41,8 +41,8 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ and
     variable to the path of that key file.
 
 * Azure Storage
-    Azure is supported using the ``azure-storage-blob`` package
-    which you can install with ``pip install azure-storage-blob``
+    Azure is supported using the ``azure-storage-blob`` package,
+    which you can install with ``pip install azure-storage-blob``.
 
     Start the Rasa server with ``remote-storage`` option set to ``azure``.
 
@@ -52,7 +52,7 @@ Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ and
     - ``AZURE_ACCOUNT_NAME``
     - ``AZURE_ACCOUNT_KEY``
 
-    If there is no container with the name ``AZURE_CONTAINER`` Rasa will create it.
+    If there is no container with the name ``AZURE_CONTAINER``, Rasa will create it.
 
 Models are gzipped before they are saved in the cloud. The gzipped file naming convention
 is `{MODEL_NAME}.tar.gz` and it is stored in the root folder of the storage service.

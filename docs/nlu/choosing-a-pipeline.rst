@@ -57,7 +57,7 @@ so it will work with any language that you can tokenize (on whitespace or using 
 You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
 
 
-You can also use MITIE as a source of word vectors in your pipeline, see :ref:`section_mitie_pipeline` .
+You can also use MITIE as a source of word vectors in your pipeline, see :ref:`section_mitie_pipeline`.
 We do not recommend that you use these; mitie support is likely to be deprecated in a future release.
 
 .. note::

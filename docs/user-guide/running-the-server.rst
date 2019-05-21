@@ -17,39 +17,36 @@ trained Rasa model with:
 
 .. code-block:: bash
 
-    rasa run \
-        --enable-api \
-        -m models \
-        --log-file out.log
+    rasa run -m models --enable-api --log-file out.log
 
-All the endpoints this API exposes are documented in :ref:`http-api` .
+All the endpoints this API exposes are documented in :ref:`http-api`.
 
 The different parameters are:
 
-- ``--enable-api``, enables this additional API
-- ``-m``, which is the path to the folder containing your Rasa model.
-- ``--log-file``, which is the path to the log file.
+- ``-m``: the path to the folder containing your Rasa model,
+- ``--enable-api``: enable this additional API, and
+- ``--log-file``: the path to the log file.
 
 Rasa can load your model in three different ways:
 
-1. Load the model specified via ``-m`` from your local storage system.
-2. Fetch the model from a server (see :ref:`server_fetch_from_server`).
+1. Load the model specified via ``-m`` from your local storage system,
+2. Fetch the model from a server (see :ref:`server_fetch_from_server`), or
 3. Fetch the model from a remote storage (see :ref:`cloud-storage`).
 
-Rasa tries to load the model in above mentioned order. E.g. it only tries to load your model from a server
+Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from a server
 if it could not find the model on your local storage system.
 
 .. warning::
 
-    Make sure to secure your server, either by restricting access to the server (e.g. using firewalls) or
-    by enabling one of the authentication methods: :ref:`server_security`.
+    Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
+    by enabling an authentication method: :ref:`server_security`.
 
 
 .. note::
 
-    If you are using custom actions - make sure your action server is
+    If you are using custom actions, make sure your action server is
     running (see :ref:`run-action-server`). If your actions are running
-    on a different machine, or you aren't using the Rasa SDk, make sure
+    on a different machine, or you aren't using the Rasa SDK, make sure
     to update your ``endpoints.yml`` file.
 
 
@@ -65,25 +62,21 @@ if it could not find the model on your local storage system.
 Fetching Models from a Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can configure the http server to fetch models from another URL:
+You can configure the HTTP server to fetch models from another URL:
 
 .. code-block:: bash
 
-    $ rasa run \
-        --enable-api \
-        -m models \
-        --endpoints my_endpoints.yaml \
-        --log-file out.log
+    rasa run -m models --enable-api --log-file out.log --endpoints my_endpoints.yml
 
 The model server is specified in the endpoint configuration
-(``my_endpoints.yaml``), where you specify the server URL Rasa
+(``my_endpoints.yml``), where you specify the server URL Rasa
 regularly queries for zipped Rasa models:
 
 .. code-block:: yaml
 
     models:
       url: http://my-server.com/models/default@latest
-      wait_time_between_pulls:  10   # [optional](default: 100)
+      wait_time_between_pulls: 10   # [optional](default: 100)
 
 .. note::
 
@@ -94,7 +87,7 @@ regularly queries for zipped Rasa models:
 
     Your model server must provide zipped Rasa models, and have
     ``{"ETag": <model_hash_string>}`` as one of its headers. Rasa will
-    only download a new model if this model hash changed.
+    only download a new model if this model hash has changed.
 
 Rasa sends requests to your model server with an ``If-None-Match``
 header that contains the current model hash. If your model server can
@@ -118,14 +111,10 @@ You can also configure the Rasa server to fetch your model from a remote storage
 
 .. code-block:: bash
 
-    $ rasa run \
-        --enable-api \
-        -m 20190506-100418.tar.gz \
-        --remote-storage aws \
-        --log-file out.log
+    rasa run -m 20190506-100418.tar.gz --enable-api --log-file out.log --remote-storage aws
 
 The model will be downloaded and stored in a temporary directory on your local storage system.
-For more information see :ref:`cloud-storage`
+For more information see :ref:`cloud-storage`.
 
 
 .. _server_security:
@@ -133,7 +122,7 @@ For more information see :ref:`cloud-storage`
 Security Considerations
 -----------------------
 
-We recommend to not expose the Rasa Server to the outside world but
+We recommend to not expose the Rasa Server to the outside world, but
 rather connect to it from your backend over a private connection (e.g.
 between docker containers).
 
@@ -146,11 +135,11 @@ the server:
 
 .. code-block:: bash
 
-    $ rasa run \
-        --enable-api \
-        --auth-token thisismysecret \
+    rasa run \
         -m models \
-        --log-file out.log
+        --enable-api \
+        --log-file out.log \
+        --auth-token thisismysecret
 
 Your requests should pass the token, in our case ``thisismysecret``,
 as a parameter:
@@ -173,11 +162,12 @@ if the ``sender_id`` matches the user's ``username``.
 
 .. code-block:: bash
 
-    $ rasa run \
-        --enable-api \
-        --jwt-secret thisismysecret \
+    rasa run \
         -m models \
-        --log-file out.log
+        --enable-api \
+        --log-file out.log \
+        --jwt-secret thisismysecret
+
 
 Your requests should have set a proper JWT header:
 
@@ -197,7 +187,7 @@ Endpoint Configuration
 To connect Rasa to other endpoints, you can specify an endpoint
 configuration within a `YAML <https://en.wikipedia.org/wiki/YAML>`_ file.
 Then run Rasa with the flag
-``--endpoints <path to endpoint configuration.yml``.
+``--endpoints <path to endpoint configuration.yml>``.
 
 For example:
 
@@ -215,10 +205,10 @@ Connecting a Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To configure a tracker store within your endpoint configuration,
-please see :ref:`tracker-stores`.
+see :ref:`tracker-stores`.
 
 Connecting an Event Broker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To configure an event broker within your endpoint configuration,
-please see :ref:`event-brokers`.
+see :ref:`event-brokers`.

@@ -5,7 +5,7 @@
 Slack
 =====
 
-You first have to create a slack app to get credentials.
+You first have to create a Slack app to get credentials.
 Once you have them you can add these to your ``credentials.yml``.
 
 Getting Credentials
@@ -20,13 +20,15 @@ Getting Credentials
      you should subscribe to the ``message.channel``,
      ``message.groups``, ``message.im`` and ``message.mpim`` events)
   3. The ``slack_channel`` is the target your bot posts to.
-     This can be a channel, an app or an individual person
+     This can be a channel or an individual person. You can leave out
+     the argument to post to the bot's "App" page.
   4. Use the entry for ``Bot User OAuth Access Token`` in the
-     "OAuth & Permissions" tab as your ``slack_token``
+     "OAuth & Permissions" tab as your ``slack_token``. It should start
+     with ``xoxob``.
 
 
 For more detailed steps, visit the
-`slack api docs <https://api.slack.com/incoming-webhooks>`_.
+`Slack API docs <https://api.slack.com/incoming-webhooks>`_.
 
 Running on Slack
 ^^^^^^^^^^^^^^^^
@@ -51,9 +53,3 @@ The endpoint for receiving slack messages is
 ``http://localhost:5005/webhooks/slack/webhook``, replacing
 the host and port with the appropriate values. This is the URL
 you should add in the OAuth & Permissions section.
-
-.. note::
-
-   If you do not set the ``slack_channel`` keyword
-   argument, messages will by delivered back to the
-   direct messages with the bot app.

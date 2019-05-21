@@ -84,7 +84,7 @@ Note that for this story to work, your slots should be `unfeaturized
 <http://rasa.com/docs/rasa/core/slot-filling/#the-requested-slot-slot>`_.
 If any of these slots are featurized, your story needs to include ``slot{}`` events
 to show these slots being set. In that case, the easiest way to create valid stories
-is to use :ref:`interactive-learning` .
+is to use :ref:`interactive-learning`.
 
 In the story above, ``restaurant_form`` is the name of our form action.
 Here is an example of what it looks like.

@@ -7,16 +7,14 @@ Rasa Tutorial
 =============
 
 This page explains the basics of building an assistant with Rasa and
-shows the structure of a rasa project.
+shows the structure of a Rasa project.
 
 
 .. contents::
    :local:
 
 
-**Goal**
-
-You will build a simple, friendly assistant which will ask you how you're doing
+You will build a simple, friendly assistant which will ask how you're doing
 and send you a fun picture to cheer you up if you are sad.
 
 .. image:: /_static/images/mood_bot.png
@@ -32,7 +30,7 @@ The first step is to create a new Rasa project. To do this, run:
 
    rasa init --no-prompt
 
-The ``rasa init`` command creates the files that a Rasa project needs.
+The ``rasa init`` command creates all the files that a Rasa project needs.
 If you leave out the ``--no-prompt`` flag you will be asked some questions about
 how you want your project to be set up.
 
@@ -44,15 +42,15 @@ This creates the following files:
 +-------------------------------+--------------------------------------------------------+
 | ``actions.py``                | code for your custom actions                           |
 +-------------------------------+--------------------------------------------------------+
-| ``config.yml`` *              | configuration of your NLU and Core models              |
+| ``config.yml`` '*'            | configuration of your NLU and Core models              |
 +-------------------------------+--------------------------------------------------------+
 | ``credentials.yml``           | details for connecting to other services               |
 +-------------------------------+--------------------------------------------------------+
-| ``data/nlu.md`` *             | your NLU training data                                 |
+| ``data/nlu.md`` '*'           | your NLU training data                                 |
 +-------------------------------+--------------------------------------------------------+
-| ``data/stories.md`` *         | your stories                                           |
+| ``data/stories.md`` '*'       | your stories                                           |
 +-------------------------------+--------------------------------------------------------+
-| ``domain.yml`` *              | your assistant's domain                                |
+| ``domain.yml`` '*'            | your assistant's domain                                |
 +-------------------------------+--------------------------------------------------------+
 | ``endpoints.yml``             | details for connecting to channels like fb messenger   |
 +-------------------------------+--------------------------------------------------------+
@@ -64,6 +62,7 @@ This creates the following files:
 The most important files are marked with a '*'.
 You will learn about all of these in this tutorial.
 
+#ASK: is code runnable?
 
 To check that all the files were created, run:
 
@@ -73,11 +72,11 @@ To check that all the files were created, run:
    ls -1
 
 
-2. Create NLU examples
+2. Create NLU Examples
 ^^^^^^^^^^^^^^^^^^^^^^
 
 The first piece of a Rasa assistant is an NLU model.
-NLU stands for Natural Language Understanding and means turning
+NLU stands for Natural Language Understanding, which means turning
 user messages into structured data. To do this with Rasa,
 you provide training examples that show how Rasa should understand
 user messages, and then train a model by showing it those examples.
@@ -97,12 +96,12 @@ your assistant. You can find all the details of the data format in :ref:`trainin
 
 .. _model-configuration:
 
-3. Define your model configuration
+3. Define Your Model Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The configuration file defines the NLU and Core components that your model
 will use. In this example, your NLU model will use the
-``supervised_embeddings`` pipeline. You can learn all about NLU pipelines
+``supervised_embeddings`` pipeline. You can learn about the different NLU pipelines
 :ref:`here <choosing-a-pipeline>`.
 
 Let's take a look at your model configuration file.
@@ -114,16 +113,15 @@ Let's take a look at your model configuration file.
 
 
 The ``pipeline`` and ``language`` keys specify how the NLU model should be built.
-You can read more about this in :ref:`choosing-a-pipeline`
-The ``policies`` key defines the :ref:`policies` that the Core model will use.
+The ``policies`` key defines the :ref:`policies <policies>` that the Core model will use.
 
 
 
 4. Write Your First Stories
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-At this stage, you will teach your assistant to respond to your messages.
-Dialogue is handled by Rasa's ``Core`` module.
+At this stage, you will teach your assistant to how respond to your messages.
+This is called dialogue management, and is handled by your Core model.
 
 Core models learn from real conversational data in the form of training "stories".
 A story is a real conversation between a user and an assistant.
@@ -141,14 +139,14 @@ This is how it looks as a story:
       - utter_greet
 
 
-You can see the full details in :ref:`stories`
+You can see the full details in :ref:`stories`.
 
 Lines that start with ``-`` are actions taken by the assistant.
-In this case, all of our actions are messages sent back to the user,
+In this tutorial, all of our actions are messages sent back to the user,
 like ``utter_greet``, but in general, an action can do anything,
 including calling an API and interacting with the outside world.
 
-Run the cell below to show the example stories inside the file ``data/stories.md`` :
+Run the command below to view the example stories inside the file ``data/stories.md``:
 
 .. runnable::
    :description: core-cat-stories
@@ -156,14 +154,14 @@ Run the cell below to show the example stories inside the file ``data/stories.md
    cat data/stories.md
 
 
-6. Define a Domain
+5. Define a Domain
 ^^^^^^^^^^^^^^^^^^
 
 The next thing we need to do is define a ``Domain``.
 The domain defines the universe your assistant lives in - what user inputs it
 should expect to get, what actions it should be able to predict, how to
-respond and what information to store.
-Here is the domain for our assistant, it's saved in a
+respond, and what information to store.
+The domain for our assistant is saved in a
 file called ``domain.yml``:
 
 .. runnable::
@@ -186,21 +184,21 @@ So what do the different parts mean?
 
 **How does this fit together?**
 Rasa Core's job is to choose the right action to execute at each step
-of the conversation. Simple actions are sending a message to a user.
-These simple actions are the ``actions`` in the domain, which start
-with ``utter_``. They will respond with a message based on a template
+of the conversation. In this case, our actions simply send a message to the user.
+These simple utterance actions are the ``actions`` in the domain that start
+with ``utter_``. The assistant will respond with a message based on a template
 from the ``templates`` section. See
 `Custom Actions <http://rasa.com/docs/rasa/core/run-code-in-custom-actions/#id1>`_
-for how to build actions that do more than just send a message.
+to build actions that do more than just send a message.
 
 
 
-7. Train a Model
+6. Train a Model
 ^^^^^^^^^^^^^^^^
 
 The next step is to train a neural network on our example stories and NLU data.
 To do this, run the command below. This command will call the Rasa Core and NLU train
-functions, and store the trained model
+functions and store the trained model
 into the ``models/`` directory. The output of this command will include
 the training results for each training epoch.
 
@@ -209,22 +207,21 @@ the training results for each training epoch.
 
    rasa train
 
-   echo "Finished training."
+   echo "Finished training." #ASK
 
-The ``rasa train`` command will look for both NLU and Core data and will train a model for each.
+The ``rasa train`` command will look for both NLU and Core data and will train a combined model.
 
 
-8. Talk To Your Assistant
+7. Talk to Your Assistant
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Congratulations 🚀! You just built an assistant
+Congratulations! 🚀 You just built an assistant
 powered entirely by machine learning.
 
 The next step is to try it out!
-First, repeat the steps in this tutorial on your own machine.
-Then, start talking to your assistant by running:
+Start talking to your assistant by running:
 
-.. copyable::
+.. code-block:: bash
 
    rasa shell
 

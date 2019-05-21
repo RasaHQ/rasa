@@ -20,7 +20,7 @@ Some people call this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a
 .. note::
 
     Rasa X provides a UI for interactive learning, and you can use any user conversation
-    as a starting point. See `here <https://rasa.com/docs/rasa-x/annotate-conversations/>`_ .
+    as a starting point. See `here <https://rasa.com/docs/rasa-x/annotate-conversations/>`_.
 
 
 Running Interactive Learning
