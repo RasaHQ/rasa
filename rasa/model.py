@@ -344,7 +344,7 @@ def core_fingerprint_changed(
 
     for k in relevant_keys:
         if fingerprint1.get(k) != fingerprint2.get(k):
-            logger.info("Data ({}) for dialogue model changed.".format(k))
+            logger.info("Data ({}) for Core model changed.".format(k))
             return True
     return False
 
