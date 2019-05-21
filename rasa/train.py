@@ -183,7 +183,10 @@ async def _do_training(
             kwargs=kwargs,
         )
     else:
-        print ("Stories / configuration did not change. No need to retrain Core model.")
+        print_color(
+            "Core stories/configuration did not change. No need to retrain Core model.",
+            color=bcolors.OKBLUE,
+        )
 
     if force_training or retrain_nlu:
         _train_nlu_with_validated_data(
@@ -194,7 +197,10 @@ async def _do_training(
             fixed_model_name=fixed_model_name,
         )
     else:
-        print ("NLU data / configuration did not change. No need to retrain NLU model.")
+        print_color(
+            "NLU data/configuration did not change. No need to retrain NLU model.",
+            color=bcolors.OKBLUE,
+        )
 
 
 def train_core(
@@ -297,7 +303,7 @@ async def _train_core_with_validated_data(
     _train_path = train_path or tempfile.mkdtemp()
 
     # normal (not compare) training
-    print_color("Start training dialogue model ...", color=bcolors.OKBLUE)
+    print_color("Training Core model...", color=bcolors.OKBLUE)
     await rasa.core.train(
         domain_file=domain,
         stories_file=story_directory,
@@ -305,7 +311,7 @@ async def _train_core_with_validated_data(
         policy_config=config,
         kwargs=kwargs,
     )
-    print_color("Done.", color=bcolors.OKBLUE)
+    print_color("Core model training completed.", color=bcolors.OKBLUE)
 
     if train_path is None:
         # Only Core was trained.
@@ -381,11 +387,11 @@ def _train_nlu_with_validated_data(
 
     _train_path = train_path or tempfile.mkdtemp()
 
-    print_color("Start training NLU model ...", color=bcolors.OKBLUE)
+    print_color("Training NLU model...", color=bcolors.OKBLUE)
     _, nlu_model, _ = rasa.nlu.train(
         config, nlu_data_directory, _train_path, fixed_model_name="nlu"
     )
-    print_color("Done.", color=bcolors.OKBLUE)
+    print_color("NLU model training completed.", color=bcolors.OKBLUE)
 
     if train_path is None:
         # Only NLU was trained
