@@ -94,6 +94,7 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
                 event.text, sender_id=tracker.sender_id, output_channel=out
             )
             for m in out.messages:
+                m.pop("buttons", None)
                 console.print_bot_output(m)
 
             tracker = agent.tracker_store.retrieve(tracker.sender_id)
