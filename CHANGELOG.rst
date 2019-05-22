@@ -6,6 +6,13 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[Unreleased] - master 1.0.x
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- set slots correctly when events are added through the API
+
 [1.0.0] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
 
