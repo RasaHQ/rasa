@@ -1,6 +1,5 @@
 import copy
 import logging
-import typing
 from collections import deque
 from enum import Enum
 import typing
@@ -400,13 +399,18 @@ class DialogueStateTracker(object):
 
         return Dialogue(self.sender_id, list(self.events))
 
-    def update(self, event: Event) -> None:
+    def update(self, event: Event, domain: Optional["Domain"] = None) -> None:
         """Modify the state of the tracker according to an ``Event``. """
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
 
         self.events.append(event)
         event.apply_to(self)
+
+        if domain and isinstance(event, UserUttered):
+            # store all entities as slots
+            for e in domain.slots_for_entities(event.parse_data["entities"]):
+                self.update(e)
 
     def export_stories(self, e2e=False) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.

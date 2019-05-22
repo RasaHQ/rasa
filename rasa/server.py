@@ -376,7 +376,7 @@ def create_app(
 
         if evt:
             try:
-                tracker.update(evt)
+                tracker.update(evt, app.agent.domain)
                 app.agent.tracker_store.save(tracker)
                 return response.json(tracker.current_state(verbosity))
             except Exception as e:
