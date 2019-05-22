@@ -8,6 +8,7 @@ import re
 import warnings
 from typing import Optional, List, Text, Any, Dict, AnyStr, TYPE_CHECKING
 
+from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import ActionExecuted, UserUttered, Event, SlotSet
@@ -36,8 +37,10 @@ class EndToEndReader(MarkdownReader):
         """Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>. For the
-        syntax of <example> see the Rasa NLU docs on training data:
-        https://rasa.com/docs/nlu/dataformat/#markdown-format"""
+        syntax of <example> see the Rasa docs on NLU training data:
+        {}/nlu/training-data-format/#markdown-format""".format(
+            DOCS_BASE_URL
+        )
 
         item_regex = re.compile(r"\s*(.+?):\s*(.*)")
         match = re.match(item_regex, line)
@@ -52,9 +55,8 @@ class EndToEndReader(MarkdownReader):
         raise ValueError(
             "Encountered invalid end-to-end format for message "
             "`{}`. Please visit the documentation page on "
-            "end-to-end evaluation at https://rasa.com/docs/core/"
-            "evaluation#end-to-end-evaluation-of-rasa-nlu-and-"
-            "core".format(line)
+            "end-to-end evaluation at {}/user-guide/evaluating-models/"
+            "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
         )
 
 

@@ -2,17 +2,17 @@ import logging
 import os
 import shutil
 import tempfile
-import typing
 import uuid
 from asyncio import CancelledError
+from sanic import Sanic
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
 
 import rasa
 import rasa.utils.io
-from rasa.constants import DEFAULT_DOMAIN_PATH
-from rasa.core import constants, jobs, training, utils
+from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
+from rasa.core import constants, jobs, training
 from rasa.core.channels import (
     InputChannel,
     OutputChannel,
@@ -28,7 +28,7 @@ from rasa.core.policies import FormPolicy, Policy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
 from rasa.model import get_model_subdirectories, get_latest_model, unpack_model
@@ -37,12 +37,6 @@ from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    # noinspection PyPep8Naming
-    from rasa.core.nlg import NaturalLanguageGenerator as NLG
-    from rasa.core.tracker_store import TrackerStore
-    from sanic import Sanic
 
 
 async def load_from_server(
@@ -164,7 +158,7 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
                 elif resp.status != 200:
-                    logger.warning(
+                    logger.debug(
                         "Tried to fetch model from server, but server response "
                         "status code is {}. We'll retry later..."
                         "".format(resp.status)
@@ -183,7 +177,7 @@ async def _pull_model_and_fingerprint(
                 return model_directory, new_fingerprint
 
         except aiohttp.ClientError as e:
-            logger.info(
+            logger.debug(
                 "Tried to fetch model from server, but "
                 "couldn't reach server. We'll retry later... "
                 "Error: {}.".format(e)
@@ -223,8 +217,8 @@ async def load_agent(
     model_server: Optional[EndpointConfig] = None,
     remote_storage: Optional[Text] = None,
     interpreter: Optional[NaturalLanguageInterpreter] = None,
-    generator: Union[EndpointConfig, "NLG"] = None,
-    tracker_store: Optional["TrackerStore"] = None,
+    generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
+    tracker_store: Optional[TrackerStore] = None,
     action_endpoint: Optional[EndpointConfig] = None,
 ):
     try:
@@ -284,8 +278,8 @@ class Agent(object):
         domain: Union[Text, Domain] = None,
         policies: Union[PolicyEnsemble, List[Policy], None] = None,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
-        generator: Union[EndpointConfig, "NLG", None] = None,
-        tracker_store: Optional["TrackerStore"] = None,
+        generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
+        tracker_store: Optional[TrackerStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_directory: Optional[Text] = None,
@@ -343,8 +337,8 @@ class Agent(object):
         cls,
         unpacked_model_path: Text,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
-        generator: Union[EndpointConfig, "NLG"] = None,
-        tracker_store: Optional["TrackerStore"] = None,
+        generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
+        tracker_store: Optional[TrackerStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
@@ -642,7 +636,7 @@ class Agent(object):
                 "to `agent.train(...)` is not supported anymore. "
                 "Pass appropriate featurizer directly "
                 "to the policy configuration instead. More info "
-                "https://rasa.com/docs/core/migrations.html"
+                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
             )
         if (
             kwargs.get("epochs")
@@ -654,7 +648,7 @@ class Agent(object):
                 "to `agent.train(...)` is not supported "
                 "anymore. Specify parameters directly in the "
                 "policy configuration instead. More info "
-                "https://rasa.com/docs/core/migrations.html"
+                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
             )
 
         if isinstance(training_trackers, str):
@@ -680,7 +674,7 @@ class Agent(object):
         http_port: int = constants.DEFAULT_SERVER_PORT,
         route: Text = "/webhooks/",
         cors=None,
-    ) -> "Sanic":
+    ) -> Sanic:
         """Start a webserver attaching the input channels and handling msgs."""
 
         from rasa.core import run
@@ -826,8 +820,8 @@ class Agent(object):
 
     @staticmethod
     def create_tracker_store(
-        store: Optional["TrackerStore"], domain: Domain
-    ) -> "TrackerStore":
+        store: Optional[TrackerStore], domain: Domain
+    ) -> TrackerStore:
         if store is not None:
             store.domain = domain
             return store
@@ -856,8 +850,8 @@ class Agent(object):
     def load_local_model(
         model_path: Text,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
-        generator: Union[EndpointConfig, "NLG"] = None,
-        tracker_store: Optional["TrackerStore"] = None,
+        generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
+        tracker_store: Optional[TrackerStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
@@ -889,8 +883,8 @@ class Agent(object):
         remote_storage: Text,
         model_name: Text,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
-        generator: Union[EndpointConfig, "NLG"] = None,
-        tracker_store: Optional["TrackerStore"] = None,
+        generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
+        tracker_store: Optional[TrackerStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
     ) -> "Agent":

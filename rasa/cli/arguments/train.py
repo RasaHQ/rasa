@@ -23,7 +23,6 @@ def set_train_arguments(parser: argparse.ArgumentParser):
 
     add_model_name_param(parser)
     add_force_param(parser)
-    add_compress_param(parser)
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser):
@@ -39,7 +38,6 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
     add_force_param(parser)
 
     add_model_name_param(parser)
-    add_compress_param(parser)
 
     compare_arguments = parser.add_argument_group("Comparison Arguments")
     add_compare_params(compare_arguments)
@@ -52,7 +50,6 @@ def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 
     add_model_name_param(parser)
-    add_compress_param(parser)
 
 
 def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
@@ -140,13 +137,4 @@ def add_model_name_param(parser: argparse.ArgumentParser):
         type=str,
         help="If set, the name of the model file/directory will be set to the given "
         "name.",
-    )
-
-
-def add_compress_param(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "--store-uncompressed",
-        action="store_true",
-        help="If set the model is not compressed. Note: You need a compressed model "
-        "file for running the Rasa Server, testing a model, etc.",
     )

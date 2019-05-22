@@ -20,8 +20,8 @@ from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DEFAULT_MODELS_PATH,
     DEFAULT_DOMAIN_PATH,
+    DOCS_BASE_URL,
 )
-from rasa.core import constants
 from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
@@ -52,7 +52,7 @@ class ErrorResponse(Exception):
 
 def _docs(sub_url: Text) -> Text:
     """Create a url to a subpart of the docs."""
-    return constants.DOCS_BASE_URL + sub_url
+    return DOCS_BASE_URL + sub_url
 
 
 def ensure_loaded_agent(app: Sanic):
@@ -67,7 +67,7 @@ def ensure_loaded_agent(app: Sanic):
                     "Conflict",
                     "No agent loaded. To continue processing, a "
                     "model of a trained agent needs to be loaded.",
-                    help_url=_docs("/server.html#running-the-http-server"),
+                    help_url=_docs("/user-guide/running-the-server/"),
                 )
 
             return f(*args, **kwargs)
@@ -132,7 +132,9 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                     403,
                     "NotAuthorized",
                     "User has insufficient permissions.",
-                    help_url=_docs("/server.html#security-considerations"),
+                    help_url=_docs(
+                        "/user-guide/running-the-server/#security-considerations"
+                    ),
                 )
             elif token is None and app.config.get("USE_JWT") is None:
                 # authentication is disabled
@@ -144,7 +146,9 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 401,
                 "NotAuthenticated",
                 "User is not authenticated.",
-                help_url=_docs("/server.html#security-considerations"),
+                help_url=_docs(
+                    "/user-guide/running-the-server/#security-considerations"
+                ),
             )
 
         return decorated

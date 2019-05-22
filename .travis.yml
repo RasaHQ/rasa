@@ -103,6 +103,16 @@ jobs:
     - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
     - python -m pytest tests
+  - stage: test
+    name: "Test Docs"
+    install:
+    - pip install -r requirements-docs.txt
+    - pip install -e .[sql]
+    - pip list
+    script:
+      # be strict about warnings --> they will be treated as errors
+    - cd docs
+    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
   - stage: docs
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
@@ -127,7 +137,7 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs docs . -- -b dirhtml  -A html_theme=rasabaster
+    - sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
   - stage: trigger website rebuild
     if: fork = false AND branch = "master" AND type != "pull_request"
     script:

@@ -314,3 +314,59 @@ def test_count_vector_featurizer(sentence, expected):
     ftr.process(test_message)
 
     assert np.all(test_message.get("text_features") == expected)
+
+
+def test_count_vector_featurizer_persist_load(tmpdir):
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    # set non default values to config
+    config = {
+        "analyzer": "char",
+        "token_pattern": r"(?u)\b\w+\b",
+        "strip_accents": "ascii",
+        "stop_words": "stop",
+        "min_df": 2,
+        "max_df": 3,
+        "min_ngram": 2,
+        "max_ngram": 3,
+        "max_features": 10,
+        "lowercase": False,
+    }
+    train_ftr = CountVectorsFeaturizer(config)
+
+    sentence1 = "ababab 123 13xc лаомтгцу sfjv oö aà"
+    sentence2 = "abababalidcn 123123 13xcdc лаомтгцу sfjv oö aà"
+    train_message1 = Message(sentence1)
+    train_message2 = Message(sentence2)
+
+    # this is needed for a valid training example
+    train_message1.set("intent", "bla")
+    train_message2.set("intent", "bla")
+    data = TrainingData([train_message1, train_message2])
+    train_ftr.train(data)
+    # persist featurizer
+    file_dict = train_ftr.persist("ftr", tmpdir.strpath)
+    train_vect_params = train_ftr.vectorizer.get_params()
+    # add trained vocabulary to vectorizer params
+    train_vect_params.update({"vocabulary": train_ftr.vectorizer.vocabulary_})
+
+    # load featurizer
+    meta = train_ftr.component_config.copy()
+    meta.update(file_dict)
+    test_ftr = CountVectorsFeaturizer.load(meta, tmpdir.strpath)
+    test_vect_params = test_ftr.vectorizer.get_params()
+
+    assert train_vect_params == test_vect_params
+
+    test_message1 = Message(sentence1)
+    test_ftr.process(test_message1)
+    test_message2 = Message(sentence2)
+    test_ftr.process(test_message2)
+
+    # check that train features and test features after loading are the same
+    assert np.all(
+        [
+            train_message1.get("text_features") == test_message1.get("text_features"),
+            train_message2.get("text_features") == test_message2.get("text_features"),
+        ]
+    )

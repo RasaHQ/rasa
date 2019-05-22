@@ -9,7 +9,7 @@ from typing import List, Text, Optional
 
 import ruamel.yaml as yaml
 
-from rasa.cli.utils import get_validated_path
+from rasa.cli.utils import get_validated_path, print_warning
 from rasa.cli.arguments import x as arguments
 
 from rasa.constants import (
@@ -17,6 +17,9 @@ from rasa.constants import (
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_LOG_LEVEL_RASA_X,
 )
 import rasa.utils.io as io_utils
 
@@ -130,7 +133,9 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
 
     ctx = get_context("spawn")
     p = ctx.Process(target=_rasa_service, args=(args, endpoints, rasa_x_url))
+    p.daemon = True
     p.start()
+    return p
 
 
 def is_rasa_x_installed():
@@ -155,19 +160,36 @@ def generate_rasa_x_token(length=16):
 
 def _configure_logging(args):
     from rasa.core.utils import configure_file_logging
+    from rasa.utils.common import set_log_level
 
-    args.log_level = args.loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-    logging.basicConfig(level=args.log_level)
-    configure_file_logging(args.log_level, args.log_file)
+    log_level = args.loglevel or DEFAULT_LOG_LEVEL_RASA_X
+
+    if isinstance(log_level, str):
+        log_level = logging.getLevelName(log_level)
+
+    set_log_level(log_level)
+    configure_file_logging(log_level, args.log_file)
+
+    logging.basicConfig(level=log_level)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
     logging.getLogger("pika").setLevel(logging.WARNING)
     logging.getLogger("socketio").setLevel(logging.ERROR)
 
-    if not args.loglevel == logging.DEBUG:
+    if not log_level == logging.DEBUG:
         logging.getLogger().setLevel(logging.WARNING)
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
+
+
+def is_rasa_project_setup(project_path: Text):
+    mandatory_files = [DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH]
+
+    for f in mandatory_files:
+        if not os.path.exists(os.path.join(project_path, f)):
+            return False
+
+    return True
 
 
 def rasa_x(args: argparse.Namespace):
@@ -194,9 +216,30 @@ def rasa_x(args: argparse.Namespace):
             )
             sys.exit(1)
 
+        project_path = "."
+
+        if not is_rasa_project_setup(project_path):
+            print_error(
+                "This directory is not a valid Rasa project. Use 'rasa init' "
+                "to create a new Rasa project or switch to a valid Rasa project "
+                "directory."
+            )
+            sys.exit(1)
+
+        if args.data and not os.path.exists(args.data):
+            print_warning(
+                "The provided data path ('{}') does not exists. Rasa X will start "
+                "without any training data.".format(args.data)
+            )
+
         # noinspection PyUnresolvedReferences
         from rasax.community import local
 
+        local.check_license_and_metrics(args)
+
         rasa_x_token = generate_rasa_x_token()
-        start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
-        local.main(args, ".", args.data, token=rasa_x_token)
+        process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
+        try:
+            local.main(args, project_path, args.data, token=rasa_x_token)
+        finally:
+            process.terminate()
