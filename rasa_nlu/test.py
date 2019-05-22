@@ -800,11 +800,22 @@ def generate_folds(n, td):
                             regex_features=td.regex_features))
 
 
-def combine_result(intent_results, entity_results, interpreter, data):
-    """Combines intent and entity result for crossvalidation folds"""
+def combine_result(intent_results,
+                   entity_results,
+                   interpreter,
+                   data,
+                   predictions=None):
+    """Combines intent and entity result for crossvalidation folds.
+    If `predictions` is provided as a dict, prediction results
+    are also combined.
+    """
 
-    intent_current_result, entity_current_result = compute_metrics(interpreter,
-                                                                   data)
+    intent_current_result, entity_current_result, current_predictions = \
+        compute_metrics(interpreter, data)
+
+    if isinstance(predictions, dict):
+        for k, v in current_predictions.items():
+            predictions[k] = predictions.get(k, []) + v
 
     intent_results = {k: v + intent_results[k]
                       for k, v in intent_current_result.items()}
@@ -849,9 +860,7 @@ def cross_validate(data: TrainingData, n_folds: int,
     entity_train_results = defaultdict(lambda: defaultdict(list))
     entity_test_results = defaultdict(lambda: defaultdict(list))
 
-    test_intent_predictions = []
-    test_entity_predictions = []
-    test_tokens = []
+    test_predictions = {}
     test_entity_targets = []
     intent_classifier_present = False
     extractors = set()
@@ -864,29 +873,23 @@ def cross_validate(data: TrainingData, n_folds: int,
             intent_train_results, entity_train_results, interpreter, train)
         # calculate test accuracy
         intent_test_results, entity_test_results = combine_result(
-            intent_test_results, entity_test_results, interpreter, test)
+            intent_test_results,
+            entity_test_results,
+            interpreter,
+            test,
+            test_predictions)
 
-        # accumulate test predictions
+        # accumulate test_entity_targets for test predictions
         if not extractors:
             extractors = get_entity_extractors(interpreter)
         test_entity_targets += get_entity_targets(test)
 
         if is_intent_classifier_present(interpreter):
             intent_classifier_present = True
-            intent_targets = get_intent_targets(test)
-        else:
-            intent_targets = [None] * len(test.training_examples)
-
-        intent_results, entity_predictions, tokens = get_predictions(
-            interpreter, test, intent_targets)
-
-        test_intent_predictions += intent_results
-        test_entity_predictions += entity_predictions
-        test_tokens += tokens
 
     if intent_classifier_present:
         logger.info("Accumulated test folds intent evaluation results:")
-        evaluate_intents(test_intent_predictions,
+        evaluate_intents(test_predictions["intent_results"],
                          report_folder,
                          successes_filename,
                          errors_filename,
@@ -894,15 +897,15 @@ def cross_validate(data: TrainingData, n_folds: int,
                          intent_hist_filename)
 
     if duckling_extractors.intersection(extractors):
-        test_entity_predictions = remove_duckling_entities(
-            test_entity_predictions)
+        test_predictions["entity_predictions"] = remove_duckling_entities(
+            test_predictions["entity_predictions"])
         extractors = remove_duckling_extractors(extractors)
 
     if extractors:
         logger.info("Accumulated test folds entity evaluation results:")
         evaluate_entities(test_entity_targets,
-                          test_entity_predictions,
-                          test_tokens,
+                          test_predictions["entity_predictions"],
+                          test_predictions["tokens"],
                           extractors,
                           report_folder)
 
@@ -917,7 +920,9 @@ def _targets_predictions_from(intent_results):
 
 
 def compute_metrics(interpreter, corpus):
-    """Computes metrics for intent classification and entity extraction."""
+    """Computes metrics for intent classification and entity extraction.
+    Returns intent and entity metrics, and prediction results.
+    """
 
     intent_targets = get_intent_targets(corpus)
     intent_results, entity_predictions, tokens = get_predictions(
@@ -928,7 +933,11 @@ def compute_metrics(interpreter, corpus):
     entity_metrics = _compute_entity_metrics(entity_predictions, tokens,
                                              interpreter, corpus)
 
-    return intent_metrics, entity_metrics
+    return intent_metrics, entity_metrics, {
+        "intent_results": intent_results,
+        "entity_predictions": entity_predictions,
+        "tokens": tokens
+    }
 
 
 def _compute_intent_metrics(intent_results):
