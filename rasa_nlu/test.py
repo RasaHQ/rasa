@@ -339,12 +339,12 @@ def evaluate_intents(intent_results,
         plot_confusion_matrix(cnf_matrix, classes=labels,
                               title='Intent Confusion matrix',
                               out=confmat_filename)
-        plt.show()
+        plt.show(block=False)
 
         plot_intent_confidences(intent_results,
                                 intent_hist_filename)
 
-        plt.show()
+        plt.show(block=False)
 
     predictions = [
         {
@@ -817,7 +817,12 @@ def combine_result(intent_results, entity_results, interpreter, data):
 
 
 def cross_validate(data: TrainingData, n_folds: int,
-                   nlu_config: Union[RasaNLUModelConfig, Text]
+                   nlu_config: Union[RasaNLUModelConfig, Text],
+                   report_folder=None,
+                   successes_filename=None,
+                   errors_filename='errors.json',
+                   confmat_filename=None,
+                   intent_hist_filename=None
                    ) -> CVEvaluationResult:
     """Stratified cross validation on data.
 
@@ -831,17 +836,25 @@ def cross_validate(data: TrainingData, n_folds: int,
               corresponds to the relevant result for one fold
     """
     from collections import defaultdict
-    import tempfile
 
     if isinstance(nlu_config, str):
         nlu_config = config.load(nlu_config)
+
+    if report_folder:
+        utils.create_dir(report_folder)
 
     trainer = Trainer(nlu_config)
     intent_train_results = defaultdict(list)
     intent_test_results = defaultdict(list)
     entity_train_results = defaultdict(lambda: defaultdict(list))
     entity_test_results = defaultdict(lambda: defaultdict(list))
-    tmp_dir = tempfile.mkdtemp()
+
+    test_intent_predictions = []
+    test_entity_predictions = []
+    test_tokens = []
+    test_entity_targets = []
+    intent_classifier_present = False
+    extractors = set()
 
     for train, test in generate_folds(n_folds, data):
         interpreter = trainer.train(train)
@@ -853,7 +866,45 @@ def cross_validate(data: TrainingData, n_folds: int,
         intent_test_results, entity_test_results = combine_result(
             intent_test_results, entity_test_results, interpreter, test)
 
-    shutil.rmtree(tmp_dir, ignore_errors=True)
+        # accumulate test predictions
+        if not extractors:
+            extractors = get_entity_extractors(interpreter)
+        test_entity_targets += get_entity_targets(test)
+
+        if is_intent_classifier_present(interpreter):
+            intent_classifier_present = True
+            intent_targets = get_intent_targets(test)
+        else:
+            intent_targets = [None] * len(test.training_examples)
+
+        intent_results, entity_predictions, tokens = get_predictions(
+            interpreter, test, intent_targets)
+
+        test_intent_predictions += intent_results
+        test_entity_predictions += entity_predictions
+        test_tokens += tokens
+
+    if intent_classifier_present:
+        logger.info("Accumulated test folds intent evaluation results:")
+        evaluate_intents(test_intent_predictions,
+                         report_folder,
+                         successes_filename,
+                         errors_filename,
+                         confmat_filename,
+                         intent_hist_filename)
+
+    if duckling_extractors.intersection(extractors):
+        test_entity_predictions = remove_duckling_entities(
+            test_entity_predictions)
+        extractors = remove_duckling_extractors(extractors)
+
+    if extractors:
+        logger.info("Accumulated test folds entity evaluation results:")
+        evaluate_entities(test_entity_targets,
+                          test_entity_predictions,
+                          test_tokens,
+                          extractors,
+                          report_folder)
 
     return (CVEvaluationResult(dict(intent_train_results),
                                dict(intent_test_results)),
@@ -873,15 +924,14 @@ def compute_metrics(interpreter, corpus):
         interpreter, corpus, intent_targets)
     intent_results = remove_empty_intent_examples(intent_results)
 
-    intent_metrics = _compute_intent_metrics(intent_results,
-                                             interpreter, corpus)
+    intent_metrics = _compute_intent_metrics(intent_results)
     entity_metrics = _compute_entity_metrics(entity_predictions, tokens,
                                              interpreter, corpus)
 
     return intent_metrics, entity_metrics
 
 
-def _compute_intent_metrics(intent_results, interpreter, corpus):
+def _compute_intent_metrics(intent_results):
     """Computes intent evaluation metrics for a given corpus and
     returns the results
     """
@@ -972,8 +1022,15 @@ def main():
         nlu_config = config.load(cmdline_args.config)
         data = training_data.load_data(cmdline_args.data)
         data = drop_intents_below_freq(data, cutoff=5)
-        results, entity_results = cross_validate(
-            data, int(cmdline_args.folds), nlu_config)
+        results, entity_results = cross_validate(data,
+                                                 int(cmdline_args.folds),
+                                                 nlu_config,
+                                                 cmdline_args.report,
+                                                 cmdline_args.successes,
+                                                 cmdline_args.errors,
+                                                 cmdline_args.confmat,
+                                                 cmdline_args.histogram)
+
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
         if any(results):
