@@ -3,11 +3,10 @@ import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.training_data import TrainingData, Message
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData
     from rasa.nlu.model import Metadata
-    from rasa.nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
 
@@ -259,7 +258,7 @@ class Component(object, metaclass=ComponentMetaclass):
         pass
 
     def train(
-        self, training_data: "TrainingData", cfg: RasaNLUModelConfig, **kwargs: Any
+        self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
         """Train this component.
 
@@ -273,7 +272,7 @@ class Component(object, metaclass=ComponentMetaclass):
         of components previous to this one."""
         pass
 
-    def process(self, message: "Message", **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> None:
         """Process an incoming message.
 
         This is the components chance to process an incoming
@@ -329,7 +328,7 @@ class Component(object, metaclass=ComponentMetaclass):
         self.partial_processing_pipeline = pipeline
         self.partial_processing_context = context
 
-    def partially_process(self, message: "Message") -> "Message":
+    def partially_process(self, message: Message) -> Message:
         """Allows the component to process messages during
         training (e.g. external training data).
 

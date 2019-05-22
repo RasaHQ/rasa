@@ -6,8 +6,8 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.0rc9] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[1.0.0] - 2019-05-21
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -25,7 +25,7 @@ Added
   This endpoints performs an intent evaluation of a Rasa Stack model
 - option to create template for new utterance action in ``interactive learning``
 - you can now choose actions previously created in the same session
-in ``interactive learning``
+  in ``interactive learning``
 - add formatter 'black'
 - channel-specific utterances via the ``- "channel":`` key in utterance templates
 - arbitrary json messages via the ``- "custom":`` key in utterance templates and
@@ -38,6 +38,8 @@ in ``interactive learning``
 - log level can be set via environment variable ``LOG_LEVEL``
 - add ``--store-uncompressed`` to train command to not compress Rasa model
 - log level of libraries, such as tensorflow, can be set via environment variable ``LOG_LEVEL_LIBRARIES``
+- if no spaCy model is linked upon building a spaCy pipeline, an appropriate error message
+  is now raised with instructions for linking one
 
 Changed
 -------
@@ -82,3 +84,9 @@ Fixed
 - in interactive learning: only updates entity values if user changes annotation
 - log options from the command line interface are applied (they overwrite the environment variable)
 - all message arguments (kwargs in dispatcher.utter methods, as well as template args) are now sent through to output channels
+- utterance templates defined in actions are checked for existence upon training a new agent, and a warning
+  is thrown before training if one is missing
+
+.. _`master`: https://github.com/RasaHQ/rasa/
+
+.. _`Semantic Versioning`: http://semver.org/

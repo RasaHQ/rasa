@@ -1,8 +1,7 @@
 .. :desc: Iterate quickly by developing reusable building blocks of AI assistant skills
        and combining them at training time.
 
-.. _multi_skill_bots:
-
+.. _multi-skill-assistants:
 
 Multi-skill Assistants
 ======================

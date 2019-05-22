@@ -119,7 +119,8 @@ def create_output_path(
         else:
             time_format = "%Y%m%d-%H%M%S"
             name = time.strftime(time_format)
-        file_name = "{}{}.tar.gz".format(prefix, name)
+            name = "{}{}".format(prefix, name)
+        file_name = "{}.tar.gz".format(name)
         return os.path.join(output_path, file_name)
 
 

@@ -54,7 +54,7 @@
 - no im looking in the south of the town
 - no indian food
 - uh no
-- breath no american food
+- no american food
 - no the south part
 - oh no and cheap
 - no spanish
@@ -122,7 +122,7 @@
 - im looking for [world](cuisine) food
 - im looking for a restaurant that serves [french](cuisine) food
 - how about [indian](cuisine) food
-- breath can i get a restaurant serving [chinese](cuisine) food
+- can i get a restaurant serving [chinese](cuisine) food
 - [irish](cuisine) food
 - im looking for a restaurant in the [west](location) part of town serving [italian](cuisine) food
 - restaurant [south](location) part of town [english](cuisine) food
@@ -286,7 +286,7 @@
 - [cheap](price) [european](cuisine) food
 - hi im looking for an [expensive](price) restaurant in the [south](location) part of town
 - im looking for [belgian](cuisine) food
-- breath i want to find a restaurant in the [north](location) part of town
+- i want to find a restaurant in the [north](location) part of town
 - how about [gastropub](cuisine) food
 - [mediterranean](cuisine) food
 - [venetian](cuisine) food
@@ -308,7 +308,7 @@
 - [scandinavian](cuisine) food
 - what about in the [west](location) area
 - on the [south](location) part of town
-- [east](location) noise
+- [east](location)
 - how about [british](cuisine) food
 - how about [international](cuisine) food
 - uh okay how about [french](cuisine) food
@@ -343,7 +343,7 @@
 - im looking for an [expensive](price) restaurant
 - can i find an [expensive](price) restaurant that serves [traditional](cuisine) food
 - [vietnamese](cuisine) food
-- noise anything [expensive](price)
+- anything [expensive](price)
 - i want to find a [cheap](price) re
 - im looking for a restaurant in the center of town that serves [african](cuisine) food
 - is there a restaurant that has [british](cuisine) food
@@ -389,7 +389,7 @@
 - [moderately](price:moderate) priced restaurant in the [west](location) part of town
 - [south](location) [expensive](price)
 - im looking for a restaurant in the [east](location) part of town
-- noise um in the [east](location) part of town
+- um in the [east](location) part of town
 - how about [gastropub](cuisine) type of food
 - uh what about [portuguese](cuisine) food
 - [expensive](price) restaurant in the [south](location) part of town
@@ -469,7 +469,7 @@
 - [vietnamese](cuisine)
 - [portuguese](cuisine) food
 - [lebanese](cuisine) food
-- noise looking for an [expensive](price) restaurant
+- looking for an [expensive](price) restaurant
 - i need a [moderately](price:moderate) priced restaurant serving [fusion](cuisine) food
 - can i find a restaurant that serves [international](cuisine) food
 - i want to find a [moderately](price:moderate) priced restaurant
@@ -511,7 +511,7 @@
 - im looking for something [expensive](price)
 - how about [french](cuisine) food
 - what about a [chinese](cuisine) restaurant in the north of town
-- noise ah [gastropub](cuisine) food
+- ah [gastropub](cuisine) food
 - [jamaican](cuisine)
 - [expensive](price) restaurant serving [portuguese](cuisine) food
 - im looking for [portuguese](cuisine) food
@@ -603,7 +603,7 @@
 - [cheap](price) [jamaican](cuisine)
 - how about [asian oriental](cuisine)
 - i need a [moderately](price:moderate) priced restaurant that serves bask food
-- noise looking for an [expensive](price) restaurant in the [south](location) part of town
+- looking for an [expensive](price) restaurant in the [south](location) part of town
 - [west](location) side
 - looking for [afghan](cuisine) good
 - im looking for a restaurant that serves [danish](cuisine) food
@@ -660,7 +660,7 @@
 - im looking for a restaurant in the [north](location) part of town serving [lebanese](cuisine) food
 - [singaporean](cuisine)
 - [cheap](price) [italian](cuisine) food
-- noise restaurant [west](location) part of town [danish](cuisine) food
+- restaurant [west](location) part of town [danish](cuisine) food
 - [british](cuisine)
 - im looking for a restaurant that serves [afghan](cuisine) food
 - what about [european](cuisine) food
@@ -670,7 +670,7 @@
 - im looking for a [korean](cuisine) restaurant in the [expensive](price) price range
 - um an [expensive](price)
 - i want a restaurant in the [moderate](price) price range
-- breath im looking for a restaurant that serves [cuban](cuisine) food
+- im looking for a restaurant that serves [cuban](cuisine) food
 - i want to find a restaurant in the [north](location) part of town
 - [gastropub](cuisine) food
 - i am looking for an [expensive](price) restaurant that serves
@@ -737,23 +737,19 @@
 - and thats all thank you and good bye
 - thank you and good bye
 - sorry about my mistakes thank you good bye
-- noise thank you good bye
-- thank you goodbye noise
+- thank you good bye
+- thank you goodbye
 - okay thank you goodbye
 - uh thank you good bye
 - thank you goodbye
-- thank you goodbye noise thank you goodbye
-- breath thank you goodbye
 - thank you
 - okay thank you
 - thanks goodbye
 - ah thank you goodbye
-- thank you noise
+- thank you
 - thank you good bye
-- breath thank you very much goodbye
 - thanks
-- noise thank you goodbye
-- unintelligible thank you goodbye
+- thank you goodbye
 - uh okay thank you good bye
 - thank you bye
 - um okay thank you good bye

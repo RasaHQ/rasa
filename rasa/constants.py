@@ -11,6 +11,9 @@ DEFAULT_DATA_PATH = "data"
 DEFAULT_RESULTS_PATH = "results"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
+DOCS_BASE_URL = "https://rasa.com/docs/rasa"
+LEGACY_DOCS_BASE_URL = "https://legacy-docs.rasa.com"
+
 FALLBACK_CONFIG_PATH = pkg_resources.resource_filename(
     __name__, "cli/default_config.yml"
 )
@@ -23,6 +26,7 @@ MINIMUM_COMPATIBLE_VERSION = "1.0.0rc1"
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
 
 DEFAULT_LOG_LEVEL = "INFO"
+DEFAULT_LOG_LEVEL_RASA_X = "WARNING"
 DEFAULT_LOG_LEVEL_LIBRARIES = "ERROR"
 ENV_LOG_LEVEL = "LOG_LEVEL"
 ENV_LOG_LEVEL_LIBRARIES = "LOG_LEVEL_LIBRARIES"
