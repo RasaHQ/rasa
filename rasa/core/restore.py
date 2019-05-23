@@ -94,7 +94,16 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
                 event.text, sender_id=tracker.sender_id, output_channel=out
             )
             for m in out.messages:
+                buttons = m.pop("buttons", None)  # for non-terminal stdin
                 console.print_bot_output(m)
+
+                if buttons is not None:
+                    color = rasa.cli.utils.bcolors.OKBLUE
+                    rasa.cli.utils.print_color("Buttons:", color=color)
+                    for idx, button in enumerate(buttons):
+                        rasa.cli.utils.print_color(
+                            console.button_to_string(button, idx), color=color
+                        )
 
             tracker = agent.tracker_store.retrieve(tracker.sender_id)
             last_prediction = actions_since_last_utterance(tracker)
