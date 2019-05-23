@@ -27,7 +27,7 @@ from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.core.utils import dump_obj_as_str_to_file
+from rasa.core.utils import dump_obj_as_str_to_file, dump_obj_as_json_to_file
 from rasa.model import get_model_subdirectories, fingerprint_from_path
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
@@ -828,5 +828,46 @@ def create_app(
                 "Make sure you've set the appropriate Accept "
                 "header.",
             )
+
+    @app.post("/data/convert")
+    @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
+    async def post_data_convert(request: Request):
+        """Converts current domain in yaml or json format."""
+        validate_request_body(
+            request,
+            "You must provide training data in the request body in order to "
+            "train your model.",
+        )
+        rjs = request.json
+
+        if 'data' not in rjs:
+            raise ErrorResponse(400, "BadRequest", "Must provide training data in 'data' property")
+        if 'output_format' not in rjs or rjs["output_format"] not in ["json", "md"]:
+            raise ErrorResponse(400, "BadRequest", "'output_format' is required and must be either 'md' or 'json")
+        if 'language' not in rjs:
+            raise ErrorResponse(400, "BadRequest", "'language' is required")
+
+        temp_dir = tempfile.mkdtemp()
+        out_dir = tempfile.mkdtemp()
+
+        nlu_data_path = os.path.join(temp_dir, "nlu_data")
+        output_path = os.path.join(out_dir, "output")
+        if type(rjs["data"] is dict):
+            dump_obj_as_json_to_file(nlu_data_path, rjs["data"])
+        else:
+            dump_obj_as_str_to_file(nlu_data_path, rjs["data"])
+
+        from rasa.nlu.convert import convert_training_data
+        convert_training_data(nlu_data_path, output_path, rjs["output_format"], rjs["language"])
+
+        with open(output_path, encoding='utf-8') as f:
+            data = f.read()
+
+        if rjs["output_format"] == 'json':
+            import json
+            data = json.loads(data, encoding='utf-8')
+
+        return response.json({"data": data})
 
     return app
