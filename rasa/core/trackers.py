@@ -2,7 +2,6 @@ import copy
 import logging
 from collections import deque
 from enum import Enum
-import typing
 from typing import Dict, Text, Any, Optional, Iterator, Type, List
 
 from rasa.core import events
@@ -19,12 +18,10 @@ from rasa.core.events import (
     BotUttered,
     Form,
 )
+from rasa.core.domain import Domain
 from rasa.core.slots import Slot
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    from rasa.core.domain import Domain
 
 
 class EventVerbosity(Enum):
@@ -399,7 +396,7 @@ class DialogueStateTracker(object):
 
         return Dialogue(self.sender_id, list(self.events))
 
-    def update(self, event: Event, domain: Optional["Domain"] = None) -> None:
+    def update(self, event: Event, domain: Optional[Domain] = None) -> None:
         """Modify the state of the tracker according to an ``Event``. """
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
