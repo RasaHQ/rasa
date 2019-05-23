@@ -201,11 +201,10 @@ def payload_from_button_question(button_question: Question) -> Text:
 
 
 def validate_domain(domain_path: Text):
-    from rasa.core.domain import Domain, check_domain_sanity, InvalidDomain
+    from rasa.core.domain import Domain, InvalidDomain
 
     try:
-        domain = Domain.load(domain_path)
-        check_domain_sanity(domain)
+        Domain.load(domain_path)
     except InvalidDomain as e:
         print_error("The provided domain file could not be loaded. Error: {}".format(e))
         sys.exit(1)

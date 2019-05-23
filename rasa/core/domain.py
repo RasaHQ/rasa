@@ -193,6 +193,8 @@ class Domain(object):
             other = cls.from_path(path, skill_imports)
             domain = domain.merge(other)
 
+        check_domain_sanity(domain)
+
         return domain
 
     @classmethod
