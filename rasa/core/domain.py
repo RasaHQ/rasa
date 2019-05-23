@@ -367,7 +367,7 @@ class Domain(object):
 
             if name in intent_properties.keys():
                 raise InvalidDomain(
-                    "Duplicated intent '{}' in domain detected.".format(intent.keys())
+                    "Duplicated intent '{}' in domain detected.".format(name)
                 )
 
             intent_properties.update(intent)

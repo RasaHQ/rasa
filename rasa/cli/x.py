@@ -9,7 +9,7 @@ from typing import List, Text, Optional
 
 import ruamel.yaml as yaml
 
-from rasa.cli.utils import get_validated_path, print_warning
+from rasa.cli.utils import get_validated_path, print_warning, validate_domain
 from rasa.cli.arguments import x as arguments
 
 from rasa.constants import (
@@ -225,6 +225,8 @@ def rasa_x(args: argparse.Namespace):
                 "directory."
             )
             sys.exit(1)
+
+        validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
 
         if args.data and not os.path.exists(args.data):
             print_warning(
