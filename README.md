@@ -100,8 +100,7 @@ pip3 install -r requirements-dev.txt
 After the installation has finished, you can run and view the documentation
 locally using:
 ```
-make livedocs-nlu
-make livedocs-core
+make livedocs
 ```
 
 Visit the local version of the docs at http://localhost:8000 in your browser.
