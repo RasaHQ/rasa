@@ -265,6 +265,7 @@ default is to use a simple whitespace tokenizer:
 
     pipeline:
     - name: "WhitespaceTokenizer"
+    - name: "RegexFeaturizer"
     - name: "CRFEntityExtractor"
     - name: "EntitySynonymMapper"
     - name: "CountVectorsFeaturizer"
