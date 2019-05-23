@@ -5,7 +5,7 @@ from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
 from rasa.core import training, utils
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot
 from tests.core import utilities
@@ -160,7 +160,7 @@ def test_custom_slot_type(tmpdir):
 
        templates:
          utter_greet:
-           - hey there!
+           - text: hey there!
 
        actions:
          - utter_greet """,
@@ -178,7 +178,7 @@ def test_custom_slot_type(tmpdir):
 
     templates:
         utter_greet:
-         - hey there!
+         - text: hey there!
 
     actions:
         - utter_greet""",
@@ -189,7 +189,7 @@ def test_custom_slot_type(tmpdir):
 
     templates:
         utter_greet:
-         - hey there!
+         - text: hey there!
 
     actions:
         - utter_greet""",
@@ -379,3 +379,17 @@ def test_domain_warnings():
 
     for diff_dict in domain_warnings.values():
         assert all(not diff_set for diff_set in diff_dict.values())
+
+
+def test_check_domain_sanity_on_valid_domain(default_domain):
+    check_domain_sanity(default_domain)
+
+
+def test_check_domain_sanity_on_invalid_domain():
+    with pytest.raises(InvalidDomain):
+        check_domain_sanity(Domain.load("data/test_domains/duplicate_intents.yml"))
+
+    with pytest.raises(InvalidDomain):
+        check_domain_sanity(
+            Domain.load("data/test_domains/missing_text_for_templates.yml")
+        )

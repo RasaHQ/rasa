@@ -40,7 +40,7 @@ class InvalidDomain(Exception):
         return bcolors.FAIL + self.message + bcolors.ENDC
 
 
-def check_domain_sanity(domain):
+def check_domain_sanity(domain: "Domain"):
     """Make sure the domain is properly configured.
 
     If the domain contains any duplicate slots, intents, actions
@@ -357,13 +357,20 @@ class Domain(object):
         intent_properties = {}
         for intent in intent_list:
             if isinstance(intent, dict):
+                name = list(intent.keys())[0]
                 for properties in intent.values():
                     if "use_entities" not in properties:
                         properties["use_entities"] = True
-                intent_properties.update(intent)
             else:
+                name = intent
                 intent = {intent: {"use_entities": True}}
-                intent_properties.update(intent)
+
+            if name in intent_properties.keys():
+                raise InvalidDomain(
+                    "Duplicated intent '{}' in domain detected.".format(intent.keys())
+                )
+
+            intent_properties.update(intent)
         return intent_properties
 
     @staticmethod
@@ -383,11 +390,8 @@ class Domain(object):
                 )
 
             for t in template_variations:
-                # templates can either directly be strings or a dict with
-                # options we will always create a dict out of them
-                if isinstance(t, str):
-                    validated_variations.append({"text": t})
-                elif "text" not in t and "custom" not in t:
+                # templates are a dict with options
+                if "text" not in t and "custom" not in t:
                     raise InvalidDomain(
                         "Utter template '{}' needs to contain either "
                         "'- text: '  or '- custom: ' attribute to be a proper "
