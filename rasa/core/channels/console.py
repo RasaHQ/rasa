@@ -42,7 +42,6 @@ def print_bot_output(
             choices,
             style=Style([("qmark", "#6d91d3"), ("", "#6d91d3"), ("answer", "#b373d6")]),
         )
-
         return question
 
     if "elements" in message:
