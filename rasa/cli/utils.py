@@ -6,7 +6,6 @@ from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -199,3 +198,14 @@ def payload_from_button_question(button_question: Question) -> Text:
     payload = response[response.find("(") + 1 : response.find(")")]
 
     return payload
+
+
+def validate_domain(domain_path: Text):
+    from rasa.core.domain import Domain, check_domain_sanity, InvalidDomain
+
+    try:
+        domain = Domain.load(domain_path)
+        check_domain_sanity(domain)
+    except InvalidDomain as e:
+        print_error("The provided domain file could not be loaded. Error: {}".format(e))
+        sys.exit(1)
