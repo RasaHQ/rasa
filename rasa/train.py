@@ -4,7 +4,7 @@ import tempfile
 from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
 from rasa.model import Fingerprint, should_retrain
 from rasa.skill import SkillSelector
 
