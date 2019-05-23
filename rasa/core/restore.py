@@ -97,7 +97,7 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
                 buttons = m.pop("buttons", None)  # for non-terminal stdin
                 console.print_bot_output(m)
 
-                if buttons:
+                if buttons is not None:
                     color = rasa.cli.utils.bcolors.OKBLUE
                     rasa.cli.utils.print_color("Buttons:", color=color)
                     for idx, button in enumerate(buttons):

@@ -3,6 +3,7 @@ import aiohttp
 import json
 import logging
 import questionary
+from typing import Text, Optional
 from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
@@ -16,7 +17,9 @@ from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 logger = logging.getLogger(__name__)
 
 
-def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
+def print_bot_output(
+    message, color=rasa.cli.utils.bcolors.OKBLUE
+) -> Optional[questionary.Question]:
     if ("text" in message) and not ("buttons" in message):
         rasa.cli.utils.print_color(message.get("text"), color=color)
 
@@ -39,6 +42,7 @@ def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
             choices,
             style=Style([("qmark", "#6d91d3"), ("", "#6d91d3"), ("answer", "#b373d6")]),
         )
+
         return question
 
     if "elements" in message:
@@ -47,22 +51,20 @@ def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
             rasa.cli.utils.print_color(element_to_string(element, idx), color=color)
 
     if "quick_replies" in message:
-        rasa.cli.utils.print_color("Quick Replies:", color)
+        rasa.cli.utils.print_color("Quick Replies:", color=color)
         for idx, element in enumerate(message.get("quick_replies")):
             rasa.cli.utils.print_color(button_to_string(element, idx), color=color)
 
     if "custom" in message:
         rasa.cli.utils.print_color("Custom json:", color=color)
-        return rasa.cli.utils.print_color(
+        rasa.cli.utils.print_color(
             json.dumps(message.get("custom"), indent=2), color=color
         )
 
 
-def get_cmd_input(button_question: questionary.Question):
-    if button_question:
-        text = button_question.ask()
-        response = text[text.find("(") + 1 : text.find(")")]  # get intent
-
+def get_cmd_input(button_question: questionary.Question) -> Text:
+    if button_question is not None:
+        response = rasa.cli.utils.payload_from_button_question(button_question)
     else:
         response = questionary.text(
             "",
@@ -117,7 +119,7 @@ async def record_messages(
     )
 
     num_messages = 0
-    button_question = False
+    button_question = None
     while not utils.is_limit_reached(num_messages, max_message_limit):
         text = get_cmd_input(button_question)
 

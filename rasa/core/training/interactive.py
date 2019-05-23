@@ -911,8 +911,9 @@ async def _predict_till_next_listen(
             button_to_string(button, idx)
             for idx, button in enumerate(data.get("buttons"))
         ]
-        answer = questionary.select(message, choices).ask()
-        button_payload = answer[answer.find("(") + 1 : answer.find(")")]
+
+        question = questionary.select(message, choices)
+        button_payload = cliutils.payload_from_button_question(question)
         await send_message(endpoint, sender_id, button_payload)
 
 
