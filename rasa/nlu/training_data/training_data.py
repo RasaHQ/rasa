@@ -149,7 +149,7 @@ class TrainingData(object):
                 "and 'md'."
             )
 
-        return {"training_data": DEFAULT_TRAINING_DATA_OUTPUT_PATH}
+        return {"training_data": data_file}
 
     def sorted_entities(self) -> List[Any]:
         """Extract all entities from examples and sorts them by entity type."""
