@@ -3,6 +3,7 @@ import aiohttp
 import json
 import logging
 import questionary
+from typing import Text, Optional
 from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
@@ -16,8 +17,10 @@ from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 logger = logging.getLogger(__name__)
 
 
-def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
-    if "text" in message:
+def print_bot_output(
+    message, color=rasa.cli.utils.bcolors.OKBLUE
+) -> Optional[questionary.Question]:
+    if ("text" in message) and not ("buttons" in message):
         rasa.cli.utils.print_color(message.get("text"), color=color)
 
     if "image" in message:
@@ -29,9 +32,17 @@ def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
         )
 
     if "buttons" in message:
-        rasa.cli.utils.print_color("Buttons:", color=color)
-        for idx, button in enumerate(message.get("buttons")):
-            rasa.cli.utils.print_color(button_to_string(button, idx), color=color)
+        choices = [
+            button_to_string(button, idx)
+            for idx, button in enumerate(message.get("buttons"))
+        ]
+
+        question = questionary.select(
+            message.get("text"),
+            choices,
+            style=Style([("qmark", "#6d91d3"), ("", "#6d91d3"), ("answer", "#b373d6")]),
+        )
+        return question
 
     if "elements" in message:
         rasa.cli.utils.print_color("Elements:", color=color)
@@ -39,25 +50,29 @@ def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
             rasa.cli.utils.print_color(element_to_string(element, idx), color=color)
 
     if "quick_replies" in message:
-        rasa.cli.utils.print_color("Quick Replies:", color)
+        rasa.cli.utils.print_color("Quick Replies:", color=color)
         for idx, element in enumerate(message.get("quick_replies")):
             rasa.cli.utils.print_color(button_to_string(element, idx), color=color)
 
     if "custom" in message:
         rasa.cli.utils.print_color("Custom json:", color=color)
-        return rasa.cli.utils.print_color(
+        rasa.cli.utils.print_color(
             json.dumps(message.get("custom"), indent=2), color=color
         )
 
 
-def get_cmd_input():
-    response = questionary.text(
-        "", qmark="Your input ->", style=Style([("qmark", "#b373d6"), ("", "#b373d6")])
-    ).ask()
+def get_cmd_input(button_question: questionary.Question) -> Text:
+    if button_question is not None:
+        response = rasa.cli.utils.payload_from_button_question(button_question)
+    else:
+        response = questionary.text(
+            "",
+            qmark="Your input ->",
+            style=Style([("qmark", "#b373d6"), ("", "#b373d6")]),
+        ).ask()
+
     if response is not None:
         return response.strip()
-    else:
-        return None
 
 
 async def send_message_receive_block(server_url, auth_token, sender_id, message):
@@ -103,8 +118,10 @@ async def record_messages(
     )
 
     num_messages = 0
+    button_question = None
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = get_cmd_input()
+        text = get_cmd_input(button_question)
+
         if text == exit_text or text is None:
             break
 
@@ -113,13 +130,13 @@ async def record_messages(
                 server_url, auth_token, sender_id, text
             )
             async for response in bot_responses:
-                print_bot_output(response)
+                button_question = print_bot_output(response)
         else:
             bot_responses = await send_message_receive_block(
                 server_url, auth_token, sender_id, text
             )
             for response in bot_responses:
-                print_bot_output(response)
+                button_question = print_bot_output(response)
 
         num_messages += 1
     return num_messages
