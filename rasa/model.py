@@ -105,11 +105,11 @@ def add_evaluation_file_to_model(
     # add model file to folder
     if data_format == "json":
         data_path = os.path.join(tmpdir, "data.json")
-        with open(data_path, "w") as f:
+        with open(data_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(payload))
     elif data_format == "md":
         data_path = os.path.join(tmpdir, "nlu.md")
-        with open(data_path, "w") as f:
+        with open(data_path, "w", encoding="utf-8") as f:
             f.write(payload)
     else:
         raise ValueError("`data_format` needs to be either `md` or `json`.")
