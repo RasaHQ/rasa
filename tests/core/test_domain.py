@@ -364,13 +364,13 @@ def test_domain_warnings():
 
     # all other domain elements should be in `in_domain` diff
     for _type, elements in zip(
-        warning_types, [domain.action_names, domain.intents, domain.entities]
+        warning_types, [domain.user_actions, domain.intents, domain.entities]
     ):
         assert set(domain_warnings[_type]["in_domain"]) == set(elements)
 
     # fully aligned domain and elements should yield empty diff
     domain_warnings = domain.domain_warnings(
-        intents=domain.intents, entities=domain.entities, actions=domain.action_names
+        intents=domain.intents, entities=domain.entities, actions=domain.user_actions
     )
     for diff_dict in domain_warnings.values():
         assert all(not diff_list for diff_list in diff_dict.values())
