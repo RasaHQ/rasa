@@ -167,10 +167,12 @@ def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Dict[Text
     # nlu_path = os.path.join(unpacked_model_path, "nlu")
     nlu_models = list(filter(lambda d: d.startswith("nlu"), os.listdir(unpacked_model_path)))
     nlu_paths = {}
-    for model in nlu_models:
-        lang = model.split("-")[1]
-        nlu_paths[lang] = os.path.join(unpacked_model_path, model)
-
+    try:
+        for model in nlu_models:
+            lang = model.split("-")[1]
+            nlu_paths[lang] = os.path.join(unpacked_model_path, model)
+    except Exception as e:
+        nlu_paths = {}
     return core_path, nlu_paths
 
 
