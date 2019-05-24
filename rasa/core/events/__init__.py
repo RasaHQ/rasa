@@ -277,7 +277,7 @@ class UserUttered(Event):
             if self.entities:
                 ent_string = json.dumps(
                     {ent["entity"]: ent["value"] for ent in self.entities},
-                    ensure_ascii=False
+                    ensure_ascii=False,
                 )
             else:
                 ent_string = ""
