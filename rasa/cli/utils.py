@@ -2,6 +2,7 @@ import os
 import sys
 from typing import Any, Callable, Dict, Optional, Text, List
 import logging
+from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
@@ -190,3 +191,11 @@ def print_error(*args: Any):
 def signal_handler(sig, frame):
     print ("Goodbye 👋")
     sys.exit(0)
+
+
+def payload_from_button_question(button_question: Question) -> Text:
+    """Prompts user with a button question and returns the nlu payload."""
+    response = button_question.ask()
+    payload = response[response.find("(") + 1 : response.find(")")]
+
+    return payload
