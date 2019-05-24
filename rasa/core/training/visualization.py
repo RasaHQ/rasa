@@ -269,7 +269,7 @@ async def _replace_edge_labels_with_nodes(
             graph.remove_edge(s, e, k)
             graph.add_node(
                 next_id,
-                label=label,
+                label=sanitize(label),
                 shape="rect",
                 style="filled",
                 fillcolor="lightblue",
@@ -361,7 +361,7 @@ def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
 
 def sanitize(s):
     if s:
-        return re.sub(r"""[&\\\<\>"'%();+]""", "", s)
+        return re.escape(s)
     else:
         return s
 
@@ -376,8 +376,8 @@ def _add_message_edge(
     """Create an edge based on the user message."""
 
     if message:
-        message_key = sanitize(message.get("intent", {}).get("name", None))
-        message_label = sanitize(message.get("text", None))
+        message_key = message.get("intent", {}).get("name", None)
+        message_label = message.get("text", None)
     else:
         message_key = None
         message_label = None
