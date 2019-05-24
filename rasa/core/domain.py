@@ -792,7 +792,8 @@ class Domain(object):
         domain_elements: Union[List[Text], Set[Text]],
         training_data_elements: Optional[Set[Text]],
     ) -> Dict[Text, Any]:
-        """Get symmetric difference between two sets of objects.
+        """Get symmetric difference between a set of domain elements and a set of
+        training data elements.
 
         Returns a dictionary containing a list of items found in the `domain_elements`
         but not in `training_data_elements` at key `in_domain`, and a list of items
