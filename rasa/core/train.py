@@ -15,7 +15,7 @@ async def train(
     domain_file: Union[Domain, Text],
     stories_file: Text,
     output_path: Text,
-    interpreter: Optional["NaturalLanguageInterpreter"] = None,
+    interpreters: Optional[Dict[Text, "NaturalLanguageInterpreter"]] = None,
     endpoints: "AvailableEndpoints" = None,
     dump_stories: bool = False,
     policy_config: Text = None,
@@ -38,7 +38,7 @@ async def train(
         domain_file,
         generator=endpoints.nlg,
         action_endpoint=endpoints.action,
-        interpreter=interpreter,
+        interpreters=interpreters or {},  # fix to avoid model not ready error
         policies=policies,
     )
 
