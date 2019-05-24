@@ -24,7 +24,6 @@ Fixed
 - set slots correctly when events are added through the API
 
 
-
 [1.0.1] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
 
