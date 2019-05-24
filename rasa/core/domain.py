@@ -3,7 +3,8 @@ import json
 import logging
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from collections import defaultdict
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
 import pkg_resources
 from pykwalify.errors import SchemaError
@@ -66,8 +67,8 @@ def check_domain_sanity(domain):
         return incorrect
 
     def get_exception_message(
-            duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
-            mappings: List[Tuple[Text, Text]] = None,
+        duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
+        mappings: List[Tuple[Text, Text]] = None,
     ):
         """Return a message given a list of error locations."""
 
@@ -94,7 +95,7 @@ def check_domain_sanity(domain):
         return message
 
     def get_duplicate_exception_message(
-            duplicates: List[Tuple[List[Text], Text]]
+        duplicates: List[Tuple[List[Text], Text]]
     ) -> Text:
         """Return a message given a list of duplicates."""
 
@@ -111,7 +112,7 @@ def check_domain_sanity(domain):
         return message
 
     def warn_missing_templates(
-            action_names: List[Text], templates: Dict[Text, Any]
+        action_names: List[Text], templates: Dict[Text, Any]
     ) -> None:
         """Warn user of utterance names which have no specified template."""
 
@@ -140,11 +141,11 @@ def check_domain_sanity(domain):
     incorrect_mappings = check_mappings(domain.intent_properties)
 
     if (
-            duplicate_actions
-            or duplicate_intents
-            or duplicate_slots
-            or duplicate_entities
-            or incorrect_mappings
+        duplicate_actions
+        or duplicate_intents
+        or duplicate_slots
+        or duplicate_entities
+        or incorrect_mappings
     ):
         raise InvalidDomain(
             get_exception_message(
@@ -171,9 +172,9 @@ class Domain(object):
 
     @classmethod
     def load(
-            cls,
-            paths: Union[List[Text], Text],
-            skill_imports: Optional[SkillSelector] = None,
+        cls,
+        paths: Union[List[Text], Text],
+        skill_imports: Optional[SkillSelector] = None,
     ) -> "Domain":
         skill_imports = skill_imports or SkillSelector.all_skills()
 
@@ -243,7 +244,7 @@ class Domain(object):
 
     @classmethod
     def from_directory(
-            cls, path: Text, skill_imports: Optional[SkillSelector] = None
+        cls, path: Text, skill_imports: Optional[SkillSelector] = None
     ) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
 
@@ -368,7 +369,7 @@ class Domain(object):
 
     @staticmethod
     def collect_templates(
-            yml_templates: Dict[Text, List[Any]]
+        yml_templates: Dict[Text, List[Any]]
     ) -> Dict[Text, List[Dict[Text, Any]]]:
         """Go through the templates and make sure they are all in dict format
         """
@@ -400,14 +401,14 @@ class Domain(object):
         return templates
 
     def __init__(
-            self,
-            intent_properties: Dict[Text, Any],
-            entities: List[Text],
-            slots: List[Slot],
-            templates: Dict[Text, Any],
-            action_names: List[Text],
-            form_names: List[Text],
-            store_entities_as_slots: bool = True,
+        self,
+        intent_properties: Dict[Text, Any],
+        entities: List[Text],
+        slots: List[Slot],
+        templates: Dict[Text, Any],
+        action_names: List[Text],
+        form_names: List[Text],
+        store_entities_as_slots: bool = True,
     ) -> None:
 
         self.intent_properties = intent_properties
@@ -420,7 +421,7 @@ class Domain(object):
         self.user_actions = action_names
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-                action.combine_user_with_default_actions(action_names) + form_names
+            action.combine_user_with_default_actions(action_names) + form_names
         )
         self.store_entities_as_slots = store_entities_as_slots
 
@@ -455,7 +456,7 @@ class Domain(object):
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
 
     def action_for_name(
-            self, action_name: Text, action_endpoint: Optional[EndpointConfig]
+        self, action_name: Text, action_endpoint: Optional[EndpointConfig]
     ) -> Optional[Action]:
         """Looks up which action corresponds to this action name."""
 
@@ -467,7 +468,7 @@ class Domain(object):
         )
 
     def action_for_index(
-            self, index: int, action_endpoint: Optional[EndpointConfig]
+        self, index: int, action_endpoint: Optional[EndpointConfig]
     ) -> Optional[Action]:
         """Integer index corresponding to an actions index in the action list.
 
@@ -566,11 +567,11 @@ class Domain(object):
         """Returns all available states."""
 
         return (
-                self.intent_states
-                + self.entity_states
-                + self.slot_states
-                + self.prev_action_states
-                + self.form_states
+            self.intent_states
+            + self.entity_states
+            + self.slot_states
+            + self.prev_action_states
+            + self.form_states
         )
 
     def get_parsing_states(self, tracker: "DialogueStateTracker") -> Dict[Text, float]:
@@ -610,7 +611,7 @@ class Domain(object):
         return state_dict
 
     def get_prev_action_states(
-            self, tracker: "DialogueStateTracker"
+        self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, float]:
         """Turns the previous taken action into a state name."""
 
@@ -649,7 +650,7 @@ class Domain(object):
         return state_dict
 
     def states_for_tracker_history(
-            self, tracker: "DialogueStateTracker"
+        self, tracker: "DialogueStateTracker"
     ) -> List[Dict[Text, float]]:
         """Array of states for each state of the trackers history."""
         return [
@@ -707,8 +708,8 @@ class Domain(object):
                 "You MUST retrain the policy. "
                 + "Detected mismatch in domain specification. "
                 + "The following states have been \n"
-                  "\t - removed: {} \n"
-                  "\t - added:   {} ".format(missing, additional)
+                "\t - removed: {} \n"
+                "\t - added:   {} ".format(missing, additional)
             )
         else:
             return True
@@ -754,8 +755,11 @@ class Domain(object):
             del domain_data["config"]["store_entities_as_slots"]
 
         # clean empty keys
-        return {k: v for k, v in domain_data.items() if v != {}
-                and v != [] and v is not None}
+        return {
+            k: v
+            for k, v in domain_data.items()
+            if v != {} and v != [] and v is not None
+        }
 
     def persist_clean(self, filename: Text) -> None:
         """Write domain to a file.
@@ -782,6 +786,52 @@ class Domain(object):
     @utils.lazyproperty
     def intents(self):
         return sorted(self.intent_properties.keys())
+
+    @staticmethod
+    def get_symmetric_difference(
+        domain_elements: Union[List[Text], Set[Text]],
+        training_data_elements: Optional[Set[Text]],
+    ) -> Dict[Text, Any]:
+        """Get symmetric difference between two sets of objects.
+
+        Returns a dictionary containing a list of items found in the `domain_elements`
+        but not in `training_data_elements` at key `in_domain`, and a list of items
+        found in `training_data_elements` but not in `domain_elements` at key
+        `in_training_data_set`.
+        """
+
+        if not training_data_elements:
+            return {}
+
+        diff_dict = defaultdict(list)
+        for e in set(domain_elements) ^ set(training_data_elements):
+            diff_dict[
+                "in_domain" if e in domain_elements else "in_traning_data"
+            ].append(e)
+
+        return dict(diff_dict)
+
+    def domain_warnings(
+        self,
+        intents: Optional[Union[List[Text], Set[Text]]] = None,
+        entities: Optional[Union[List[Text], Set[Text]]] = None,
+        actions: Optional[Union[List[Text], Set[Text]]] = None,
+    ) -> Dict[Text, Any]:
+        """Generate domain warnings from intents, entities and actions.
+
+        Returns a dictionary with entries for `intent_warnings`,
+        `entity_warnings` and `action_warnings`.
+        """
+
+        intent_warnings = self.get_symmetric_difference(self.intents, intents)
+        entity_warnings = self.get_symmetric_difference(self.entities, entities)
+        action_warnings = self.get_symmetric_difference(self.action_names, actions)
+
+        return {
+            "intent_warnings": intent_warnings,
+            "entity_warnings": entity_warnings,
+            "action_warnings": action_warnings,
+        }
 
 
 class TemplateDomain(Domain):
