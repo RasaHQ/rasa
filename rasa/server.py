@@ -844,7 +844,6 @@ def create_app(
 
     @app.post("/data/convert")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
     async def post_data_convert(request: Request):
         """Converts current domain in yaml or json format."""
         validate_request_body(
