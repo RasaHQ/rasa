@@ -196,7 +196,7 @@ async def load_agent_on_start(
             "Load default agent without any model."
         )
         app.agent = Agent(
-            interpreter=_interpreter,
+            interpreters=_interpreters,
             generator=endpoints.nlg,
             tracker_store=_tracker_store,
             action_endpoint=endpoints.action,

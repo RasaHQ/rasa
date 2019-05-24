@@ -30,7 +30,7 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
-
+from rasa.nlu.botfront.language_setter import LanguageSetter
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
     from rasa.nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
@@ -66,6 +66,8 @@ component_classes = [
     MitieIntentClassifier,
     KeywordIntentClassifier,
     EmbeddingIntentClassifier,
+    # botfront
+    LanguageSetter,
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
