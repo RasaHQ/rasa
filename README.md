@@ -6,7 +6,7 @@
 [![Build Status](https://travis-ci.com/RasaHQ/rasa.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa?branch=master)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FRasaHQ%2Frasa.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FRasaHQ%2Frasa?ref=badge_shield)
+[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
