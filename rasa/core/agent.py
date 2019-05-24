@@ -222,7 +222,7 @@ async def load_agent(
     model_path: Optional[Text] = None,
     model_server: Optional[EndpointConfig] = None,
     remote_storage: Optional[Text] = None,
-    interpreter: Optional[NaturalLanguageInterpreter] = None,
+    interpreters: Optional[Dict[str, NaturalLanguageInterpreter]] = None,
     generator: Union[EndpointConfig, "NLG"] = None,
     tracker_store: Optional["TrackerStore"] = None,
     action_endpoint: Optional[EndpointConfig] = None,
@@ -231,7 +231,7 @@ async def load_agent(
         if model_path is not None and os.path.exists(model_path):
             return Agent.load_local_model(
                 model_path,
-                interpreter=interpreter,
+                interpreters=interpreters,
                 generator=generator,
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
@@ -242,7 +242,7 @@ async def load_agent(
         elif model_server is not None:
             return await load_from_server(
                 Agent(
-                    interpreter=interpreter,
+                    interpreters=interpreters,
                     generator=generator,
                     tracker_store=tracker_store,
                     action_endpoint=action_endpoint,
@@ -256,7 +256,7 @@ async def load_agent(
             return Agent.load_from_remote_storage(
                 remote_storage,
                 model_path,
-                interpreter=interpreter,
+                interpreters=interpreters,
                 generator=generator,
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
@@ -283,7 +283,7 @@ class Agent(object):
         self,
         domain: Union[Text, Domain] = None,
         policies: Union[PolicyEnsemble, List[Policy], None] = None,
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        interpreters: Optional[Dict[str, NaturalLanguageInterpreter]] = None,
         generator: Union[EndpointConfig, "NLG", None] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
@@ -303,7 +303,7 @@ class Agent(object):
                 "FormPolicy to your policy ensemble."
             )
 
-        self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        self.interpreters = interpreters
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
@@ -320,14 +320,14 @@ class Agent(object):
         domain: Union[Text, Domain],
         policy_ensemble: PolicyEnsemble,
         fingerprint: Optional[Text],
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        interpreters: Optional[Dict[str, NaturalLanguageInterpreter]] = None,
         model_directory: Optional[Text] = None,
     ) -> None:
         self.domain = domain
         self.policy_ensemble = policy_ensemble
 
-        if interpreter:
-            self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        if interpreters:
+            self.interpreters = NaturalLanguageInterpreter.create(interpreters)
 
         self._set_fingerprint(fingerprint)
 
@@ -342,7 +342,7 @@ class Agent(object):
     def load(
         cls,
         unpacked_model_path: Text,
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        interpreters: Optional[Dict[str, NaturalLanguageInterpreter]] = None,
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
@@ -364,10 +364,11 @@ class Agent(object):
                 "instead.".format(unpacked_model_path)
             )
 
-        core_model, nlu_model = get_model_subdirectories(unpacked_model_path)
-
-        if not interpreter and os.path.exists(nlu_model):
-            interpreter = NaturalLanguageInterpreter.create(nlu_model)
+        core_model, nlu_models = get_model_subdirectories(unpacked_model_path)
+        if not interpreters and len(nlu_models):
+            interpreters = {}
+            for lang, model_path in nlu_models:
+                interpreters[lang] = NaturalLanguageInterpreter.create(os.path.join(unpacked_model_path, model_path))
 
         domain = None
         ensemble = None
@@ -382,7 +383,7 @@ class Agent(object):
         return cls(
             domain=domain,
             policies=ensemble,
-            interpreter=interpreter,
+            interpreters=interpreters,
             generator=generator,
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
@@ -396,7 +397,7 @@ class Agent(object):
         return (
             self.tracker_store is not None
             and self.policy_ensemble is not None
-            and self.interpreter is not None
+            and self.interpreters is not None
         )
 
     async def handle_message(
@@ -801,7 +802,7 @@ class Agent(object):
         # creates a processor
         self._ensure_agent_is_ready()
         return MessageProcessor(
-            self.interpreter,
+            self.interpreters,
             self.policy_ensemble,
             self.domain,
             self.tracker_store,
@@ -855,7 +856,7 @@ class Agent(object):
     @staticmethod
     def load_local_model(
         model_path: Text,
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        interpreters: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
@@ -876,7 +877,7 @@ class Agent(object):
 
         return Agent.load(
             unpacked_model,
-            interpreter=interpreter,
+            interpreters=interpreters,
             generator=generator,
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
@@ -888,7 +889,7 @@ class Agent(object):
     def load_from_remote_storage(
         remote_storage: Text,
         model_name: Text,
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        interpreters: Optional[Dict[str, NaturalLanguageInterpreter]] = None,
         generator: Union[EndpointConfig, "NLG"] = None,
         tracker_store: Optional["TrackerStore"] = None,
         action_endpoint: Optional[EndpointConfig] = None,
@@ -904,7 +905,7 @@ class Agent(object):
 
             return Agent.load(
                 target_path,
-                interpreter=interpreter,
+                interpreters=interpreters,
                 generator=generator,
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,

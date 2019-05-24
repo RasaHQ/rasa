@@ -165,8 +165,10 @@ async def load_agent_on_start(
     from rasa.core import broker
 
     try:
-        _, nlu_model = get_model_subdirectories(get_model(model_path))
-        _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+        _, nlu_models = get_model_subdirectories(get_model(model_path))
+        _interpreters = {}
+        for lang, nlu_model_path in nlu_models.items():
+            _interpreters[lang] = NaturalLanguageInterpreter.create(nlu_model_path, endpoints.nlu)
     except Exception:
         logger.debug("Could not load interpreter from '{}'".format(model_path))
         _interpreter = None
@@ -182,7 +184,7 @@ async def load_agent_on_start(
         model_path,
         model_server=model_server,
         remote_storage=remote_storage,
-        interpreter=_interpreter,
+        interpreters=_interpreters,
         generator=endpoints.nlg,
         tracker_store=_tracker_store,
         action_endpoint=endpoints.action,

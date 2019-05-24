@@ -577,8 +577,12 @@ def create_app(
         dump_obj_as_str_to_file(config_path, rjs["config"])
 
         if "nlu" in rjs:
-            nlu_path = os.path.join(temp_dir, "nlu.md")
-            dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
+            nlu_dir = os.path.join(temp_dir, 'nlu')
+            os.mkdir(nlu_dir)
+
+            for key, value in rjs["nlu"].items():
+                nlu_file_path = os.path.join(nlu_dir, "{}.md".format(key))
+                dump_obj_as_str_to_file(nlu_file_path, rjs["nlu"][key]["data"])
 
         if "stories" in rjs:
             stories_path = os.path.join(temp_dir, "stories.md")
@@ -762,12 +766,17 @@ def create_app(
             "No text message defined in request_body. Add text message to request body "
             "in order to obtain the intent and extracted entities.",
         )
+        if not request.json.get("lang"):
+            raise ErrorResponse(
+                400, "Bad Request", "'lang' property is required'"
+            )
+
         emulation_mode = request.args.get("emulation_mode")
         emulator = _create_emulator(emulation_mode)
 
         try:
             data = emulator.normalise_request_json(request.json)
-            parse_data = await app.agent.interpreter.parse(data.get("text"))
+            parse_data = await app.agent.interpreters.get(request.json.get("lang")).parse(data.get("text"))
             response_data = emulator.normalise_response_json(parse_data)
 
             return response.json(response_data)

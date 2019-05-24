@@ -397,13 +397,19 @@ def _train_nlu_with_validated_data(
     """Train NLU with validated training and config data."""
 
     import rasa.nlu.train
+    import re
 
     _train_path = train_path or tempfile.mkdtemp()
+    models = {}
+    pattern = r'(\w\w)*(?=\.)'
+    for file in os.listdir(nlu_data_directory):
+        lang = re.search(pattern, file).groups()[0]
+        nlu_file_path = os.path.join(nlu_data_directory, file)
+        print_color("Start training {} NLU model ...".format(lang), color=bcolors.OKBLUE)
+        _, models[lang], _ = rasa.nlu.train(
+            config, nlu_file_path, _train_path, fixed_model_name="nlu-{}".format(lang)
+        )
 
-    print_color("Start training NLU model ...", color=bcolors.OKBLUE)
-    _, nlu_model, _ = rasa.nlu.train(
-        config, nlu_data_directory, _train_path, fixed_model_name="nlu"
-    )
     print_color("Done.", color=bcolors.OKBLUE)
 
     if train_path is None:
