@@ -806,7 +806,7 @@ class Domain(object):
         diff_dict = defaultdict(list)
         for e in set(domain_elements) ^ set(training_data_elements):
             diff_dict[
-                "in_domain" if e in domain_elements else "in_traning_data"
+                "in_domain" if e in domain_elements else "in_training_data"
             ].append(e)
 
         return dict(diff_dict)

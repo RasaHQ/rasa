@@ -360,7 +360,7 @@ def test_domain_warnings():
 
     # elements not found in domain should be in `in_training_data` diff
     for _type, elements in zip(warning_types, [actions, intents, entities]):
-        assert set(domain_warnings[_type]["in_traning_data"]) == set(elements)
+        assert set(domain_warnings[_type]["in_training_data"]) == set(elements)
 
     # all other domain elements should be in `in_domain` diff
     for _type, elements in zip(
