@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 class MessageProcessor(object):
     def __init__(
         self,
-        interpreter: NaturalLanguageInterpreter,
+        interpreters: Dict[Text, NaturalLanguageInterpreter],
         policy_ensemble: PolicyEnsemble,
         domain: Domain,
         tracker_store: TrackerStore,
@@ -53,7 +53,7 @@ class MessageProcessor(object):
         message_preprocessor: Optional[LambdaType] = None,
         on_circuit_break: Optional[LambdaType] = None,
     ):
-        self.interpreter = interpreter
+        self.interpreters = interpreters
         self.nlg = generator
         self.policy_ensemble = policy_ensemble
         self.domain = domain
@@ -266,7 +266,8 @@ class MessageProcessor(object):
                 message.text, message.message_id
             )
         else:
-            parse_data = await self.interpreter.parse(message.text, message.message_id)
+            lang = message.output_channel.language
+            parse_data = await self.interpreters.get(lang).parse(message.text, message.message_id)
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
