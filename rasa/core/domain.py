@@ -17,7 +17,7 @@ from rasa.core import utils
 from rasa.core.actions import Action, action
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.slots import Slot, UnfeaturizedSlot
-from rasa.core.trackers import SlotSet
+from rasa.core.events import SlotSet
 from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
 
