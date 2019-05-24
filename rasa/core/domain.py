@@ -802,7 +802,7 @@ class Domain(object):
         """
 
         if not training_data_elements:
-            return {}
+            training_data_elements = set()
 
         diff_dict = defaultdict(list)
         for e in set(domain_elements) ^ set(training_data_elements):
