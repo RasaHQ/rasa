@@ -103,9 +103,9 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         except Exception as e:
             logger.warning(
                 "Invalid to parse arguments in line "
-                "'{}'. Failed to decode parameters"
-                "as a json object. Make sure the intent"
-                "followed by a proper json object. "
+                "'{}'. Failed to decode parameters "
+                "as a json object. Make sure the intent "
+                "is followed by a proper json object. "
                 "Error: {}".format(user_input, e)
             )
             return []
