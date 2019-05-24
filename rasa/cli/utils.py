@@ -2,6 +2,7 @@ import os
 import sys
 from typing import Any, Callable, Dict, Optional, Text, List
 import logging
+from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
@@ -119,7 +120,8 @@ def create_output_path(
         else:
             time_format = "%Y%m%d-%H%M%S"
             name = time.strftime(time_format)
-        file_name = "{}{}.tar.gz".format(prefix, name)
+            name = "{}{}".format(prefix, name)
+        file_name = "{}.tar.gz".format(name)
         return os.path.join(output_path, file_name)
 
 
@@ -151,10 +153,6 @@ def minimal_kwargs(
     }
 
 
-def print_success(*args: Any):
-    print_color(*args, color=bcolors.OKGREEN)
-
-
 class bcolors(object):
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
@@ -174,6 +172,14 @@ def print_color(*args: Any, color: Text):
     print (wrap_with_color(*args, color=color))
 
 
+def print_success(*args: Any):
+    print_color(*args, color=bcolors.OKGREEN)
+
+
+def print_info(*args: Any):
+    print_color(*args, color=bcolors.OKBLUE)
+
+
 def print_warning(*args: Any):
     print_color(*args, color=bcolors.WARNING)
 
@@ -185,3 +191,11 @@ def print_error(*args: Any):
 def signal_handler(sig, frame):
     print ("Goodbye 👋")
     sys.exit(0)
+
+
+def payload_from_button_question(button_question: Question) -> Text:
+    """Prompts user with a button question and returns the nlu payload."""
+    response = button_question.ask()
+    payload = response[response.find("(") + 1 : response.find(")")]
+
+    return payload

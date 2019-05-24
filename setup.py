@@ -77,6 +77,8 @@ install_requires = [
     "SQLAlchemy~=1.3.0",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
+    # temporary dependency, until https://github.com/boto/botocore/issues/1733 is fixed
+    "urllib3<1.25",
 ]
 
 extras_requires = {
@@ -106,8 +108,9 @@ setup(
     tests_require=tests_requires,
     extras_require=extras_requires,
     include_package_data=True,
-    description="Machine learning based dialogue engine "
-    "for conversational software.",
+    description="Open source machine learning framework to automate text- and "
+    "voice-based conversations: NLU, dialogue management, connect to "
+    "Slack, Facebook, and more - Create chatbots and voice assistants",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Rasa Technologies GmbH",
@@ -128,5 +131,7 @@ setup(
 )
 
 print ("\nWelcome to Rasa!")
-print ("If any questions please visit documentation page https://rasa.com/docs")
-print ("or join the community discussions on https://forum.rasa.com")
+print (
+    "If you have any questions, please visit our documentation page: https://rasa.com/docs/"
+)
+print ("or join the community discussions on https://forum.rasa.com/")

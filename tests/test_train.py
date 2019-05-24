@@ -17,9 +17,9 @@ from tests.core.test_model import _fingerprint
 @pytest.mark.parametrize(
     "parameters",
     [
-        {"model_name": "test-1234", "prefix": None, "uncompress": True},
-        {"model_name": None, "prefix": "core-", "uncompress": False},
-        {"model_name": None, "prefix": None, "uncompress": True},
+        {"model_name": "test-1234", "prefix": None},
+        {"model_name": None, "prefix": "core-"},
+        {"model_name": None, "prefix": None},
     ],
 )
 def test_package_model(trained_rasa_model, parameters):
@@ -32,7 +32,6 @@ def test_package_model(trained_rasa_model, parameters):
         train_path,
         parameters["model_name"],
         parameters["prefix"],
-        parameters["uncompress"],
     )
 
     assert os.path.exists(model_path)
@@ -45,11 +44,7 @@ def test_package_model(trained_rasa_model, parameters):
     if parameters["prefix"]:
         assert parameters["prefix"] in file_name
 
-    if parameters["uncompress"]:
-        assert os.path.isdir(model_path)
-        assert not file_name.endswith(".tar.gz")
-    else:
-        assert file_name.endswith(".tar.gz")
+    assert file_name.endswith(".tar.gz")
 
 
 @pytest.mark.parametrize(

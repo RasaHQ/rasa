@@ -7,9 +7,9 @@ from typing import List, Text, Optional, Dict, Any
 import aiohttp
 
 import rasa.core
+from rasa.constants import DOCS_BASE_URL
 from rasa.core import events
 from rasa.core.constants import (
-    DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
     REQUESTED_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
@@ -141,7 +141,6 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
         metadata=message,
     )
 
-    logger.debug("Bot utterance '{}'".format(bot_message))
     return bot_message
 
 
@@ -351,7 +350,7 @@ class RemoteAction(Action):
                 ". Failed to validate Action server response from API, "
                 "make sure your response from the Action endpoint is valid. "
                 "For more information about the format visit "
-                "{}/customactions/".format(DOCS_BASE_URL)
+                "{}/core/actions/".format(DOCS_BASE_URL)
             )
             raise e
 
@@ -399,7 +398,7 @@ class RemoteAction(Action):
                 "but you didn't configure an endpoint to "
                 "run this custom action. Please take a look at "
                 "the docs and set an endpoint configuration. "
-                "{}/customactions/"
+                "{}/core/actions"
                 "".format(self.name(), DOCS_BASE_URL)
             )
 

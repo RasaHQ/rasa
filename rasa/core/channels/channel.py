@@ -9,8 +9,8 @@ from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 
 import rasa.utils.endpoints
+from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
-from rasa.core.constants import DOCS_BASE_URL
 
 try:
     from urlparse import urljoin
@@ -137,11 +137,11 @@ class InputChannel(object):
         raise Exception(
             "To use the {} input channel, you need to "
             "pass a credentials file using '--credentials'. "
-            "The argument should be a file path pointing to"
-            "a yml file containing the {} authentication"
+            "The argument should be a file path pointing to "
+            "a yml file containing the {} authentication "
             "information. Details in the docs: "
-            "{}/connectors/#{}-setup".format(
-                cls.name(), cls.name(), DOCS_BASE_URL, cls.name()
+            "{}/user-guide/messaging-and-voice-channels/".format(
+                cls.name(), cls.name(), DOCS_BASE_URL
             )
         )
 

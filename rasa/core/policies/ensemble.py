@@ -10,8 +10,8 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 import numpy as np
 
 import rasa.core
-import rasa.constants
 import rasa.utils.io
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
 
 from rasa.core import utils, training
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -74,9 +74,8 @@ class PolicyEnsemble(object):
                         "in PolicyEnsemble. When personalizing "
                         "priorities, be sure to give all policies "
                         "different priorities. More information: "
-                        "https://rasa.com/docs/core/"
-                        "policies/"
-                    ).format(v, k)
+                        "{}/core/policies/"
+                    ).format(v, k, DOCS_BASE_URL)
                 )
 
     def train(
@@ -190,7 +189,7 @@ class PolicyEnsemble(object):
         from packaging import version
 
         if version_to_check is None:
-            version_to_check = rasa.constants.MINIMUM_COMPATIBLE_VERSION
+            version_to_check = MINIMUM_COMPATIBLE_VERSION
 
         model_version = metadata.get("rasa", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
@@ -348,8 +347,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 probabilities[
                     domain.index_for_action(tracker.events[-1].action_name)
                 ] = 0.0
-            confidence = np.max(probabilities)
 
+            confidence = np.max(probabilities)
             if (confidence, p.priority) > (max_confidence, best_policy_priority):
                 max_confidence = confidence
                 result = probabilities
@@ -388,10 +387,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 best_policy_name = "policy_{}_{}".format(
                     fallback_idx, type(fallback_policy).__name__
                 )
-
-        # normalize probabilities
-        if np.sum(result) != 0:
-            result = result / np.nansum(result)
 
         logger.debug("Predicted next action using {}".format(best_policy_name))
         return result, best_policy_name
