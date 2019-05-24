@@ -300,7 +300,7 @@ def persist_graph(graph, output_file):
         "// { graph-content }", "graph = `{}`".format(expg.to_string()), 1
     )
 
-    with open(output_file, "w") as file:
+    with open(output_file, "w", encoding="utf-8") as file:
         file.write(template)
 
 
