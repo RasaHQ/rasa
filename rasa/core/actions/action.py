@@ -194,7 +194,9 @@ class ActionUtterTemplate(Action):
     async def run(self, output_channel, nlg, tracker, domain):
         """Simple run implementation uttering a (hopefully defined) template."""
 
-        message = await nlg.generate(self.template_name, tracker, output_channel.name())
+        # botfront: added lang in **kwargs;
+        message = await nlg.generate(self.template_name, tracker, output_channel.name(),
+                                     language=output_channel.language)
         if message is None:
             if not self.silent_fail:
                 logger.error(
@@ -203,7 +205,9 @@ class ActionUtterTemplate(Action):
                 )
             return []
 
-        return [create_bot_utterance(message)]
+        # botfront: create an array of messages for a sequence
+        # was [create_bot_utterance(message)]
+        return [create_bot_utterance(m) for m in message]
 
     def name(self) -> Text:
         return self.template_name

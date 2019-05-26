@@ -25,6 +25,15 @@ def nlg_response_format_spec():
     }
 
 
+# botfront: response format spec for sequences
+def nlg_response_botfront_format_spec():
+    """Expected response schema for an NLG endpoint with Botfront."""
+    return {
+        "type" : "array",
+        "items" : nlg_request_format_spec(),
+    }
+
+
 def nlg_request_format_spec():
     """Expected request schema for requests sent to an NLG endpoint."""
 
@@ -116,7 +125,8 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                 # means the endpoint did not want to respond with anything
                 return True
             else:
-                validate(content, nlg_response_format_spec())
+                # botfront: response format spec for sequences
+                validate(content, nlg_response_botfront_format_spec())
                 return True
         except ValidationError as e:
             e.message += (
