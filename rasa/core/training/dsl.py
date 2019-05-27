@@ -204,28 +204,32 @@ class StoryFileReader(object):
             stories[line] = stories[line].strip()
 
         for line in stories:
-            if not (line.startswith('*') or line.startswith('#') or
-                    line.startswith('-') or line == ''):
-                logger.error("There is an error in the stories file"
-                             " {}:".format(filename))
+            if not (
+                line.startswith("*")
+                or line.startswith("#")
+                or line.startswith("-")
+                or line == ""
+            ):
+                logger.error(
+                    "There is an error in the stories file" " {}:".format(filename)
+                )
                 logger.error(line)
         return stories
 
     def _clean_string(self, st: Text, story_file: Text):
         fragments = []
         while st:
-            fragment, open_, st = st.partition('<!--')
-            _, close, st = st.partition('-->')
+            fragment, open_, st = st.partition("<!--")
+            _, close, st = st.partition("-->")
             if open_ and not close or close and not open_:
-                logger.error("The file {} has a unclosed comment"
-                             .format(story_file))
+                logger.error("The file {} has a unclosed comment".format(story_file))
             fragments.append(fragment)
-        return ''.join(fragments)
+        return "".join(fragments)
 
     def _remove_comments(self, story_file: Text):
         with io.open(story_file, "r", encoding="utf-8") as f:
             no_comment = self._clean_string(f.read(), story_file)
-        story_lines = no_comment.split('\n')
+        story_lines = no_comment.split("\n")
         return story_lines
 
     @staticmethod

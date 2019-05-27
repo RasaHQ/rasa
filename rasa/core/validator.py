@@ -8,6 +8,7 @@ from rasa.nlu.training_data import load_data, TrainingData
 from rasa.core.training.dsl import StoryFileReader, StoryStep
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,8 +18,7 @@ def create_argument_parser():
     parser = argparse.ArgumentParser(description="Validates files")
 
     parser.add_argument(
-        "--domain", "-d", type=str, required=True,
-        help="Path for the domain file"
+        "--domain", "-d", type=str, required=True, help="Path for the domain file"
     )
 
     parser.add_argument(
@@ -43,10 +43,7 @@ def create_argument_parser():
 class Validator:
     """Validator is a class to verify the intents and utters written."""
 
-    def __init__(self,
-                 domain: Domain,
-                 intents: TrainingData,
-                 stories: List[StoryStep]):
+    def __init__(self, domain: Domain, intents: TrainingData, stories: List[StoryStep]):
 
         """Initialize the validator object. """
 
@@ -126,8 +123,7 @@ class Validator:
             found = self._search(stories_intents, intent)
             if not found:
                 logger.warning(
-                    "The intent '{}' is not being used in any "
-                    "story".format(intent)
+                    "The intent '{}' is not being used in any " "story".format(intent)
                 )
 
     def verify_utterances(self):
@@ -143,8 +139,9 @@ class Validator:
         for utterance in utterance_templates:
             found = self._search(utterance_actions, utterance)
             if not found:
-                logger.error("The utterance '{}' is not listed in actions"
-                             .format(utterance))
+                logger.error(
+                    "The utterance '{}' is not listed in actions".format(utterance)
+                )
             else:
                 self.valid_utterances.append(utterance)
 
@@ -152,8 +149,9 @@ class Validator:
             if utterance.split("_")[0] == "utter":
                 found = self._search(utterance_templates, utterance)
                 if not found:
-                    logger.error("There is no template for utterance '{}'"
-                                 .format(utterance))
+                    logger.error(
+                        "There is no template for utterance '{}'".format(utterance)
+                    )
 
     def verify_utterances_in_stories(self):
         """Verifies if the utterances being used in the stories are
@@ -197,16 +195,13 @@ class Validator:
         self.verify_utterances_in_stories()
 
     @classmethod
-    def from_files(cls,
-                   domain_file: Text,
-                   nlu_data: Text,
-                   story_data: Text) -> 'Validator':
+    def from_files(
+        cls, domain_file: Text, nlu_data: Text, story_data: Text
+    ) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
 
         domain = Domain.load(domain_file)
-        stories = asyncio.run(
-            StoryFileReader.read_from_folder(story_data, domain)
-        )
+        stories = asyncio.run(StoryFileReader.read_from_folder(story_data, domain))
         intents = load_data(nlu_data)
         return cls(domain, intents, stories)
 
@@ -216,5 +211,7 @@ if __name__ == "__main__":
     cmdline_args = parser.parse_args()
     configure_colored_logging(loglevel="INFO")
 
-    validator = Validator.from_files(cmdline_args.domain, cmdline_args.intents, cmdline_args.stories)
+    validator = Validator.from_files(
+        cmdline_args.domain, cmdline_args.intents, cmdline_args.stories
+    )
     validator.verify_all()
