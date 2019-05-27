@@ -817,21 +817,26 @@ class Domain(object):
         intents: Optional[Union[List[Text], Set[Text]]] = None,
         entities: Optional[Union[List[Text], Set[Text]]] = None,
         actions: Optional[Union[List[Text], Set[Text]]] = None,
+        slots: Optional[Union[List[Text], Set[Text]]] = None,
     ) -> Dict[Text, Any]:
-        """Generate domain warnings from intents, entities and actions.
+        """Generate domain warnings from intents, entities, actions and slots.
 
         Returns a dictionary with entries for `intent_warnings`,
-        `entity_warnings` and `action_warnings`.
+        `entity_warnings`, `action_warnings` and `slot_warnings`.
         """
 
         intent_warnings = self.get_symmetric_difference(self.intents, intents)
         entity_warnings = self.get_symmetric_difference(self.entities, entities)
         action_warnings = self.get_symmetric_difference(self.user_actions, actions)
+        slot_warnings = self.get_symmetric_difference(
+            [s.name for s in self.slots], slots
+        )
 
         return {
             "intent_warnings": intent_warnings,
             "entity_warnings": entity_warnings,
             "action_warnings": action_warnings,
+            "slot_warnings": slot_warnings,
         }
 
 
