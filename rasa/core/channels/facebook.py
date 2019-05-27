@@ -4,6 +4,8 @@ import logging
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
+from fbmessenger.quick_replies import QuickReply, QuickReplies
+from fbmessenger.thread_settings import PersistentMenu, PersistentMenuItem, MessengerProfile, GetStartedButton
 from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable
@@ -178,6 +180,7 @@ class MessengerBot(OutputChannel):
         """Sends quick replies to the output."""
 
         self._add_text_info(quick_replies)
+        quick_replies = self._convert_to_quick_reply(quick_replies)
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
     async def send_elements(
@@ -200,10 +203,20 @@ class MessengerBot(OutputChannel):
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json data to the output."""
-
-        recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
-
-        self.messenger_client.send(json_message, recipient_id, "RESPONSE")
+        # recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id # Argument Error here, due to pop, which only takes 2 arguments
+        for custom_json in json_message:
+            if 'get_started' in custom_json.keys() :
+                message = custom_json.pop('get_started')
+                get_started = self._convert_to_get_started(message)
+            elif custom_json.get('persistent_menu'):
+                message = custom_json.pop('persistent_menu')
+                menu = self._convert_to_persistent_menu(message)
+            else:
+                self.messenger_client.send(json_message, recipient_id, "RESPONSE")
+                break
+       
+        messenger_profile = MessengerProfile(persistent_menus=[menu], get_started=get_started)
+        self.messenger_client.set_messenger_profile(messenger_profile.to_dict())
 
     @staticmethod
     def _add_text_info(quick_replies: List[Dict[Text, Any]]) -> None:
@@ -214,6 +227,92 @@ class MessengerBot(OutputChannel):
         for quick_reply in quick_replies:
             if not quick_reply.get("type"):
                 quick_reply["content_type"] = "text"
+    
+    @staticmethod
+    def _convert_to_get_started(custom_json: Dict[Text, Any]) -> GetStartedButton:        
+        return GetStartedButton(payload = custom_json['payload'])
+
+    @staticmethod
+    def _convert_to_persistent_menu(custom_json: Dict[Text, Any]) -> PersistentMenu:
+        """Convert json custom message for persitent Menu into a PersistentMenu object support 
+                by fbmessenger api   Happens in place."""
+        
+        pers_menu_item_0 = []
+        pers_menu_item_1 = []
+        nested_menu_item_depth_0 = []
+        nested_menu_item_depth_1 = []
+        for json_message in custom_json:
+            if 'payload' in json_message.keys():
+                payload_depth_0 = json_message['payload']
+            
+            if 'title' in json_message.keys():
+                title_depth_0 = json_message['title']
+            else: 
+                raise ValueError("You must specify a title for your menu items.")
+            
+            if 'type' in json_message.keys():
+                type_depth_0 = json_message['type']
+                
+                if type_depth_0 == 'nested' and ('nested_items' in json_message.keys()):
+                    
+                    for json_item_depth_1 in json_message['nested_items']:
+                        if 'payload' in json_item_depth_1.keys():
+                            payload_depth_1 = json_item_depth_1['payload']
+            
+                        if 'title' in json_item_depth_1.keys():
+                            title_depth_1 = json_item_depth_1['title']
+                        
+                        if 'type' in json_item_depth_1.keys():
+                            type_depth_1 = json_item_depth_1['type']
+                            if type_depth_1 == 'nested' and ('nested_items' in json_item_depth_1.keys()):
+                                for json_item_depth_2 in json_item_depth_1['nested_items']:
+                                    if 'payload' in json_item_depth_2.keys():
+                                        payload = json_item_depth_2['payload']
+                        
+                                    if 'title' in json_item_depth_2.keys():
+                                        title = json_item_depth_2['title']
+                                    
+                                    if 'type' in json_item_depth_2.keys():
+                                        type_depth_2 = json_item_depth_2['type']
+                                        if type_depth_2 == 'nested':
+                                            raise ValueError("You must have at most two nested menus!")
+                                    nested_menu_item_depth_1.append(
+                                        PersistentMenuItem(title=title, item_type=type_depth_2, payload=payload))
+                                PersistentMenuItem(title=title_depth_1, item_type=type_depth_1, nested_items=nested_menu_item_depth_1)
+                                
+                            else:
+                                nested_menu_item_depth_0.append(PersistentMenuItem(title=title_depth_1, item_type=type_depth_1, payload=payload_depth_1))
+                    pers_menu_item_1.append(
+                        PersistentMenuItem(item_type=type_depth_0, title=title_depth_0, nested_items=nested_menu_item_depth_0))
+                        
+                else:
+                    pers_menu_item_0.append(PersistentMenuItem(item_type=type_depth_0, title=title_depth_0, payload=payload_depth_0))
+            else:
+                raise ValueError("You must specify a type for your menu items")
+        pers_menu_item_0.extend(pers_menu_item_1)
+        
+        return PersistentMenu(menu_items=pers_menu_item_0)
+    
+    @staticmethod
+    def _convert_to_quick_reply(quick_replies: List[Dict[Text, Any]]) -> None:
+        """Convert the List[Dict] to a List[QuickReply]
+        """
+        tmp_quick_replies = []
+        for ind, quick_reply in enumerate(quick_replies):
+            if "content_type" in quick_reply.keys():
+                content_type = quick_reply["content_type"]
+            else:
+                content_type = "text" 
+            if "title" and "payload" in quick_reply.keys():
+                title = quick_reply["title"]
+                payload = quick_reply["payload"]
+            else:
+                raise ValueError("You need to specify the title and the payload")
+            tmp_quick_replies.append(QuickReply(title=title, content_type=content_type, payload=payload))
+        
+        quick_replies.clear()
+        quick_replies = tmp_quick_replies.copy()
+        return QuickReplies(quick_replies=quick_replies)
 
     @staticmethod
     def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
