@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import typing
-from collections import defaultdict
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
 import pkg_resources
@@ -16,8 +15,8 @@ from rasa.cli.utils import print_warning, bcolors
 from rasa.core import utils
 from rasa.core.actions import Action, action
 from rasa.core.constants import REQUESTED_SLOT
-from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.core.events import SlotSet
+from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
 
@@ -736,8 +735,10 @@ class Domain(object):
         domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
-    @staticmethod
-    def _clean_domain(domain_data: Dict[Text, Any]) -> Dict[Text, Any]:
+    def cleaned_domain(self) -> Dict[Text, Any]:
+        """Fetch cleaned domain, replacing redundant keys with default values."""
+
+        domain_data = self.as_dict()
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
                 if intent.get("use_entities"):
@@ -762,22 +763,18 @@ class Domain(object):
         }
 
     def persist_clean(self, filename: Text) -> None:
-        """Write domain to a file.
+        """Write cleaned domain to a file."""
 
-         Strips redundant keys with default values."""
-
-        domain_data = self.as_dict()
-        cleaned_domain_data = self._clean_domain(domain_data)
+        cleaned_domain_data = self.cleaned_domain()
         utils.dump_obj_as_yaml_to_file(filename, cleaned_domain_data)
 
-    def as_yaml(self):
-        domain_data = self.as_dict()
-        return utils.dump_obj_as_yaml_to_string(domain_data)
+    def as_yaml(self, clean_before_dump=False):
+        if clean_before_dump:
+            domain_data = self.cleaned_domain()
+        else:
+            domain_data = self.as_dict()
 
-    def as_yaml_clean(self):
-        domain_data = self.as_dict()
-        cleaned_domain_data = self._clean_domain(domain_data)
-        return utils.dump_obj_as_yaml_to_string(cleaned_domain_data)
+        return utils.dump_obj_as_yaml_to_string(domain_data)
 
     def intent_config(self, intent_name: Text) -> Dict[Text, Any]:
         """Return the configuration for an intent."""
@@ -788,10 +785,10 @@ class Domain(object):
         return sorted(self.intent_properties.keys())
 
     @staticmethod
-    def get_symmetric_difference(
+    def _get_symmetric_difference(
         domain_elements: Union[List[Text], Set[Text]],
         training_data_elements: Optional[Set[Text]],
-    ) -> Dict[Text, Any]:
+    ) -> Dict[Text, Set[Text]]:
         """Get symmetric difference between a set of domain elements and a set of
         training data elements.
 
@@ -801,16 +798,13 @@ class Domain(object):
         `in_training_data_set`.
         """
 
-        if not training_data_elements:
+        if training_data_elements is None:
             training_data_elements = set()
 
-        diff_dict = defaultdict(list)
-        for e in set(domain_elements) ^ set(training_data_elements):
-            diff_dict[
-                "in_domain" if e in domain_elements else "in_training_data"
-            ].append(e)
+        in_domain_diff = set(domain_elements) - set(training_data_elements)
+        in_training_data_diff = set(training_data_elements) - set(domain_elements)
 
-        return dict(diff_dict)
+        return {"in_domain": in_domain_diff, "in_training_data": in_training_data_diff}
 
     def domain_warnings(
         self,
@@ -818,17 +812,17 @@ class Domain(object):
         entities: Optional[Union[List[Text], Set[Text]]] = None,
         actions: Optional[Union[List[Text], Set[Text]]] = None,
         slots: Optional[Union[List[Text], Set[Text]]] = None,
-    ) -> Dict[Text, Any]:
+    ) -> Dict[Text, Dict[Text, Set[Text]]]:
         """Generate domain warnings from intents, entities, actions and slots.
 
         Returns a dictionary with entries for `intent_warnings`,
         `entity_warnings`, `action_warnings` and `slot_warnings`.
         """
 
-        intent_warnings = self.get_symmetric_difference(self.intents, intents)
-        entity_warnings = self.get_symmetric_difference(self.entities, entities)
-        action_warnings = self.get_symmetric_difference(self.user_actions, actions)
-        slot_warnings = self.get_symmetric_difference(
+        intent_warnings = self._get_symmetric_difference(self.intents, intents)
+        entity_warnings = self._get_symmetric_difference(self.entities, entities)
+        action_warnings = self._get_symmetric_difference(self.user_actions, actions)
+        slot_warnings = self._get_symmetric_difference(
             [s.name for s in self.slots], slots
         )
 
