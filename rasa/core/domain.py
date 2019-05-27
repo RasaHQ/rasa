@@ -193,8 +193,6 @@ class Domain(object):
             other = cls.from_path(path, skill_imports)
             domain = domain.merge(other)
 
-        check_domain_sanity(domain)
-
         return domain
 
     @classmethod
@@ -233,7 +231,7 @@ class Domain(object):
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         intent_properties = cls.collect_intent_properties(data.get("intents", {}))
-        return cls(
+        domain = cls(
             intent_properties,
             data.get("entities", []),
             slots,
@@ -242,6 +240,10 @@ class Domain(object):
             data.get("forms", []),
             **additional_arguments
         )
+
+        check_domain_sanity(domain)
+
+        return domain
 
     @classmethod
     def from_directory(
