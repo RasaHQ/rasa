@@ -23,7 +23,7 @@ from rasa.core.actions.action import (
     ActionUtterTemplate,
     RemoteAction,
 )
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import Restarted, SlotSet, UserUtteranceReverted, BotUttered
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
@@ -102,7 +102,7 @@ def test_domain_action_instantiation():
 
 
 def test_domain_fails_on_duplicated_actions():
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidDomain):
         Domain(
             intent_properties={},
             entities=[],

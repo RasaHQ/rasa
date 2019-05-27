@@ -103,6 +103,7 @@ def default_domain():
     return Domain.load(DEFAULT_DOMAIN_PATH)
 
 
+@pytest.fixture(scope="session")
 async def default_agent(default_domain):
     agent = Agent(
         default_domain,
