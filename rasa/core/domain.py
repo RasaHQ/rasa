@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 import pkg_resources
 from pykwalify.errors import SchemaError
 from ruamel.yaml import YAMLError
+from ruamel.yaml.constructor import DuplicateKeyError
 
 import rasa.utils.io
 from rasa import data
@@ -106,7 +107,7 @@ def check_domain_sanity(domain: "Domain"):
                 message += (
                     "Duplicate {0} in domain. "
                     "These {0} occur more than once in "
-                    "the domain: {1}".format(name, ", ".join(d))
+                    "the domain: '{1}'".format(name, ", ".join(d))
                 )
         return message
 
@@ -192,6 +193,8 @@ class Domain(object):
         for path in paths:
             other = cls.from_path(path, skill_imports)
             domain = domain.merge(other)
+
+        check_domain_sanity(domain)
 
         return domain
 
@@ -329,6 +332,8 @@ class Domain(object):
                 "http://www.yamllint.com/ to validate the yaml syntax "
                 "of your domain file."
             )
+        except DuplicateKeyError as e:
+            raise InvalidDomain(str(e))
 
         try:
             c = Core(source_data=source_data, schema_files=[schema_file])
@@ -442,7 +447,10 @@ class Domain(object):
         )
         self.store_entities_as_slots = store_entities_as_slots
 
-        action.ensure_action_name_uniqueness(self.action_names)
+        try:
+            action.ensure_action_name_uniqueness(self.action_names)
+        except ValueError as e:
+            raise InvalidDomain(str(e))
 
     def __hash__(self) -> int:
         self_as_string = json.dumps(self.as_dict())
