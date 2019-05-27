@@ -376,5 +376,6 @@ def test_domain_warnings():
         actions=domain.user_actions,
         slots=[s.name for s in domain.slots],
     )
+
     for diff_dict in domain_warnings.values():
-        assert all(not diff_list for diff_list in diff_dict.values())
+        assert all(not diff_set for diff_set in diff_dict.values())
