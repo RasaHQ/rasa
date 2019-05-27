@@ -354,8 +354,9 @@ def test_domain_warnings():
     actions = ["action_1", "action_2"]
     intents = ["intent_1", "intent_2"]
     entities = ["entity_1", "entity_2"]
+    slots = ["slot_1", "slot_2"]
     domain_warnings = domain.domain_warnings(
-        intents=intents, entities=entities, actions=actions
+        intents=intents, entities=entities, actions=actions, slots=slots
     )
 
     # elements not found in domain should be in `in_training_data` diff
@@ -370,7 +371,10 @@ def test_domain_warnings():
 
     # fully aligned domain and elements should yield empty diff
     domain_warnings = domain.domain_warnings(
-        intents=domain.intents, entities=domain.entities, actions=domain.user_actions
+        intents=domain.intents,
+        entities=domain.entities,
+        actions=domain.user_actions,
+        slots=[s.name for s in domain.slots],
     )
     for diff_dict in domain_warnings.values():
         assert all(not diff_list for diff_list in diff_dict.values())
