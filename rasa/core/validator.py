@@ -1,15 +1,13 @@
 import logging
 import argparse
 import asyncio
-from rasa import utils
+from rasa.utils.io import configure_colored_logging
 from typing import List, Any, Text
 from rasa.core.domain import Domain
 from rasa.nlu.training_data import load_data, TrainingData
 from rasa.core.training.dsl import StoryFileReader, StoryStep
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
-from rasa.core import cli
-
 logger = logging.getLogger(__name__)
 
 
@@ -39,22 +37,6 @@ def create_argument_parser():
         help="Path for the intents file or directory",
     )
 
-    parser.add_argument(
-        "--skip-intents-validation",
-        action="store_true",
-        default=False,
-        help="Skips validations to intents",
-    )
-
-    parser.add_argument(
-        "--skip-utterances-validation",
-        action="store_true",
-        default=False,
-        help="Skips validations to utterances",
-    )
-
-    cli.arguments.add_logging_option_arguments(parser)
-    cli.run.add_run_arguments(parser)
     return parser
 
 
@@ -210,11 +192,7 @@ class Validator:
 if __name__ == "__main__":
     parser = create_argument_parser()
     cmdline_args = parser.parse_args()
-    utils.configure_colored_logging(cmdline_args.loglevel)
+    configure_colored_logging(loglevel="INFO")
 
     validator = Validator.from_files(cmdline_args.domain, cmdline_args.intents, cmdline_args.stories)
-
-    skip_intents_validation = cmdline_args.skip_intents_validation
-    skip_utterances_validation = cmdline_args.skip_utterances_validation
-
     validator.verify_all()
