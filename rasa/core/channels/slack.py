@@ -32,17 +32,14 @@ class SlackBot(SlackClient, OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        text_blocks = []
         for message_part in text.split("\n\n"):
-            text_blocks.append(
-                {
-                    "type": "section",
-                    "text": {"type": "plain_text", "text": message_part},
-                }
+            super(SlackBot, self).api_call(
+                "chat.postMessage",
+                channel=recipient,
+                as_user=True,
+                text=message_part,
+                type="mrkdwn",
             )
-        super(SlackBot, self).api_call(
-            "chat.postMessage", channel=recipient, as_user=True, blocks=text_blocks
-        )
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any

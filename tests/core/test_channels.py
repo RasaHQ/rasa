@@ -811,12 +811,12 @@ async def test_slackbot_send_text():
 
     r = httpretty.latest_requests[-1]
 
-    assert r.parsed_body["as_user"] == ["True"]
-    assert r.parsed_body["channel"] == ["General"]
-    assert len(r.parsed_body["blocks"]) == 1
-    assert '"type": "section"' in r.parsed_body["blocks"][0]
-    assert '"type": "plain_text"' in r.parsed_body["blocks"][0]
-    assert '"text": "my message"' in r.parsed_body["blocks"][0]
+    assert r.parsed_body == {
+        "as_user": ["True"],
+        "channel": ["General"],
+        "text": ["my message"],
+        "type": ["mrkdwn"],
+    }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
