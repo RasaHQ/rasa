@@ -128,7 +128,7 @@ def check_domain_sanity(domain: "Domain"):
                 message += (
                     "\nUtterance '{}' is listed as an "
                     "action in the domain file, but there is "
-                    "no matching utterance template.   Please "
+                    "no matching utterance template. Please "
                     "check your domain."
                 ).format(template)
             print_warning(message)
@@ -333,7 +333,9 @@ class Domain(object):
                 "of your domain file."
             )
         except DuplicateKeyError as e:
-            raise InvalidDomain(str(e))
+            raise InvalidDomain(
+                "The provided domain file contains a duplicated key: {}".format(str(e))
+            )
 
         try:
             c = Core(source_data=source_data, schema_files=[schema_file])
