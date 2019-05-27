@@ -28,6 +28,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    user-guide/architecture
    user-guide/messaging-and-voice-channels
    user-guide/evaluating-models
+   user-guide/validate-files
    user-guide/running-the-server
    user-guide/running-rasa-with-docker
    user-guide/cloud-storage
