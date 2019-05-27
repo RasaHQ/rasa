@@ -62,7 +62,7 @@ def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
 
     actual = SkillSelector.load(str(root / "config.yml"))
 
-    assert actual.is_imported(root / "Skill C")
+    assert actual.is_imported(str(root / "Skill C"))
 
 
 @pytest.mark.parametrize("input_dict", [{}, {"imports": None}])
