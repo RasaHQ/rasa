@@ -41,10 +41,15 @@ def create_argument_parser():
 
 
 class Validator:
+    """Validator is a class to verify the intents and utters written."""
+
     def __init__(self,
                  domain: Domain,
                  intents: TrainingData,
                  stories: List[StoryStep]):
+
+        """Initialize the validator object. """
+
         self.domain = domain
         self.intents = intents
         self.valid_intents = []
@@ -52,6 +57,7 @@ class Validator:
         self.stories = stories
 
     def _search(self, vector: List[Any], searched_value: Any):
+        """Search for a element in a vector."""
         vector.append(searched_value)
         count = 0
         while searched_value != vector[count]:
@@ -62,6 +68,9 @@ class Validator:
             return True
 
     def verify_intents(self):
+        """Compares list of intents in domain with 
+            list of intents in the nlu files."""
+
         domain_intents = []
         files_intents = []
 
@@ -90,6 +99,10 @@ class Validator:
                 )
 
     def verify_intents_in_stories(self):
+        """Verifies if the intents being used in the stories are
+            valid and if all the valid intents are being used in
+            the stories."""
+
         if self.valid_intents == []:
             self.verify_intents()
 
@@ -118,6 +131,9 @@ class Validator:
                 )
 
     def verify_utterances(self):
+        """Compares list of utterances in actions with
+        list of utterances in the templates."""
+
         utterance_actions = self.domain.action_names
         utterance_templates = []
 
@@ -140,6 +156,10 @@ class Validator:
                                  .format(utterance))
 
     def verify_utterances_in_stories(self):
+        """Verifies if the utterances being used in the stories are
+        valid and if all the valid utterances are being used in
+        the stories."""
+
         if self.valid_utterances == []:
             self.verify_utterances()
 
@@ -168,6 +188,8 @@ class Validator:
                 )
 
     def verify_all(self):
+        """Run all the verifications on intents and utterances """
+
         logger.info("Verifying intents...")
         self.verify_intents_in_stories()
 
