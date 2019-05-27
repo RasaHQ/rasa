@@ -308,11 +308,11 @@ def evaluate_intents(
             title="Intent Confusion matrix",
             out=confmat_filename,
         )
-        plt.show()
+        plt.show(block=False)
 
         plot_intent_confidences(intent_results, intent_hist_filename)
 
-        plt.show()
+        plt.show(block=False)
 
     predictions = [
         {
@@ -352,11 +352,10 @@ def substitute_labels(labels, old, new):
     return [new if label == old else label for label in labels]
 
 
-def evaluate_entities(entity_results, interpreter, report_folder):  # pragma: no cover
+def evaluate_entities(entity_results, extractors, report_folder):  # pragma: no cover
     """Creates summary statistics for each entity extractor.
     Logs precision, recall, and F1 per entity type for each extractor."""
 
-    extractors = get_entity_extractors(interpreter)
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
@@ -669,8 +668,9 @@ def run_evaluation(
 
     if entity_results:
         logger.info("Entity evaluation results:")
+        extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(
-            entity_results, interpreter, report
+            entity_results, extractors, report
         )
 
     return result
@@ -702,10 +702,19 @@ def generate_folds(n, td):
         )
 
 
-def combine_result(intent_results, entity_results, interpreter, data):
-    """Combines intent and entity result for crossvalidation folds"""
+def combine_result(intent_results, entity_results, interpreter, data, predictions=None):
+    """Combines intent and entity result for crossvalidation folds.
+    If `predictions` is provided as a dict, prediction results
+    are also combined.
+    """
 
-    intent_current_result, entity_current_result = compute_metrics(interpreter, data)
+    intent_current_result, entity_current_result, current_predictions = compute_metrics(
+        interpreter, data
+    )
+
+    if isinstance(predictions, dict):
+        for k, v in current_predictions.items():
+            predictions[k] = predictions.get(k, []) + v
 
     intent_results = {
         k: v + intent_results[k] for k, v in intent_current_result.items()
@@ -720,7 +729,14 @@ def combine_result(intent_results, entity_results, interpreter, data):
 
 
 def cross_validate(
-    data: TrainingData, n_folds: int, nlu_config: Union[RasaNLUModelConfig, Text]
+    data: TrainingData,
+    n_folds: int,
+    nlu_config: Union[RasaNLUModelConfig, Text],
+    report: Optional[Text] = None,
+    successes: Optional[Text] = None,
+    errors: Optional[Text] = "errors.json",
+    confmat: Optional[Text] = None,
+    histogram: Optional[Text] = None,
 ) -> CVEvaluationResult:
     """Stratified cross validation on data.
 
@@ -728,16 +744,23 @@ def cross_validate(
         data: Training Data
         n_folds: integer, number of cv folds
         nlu_config: nlu config file
+        report: path to folder where reports are stored
+        successes: path to file that will contain success cases
+        errors: path to file that will contain error cases
+        confmat: path to file that will show the confusion matrix
+        histogram: path fo file that will show a histogram
 
     Returns:
         dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
     from collections import defaultdict
-    import tempfile
 
     if isinstance(nlu_config, str):
         nlu_config = config.load(nlu_config)
+
+    if report:
+        utils.create_dir(report)
 
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
@@ -746,7 +769,10 @@ def cross_validate(
     intent_test_results = defaultdict(list)
     entity_train_results = defaultdict(lambda: defaultdict(list))
     entity_test_results = defaultdict(lambda: defaultdict(list))
-    tmp_dir = tempfile.mkdtemp()
+
+    test_predictions = {}
+    intent_classifier_present = False
+    extractors = set()
 
     for train, test in generate_folds(n_folds, data):
         interpreter = trainer.train(train)
@@ -757,10 +783,33 @@ def cross_validate(
         )
         # calculate test accuracy
         intent_test_results, entity_test_results = combine_result(
-            intent_test_results, entity_test_results, interpreter, test
+            intent_test_results,
+            entity_test_results,
+            interpreter,
+            test,
+            test_predictions,
         )
 
-    shutil.rmtree(tmp_dir, ignore_errors=True)
+        if not extractors:
+            extractors = get_entity_extractors(interpreter)
+
+        if is_intent_classifier_present(interpreter):
+            intent_classifier_present = True
+
+    if intent_classifier_present:
+        logger.info("Accumulated test folds intent evaluation results:")
+        evaluate_intents(
+            test_predictions["intent_results"],
+            report,
+            successes,
+            errors,
+            confmat,
+            histogram,
+        )
+
+    if extractors:
+        logger.info("Accumulated test folds entity evaluation results:")
+        evaluate_entities(test_predictions["entity_results"], extractors, report)
 
     return (
         CVEvaluationResult(dict(intent_train_results), dict(intent_test_results)),
@@ -773,19 +822,25 @@ def _targets_predictions_from(intent_results):
 
 
 def compute_metrics(interpreter, corpus):
-    """Computes metrics for intent classification and entity extraction."""
+    """Computes metrics for intent classification and entity extraction.
+    Returns intent and entity metrics, and prediction results.
+    """
 
     intent_results, entity_results = get_eval_data(interpreter, corpus)
 
     intent_results = remove_empty_intent_examples(intent_results)
 
-    intent_metrics = _compute_intent_metrics(intent_results, interpreter, corpus)
+    intent_metrics = _compute_intent_metrics(intent_results)
     entity_metrics = _compute_entity_metrics(entity_results, interpreter, corpus)
 
-    return intent_metrics, entity_metrics
+    return (
+        intent_metrics,
+        entity_metrics,
+        {"intent_results": intent_results, "entity_results": entity_results},
+    )
 
 
-def _compute_intent_metrics(intent_results, interpreter, corpus):
+def _compute_intent_metrics(intent_results):
     """Computes intent evaluation metrics for a given corpus and
     returns the results
     """

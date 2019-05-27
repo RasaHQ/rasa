@@ -14,6 +14,8 @@ Added
 
 Changed
 -------
+- NLU evaluation in cross-validation mode now also provides intent/entity reports,
+  confusion matrix, etc.
 
 Removed
 -------
