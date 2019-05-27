@@ -25,13 +25,13 @@ Fixed
 - mapping policy no longer ignores NLU threshold
 - mapping policy priority is correctly persisted
 
+
 [1.0.1] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
-- fixed rasa-x installation instruction
-
+- updated installation command in docs for Rasa X
 
 [1.0.0] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
