@@ -295,11 +295,9 @@ class MessageProcessor(object):
                 parse_data,
                 input_channel=message.input_channel,
                 message_id=message.message_id,
-            )
+            ),
+            self.domain,
         )
-        # store all entities as slots
-        for e in self.domain.slots_for_entities(parse_data["entities"]):
-            tracker.update(e)
 
         if parse_data["entities"]:
             self._log_slots(tracker)
