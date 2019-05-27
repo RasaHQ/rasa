@@ -28,7 +28,7 @@ class FallbackPolicy(Policy):
 
     def __init__(
         self,
-        priority: int = 5,
+        priority: int = 4,
         nlu_threshold: float = 0.3,
         core_threshold: float = 0.3,
         fallback_action_name: Text = "action_default_fallback",
