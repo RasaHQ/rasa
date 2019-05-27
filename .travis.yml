@@ -43,13 +43,13 @@ jobs:
     script: pip install black; black --check .
   - &run-tests
     stage: test
-    name: "Test 3.6"
-    python: "3.6"
+    name: "Test 3.5"
+    python: "3.5"
     script:
       - py.test tests --cov rasa -v --cov-append
   - <<: *run-tests
-    name: "Test 3.5"
-    python: '3.5'
+    name: "Test 3.6"
+    python: '3.6'
   - <<: *run-tests
     name: "Test 3.7"
     python: '3.7'
