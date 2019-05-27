@@ -663,8 +663,6 @@ class Agent(object):
 
         logger.debug("Agent trainer got kwargs: {}".format(kwargs))
 
-        check_domain_sanity(self.domain)
-
         self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
         self._set_fingerprint()
 
