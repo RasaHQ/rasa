@@ -392,11 +392,21 @@ class Domain(object):
                 )
 
             for t in template_variations:
-                # templates are a dict with options
-                if "text" not in t and "custom" not in t:
+
+                # templates should be a dict with options
+                if isinstance(t, str):
+                    logger.warning(
+                        "Deprecated: Templates should not be strings anymore. Utter "
+                        "template '{}' should contain either '- text: ' or "
+                        "'- custom: ' attribute to be a proper template.".format(
+                            template_key
+                        )
+                    )
+                    validated_variations.append({"text": t})
+                elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(
                         "Utter template '{}' needs to contain either "
-                        "'- text: '  or '- custom: ' attribute to be a proper "
+                        "'- text: ' or '- custom: ' attribute to be a proper "
                         "template.".format(template_key)
                     )
                 else:
