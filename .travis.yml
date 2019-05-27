@@ -41,41 +41,17 @@ jobs:
     name: "Black Formatting"
     python: 3.6
     script: pip install black; black --check .
-  - &test-core
+  - &run-tests
     stage: test
-    name: "Test Core 3.6"
+    name: "Test 3.6"
     python: "3.6"
     script:
-      - py.test tests/core --cov rasa -v --cov-append
-  - <<: *test-core
-    name: "Test Core 3.5"
+      - py.test tests --cov rasa -v --cov-append
+  - <<: *run-tests
+    name: "Test 3.5"
     python: '3.5'
-  - <<: *test-core
-    name: "Test Core 3.7"
-    python: '3.7'
-  - &test-nlu-base
-    stage: test
-    name: "Test NLU 3.6"
-    python: "3.6"
-    script:
-      - py.test tests/nlu/base --cov rasa -v --cov-append
-  - <<: *test-nlu-base
-    name: "Test NLU 3.5"
-    python: '3.5'
-  - <<: *test-nlu-base
-    name: "Test NLU 3.7"
-    python: '3.7'
-  - &test-nlu-training
-    stage: test
-    name: "Test NLU training 3.6"
-    python: "3.6"
-    script:
-      - py.test tests/nlu/training --cov rasa -v --cov-append
-  - <<: *test-nlu-training
-    name: "Test NLU training 3.5"
-    python: '3.5'
-  - <<: *test-nlu-training
-    name: "Test NLU training 3.7"
+  - <<: *run-tests
+    name: "Test 3.7"
     python: '3.7'
   - stage: integration
     name: "Test API specification"
