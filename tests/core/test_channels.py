@@ -701,6 +701,7 @@ async def test_slackbot_send_attachment_only():
     assert r.parsed_body == {
         "channel": ["General"],
         "as_user": ["True"],
+        "text": ["Attachment"],
         "attachments": [json.dumps([attachment])],
     }
 
@@ -718,13 +719,13 @@ async def test_slackbot_send_attachment_withtext():
     httpretty.enable()
 
     bot = SlackBot("DummyToken", "General")
-    kwargs = {"text": "Sample text"}
     attachment = {
         "fallback": "Financial Advisor Summary",
         "color": "#36a64f",
         "author_name": "ABE",
         "title": "Financial Advisor Summary",
         "title_link": "http://tenfactorialrocks.com",
+        "text": "Here is the summary:",
         "image_url": "https://r.com/cancel/r12",
         "thumb_url": "https://r.com/cancel/r12",
         "actions": [
@@ -751,7 +752,7 @@ async def test_slackbot_send_attachment_withtext():
         "ts": 1531889719,
     }
 
-    await bot.send_attachment("ID", attachment, **kwargs)
+    await bot.send_attachment("ID", attachment)
 
     httpretty.disable()
 
@@ -760,7 +761,7 @@ async def test_slackbot_send_attachment_withtext():
     assert r.parsed_body == {
         "channel": ["General"],
         "as_user": ["True"],
-        "text": ["Sample text"],
+        "text": ["Here is the summary:"],
         "attachments": [json.dumps([attachment])],
     }
 

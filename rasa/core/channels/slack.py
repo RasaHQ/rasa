@@ -47,19 +47,24 @@ class SlackBot(SlackClient, OutputChannel):
         recipient = self.slack_channel or recipient_id
         image_block = {"type": "image", "image_url": image, "alt_text": image}
         return super(SlackBot, self).api_call(
-            "chat.postMessage", channel=recipient, as_user=True, blocks=[image_block]
+            "chat.postMessage",
+            channel=recipient,
+            as_user=True,
+            text=image,
+            blocks=[image_block],
         )
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
+        text = attachment.get("text", "Attachment")
         return super(SlackBot, self).api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
+            text=text,
             attachments=[attachment],
-            **kwargs
         )
 
     async def send_text_with_buttons(
