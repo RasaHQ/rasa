@@ -88,11 +88,21 @@ def test_core(args: argparse.Namespace) -> None:
 
 def test_nlu(args: argparse.Namespace) -> None:
     from rasa.test import test_nlu, test_nlu_with_cross_validation
+    import os
 
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
 
-    if isinstance(args.config, list) and len(args.config) > 1:
+    if isinstance(args.config, list):
+        if len(args.config) == 1:
+            args.config = args.config[0]
+            config_path = os.path.abspath(args.config)
+
+            if os.path.isdir(config_path):
+                configs = os.listdir(args.config)
+                args.config = [os.path.join(config_path, config) for config in configs]
+
+    if isinstance(args.config, list):
         logger.info("Multiple configs specified, running nlu comparison mode.")
 
         output = args.report or "nlu_comparison_results"
