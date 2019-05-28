@@ -414,7 +414,7 @@ def test_check_domain_sanity_on_invalid_domain():
         check_domain_sanity(
             Domain(
                 intent_properties={},
-                entities=["random_name", "random_name"],
+                entities=["random_name", "random_name", "other_name", "other_name"],
                 slots=[],
                 templates={},
                 action_names=[],

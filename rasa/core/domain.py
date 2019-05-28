@@ -107,7 +107,7 @@ def check_domain_sanity(domain: "Domain"):
                 message += (
                     "Duplicate {0} in domain. "
                     "These {0} occur more than once in "
-                    "the domain: '{1}'".format(name, ", ".join(d))
+                    "the domain: '{1}'".format(name, "', '".join(d))
                 )
         return message
 
