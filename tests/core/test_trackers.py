@@ -209,6 +209,33 @@ def test_tracker_entity_retrieval(default_domain):
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
+def test_tracker_update_slots_with_entity(default_domain):
+    tracker = DialogueStateTracker("default", default_domain.slots)
+
+    test_entity = default_domain.entities[0]
+    expected_slot_value = "test user"
+
+    intent = {"name": "greet", "confidence": 1.0}
+    tracker.update(
+        UserUttered(
+            "/greet",
+            intent,
+            [
+                {
+                    "start": 1,
+                    "end": 5,
+                    "value": expected_slot_value,
+                    "entity": test_entity,
+                    "extractor": "manual",
+                }
+            ],
+        ),
+        default_domain,
+    )
+
+    assert tracker.get_slot(test_entity) == expected_slot_value
+
+
 def test_restart_event(default_domain):
     tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
