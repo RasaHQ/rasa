@@ -728,6 +728,11 @@ components:
       schema:
         type: string
       required: false
+    language:
+      in: query
+      name: language
+      description: >-
+        The language to be evaluated
     include_events:
       in: query
       name: include_events
