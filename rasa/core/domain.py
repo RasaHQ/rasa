@@ -175,6 +175,7 @@ class Domain(object):
         cls,
         paths: Union[List[Text], Text],
         skill_imports: Optional[SkillSelector] = None,
+        log_warning: bool = True,
     ) -> "Domain":
         skill_imports = skill_imports or SkillSelector.all_skills()
 
@@ -191,15 +192,15 @@ class Domain(object):
 
         domain = Domain.empty()
         for path in paths:
-            other = cls.from_path(path, skill_imports)
+            other = cls.from_path(path, skill_imports, log_warning)
             domain = domain.merge(other)
-
-        check_domain_sanity(domain)
 
         return domain
 
     @classmethod
-    def from_path(cls, path: Text, skill_imports: SkillSelector) -> "Domain":
+    def from_path(
+        cls, path: Text, skill_imports: SkillSelector, log_warning: bool = True
+    ) -> "Domain":
         path = os.path.abspath(path)
 
         # If skills were imported search the whole directory tree for domain files
@@ -207,7 +208,7 @@ class Domain(object):
             path = os.path.dirname(path)
 
         if os.path.isfile(path):
-            domain = cls.from_file(path)
+            domain = cls.from_file(path, log_warning)
         elif os.path.isdir(path):
             domain = cls.from_directory(path, skill_imports)
         else:
@@ -219,18 +220,18 @@ class Domain(object):
         return domain
 
     @classmethod
-    def from_file(cls, path: Text) -> "Domain":
-        return cls.from_yaml(rasa.utils.io.read_file(path))
+    def from_file(cls, path: Text, log_warning: bool = True) -> "Domain":
+        return cls.from_yaml(rasa.utils.io.read_file(path), log_warning)
 
     @classmethod
-    def from_yaml(cls, yaml: Text) -> "Domain":
+    def from_yaml(cls, yaml: Text, log_warning: bool = True) -> "Domain":
         cls.validate_domain_yaml(yaml)
         data = rasa.utils.io.read_yaml(yaml)
-        return cls.from_dict(data)
+        return cls.from_dict(data, log_warning)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Domain":
-        utter_templates = cls.collect_templates(data.get("templates", {}))
+    def from_dict(cls, data: Dict, log_warning: bool = True) -> "Domain":
+        utter_templates = cls.collect_templates(data.get("templates", {}), log_warning)
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         intent_properties = cls.collect_intent_properties(data.get("intents", {}))
@@ -243,8 +244,6 @@ class Domain(object):
             data.get("forms", []),
             **additional_arguments
         )
-
-        check_domain_sanity(domain)
 
         return domain
 
@@ -386,7 +385,7 @@ class Domain(object):
 
     @staticmethod
     def collect_templates(
-        yml_templates: Dict[Text, List[Any]]
+        yml_templates: Dict[Text, List[Any]], log_warning: bool = True
     ) -> Dict[Text, List[Dict[Text, Any]]]:
         """Go through the templates and make sure they are all in dict format
         """
@@ -404,13 +403,14 @@ class Domain(object):
 
                 # templates should be a dict with options
                 if isinstance(t, str):
-                    logger.warning(
-                        "Deprecated: Templates should not be strings anymore. Utter "
-                        "template '{}' should contain either '- text: ' or "
-                        "'- custom: ' attribute to be a proper template.".format(
-                            template_key
+                    if log_warning:
+                        logger.warning(
+                            "Deprecated: Templates should not be strings anymore. Utter "
+                            "template '{}' should contain either '- text: ' or "
+                            "'- custom: ' attribute to be a proper template.".format(
+                                template_key
+                            )
                         )
-                    )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(

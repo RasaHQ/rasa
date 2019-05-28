@@ -15,6 +15,7 @@ import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
+from rasa.core.domain import InvalidDomain, Domain, check_domain_sanity
 from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
@@ -592,6 +593,7 @@ def create_app(
         if "domain" in rjs:
             domain_path = os.path.join(temp_dir, "domain.yml")
             dump_obj_as_str_to_file(domain_path, rjs["domain"])
+            _validate_domain(domain_path)
 
         try:
             model_path = await train_async(
@@ -609,6 +611,17 @@ def create_app(
                 500,
                 "TrainingError",
                 "An unexpected error occurred during training. Error: {}".format(e),
+            )
+
+    def _validate_domain(domain_path: Text):
+        try:
+            domain = Domain.load(domain_path, log_warning=False)
+            check_domain_sanity(domain)
+        except InvalidDomain as e:
+            raise ErrorResponse(
+                400,
+                "InvalidDomainError",
+                "Provided domain file is invalid. Error: {}".format(e),
             )
 
     def validate_request(rjs):
