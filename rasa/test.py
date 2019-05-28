@@ -8,12 +8,18 @@ from rasa.core.interpreter import RegexInterpreter
 
 from rasa.constants import DEFAULT_RESULTS_PATH
 from rasa.model import get_model, get_model_subdirectories, unpack_model
-from rasa.cli.utils import minimal_kwargs, print_error, print_warning
+from rasa.cli.utils import (
+    minimal_kwargs,
+    print_error,
+    print_warning,
+    print_info,
+    print_success,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def test_compare(models: List[Text], stories: Text, output: Text):
+def test_compare_core(models: List[Text], stories: Text, output: Text):
     from rasa.core.test import compare, plot_curve
     import rasa.core.utils as core_utils
 
@@ -124,7 +130,87 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
         )
 
 
-def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int = 3):
+def test_compare_nlu(
+    configs: List[Text],
+    nlu: Text,
+    output: Text,
+    runs: int = 2,
+    exclusion_percentages: List[int] = [0, 30, 60, 90],
+):
+    """Trains multiple models, compares them and saves the results."""
+    from rasa.nlu.test import drop_intents_below_freq, run_evaluation
+    from rasa.nlu.training_data import load_data
+    from rasa.nlu.utils import write_to_file, write_json_to_file
+    from rasa.utils.io import create_path, read_json_file
+    from rasa.train import train_nlu
+    from rasa.core.test import plot_curve
+    from rasa.model import get_model
+
+    data = load_data(nlu)
+    data = drop_intents_below_freq(data, cutoff=5)
+
+    create_path(output)
+
+    bases = [os.path.basename(nlu_config) for nlu_config in configs]
+    model_names = [os.path.splitext(base)[0] for base in bases]
+    micros = dict((model_name, [[] for _ in range(runs)]) for model_name in model_names)
+
+    for run in range(runs):
+
+        print_info("Beginning comparison run {}/{}".format(run + 1, runs))
+        train, test = data.train_test_split()
+
+        run_path = os.path.join(output, "run_{}".format(run + 1))
+        create_path(run_path)
+
+        test_path = os.path.join(run_path, "test.md")
+        create_path(test_path)
+
+        write_to_file(test_path, test.as_markdown())
+        intent_examples_present = []
+
+        for percentage in exclusion_percentages:
+            percent_string = "{}%_exclusion".format(percentage)
+
+            _, train = train.train_test_split(percentage / 100)
+            intent_examples_present.append(len(train.training_examples))
+
+            out_path = os.path.join(run_path, percent_string)
+            train_split_path = os.path.join(out_path, "train.md")
+            create_path(train_split_path)
+
+            write_to_file(train_split_path, train.as_markdown())
+
+            for nlu_config, model_name in zip(configs, model_names):
+
+                print_success(
+                    "Evaluating config '{}' with {}".format(model_name, percent_string)
+                )
+
+                model_path = train_nlu(
+                    nlu_config, train_split_path, out_path, fixed_model_name=model_name
+                )
+
+                model_path = os.path.join(get_model(model_path), "nlu/")
+
+                report_path = os.path.join(out_path, "{}_report".format(model_name))
+                errors_path = os.path.join(report_path, "errors.json")
+                run_evaluation(
+                    test_path, model_path, report=report_path, errors=errors_path
+                )
+
+                scores = read_json_file(os.path.join(report_path, "intent_report.json"))
+
+                f1 = scores["micro avg"]["f1-score"]
+                micros[model_name][run].append(f1)
+
+    f1_path = os.path.join(output, "results.json")
+    write_json_to_file(f1_path, micros)
+
+    plot_curve(output, intent_examples_present, mode="nlu")
+
+
+def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int):
     import rasa.nlu.config
     from rasa.nlu.test import (
         drop_intents_below_freq,

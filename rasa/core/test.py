@@ -7,6 +7,7 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.core.events import ActionExecuted, UserUttered
+from rasa.cli.utils import print_success
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -620,12 +621,14 @@ async def compare(models: Text, stories_file: Text, output: Text) -> None:
     utils.dump_obj_as_json_to_file(os.path.join(output, "results.json"), num_correct)
 
 
-def plot_curve(output: Text, no_stories: List[int]) -> None:
-    """Plot the results from run_comparison_evaluation.
+def plot_curve(output: Text, no_examples: List[int], mode: Text = "core") -> None:
+    """Plot the results from a model comparison.
 
     Args:
         output: Output directory to save resulting plots to
-        no_stories: Number of stories per run
+        no_examples: Number of examples per run
+        mode: "core" or "nlu" to fill in correct axes titles
+
     """
     import matplotlib.pyplot as plt
     import numpy as np
@@ -635,7 +638,7 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
 
     # load results from file
     data = utils.read_json_file(os.path.join(output, "results.json"))
-    x = no_stories
+    x = no_examples
 
     # compute mean of all the runs for keras/embed policies
     for label in data.keys():
@@ -652,10 +655,19 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
             alpha=0.2,
         )
     ax.legend(loc=4)
-    ax.set_xlabel("Number of stories present during training")
-    ax.set_ylabel("Number of correct test stories")
-    plt.savefig(os.path.join(output, "model_comparison_graph.pdf"), format="pdf")
-    plt.show()
+
+    if mode == "core":
+        ax.set_xlabel("Number of stories present during training")
+        ax.set_ylabel("Number of correct test stories")
+        graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
+    elif mode == "nlu":
+        ax.set_xlabel("Number of intent examples present during training")
+        ax.set_ylabel("Micro-averaged F1 score on test set")
+        graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
+
+    plt.savefig(graph_path, format="pdf")
+
+    print_success("Comparison graph saved to {}".format(graph_path))
 
 
 if __name__ == "__main__":
