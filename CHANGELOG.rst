@@ -6,6 +6,33 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[Unreleased 1.0.2.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+- buttons can now be properly selected during cmdline chat or when in interactive learning
+- set slots correctly when events are added through the API
+- mapping policy no longer ignores NLU threshold
+- mapping policy priority is correctly persisted
+
+
+[1.0.1] - 2019-05-21
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- updated installation command in docs for Rasa X
+
 [1.0.0] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
 
