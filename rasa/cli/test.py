@@ -96,7 +96,13 @@ def test_nlu(args: argparse.Namespace) -> None:
         logger.info("Multiple configs specified, running nlu comparison mode.")
 
         output = args.report or "nlu_comparison_results"
-        test_compare_nlu(configs=args.config, nlu=nlu_data, output=output)
+        test_compare_nlu(
+            configs=args.config,
+            nlu=nlu_data,
+            output=output,
+            runs=args.runs,
+            exclusion_percentages=args.percentages,
+        )
 
     elif not args.cross_validation:
         print (args.config)

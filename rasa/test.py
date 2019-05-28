@@ -134,8 +134,8 @@ def test_compare_nlu(
     configs: List[Text],
     nlu: Text,
     output: Text,
-    runs: int = 2,
-    exclusion_percentages: List[int] = [0, 30, 60, 90],
+    runs: int,
+    exclusion_percentages: List[int],
 ):
     """Trains multiple models, compares them and saves the results."""
     from rasa.nlu.test import drop_intents_below_freq, run_evaluation
