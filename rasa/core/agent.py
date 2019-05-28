@@ -289,6 +289,7 @@ class Agent(object):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         if self.domain:
+            check_domain_sanity(self.domain)
             self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
         if not self._is_form_policy_present():

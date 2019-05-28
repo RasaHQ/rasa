@@ -235,7 +235,7 @@ class Domain(object):
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         intent_properties = cls.collect_intent_properties(data.get("intents", {}))
-        domain = cls(
+        return cls(
             intent_properties,
             data.get("entities", []),
             slots,
@@ -244,8 +244,6 @@ class Domain(object):
             data.get("forms", []),
             **additional_arguments
         )
-
-        return domain
 
     @classmethod
     def from_directory(
