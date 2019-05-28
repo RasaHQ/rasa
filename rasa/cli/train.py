@@ -3,7 +3,7 @@ import tempfile
 from typing import List, Optional, Text, Dict
 import rasa.cli.arguments as arguments
 
-from rasa.cli.utils import get_validated_path, validate_domain
+from rasa.cli.utils import get_validated_path
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 
 
@@ -59,8 +59,6 @@ def train(args: argparse.Namespace) -> Optional[Text]:
         for f in args.data
     ]
 
-    validate_domain(domain)
-
     return rasa.train(
         domain=domain,
         config=config,
@@ -87,8 +85,6 @@ def train_core(
     stories = get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
-
-    validate_domain(args.domain)
 
     _train_path = train_path or tempfile.mkdtemp()
 

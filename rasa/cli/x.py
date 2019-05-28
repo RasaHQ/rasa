@@ -9,14 +9,12 @@ from typing import List, Text, Optional
 
 import ruamel.yaml as yaml
 
-from rasa.cli.utils import get_validated_path, print_warning, validate_domain
+from rasa.cli.utils import get_validated_path, print_warning, print_error
 from rasa.cli.arguments import x as arguments
 
 from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_LOG_LEVEL,
-    ENV_LOG_LEVEL,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CONFIG_PATH,
     DEFAULT_LOG_LEVEL_RASA_X,
@@ -226,7 +224,7 @@ def rasa_x(args: argparse.Namespace):
             )
             sys.exit(1)
 
-        validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
+        _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
 
         if args.data and not os.path.exists(args.data):
             print_warning(
@@ -245,3 +243,13 @@ def rasa_x(args: argparse.Namespace):
             local.main(args, project_path, args.data, token=rasa_x_token)
         finally:
             process.terminate()
+
+
+def _validate_domain(domain_path: Text):
+    from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
+
+    try:
+        Domain.load(domain_path, log_warning=False)
+    except InvalidDomain as e:
+        print_error("The provided domain file could not be loaded. Error: {}".format(e))
+        sys.exit(1)

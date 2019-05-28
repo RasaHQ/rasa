@@ -593,7 +593,6 @@ def create_app(
         if "domain" in rjs:
             domain_path = os.path.join(temp_dir, "domain.yml")
             dump_obj_as_str_to_file(domain_path, rjs["domain"])
-            _validate_domain(domain_path)
 
         try:
             model_path = await train_async(
@@ -603,25 +602,19 @@ def create_app(
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
             )
-
             return await response.file(model_path)
+        except InvalidDomain as e:
+            raise ErrorResponse(
+                400,
+                "InvalidDomainError",
+                "Provided domain file is invalid. Error: {}".format(e),
+            )
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TrainingError",
                 "An unexpected error occurred during training. Error: {}".format(e),
-            )
-
-    def _validate_domain(domain_path: Text):
-        try:
-            domain = Domain.load(domain_path, log_warning=False)
-            check_domain_sanity(domain)
-        except InvalidDomain as e:
-            raise ErrorResponse(
-                400,
-                "InvalidDomainError",
-                "Provided domain file is invalid. Error: {}".format(e),
             )
 
     def validate_request(rjs):
