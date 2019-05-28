@@ -22,6 +22,8 @@ Fixed
 -----
 - buttons can now be properly selected during cmdline chat or when in interactive learning
 - set slots correctly when events are added through the API
+- mapping policy no longer ignores NLU threshold
+- mapping policy priority is correctly persisted
 
 
 [1.0.1] - 2019-05-21
