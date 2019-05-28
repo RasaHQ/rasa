@@ -83,7 +83,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 
 def add_evaluation_file_to_model(
-    model_path: Text, payload: Union[Text, Dict[Text, Any]], data_format: Text = "json"
+        model_path: Text, payload: Union[Text, Dict[Text, Any]], data_format: Text = "json"
 ) -> Text:
     """Adds NLU data `payload` to zipped model at `model_path`.
 
@@ -177,9 +177,9 @@ def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Dict[Text
 
 
 def create_package_rasa(
-    training_directory: Text,
-    output_filename: Text,
-    fingerprint: Optional[Fingerprint] = None,
+        training_directory: Text,
+        output_filename: Text,
+        fingerprint: Optional[Fingerprint] = None,
 ) -> Text:
     """Creates a zipped Rasa model from trained model files.
 
@@ -211,10 +211,10 @@ def create_package_rasa(
 
 
 def model_fingerprint(
-    config_file: Text,
-    domain: Optional[Union[Domain, Text]] = None,
-    nlu_data: Optional[Text] = None,
-    stories: Optional[Text] = None,
+        config_files: Dict[Text, Text],
+        domain: Optional[Union[Domain, Text]] = None,
+        nlu_data: Optional[Text] = None,
+        stories: Optional[Text] = None,
 ) -> Fingerprint:
     """Creates a model fingerprint from its used configuration and training
     data.
@@ -239,14 +239,13 @@ def model_fingerprint(
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_hash_of_config(
-            config_file, exclude_keys=CONFIG_MANDATORY_KEYS
+            config_files[list(config_files.keys())[0]], exclude_keys=CONFIG_MANDATORY_KEYS
         ),
         FINGERPRINT_CONFIG_CORE_KEY: _get_hash_of_config(
-            config_file, include_keys=CONFIG_MANDATORY_KEYS_CORE
+            config_files[list(config_files.keys())[0]], include_keys=CONFIG_MANDATORY_KEYS_CORE
         ),
-        FINGERPRINT_CONFIG_NLU_KEY: _get_hash_of_config(
-            config_file, include_keys=CONFIG_MANDATORY_KEYS_NLU
-        ),
+        FINGERPRINT_CONFIG_NLU_KEY: {key: _get_hash_of_config(value, exclude_keys=CONFIG_MANDATORY_KEYS)
+                                     for (key, value) in config_files.items()},
         FINGERPRINT_DOMAIN_KEY: domain_hash,
         FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
         FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
@@ -270,9 +269,9 @@ def _get_hashes_for_paths(path: Text) -> List[Text]:
 
 
 def _get_hash_of_config(
-    config_path: Text,
-    include_keys: Optional[List[Text]] = None,
-    exclude_keys: Optional[List[Text]] = None,
+        config_path: Text,
+        include_keys: Optional[List[Text]] = None,
+        exclude_keys: Optional[List[Text]] = None,
 ) -> Text:
     if not config_path or not os.path.exists(config_path):
         return ""
@@ -329,7 +328,7 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
 
 
 def core_fingerprint_changed(
-    fingerprint1: Fingerprint, fingerprint2: Fingerprint
+        fingerprint1: Fingerprint, fingerprint2: Fingerprint
 ) -> bool:
     """Checks whether the fingerprints of the Core model changed.
 
@@ -357,7 +356,7 @@ def core_fingerprint_changed(
 
 
 def nlu_fingerprint_changed(
-    fingerprint1: Fingerprint, fingerprint2: Fingerprint
+        fingerprint1: Fingerprint, fingerprint2: Fingerprint
 ) -> bool:
     """Checks whether the fingerprints of the NLU model changed.
 

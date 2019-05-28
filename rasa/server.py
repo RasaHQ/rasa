@@ -577,8 +577,15 @@ def create_app(
         # training data
         temp_dir = tempfile.mkdtemp()
 
-        config_path = os.path.join(temp_dir, "config.yml")
-        dump_obj_as_str_to_file(config_path, rjs["config"])
+        config_paths = {}
+
+        config_dir = os.path.join(temp_dir, 'config')
+        os.mkdir(config_dir)
+
+        for key, value in rjs["config"].items():
+            config_file_path = os.path.join(config_dir, "{}.yml".format(key))
+            dump_obj_as_str_to_file(config_file_path, rjs["config"][key])
+            config_paths[key] = config_file_path
 
         if "nlu" in rjs:
             nlu_dir = os.path.join(temp_dir, 'nlu')
@@ -600,7 +607,7 @@ def create_app(
         try:
             model_path = await train_async(
                 domain=domain_path,
-                config=config_path,
+                configs=config_paths,
                 training_files=temp_dir,
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
@@ -680,6 +687,7 @@ def create_app(
         eval_agent = app.agent
 
         model_path = request.args.get("model", None)
+        language = request.args.get("language", None)
         if model_path:
             model_server = app.agent.model_server
             if model_server is not None:
@@ -695,10 +703,10 @@ def create_app(
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
         model_directory = eval_agent.model_directory
-        _, nlu_model = get_model_subdirectories(model_directory)
+        _, nlu_models = get_model_subdirectories(model_directory)
 
         try:
-            evaluation = run_evaluation(data_path, nlu_model)
+            evaluation = run_evaluation(data_path, nlu_models.get(language))
             return response.json(evaluation)
         except Exception as e:
             logger.debug(traceback.format_exc())
