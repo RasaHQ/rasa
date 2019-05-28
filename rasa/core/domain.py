@@ -787,7 +787,7 @@ class Domain(object):
     @staticmethod
     def _get_symmetric_difference(
         domain_elements: Union[List[Text], Set[Text]],
-        training_data_elements: Optional[Set[Text]],
+        training_data_elements: Optional[Union[List[Text], Set[Text]]],
     ) -> Dict[Text, Set[Text]]:
         """Get symmetric difference between a set of domain elements and a set of
         training data elements.
