@@ -95,7 +95,8 @@ def test_nlu(args: argparse.Namespace) -> None:
     if isinstance(args.config, list) and len(args.config) > 1:
         logger.info("Multiple configs specified, running nlu comparison mode.")
 
-        test_compare_nlu(configs=args.config, nlu=nlu_data, output=args.report)
+        output = args.report or "nlu_comparison_results"
+        test_compare_nlu(configs=args.config, nlu=nlu_data, output=output)
 
     elif not args.cross_validation:
         print (args.config)

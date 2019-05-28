@@ -121,9 +121,10 @@ def add_test_nlu_argument_group(
     cross_validation_arguments.add_argument(
         "-c",
         "--config",
-        type=str,
+        nargs="+",
         default=DEFAULT_CONFIG_PATH,
-        help="Model configuration file (cross validation only).",
+        help="Model configuration file.  If a single file is passed, cross-validation is performed,"
+             "if multiple configs are passed, models will be trained and compared directly.",
     )
     cross_validation_arguments.add_argument(
         "-f",
