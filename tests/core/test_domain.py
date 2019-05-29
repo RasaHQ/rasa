@@ -1,4 +1,5 @@
 import json
+
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
@@ -343,3 +344,38 @@ def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
     ]
 
     assert set(actual.user_actions) == set(expected)
+
+
+def test_domain_warnings():
+    domain = Domain.load(DEFAULT_DOMAIN_PATH)
+
+    warning_types = ["action_warnings", "intent_warnings", "entity_warnings"]
+
+    actions = ["action_1", "action_2"]
+    intents = ["intent_1", "intent_2"]
+    entities = ["entity_1", "entity_2"]
+    slots = ["slot_1", "slot_2"]
+    domain_warnings = domain.domain_warnings(
+        intents=intents, entities=entities, actions=actions, slots=slots
+    )
+
+    # elements not found in domain should be in `in_training_data` diff
+    for _type, elements in zip(warning_types, [actions, intents, entities]):
+        assert set(domain_warnings[_type]["in_training_data"]) == set(elements)
+
+    # all other domain elements should be in `in_domain` diff
+    for _type, elements in zip(
+        warning_types, [domain.user_actions, domain.intents, domain.entities]
+    ):
+        assert set(domain_warnings[_type]["in_domain"]) == set(elements)
+
+    # fully aligned domain and elements should yield empty diff
+    domain_warnings = domain.domain_warnings(
+        intents=domain.intents,
+        entities=domain.entities,
+        actions=domain.user_actions,
+        slots=[s.name for s in domain.slots],
+    )
+
+    for diff_dict in domain_warnings.values():
+        assert all(not diff_set for diff_set in diff_dict.values())

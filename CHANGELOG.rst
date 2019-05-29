@@ -11,6 +11,9 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- added ``domain_warnings()`` method to ``Domain`` which returns a dict containing the
+  diff between supplied {actions, intents, entities, slots} and what's contained in the
+  domain
 
 Changed
 -------
