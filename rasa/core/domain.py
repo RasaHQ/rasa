@@ -427,8 +427,15 @@ class Domain(object):
         action.ensure_action_name_uniqueness(self.action_names)
 
     def __hash__(self) -> int:
-        self_as_string = json.dumps(self.as_dict(), sort_keys=True)
+        from rasa.utils.common import sort_list_of_dicts_by_first_key
+
+        self_as_dict = self.as_dict()
+        self_as_dict["intents"] = sort_list_of_dicts_by_first_key(
+            self_as_dict["intents"]
+        )
+        self_as_string = json.dumps(self_as_dict, sort_keys=True)
         text_hash = utils.get_text_hash(self_as_string)
+
         return int(text_hash, 16)
 
     @utils.lazyproperty
