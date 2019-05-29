@@ -12,9 +12,9 @@ slots:
 
 templates:
   utter_ask_username:
-    - "what is your name?"
+    - text: "what is your name?"
   utter_ask_query:
-    - "hello {username}, what can I help you with?"
+    - text: "hello {username}, what can I help you with?"
 
 actions:
   - action_perform_query

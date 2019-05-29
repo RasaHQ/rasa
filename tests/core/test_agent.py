@@ -8,10 +8,8 @@ from sanic import Sanic, response
 import rasa.utils.io
 import rasa.core
 from rasa.core import jobs, utils
-from tests.core import utilities
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
-from rasa.core.domain import InvalidDomain
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig

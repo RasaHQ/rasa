@@ -160,7 +160,7 @@ def test_custom_slot_type(tmpdir):
 
        templates:
          utter_greet:
-           - hey there!
+           - text: hey there!
 
        actions:
          - utter_greet """,
@@ -178,7 +178,7 @@ def test_custom_slot_type(tmpdir):
 
     templates:
         utter_greet:
-         - hey there!
+         - text: hey there!
 
     actions:
         - utter_greet""",
@@ -189,7 +189,7 @@ def test_custom_slot_type(tmpdir):
 
     templates:
         utter_greet:
-         - hey there!
+         - text: hey there!
 
     actions:
         - utter_greet""",
@@ -379,3 +379,63 @@ def test_domain_warnings():
 
     for diff_dict in domain_warnings.values():
         assert all(not diff_set for diff_set in diff_dict.values())
+
+
+def test_check_domain_sanity_on_invalid_domain():
+    with pytest.raises(InvalidDomain):
+        Domain(
+            intent_properties={},
+            entities=[],
+            slots=[],
+            templates={},
+            action_names=["random_name", "random_name"],
+            form_names=[],
+        )
+
+    with pytest.raises(InvalidDomain):
+        Domain(
+            intent_properties={},
+            entities=[],
+            slots=[TextSlot("random_name"), TextSlot("random_name")],
+            templates={},
+            action_names=[],
+            form_names=[],
+        )
+
+    with pytest.raises(InvalidDomain):
+        Domain(
+            intent_properties={},
+            entities=["random_name", "random_name", "other_name", "other_name"],
+            slots=[],
+            templates={},
+            action_names=[],
+            form_names=[],
+        )
+
+    with pytest.raises(InvalidDomain):
+        Domain(
+            intent_properties={},
+            entities=[],
+            slots=[],
+            templates={},
+            action_names=[],
+            form_names=["random_name", "random_name"],
+        )
+
+
+def test_load_on_invalid_domain():
+    with pytest.raises(InvalidDomain):
+        Domain.load("data/test_domains/duplicate_intents.yml")
+
+    with pytest.raises(InvalidDomain):
+        Domain.load("data/test_domains/duplicate_actions.yml")
+
+    with pytest.raises(InvalidDomain):
+        Domain.load("data/test_domains/duplicate_templates.yml")
+
+    with pytest.raises(InvalidDomain):
+        Domain.load("data/test_domains/duplicate_entities.yml")
+
+    # Currently just deprecated
+    # with pytest.raises(InvalidDomain):
+    #     Domain.load("data/test_domains/missing_text_for_templates.yml")

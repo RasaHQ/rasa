@@ -3,22 +3,13 @@ intents:
  - default
  - goodbye
 
-slots:
-  cuisine:
-    type: text
-  location:
-    type: text
-
-entities:
- - name
-
 templates:
   utter_greet:
-    - text: hey there!
+    - hey there!
   utter_goodbye:
-    - text: goodbye :(
+    - goodbye :(
   utter_default:
-    - text: default message
+    - default message
 
 actions:
   - utter_default

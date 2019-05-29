@@ -2,6 +2,8 @@ intents:
  - greet
  - default
  - goodbye
+ - default
+ - goodbye
 
 slots:
   cuisine:
@@ -10,6 +12,7 @@ slots:
     type: text
 
 entities:
+ - name
  - name
 
 templates:
