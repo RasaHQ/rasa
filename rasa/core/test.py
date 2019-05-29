@@ -662,7 +662,7 @@ def plot_curve(output: Text, no_examples: List[int], mode: Text = "core") -> Non
         graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
     elif mode == "nlu":
         ax.set_xlabel("Number of intent examples present during training")
-        ax.set_ylabel("Micro-averaged F1 score on test set")
+        ax.set_ylabel("Label-weighted average F1 score on test set")
         graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
 
     plt.savefig(graph_path, format="pdf")

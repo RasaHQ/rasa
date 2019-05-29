@@ -93,14 +93,13 @@ def test_nlu(args: argparse.Namespace) -> None:
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
 
-    if isinstance(args.config, list):
-        if len(args.config) == 1:
-            args.config = args.config[0]
-            config_path = os.path.abspath(args.config)
+    if len(args.config) == 1:
+        args.config = args.config[0]
+        config_path = os.path.abspath(args.config)
 
-            if os.path.isdir(config_path):
-                configs = os.listdir(args.config)
-                args.config = [os.path.join(config_path, config) for config in configs]
+        if os.path.isdir(config_path):
+            files = os.listdir(args.config)
+            args.config = [os.path.join(config_path, file) for file in files]
 
     if isinstance(args.config, list):
         logger.info("Multiple configs specified, running nlu comparison mode.")
@@ -113,16 +112,13 @@ def test_nlu(args: argparse.Namespace) -> None:
             runs=args.runs,
             exclusion_percentages=args.percentages,
         )
-
-    elif not args.cross_validation:
-        print (args.config)
+    elif args.cross_validation:
+        logger.info("Test model using cross validation.")
+        config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+        test_nlu_with_cross_validation(config, nlu_data, args.folds)
+    else:
         model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
         test_nlu(model_path, nlu_data, vars(args))
-    else:
-        logger.info("No model specified. Model will be trained using cross validation.")
-        config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
-
-        test_nlu_with_cross_validation(config, nlu_data, args.folds)
 
 
 def test(args: argparse.Namespace):

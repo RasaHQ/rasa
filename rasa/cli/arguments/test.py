@@ -123,8 +123,10 @@ def add_test_nlu_argument_group(
         "--config",
         nargs="+",
         default=DEFAULT_CONFIG_PATH,
-        help="Model configuration file.  If a single file is passed, cross-validation is performed,"
-        "if multiple configs are passed, models will be trained and compared directly.",
+        help="Model configuration file.  If a single file is passed, "
+             "cross-validation is performed, if multiple configs or a "
+             "folder of configs are passed, models will be trained and "
+             "compared directly.",
     )
     cross_validation_arguments.add_argument(
         "-f",
@@ -139,6 +141,7 @@ def add_test_nlu_argument_group(
         "--runs",
         required=False,
         default=3,
+        type=int,
         help="Number of comparison runs to make.",
     )
     comparison_arguments.add_argument(
@@ -146,6 +149,7 @@ def add_test_nlu_argument_group(
         "--percentages",
         required=False,
         nargs="+",
+        type=int,
         default=[0, 25, 50, 75, 90],
         help="Percentages of data to exclude during comparison.",
     )

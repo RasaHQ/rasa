@@ -195,13 +195,11 @@ def test_compare_nlu(
 
                 report_path = os.path.join(out_path, "{}_report".format(model_name))
                 errors_path = os.path.join(report_path, "errors.json")
-                run_evaluation(
+                result = run_evaluation(
                     test_path, model_path, report=report_path, errors=errors_path
                 )
 
-                scores = read_json_file(os.path.join(report_path, "intent_report.json"))
-
-                f1 = scores["micro avg"]["f1-score"]
+                f1 = result["intent_evaluation"]["f1_score"]
                 micros[model_name][run].append(f1)
 
     f1_path = os.path.join(output, "results.json")
