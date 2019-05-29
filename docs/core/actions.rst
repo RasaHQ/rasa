@@ -143,8 +143,10 @@ There are eight default actions:
 | ``action_listen``                 | Stop predicting more actions and wait for user |
 |                                   | input.                                         |
 +-----------------------------------+------------------------------------------------+
-| ``action_restart``                | Reset the whole conversation, usually triggered|
-|                                   | by using ``/restart``.                         |
+| ``action_restart``                | Reset the whole conversation. Can be triggered |
+|                                   | during a conversation by entering ``/restart`` |
+|                                   | if the :ref:`mapping_policy` is included in    |
+|                                   | the policy configuration.                      |
 +-----------------------------------+------------------------------------------------+
 | ``action_default_fallback``       | Undo the last user message (as if the user did |
 |                                   | not send it and the bot did not react) and     |
@@ -168,7 +170,9 @@ There are eight default actions:
 +-----------------------------------+------------------------------------------------+
 | ``action_back``                   | Undo the last user message (as if the user did |
 |                                   | not send it and the bot did not react).        |
-|                                   | Can be triggered by sending ``/back``.         |
+|                                   | Can be triggered during a conversation by      |
+|                                   | entering ``/back`` if the MappingPolicy is     |
+|                                   | included in the policy configuration.          |
 +-----------------------------------+------------------------------------------------+
 
 All the default actions can be overwritten. To do so, add the action name
@@ -181,10 +185,6 @@ to the list of actions in your domain:
 
 Rasa Core will then call your action endpoint and treat it as every other
 custom action.
-
-The actions that can be triggered by the user (i.e. ``action_restart`` and
-``action_back``) are predicted by the MappingPolicy and will not be triggered if it
-is removed from the configuration file.
 
 Execute Actions in Other Code
 -----------------------------
