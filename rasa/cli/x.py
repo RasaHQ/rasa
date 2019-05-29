@@ -246,10 +246,10 @@ def rasa_x(args: argparse.Namespace):
 
 
 def _validate_domain(domain_path: Text):
-    from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
+    from rasa.core.domain import Domain, InvalidDomain
 
     try:
-        Domain.load(domain_path, log_warning=False)
+        Domain.load(domain_path)
     except InvalidDomain as e:
         print_error("The provided domain file could not be loaded. Error: {}".format(e))
         sys.exit(1)
