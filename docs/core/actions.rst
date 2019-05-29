@@ -153,7 +153,7 @@ There are eight default actions:
 +-----------------------------------+------------------------------------------------+
 | ``action_deactivate_form``        | Deactivate the active form and reset the       |
 |                                   | requested slot.                                |
-|                                   | See also :ref:`_section_unhappy`.              |
+|                                   | See also :ref:`section_unhappy`.               |
 +-----------------------------------+------------------------------------------------+
 | ``action_revert_fallback_events`` | Revert events that occurred during the         |
 |                                   | TwoStageFallbackPolicy.                        |
@@ -164,7 +164,7 @@ There are eight default actions:
 |                                   | action with a custom action to have more       |
 |                                   | meaningful prompts.                            |
 +-----------------------------------+------------------------------------------------+
-| ``action_default_ask_rephrase``   | Ask the user to rephrase their intent.         |                                   | did not send it) and utters a message that the |
+| ``action_default_ask_rephrase``   | Ask the user to rephrase their intent.         |
 +-----------------------------------+------------------------------------------------+
 | ``action_back``                   | Undo the last user message (as if the user did |
 |                                   | not send it and the bot did not react).        |
