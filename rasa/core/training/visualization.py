@@ -464,7 +464,7 @@ async def visualize_neighborhood(
                     next_node_idx,
                     label="  ?  "
                     if not message
-                    else sanitize(message.get("intent", {})).get("name", "  ?  "),
+                    else sanitize(message.get("intent", {}).get("name", "  ?  ")),
                     shape="rect",
                     **{"class": "intent dashed active"}
                 )
