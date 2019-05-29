@@ -4,6 +4,7 @@ import logging
 import signal
 import sys
 import os
+import traceback
 from multiprocessing import get_context
 from typing import List, Text, Optional
 
@@ -241,6 +242,14 @@ def rasa_x(args: argparse.Namespace):
         process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
         try:
             local.main(args, project_path, args.data, token=rasa_x_token)
+        except Exception:
+            print (traceback.format_exc())
+            print_error(
+                "Sorry, something went wrong (see error above). Make sure to start "
+                "Rasa X with valid data and valid domain and config files. Please, "
+                "also check any warnings that popped up.\nIf you need help fixing "
+                "the issue visit our forum: https://forum.rasa.com/."
+            )
         finally:
             process.terminate()
 
