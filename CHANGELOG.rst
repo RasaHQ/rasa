@@ -32,6 +32,7 @@ Added
 
 Fixed
 -----
+- fix lookup table files failed to load issues/3622 
 - buttons can now be properly selected during cmdline chat or when in interactive learning
 - set slots correctly when events are added through the API
 - mapping policy no longer ignores NLU threshold
