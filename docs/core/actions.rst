@@ -145,7 +145,7 @@ There are eight default actions:
 +-----------------------------------+------------------------------------------------+
 | ``action_restart``                | Reset the whole conversation. Can be triggered |
 |                                   | during a conversation by entering ``/restart`` |
-|                                   | if the :ref:`mapping_policy` is included in    |
+|                                   | if the :ref:`mapping-policy` is included in    |
 |                                   | the policy configuration.                      |
 +-----------------------------------+------------------------------------------------+
 | ``action_default_fallback``       | Undo the last user message (as if the user did |
