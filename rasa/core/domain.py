@@ -41,125 +41,6 @@ class InvalidDomain(Exception):
         return bcolors.FAIL + self.message + bcolors.ENDC
 
 
-def check_domain_sanity(domain: "Domain"):
-    """Make sure the domain is properly configured.
-
-    If the domain contains any duplicate slots, intents, actions
-    or entities, an InvalidDomain error is raised.  This error
-    is also raised when intent-action mappings are incorrectly
-    named or an utterance template is missing."""
-
-    def get_duplicates(my_items):
-        """Returns a list of duplicate items in my_items."""
-
-        return [
-            item for item, count in collections.Counter(my_items).items() if count > 1
-        ]
-
-    def check_mappings(intent_properties):
-        """Check whether intent-action mappings use proper action names."""
-
-        incorrect = list()
-        for intent, properties in intent_properties.items():
-            if "triggers" in properties:
-                if properties.get("triggers") not in domain.action_names:
-                    incorrect.append((intent, properties["triggers"]))
-        return incorrect
-
-    def get_exception_message(
-        duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
-        mappings: List[Tuple[Text, Text]] = None,
-    ):
-        """Return a message given a list of error locations."""
-
-        message = ""
-        if duplicates:
-            message += get_duplicate_exception_message(duplicates)
-        if mappings:
-            if message:
-                message += "\n"
-            message += get_mapping_exception_message(mappings)
-        return message
-
-    def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
-        """Return a message given a list of duplicates."""
-
-        message = ""
-        for name, action_name in mappings:
-            if message:
-                message += "\n"
-            message += (
-                "Intent '{}' is set to trigger action '{}', which is "
-                "not defined in the domain.".format(name, action_name)
-            )
-        return message
-
-    def get_duplicate_exception_message(
-        duplicates: List[Tuple[List[Text], Text]]
-    ) -> Text:
-        """Return a message given a list of duplicates."""
-
-        message = ""
-        for d, name in duplicates:
-            if d:
-                if message:
-                    message += "\n"
-                message += (
-                    "Duplicate {0} in domain. "
-                    "These {0} occur more than once in "
-                    "the domain: '{1}'".format(name, "', '".join(d))
-                )
-        return message
-
-    def warn_missing_templates(
-        action_names: List[Text], templates: Dict[Text, Any]
-    ) -> None:
-        """Warn user of utterance names which have no specified template."""
-
-        utterances = [
-            act for act in action_names if act.startswith(action.UTTER_PREFIX)
-        ]
-
-        missing_templates = [t for t in utterances if t not in templates.keys()]
-
-        if missing_templates:
-            message = ""
-            for template in missing_templates:
-                message += (
-                    "\nUtterance '{}' is listed as an "
-                    "action in the domain file, but there is "
-                    "no matching utterance template. Please "
-                    "check your domain."
-                ).format(template)
-            print_warning(message)
-
-    warn_missing_templates(domain.action_names, domain.templates)
-    duplicate_actions = get_duplicates(domain.action_names)
-    duplicate_intents = get_duplicates(domain.intents)
-    duplicate_slots = get_duplicates([s.name for s in domain.slots])
-    duplicate_entities = get_duplicates(domain.entities)
-    incorrect_mappings = check_mappings(domain.intent_properties)
-
-    if (
-        duplicate_actions
-        or duplicate_intents
-        or duplicate_slots
-        or duplicate_entities
-        or incorrect_mappings
-    ):
-        raise InvalidDomain(
-            get_exception_message(
-                [
-                    (duplicate_actions, "actions"),
-                    (duplicate_intents, "intents"),
-                    (duplicate_slots, "slots"),
-                    (duplicate_entities, "entities"),
-                ],
-                incorrect_mappings,
-            )
-        )
-
-
 class Domain(object):
     """The domain specifies the universe in which the bot's policy acts.
 
@@ -400,8 +281,8 @@ class Domain(object):
                 # templates should be a dict with options
                 if isinstance(t, str):
                     logger.warning(
-                        "Deprecated: Templates should not be strings anymore. Utter "
-                        "template '{}' should contain either '- text: ' or "
+                        "Deprecated: Templates should not be strings anymore. "
+                        "Utterance template '{}' should contain either '- text: ' or "
                         "'- custom: ' attribute to be a proper template.".format(
                             template_key
                         )
@@ -444,12 +325,7 @@ class Domain(object):
         )
         self.store_entities_as_slots = store_entities_as_slots
 
-        try:
-            action.ensure_action_name_uniqueness(self.action_names)
-        except ValueError as e:
-            raise InvalidDomain(str(e))
-
-        check_domain_sanity(self)
+        self._check_domain_sanity()
 
     def __hash__(self) -> int:
         self_as_string = json.dumps(self.as_dict())
@@ -857,6 +733,122 @@ class Domain(object):
             "action_warnings": action_warnings,
             "slot_warnings": slot_warnings,
         }
+
+    def _check_domain_sanity(self):
+        """Make sure the domain is properly configured.
+        If the domain contains any duplicate slots, intents, actions
+        or entities, an InvalidDomain error is raised.  This error
+        is also raised when intent-action mappings are incorrectly
+        named or an utterance template is missing."""
+
+        def get_duplicates(my_items):
+            """Returns a list of duplicate items in my_items."""
+
+            return [
+                item
+                for item, count in collections.Counter(my_items).items()
+                if count > 1
+            ]
+
+        def check_mappings(intent_properties):
+            """Check whether intent-action mappings use proper action names."""
+
+            incorrect = list()
+            for intent, properties in intent_properties.items():
+                if "triggers" in properties:
+                    if properties.get("triggers") not in self.action_names:
+                        incorrect.append((intent, properties["triggers"]))
+            return incorrect
+
+        def get_exception_message(
+            duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
+            mappings: List[Tuple[Text, Text]] = None,
+        ):
+            """Return a message given a list of error locations."""
+
+            message = ""
+            if duplicates:
+                message += get_duplicate_exception_message(duplicates)
+            if mappings:
+                if message:
+                    message += "\n"
+                message += get_mapping_exception_message(mappings)
+            return message
+
+        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
+            """Return a message given a list of duplicates."""
+
+            message = ""
+            for name, action_name in mappings:
+                if message:
+                    message += "\n"
+                message += (
+                    "Intent '{}' is set to trigger action '{}', which is "
+                    "not defined in the domain.".format(name, action_name)
+                )
+            return message
+
+        def get_duplicate_exception_message(
+            duplicates: List[Tuple[List[Text], Text]]
+        ) -> Text:
+            """Return a message given a list of duplicates."""
+
+            message = ""
+            for d, name in duplicates:
+                if d:
+                    if message:
+                        message += "\n"
+                    message += (
+                        "Duplicate {0} in domain. "
+                        "These {0} occur more than once in "
+                        "the domain: '{1}'".format(name, "', '".join(d))
+                    )
+            return message
+
+        def warn_missing_templates(
+            action_names: List[Text], templates: Dict[Text, Any]
+        ) -> None:
+            """Warn user of utterance names which have no specified template."""
+
+            utterances = [
+                act for act in action_names if act.startswith(action.UTTER_PREFIX)
+            ]
+
+            missing_templates = [t for t in utterances if t not in templates.keys()]
+
+            if missing_templates:
+                message = ""
+                for template in missing_templates:
+                    message += (
+                        "\nUtterance '{}' is listed as an "
+                        "action in the domain file, but there is "
+                        "no matching utterance template. Please "
+                        "check your domain."
+                    ).format(template)
+                print_warning(message)
+
+        warn_missing_templates(self.action_names, self.templates)
+        duplicate_actions = get_duplicates(self.action_names)
+        duplicate_slots = get_duplicates([s.name for s in self.slots])
+        duplicate_entities = get_duplicates(self.entities)
+        incorrect_mappings = check_mappings(self.intent_properties)
+
+        if (
+            duplicate_actions
+            or duplicate_slots
+            or duplicate_entities
+            or incorrect_mappings
+        ):
+            raise InvalidDomain(
+                get_exception_message(
+                    [
+                        (duplicate_actions, "actions"),
+                        (duplicate_slots, "slots"),
+                        (duplicate_entities, "entities"),
+                    ],
+                    incorrect_mappings,
+                )
+            )
 
 
 class TemplateDomain(Domain):

@@ -15,7 +15,7 @@ import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
-from rasa.core.domain import InvalidDomain, Domain, check_domain_sanity
+from rasa.core.domain import InvalidDomain
 from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
