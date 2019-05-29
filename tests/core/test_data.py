@@ -8,6 +8,7 @@ import pytest
 import rasa.data as data
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
 from rasa.nlu.training_data import load_data
+from rasa.nlu.utils import json_to_string
 
 
 def test_get_core_directory(project):
@@ -129,7 +130,7 @@ def test_is_nlu_file_with_json():
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
     with open(file, "w", encoding="utf-8") as f:
-        f.write(json.dumps(test))
+        f.write(json_to_string(test))
 
     assert data._is_nlu_file(file)
 

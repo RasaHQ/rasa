@@ -21,6 +21,7 @@ Removed
 Fixed
 -----
 - buttons can now be properly selected during cmdline chat or when in interactive learning
+- non-ascii characters render correctly in stories generated from interactive learning
 
 
 [1.0.1] - 2019-05-21
