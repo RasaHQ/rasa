@@ -15,6 +15,7 @@ import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
+from rasa.core.domain import InvalidDomain
 from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
@@ -376,7 +377,7 @@ def create_app(
 
         if evt:
             try:
-                tracker.update(evt)
+                tracker.update(evt, app.agent.domain)
                 app.agent.tracker_store.save(tracker)
                 return response.json(tracker.current_state(verbosity))
             except Exception as e:
@@ -601,8 +602,13 @@ def create_app(
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
             )
-
             return await response.file(model_path)
+        except InvalidDomain as e:
+            raise ErrorResponse(
+                400,
+                "InvalidDomainError",
+                "Provided domain file is invalid. Error: {}".format(e),
+            )
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
