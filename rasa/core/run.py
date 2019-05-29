@@ -66,6 +66,7 @@ def configure_app(
     jwt_method: Optional[Text] = None,
     route: Optional[Text] = "/webhooks/",
     port: int = constants.DEFAULT_SERVER_PORT,
+    endpoints: Optional[AvailableEndpoints] = None,
 ):
     """Run the agent."""
     from rasa import server
@@ -76,6 +77,7 @@ def configure_app(
             auth_token=auth_token,
             jwt_secret=jwt_secret,
             jwt_method=jwt_method,
+            endpoints=endpoints,
         )
     else:
         app = Sanic(__name__)
@@ -132,7 +134,7 @@ def serve_application(
     input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(
-        input_channels, cors, auth_token, enable_api, jwt_secret, jwt_method, port=port
+        input_channels, cors, auth_token, enable_api, jwt_secret, jwt_method, port=port, endpoints=endpoints
     )
 
     logger.info(
