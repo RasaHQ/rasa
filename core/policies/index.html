@@ -187,12 +187,13 @@ require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.0.1
+          viewing: 1.0.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.0.2/core/policies/">1.0.2</a>
               <a href="../.././1.0.1/core/policies/">1.0.1</a>
               <a href="../.././1.0.0/core/policies/">1.0.0</a>
           </div>
@@ -234,10 +235,10 @@ require generalization." />
 <li><a class="reference internal" href="#keras-policy" id="id7">Keras Policy</a></li>
 <li><a class="reference internal" href="#embedding-policy" id="id8">Embedding Policy</a></li>
 <li><a class="reference internal" href="#memoization-policy" id="id9">Memoization Policy</a></li>
-<li><a class="reference internal" href="#form-policy" id="id10">Form Policy</a></li>
-<li><a class="reference internal" href="#mapping-policy" id="id11">Mapping Policy</a></li>
-<li><a class="reference internal" href="#fallback-policy" id="id12">Fallback Policy</a></li>
-<li><a class="reference internal" href="#two-stage-fallback-policy" id="id13">Two-Stage Fallback Policy</a></li>
+<li><a class="reference internal" href="#mapping-policy" id="id10">Mapping Policy</a></li>
+<li><a class="reference internal" href="#fallback-policy" id="id11">Fallback Policy</a></li>
+<li><a class="reference internal" href="#two-stage-fallback-policy" id="id12">Two-Stage Fallback Policy</a></li>
+<li><a class="reference internal" href="#form-policy" id="id13">Form Policy</a></li>
 </ul>
 </div>
 <div class="section" id="data-augmentation">
@@ -725,44 +726,49 @@ training data. It predicts the next action with confidence <code class="docutils
 if this exact conversation exists in the training data, otherwise it
 predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
 </div>
-<div class="section" id="form-policy">
-<h2><a class="toc-backref" href="#id10">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> is an extension of the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> which
-handles the filling of forms. Once a <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> is called, the
-<code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> will continually predict the <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> until all slots
-in the form are filled. For more information, see <a class="reference internal" href="../forms/#forms"><span class="std std-ref">Forms</span></a>.</p>
-</div>
 <div class="section" id="mapping-policy">
-<h2><a class="toc-backref" href="#id11">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> can be used to directly map intents to actions such that
-the mapped action will always be executed. The mappings are assigned by giving
-and intent the property <cite>‘triggers’</cite>, e.g.:</p>
+<h2><a class="toc-backref" href="#id10">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> can be used to directly map intents to actions. The
+mappings are assigned by giving an intent the property <code class="docutils literal notranslate"><span class="pre">triggers</span></code>, e.g.:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
- <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span>
-     <span class="l l-Scalar l-Scalar-Plain">triggers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
+ <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ask_is_bot</span><span class="p p-Indicator">:</span>
+     <span class="l l-Scalar l-Scalar-Plain">triggers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">action_is_bot</span>
 </pre></div>
 </div>
 <p>An intent can only be mapped to at most one action. The bot will run
-the action once it receives a message of the mapped intent. Afterwards,
-it will listen for the next message.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p>The mapping policy will predict the mapped action after the intent (e.g.
-<code class="docutils literal notranslate"><span class="pre">utter_greet</span></code> in the above example) and afterwards it will wait for
-the next user message (predicting <code class="docutils literal notranslate"><span class="pre">action_listen</span></code>). With the next
-user message normal prediction will resume.</p>
-<p>You should have an example like</p>
-<div class="highlight-story notranslate"><div class="highlight"><pre><span></span><span class="vm">* greet</span>
-<span class="vm">  </span>- utter_greet
+the mapped action once it receives a message of the triggering intent. Afterwards,
+it will listen for the next message. With the next
+user message, normal prediction will resume.</p>
+<p>If you do not want your intent-action mapping to affect the dialogue
+history, the mapped action must return a <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code>
+event. This will delete the user’s latest message, along with any events that
+happened after it, from the dialogue history. This means you should not
+include the intent-action interaction in your stories.</p>
+<p>For example, if a user asks “Are you a bot?” off-topic in the middle of the
+flow, you probably want to answer without that interaction affecting the next
+action prediction. A triggered custom action can do anything, but here’s a
+simple example that dispatches a bot utterance and then reverts the interaction:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ActionIsBot</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+<span class="sd">&quot;&quot;&quot;Revertible mapped action for utter_is_bot&quot;&quot;&quot;</span>
+
+<span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;action_is_bot&quot;</span>
+
+<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
+    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_is_bot&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">UserUtteranceReverted</span><span class="p">()]</span>
 </pre></div>
 </div>
-<p class="last">in your stories. Otherwise any machine learning policy might be confused
-by the sudden appearance of the predicted <code class="docutils literal notranslate"><span class="pre">utter_greet</span></code> in
-the dialogue history.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you use the <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> to predict bot utterances directly (e.g.
+<code class="docutils literal notranslate"><span class="pre">triggers:</span> <span class="pre">utter_{}</span></code>), these interactions must go in your stories, as in this
+case there is no <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code> and the
+intent and the mapped utterance will appear in the dialogue history.</p>
 </div>
 </div>
 <div class="section" id="fallback-policy">
-<span id="id3"></span><h2><a class="toc-backref" href="#id12">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id3"></span><h2><a class="toc-backref" href="#id11">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if the intent recognition
 has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code> or if none of the dialogue
 policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</p>
@@ -818,7 +824,7 @@ or action is below the respective threshold</td>
 </div></blockquote>
 </div>
 <div class="section" id="two-stage-fallback-policy">
-<h2><a class="toc-backref" href="#id13">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id12">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.</p>
 <ul>
@@ -906,6 +912,13 @@ intents</td>
 <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> in your configuration, but not both.</p>
 </div>
 </div></blockquote>
+</div>
+<div class="section" id="form-policy">
+<h2><a class="toc-backref" href="#id13">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> is an extension of the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> which
+handles the filling of forms. Once a <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> is called, the
+<code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> will continually predict the <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> until all required
+slots in the form are filled. For more information, see <a class="reference internal" href="../forms/#forms"><span class="std std-ref">Forms</span></a>.</p>
 </div>
 </div>
 

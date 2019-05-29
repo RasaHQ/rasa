@@ -187,12 +187,13 @@ for open source NLU." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.0.1
+          viewing: 1.0.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.0.2/nlu/choosing-a-pipeline/">1.0.2</a>
               <a href="../.././1.0.1/nlu/choosing-a-pipeline/">1.0.1</a>
               <a href="../.././1.0.0/nlu/choosing-a-pipeline/">1.0.0</a>
           </div>
@@ -436,6 +437,7 @@ default is to use a simple whitespace tokenizer:</p>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
