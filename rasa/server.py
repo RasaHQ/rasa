@@ -813,10 +813,7 @@ def create_app(
         remote_storage = request.json.get("remote_storage", None)
 
         app.agent = await _load_agent(
-            model_path,
-            model_server,
-            remote_storage,
-            endpoints,
+            model_path, model_server, remote_storage, endpoints
         )
 
         logger.debug("Successfully loaded model '{}'.".format(model_path))

@@ -134,7 +134,14 @@ def serve_application(
     input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(
-        input_channels, cors, auth_token, enable_api, jwt_secret, jwt_method, port=port, endpoints=endpoints
+        input_channels,
+        cors,
+        auth_token,
+        enable_api,
+        jwt_secret,
+        jwt_method,
+        port=port,
+        endpoints=endpoints,
     )
 
     logger.info(
