@@ -10,46 +10,6 @@ servers:
   - url: "http://localhost:5005"
     description: "Local development server"
 
-x-reuse:
-  tracker:
-    &tracker-example
-    conversation_id: default
-    latest_event_time: 1537645578.314389
-    latest_input_channel: rest
-    paused: false
-    slots: {}
-    followup_action:
-    latest_message:
-      text: hello
-      entities: []
-      intent:
-        confidence: 0.57
-        name: greet
-      intent_ranking:
-      - confidence: 0.57
-        name: greet
-      - confidence: 0.33
-        name: goodbye
-    events:
-    - event: action
-      name: action_listen
-      timestamp: 1537645578.274815
-    - event: user
-      input_channel: rest
-      text: hello
-      timestamp: 1537645578.314389
-      parse_data:
-        text: hello
-        entities: []
-        intent:
-          confidence: 0.57
-          name: greet
-        intent_ranking:
-        - confidence: 0.57
-          name: greet
-        - confidence: 0.33
-          name: goodbye
-
 paths:
   /:
     get:
@@ -1379,7 +1339,42 @@ components:
 
     Tracker:
       value:
-        <<: *tracker-example
+        conversation_id: default
+        latest_event_time: 1537645578.314389
+        latest_input_channel: rest
+        paused: false
+        slots: {}
+        followup_action:
+        latest_message:
+          text: hello
+          entities: []
+          intent:
+            confidence: 0.57
+            name: greet
+          intent_ranking:
+            - confidence: 0.57
+              name: greet
+            - confidence: 0.33
+              name: goodbye
+        events:
+          - event: action
+            name: action_listen
+            timestamp: 1537645578.274815
+          - event: user
+            input_channel: rest
+            text: hello
+            timestamp: 1537645578.314389
+            parse_data:
+              text: hello
+              entities: []
+              intent:
+                confidence: 0.57
+                name: greet
+              intent_ranking:
+                - confidence: 0.57
+                  name: greet
+                - confidence: 0.33
+                  name: goodbye
     Event:
       value:
         event: action
@@ -1405,7 +1400,42 @@ components:
             score: 0.15
         policy: "policy_2_KerasPolicy"
         tracker:
-          <<: *tracker-example
+          conversation_id: default
+          latest_event_time: 1537645578.314389
+          latest_input_channel: rest
+          paused: false
+          slots: {}
+          followup_action:
+          latest_message:
+            text: hello
+            entities: []
+            intent:
+              confidence: 0.57
+              name: greet
+            intent_ranking:
+              - confidence: 0.57
+                name: greet
+              - confidence: 0.33
+                name: goodbye
+          events:
+            - event: action
+              name: action_listen
+              timestamp: 1537645578.274815
+            - event: user
+              input_channel: rest
+              text: hello
+              timestamp: 1537645578.314389
+              parse_data:
+                text: hello
+                entities: []
+                intent:
+                  confidence: 0.57
+                  name: greet
+                intent_ranking:
+                  - confidence: 0.57
+                    name: greet
+                  - confidence: 0.33
+                    name: goodbye
     EvaluationStoriesResult:
       value:
         accuracy: 0.9

@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.2.aX] - `master`_
+[Unreleased 1.0.3.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -20,9 +20,25 @@ Removed
 
 Fixed
 -----
+
+[1.0.2] - 2019-05-29
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added ``domain_warnings()`` method to ``Domain`` which returns a dict containing the
+  diff between supplied {actions, intents, entities, slots} and what's contained in the
+  domain
+
+Fixed
+-----
+- fix lookup table files failed to load issues/3622 
 - buttons can now be properly selected during cmdline chat or when in interactive learning
 - set slots correctly when events are added through the API
-
+- mapping policy no longer ignores NLU threshold
+- mapping policy priority is correctly persisted
+- validate domain file before usage, e.g. print proper error messages if domain file is invalid instead of raising
+  errors
 
 [1.0.1] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
