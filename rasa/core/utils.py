@@ -286,7 +286,7 @@ def list_routes(app: Sanic):
 
     def find_route(suffix, path):
         for name, (uri, _) in app.router.routes_names.items():
-            if name == suffix and uri == path:
+            if name.split(".")[-1] == suffix and uri == path:
                 return name
         return None
 
