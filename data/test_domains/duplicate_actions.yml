@@ -24,3 +24,4 @@ actions:
   - utter_default
   - utter_greet
   - utter_goodbye
+  - utter_default

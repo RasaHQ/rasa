@@ -37,6 +37,8 @@ Fixed
 - set slots correctly when events are added through the API
 - mapping policy no longer ignores NLU threshold
 - mapping policy priority is correctly persisted
+- validate domain file before usage, e.g. print proper error messages if domain file is invalid instead of raising
+  errors
 
 [1.0.1] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
