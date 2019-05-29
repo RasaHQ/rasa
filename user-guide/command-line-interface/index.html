@@ -704,14 +704,15 @@ Check out more details in <a class="reference internal" href="../evaluating-mode
                  [--url URL] [-u NLU] [--report [REPORT]]
                  [--successes [SUCCESSES]] [--errors ERRORS]
                  [--histogram HISTOGRAM] [--confmat CONFMAT]
-                 [--cross-validation] [-c CONFIG [CONFIG ...]] [-f FOLDS]
-                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--cross-validation] [-c CONFIG] [-f FOLDS]
                  {core,nlu} ...
 
 positional arguments:
   {core,nlu}
-    core                Tests Rasa Core models using your test stories.
-    nlu                 Tests Rasa NLU models using your test NLU data.
+    core                Tests a trained Rasa Core model using your test
+                        stories.
+    nlu                 Tests a trained Rasa NLU model using your test NLU
+                        data.
 
 optional arguments:
   -h, --help            show this help message and exit

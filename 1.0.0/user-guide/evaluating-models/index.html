@@ -269,9 +269,8 @@ To do this, add the flag <code class="docutils literal notranslate"><span class=
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU]
                      [--report [REPORT]] [--successes [SUCCESSES]]
                      [--errors ERRORS] [--histogram HISTOGRAM]
-                     [--confmat CONFMAT] [--cross-validation]
-                     [-c CONFIG [CONFIG ...]] [-f FOLDS] [-r RUNS]
-                     [-p PERCENTAGES [PERCENTAGES ...]]
+                     [--confmat CONFMAT] [--cross-validation] [-c CONFIG]
+                     [-f FOLDS]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -305,20 +304,12 @@ Python Logging Options:
 Cross Validation:
   --cross-validation    Switch on cross validation mode. Any provided model
                         will be ignored. (default: False)
-  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
-                        Model configuration file. If a single file is passed,
-                        cross-validation is performed,if multiple configs are
-                        passed, models will be trained and compared directly.
+  -c CONFIG, --config CONFIG
+                        Model configuration file (cross validation only).
                         (default: config.yml)
   -f FOLDS, --folds FOLDS
                         Number of cross validation folds (cross validation
                         only). (default: 10)
-
-Comparison Mode:
-  -r RUNS, --runs RUNS  Number of comparison runs to make. (default: 3)
-  -p PERCENTAGES [PERCENTAGES ...], --percentages PERCENTAGES [PERCENTAGES ...]
-                        Percentages of data to exclude during comparison.
-                        (default: [0, 25, 50, 75, 90])
 </pre></div>
 </div>
 <div class="section" id="intent-classification">
