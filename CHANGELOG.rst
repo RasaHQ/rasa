@@ -20,6 +20,7 @@ Removed
 
 Fixed
 -----
+- non-ascii characters render correctly in stories generated from interactive learning
 - slack notifications from bots correctly render text 
 
 [1.0.2] - 2019-05-29

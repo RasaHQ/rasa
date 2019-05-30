@@ -2,7 +2,6 @@ import errno
 import glob
 import io
 import json
-import logging
 import os
 import re
 import tempfile
