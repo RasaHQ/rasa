@@ -112,9 +112,9 @@ class Domain(object):
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
-        intent_properties = cls.collect_intent_properties(data.get("intents", {}))
+        intent_list = data.get("intents", {})
         return cls(
-            intent_properties,
+            intent_list,
             data.get("entities", []),
             slots,
             utter_templates,
@@ -245,11 +245,13 @@ class Domain(object):
             if isinstance(intent, dict):
                 name = list(intent.keys())[0]
                 for properties in intent.values():
-                    if "use_entities" not in properties:
-                        properties["use_entities"] = True
+                    properties.setdefault('use_entities', True)
+                    properties.setdefault('ignore_entities', [])
+                    if properties['use_entities'] is None:
+                        properties['use_entities'] = []
             else:
                 name = intent
-                intent = {intent: {"use_entities": True}}
+                intent = {intent: {'use_entities': True, 'ignore_entities': []}}
 
             if name in intent_properties.keys():
                 raise InvalidDomain(
@@ -302,7 +304,7 @@ class Domain(object):
 
     def __init__(
         self,
-        intent_properties: Dict[Text, Any],
+        intent_list, #TODO which type does this have?
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, Any],
@@ -311,7 +313,7 @@ class Domain(object):
         store_entities_as_slots: bool = True,
     ) -> None:
 
-        self.intent_properties = intent_properties
+        self.intent_properties = self.collect_intent_properties(intent_list)
         self.entities = entities
         self.form_names = form_names
         self.slots = slots
@@ -481,12 +483,37 @@ class Domain(object):
         # be ignored for the current intent
         for entity in tracker.latest_message.entities:
             intent_name = tracker.latest_message.intent.get("name")
-            intent_config = self.intent_config(intent_name)
-            should_use_entity = intent_config.get("use_entities", True)
-            if should_use_entity:
-                if "entity" in entity:
-                    key = "entity_{0}".format(entity["entity"])
+            latest_message = tracker.latest_message
+            intent_name = latest_message.intent.get("name")
+            # only featurize entities if an intent has been recognized
+            if intent_name:
+                intent_config = self.intent_config(intent_name)
+                entities = latest_message.entities
+                named_entities = [entity for entity in entities 
+                    if "entity" in entity]
+                entity_names = set([entity['entity'] for entity in named_entities])
+
+                # use_entities is either a list of explicitely included entities
+                # or True if all should be included
+                include = intent_config.get('use_entities')
+                included_entities = set(entity_names 
+                    if include is True else include)
+                excluded_entities = set(intent_config.get('ignore_entities'))
+                wanted_entities = included_entities - excluded_entities
+                ambiguous_entities = included_entities & excluded_entities
+                existing_wanted_entities = entity_names & wanted_entities
+
+                if ambiguous_entities:
+                    logger.warning(
+                        "Entities: '{}' are explicitly included and excluded."
+                        "Excluding takes precedence in this case."
+                        "Please resolve that ambiguity."
+                        "".format(ambiguous_entities))
+
+                for entity_name in existing_wanted_entities:
+                    key = "entity_{0}".format(entity_name)
                     state_dict[key] = 1.0
+
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():

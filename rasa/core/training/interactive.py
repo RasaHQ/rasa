@@ -819,9 +819,9 @@ def _intents_from_messages(messages):
     """Return all intents that occur in at least one of the messages."""
 
     # set of distinct intents
-    intents = {m.data["intent"] for m in messages if "intent" in m.data}
+    distinct_intents = {m.data["intent"] for m in messages if "intent" in m.data}
 
-    return [{i: {"use_entities": True}} for i in intents]
+    return distinct_intents
 
 
 async def _write_domain_to_file(
@@ -839,16 +839,13 @@ async def _write_domain_to_file(
     templates = NEW_TEMPLATES
 
     # TODO for now there is no way to distinguish between action and form
-    intent_properties = Domain.collect_intent_properties(
-        _intents_from_messages(messages)
-    )
 
     collected_actions = list(
         {e["name"] for e in actions if e["name"] not in default_action_names()}
     )
 
     new_domain = Domain(
-        intent_properties=intent_properties,
+        intent_list=_intents_from_messages(messages),
         entities=_entities_from_messages(messages),
         slots=[],
         templates=templates,
