@@ -4,19 +4,18 @@ import logging
 import signal
 import sys
 import os
+import traceback
 from multiprocessing import get_context
 from typing import List, Text, Optional
 
 import ruamel.yaml as yaml
 
-from rasa.cli.utils import get_validated_path, print_warning
+from rasa.cli.utils import get_validated_path, print_warning, print_error
 from rasa.cli.arguments import x as arguments
 
 from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_LOG_LEVEL,
-    ENV_LOG_LEVEL,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CONFIG_PATH,
     DEFAULT_LOG_LEVEL_RASA_X,
@@ -226,6 +225,8 @@ def rasa_x(args: argparse.Namespace):
             )
             sys.exit(1)
 
+        _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
+
         if args.data and not os.path.exists(args.data):
             print_warning(
                 "The provided data path ('{}') does not exists. Rasa X will start "
@@ -241,5 +242,23 @@ def rasa_x(args: argparse.Namespace):
         process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
         try:
             local.main(args, project_path, args.data, token=rasa_x_token)
+        except Exception:
+            print (traceback.format_exc())
+            print_error(
+                "Sorry, something went wrong (see error above). Make sure to start "
+                "Rasa X with valid data and valid domain and config files. Please, "
+                "also check any warnings that popped up.\nIf you need help fixing "
+                "the issue visit our forum: https://forum.rasa.com/."
+            )
         finally:
             process.terminate()
+
+
+def _validate_domain(domain_path: Text):
+    from rasa.core.domain import Domain, InvalidDomain
+
+    try:
+        Domain.load(domain_path)
+    except InvalidDomain as e:
+        print_error("The provided domain file could not be loaded. Error: {}".format(e))
+        sys.exit(1)
