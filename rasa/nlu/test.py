@@ -548,12 +548,14 @@ def align_entity_predictions(
     """
 
     true_token_labels = []
-    entities_by_extractors: Dict[Text, List] = {
+    entities_by_extractors = {
         extractor: [] for extractor in extractors
-    }
+    }  # type: Dict[Text, List]
     for p in result.entity_predictions:
         entities_by_extractors[p["extractor"]].append(p)
-    extractor_labels: Dict[Text, List] = {extractor: [] for extractor in extractors}
+    extractor_labels = {
+        extractor: [] for extractor in extractors
+    }  # type: Dict[Text, List]
     for t in result.tokens:
         true_token_labels.append(determine_token_labels(t, result.entity_targets, None))
         for extractor, entities in entities_by_extractors.items():
@@ -693,10 +695,10 @@ def run_evaluation(
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data = training_data.load_data(data_path, interpreter.model_metadata.language)
 
-    result: Dict[Text, Optional[Dict]] = {
+    result = {
         "intent_evaluation": None,
         "entity_evaluation": None,
-    }
+    }  # type: Dict[Text, Optional[Dict]]
 
     if report:
         utils.create_dir(report)
@@ -821,15 +823,15 @@ def cross_validate(
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
 
-    intent_train_metrics: IntentMetrics = defaultdict(list)
-    intent_test_metrics: IntentMetrics = defaultdict(list)
-    entity_train_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
-    entity_test_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
+    intent_train_metrics = defaultdict(list)  # type: IntentMetrics
+    intent_test_metrics = defaultdict(list)  # type: IntentMetrics
+    entity_train_metrics = defaultdict(lambda: defaultdict(list))  # type: EntityMetrics
+    entity_test_metrics = defaultdict(lambda: defaultdict(list))  # type: EntityMetrics
 
-    intent_test_results: List[IntentEvaluationResult] = []
-    entity_test_results: List[EntityEvaluationResult] = []
+    intent_test_results = []  # type: List[IntentEvaluationResult]
+    entity_test_results = []  # type: List[EntityEvaluationResult]
     intent_classifier_present = False
-    extractors: Set[Text] = set()
+    extractors = set()  # type: Set[Text]
 
     for train, test in generate_folds(n_folds, data):
         interpreter = trainer.train(train)
@@ -914,7 +916,9 @@ def _compute_entity_metrics(
 ) -> EntityMetrics:
     """Computes entity evaluation metrics and returns the results"""
 
-    entity_metric_results: EntityMetrics = defaultdict(lambda: defaultdict(list))
+    entity_metric_results = defaultdict(
+        lambda: defaultdict(list)
+    )  # type: EntityMetrics
     extractors = get_entity_extractors(interpreter)
 
     if not extractors:
