@@ -286,6 +286,7 @@ To ignore some entities or explicitly take only certain entities
 into account you can use this syntax:
 
 .. code-block:: yaml
+
   intents:
     - greet: {include_entities: [name]}
     - goodbye: {exclude_entities: [location]}
