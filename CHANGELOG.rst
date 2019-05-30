@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.3.aX] - `master`_
+[Unreleased 1.0.4.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -20,8 +20,15 @@ Removed
 
 Fixed
 -----
-- buttons can now be properly selected during cmdline chat or when in interactive learning
+
+[1.0.3] - 2019-05-30
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
 - non-ascii characters render correctly in stories generated from interactive learning
+- validate domain file before usage, e.g. print proper error messages if domain file
+  is invalid instead of raising errors
 
 [1.0.2] - 2019-05-29
 ^^^^^^^^^^^^^^^^^^^^
