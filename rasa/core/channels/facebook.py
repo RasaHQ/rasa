@@ -230,7 +230,7 @@ class MessengerBot(OutputChannel):
     
     @staticmethod
     def _convert_to_get_started(custom_json: Dict[Text, Any]) -> GetStartedButton: 
-         """Convert json custom message for get_started into a GetStrted object support 
+        """Convert json custom message for get_started into a GetStrted object support 
                 by fbmessenger api ."""      
         return GetStartedButton(payload = custom_json['payload'])
 
