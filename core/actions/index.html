@@ -183,12 +183,13 @@ Stack to integrate your contextual Assistant in your processes and databases." /
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.0.2
+          viewing: 1.0.3
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.0.3/core/actions/">1.0.3</a>
               <a href="../.././1.0.2/core/actions/">1.0.2</a>
               <a href="../.././1.0.1/core/actions/">1.0.1</a>
               <a href="../.././1.0.0/core/actions/">1.0.0</a>
@@ -240,7 +241,7 @@ Stack to integrate your contextual Assistant in your processes and databases." /
 There are three kinds of actions in Rasa Core:</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li><strong>Default actions</strong>: <code class="docutils literal notranslate"><span class="pre">action_listen</span></code>, <code class="docutils literal notranslate"><span class="pre">action_back</span></code>, <code class="docutils literal notranslate"><span class="pre">action_restart</span></code>,
+<li><strong>Default actions</strong>: e.g. <code class="docutils literal notranslate"><span class="pre">action_listen</span></code>, <code class="docutils literal notranslate"><span class="pre">action_restart</span></code>,
 <code class="docutils literal notranslate"><span class="pre">action_default_fallback</span></code></li>
 <li><strong>Utterance actions</strong>: start with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>, just send a message
 to the user</li>
@@ -377,33 +378,61 @@ events in <a class="reference internal" href="../../api/events/#events"><span cl
 </div>
 <div class="section" id="default-actions">
 <h2><a class="toc-backref" href="#id7">Default Actions</a><a class="headerlink" href="#default-actions" title="Permalink to this headline">¶</a></h2>
-<p>There are three default actions:</p>
+<p>There are eight default actions:</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="38%" />
-<col width="62%" />
+<col width="42%" />
+<col width="58%" />
 </colgroup>
 <tbody valign="top">
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">action_listen</span></code></td>
-<td>stop predicting more actions and wait for user
-input</td>
+<td>Stop predicting more actions and wait for user
+input.</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">action_restart</span></code></td>
-<td>reset the whole conversation, usually triggered
-by using <code class="docutils literal notranslate"><span class="pre">/restart</span></code></td>
+<td>Reset the whole conversation. Can be triggered
+during a conversation by entering <code class="docutils literal notranslate"><span class="pre">/restart</span></code>
+if the <a class="reference internal" href="../policies/#mapping-policy"><span class="std std-ref">Mapping Policy</span></a> is included in
+the policy configuration.</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">action_default_fallback</span></code></td>
-<td>undoes the last user message (as if the user
-did not send it) and utters a message that the
-bot did not understand. See
-<a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">Fallback Actions</span></a>.</td>
+<td>Undo the last user message (as if the user did
+not send it and the bot did not react) and
+utter a message that the bot did not
+understand. See <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">Fallback Actions</span></a>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">action_deactivate_form</span></code></td>
+<td>Deactivate the active form and reset the
+requested slot.
+See also <a class="reference internal" href="../forms/#section-unhappy"><span class="std std-ref">Handling unhappy paths</span></a>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">action_revert_fallback_events</span></code></td>
+<td>Revert events that occurred during the
+TwoStageFallbackPolicy.
+See <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">Fallback Actions</span></a>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">action_default_ask_affirmation</span></code></td>
+<td>Ask the user to affirm their intent.
+It is suggested to overwrite this default
+action with a custom action to have more
+meaningful prompts.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">action_default_ask_rephrase</span></code></td>
+<td>Ask the user to rephrase their intent.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">action_back</span></code></td>
+<td>Undo the last user message (as if the user did
+not send it and the bot did not react).
+Can be triggered during a conversation by
+entering <code class="docutils literal notranslate"><span class="pre">/back</span></code> if the MappingPolicy is
+included in the policy configuration.</td>
 </tr>
 </tbody>
 </table>
 <p>All the default actions can be overwritten. To do so, add the action name
 to the list of actions in your domain:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">action_listen</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">action_default_ask_affirmation</span>
 </pre></div>
 </div>
 <p>Rasa Core will then call your action endpoint and treat it as every other
