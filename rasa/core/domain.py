@@ -247,7 +247,10 @@ class Domain(object):
                 for properties in intent.values():
                     properties.setdefault("use_entities", True)
                     properties.setdefault("ignore_entities", [])
-                    if properties["use_entities"] is None:
+                    if (
+                        properties["use_entities"] is None
+                        or properties["use_entities"] is False
+                    ):
                         properties["use_entities"] = []
             else:
                 name = intent
