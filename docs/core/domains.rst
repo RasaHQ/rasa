@@ -272,7 +272,7 @@ multiple responses and Rasa will randomly pick one of them, e.g.:
 Ignoring entities for certain intents
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want entities to be ignored for certain intents, you can
+If you want all entities to be ignored for certain intents, you can
 add the ``use_entities: false`` parameter to the intent in your domain
 file like this:
 
@@ -282,7 +282,15 @@ file like this:
     - greet:
         use_entities: false
 
-This means that entities for those intents will be unfeaturized and therefore
+To ignore some entities or explicitly take only certain entities
+into account you can use this syntax:
+
+.. code-block:: yaml
+  intents:
+    - greet: {include_entities: [name]}
+    - goodbye: {exclude_entities: [location]}
+
+This means that excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
 an intent where you don't care about the entities being picked up. If you list
 your intents as normal without this parameter, the entities will be
