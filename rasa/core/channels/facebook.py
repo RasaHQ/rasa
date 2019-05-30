@@ -229,13 +229,15 @@ class MessengerBot(OutputChannel):
                 quick_reply["content_type"] = "text"
     
     @staticmethod
-    def _convert_to_get_started(custom_json: Dict[Text, Any]) -> GetStartedButton:        
+    def _convert_to_get_started(custom_json: Dict[Text, Any]) -> GetStartedButton: 
+         """Convert json custom message for get_started into a GetStrted object support 
+                by fbmessenger api ."""      
         return GetStartedButton(payload = custom_json['payload'])
 
     @staticmethod
     def _convert_to_persistent_menu(custom_json: Dict[Text, Any]) -> PersistentMenu:
         """Convert json custom message for persitent Menu into a PersistentMenu object support 
-                by fbmessenger api   Happens in place."""
+                by fbmessenger api ."""
         
         pers_menu_item_0 = []
         pers_menu_item_1 = []
