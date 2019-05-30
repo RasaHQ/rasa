@@ -245,13 +245,13 @@ class Domain(object):
             if isinstance(intent, dict):
                 name = list(intent.keys())[0]
                 for properties in intent.values():
-                    properties.setdefault('use_entities', True)
-                    properties.setdefault('ignore_entities', [])
-                    if properties['use_entities'] is None:
-                        properties['use_entities'] = []
+                    properties.setdefault("use_entities", True)
+                    properties.setdefault("ignore_entities", [])
+                    if properties["use_entities"] is None:
+                        properties["use_entities"] = []
             else:
                 name = intent
-                intent = {intent: {'use_entities': True, 'ignore_entities': []}}
+                intent = {intent: {"use_entities": True, "ignore_entities": []}}
 
             if name in intent_properties.keys():
                 raise InvalidDomain(
@@ -304,7 +304,7 @@ class Domain(object):
 
     def __init__(
         self,
-        intent_list, #TODO which type does this have?
+        intent_list,  # TODO which type does this have?
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, Any],
@@ -489,16 +489,14 @@ class Domain(object):
             if intent_name:
                 intent_config = self.intent_config(intent_name)
                 entities = latest_message.entities
-                named_entities = [entity for entity in entities 
-                    if "entity" in entity]
-                entity_names = set([entity['entity'] for entity in named_entities])
+                named_entities = [entity for entity in entities if "entity" in entity]
+                entity_names = set([entity["entity"] for entity in named_entities])
 
                 # use_entities is either a list of explicitely included entities
                 # or True if all should be included
-                include = intent_config.get('use_entities')
-                included_entities = set(entity_names 
-                    if include is True else include)
-                excluded_entities = set(intent_config.get('ignore_entities'))
+                include = intent_config.get("use_entities")
+                included_entities = set(entity_names if include is True else include)
+                excluded_entities = set(intent_config.get("ignore_entities"))
                 wanted_entities = included_entities - excluded_entities
                 ambiguous_entities = included_entities & excluded_entities
                 existing_wanted_entities = entity_names & wanted_entities
@@ -508,12 +506,12 @@ class Domain(object):
                         "Entities: '{}' are explicitly included and excluded."
                         "Excluding takes precedence in this case."
                         "Please resolve that ambiguity."
-                        "".format(ambiguous_entities))
+                        "".format(ambiguous_entities)
+                    )
 
                 for entity_name in existing_wanted_entities:
                     key = "entity_{0}".format(entity_name)
                     state_dict[key] = 1.0
-
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():

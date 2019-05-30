@@ -107,17 +107,18 @@ async def test_create_train_data_with_history(default_domain):
         '{"intent_default": 1.0, "prev_action_listen": 1.0}]',
     ]
 
+
 async def test_create_train_data_unfeaturized_entities():
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_stories/stories_unfeaturized_entities.md"
     domain = Domain.load(domain_file)
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
-        stories_file, domain, augmentation_factor=0)
+        stories_file, domain, augmentation_factor=0
+    )
 
     assert len(training_trackers) == 2
-    (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, domain)
+    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -126,19 +127,19 @@ async def test_create_train_data_unfeaturized_entities():
     hashed = sorted(hashed, reverse=True)
 
     assert hashed == [
-        '[{}]',
+        "[{}]",
         '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
         '[{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
         '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
         '[{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
         '[{"entity_name": 1.0, "intent_greet": 1.0, "prev_utter_greet": 1.0}]',
-        '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0}]',
+        '[{"entity_name": 1.0, "intent_greet": 1.0, ' '"prev_action_listen": 1.0}]',
         '[{"entity_name": 1.0, "entity_other": 1.0, "intent_default": 1.0, '
         '"prev_utter_default": 1.0}]',
         '[{"entity_name": 1.0, "entity_other": 1.0, "intent_default": 1.0, '
-        '"prev_action_listen": 1.0}]'
+        '"prev_action_listen": 1.0}]',
     ]
+
 
 def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
@@ -308,32 +309,55 @@ templates:
     "intent_list, intent_properties",
     [
         (
-            ['greet', 'goodbye'], 
-            {'greet': {'use_entities': True, 'ignore_entities': []}, 
-            'goodbye': {'use_entities': True, 'ignore_entities': []}}
+            ["greet", "goodbye"],
+            {
+                "greet": {"use_entities": True, "ignore_entities": []},
+                "goodbye": {"use_entities": True, "ignore_entities": []},
+            },
         ),
-
         (
-            [{'greet': {'use_entities': []}}, 'goodbye'],
-            {'greet': {'use_entities': [], 'ignore_entities': []},
-            'goodbye': {'use_entities': True, 'ignore_entities': []}}
+            [{"greet": {"use_entities": []}}, "goodbye"],
+            {
+                "greet": {"use_entities": [], "ignore_entities": []},
+                "goodbye": {"use_entities": True, "ignore_entities": []},
+            },
         ),
-
         (
-            [{'greet': {'maps_to': 'utter_goodbye',
-                'use_entities': ['entity'], 'ignore_entities': ['other']}}, 'goodbye'],
-            {'greet': {'maps_to': 'utter_goodbye', 'use_entities': ['entity'],
-                'ignore_entities': ['other']},
-            'goodbye': {'use_entities': True, 'ignore_entities': []}}
+            [
+                {
+                    "greet": {
+                        "maps_to": "utter_goodbye",
+                        "use_entities": ["entity"],
+                        "ignore_entities": ["other"],
+                    }
+                },
+                "goodbye",
+            ],
+            {
+                "greet": {
+                    "maps_to": "utter_goodbye",
+                    "use_entities": ["entity"],
+                    "ignore_entities": ["other"],
+                },
+                "goodbye": {"use_entities": True, "ignore_entities": []},
+            },
         ),
-
         (
-            [{'greet': {'maps_to': 'utter_goodbye', 'use_entities': None}},
-                {'goodbye': {'use_entities': [], 'ignore_entities': []}}],
-            {'greet': {'use_entities': [], 'ignore_entities': [],
-                'maps_to': 'utter_goodbye'},
-            'goodbye': {'use_entities': [], 'ignore_entities': []}})]
-        )
+            [
+                {"greet": {"maps_to": "utter_goodbye", "use_entities": None}},
+                {"goodbye": {"use_entities": [], "ignore_entities": []}},
+            ],
+            {
+                "greet": {
+                    "use_entities": [],
+                    "ignore_entities": [],
+                    "maps_to": "utter_goodbye",
+                },
+                "goodbye": {"use_entities": [], "ignore_entities": []},
+            },
+        ),
+    ],
+)
 def test_collect_intent_properties(intent_list, intent_properties):
     assert Domain.collect_intent_properties(intent_list) == intent_properties
 
