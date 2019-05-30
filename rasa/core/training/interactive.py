@@ -764,7 +764,7 @@ async def _write_stories_to_file(
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
-            f.write(s.as_story_string(flat=True) + "\n")
+            f.write("\n" + s.as_story_string(flat=True))
 
 
 async def _write_nlu_to_file(

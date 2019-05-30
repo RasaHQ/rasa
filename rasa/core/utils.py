@@ -341,13 +341,6 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
         return s
 
 
-def write_request_body_to_file(request: Request, path: Text):
-    """Writes the body of `request` to `path`."""
-
-    with open(path, "w+b") as f:
-        f.write(request.body)
-
-
 def extract_args(
     kwargs: Dict[Text, Any], keys_to_extract: Set[Text]
 ) -> Tuple[Dict[Text, Any], Dict[Text, Any]]:

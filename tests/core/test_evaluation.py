@@ -1,7 +1,6 @@
 import os
 
 from rasa.core.test import _generate_trackers, collect_story_predictions, test
-from rasa.model import add_evaluation_file_to_model
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
