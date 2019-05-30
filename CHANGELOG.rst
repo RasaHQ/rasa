@@ -20,6 +20,7 @@ Removed
 
 Fixed
 -----
+- slack notifications from bots correctly render text 
 
 [1.0.2] - 2019-05-29
 ^^^^^^^^^^^^^^^^^^^^
@@ -32,7 +33,7 @@ Added
 
 Fixed
 -----
-- fix lookup table files failed to load issues/3622 
+- fix lookup table files failed to load issues/3622
 - buttons can now be properly selected during cmdline chat or when in interactive learning
 - set slots correctly when events are added through the API
 - mapping policy no longer ignores NLU threshold
