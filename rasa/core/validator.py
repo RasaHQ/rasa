@@ -11,35 +11,6 @@ from rasa.core.training.dsl import ActionExecuted
 
 logger = logging.getLogger(__name__)
 
-
-def create_argument_parser():
-    """Parse all the command line arguments for the run script."""
-
-    parser = argparse.ArgumentParser(description="Validates files")
-
-    parser.add_argument(
-        "--domain", "-d", type=str, required=True, help="Path for the domain file"
-    )
-
-    parser.add_argument(
-        "--stories",
-        "-s",
-        type=str,
-        required=True,
-        help="Path for the stories file or directory",
-    )
-
-    parser.add_argument(
-        "--intents",
-        "-i",
-        type=str,
-        required=True,
-        help="Path for the intents file or directory",
-    )
-
-    return parser
-
-
 class Validator:
     """Validator is a class to verify the intents and utters written."""
 
