@@ -328,7 +328,8 @@ def test_entity_evaluation_report(tmpdir_factory):
         ],
         None,
     )
-    result = evaluate_entities([EN_entity_result], mock_interpreter, report_folder)
+    extractors = get_entity_extractors(mock_interpreter)
+    result = evaluate_entities([EN_entity_result], extractors, report_folder)
 
     report_a = json.loads(rasa.utils.io.read_file(report_filename_a))
     report_b = json.loads(rasa.utils.io.read_file(report_filename_b))

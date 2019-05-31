@@ -6,20 +6,35 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.3.aX] - `master`_
+[Unreleased 1.0.4.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+- automatic creation of index on the ``sender_id`` column when using an SQL
+  tracker store. If you have an existing data and you are running into performance
+  issues, please make sure to add an index manually using
+  ``CREATE INDEX event_idx_sender_id ON events (sender_id);``.
 
 Changed
 -------
+- NLU evaluation in cross-validation mode now also provides intent/entity reports,
+  confusion matrix, etc.
 
 Removed
 -------
 
 Fixed
 -----
+
+[1.0.3] - 2019-05-30
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- non-ascii characters render correctly in stories generated from interactive learning
+- validate domain file before usage, e.g. print proper error messages if domain file
+  is invalid instead of raising errors
 
 [1.0.2] - 2019-05-29
 ^^^^^^^^^^^^^^^^^^^^
@@ -32,13 +47,12 @@ Added
 
 Fixed
 -----
-- fix lookup table files failed to load issues/3622 
+- fix lookup table files failed to load issues/3622
 - buttons can now be properly selected during cmdline chat or when in interactive learning
 - set slots correctly when events are added through the API
 - mapping policy no longer ignores NLU threshold
 - mapping policy priority is correctly persisted
-- validate domain file before usage, e.g. print proper error messages if domain file is invalid instead of raising
-  errors
+
 
 [1.0.1] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^

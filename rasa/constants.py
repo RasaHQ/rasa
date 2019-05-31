@@ -12,7 +12,7 @@ DEFAULT_RESULTS_PATH = "results"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
 DOCS_BASE_URL = "https://rasa.com/docs/rasa"
-LEGACY_DOCS_BASE_URL = "https://legacy-docs.rasa.com"
+LEGACY_DOCS_BASE_URL = "http://legacy-docs.rasa.com"
 
 FALLBACK_CONFIG_PATH = pkg_resources.resource_filename(
     __name__, "cli/default_config.yml"
