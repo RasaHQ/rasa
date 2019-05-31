@@ -205,7 +205,7 @@ def test_nlu_comparison(tmpdir):
                      DEFAULT_DATA_PATH,
                      output,
                      runs=2,
-                     exclusion_percentages=[80, 95])
+                     exclusion_percentages=[50, 80])
 
     assert os.listdir(output) == ["run_1", "run_2", "results.json", "nlu_model_comparison_graph.pdf"]
 
