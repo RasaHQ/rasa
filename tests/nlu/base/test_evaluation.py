@@ -195,8 +195,8 @@ def test_determine_token_labels_no_extractors():
 def test_determine_token_labels_no_extractors_no_overlap():
     determine_token_labels(CH_correct_segmentation[0], EN_targets, None)
 
-    
-    def test_determine_token_labels_with_extractors():
+
+def test_determine_token_labels_with_extractors():
     determine_token_labels(
         CH_correct_segmentation[0],
         [CH_correct_entity, CH_wrong_entity],
@@ -261,7 +261,7 @@ def test_run_cv_evaluation():
     assert len(entity_results.test["CRFEntityExtractor"]["Precision"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
 
-    
+
 def test_intent_evaluation_report(tmpdir_factory):
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
