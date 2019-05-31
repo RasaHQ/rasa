@@ -95,6 +95,8 @@ setup(
 )
 
 print("\nWelcome to Rasa NLU!")
-print("If any questions please visit documentation "
-      "page https://rasa.com/docs/nlu/")
+print(
+    "If any questions please visit documentation "
+    "page https://legacy-docs.rasa.com/docs/nlu/"
+)
 print("or join the community discussions on https://forum.rasa.com")
