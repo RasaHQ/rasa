@@ -207,14 +207,3 @@ class Validator:
         )
         intents = load_data(nlu_data)
         return cls(domain, intents, stories)
-
-
-if __name__ == "__main__":
-    parser = create_argument_parser()
-    cmdline_args = parser.parse_args()
-    configure_colored_logging(loglevel="INFO")
-
-    validator = Validator.from_files(
-        cmdline_args.domain, cmdline_args.intents, cmdline_args.stories
-    )
-    validator.verify_all()
