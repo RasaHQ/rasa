@@ -242,18 +242,25 @@ async def _load_agent(
     endpoints: Optional[AvailableEndpoints] = None,
 ) -> Agent:
     try:
-        _broker = broker.from_endpoint_config(endpoints.event_broker)
-        _tracker_store = TrackerStore.find_tracker_store(
-            None, endpoints.tracker_store, _broker
-        )
+        tracker_store = None
+        generator = None
+        action_endpoint = None
+
+        if endpoints:
+            _broker = broker.from_endpoint_config(endpoints.event_broker)
+            tracker_store = TrackerStore.find_tracker_store(
+                None, endpoints.tracker_store, _broker
+            )
+            generator = endpoints.nlg
+            action_endpoint = endpoints.action
 
         loaded_agent = await load_agent(
             model_path,
             model_server,
             remote_storage,
-            generator=endpoints.nlg,
-            tracker_store=_tracker_store,
-            action_endpoint=endpoints.action,
+            generator=generator,
+            tracker_store=tracker_store,
+            action_endpoint=action_endpoint,
         )
     except Exception as e:
         logger.debug(traceback.format_exc())
