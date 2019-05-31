@@ -204,7 +204,7 @@ class StoryFileReader(object):
             stories[line] = stories[line].strip()
 
         for line in stories:
-            if line[0] not in {"*", "#", "-", ">"} or line != "":
+            if len(line) > 0 and line[0] not in {"*", "#", "-", ">"}:
                 logger.error(
                     "There is an error with the following line "
                     "in your stories file"
