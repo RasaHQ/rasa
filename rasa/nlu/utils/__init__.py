@@ -321,16 +321,17 @@ def validate_pipeline_yaml(yaml):
     import pkg_resources
     from pykwalify.errors import SchemaError
     from ruamel.yaml import YAMLError
-    from rasa.nlu.model import InvalidModelError
+    from rasa.nlu.config import InvalidConfigError
+    import logging
 
     log = logging.getLogger("pykwalify")
     log.setLevel(logging.WARN)
 
     try:
-        schema_file = pkg_resources.resource_filename(__name__, "schemas/nlu_model.yml")
+        schema_file = pkg_resources.resource_filename("rasa", "nlu/schemas/nlu_model.yml")
         source_data = rasa.utils.io.read_yaml(yaml)
     except YAMLError:
-        raise InvalidModelError(
+        raise InvalidConfigError(
             "The provided config file is invalid. You can use "
             "http://www.yamllint.com/ to validate the yaml syntax "
             "of your config file."
@@ -340,7 +341,7 @@ def validate_pipeline_yaml(yaml):
         c = Core(source_data=source_data, schema_files=[schema_file])
         c.validate(raise_exception=True)
     except SchemaError:
-        raise InvalidModelError(
+        raise InvalidConfigError(
             "Failed to validate your config yaml. "
             "Please make sure the file is correct; to do so, "
             "take a look at the errors logged during "
