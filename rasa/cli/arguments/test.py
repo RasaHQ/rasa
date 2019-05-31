@@ -124,9 +124,9 @@ def add_test_nlu_argument_group(
         nargs="+",
         default=DEFAULT_CONFIG_PATH,
         help="Model configuration file.  If a single file is passed, "
-             "cross-validation is performed, if multiple configs or a "
-             "folder of configs are passed, models will be trained and "
-             "compared directly.",
+        "cross-validation is performed, if multiple configs or a "
+        "folder of configs are passed, models will be trained and "
+        "compared directly.",
     )
     cross_validation_arguments.add_argument(
         "-f",

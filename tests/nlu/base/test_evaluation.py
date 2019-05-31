@@ -41,7 +41,7 @@ from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
 
 logging.basicConfig(level="DEBUG")
 
-CONFIG_FOLDERS_PATH = './sample_configs'
+CONFIG_FOLDERS_PATH = "./sample_configs"
 
 
 @pytest.fixture(scope="session")
@@ -198,17 +198,22 @@ def test_determine_token_labels_no_extractors_no_overlap():
 
 def test_nlu_comparison(tmpdir):
 
-    configs = [NLU_DEFAULT_CONFIG_PATH, "sample_configs/config_supervised_embeddings.yml"]
+    configs = [
+        NLU_DEFAULT_CONFIG_PATH,
+        "sample_configs/config_supervised_embeddings.yml",
+    ]
     output = tmpdir.strpath
 
-    test_compare_nlu(configs,
-                     DEFAULT_DATA_PATH,
-                     output,
-                     runs=2,
-                     exclusion_percentages=[50, 80])
+    test_compare_nlu(
+        configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
+    )
 
-    assert os.listdir(output) == ["run_1", "run_2", "results.json", "nlu_model_comparison_graph.pdf"]
+    assert os.listdir(output) == [
+        "run_1",
+        "run_2",
+        "results.json",
+        "nlu_model_comparison_graph.pdf",
+    ]
 
     run_1_path = os.path.join(output, "run_1")
     assert os.listdir(run_1_path) == ["80%_exclusion", "95%_exclusion", "test.md"]
-

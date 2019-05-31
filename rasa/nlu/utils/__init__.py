@@ -328,9 +328,7 @@ def validate_pipeline_yaml(yaml):
     log.setLevel(logging.WARN)
 
     try:
-        schema_file = pkg_resources.resource_filename(
-            __name__, "schemas/nlu_model.yml"
-        )
+        schema_file = pkg_resources.resource_filename(__name__, "schemas/nlu_model.yml")
         source_data = rasa.utils.io.read_yaml(yaml)
     except YAMLError:
         raise InvalidModelError(
