@@ -41,8 +41,6 @@ from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
 
 logging.basicConfig(level="DEBUG")
 
-CONFIG_FOLDERS_PATH = "./sample_configs"
-
 
 @pytest.fixture(scope="session")
 def pretrained_interpreter(component_builder, tmpdir_factory):
