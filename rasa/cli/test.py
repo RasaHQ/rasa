@@ -88,6 +88,9 @@ def test_core(args: argparse.Namespace) -> None:
 
 def test_nlu(args: argparse.Namespace) -> None:
     from rasa.test import test_nlu, test_nlu_with_cross_validation
+    from rasa.train import _get_valid_config
+    from rasa.nlu.utils import validate_pipeline_yaml
+    from rasa.nlu.model import InvalidModelError
     import os
 
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
@@ -99,7 +102,15 @@ def test_nlu(args: argparse.Namespace) -> None:
 
         if os.path.isdir(config_path):
             files = os.listdir(args.config)
-            args.config = [os.path.join(config_path, file) for file in files]
+            args.config = []
+            for file in files:
+                try:
+                    validate_pipeline_yaml(file)
+                except InvalidModelError:
+                    continue
+
+                valid_pipeline = _get_valid_config(file, ["pipeline", "language"])
+                args.config.append(valid_pipeline)
 
     if isinstance(args.config, list):
         logger.info("Multiple configs specified, running nlu comparison mode.")

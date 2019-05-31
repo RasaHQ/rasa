@@ -141,7 +141,7 @@ def test_compare_nlu(
     from rasa.nlu.test import drop_intents_below_freq, run_evaluation
     from rasa.nlu.training_data import load_data
     from rasa.nlu.utils import write_to_file, write_json_to_file
-    from rasa.utils.io import create_path, read_json_file
+    from rasa.utils.io import create_path
     from rasa.train import train_nlu
     from rasa.core.test import plot_curve
     from rasa.model import get_model
