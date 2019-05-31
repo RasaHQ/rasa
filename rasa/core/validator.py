@@ -201,7 +201,10 @@ class Validator:
         """Create an instance from the domain, nlu and story files."""
 
         domain = Domain.load(domain_file)
-        stories = asyncio.run(StoryFileReader.read_from_folder(story_data, domain))
+        loop = asyncio.get_event_loop()
+        stories = loop.run_until_complete(
+            StoryFileReader.read_from_folder(story_data, domain)
+        )
         intents = load_data(nlu_data)
         return cls(domain, intents, stories)
 

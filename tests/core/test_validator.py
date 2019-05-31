@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from rasa.core.validator import Validator
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH,
@@ -7,19 +6,16 @@ from tests.core.conftest import (
     DEFAULT_NLU_DATA,
 )
 from rasa.core.domain import Domain
-from rasa.nlu.training_data import load_data, TrainingData
-from rasa.core.training.dsl import StoryFileReader
+from rasa.nlu.training_data import TrainingData
 
 
 @pytest.fixture
 def validator():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH)
-    stories = asyncio.run(
-        StoryFileReader.read_from_folder(DEFAULT_STORIES_FILE, domain)
+    return Validator.from_files(
+        domain_file=DEFAULT_DOMAIN_PATH,
+        nlu_data=DEFAULT_NLU_DATA,
+        story_data=DEFAULT_STORIES_FILE,
     )
-    intents = load_data(DEFAULT_NLU_DATA)
-
-    return Validator(domain=domain, intents=intents, stories=stories)
 
 
 def test_validator_creation(validator):
