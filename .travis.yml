@@ -11,7 +11,6 @@ env:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global:
   - BOTO_CONFIG=/dev/null
-  - COVERALLS_PARALLEL=true
   - PIP_USE_PEP517=false
 
 install:
@@ -33,8 +32,6 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-after_success:
-  - coveralls
 jobs:
   include:
   - stage: test
@@ -46,13 +43,15 @@ jobs:
     name: "Test 3.5"
     python: "3.5"
     script:
-      - py.test tests --cov rasa -v --cov-append
+      - py.test tests --cov rasa -v
   - <<: *run-tests
     name: "Test 3.6"
     python: '3.6'
   - <<: *run-tests
     name: "Test 3.7"
     python: '3.7'
+    after_success:
+      - coveralls   # only this version will submit results to coveralls
   - stage: integration
     name: "Test API specification"
     language: python
@@ -61,8 +60,6 @@ jobs:
     script:
     - swagger-cli validate docs/_static/spec/action-server.yml
     - swagger-cli validate docs/_static/spec/rasa.yml
-    after_success:
-    - coveralls
   - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "NLU starter pack (NLU only)"
