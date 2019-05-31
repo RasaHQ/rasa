@@ -11,7 +11,7 @@ slots:
 
 templates:
   utter_ask_person_name:
-    - "what's the name of the person you're looking for?"
+    - text: "what's the name of the person you're looking for?"
 
 actions:
   - action_search_people
