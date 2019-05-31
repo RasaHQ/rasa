@@ -102,14 +102,6 @@ def test_nlu(args: argparse.Namespace) -> None:
 
         if os.path.isdir(config_path):
             args.config = os.listdir(args.config)
-            args.config = []
-            for file in files:
-                try:
-                    validate_pipeline_yaml(file)
-                except InvalidConfigError:
-                    continue
-
-                args.config.append(file)
 
     if isinstance(args.config, list):
         logger.info("Multiple configs specified, running nlu comparison mode.")

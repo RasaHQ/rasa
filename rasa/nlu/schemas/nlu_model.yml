@@ -1,6 +1,8 @@
 allowempty: True
 mapping:
   language:
-    type: !!python/str "str"
+    type: "str"
   pipeline:
-    type: !!python/str "any"
+    type: "seq"
+    sequence:
+    - type: "str"
