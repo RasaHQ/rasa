@@ -55,7 +55,7 @@ so it will work with any language that you can tokenize (on whitespace or using 
 You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
 
 Rasa gives you the tools to compare the performance of both of these pipelines on your data directly,
-see :ref:`comparing-nlu-pipelines`
+see :ref:`comparing-nlu-pipelines`.
 
 
 You can also use MITIE as a source of word vectors in your pipeline, see :ref:`section_mitie_pipeline`.

@@ -331,9 +331,9 @@ def validate_pipeline_yaml(yaml):
         source_data = rasa.utils.io.read_yaml(yaml)
     except YAMLError:
         raise InvalidModelError(
-            "The provided pipeline file is invalid. You can use "
+            "The provided config file is invalid. You can use "
             "http://www.yamllint.com/ to validate the yaml syntax "
-            "of your domain file."
+            "of your config file."
         )
 
     try:
@@ -341,11 +341,11 @@ def validate_pipeline_yaml(yaml):
         c.validate(raise_exception=True)
     except SchemaError:
         raise InvalidModelError(
-            "Failed to validate your pipeline yaml. "
+            "Failed to validate your config yaml. "
             "Please make sure the file is correct; to do so, "
             "take a look at the errors logged during "
             "validation previous to this exception. "
-            "You can also validate your pipeline's yaml "
+            "You can also validate your config's yaml "
             "syntax using http://www.yamllint.com/."
         )
 

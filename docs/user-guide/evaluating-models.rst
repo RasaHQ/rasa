@@ -59,17 +59,17 @@ a comparative examination between the pipelines.
 .. code-block:: bash
 
   $ rasa test nlu --config pretrained_embeddings_spacy.yml supervised_embeddings.yml
-    --nlu data/nlu.md --runs 3 --percentages 0, 25, 50, 70, 90
+    --nlu data/nlu.md --runs 3 --percentages 0 25 50 70 90
 
 
 By default, it will create a train/test split from your data,
 then train each pipeline multiple times with 0, 25, 50, 70 and 90% of your intent data excluded from the training set.
-The models are then evaluated on the test set and the f1-score for each exclusion percentage is recorded.  This process
+The models are then evaluated on the test set and the f1-score for each exclusion percentage is recorded. This process
 runs three times (i.e. with 3 test sets in total) and then a graph is plotted using the means and standard deviations of
 the f1-scores.
 
 The f1-score graph - along with all train/test sets, the trained models, classification and error reports - will be saved into a folder
-called ``nlu_comparison_results``
+called ``nlu_comparison_results``.
 
 
 Intent Classification

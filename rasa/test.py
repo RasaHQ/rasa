@@ -191,7 +191,7 @@ def test_compare_nlu(
                     nlu_config, train_split_path, out_path, fixed_model_name=model_name
                 )
 
-                model_path = os.path.join(get_model(model_path), "nlu/")
+                model_path = os.path.join(get_model(model_path), "nlu")
 
                 report_path = os.path.join(out_path, "{}_report".format(model_name))
                 errors_path = os.path.join(report_path, "errors.json")
