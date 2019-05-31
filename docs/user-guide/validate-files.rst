@@ -16,17 +16,17 @@ You can run it with the following command:
 
 .. code-block:: bash
 
-  $ python -m rasa.core.validator -s data/stories.md -d domain.yml -i data/nlu.md
+  $ rasa data validate -s data/stories.md -d domain.yml -u data/nlu.md
 
 The script above runs all the validations on your files. Here is the list of options to
 the script:
 
-.. program-output:: python -m rasa.core.validator --help 
+.. program-output:: rasa data validate --help 
 
 You can also run these validations through the Python API by importing the `Validator` class,
 which has the following methods:
 
-**from_files():** Creates the instance from string paths to the necessary files
+**from_files():** Creates the instance from string paths to the necessary files.
 
 **verify_intents():** Checks if intents listed in domain file are consistent with the nlu data.
 
