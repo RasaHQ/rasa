@@ -6,7 +6,6 @@ from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
-
 logger = logging.getLogger(__name__)
 
 

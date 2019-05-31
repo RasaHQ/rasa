@@ -29,31 +29,31 @@ intents:
 
 templates:
   utter_greet:
-    - "hey there!"
+    - text: "hey there!"
   utter_goodbye:
-    - "goodbye :("
-    - "Bye-bye"
+    - text: "goodbye :("
+    - text: "Bye-bye"
   utter_default:
-    - "default message"
+    - text: "default message"
   utter_ack_dosearch:
-    - "ok let me see what I can find"
+    - text: "ok let me see what I can find"
   utter_ack_findalternatives:
-    - "ok let me see what else there is"
+    - text: "ok let me see what else there is"
   utter_ack_makereservation:
     - text: "ok making a reservation for restaurant (price={price} cuisine={cuisine}) in location={location} for count={people}? "
       buttons:
         - title: "thank you"
           payload: "thank you"
   utter_ask_cuisine:
-    - "what kind of cuisine would you like?"
+    - text: "what kind of cuisine would you like?"
   utter_ask_howcanhelp:
-    - "how can I help you?"
+    - text: "how can I help you?"
   utter_ask_location:
-    - "where?"
+    - text: "where?"
   utter_ask_moreupdates:
-    - "if you'd like to modify anything else, please tell me what. This is what I currently have: {location} (price: {price}, cuisine: {cuisine}) for {people} people."
+    - text: "if you'd like to modify anything else, please tell me what. This is what I currently have: {location} (price: {price}, cuisine: {cuisine}) for {people} people."
   utter_ask_numpeople:
-    - "for how many people?"
+    - text: "for how many people?"
   utter_ask_price:
     - text: "in which price range?"
       buttons:
@@ -62,7 +62,7 @@ templates:
       - title: "expensive"
         payload: "expensive"
   utter_on_it:
-    - "I'm on it"
+    - text: "I'm on it"
 
 actions:
 - utter_greet
