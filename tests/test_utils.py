@@ -1,6 +1,7 @@
 from aioresponses import aioresponses
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request, json_of_latest_request
+from rasa.utils.common import sort_list_of_dicts_by_first_key
 
 
 async def test_endpoint_config():
@@ -51,3 +52,12 @@ async def test_endpoint_config():
             assert s._default_headers.get("X-Powered-By") == "Rasa"
             assert s._default_auth.login == "user"
             assert s._default_auth.password == "pass"
+
+
+def test_sort_dicts_by_keys():
+    test_data = [{"Z": 1}, {"A": 10}]
+
+    expected = [{"A": 10}, {"Z": 1}]
+    actual = sort_list_of_dicts_by_first_key(test_data)
+
+    assert actual == expected

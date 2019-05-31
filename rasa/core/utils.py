@@ -286,7 +286,7 @@ def list_routes(app: Sanic):
 
     def find_route(suffix, path):
         for name, (uri, _) in app.router.routes_names.items():
-            if name.endswith(suffix) and uri == path:
+            if name.split(".")[-1] == suffix and uri == path:
                 return name
         return None
 
@@ -339,13 +339,6 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
             return s[:char_limit]
     else:
         return s
-
-
-def write_request_body_to_file(request: Request, path: Text):
-    """Writes the body of `request` to `path`."""
-
-    with open(path, "w+b") as f:
-        f.write(request.body)
 
 
 def extract_args(
