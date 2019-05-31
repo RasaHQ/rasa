@@ -20,7 +20,7 @@ from rasa.core.channels import (
     CollectingOutputChannel,
 )
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -662,8 +662,6 @@ class Agent(object):
             )
 
         logger.debug("Agent trainer got kwargs: {}".format(kwargs))
-
-        check_domain_sanity(self.domain)
 
         self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
         self._set_fingerprint()
