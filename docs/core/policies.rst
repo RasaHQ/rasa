@@ -342,6 +342,7 @@ training data. It predicts the next action with confidence ``1.0``
 if this exact conversation exists in the training data, otherwise it
 predicts ``None`` with confidence ``0.0``.
 
+.. _mapping-policy:
 
 Mapping Policy
 ^^^^^^^^^^^^^^
