@@ -207,7 +207,8 @@ class StoryFileReader(object):
             if line[0] not in {"*", "#", "-", ">"} or line != "":
                 logger.error(
                     "There is an error with the following line "
-                    "in your stories file" " {}:".format(filename)
+                    "in your stories file"
+                    " {}:".format(filename)
                 )
                 logger.error(line)
         return stories
@@ -218,7 +219,9 @@ class StoryFileReader(object):
             fragment, open_, st = st.partition("<!--")
             _, close, st = st.partition("-->")
             if open_ and not close or close and not open_:
-                logger.error("The story file {} has a unclosed comment".format(story_file))
+                logger.error(
+                    "The story file {} has a unclosed comment".format(story_file)
+                )
             fragments.append(fragment)
         return "".join(fragments)
 
