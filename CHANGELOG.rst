@@ -11,6 +11,10 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- automatic creation of index on the ``sender_id`` column when using an SQL
+  tracker store. If you have an existing data and you are running into performance
+  issues, please make sure to add an index manually using
+  ``CREATE INDEX event_idx_sender_id ON events (sender_id);``.
 
 Changed
 -------
