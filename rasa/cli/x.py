@@ -55,6 +55,7 @@ def _rasa_service(
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
 
+    # needs separate logging configuration as it is started in its own process
     logging.basicConfig(level=args.loglevel)
     io_utils.configure_colored_logging(args.loglevel)
     logging.getLogger("apscheduler").setLevel(logging.WARNING)
