@@ -27,23 +27,19 @@ item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
 
-ESCAPE_DCT = {
-    '\b': '\\b',
-    '\f': '\\f',
-    '\n': '\\n',
-    '\r': '\\r',
-    '\t': '\\t',
-}
+ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 
-ESCAPE = re.compile(r'[\b\f\n\r\t]')
+ESCAPE = re.compile(r"[\b\f\n\r\t]")
 
 
 def encode_string(s):
     """Return a encoded python string
 
     """
+
     def replace(match):
         return ESCAPE_DCT[match.group(0)]
+
     return ESCAPE.sub(replace, s)
 
 
@@ -288,7 +284,7 @@ class MarkdownWriter(TrainingDataWriter):
     @staticmethod
     def _generate_fname_md(text):
         """generates markdown for a lookup table file path."""
-        return "  {}\n".format(text)
+        return "  {}\n".format(encode_string(text))
 
     def _generate_message_md(self, message):
         """generates markdown for a message object."""
