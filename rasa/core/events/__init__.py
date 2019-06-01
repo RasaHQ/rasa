@@ -276,7 +276,8 @@ class UserUttered(Event):
         if self.intent:
             if self.entities:
                 ent_string = json.dumps(
-                    {ent["entity"]: ent["value"] for ent in self.entities}
+                    {ent["entity"]: ent["value"] for ent in self.entities},
+                    ensure_ascii=False,
                 )
             else:
                 ent_string = ""
@@ -425,7 +426,7 @@ class SlotSet(Event):
             return (self.key, self.value) == (other.key, other.value)
 
     def as_story_string(self):
-        props = json.dumps({self.key: self.value})
+        props = json.dumps({self.key: self.value}, ensure_ascii=False)
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod

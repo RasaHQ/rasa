@@ -107,7 +107,7 @@ class MarkdownReader(TrainingDataReader):
         if self.current_section == LOOKUP:
             match = re.match(fname_regex, line)
             if match:
-                fname = match.group(1)
+                fname = line.strip()
                 self.lookup_tables.append(
                     {"name": self.current_title, "elements": str(fname)}
                 )

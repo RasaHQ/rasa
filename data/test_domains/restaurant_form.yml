@@ -20,9 +20,9 @@ slots:
 
 templates:
   utter_ask_people:
-    - "for how many people?"
+    - text: "for how many people?"
   utter_ask_cuisine:
-    - "what cuisine would you like?"
+    - text: "what cuisine would you like?"
 
 actions:
   - action_search_restaurants

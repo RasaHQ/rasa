@@ -19,7 +19,7 @@ class FormPolicy(MemoizationPolicy):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = 4,
+        priority: int = 5,
         lookup: Optional[Dict] = None,
     ) -> None:
 
