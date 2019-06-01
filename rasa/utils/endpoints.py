@@ -153,7 +153,7 @@ class EndpointConfig(object):
             self.basic_auth,
             self.token,
             self.token_name,
-            ** self.kwargs,
+            **self.kwargs
         )
 
     def __eq__(self, other):

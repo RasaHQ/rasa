@@ -12,6 +12,7 @@ from rasa.core import utils
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
 from tests.core.conftest import MOODBOT_MODEL_PATH
+
 # this is needed so that the tests included as code examples look better
 from tests.utilities import json_of_latest_request, latest_request
 

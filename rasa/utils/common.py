@@ -102,7 +102,7 @@ def update_tensorflow_log_level():
 
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # disables AVX2 FMA warnings (CPU support)
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # disables AVX2 FMA warnings (CPU support)
     if log_level == "DEBUG":
         tf_log_level = tf.logging.DEBUG
     elif log_level == "INFO":
