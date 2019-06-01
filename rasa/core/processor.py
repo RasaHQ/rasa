@@ -244,7 +244,7 @@ class MessageProcessor(object):
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
-    async def _parse_message(self, message):
+    async def _parse_message(self, message, tracker=None):
         # for testing - you can short-cut the NLU part with a message
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
@@ -253,7 +253,7 @@ class MessageProcessor(object):
                 message.text, message.message_id
             )
         else:
-            parse_data = await self.interpreter.parse(message.text, message.message_id)
+            parse_data = await self.interpreter.parse(message.text, message.message_id, tracker)
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
@@ -270,7 +270,7 @@ class MessageProcessor(object):
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            parse_data = await self._parse_message(message)
+            parse_data = await self._parse_message(message, tracker)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log

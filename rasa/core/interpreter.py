@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class NaturalLanguageInterpreter(object):
-    async def parse(self, text, message_id=None):
+    async def parse(self, text, message_id=None, tracker_store=None):
         raise NotImplementedError(
             "Interpreter needs to be able to parse messages into structured output."
         )
@@ -187,7 +187,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         else:
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    async def parse(self, text, message_id=None):
+    async def parse(self, text, message_id=None, tracker=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
@@ -197,11 +197,11 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "entities": [],
             "text": "",
         }
-        result = await self._rasa_http_parse(text, message_id)
+        result = await self._rasa_http_parse(text, message_id, traker)
 
         return result if result is not None else default_return
 
-    async def _rasa_http_parse(self, text, message_id=None):
+    async def _rasa_http_parse(self, text, message_id=None, tracker=None):
         """Send a text message to a running rasa NLU http server.
 
         Return `None` on failure."""
@@ -213,15 +213,20 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             )
             return None
 
+        if self.endpoint.nlu_project_slot:
+            project = tracker.get(self.endpoint.nlu_project_slot)
+            url = "https://{}.{}/parse".format(project, self.endpoint.url)
+        else:
+            url = "{}/parse".format(self.endpoint.url)
+
         params = {
             "token": self.endpoint.token,
             "model": self.model_name,
             "project": self.project_name,
             "q": text,
-            "message_id": message_id,
+            "message_id": message_id
         }
 
-        url = "{}/parse".format(self.endpoint.url)
         # noinspection PyBroadException
         try:
             async with aiohttp.ClientSession() as session:

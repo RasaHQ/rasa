@@ -18,6 +18,7 @@ from rasa.core.events import (
 )
 from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
+from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 from tests.utilities import json_of_latest_request, latest_request
@@ -58,13 +59,37 @@ async def test_parsing(default_processor):
 async def test_http_parsing():
     message = UserMessage("lunch?")
 
-    endpoint = EndpointConfig("https://interpreter.com")
+    endpoint = EndpointConfig("interpreter.com")
     with aioresponses() as mocked:
-        mocked.post("https://interpreter.com/parse", repeat=True, status=200)
+        mocked.post("https://en.interpreter.com/parse", repeat=True, status=200)
 
         inter = RasaNLUHttpInterpreter(endpoint=endpoint)
         try:
             await MessageProcessor(inter, None, None, None, None)._parse_message(
+                message
+            )
+        except KeyError:
+            pass  # logger looks for intent and entities, so we except
+
+        r = latest_request(mocked, "POST", "https://interpreter.com/parse")
+
+        assert r
+        assert json_of_latest_request(r)["message_id"] == message.message_id
+
+async def test_http_parsing_with_tracker():
+    message = UserMessage("lunch?")
+    tracker = DialogueStateTracker("1", [{"name": "nlu_project"}])
+    tracker._set_slot("nlu_project", "en")
+
+    endpoint = EndpointConfig("interpreter.com", nlu_project_slot="nlu_project")
+    assert endpoint.nlu_project_slot == "nlu_project"
+
+    with aioresponses() as mocked:
+        mocked.post("https://en.interpreter.com/parse", repeat=True, status=200)
+
+        inter = RasaNLUHttpInterpreter(endpoint=endpoint)
+        try:
+            await MessageProcessor(inter, None, None, tracker, None)._parse_message(
                 message
             )
         except KeyError:
