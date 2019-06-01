@@ -1,6 +1,7 @@
 import json
 import logging
-import mock
+from unittest.mock import patch
+
 import pytest
 import sanic
 from aioresponses import aioresponses
@@ -8,15 +9,11 @@ from httpretty import httpretty
 from sanic import Sanic
 
 from rasa.core import utils
-from rasa.core.agent import Agent
-from rasa.core.interpreter import RegexInterpreter
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
 from tests.core.conftest import MOODBOT_MODEL_PATH
-
 # this is needed so that the tests included as code examples look better
 from tests.utilities import json_of_latest_request, latest_request
-import os
 
 MODEL_PATH = MOODBOT_MODEL_PATH
 
@@ -101,7 +98,7 @@ async def test_console_input():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_facebook_channel():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         # START DOC INCLUDE
         from rasa.core.channels.facebook import FacebookInput
         from rasa.core.agent import Agent
@@ -132,7 +129,7 @@ def test_facebook_channel():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_webexteams_channel():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         # START DOC INCLUDE
         from rasa.core.channels.webexteams import WebexTeamsInput
         from rasa.core.agent import Agent
@@ -163,7 +160,7 @@ def test_webexteams_channel():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_slack_channel():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         # START DOC INCLUDE
         from rasa.core.channels.slack import SlackInput
         from rasa.core.agent import Agent
@@ -192,7 +189,7 @@ def test_slack_channel():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_mattermost_channel():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         # START DOC INCLUDE
         from rasa.core.channels.mattermost import MattermostInput
         from rasa.core.agent import Agent
@@ -228,7 +225,7 @@ def test_mattermost_channel():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_botframework_channel():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         # START DOC INCLUDE
         from rasa.core.channels.botframework import BotFrameworkInput
         from rasa.core.agent import Agent
@@ -259,7 +256,7 @@ def test_botframework_channel():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_rocketchat_channel():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         # START DOC INCLUDE
         from rasa.core.channels.rocketchat import RocketChatInput
         from rasa.core.agent import Agent
@@ -294,7 +291,7 @@ def test_rocketchat_channel():
 @pytest.mark.filterwarnings("ignore:unclosed file.*:ResourceWarning")
 def test_telegram_channel():
     # telegram channel will try to set a webhook, so we need to mock the api
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         httpretty.register_uri(
             httpretty.POST,
             "https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook",
@@ -404,7 +401,7 @@ def test_handling_of_telegram_user_id():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_twilio_channel():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         # START DOC INCLUDE
         from rasa.core.channels.twilio import TwilioInput
         from rasa.core.agent import Agent
@@ -435,7 +432,7 @@ def test_twilio_channel():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_callback_channel():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         # START DOC INCLUDE
         from rasa.core.channels.callback import CallbackInput
         from rasa.core.agent import Agent
@@ -464,7 +461,7 @@ def test_callback_channel():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_socketio_channel():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         # START DOC INCLUDE
         from rasa.core.channels.socketio import SocketIOInput
         from rasa.core.agent import Agent
@@ -821,7 +818,7 @@ async def test_slackbot_send_text():
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 def test_channel_inheritance():
-    with mock.patch.object(sanic.Sanic, "run", fake_sanic_run):
+    with patch.object(sanic.Sanic, "run", fake_sanic_run):
         from rasa.core.channels import RestInput
         from rasa.core.channels import RasaChatInput
         from rasa.core.agent import Agent

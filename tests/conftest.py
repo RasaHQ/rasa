@@ -16,6 +16,10 @@ from tests.core.conftest import (
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
+# we reuse a bit of pytest's own testing machinery, this should eventually come
+# from a separatedly installable pytest-cli plugin.
+pytest_plugins = ["pytester"]
+
 
 @pytest.fixture
 async def default_agent(tmpdir_factory) -> Agent:

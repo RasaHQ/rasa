@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from typing import Text
@@ -22,7 +23,7 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.utils import zip_folder
+from rasa.utils.io import zip_folder
 from rasa.train import train_async
 
 matplotlib.use("Agg")
@@ -73,9 +74,11 @@ class ExamplePolicy(Policy):
 
 @pytest.fixture
 def loop():
-    from pytest_sanic.plugin import loop as sanic_loop
-
-    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")

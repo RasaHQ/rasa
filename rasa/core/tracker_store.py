@@ -12,7 +12,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.broker import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
-from rasa.core.utils import class_from_module_path
+from rasa.utils.common import class_from_module_path
 
 logger = logging.getLogger(__name__)
 

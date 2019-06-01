@@ -4,7 +4,7 @@ import uuid
 from aioresponses import aioresponses
 
 import rasa.utils.io
-from rasa.core import utils
+from rasa.utils.io import read_json_file
 from rasa.core.training import interactive
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.actions.action import default_actions
@@ -297,7 +297,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
     # Test method interactive._write_domain_to_file
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = utils.read_json_file(tracker_dump)
+    tracker_json = read_json_file(tracker_dump)
 
     events = tracker_json.get("events", [])
 

@@ -9,6 +9,7 @@ from rasa.core.interpreter import RegexInterpreter
 from rasa.constants import DEFAULT_RESULTS_PATH
 from rasa.model import get_model, get_model_subdirectories, unpack_model
 from rasa.cli.utils import minimal_kwargs, print_error, print_warning
+from rasa.utils.io import read_json_file
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def test_compare(models: List[Text], stories: Text, output: Text):
     loop.run_until_complete(compare(model_directory, stories, output))
 
     story_n_path = os.path.join(model_directory, "num_stories.json")
-    number_of_stories = core_utils.read_json_file(story_n_path)
+    number_of_stories = read_json_file(story_n_path)
     plot_curve(output, number_of_stories)
 
 

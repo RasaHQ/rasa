@@ -8,6 +8,7 @@ from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
+from rasa.utils.io import read_json_file
 
 
 class EntitySynonymMapper(EntityExtractor):
@@ -71,7 +72,7 @@ class EntitySynonymMapper(EntityExtractor):
 
         entity_synonyms_file = os.path.join(model_dir, file_name)
         if os.path.isfile(entity_synonyms_file):
-            synonyms = utils.read_json_file(entity_synonyms_file)
+            synonyms = read_json_file(entity_synonyms_file)
         else:
             synonyms = None
             warnings.warn(

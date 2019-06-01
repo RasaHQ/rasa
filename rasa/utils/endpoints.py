@@ -36,6 +36,25 @@ def read_endpoint_config(
         return None
 
 
+def concat_url(base: Text, subpath: Optional[Text]) -> Text:
+    """Append a subpath to a base url.
+
+    Strips leading slashes from the subpath if necessary. This behaves
+    differently than `urlparse.urljoin` and will not treat the subpath
+    as a base url if it starts with `/` but will always append it to the
+    `base`."""
+
+    if not subpath:
+        return base
+
+    url = base
+    if not base.endswith("/"):
+        url += "/"
+    if subpath.startswith("/"):
+        subpath = subpath[1:]
+    return url + subpath
+
+
 class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
@@ -57,25 +76,6 @@ class EndpointConfig(object):
         self.token_name = token_name
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
         self.kwargs = kwargs
-
-    @staticmethod
-    def _concat_url(base: Text, subpath: Optional[Text]) -> Text:
-        """Append a subpath to a base url.
-
-        Strips leading slashes from the subpath if necessary. This behaves
-        differently than `urlparse.urljoin` and will not treat the subpath
-        as a base url if it starts with `/` but will always append it to the
-        `base`."""
-
-        if not subpath:
-            return base
-
-        url = base
-        if not base.endswith("/"):
-            url += "/"
-        if subpath.startswith("/"):
-            subpath = subpath[1:]
-        return url + subpath
 
     def session(self):
         # create authentication parameters
@@ -126,7 +126,7 @@ class EndpointConfig(object):
             headers.update(kwargs["headers"])
             del kwargs["headers"]
 
-        url = self._concat_url(self.url, subpath)
+        url = concat_url(self.url, subpath)
         async with self.session() as session:
             async with session.request(
                 method,
@@ -144,6 +144,17 @@ class EndpointConfig(object):
     @classmethod
     def from_dict(cls, data):
         return EndpointConfig(**data)
+
+    def copy(self):
+        return EndpointConfig(
+            self.url,
+            self.params,
+            self.headers,
+            self.basic_auth,
+            self.token,
+            self.token_name,
+            ** self.kwargs,
+        )
 
     def __eq__(self, other):
         if isinstance(self, type(other)):

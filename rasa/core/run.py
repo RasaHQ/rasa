@@ -16,7 +16,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.model import get_model_subdirectories, get_model
-from rasa.utils.common import update_sanic_log_level
+from rasa.utils.common import update_sanic_log_level, class_from_module_path
 
 logger = logging.getLogger()  # get the root logger
 
@@ -45,7 +45,7 @@ def _create_single_channel(channel, credentials):
     else:
         # try to load channel based on class name
         try:
-            input_channel_class = utils.class_from_module_path(channel)
+            input_channel_class = class_from_module_path(channel)
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
             raise Exception(
@@ -78,7 +78,7 @@ def configure_app(
             jwt_method=jwt_method,
         )
     else:
-        app = Sanic(__name__)
+        app = Sanic(__name__, configure_logging=False)
         CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
 
     if input_channels:
