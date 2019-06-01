@@ -1,9 +1,9 @@
 # coding=utf-8
+import responses
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
-from httpretty import httpretty
 
 
 def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
@@ -145,9 +145,10 @@ def test_crf_json_from_non_BILOU(spacy_nlp, ner_crf_pos_feature_config):
     assert rs[4] == {"start": 29, "end": 31, "value": "by", "entity": "where"}
 
 
+@responses.activate
 def test_duckling_entity_extractor(component_builder):
-    httpretty.register_uri(
-        httpretty.POST,
+    responses.add(
+        responses.POST,
         "http://localhost:8000/parse",
         body="""[{"body":"Today","start":0,"value":{"values":[{
              "value":"2018-11-13T00:00:00.000-08:00","grain":"day",
@@ -181,7 +182,6 @@ def test_duckling_entity_extractor(component_builder):
              "type":"value"},"end":45,"dim":"time",
              "latent":false}]""",
     )
-    httpretty.enable()
 
     _config = RasaNLUModelConfig({"pipeline": [{"name": "DucklingHTTPExtractor"}]})
     _config.set_component_attr(
@@ -195,8 +195,8 @@ def test_duckling_entity_extractor(component_builder):
 
     # Test duckling with a defined date
 
-    httpretty.register_uri(
-        httpretty.POST,
+    responses.add(
+        responses.POST,
         "http://localhost:8000/parse",
         body="""[{"body":"tomorrow","start":12,"value":{"values":[{
              "value":"2013-10-13T00:00:00.000Z","grain":"day",
@@ -219,8 +219,8 @@ def test_duckling_entity_extractor(component_builder):
     duckling_number = component_builder.create_component(
         _config.for_component(0), _config
     )
-    httpretty.register_uri(
-        httpretty.POST,
+    responses.add(
+        responses.POST,
         "http://localhost:8000/parse",
         body="""[{"body":"Yesterday","start":0,"value":{"values":[{
             "value":"2019-02-28T00:00:00.000+01:00","grain":"day",
@@ -237,8 +237,6 @@ def test_duckling_entity_extractor(component_builder):
     assert len(entities) == 1
     assert entities[0]["text"] == "5"
     assert entities[0]["value"] == 5
-
-    httpretty.disable()
 
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):

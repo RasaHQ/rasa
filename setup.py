@@ -19,7 +19,6 @@ tests_requires = [
     "pytest-localserver~=0.5.0",
     "pytest-sanic~=1.0.0",
     "responses~=0.9.0",
-    "httpretty~=0.9.0",
     "freezegun~=0.3.0",
     "nbsphinx>=0.3",
     "aioresponses~=0.6.0",
