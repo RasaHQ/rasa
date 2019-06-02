@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class NaturalLanguageInterpreter(object):
-    async def parse(self, text, message_id=None, tracker_store=None):
+    async def parse(self, text, message_id=None, tracker=None):
         raise NotImplementedError(
             "Interpreter needs to be able to parse messages into structured output."
         )
@@ -197,7 +197,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "entities": [],
             "text": "",
         }
-        result = await self._rasa_http_parse(text, message_id, traker)
+        result = await self._rasa_http_parse(text, message_id, tracker)
 
         return result if result is not None else default_return
 
@@ -213,19 +213,23 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             )
             return None
 
-        if self.endpoint.nlu_project_slot:
-            project = tracker.get(self.endpoint.nlu_project_slot)
-            url = "https://{}.{}/parse".format(project, self.endpoint.url)
-        else:
-            url = "{}/parse".format(self.endpoint.url)
-
         params = {
             "token": self.endpoint.token,
             "model": self.model_name,
-            "project": self.project_name,
             "q": text,
             "message_id": message_id
         }
+
+        logger.info("traker:{} endpoint.kwargs:{} nlu_project_slot:{}".format(
+            tracker, self.endpoint.kwargs, self.endpoint.nlu_project_slot
+        ))
+        if tracker and self.endpoint.nlu_project_slot:
+            project = tracker.get_slot(self.endpoint.nlu_project_slot)
+            params["project"] = project
+            url = "https://{}.{}/parse".format(project, self.endpoint.url)
+        else:
+            url = "https://{}/parse".format(self.endpoint.url)
+
 
         # noinspection PyBroadException
         try:

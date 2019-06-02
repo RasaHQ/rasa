@@ -20,6 +20,7 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
+from rasa.core.slots import Slot
 
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -61,7 +62,7 @@ async def test_http_parsing():
 
     endpoint = EndpointConfig("interpreter.com")
     with aioresponses() as mocked:
-        mocked.post("https://en.interpreter.com/parse", repeat=True, status=200)
+        mocked.post("https://interpreter.com/parse", repeat=True, status=200)
 
         inter = RasaNLUHttpInterpreter(endpoint=endpoint)
         try:
@@ -76,9 +77,21 @@ async def test_http_parsing():
         assert r
         assert json_of_latest_request(r)["message_id"] == message.message_id
 
+
+# This test sets the endpoint config to specify the slot name that will specify
+# the NLU project name. We also set that slot in the tracker.
+#
+# Once everything is set up, we're parsing the message and passing the tracker as
+# the context for the interpreter. RasaNLUHttpInterpreter reacts to the fact that
+# the tracker has a slot, and modifies the HTTP url to connect to the right NLU
+# service.
+# 
+# Thus we're showing a use-case how a multi-language NLU interpretation can be
+# implemented with a single core runtime.
 async def test_http_parsing_with_tracker():
     message = UserMessage("lunch?")
-    tracker = DialogueStateTracker("1", [{"name": "nlu_project"}])
+    tracker = DialogueStateTracker.from_dict("1", [], [Slot("nlu_project")])
+    # we'll expect this value 'en' to be part of the NLU domain name
     tracker._set_slot("nlu_project", "en")
 
     endpoint = EndpointConfig("interpreter.com", nlu_project_slot="nlu_project")
@@ -89,13 +102,15 @@ async def test_http_parsing_with_tracker():
 
         inter = RasaNLUHttpInterpreter(endpoint=endpoint)
         try:
+            # passing the tracker
             await MessageProcessor(inter, None, None, tracker, None)._parse_message(
-                message
+                message, tracker
             )
         except KeyError:
             pass  # logger looks for intent and entities, so we except
 
-        r = latest_request(mocked, "POST", "https://interpreter.com/parse")
+        # Did we POST to the right domain name?
+        r = latest_request(mocked, "POST", "https://en.interpreter.com/parse")
 
         assert r
         assert json_of_latest_request(r)["message_id"] == message.message_id
