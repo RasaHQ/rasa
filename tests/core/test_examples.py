@@ -23,9 +23,8 @@ def loop():
     loop.close()
 
 
-async def test_moodbot_example(trained_moodbot_path):
-    model = get_model(trained_moodbot_path)
-    agent = Agent.load(model)
+async def test_moodbot_example(unpacked_trained_moodbot_path):
+    agent = Agent.load(unpacked_trained_moodbot_path)
 
     responses = await agent.handle_text("/greet")
     assert responses[0]["text"] == "Hey! How are you?"

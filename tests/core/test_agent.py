@@ -40,7 +40,7 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
         return await response.file_stream(
             location=model_path,
             headers={"ETag": model_hash, "filename": model_path},
-            mime_type="application/zip",
+            mime_type="application/gzip",
         )
 
     return app
@@ -48,9 +48,9 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
 
 @pytest.fixture
 @async_generator
-async def model_server(test_server, zipped_moodbot_model):
+async def model_server(test_server, trained_moodbot_path):
     server = await test_server(
-        model_server_app(zipped_moodbot_model, model_hash="somehash")
+        model_server_app(trained_moodbot_path, model_hash="somehash")
     )
     await yield_(server)  # python 3.5 compatibility
     await server.close()
@@ -112,7 +112,7 @@ def test_agent_wrong_use_of_load(tmpdir, default_domain):
 
 
 async def test_agent_with_model_server_in_thread(
-    model_server, tmpdir, zipped_moodbot_model, moodbot_domain, moodbot_metadata
+    model_server, moodbot_domain, moodbot_metadata
 ):
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": model_server.make_url("/model"), "wait_time_between_pulls": 2}

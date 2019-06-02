@@ -152,16 +152,8 @@ async def default_processor(default_domain, default_nlg):
 
 
 @pytest.fixture(scope="session")
-async def zipped_moodbot_model(trained_moodbot_path):
-    # train moodbot if necessary
-    policy_file = os.path.join(trained_moodbot_path, "core", "metadata.json")
-
-    return zip_folder(os.path.dirname(trained_moodbot_path))
-
-
-@pytest.fixture(scope="session")
-def moodbot_domain():
-    domain_path = os.path.join(MOODBOT_MODEL_PATH, "core", "domain.yml")
+def moodbot_domain(trained_moodbot_path):
+    domain_path = os.path.join("examples", "moodbot", "domain.yml")
     return Domain.load(domain_path)
 
 

@@ -5,6 +5,7 @@ from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels import RestInput, channel
 from rasa.core.policies import AugmentedMemoizationPolicy
+from rasa.model import get_model
 from rasa.train import train_async, train
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
@@ -45,6 +46,11 @@ async def trained_moodbot_path():
         training_files="examples/moodbot/data/",
         output_path=MOODBOT_MODEL_PATH,
     )
+
+
+@pytest.fixture(scope="session")
+async def unpacked_trained_moodbot_path(trained_moodbot_path):
+    return get_model(trained_moodbot_path)
 
 
 @pytest.fixture
