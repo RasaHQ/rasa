@@ -12,7 +12,8 @@ from tests.core.conftest import (
     DEFAULT_STACK_CONFIG,
     DEFAULT_NLU_DATA,
     END_TO_END_STORY_FILE,
-    MOODBOT_MODEL_PATH)
+    MOODBOT_MODEL_PATH,
+)
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
