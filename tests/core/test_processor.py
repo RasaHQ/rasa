@@ -18,8 +18,9 @@ from rasa.core.events import (
 )
 from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
+from rasa.core.trackers import DialogueStateTracker
 from rasa.core.slots import Slot
 
 from tests.utilities import json_of_latest_request, latest_request

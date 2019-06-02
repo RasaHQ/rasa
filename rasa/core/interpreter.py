@@ -216,7 +216,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         params = {
             "token": self.endpoint.token,
             "model": self.model_name,
-            "q": text,
+            "text": text,
             "message_id": message_id,
         }
 
