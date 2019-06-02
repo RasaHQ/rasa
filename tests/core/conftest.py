@@ -152,29 +152,11 @@ async def default_processor(default_domain, default_nlg):
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path():
-    await train(
-        domain_file="examples/moodbot/domain.yml",
-        stories_file="examples/moodbot/data/stories.md",
-        output_path=MOODBOT_MODEL_PATH,
-        interpreter=RegexInterpreter(),
-        policy_config="rasa/cli/default_config.yml",
-        kwargs=None,
-    )
-
-    return MOODBOT_MODEL_PATH
-
-
-@pytest.fixture(scope="session")
-async def zipped_moodbot_model():
+async def zipped_moodbot_model(trained_moodbot_path):
     # train moodbot if necessary
-    policy_file = os.path.join(MOODBOT_MODEL_PATH, "core", "metadata.json")
-    if not os.path.isfile(policy_file):
-        await trained_moodbot_path()
+    policy_file = os.path.join(trained_moodbot_path, "core", "metadata.json")
 
-    zip_path = zip_folder(os.path.dirname(MOODBOT_MODEL_PATH))
-
-    return zip_path
+    return zip_folder(os.path.dirname(trained_moodbot_path))
 
 
 @pytest.fixture(scope="session")

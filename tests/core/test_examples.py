@@ -10,6 +10,7 @@ import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
+from rasa.model import get_model
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 
@@ -23,7 +24,8 @@ def loop():
 
 
 async def test_moodbot_example(trained_moodbot_path):
-    agent = Agent.load(trained_moodbot_path)
+    model = get_model(trained_moodbot_path)
+    agent = Agent.load(model)
 
     responses = await agent.handle_text("/greet")
     assert responses[0]["text"] == "Hey! How are you?"

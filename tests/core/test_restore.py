@@ -5,6 +5,7 @@ import pytest
 import rasa.utils.io
 from rasa.core import restore
 from rasa.core.agent import Agent
+from rasa.model import get_model
 
 
 @pytest.fixture(scope="module")
@@ -19,7 +20,8 @@ def loop():
 async def test_restoring_tracker(trained_moodbot_path, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
-    agent = Agent.load(trained_moodbot_path)
+    model = get_model(trained_moodbot_path)
+    agent = Agent.load(model)
 
     tracker = restore.load_tracker_from_json(tracker_dump, agent.domain)
 
