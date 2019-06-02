@@ -217,19 +217,20 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "token": self.endpoint.token,
             "model": self.model_name,
             "q": text,
-            "message_id": message_id
+            "message_id": message_id,
         }
 
-        logger.info("traker:{} endpoint.kwargs:{} nlu_project_slot:{}".format(
-            tracker, self.endpoint.kwargs, self.endpoint.nlu_project_slot
-        ))
+        logger.info(
+            "traker:{} endpoint.kwargs:{} nlu_project_slot:{}".format(
+                tracker, self.endpoint.kwargs, self.endpoint.nlu_project_slot
+            )
+        )
         if tracker and self.endpoint.nlu_project_slot:
             project = tracker.get_slot(self.endpoint.nlu_project_slot)
             params["project"] = project
             url = "https://{}.{}/parse".format(project, self.endpoint.url)
         else:
             url = "https://{}/parse".format(self.endpoint.url)
-
 
         # noinspection PyBroadException
         try:

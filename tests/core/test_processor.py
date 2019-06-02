@@ -85,7 +85,7 @@ async def test_http_parsing():
 # the context for the interpreter. RasaNLUHttpInterpreter reacts to the fact that
 # the tracker has a slot, and modifies the HTTP url to connect to the right NLU
 # service.
-# 
+#
 # Thus we're showing a use-case how a multi-language NLU interpretation can be
 # implemented with a single core runtime.
 async def test_http_parsing_with_tracker():

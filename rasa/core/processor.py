@@ -253,7 +253,9 @@ class MessageProcessor(object):
                 message.text, message.message_id
             )
         else:
-            parse_data = await self.interpreter.parse(message.text, message.message_id, tracker)
+            parse_data = await self.interpreter.parse(
+                message.text, message.message_id, tracker
+            )
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
