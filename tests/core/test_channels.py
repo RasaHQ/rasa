@@ -42,6 +42,11 @@ def fake_telegram_me(*args, **kwargs):
     }
 
 
+def fake_send_message(*args, **kwargs):
+    """Fake sending a message."""
+    return {"ok": True, "result": {}}
+
+
 async def test_send_response(default_channel, default_tracker):
     text_only_message = {"text": "hey"}
     image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
@@ -343,6 +348,8 @@ def test_telegram_channel():
 @patch.object(TelegramOutput, "setWebhook", noop)
 # telegram will try to verify the user, so we need to mock the api
 @patch.object(TelegramOutput, "get_me", fake_telegram_me)
+# telegram will also try to send a message...
+@patch.object(TelegramOutput, "send_message", fake_send_message)
 def test_handling_of_telegram_user_id():
     from rasa.core.channels.telegram import TelegramInput
     from rasa.core.agent import Agent
