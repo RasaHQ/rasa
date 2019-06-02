@@ -16,13 +16,12 @@ from rasa.core.events import (
     BotUttered,
     Restarted,
 )
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.slots import Slot
 from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.slots import Slot
-
 from tests.utilities import json_of_latest_request, latest_request
 
 
