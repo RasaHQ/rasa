@@ -99,7 +99,7 @@ called ``actions.py`` and you do not have ``rasa`` installed, run this command:
 
     python -m rasa_sdk --actions actions
 
-.. _custom_action_example:
+.. _custom_action_example_verbose:
 
 In a restaurant bot, if the user says "show me a Mexican restaurant",
 your bot could execute the action ``ActionCheckRestaurants``,
