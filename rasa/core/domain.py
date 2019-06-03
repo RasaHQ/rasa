@@ -503,7 +503,7 @@ class Domain(object):
                 entity_names = set([entity["entity"] for entity in named_entities])
 
                 # use_entities is either a list of explicitely included entities
-                # or True if all should be included
+                # or `True` if all should be included
                 include = intent_config.get("use_entities")
                 included_entities = set(entity_names if include is True else include)
                 excluded_entities = set(intent_config.get("ignore_entities"))
