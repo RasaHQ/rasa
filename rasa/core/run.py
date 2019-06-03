@@ -57,6 +57,13 @@ def _create_single_channel(channel, credentials):
             )
 
 
+def _configure_logging(log_file: Text):
+    formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+    file_handler = logging.FileHandler(log_file, mode="w")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+
 def configure_app(
     input_channels: Optional[List["InputChannel"]] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
@@ -66,6 +73,7 @@ def configure_app(
     jwt_method: Optional[Text] = None,
     route: Optional[Text] = "/webhooks/",
     port: int = constants.DEFAULT_SERVER_PORT,
+    log_file: Optional[Text] = None,
 ):
     """Run the agent."""
     from rasa import server
@@ -81,6 +89,8 @@ def configure_app(
         app = Sanic(__name__, configure_logging=False)
         CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
 
+    _configure_logging(log_file)
+
     if input_channels:
         rasa.core.channels.channel.register(input_channels, app, route=route)
     else:
@@ -90,11 +100,11 @@ def configure_app(
         utils.list_routes(app)
 
     # configure async loop logging
-    async def configure_logging():
+    async def configure_async_logging():
         if logger.isEnabledFor(logging.DEBUG):
             rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())
 
-    app.add_task(configure_logging)
+    app.add_task(configure_async_logging)
 
     if "cmdline" in {c.name() for c in input_channels}:
 
@@ -125,6 +135,7 @@ def serve_application(
     jwt_method: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
     remote_storage: Optional[Text] = None,
+    log_file: Optional[Text] = None,
 ):
     if not channel and not credentials:
         channel = "cmdline"
@@ -132,7 +143,14 @@ def serve_application(
     input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(
-        input_channels, cors, auth_token, enable_api, jwt_secret, jwt_method, port=port
+        input_channels,
+        cors,
+        auth_token,
+        enable_api,
+        jwt_secret,
+        jwt_method,
+        port=port,
+        log_file=log_file,
     )
 
     logger.info(
@@ -145,7 +163,7 @@ def serve_application(
         "before_server_start",
     )
 
-    update_sanic_log_level()
+    update_sanic_log_level(log_file)
 
     app.run(host="0.0.0.0", port=port)
 
