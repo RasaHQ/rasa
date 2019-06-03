@@ -9,6 +9,7 @@ from aioresponses import aioresponses
 from sanic import Sanic
 
 from rasa.core import utils
+from rasa.core.channels import UserMessage
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
@@ -343,53 +344,11 @@ def test_telegram_channel():
     )
 
 
-@pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-# telegram channel will try to set a webhook, so we need to mock the api
-@patch.object(TelegramOutput, "setWebhook", noop)
-# telegram will try to verify the user, so we need to mock the api
-@patch.object(TelegramOutput, "get_me", fake_telegram_me)
-# telegram will also try to send a message...
-@patch.object(TelegramOutput, "send_message", fake_send_message)
-def test_handling_of_telegram_user_id():
-    from rasa.core.channels.telegram import TelegramInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
+async def test_handling_of_integer_user_id():
+    # needed for telegram to work properly as this channel sends integer ids,
+    # but we expect the sender_id to be a string everywhere else
 
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
-
-    input_channel = TelegramInput(
-        # you get this when setting up a bot
-        access_token="123:YOUR_ACCESS_TOKEN",
-        # this is your bots username
-        verify="YOUR_TELEGRAM_BOT",
-        # the url your bot should listen for messages
-        webhook_url="YOUR_WEBHOOK_URL",
-    )
-
-    import rasa.core
-
-    app = Sanic(__name__)
-    app.agent = agent
-    rasa.core.channels.channel.register([input_channel], app, route="/webhooks/")
-
-    data = {
-        "message": {
-            "chat": {"id": 1234, "type": "private"},
-            "text": "Hello",
-            "message_id": 0,
-            "date": 0,
-        },
-        "update_id": 0,
-    }
-    test_client = app.test_client
-    test_client.post(
-        "/webhooks/telegram/webhook",
-        data=json.dumps(data),
-        headers={"Content-Type": "application/json"},
-    )
-
-    assert agent.tracker_store.retrieve("1234") is not None
+    assert UserMessage("hello", sender_id=123).sender_id == "123"
 
 
 # USED FOR DOCS - don't rename without changing in the docs
