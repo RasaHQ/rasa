@@ -220,7 +220,7 @@ def zip_folder(folder: Text) -> Text:
 
 
 def create_directory_for_file(file_path: Text) -> None:
-    """Creates any missing parent directories of this files path."""
+    """Creates any missing parent directories of this file path."""
 
     try:
         os.makedirs(os.path.dirname(file_path))
