@@ -1409,7 +1409,7 @@ class EmbeddingPolicy(Policy):
 
         file_name = "tensorflow_embedding.ckpt"
         checkpoint = os.path.join(path, file_name)
-        rasa.utils.io.create_dir_for_file(checkpoint)
+        rasa.utils.io.create_directory_for_file(checkpoint)
 
         with self.graph.as_default():
             self._persist_tensor("intent_placeholder", self.a_in)

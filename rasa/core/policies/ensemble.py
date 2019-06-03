@@ -143,7 +143,7 @@ class PolicyEnsemble(object):
         # make sure the directory we persist exists
         domain_spec_path = os.path.join(path, "metadata.json")
         training_data_path = os.path.join(path, "stories.md")
-        rasa.utils.io.create_dir_for_file(domain_spec_path)
+        rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [utils.module_path_from_instance(p) for p in self.policies]
 

@@ -219,7 +219,7 @@ def zip_folder(folder: Text) -> Text:
     return shutil.make_archive(zipped_path.name, str("zip"), folder)
 
 
-def create_dir_for_file(file_path: Text) -> None:
+def create_directory_for_file(file_path: Text) -> None:
     """Creates any missing parent directories of this files path."""
 
     try:
