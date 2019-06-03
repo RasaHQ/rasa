@@ -21,8 +21,8 @@ how you can migrate from one version to another.
 
 model configuration
 ~~~~~~~~~~~~~~~~~~~
-- The standard pipelines have been renamed. ``spacy_sklearn`` is now 
-  ``pretrained_embeddings_spacy`` and ``tensorflow_embedding`` is now 
+- The standard pipelines have been renamed. ``spacy_sklearn`` is now
+  ``pretrained_embeddings_spacy`` and ``tensorflow_embedding`` is now
   ``supervised_embeddings``.
 - Components names used for nlu config have been changed.
   Use component class name in nlu config file.
@@ -49,7 +49,7 @@ function names
   on the servers config.
 - ``ner_duckling`` support has been removed. Use ``DucklingHTTPExtractor``
   instead. More info about ``DucklingHTTPExtractor`` can be found at
-  https://rasa.com/docs/nlu/components/#ner-duckling-http.
+  https://legacy-docs.rasa.com/docs/nlu/components/#ner-duckling-http.
 
 0.13.x to 0.13.3
 ----------------

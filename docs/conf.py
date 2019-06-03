@@ -138,7 +138,7 @@ html_theme_options = {
     'github_repo': 'rasa_nlu',
     'fixed_sidebar': True,
     'product': 'NLU',
-    'base_url': 'https://rasa.com/docs/nlu/'
+    "base_url": "https://legacy-docs.rasa.com/docs/nlu/",
 }
 #html_theme_options = {}
 

@@ -1,5 +1,5 @@
 :desc: Setup Rasa NLU with Docker in your own infrastructure for local
-       intent recognition and entity recognition. 
+       intent recognition and entity recognition.
 
 .. _section_docker:
 
@@ -53,7 +53,7 @@ To train a NLU model you need to mount two directories into the Docker container
 Running NLU with Rasa Core
 --------------------------
 
-See this `guide <https://rasa.com/docs/core/docker_walkthrough/>`_ which
+See this `guide <https://legacy-docs.rasa.com/docs/core/docker_walkthrough/>`_ which
 describes how to set up all Rasa components as Docker containers and how to
 connect them.
 
