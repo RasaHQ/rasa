@@ -68,7 +68,6 @@ async def train_async(
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
-        uncompress: If `True` the model will not be compressed.
         kwargs: Additional training parameters.
 
     Returns:

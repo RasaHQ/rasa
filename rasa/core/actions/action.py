@@ -81,20 +81,6 @@ def combine_user_with_default_actions(user_actions):
     return default_action_names() + unique_user_actions
 
 
-def ensure_action_name_uniqueness(action_names: List[Text]) -> None:
-    """Check and raise an exception if there are two actions with same name."""
-
-    unique_action_names = set()  # used to collect unique action names
-    for a in action_names:
-        if a in unique_action_names:
-            raise ValueError(
-                "Action names are not unique! Found two actions with name"
-                " '{}'. Either rename or remove one of them.".format(a)
-            )
-        else:
-            unique_action_names.add(a)
-
-
 def action_from_name(
     name: Text, action_endpoint: Optional[EndpointConfig], user_actions: List[Text]
 ) -> "Action":
