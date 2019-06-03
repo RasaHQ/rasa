@@ -1,4 +1,5 @@
 import asyncio
+import errno
 import json
 import logging
 import os
@@ -10,6 +11,8 @@ from asyncio import AbstractEventLoop
 from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader, StringIO
+
+import simplejson
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 
@@ -122,10 +125,16 @@ def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
         return f.read()
 
 
-def read_json_file(filename: Text) -> Union[Dict, List]:
-    """Read json from a file"""
-    with open(filename) as f:
-        return json.load(f)
+def read_json_file(filename: Text) -> Any:
+    """Read json from a file."""
+    content = read_file(filename)
+    try:
+        return simplejson.loads(content)
+    except ValueError as e:
+        raise ValueError(
+            "Failed to read json from '{}'. Error: "
+            "{}".format(os.path.abspath(filename), e)
+        )
 
 
 def read_yaml_file(filename: Text) -> Union[Dict, List]:
@@ -196,3 +205,26 @@ def create_path(file_path: Text):
     parent_dir = os.path.dirname(os.path.abspath(file_path))
     if not os.path.exists(parent_dir):
         os.makedirs(parent_dir)
+
+
+def zip_folder(folder: Text) -> Text:
+    """Create an archive from a folder."""
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)
+
+
+def create_directory_for_file(file_path: Text) -> None:
+    """Creates any missing parent directories of this file path."""
+
+    try:
+        os.makedirs(os.path.dirname(file_path))
+    except OSError as e:
+        # be happy if someone already created the path
+        if e.errno != errno.EEXIST:
+            raise
