@@ -135,6 +135,7 @@ def update_sanic_log_level(log_file: Optional[Text] = None):
         formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
         file_handler = logging.FileHandler(log_file)
         file_handler.setFormatter(formatter)
+
         logger.addHandler(file_handler)
         error_logger.addHandler(file_handler)
         access_logger.addHandler(file_handler)
