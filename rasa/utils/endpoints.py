@@ -110,6 +110,7 @@ class EndpointConfig(object):
         method: Text = "post",
         subpath: Optional[Text] = None,
         content_type: Optional[Text] = "application/json",
+        return_method: Text = "json",
         **kwargs: Any
     ):
         """Send a HTTP request to the endpoint.
@@ -139,7 +140,7 @@ class EndpointConfig(object):
                     raise ClientResponseError(
                         resp.status, resp.reason, await resp.content.read()
                     )
-                return await resp.json()
+                return await getattr(resp, return_method)()
 
     @classmethod
     def from_dict(cls, data):

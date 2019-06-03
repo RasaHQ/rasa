@@ -18,9 +18,15 @@ Changed
 Removed
 -------
 
+Fixed
+-----
+
+[1.0.6] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
+- fixed backwards incompatible utils changes
 
 [1.0.5] - 2019-06-03
 ^^^^^^^^^^^^^^^^^^^^
