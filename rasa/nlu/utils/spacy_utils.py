@@ -6,7 +6,6 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.model import InvalidModelError
-from spacy.language import Language
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ class SpacyNLP(Component):
         super(SpacyNLP, self).__init__(component_config)
 
     @staticmethod
-    def load_model(spacy_model_name: Text) -> Language:
+    def load_model(spacy_model_name: Text) -> "Language":
         """Try loading the model, catching the OSError if missing."""
         import spacy
 
