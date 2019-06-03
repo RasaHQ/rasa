@@ -7,7 +7,6 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.core.events import ActionExecuted, UserUttered
-from rasa.utils.io import read_json_file
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -630,12 +629,12 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
     """
     import matplotlib.pyplot as plt
     import numpy as np
-    from rasa.core import utils
+    import rasa.utils.io
 
     ax = plt.gca()
 
     # load results from file
-    data = read_json_file(os.path.join(output, "results.json"))
+    data = rasa.utils.io.read_json_file(os.path.join(output, "results.json"))
     x = no_stories
 
     # compute mean of all the runs for keras/embed policies
