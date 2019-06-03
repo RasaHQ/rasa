@@ -499,7 +499,7 @@ class Domain(object):
             if intent_name:
                 intent_config = self.intent_config(intent_name)
                 entities = latest_message.entities
-                named_entities = [entity for entity in entities if "entity" in entity]
+                entity_names = {entity["entity"] for entity in entities if "entity" in entity.keys()]}
                 entity_names = set([entity["entity"] for entity in named_entities])
 
                 # use_entities is either a list of explicitly included entities
