@@ -114,7 +114,7 @@ class Domain(object):
         additional_arguments = data.get("config", {})
         intents = data.get("intents", {})
         return cls(
-            intent_list,
+            intents,
             data.get("entities", []),
             slots,
             utter_templates,
