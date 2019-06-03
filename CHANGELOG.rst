@@ -20,6 +20,8 @@ Removed
 
 Fixed
 -----
+- fixed usage of ``--log-file`` argument for ``rasa run`` and ``rasa shell``
+
 
 [1.0.4] - 2019-06-03
 ^^^^^^^^^^^^^^^^^^^^
