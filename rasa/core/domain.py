@@ -507,8 +507,8 @@ class Domain(object):
                 included_entities = set(entity_names if include is True else include)
                 excluded_entities = set(intent_config.get("ignore_entities"))
                 wanted_entities = included_entities - excluded_entities
-                ambiguous_entities = included_entities & excluded_entities
-                existing_wanted_entities = entity_names & wanted_entities
+                ambiguous_entities = included_entities.intersection(excluded_entities)
+                existing_wanted_entities = entity_names.intersection(wanted_entities)
 
                 if ambiguous_entities:
                     logger.warning(
