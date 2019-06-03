@@ -1,6 +1,8 @@
 from collections import namedtuple
 import tensorflow as tf
 
+tf.contrib._warning = None  # avoid warning println on contrib import - remove for tf 2
+
 
 class TimedNTM(object):
     """Timed Neural Turing Machine

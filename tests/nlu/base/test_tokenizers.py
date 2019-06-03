@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import mock
+from unittest.mock import patch
 
 
 def test_whitespace():
@@ -141,7 +141,7 @@ def test_jieba_load_dictionary(tmpdir_factory):
 
     component_config = {"dictionary_path": dictionary_path}
 
-    with mock.patch.object(
+    with patch.object(
         JiebaTokenizer, "load_custom_dictionary", return_value=None
     ) as mock_method:
         tk = JiebaTokenizer(component_config)

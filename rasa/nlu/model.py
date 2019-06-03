@@ -16,6 +16,7 @@ from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.utils import create_dir, write_json_to_file
+import rasa.utils.io
 
 MODEL_NAME_PREFIX = "nlu_"
 
@@ -64,7 +65,7 @@ class Metadata(object):
         """
         try:
             metadata_file = os.path.join(model_dir, "metadata.json")
-            data = utils.read_json_file(metadata_file)
+            data = rasa.utils.io.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))

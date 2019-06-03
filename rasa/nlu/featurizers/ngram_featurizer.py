@@ -14,6 +14,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
+import rasa.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +101,7 @@ class NGramFeaturizer(Featurizer):
         featurizer_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(featurizer_file):
-            data = utils.read_json_file(featurizer_file)
+            data = rasa.utils.io.read_json_file(featurizer_file)
             return NGramFeaturizer(meta, data["all_ngrams"], data["best_num_ngrams"])
         else:
             return NGramFeaturizer(meta)
