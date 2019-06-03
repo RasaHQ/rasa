@@ -16,6 +16,7 @@ from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_PACKAGE,
 )
 from rasa.utils.endpoints import EndpointConfig
+import rasa.utils.io as io_utils
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -74,7 +75,7 @@ async def load_data_from_endpoint(
     try:
         response = await data_endpoint.request("get")
         response.raise_for_status()
-        temp_data_file = utils.create_temporary_file(response.content, mode="w+b")
+        temp_data_file = io_utils.create_temporary_file(response.content, mode="w+b")
         training_data = _load(temp_data_file, language)
 
         return training_data

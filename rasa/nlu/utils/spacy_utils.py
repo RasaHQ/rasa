@@ -6,6 +6,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.model import InvalidModelError
+from spacy.language import Language
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,6 @@ if typing.TYPE_CHECKING:
 
 
 class SpacyNLP(Component):
-
     provides = ["spacy_doc", "spacy_nlp"]
 
     defaults = {
@@ -39,6 +39,22 @@ class SpacyNLP(Component):
         self.nlp = nlp
         super(SpacyNLP, self).__init__(component_config)
 
+    @staticmethod
+    def load_model(spacy_model_name: Text) -> Language:
+        """Try loading the model, catching the OSError if missing."""
+        import spacy
+
+        try:
+            return spacy.load(spacy_model_name, disable=["parser"])
+        except OSError:
+            raise InvalidModelError(
+                "Model '{}' is not a linked spaCy model.  "
+                "Please download and/or link a spaCy model, "
+                "e.g. by running:\npython -m spacy download "
+                "en_core_web_md\npython -m spacy link "
+                "en_core_web_md en".format(spacy_model_name)
+            )
+
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["spacy"]
@@ -47,7 +63,6 @@ class SpacyNLP(Component):
     def create(
         cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
     ) -> "SpacyNLP":
-        import spacy
 
         component_config = override_defaults(cls.defaults, component_config)
 
@@ -62,16 +77,7 @@ class SpacyNLP(Component):
             "Trying to load spacy model with name '{}'".format(spacy_model_name)
         )
 
-        try:
-            nlp = spacy.load(spacy_model_name, disable=["parser"])
-        except OSError:
-            raise InvalidModelError(
-                "Model '{}' is not a linked spaCy model.  "
-                "Please download and/or link a spaCy model, "
-                "e.g. by running:\npython -m spacy download "
-                "en_core_web_md\npython -m spacy link "
-                "en_core_web_md en".format(spacy_model_name)
-            )
+        nlp = cls.load_model(spacy_model_name)
 
         cls.ensure_proper_language_model(nlp)
         return cls(component_config, nlp)
@@ -116,14 +122,13 @@ class SpacyNLP(Component):
         cached_component: Optional["SpacyNLP"] = None,
         **kwargs: Any
     ) -> "SpacyNLP":
-        import spacy
 
         if cached_component:
             return cached_component
 
         model_name = meta.get("model")
 
-        nlp = spacy.load(model_name, disable=["parser"])
+        nlp = cls.load_model(model_name)
         cls.ensure_proper_language_model(nlp)
         return cls(meta, nlp)
 

@@ -1,6 +1,7 @@
 import logging
 
 from rasa.core import utils
+from rasa.utils.common import class_from_module_path
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class Slot(object):
             if cls.type_name == type_name:
                 return cls
         try:
-            return utils.class_from_module_path(type_name)
+            return class_from_module_path(type_name)
         except (ImportError, AttributeError):
             raise ValueError(
                 "Failed to find slot type, '{}' is neither a known type nor "
