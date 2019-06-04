@@ -269,7 +269,9 @@ def rasa_x(args: argparse.Namespace):
     _configure_logging(args)
 
     args.rasa_x_port = args.rasa_x_port or DEFAULT_RASA_X_PORT
+    os.environ["SELF_PORT"] = args.rasa_x_port
     args.port = args.port or DEFAULT_RASA_PORT
+    os.environ["RASA_PORT"] = args.port
 
     if args.production:
         run_in_production(args)
