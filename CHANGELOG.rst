@@ -4,12 +4,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-[0.15.1] - Unreleased
+[0.15.1] - 2019-06-04
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - fixed bug in rasa_nlu.test script that appeared if no intent classifier was present
+- update links in docs
 
 
 [0.15.0] - 2019-04-23
