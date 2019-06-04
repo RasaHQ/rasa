@@ -1,6 +1,8 @@
 import os
 import pkg_resources
 
+from rasa.core.constants import DEFAULT_SERVER_PORT
+
 DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
 DEFAULT_CREDENTIALS_PATH = "credentials.yml"
 DEFAULT_CONFIG_PATH = "config.yml"
@@ -12,6 +14,7 @@ DEFAULT_RESULTS_PATH = "results"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
 DEFAULT_RASA_X_PORT = 5002
+DEFAULT_RASA_PORT = DEFAULT_SERVER_PORT
 
 DOCS_BASE_URL = "https://rasa.com/docs/rasa"
 LEGACY_DOCS_BASE_URL = "http://legacy-docs.rasa.com"

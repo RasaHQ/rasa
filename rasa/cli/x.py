@@ -20,6 +20,7 @@ from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_LOG_LEVEL_RASA_X,
     DEFAULT_RASA_X_PORT,
+    DEFAULT_RASA_PORT,
 )
 import rasa.utils.io as io_utils
 from rasa.utils.endpoints import EndpointConfig
@@ -267,9 +268,6 @@ def rasa_x(args: argparse.Namespace):
 
     _configure_logging(args)
 
-    args.rasa_x_port = args.rasa_x_port or DEFAULT_RASA_X_PORT
-    os.environ["SELF_PORT"] = str(args.rasa_x_port)
-
     if args.production:
         run_in_production(args)
     else:
@@ -291,6 +289,12 @@ def run_in_production(args: argparse.Namespace):
 def run_locally(args: argparse.Namespace):
     # noinspection PyUnresolvedReferences
     from rasax.community import local
+
+    args.rasa_x_port = args.rasa_x_port or DEFAULT_RASA_X_PORT
+    os.environ["SELF_PORT"] = str(args.rasa_x_port)
+
+    args.port = args.port or DEFAULT_RASA_PORT
+    os.environ["RASA_PORT"] = str(args.port)
 
     project_path = "."
 
