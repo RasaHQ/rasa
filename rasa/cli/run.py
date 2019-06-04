@@ -4,7 +4,7 @@ import os
 from typing import List
 
 from rasa.cli.arguments import run as arguments
-from rasa.cli.utils import get_validated_path
+from rasa.cli.utils import get_validated_path, print_error
 from rasa.constants import (
     DEFAULT_ACTIONS_PATH,
     DEFAULT_CREDENTIALS_PATH,
@@ -60,6 +60,20 @@ def run(args: argparse.Namespace):
     import rasa.run
 
     args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+
+    if not args.enable_api:
+        # if the API is enabled you can start without a model as you can train a
+        # model via the API once the server is up and running
+        from rasa.model import get_model
+
+        model_path = get_model(args.model)
+        if not model_path:
+            print_error(
+                "No model found. Train a model before running the "
+                "server using `rasa train`."
+            )
+            return
+
     args.endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
