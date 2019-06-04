@@ -95,6 +95,12 @@ class SpacyNLP(Component):
     def provide_context(self) -> Dict[Text, Any]:
         return {"spacy_nlp": self.nlp}
 
+    def doc_for_text(self, text: Text) -> "Doc":
+        if self.component_config.get("case_sensitive"):
+            return self.nlp(text)
+        else:
+            return self.nlp(text.lower())
+
     def docs_for_training_data(self, training_data: TrainingData) -> List[Any]:
 
         texts = [e.text if self.component_config.get("case_sensitive") else e.text.lower()
