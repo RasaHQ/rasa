@@ -307,7 +307,7 @@ class Domain(object):
 
     def __init__(
         self,
-        intent_list,  # TODO which type does this have?
+        intent_list: List[Union[Text, Dict[Text, Any]]],
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, Any],
