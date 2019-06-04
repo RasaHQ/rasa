@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.5.aX] - `master`_
+[Unreleased 1.0.6.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -22,6 +22,20 @@ Fixed
 -----
 - fixed usage of ``--log-file`` argument for ``rasa run`` and ``rasa shell``
 
+
+[1.0.6] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed backwards incompatible utils changes
+
+[1.0.5] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed spacy being a required dependency (regression)
 
 [1.0.4] - 2019-06-03
 ^^^^^^^^^^^^^^^^^^^^

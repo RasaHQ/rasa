@@ -6,6 +6,10 @@ import os
 import re
 from typing import Any, Callable, Dict, List, Optional, Text
 
+# backwards compatibility 1.0.x
+# noinspection PyUnresolvedReferences
+from rasa.utils.io import read_json_file
+
 
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
     """Return the path of file relative to `path`."""
