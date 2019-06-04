@@ -138,7 +138,7 @@ class FallbackPolicy(Policy):
             "core_threshold": self.core_threshold,
             "fallback_action_name": self.fallback_action_name,
         }
-        utils.create_dir_for_file(config_file)
+        rasa.utils.io.create_directory_for_file(config_file)
         utils.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod

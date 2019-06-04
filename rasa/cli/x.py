@@ -1,4 +1,5 @@
 import argparse
+import functools
 import importlib.util
 import logging
 import signal
@@ -53,10 +54,11 @@ def _rasa_service(
 ):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
-    from rasa.nlu.utils import configure_colored_logging
 
-    configure_colored_logging(args.loglevel)
-    logging.getLogger("apscheduler.executors.default").setLevel(logging.WARNING)
+    # needs separate logging configuration as it is started in its own process
+    logging.basicConfig(level=args.loglevel)
+    io_utils.configure_colored_logging(args.loglevel)
+    logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
     credentials_path = _prepare_credentials_for_rasa_x(
         args.credentials, rasa_x_url=rasa_x_url
@@ -166,10 +168,11 @@ def _configure_logging(args):
     if isinstance(log_level, str):
         log_level = logging.getLevelName(log_level)
 
+    logging.basicConfig(level=log_level)
+    io_utils.configure_colored_logging(args.loglevel)
+
     set_log_level(log_level)
     configure_file_logging(log_level, args.log_file)
-
-    logging.basicConfig(level=log_level)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)

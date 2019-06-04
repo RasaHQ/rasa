@@ -1,21 +1,26 @@
+import asyncio
+
 import pytest
 
 import rasa.utils.io
 from rasa.core import restore
 from rasa.core.agent import Agent
+from rasa.model import get_model
 
 
 @pytest.fixture(scope="module")
 def loop():
-    from pytest_sanic.plugin import loop as sanic_loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
-    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
-
-async def test_restoring_tracker(trained_moodbot_path, recwarn):
+async def test_restoring_tracker(unpacked_trained_moodbot_path, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
-    agent = Agent.load(trained_moodbot_path)
+    agent = Agent.load(unpacked_trained_moodbot_path)
 
     tracker = restore.load_tracker_from_json(tracker_dump, agent.domain)
 

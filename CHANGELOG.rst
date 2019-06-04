@@ -6,8 +6,37 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.4.aX] - `master`_
+[Unreleased 1.0.6.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[1.0.6] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed backwards incompatible utils changes
+
+[1.0.5] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed spacy being a required dependency (regression)
+
+[1.0.4] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -20,12 +49,6 @@ Changed
 -------
 - NLU evaluation in cross-validation mode now also provides intent/entity reports,
   confusion matrix, etc.
-
-Removed
--------
-
-Fixed
------
 
 [1.0.3] - 2019-05-30
 ^^^^^^^^^^^^^^^^^^^^
