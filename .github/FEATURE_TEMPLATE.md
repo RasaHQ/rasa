@@ -3,7 +3,7 @@ Short overview of the current situation.
 Why is this feature needed?
 
 **Overview of the Solution**:
-How does a possible solution look like?
+What would a possible solution look like?
 Describe, without going too low into technical details, 
 what changes need to happen during implementation of this feature. 
 
