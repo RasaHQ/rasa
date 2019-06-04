@@ -19,13 +19,13 @@ from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CONFIG_PATH,
     DEFAULT_LOG_LEVEL_RASA_X,
+    DEFAULT_RASA_X_PORT,
 )
 import rasa.utils.io as io_utils
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_RASA_X_HOST = "http://localhost:5002"
 DEFAULT_TRACKER_DB = "tracker.db"
 
 
@@ -150,7 +150,7 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
 
     endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
 
-    rasa_x_url = "{}/api".format(DEFAULT_RASA_X_HOST)
+    rasa_x_url = "http://localhost:{}/api".format(args.rasa_x_port)
     _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url)
 
     vars(args).update(
@@ -266,6 +266,9 @@ def rasa_x(args: argparse.Namespace):
     signal.signal(signal.SIGINT, signal_handler)
 
     _configure_logging(args)
+
+    args.rasa_x_port = args.rasa_x_port or DEFAULT_RASA_X_PORT
+    os.environ["SELF_PORT"] = str(args.rasa_x_port)
 
     if args.production:
         run_in_production(args)
