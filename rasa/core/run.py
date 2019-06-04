@@ -57,11 +57,12 @@ def _create_single_channel(channel, credentials):
             )
 
 
-def _configure_logging(log_file: Text):
-    formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+def _configure_logging(log_file: Optional[Text]):
+    if log_file is not None:
+        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
 
 def configure_app(
