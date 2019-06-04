@@ -35,17 +35,6 @@ def spacy_nlp(component_builder, default_config):
 
 
 @pytest.fixture(scope="session")
-def trained_moodbot_path():
-    _, _, persisted_path = train(
-        data="examples/moodbot/data/nlu.md",
-        nlu_config="examples/moodbot/config.yml",
-        path=MOODBOT_MODEL_PATH,
-    )
-
-    return persisted_path
-
-
-@pytest.fixture(scope="session")
 def ner_crf_pos_feature_config():
     return {
         "features": [

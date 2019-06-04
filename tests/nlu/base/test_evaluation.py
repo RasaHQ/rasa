@@ -5,6 +5,7 @@ import logging
 import pytest
 
 import rasa.utils.io
+from rasa.model import get_model
 from rasa.nlu.components import Component
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -230,11 +231,12 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
-def test_run_evaluation(trained_moodbot_path):
+def test_run_evaluation(unpacked_trained_moodbot_path):
     data = DEFAULT_DATA_PATH
-    model = trained_moodbot_path
 
-    result = run_evaluation(data, model, errors=None)
+    result = run_evaluation(
+        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=None
+    )
     assert result.get("intent_evaluation")
     assert result.get("entity_evaluation").get("CRFEntityExtractor")
 
@@ -328,7 +330,8 @@ def test_entity_evaluation_report(tmpdir_factory):
         ],
         None,
     )
-    result = evaluate_entities([EN_entity_result], mock_interpreter, report_folder)
+    extractors = get_entity_extractors(mock_interpreter)
+    result = evaluate_entities([EN_entity_result], extractors, report_folder)
 
     report_a = json.loads(rasa.utils.io.read_file(report_filename_a))
     report_b = json.loads(rasa.utils.io.read_file(report_filename_b))

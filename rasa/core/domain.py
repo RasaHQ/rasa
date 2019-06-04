@@ -328,8 +328,15 @@ class Domain(object):
         self._check_domain_sanity()
 
     def __hash__(self) -> int:
-        self_as_string = json.dumps(self.as_dict())
+        from rasa.utils.common import sort_list_of_dicts_by_first_key
+
+        self_as_dict = self.as_dict()
+        self_as_dict["intents"] = sort_list_of_dicts_by_first_key(
+            self_as_dict["intents"]
+        )
+        self_as_string = json.dumps(self_as_dict, sort_keys=True)
         text_hash = utils.get_text_hash(self_as_string)
+
         return int(text_hash, 16)
 
     @utils.lazyproperty
@@ -578,7 +585,7 @@ class Domain(object):
         """Persists the domain specification to storage."""
 
         domain_spec_path = os.path.join(model_path, "domain.json")
-        utils.create_dir_for_file(domain_spec_path)
+        rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         metadata = {"states": self.input_states}
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
