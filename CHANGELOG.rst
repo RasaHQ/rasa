@@ -20,6 +20,7 @@ Removed
 
 Fixed
 -----
+- slack notifications from bots correctly render text
 - fixed usage of ``--log-file`` argument for ``rasa run`` and ``rasa shell``
 
 
