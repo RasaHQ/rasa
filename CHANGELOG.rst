@@ -22,6 +22,7 @@ Fixed
 -----
 - slack notifications from bots correctly render text
 - fixed usage of ``--log-file`` argument for ``rasa run`` and ``rasa shell``
+- duplicated events when using ``training.interactive`` with ``SQLTrackerStore``
 
 
 [1.0.6] - 2019-06-03
