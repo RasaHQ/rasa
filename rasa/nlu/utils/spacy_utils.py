@@ -95,18 +95,23 @@ class SpacyNLP(Component):
     def provide_context(self) -> Dict[Text, Any]:
         return {"spacy_nlp": self.nlp}
 
-    def doc_for_text(self, text: Text) -> "Doc":
-        if self.component_config.get("case_sensitive"):
-            return self.nlp(text)
-        else:
-            return self.nlp(text.lower())
+    def docs_for_training_data(self, training_data: TrainingData) -> List[Any]:
+
+        texts = [e.text if self.component_config.get("case_sensitive") else e.text.lower()
+                for e in training_data.intent_examples]
+
+        docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
+
+        return docs 
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
 
-        for example in training_data.training_examples:
-            example.set("spacy_doc", self.doc_for_text(example.text))
+    	docs = self.docs_for_training_data(training_data)
+
+        for idx, example in enumerate(training_data.training_examples):
+            example.set("spacy_doc", docs[idx])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
