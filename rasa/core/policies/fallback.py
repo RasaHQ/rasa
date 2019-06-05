@@ -32,7 +32,7 @@ class FallbackPolicy(Policy):
                "fallback_action_name": "action_default_fallback"}
 
     def __init__(self,
-                 policy_config: Optional[Dict[Text, Any]] = None,
+                 config: Optional[Dict[Text, Any]] = None,
                  ) -> None:
 
         """Create a new Fallback policy.
@@ -47,12 +47,12 @@ class FallbackPolicy(Policy):
                 predict fallback action with confidence 1.0.
             fallback_action_name: name of the action to execute as a fallback
         """
-        super(FallbackPolicy, self).__init__(policy_config)
+        super(FallbackPolicy, self).__init__(config)
 
     def set_params(self):
         self.nlu_threshold = self.polcy_config["nlu_threshold"]
         self.core_threshold = self.pocy_config["core_threshold"]
-        self.fallback_action_name = self.policy_config["fallback_action_name"]
+        self.fallback_action_name = self.config["fallback_action_name"]
 
     def train(
         self,
@@ -136,7 +136,7 @@ class FallbackPolicy(Policy):
 
         config_file = os.path.join(path, 'fallback_policy.json')
         utils.create_dir_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, self.policy_config)
+        utils.dump_obj_as_json_to_file(config_file, self.config)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

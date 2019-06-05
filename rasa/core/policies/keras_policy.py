@@ -52,7 +52,7 @@ class KerasPolicy(Policy):
                                            max_history=max_history)
 
     def __init__(self,
-                 policy_config: Optional[Dict[Text, Any]] = None,
+                 config: Optional[Dict[Text, Any]] = None,
                  featurizer: Optional[TrackerFeaturizer] = None,
                  model: Optional[tf.keras.models.Sequential] = None,
                  graph: Optional[tf.Graph] = None,
@@ -61,7 +61,7 @@ class KerasPolicy(Policy):
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
-        super(KerasPolicy, self).__init__(policy_config, featurizer)
+        super(KerasPolicy, self).__init__(config, featurizer)
 
         self.model = model
         # by default keras uses default tf graph and global tf session
@@ -69,16 +69,16 @@ class KerasPolicy(Policy):
         self.graph = graph
         self.session = session
 
-        self.current_epoch = self.policy_config["current_epoch"]
+        self.current_epoch = self.config["current_epoch"]
 
     def _load_params(self) -> None:
         # filter out kwargs that are used explicitly
-        self._tf_config = self._load_tf_config(self.policy_config)
-        self.rnn_size = self.policy_config.get('rnn_size')
-        self.epochs = self.policy_config.get('epochs')
-        self.batch_size = self.policy_config.get('batch_size')
-        self.validation_split = self.policy_config.get('validation_split')
-        self.random_seed = self.policy_config.get('random_seed')
+        self._tf_config = self._load_tf_config(self.config)
+        self.rnn_size = self.config.get('rnn_size')
+        self.epochs = self.config.get('epochs')
+        self.batch_size = self.config.get('batch_size')
+        self.validation_split = self.config.get('validation_split')
+        self.random_seed = self.config.get('random_seed')
         # all the variables above were previously set by popping from the
         # dictionary, since we want to keep the dict for storage the
         # _train_params might need to be adujested
@@ -263,7 +263,7 @@ class KerasPolicy(Policy):
         if self.model:
             self.featurizer.persist(path)
 
-            meta = self.policy_config
+            meta = self.config
             meta["model"] = "keras_model.h5"
 
             meta_file = os.path.join(path, "keras_policy.json")
@@ -309,7 +309,7 @@ class KerasPolicy(Policy):
                             warnings.simplefilter("ignore")
                             model = load_model(model_file)
 
-                return cls(policy_config=meta,
+                return cls(config=meta,
                            featurizer=featurizer,
                            model=model,
                            graph=graph,

@@ -290,7 +290,7 @@ class PolicyEnsemble(object):
 
             try:
                 constr_func = registry.policy_from_module_path(policy_name)
-                policy_object = constr_func(policy_config=policy,
+                policy_object = constr_func(config=policy,
                                             featurizer=featurizer)
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):

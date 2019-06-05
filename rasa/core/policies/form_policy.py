@@ -21,13 +21,13 @@ class FormPolicy(MemoizationPolicy):
                }
 
     def __init__(self,
-                 policy_config: Optional[Dict[Text, Any]] = None,
+                 config: Optional[Dict[Text, Any]] = None,
                  featurizer: Optional[TrackerFeaturizer] = None
                  ) -> None:
 
         # max history is set to 2 in order to capture
         # previous meaningful action before action listen
-        super(FormPolicy, self).__init__(policy_config=policy_config,
+        super(FormPolicy, self).__init__(config=config,
                                          featurizer=featurizer)
 
     @staticmethod

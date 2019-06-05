@@ -50,18 +50,18 @@ class Policy(object):
     defaults = {"priority": 1}
 
     def __init__(self,
-                 policy_config: Optional[Dict[Text, Any]] = None,
+                 config: Optional[Dict[Text, Any]] = None,
                  featurizer: Optional[TrackerFeaturizer] = None
                  ) -> None:
-        if not policy_config:
-            policy_config = {}
-        policy_config["name"] = self.name
-        self.policy_config = override_defaults(self.defaults, policy_config)
+        if not config:
+            config = {}
+        config["name"] = self.name
+        self.config = override_defaults(self.defaults, config)
         self.__featurizer = self._create_featurizer(featurizer)
 
     @property
     def priority(self):
-        return self.policy_config.get("priority")
+        return self.config.get("priority")
 
     @property
     def featurizer(self):
