@@ -208,8 +208,8 @@ async def load_agent_on_start(
     )
 
     if not app.agent:
-        logger.error(
-            "Agent could not be loaded with the provided configuration."
+        logger.warning(
+            "Agent could not be loaded with the provided configuration. "
             "Load default agent without any model."
         )
         app.agent = Agent(

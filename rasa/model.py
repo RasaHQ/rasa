@@ -49,6 +49,8 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     """
     if not model_path:
         return None
+    elif not os.path.exists(model_path):
+        return None
     elif os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
 
