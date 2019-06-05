@@ -99,7 +99,7 @@ def test_nlu(args: argparse.Namespace) -> None:
         print ("No model specified. Model will be trained using cross validation.")
         config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
-        test_nlu_with_cross_validation(config, nlu_data, args.folds)
+        test_nlu_with_cross_validation(config, nlu_data, vars(args))
 
 
 def test(args: argparse.Namespace):

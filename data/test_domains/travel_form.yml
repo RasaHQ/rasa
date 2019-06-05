@@ -15,9 +15,9 @@ slots:
 
 templates:
   utter_ask_GPE_origin:
-    - "where are you leaving from?"
+    - text: "where are you leaving from?"
   utter_ask_GPE_destination:
-    - "where are you going to?"
+    - text: "where are you going to?"
 
 actions:
   - action_search_travel

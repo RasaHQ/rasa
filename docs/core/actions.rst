@@ -11,7 +11,7 @@ Actions
 Actions are the things your bot runs in response to user input.
 There are three kinds of actions in Rasa Core:
 
- 1. **Default actions**: ``action_listen``, ``action_back``, ``action_restart``,
+ 1. **Default actions**: e.g. ``action_listen``, ``action_restart``,
     ``action_default_fallback``
  2. **Utterance actions**: start with ``utter_``, just send a message
     to the user
@@ -146,20 +146,43 @@ events in :ref:`Events <events>`.
 Default Actions
 ---------------
 
-There are three default actions:
+There are eight default actions:
 
-+-----------------------------+------------------------------------------------+
-| ``action_listen``           | stop predicting more actions and wait for user |
-|                             | input                                          |
-+-----------------------------+------------------------------------------------+
-| ``action_restart``          | reset the whole conversation, usually triggered|
-|                             | by using ``/restart``                          |
-+-----------------------------+------------------------------------------------+
-| ``action_default_fallback`` | undoes the last user message (as if the user   |
-|                             | did not send it) and utters a message that the |
-|                             | bot did not understand. See                    |
-|                             | :ref:`fallback-actions`.                       |
-+-----------------------------+------------------------------------------------+
++-----------------------------------+------------------------------------------------+
+| ``action_listen``                 | Stop predicting more actions and wait for user |
+|                                   | input.                                         |
++-----------------------------------+------------------------------------------------+
+| ``action_restart``                | Reset the whole conversation. Can be triggered |
+|                                   | during a conversation by entering ``/restart`` |
+|                                   | if the :ref:`mapping-policy` is included in    |
+|                                   | the policy configuration.                      |
++-----------------------------------+------------------------------------------------+
+| ``action_default_fallback``       | Undo the last user message (as if the user did |
+|                                   | not send it and the bot did not react) and     |
+|                                   | utter a message that the bot did not           |
+|                                   | understand. See :ref:`fallback-actions`.       |
++-----------------------------------+------------------------------------------------+
+| ``action_deactivate_form``        | Deactivate the active form and reset the       |
+|                                   | requested slot.                                |
+|                                   | See also :ref:`section_unhappy`.               |
++-----------------------------------+------------------------------------------------+
+| ``action_revert_fallback_events`` | Revert events that occurred during the         |
+|                                   | TwoStageFallbackPolicy.                        |
+|                                   | See :ref:`fallback-actions`.                   |
++-----------------------------------+------------------------------------------------+
+| ``action_default_ask_affirmation``| Ask the user to affirm their intent.           |
+|                                   | It is suggested to overwrite this default      |
+|                                   | action with a custom action to have more       |
+|                                   | meaningful prompts.                            |
++-----------------------------------+------------------------------------------------+
+| ``action_default_ask_rephrase``   | Ask the user to rephrase their intent.         |
++-----------------------------------+------------------------------------------------+
+| ``action_back``                   | Undo the last user message (as if the user did |
+|                                   | not send it and the bot did not react).        |
+|                                   | Can be triggered during a conversation by      |
+|                                   | entering ``/back`` if the MappingPolicy is     |
+|                                   | included in the policy configuration.          |
++-----------------------------------+------------------------------------------------+
 
 All the default actions can be overwritten. To do so, add the action name
 to the list of actions in your domain:
@@ -167,7 +190,7 @@ to the list of actions in your domain:
 .. code-block:: yaml
 
   actions:
-  - action_listen
+  - action_default_ask_affirmation
 
 Rasa Core will then call your action endpoint and treat it as every other
 custom action.

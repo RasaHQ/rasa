@@ -4,24 +4,24 @@ import logging
 import signal
 import sys
 import os
+import traceback
 from multiprocessing import get_context
 from typing import List, Text, Optional
 
 import ruamel.yaml as yaml
 
-from rasa.cli.utils import get_validated_path, print_warning
+from rasa.cli.utils import get_validated_path, print_warning, print_error
 from rasa.cli.arguments import x as arguments
 
 from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_LOG_LEVEL,
-    ENV_LOG_LEVEL,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CONFIG_PATH,
     DEFAULT_LOG_LEVEL_RASA_X,
 )
 import rasa.utils.io as io_utils
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +54,11 @@ def _rasa_service(
 ):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
-    from rasa.nlu.utils import configure_colored_logging
 
-    configure_colored_logging(args.loglevel)
-    logging.getLogger("apscheduler.executors.default").setLevel(logging.WARNING)
+    # needs separate logging configuration as it is started in its own process
+    logging.basicConfig(level=args.loglevel)
+    io_utils.configure_colored_logging(args.loglevel)
+    logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
     credentials_path = _prepare_credentials_for_rasa_x(
         args.credentials, rasa_x_url=rasa_x_url
@@ -96,15 +97,41 @@ def _prepare_credentials_for_rasa_x(
 
 
 def _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url):
-    from rasa.utils.endpoints import EndpointConfig
+    import questionary
 
     endpoints.model = EndpointConfig(
         "{}/projects/default/models/tags/production".format(rasa_x_url),
         token=rasa_x_token,
         wait_time_between_pulls=2,
     )
-    if not endpoints.tracker_store:
+
+    overwrite_existing_tracker_store = False
+    if endpoints.tracker_store and not _is_correct_tracker_store(
+        endpoints.tracker_store
+    ):
+        print_error(
+            "Rasa X currently only supports a SQLite tracker store with path '{}' "
+            "when running locally. You can deploy Rasa X with Docker "
+            "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
+            "other tracker store configurations.".format(DEFAULT_TRACKER_DB)
+        )
+        overwrite_existing_tracker_store = questionary.confirm(
+            "Do you want to continue with the default SQLite tracker store?"
+        ).ask()
+
+        if not overwrite_existing_tracker_store:
+            exit(0)
+
+    if not endpoints.tracker_store or overwrite_existing_tracker_store:
         endpoints.tracker_store = EndpointConfig(type="sql", db=DEFAULT_TRACKER_DB)
+
+
+def _is_correct_tracker_store(tracker_endpoint: EndpointConfig) -> bool:
+    return (
+        tracker_endpoint.type == "sql"
+        and tracker_endpoint.kwargs.get("dialect", "").lower() == "sqlite"
+        and tracker_endpoint.kwargs.get("db") == DEFAULT_TRACKER_DB
+    )
 
 
 def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
@@ -167,10 +194,11 @@ def _configure_logging(args):
     if isinstance(log_level, str):
         log_level = logging.getLevelName(log_level)
 
+    logging.basicConfig(level=log_level)
+    io_utils.configure_colored_logging(args.loglevel)
+
     set_log_level(log_level)
     configure_file_logging(log_level, args.log_file)
-
-    logging.basicConfig(level=log_level)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
@@ -226,6 +254,8 @@ def rasa_x(args: argparse.Namespace):
             )
             sys.exit(1)
 
+        _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
+
         if args.data and not os.path.exists(args.data):
             print_warning(
                 "The provided data path ('{}') does not exists. Rasa X will start "
@@ -241,5 +271,23 @@ def rasa_x(args: argparse.Namespace):
         process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
         try:
             local.main(args, project_path, args.data, token=rasa_x_token)
+        except Exception:
+            print (traceback.format_exc())
+            print_error(
+                "Sorry, something went wrong (see error above). Make sure to start "
+                "Rasa X with valid data and valid domain and config files. Please, "
+                "also check any warnings that popped up.\nIf you need help fixing "
+                "the issue visit our forum: https://forum.rasa.com/."
+            )
         finally:
             process.terminate()
+
+
+def _validate_domain(domain_path: Text):
+    from rasa.core.domain import Domain, InvalidDomain
+
+    try:
+        Domain.load(domain_path)
+    except InvalidDomain as e:
+        print_error("The provided domain file could not be loaded. Error: {}".format(e))
+        sys.exit(1)
