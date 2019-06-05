@@ -2,7 +2,7 @@
 name: Ask a question
 about: If you have a "How do I?" question please ask here https://forum.rasa.com
 title: ''
-labels: ''
+labels: question
 assignees: ''
 
 ---
