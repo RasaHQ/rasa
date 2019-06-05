@@ -49,3 +49,15 @@ def test_data_convert_help(run):
 
     for i, line in enumerate(lines):
         assert output.outlines[i] == line
+
+
+def test_data_validate_help(run):
+    output = run("data", "validate", "--help")
+
+    help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-u NLU]
+                          [-s STORIES]"""
+
+    lines = help_text.split("\n")
+
+    for i, line in enumerate(lines):
+        assert output.outlines[i] == line

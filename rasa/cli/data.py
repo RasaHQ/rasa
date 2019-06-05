@@ -87,7 +87,9 @@ def split_nlu_data(args):
     train.persist(args.out, filename="training_data.{}".format(fformat))
     test.persist(args.out, filename="test_data.{}".format(fformat))
 
+
 def validate_files(args):
     from rasa.core.validator import Validator
+
     validator = Validator.from_files(args.domain, args.nlu, args.stories)
     validator.verify_all()

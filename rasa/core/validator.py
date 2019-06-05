@@ -11,6 +11,7 @@ from rasa.core.training.dsl import ActionExecuted
 
 logger = logging.getLogger(__name__)
 
+
 class Validator:
     """Validator is a class to verify the intents and utters written."""
 
