@@ -268,11 +268,6 @@ def rasa_x(args: argparse.Namespace):
 
     _configure_logging(args)
 
-    args.rasa_x_port = args.rasa_x_port or DEFAULT_RASA_X_PORT
-    os.environ["SELF_PORT"] = str(args.rasa_x_port)
-    args.port = args.port or DEFAULT_RASA_PORT
-    os.environ["RASA_PORT"] = str(args.port)
-
     if args.production:
         run_in_production(args)
     else:
@@ -294,6 +289,9 @@ def run_in_production(args: argparse.Namespace):
 def run_locally(args: argparse.Namespace):
     # noinspection PyUnresolvedReferences
     from rasax.community import local
+
+    args.rasa_x_port = args.rasa_x_port or DEFAULT_RASA_X_PORT
+    args.port = args.port or DEFAULT_RASA_PORT
 
     project_path = "."
 
