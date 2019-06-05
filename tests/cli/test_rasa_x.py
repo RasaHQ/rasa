@@ -1,5 +1,8 @@
+import pytest
+
 import rasa.utils.io as io_utils
 from rasa.cli import x
+from rasa.utils.endpoints import EndpointConfig
 
 
 def test_x_help(run):
@@ -49,3 +52,23 @@ def test_prepare_credentials_if_already_valid(tmpdir_factory):
     actual = io_utils.read_yaml_file(credentials_path)
 
     assert actual == credentials
+
+
+def test_if_endpoint_config_is_valid_in_local_mode():
+    config = EndpointConfig(type="sql", dialect="sqlite", db=x.DEFAULT_TRACKER_DB)
+
+    assert x._is_correct_tracker_store(config)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"type": "mongo", "url": "mongodb://localhost:27017"},
+        {"type": "sql", "dialect": "postgresql"},
+        {"type": "sql", "dialect": "sqlite", "db": "some.db"},
+    ],
+)
+def test_if_endpoint_config_is_invalid_in_local_mode(kwargs):
+    config = EndpointConfig(**kwargs)
+
+    assert not x._is_correct_tracker_store(config)
