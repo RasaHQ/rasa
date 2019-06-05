@@ -1,6 +1,6 @@
 ---
 name: Ask a question
-about: To ask a usage question please go to https://forum.rasa.com instead
+about: If you have a "How do I?" question please ask here https://forum.rasa.com
 title: ''
 labels: ''
 assignees: ''
