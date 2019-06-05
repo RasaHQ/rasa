@@ -1,24 +1,54 @@
 import asyncio
 import logging
-from typing import Text, Dict
+import tempfile
+from typing import Text, Dict, Optional, List
 import os
 
+from rasa.core.interpreter import RegexInterpreter
+
 from rasa.constants import DEFAULT_RESULTS_PATH
-from rasa.model import get_model, get_model_subdirectories
-from rasa.cli.utils import minimal_kwargs
+from rasa.model import get_model, get_model_subdirectories, unpack_model
+from rasa.cli.utils import minimal_kwargs, print_error, print_warning
 
 logger = logging.getLogger(__name__)
 
 
-def test(model: Text, stories: Text, nlu_data: Text, endpoints: Text = None,
-         output: Text = DEFAULT_RESULTS_PATH, **kwargs):
+def test_compare(models: List[Text], stories: Text, output: Text):
+    from rasa.core.test import compare, plot_curve
+    import rasa.utils.io
+
+    model_directory = copy_models_to_compare(models)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(compare(model_directory, stories, output))
+
+    story_n_path = os.path.join(model_directory, "num_stories.json")
+    number_of_stories = rasa.utils.io.read_json_file(story_n_path)
+    plot_curve(output, number_of_stories)
+
+
+def test(
+    model: Text,
+    stories: Text,
+    nlu_data: Text,
+    endpoints: Optional[Text] = None,
+    output: Text = DEFAULT_RESULTS_PATH,
+    kwargs: Optional[Dict] = None,
+):
+    if kwargs is None:
+        kwargs = {}
+
     test_core(model, stories, endpoints, output, **kwargs)
-    test_nlu(model, nlu_data, **kwargs)
+    test_nlu(model, nlu_data, kwargs)
 
 
-def test_core(model: Text, stories: Text, endpoints: Text = None,
-              output: Text = DEFAULT_RESULTS_PATH, model_path: Text = None,
-              **kwargs: Dict):
+def test_core(
+    model: Optional[Text] = None,
+    stories: Optional[Text] = None,
+    endpoints: Optional[Text] = None,
+    output: Text = DEFAULT_RESULTS_PATH,
+    kwargs: Optional[Dict] = None,
+):
     import rasa.core.test
     import rasa.core.utils as core_utils
     from rasa.nlu import utils as nlu_utils
@@ -28,63 +58,110 @@ def test_core(model: Text, stories: Text, endpoints: Text = None,
 
     _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
 
+    if kwargs is None:
+        kwargs = {}
+
     if output:
         nlu_utils.create_dir(output)
 
-    if os.path.isfile(model):
-        model_path = get_model(model)
+    unpacked_model = get_model(model)
+    if unpacked_model is None:
+        print_error(
+            "Unable to test: could not find a model. Use 'rasa train' to train a "
+            "Rasa model."
+        )
+        return
 
-    if model_path:
-        # Single model: Normal evaluation
-        loop = asyncio.get_event_loop()
-        model_path = get_model(model)
-        core_path, nlu_path = get_model_subdirectories(model_path)
+    core_path, nlu_path = get_model_subdirectories(unpacked_model)
 
-        _interpreter = NaturalLanguageInterpreter.create(nlu_path,
-                                                         _endpoints.nlu)
+    if not os.path.exists(core_path):
+        print_error(
+            "Unable to test: could not find a Core model. Use 'rasa train' to "
+            "train a model."
+        )
 
-        _agent = Agent.load(core_path, interpreter=_interpreter)
+    use_e2e = kwargs["e2e"] if "e2e" in kwargs else False
 
-        kwargs = minimal_kwargs(kwargs, rasa.core.test)
-        loop.run_until_complete(
-            rasa.core.test(stories, _agent, out_directory=output, **kwargs))
+    _interpreter = RegexInterpreter()
+    if use_e2e:
+        if os.path.exists(nlu_path):
+            _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
+        else:
+            print_warning(
+                "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
+                "evaluation."
+            )
 
-    else:
-        from rasa.core.test import compare, plot_curve
+    _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
-        compare(model, stories, output)
+    kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
 
-        story_n_path = os.path.join(model, 'num_stories.json')
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(
+        rasa.core.test(stories, _agent, out_directory=output, **kwargs)
+    )
 
-        number_of_stories = core_utils.read_json_file(story_n_path)
-        plot_curve(output, number_of_stories)
 
-
-def test_nlu(model: Text, nlu_data: Text, **kwargs: Dict):
+def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict]):
     from rasa.nlu.test import run_evaluation
 
     unpacked_model = get_model(model)
+
+    if unpacked_model is None:
+        print_error(
+            "Could not find any model. Use 'rasa train nlu' to train an NLU model."
+        )
+        return
+
     nlu_model = os.path.join(unpacked_model, "nlu")
-    kwargs = minimal_kwargs(kwargs, run_evaluation)
-    run_evaluation(nlu_data, nlu_model, **kwargs)
+
+    if os.path.exists(nlu_model):
+        kwargs = minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
+        run_evaluation(nlu_data, nlu_model, **kwargs)
+    else:
+        print_error(
+            "Could not find any model. Use 'rasa train nlu' to train an NLU model."
+        )
 
 
-def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int = 3):
+def test_nlu_with_cross_validation(config: Text, nlu: Text, kwargs: Optional[Dict]):
     import rasa.nlu.config
-    import rasa.nlu.test as nlu_test
+    from rasa.nlu.test import (
+        drop_intents_below_freq,
+        cross_validate,
+        return_results,
+        return_entity_results,
+    )
 
+    kwargs = kwargs or {}
+    folds = int(kwargs.get("folds", 3))
     nlu_config = rasa.nlu.config.load(config)
     data = rasa.nlu.training_data.load_data(nlu)
-    data = nlu_test.drop_intents_below_freq(data, cutoff=5)
-    results, entity_results = nlu_test.cross_validate(data, int(folds),
-                                                      nlu_config)
+    data = drop_intents_below_freq(data, cutoff=folds)
+    kwargs = minimal_kwargs(kwargs, cross_validate)
+    results, entity_results = cross_validate(data, folds, nlu_config, **kwargs)
     logger.info("CV evaluation (n={})".format(folds))
 
     if any(results):
         logger.info("Intent evaluation results")
-        nlu_test.return_results(results.train, "train")
-        nlu_test.return_results(results.test, "test")
+        return_results(results.train, "train")
+        return_results(results.test, "test")
     if any(entity_results):
         logger.info("Entity evaluation results")
-        nlu_test.return_entity_results(entity_results.train, "train")
-        nlu_test.return_entity_results(entity_results.test, "test")
+        return_entity_results(entity_results.train, "train")
+        return_entity_results(entity_results.test, "test")
+
+
+def copy_models_to_compare(models: List[str]) -> Text:
+    models_dir = tempfile.mkdtemp()
+
+    for i, model in enumerate(models):
+        if os.path.exists(model) and os.path.isfile(model):
+            path = os.path.join(models_dir, "model_" + str(i))
+            unpack_model(model, path)
+        else:
+            logger.warning("Ignore '{}' as it is not a valid model file.".format(model))
+
+    logger.debug("Unpacked models to compare to '{}'".format(models_dir))
+
+    return models_dir

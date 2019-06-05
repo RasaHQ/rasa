@@ -1,0 +1,3 @@
+DEFAULT_SERVER_PORT = 5000
+
+DEFAULT_SERVER_FORMAT = "http://localhost:{}"

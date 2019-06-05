@@ -1,5 +1,5 @@
-rasanlu:
-  image: rasa/rasa_nlu:latest-spacy
+rasa:
+  image: rasa/rasa:latest-spacy-en
   ports:
     - "5000:5000"
   volumes:

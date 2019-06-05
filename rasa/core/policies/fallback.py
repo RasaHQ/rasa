@@ -5,6 +5,8 @@ from typing import Any, List, Text, Optional, Dict
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 
+import rasa.utils.io
+
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.policies.policy import Policy
@@ -32,6 +34,7 @@ class FallbackPolicy(Policy):
     def __init__(self,
                  policy_config: Optional[Dict[Text, Any]] = None,
                  ) -> None:
+
         """Create a new Fallback policy.
 
         Args:
@@ -51,19 +54,19 @@ class FallbackPolicy(Policy):
         self.core_threshold = self.pocy_config["core_threshold"]
         self.fallback_action_name = self.policy_config["fallback_action_name"]
 
-    def train(self,
-              training_trackers: List[DialogueStateTracker],
-              domain: Domain,
-              **kwargs: Any
-              ) -> None:
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any
+    ) -> None:
         """Does nothing. This policy is deterministic."""
 
         pass
 
-    def should_nlu_fallback(self,
-                            nlu_confidence: float,
-                            last_action_name: Text
-                            ) -> bool:
+    def should_nlu_fallback(
+        self, nlu_confidence: float, last_action_name: Text
+    ) -> bool:
         """Checks if fallback action should be predicted.
 
         Checks for:
@@ -71,8 +74,10 @@ class FallbackPolicy(Policy):
         - last action is action listen
         """
 
-        return (nlu_confidence < self.nlu_threshold and
-                last_action_name == ACTION_LISTEN_NAME)
+        return (
+            nlu_confidence < self.nlu_threshold
+            and last_action_name == ACTION_LISTEN_NAME
+        )
 
     def fallback_scores(self, domain, fallback_score=1.0):
         """Prediction scores used if a fallback is necessary."""
@@ -82,9 +87,9 @@ class FallbackPolicy(Policy):
         result[idx] = fallback_score
         return result
 
-    def predict_action_probabilities(self,
-                                     tracker: DialogueStateTracker,
-                                     domain: Domain) -> List[float]:
+    def predict_action_probabilities(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> List[float]:
         """Predicts a fallback action.
 
         The fallback action is predicted if the NLU confidence is low
@@ -103,11 +108,12 @@ class FallbackPolicy(Policy):
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
 
-        elif self.should_nlu_fallback(nlu_confidence,
-                                      tracker.latest_action_name):
-            logger.debug("NLU confidence {} is lower "
-                         "than NLU threshold {}. "
-                         "".format(nlu_confidence, self.nlu_threshold))
+        elif self.should_nlu_fallback(nlu_confidence, tracker.latest_action_name):
+            logger.debug(
+                "NLU confidence {} is lower "
+                "than NLU threshold {:.2f}. "
+                "".format(nlu_confidence, self.nlu_threshold)
+            )
             result = self.fallback_scores(domain)
 
         else:
@@ -115,9 +121,12 @@ class FallbackPolicy(Policy):
             # predict fallback action with confidence `core_threshold`
             # if this is the highest confidence in the ensemble,
             # the fallback action will be executed.
-            logger.debug("NLU confidence threshold met, confidence of "
-                         "fallback action set to core threshold ({})."
-                         .format(self.core_threshold))
+            logger.debug(
+                "NLU confidence threshold met, confidence of "
+                "fallback action set to core threshold ({}).".format(
+                    self.core_threshold
+                )
+            )
             result = self.fallback_scores(domain, self.core_threshold)
 
         return result
@@ -130,11 +139,11 @@ class FallbackPolicy(Policy):
         utils.dump_obj_as_json_to_file(config_file, self.policy_config)
 
     @classmethod
-    def load(cls, path: Text) -> 'FallbackPolicy':
+    def load(cls, path: Text) -> "FallbackPolicy":
         meta = {}
         if os.path.exists(path):
             meta_path = os.path.join(path, "fallback_policy.json")
             if os.path.isfile(meta_path):
-                meta = json.loads(utils.read_file(meta_path))
+                meta = json.loads(rasa.utils.io.read_file(meta_path))
 
         return cls(**meta)

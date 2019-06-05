@@ -1,11 +1,10 @@
 :desc: Stories are used to teach Rasa Stack real conversation designs to learn
-       from providing the basis for a scalable machine learning dialogue management. 
+       from providing the basis for a scalable machine learning dialogue management.
 
 .. _stories:
 
-Story Data Format
-=================
-
+Stories
+=======
 
 A training example for the Rasa Core dialogue system is called a **story**.
 This is a guide to the story data format.
@@ -22,7 +21,7 @@ Format
 ------
 
 Here's an example from the `bAbI <https://research.fb.com/downloads/babi/>`_
-data (converted into Rasa stories):
+dataset (converted into Rasa stories):
 
 .. code-block:: story
 
@@ -84,13 +83,8 @@ contains checkpoints:
       - action_handle_denial
 
 
-``OR`` Statements
------------------
-
-.. note::
-
-   Adding lines to your stories with many ``OR`` statements
-   will slow down training.
+OR Statements
+-------------
 
 Another way to write shorter stories, or to handle multiple intents
 the same way, is to use an ``OR`` statement. For example if you ask
@@ -109,4 +103,7 @@ it is probably better to restructure your domain and/or intents:
       - action_handle_affirmation
 
 
-.. include:: feedback.inc
+.. note::
+
+   Adding lines to your stories with many ``OR`` statements
+   will slow down training.

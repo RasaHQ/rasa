@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from typing import Text
@@ -5,24 +6,27 @@ from typing import Text
 import matplotlib
 import pytest
 
-from rasa.core import server, train, utils
+import rasa.utils.io
+from rasa.core import train
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, channel
-from rasa.core.dispatcher import Dispatcher
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import (AugmentedMemoizationPolicy,
-                                            MemoizationPolicy, Policy)
+from rasa.core.policies.memoization import (
+    AugmentedMemoizationPolicy,
+    MemoizationPolicy,
+    Policy,
+)
 from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.utils import zip_folder
+from rasa.utils.io import zip_folder
 from rasa.train import train_async
 
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 
 logging.basicConfig(level="DEBUG")
 
@@ -38,19 +42,23 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
-MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
+MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
-TEST_DIALOGUES = ['data/test_dialogues/default.json',
-                  'data/test_dialogues/formbot.json',
-                  'data/test_dialogues/moodbot.json',
-                  'data/test_dialogues/restaurantbot.json']
+TEST_DIALOGUES = [
+    "data/test_dialogues/default.json",
+    "data/test_dialogues/formbot.json",
+    "data/test_dialogues/moodbot.json",
+    "data/test_dialogues/restaurantbot.json",
+]
 
-EXAMPLE_DOMAINS = [DEFAULT_DOMAIN_PATH,
-                   "examples/formbot/domain.yml",
-                   "examples/moodbot/domain.yml",
-                   "examples/restaurantbot/domain.yml"]
+EXAMPLE_DOMAINS = [
+    DEFAULT_DOMAIN_PATH,
+    "examples/formbot/domain.yml",
+    "examples/moodbot/domain.yml",
+    "examples/restaurantbot/domain.yml",
+]
 
 
 class CustomSlot(Slot):
@@ -60,15 +68,17 @@ class CustomSlot(Slot):
 
 # noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
 class ExamplePolicy(Policy):
-
     def __init__(self, example_arg):
         pass
 
 
 @pytest.fixture
 def loop():
-    from pytest_sanic.plugin import loop as sanic_loop
-    return utils.enable_async_loop_debugging(next(sanic_loop()))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -98,10 +108,12 @@ def default_domain():
 
 @pytest.fixture(scope="session")
 async def default_agent(default_domain):
-    agent = Agent(default_domain,
-                  policies=[MemoizationPolicy()],
-                  interpreter=RegexInterpreter(),
-                  tracker_store=InMemoryTrackerStore(default_domain))
+    agent = Agent(
+        default_domain,
+        policies=[MemoizationPolicy()],
+        interpreter=RegexInterpreter(),
+        tracker_store=InMemoryTrackerStore(default_domain),
+    )
     training_data = await agent.load_data(DEFAULT_STORIES_FILE)
     agent.train(training_data)
     return agent
@@ -115,71 +127,53 @@ def default_agent_path(default_agent, tmpdir_factory):
 
 
 @pytest.fixture
-def default_dispatcher_collecting(default_nlg):
-    bot = CollectingOutputChannel()
-    return Dispatcher("my-sender", bot, default_nlg)
+def default_channel():
+    return CollectingOutputChannel()
 
 
 @pytest.fixture
 async def default_processor(default_domain, default_nlg):
-    agent = Agent(default_domain,
-                  SimplePolicyEnsemble([AugmentedMemoizationPolicy()]),
-                  interpreter=RegexInterpreter())
+    agent = Agent(
+        default_domain,
+        SimplePolicyEnsemble([AugmentedMemoizationPolicy()]),
+        interpreter=RegexInterpreter(),
+    )
 
     training_data = await agent.load_data(DEFAULT_STORIES_FILE)
     agent.train(training_data)
     tracker_store = InMemoryTrackerStore(default_domain)
-    return MessageProcessor(agent.interpreter,
-                            agent.policy_ensemble,
-                            default_domain,
-                            tracker_store,
-                            default_nlg)
-
-
-@pytest.fixture(scope="session")
-async def trained_moodbot_path():
-    await train(
-        domain_file="examples/moodbot/domain.yml",
-        stories_file="examples/moodbot/data/stories.md",
-        output_path=MOODBOT_MODEL_PATH,
-        interpreter=RegexInterpreter(),
-        policy_config='rasa/core/default_config.yml',
-        kwargs=None
+    return MessageProcessor(
+        agent.interpreter,
+        agent.policy_ensemble,
+        default_domain,
+        tracker_store,
+        default_nlg,
     )
 
-    return MOODBOT_MODEL_PATH
-
 
 @pytest.fixture(scope="session")
-async def zipped_moodbot_model():
-    # train moodbot if necessary
-    policy_file = os.path.join(MOODBOT_MODEL_PATH, 'metadata.json')
-    if not os.path.isfile(policy_file):
-        await trained_moodbot_path()
-
-    zip_path = zip_folder(MOODBOT_MODEL_PATH)
-
-    return zip_path
-
-
-@pytest.fixture(scope="session")
-def moodbot_domain():
-    domain_path = os.path.join(MOODBOT_MODEL_PATH, 'domain.yml')
+def moodbot_domain(trained_moodbot_path):
+    domain_path = os.path.join("examples", "moodbot", "domain.yml")
     return Domain.load(domain_path)
 
 
 @pytest.fixture(scope="session")
-def moodbot_metadata():
-    return PolicyEnsemble.load_metadata(MOODBOT_MODEL_PATH)
+def moodbot_metadata(unpacked_trained_moodbot_path):
+    return PolicyEnsemble.load_metadata(
+        os.path.join(unpacked_trained_moodbot_path, "core")
+    )
 
 
 @pytest.fixture()
-async def trained_stack_model(default_domain_path, default_stack_config,
-                              default_nlu_data, default_stories_file):
+async def trained_stack_model(
+    default_domain_path, default_stack_config, default_nlu_data, default_stories_file
+):
+
     trained_stack_model_path = await train_async(
         domain=default_domain_path,
         config=default_stack_config,
-        training_files=[default_nlu_data, default_stories_file])
+        training_files=[default_nlu_data, default_stories_file],
+    )
 
     return trained_stack_model_path
 
@@ -188,33 +182,15 @@ async def trained_stack_model(default_domain_path, default_stack_config,
 async def prepared_agent(tmpdir_factory) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
 
-    agent = Agent("data/test_domains/default.yml",
-                  policies=[AugmentedMemoizationPolicy(max_history=3)])
+    agent = Agent(
+        "data/test_domains/default.yml",
+        policies=[AugmentedMemoizationPolicy(max_history=3)],
+    )
 
     training_data = await agent.load_data(DEFAULT_STORIES_FILE)
     agent.train(training_data)
     agent.persist(model_path)
     return agent
-
-
-@pytest.fixture
-async def core_server(prepared_agent):
-    app = server.create_app(prepared_agent)
-    channel.register([RestInput()],
-                     app,
-                     "/webhooks/")
-    return app
-
-
-@pytest.fixture
-async def core_server_secured(prepared_agent):
-    app = server.create_app(prepared_agent,
-                            auth_token="rasa",
-                            jwt_secret="core")
-    channel.register([RestInput()],
-                     app,
-                     "/webhooks/")
-    return app
 
 
 @pytest.fixture
@@ -224,9 +200,7 @@ def default_nlg(default_domain):
 
 @pytest.fixture
 def default_tracker(default_domain):
-    import uuid
-    uid = str(uuid.uuid1())
-    return DialogueStateTracker(uid, default_domain.slots)
+    return DialogueStateTracker("my-sender", default_domain.slots)
 
 
 @pytest.fixture(scope="session")
@@ -242,8 +216,11 @@ def project() -> Text:
 
 def train_model(project: Text, filename: Text = "test.tar.gz"):
     from rasa.constants import (
-        DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH,
-        DEFAULT_MODELS_PATH)
+        DEFAULT_CONFIG_PATH,
+        DEFAULT_DATA_PATH,
+        DEFAULT_DOMAIN_PATH,
+        DEFAULT_MODELS_PATH,
+    )
     import rasa.train
 
     output = os.path.join(project, DEFAULT_MODELS_PATH, filename)

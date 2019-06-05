@@ -24,23 +24,20 @@ clean:
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info
-	rm -rf docs/core/_build
-	rm -rf docs/nlu/_build
+	rm -rf docs/_build
 
 lint:
-	py.test --pep8 -m pep8
+	black .
 
 test: clean
-	py.test tests --verbose --pep8 --color=yes $(TEST_PATH)
+	py.test tests --verbose --color=yes $(TEST_PATH)
+	black --check .
 
 doctest: clean
-	cd docs/core && make doctest
+	cd docs && make doctest
 
-livedocs-core:
-	cd docs/core && make livehtml
-
-livedocs-nlu:
-	cd docs/nlu && make livehtml
+livedocs:
+	cd docs && make livehtml
 
 check-readme:
 	# if this runs through we can be sure the readme is properly shown on pypi
