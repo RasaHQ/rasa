@@ -239,4 +239,4 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
     not_relevant_file2.write({}, ensure=True)
 
     assert not selector.is_imported(str(not_relevant_file1))
-    assert not selector.is_imported(not_relevant_file2)
+    assert not selector.is_imported(str(not_relevant_file2))
