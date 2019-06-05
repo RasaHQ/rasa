@@ -1,5 +1,4 @@
 import argparse
-import functools
 import importlib.util
 import logging
 import signal
@@ -22,6 +21,7 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_RASA_X,
 )
 import rasa.utils.io as io_utils
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -97,15 +97,41 @@ def _prepare_credentials_for_rasa_x(
 
 
 def _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url):
-    from rasa.utils.endpoints import EndpointConfig
+    import questionary
 
     endpoints.model = EndpointConfig(
         "{}/projects/default/models/tags/production".format(rasa_x_url),
         token=rasa_x_token,
         wait_time_between_pulls=2,
     )
-    if not endpoints.tracker_store:
+
+    overwrite_existing_tracker_store = False
+    if endpoints.tracker_store and not _is_correct_tracker_store(
+        endpoints.tracker_store
+    ):
+        print_error(
+            "Rasa X currently only supports a SQLite tracker store with path '{}' "
+            "when running locally. You can deploy Rasa X with Docker "
+            "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
+            "other tracker store configurations.".format(DEFAULT_TRACKER_DB)
+        )
+        overwrite_existing_tracker_store = questionary.confirm(
+            "Do you want to continue with the default SQLite tracker store?"
+        ).ask()
+
+        if not overwrite_existing_tracker_store:
+            exit(0)
+
+    if not endpoints.tracker_store or overwrite_existing_tracker_store:
         endpoints.tracker_store = EndpointConfig(type="sql", db=DEFAULT_TRACKER_DB)
+
+
+def _is_correct_tracker_store(tracker_endpoint: EndpointConfig) -> bool:
+    return (
+        tracker_endpoint.type == "sql"
+        and tracker_endpoint.kwargs.get("dialect", "").lower() == "sqlite"
+        and tracker_endpoint.kwargs.get("db") == DEFAULT_TRACKER_DB
+    )
 
 
 def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
