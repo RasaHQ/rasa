@@ -164,13 +164,15 @@ class EmbeddingPolicy(Policy):
         rnn_embed: Optional[tf.Tensor] = None,
         attn_embed: Optional[tf.Tensor] = None,
         copy_attn_debug: Optional[tf.Tensor] = None,
-        all_time_masks: Optional[tf.Tensor] = None
+        all_time_masks: Optional[tf.Tensor] = None,
+        **kwargs,
     ) -> None:
         if featurizer:
             if not isinstance(featurizer, FullDialogueTrackerFeaturizer):
                 raise TypeError("Passed tracker featurizer of type {}, "
                                 "should be FullDialogueTrackerFeaturizer."
                                 "".format(type(featurizer).__name__))
+        config.update(kwargs)
         super(EmbeddingPolicy, self).__init__(config, featurizer)
 
         # flag if to use the same embeddings for user and bot
@@ -194,6 +196,8 @@ class EmbeddingPolicy(Policy):
                     self.config["hidden_layers_sizes_a"], self.config["hidden_layers_sizes_b"]
                 )
             )
+
+        self._tf_config = self._load_tf_config(self.config)
 
         # chrono initialization for forget bias
         self.characteristic_time = None
@@ -239,9 +243,6 @@ class EmbeddingPolicy(Policy):
     @property
     def is_using_attention(self):
         return self.config["attn_after_rnn"] or self.config["attn_before_rnn"]
-
-    def _load_params(self) -> None:
-        self._tf_config = self._load_tf_config()
 
     # data helpers
     # noinspection PyPep8Naming
@@ -1388,9 +1389,9 @@ class EmbeddingPolicy(Policy):
         with open(encoded_actions_file, "wb") as f:
             pickle.dump(self.encoded_all_actions, f)
 
-        # tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
-        # with open(tf_config_file, 'wb') as f:
-        #     pickle.dump(self._tf_config, f)
+        tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
+        with open(tf_config_file, 'wb') as f:
+            pickle.dump(self._tf_config, f)
 
     @staticmethod
     def load_tensor(name: Text) -> Optional[tf.Tensor]:
