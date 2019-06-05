@@ -258,7 +258,7 @@ async def load_agent(
             )
 
         else:
-            logger.error("No valid configuration given to load agent.")
+            logger.warning("No valid configuration given to load agent.")
             return None
 
     except Exception as e:
