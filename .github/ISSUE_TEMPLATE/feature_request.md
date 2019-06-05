@@ -2,19 +2,20 @@
 name: Feature request
 about: Suggest an idea for this project
 title: ''
-labels: ''
+labels: 'enhancement'
 assignees: ''
 
 ---
 
 **Description of Problem**:
-Short overview of the current situation. 
-Why is this feature needed?
+Short overview of the current situation.
+Why is this feature needed? Please link any relevant
+[forum](https://forum.rasa.com) threads here.
 
 **Overview of the Solution**:
 What would a possible solution look like?
-Describe, without going too low into technical details, 
-what changes need to happen during implementation of this feature. 
+Describe, without going too low into technical details,
+what changes need to happen during implementation of this feature.
 
 **Examples** (if relevant):
 List examples and/or link to relevant references.
