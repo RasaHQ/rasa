@@ -204,7 +204,7 @@ def _configure_logging(args: argparse.Namespace):
     io_utils.configure_colored_logging(args.loglevel)
 
     set_log_level(log_level)
-    configure_file_logging(log_level, args.log_file)
+    configure_file_logging(args.log_file)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
@@ -230,16 +230,20 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
     if not is_rasa_x_installed():
         print_error(
             "Rasa X is not installed. The `rasa x` "
-            "command requires an installation of Rasa X."
+            "command requires an installation of Rasa X. "
+            "Instructions on how to install Rasa X can be found here: "
+            "https://rasa.com/docs/rasa-x/installation-and-setup/."
         )
         sys.exit(1)
 
     if args.port == args.rasa_x_port:
         print_error(
-            "The port for Rasa X and the port of the Rasa server are the same. "
-            "We need two different ports, one to run Rasa X (e.g. delivering the UI) "
-            "and another one to run a normal Rasa server.\nPlease specify two "
-            "different ports using the arguments '--port' and '--rasa-x-port'."
+            "The port for Rasa X '{}' and the port of the Rasa server '{}' are the "
+            "same. We need two different ports, one to run Rasa X (e.g. delivering the "
+            "UI) and another one to run a normal Rasa server.\nPlease specify two "
+            "different ports using the arguments '--port' and '--rasa-x-port'.".format(
+                args.rasa_x_port, args.port
+            )
         )
         sys.exit(1)
 
@@ -247,7 +251,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
         print_error(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
-            "directory."
+            "directory (see http://rasa.com/docs/rasa/user-guide/rasa-tutorial/#create-a-new-project)."
         )
         sys.exit(1)
 

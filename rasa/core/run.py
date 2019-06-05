@@ -14,7 +14,7 @@ from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import BUILTIN_CHANNELS, InputChannel, console
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.utils import AvailableEndpoints
+from rasa.core.utils import AvailableEndpoints, configure_file_logging
 from rasa.model import get_model_subdirectories, get_model
 from rasa.utils.common import update_sanic_log_level, class_from_module_path
 
@@ -57,14 +57,6 @@ def _create_single_channel(channel, credentials):
             )
 
 
-def _configure_logging(log_file: Optional[Text]):
-    if log_file is not None:
-        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-
 def configure_app(
     input_channels: Optional[List["InputChannel"]] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
@@ -90,7 +82,7 @@ def configure_app(
         app = Sanic(__name__, configure_logging=False)
         CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
 
-    _configure_logging(log_file)
+    configure_file_logging(log_file)
 
     if input_channels:
         rasa.core.channels.channel.register(input_channels, app, route=route)
