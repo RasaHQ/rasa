@@ -230,7 +230,7 @@ class MemoizationPolicy(Policy):
             "max_history": self.max_history,
             "lookup": self.lookup,
         }
-        utils.create_dir_for_file(memorized_file)
+        rasa.utils.io.create_directory_for_file(memorized_file)
         utils.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod

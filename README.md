@@ -93,8 +93,8 @@ also be asked to sign a
 To build & edit the docs, first install all necessary dependencies:
 
 ```
-brew install sphinx
 pip3 install -r requirements-dev.txt
+pip3 install -r requirements-docs.txt
 ```
 
 After the installation has finished, you can run and view the documentation

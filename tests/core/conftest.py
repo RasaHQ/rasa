@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from typing import Text
@@ -22,7 +23,7 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.utils import zip_folder
+from rasa.utils.io import zip_folder
 from rasa.train import train_async
 
 matplotlib.use("Agg")
@@ -73,9 +74,11 @@ class ExamplePolicy(Policy):
 
 @pytest.fixture
 def loop():
-    from pytest_sanic.plugin import loop as sanic_loop
-
-    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -149,40 +152,16 @@ async def default_processor(default_domain, default_nlg):
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path():
-    await train(
-        domain_file="examples/moodbot/domain.yml",
-        stories_file="examples/moodbot/data/stories.md",
-        output_path=MOODBOT_MODEL_PATH,
-        interpreter=RegexInterpreter(),
-        policy_config="rasa/cli/default_config.yml",
-        kwargs=None,
-    )
-
-    return MOODBOT_MODEL_PATH
-
-
-@pytest.fixture(scope="session")
-async def zipped_moodbot_model():
-    # train moodbot if necessary
-    policy_file = os.path.join(MOODBOT_MODEL_PATH, "core", "metadata.json")
-    if not os.path.isfile(policy_file):
-        await trained_moodbot_path()
-
-    zip_path = zip_folder(os.path.dirname(MOODBOT_MODEL_PATH))
-
-    return zip_path
-
-
-@pytest.fixture(scope="session")
-def moodbot_domain():
-    domain_path = os.path.join(MOODBOT_MODEL_PATH, "core", "domain.yml")
+def moodbot_domain(trained_moodbot_path):
+    domain_path = os.path.join("examples", "moodbot", "domain.yml")
     return Domain.load(domain_path)
 
 
 @pytest.fixture(scope="session")
-def moodbot_metadata():
-    return PolicyEnsemble.load_metadata(os.path.join(MOODBOT_MODEL_PATH, "core"))
+def moodbot_metadata(unpacked_trained_moodbot_path):
+    return PolicyEnsemble.load_metadata(
+        os.path.join(unpacked_trained_moodbot_path, "core")
+    )
 
 
 @pytest.fixture()

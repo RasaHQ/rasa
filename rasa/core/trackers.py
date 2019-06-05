@@ -1,6 +1,6 @@
 import copy
 import logging
-from collections import deque
+from collections import deque, defaultdict
 from enum import Enum
 from typing import Dict, Text, Any, Optional, Iterator, Type, List
 
@@ -43,6 +43,17 @@ class EventVerbosity(Enum):
     ALL = 4
 
 
+class AnySlotDict(dict):
+    """A slot dictionary that pretends every slot exists, by creating slots on demand.
+
+    This only uses the generic slot type! This means certain functionality wont work,
+    e.g. properly featurizing the slot."""
+
+    def __missing__(self, key):
+        value = self[key] = Slot(key)
+        return value
+
+
 class DialogueStateTracker(object):
     """Maintains the state of a conversation.
 
@@ -54,7 +65,7 @@ class DialogueStateTracker(object):
         cls,
         sender_id: Text,
         events_as_dict: List[Dict[Text, Any]],
-        slots: List[Slot],
+        slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
     ) -> "DialogueStateTracker":
         """Create a tracker from dump.
@@ -70,7 +81,7 @@ class DialogueStateTracker(object):
         cls,
         sender_id: Text,
         evts: List[Event],
-        slots: List[Slot],
+        slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
     ):
         tracker = cls(sender_id, slots, max_event_history)
@@ -92,7 +103,10 @@ class DialogueStateTracker(object):
         # id of the source of the messages
         self.sender_id = sender_id
         # slots that can be filled in this domain
-        self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
+        if slots is not None:
+            self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
+        else:
+            self.slots = AnySlotDict()
 
         ###
         # current state of the tracker - MUST be re-creatable by processing

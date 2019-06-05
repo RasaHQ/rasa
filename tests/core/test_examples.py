@@ -1,3 +1,4 @@
+import asyncio
 import sys
 
 import json
@@ -9,18 +10,21 @@ import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
+from rasa.model import get_model
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 
 @pytest.fixture(scope="session")
 def loop():
-    from pytest_sanic.plugin import loop as sanic_loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
-    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
-
-async def test_moodbot_example(trained_moodbot_path):
-    agent = Agent.load(trained_moodbot_path)
+async def test_moodbot_example(unpacked_trained_moodbot_path):
+    agent = Agent.load(unpacked_trained_moodbot_path)
 
     responses = await agent.handle_text("/greet")
     assert responses[0]["text"] == "Hey! How are you?"

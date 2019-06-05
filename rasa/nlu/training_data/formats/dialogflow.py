@@ -6,6 +6,7 @@ from typing import Any, Text, Optional
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa.nlu.training_data.util import transform_entity_synonyms
+import rasa.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -34,7 +35,7 @@ class DialogflowReader(TrainingDataReader):
                 "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES)
             )
 
-        root_js = utils.read_json_file(fn)
+        root_js = rasa.utils.io.read_json_file(fn)
         examples_js = self._read_examples_js(fn, language, fformat)
 
         if not examples_js:
@@ -125,7 +126,7 @@ class DialogflowReader(TrainingDataReader):
         examples_fn_ending = "_{}_{}.json".format(examples_type, language)
         examples_fn = fn.replace(".json", examples_fn_ending)
         if os.path.isfile(examples_fn):
-            return utils.read_json_file(examples_fn)
+            return rasa.utils.io.read_json_file(examples_fn)
         else:
             return None
 
