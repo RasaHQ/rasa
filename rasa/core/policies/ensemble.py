@@ -249,9 +249,8 @@ class PolicyEnsemble(object):
         parsed_policies = []
 
         for policy in policies:
-
             policy_name = policy.pop('name')
-            if policy.get('featurizer'):
+            if policy.pop('featurizer'):
                 featurizer_func, featurizer_config = \
                     cls.get_featurizer_from_dict(policy)
 
@@ -267,11 +266,14 @@ class PolicyEnsemble(object):
                     )
 
                 # override policy's featurizer with real featurizer class
-                policy['featurizer'] = featurizer_func(**featurizer_config)
+                featurizer = featurizer_func(**featurizer_config)
+            else:
+                featurizer = None
 
             try:
                 constr_func = registry.policy_from_module_path(policy_name)
-                policy_object = constr_func(**policy)
+                policy_object = constr_func(policy_config=policy,
+                                            featurizer=featurizer)
                 parsed_policies.append(policy_object)
             except(ImportError, AttributeError):
                 raise InvalidPolicyConfig("Module for policy '{}' could not "

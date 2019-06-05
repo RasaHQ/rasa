@@ -1,9 +1,9 @@
 import copy
 import logging
 import tensorflow as tf
-from typing import (
-    Any, List, Optional, Text, Dict, Callable)
+from typing import Any, List, Optional, Text, Dict, Callable
 
+from rasa.config import override_defaults
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
@@ -17,6 +17,12 @@ logger = logging.getLogger(__name__)
 
 class Policy(object):
     SUPPORTS_ONLINE_TRAINING = False
+
+    @property
+    def name(cls):
+        """The name property is a function of the class - its __name__."""
+
+        return cls.__name__
 
     @staticmethod
     def _standard_featurizer():
@@ -37,12 +43,22 @@ class Policy(object):
         else:
             return None
 
+    #Defines the default configuration parameters of a policy.
+    defaults = {"priority": 1}
+
     def __init__(self,
-                 featurizer: Optional[TrackerFeaturizer] = None,
-                 priority: Optional[int] = 1
+                 policy_config: Optional[Dict[Text, Any]] = None,
+                 featurizer: Optional[TrackerFeaturizer] = None
                  ) -> None:
+        if not policy_config:
+            policy_config = {}
+        policy_config["name"] = self.name
+        self.policy_config = override_defaults(self.defaults, policy_config)
         self.__featurizer = self._create_featurizer(featurizer)
-        self.priority = priority
+
+    @property
+    def priority(self):
+        return self.policy_config.get("priority")
 
     @property
     def featurizer(self):

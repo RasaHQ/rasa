@@ -16,18 +16,19 @@ class FormPolicy(MemoizationPolicy):
 
     ENABLE_FEATURE_STRING_COMPRESSION = True
 
+    default = {"priority": 4,
+               "max_history": 2,
+               }
+
     def __init__(self,
-                 featurizer: Optional[TrackerFeaturizer] = None,
-                 priority: int = 4,
-                 lookup: Optional[Dict] = None
+                 policy_config: Optional[Dict[Text, Any]] = None,
+                 featurizer: Optional[TrackerFeaturizer] = None
                  ) -> None:
 
         # max history is set to 2 in order to capture
         # previous meaningful action before action listen
-        super(FormPolicy, self).__init__(featurizer=featurizer,
-                                         priority=priority,
-                                         max_history=2,
-                                         lookup=lookup)
+        super(FormPolicy, self).__init__(policy_config=policy_config,
+                                         featurizer=featurizer)
 
     @staticmethod
     def _get_active_form_name(state):

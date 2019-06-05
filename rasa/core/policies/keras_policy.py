@@ -32,8 +32,12 @@ class KerasPolicy(Policy):
         "epochs": 100,
         "batch_size": 32,
         "validation_split": 0.1,
+        "current_epoch": 0,
         # set random seed to any int to get reproducible results
-        "random_seed": None
+        "random_seed": None,
+        # policy params
+        "priority": 1,
+        "max_history": None
     }
 
     @staticmethod
@@ -42,40 +46,35 @@ class KerasPolicy(Policy):
                                            max_history=max_history)
 
     def __init__(self,
+                 policy_config: Optional[Dict[Text, Any]] = None,
                  featurizer: Optional[TrackerFeaturizer] = None,
-                 priority: int = 1,
                  model: Optional[tf.keras.models.Sequential] = None,
                  graph: Optional[tf.Graph] = None,
                  session: Optional[tf.Session] = None,
-                 current_epoch: int = 0,
-                 max_history: Optional[int] = None,
-                 **kwargs: Any
                  ) -> None:
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
-        super(KerasPolicy, self).__init__(featurizer, priority)
+        super(KerasPolicy, self).__init__(policy_config, featurizer)
 
-        self._load_params(**kwargs)
         self.model = model
         # by default keras uses default tf graph and global tf session
         # we are going to either load them or create them in train(...)
         self.graph = graph
         self.session = session
 
-        self.current_epoch = current_epoch
+        self.current_epoch = self.policy_config["current_epoch"]
 
-    def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        config = copy.deepcopy(self.defaults)
-        config.update(kwargs)
-
+    def _load_params(self) -> None:
         # filter out kwargs that are used explicitly
-        self._tf_config = self._load_tf_config(config)
-        self.rnn_size = config.pop('rnn_size')
-        self.epochs = config.pop('epochs')
-        self.batch_size = config.pop('batch_size')
-        self.validation_split = config.pop('validation_split')
-        self.random_seed = config.pop('random_seed')
-
+        self._tf_config = self._load_tf_config(self.policy_config)
+        self.rnn_size = self.policy_config.get('rnn_size')
+        self.epochs = self.policy_config.get('epochs')
+        self.batch_size = self.policy_config.get('batch_size')
+        self.validation_split = self.policy_config.get('validation_split')
+        self.random_seed = self.policy_config.get('random_seed')
+        # all the variables above were previously set by popping from the
+        # dictionary, since we want to keep the dict for storage the
+        # _train_params might need to be adujested
         self._train_params = config
 
     @property
@@ -236,9 +235,8 @@ class KerasPolicy(Policy):
         if self.model:
             self.featurizer.persist(path)
 
-            meta = {"priority": self.priority,
-                    "model": "keras_model.h5",
-                    "epochs": self.current_epoch}
+            meta = self.policy_config
+            meta["model"] = "keras_model.h5"
 
             meta_file = os.path.join(path, 'keras_policy.json')
             utils.dump_obj_as_json_to_file(meta_file, meta)
@@ -283,12 +281,11 @@ class KerasPolicy(Policy):
                             warnings.simplefilter("ignore")
                             model = load_model(model_file)
 
-                return cls(featurizer=featurizer,
-                           priority=meta["priority"],
+                return cls(policy_config=meta,
+                           featurizer=featurizer,
                            model=model,
                            graph=graph,
-                           session=session,
-                           current_epoch=meta["epochs"])
+                           session=session)
             else:
                 return cls(featurizer=featurizer)
         else:

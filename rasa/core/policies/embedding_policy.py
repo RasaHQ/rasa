@@ -138,8 +138,8 @@ class EmbeddingPolicy(Policy):
 
     def __init__(
         self,
-        featurizer: Optional[FullDialogueTrackerFeaturizer] = None,
-        priority: int = 1,
+        policy_config: Optional[Dict[Text, Any]] = None,
+        featurizer: Optional[TrackerFeaturizer] = None,
         encoded_all_actions: Optional[np.ndarray] = None,
         graph: Optional[tf.Graph] = None,
         session: Optional[tf.Session] = None,
@@ -160,15 +160,14 @@ class EmbeddingPolicy(Policy):
         rnn_embed: Optional[tf.Tensor] = None,
         attn_embed: Optional[tf.Tensor] = None,
         copy_attn_debug: Optional[tf.Tensor] = None,
-        all_time_masks: Optional[tf.Tensor] = None,
-        **kwargs: Any
+        all_time_masks: Optional[tf.Tensor] = None
     ) -> None:
         if featurizer:
             if not isinstance(featurizer, FullDialogueTrackerFeaturizer):
                 raise TypeError("Passed tracker featurizer of type {}, "
                                 "should be FullDialogueTrackerFeaturizer."
                                 "".format(type(featurizer).__name__))
-        super(EmbeddingPolicy, self).__init__(featurizer, priority)
+        super(EmbeddingPolicy, self).__init__(policy_config, featurizer)
 
         # flag if to use the same embeddings for user and bot
         try:
@@ -177,7 +176,7 @@ class EmbeddingPolicy(Policy):
         except AttributeError:
             self.share_embedding = False
 
-        self._load_params(**kwargs)
+        self._load_params()
 
         # chrono initialization for forget bias
         self.characteristic_time = None
@@ -244,48 +243,47 @@ class EmbeddingPolicy(Policy):
 
         self.random_seed = config['random_seed']
 
-    def _load_embedding_params(self, config: Dict[Text, Any]) -> None:
-        self.embed_dim = config['embed_dim']
-        self.mu_pos = config['mu_pos']
-        self.mu_neg = config['mu_neg']
-        self.similarity_type = config['similarity_type']
-        self.num_neg = config['num_neg']
-        self.use_max_sim_neg = config['use_max_sim_neg']
+    def _load_embedding_params(self) -> None:
+        self.embed_dim = self.policy_config['embed_dim']
+        self.mu_pos = self.policy_config['mu_pos']
+        self.mu_neg = self.policy_config['mu_neg']
+        self.similarity_type = self.policy_config['similarity_type']
+        self.num_neg = self.policy_config['num_neg']
+        self.use_max_sim_neg = self.policy_config['use_max_sim_neg']
 
-    def _load_regularization_params(self, config: Dict[Text, Any]) -> None:
-        self.C2 = config['C2']
-        self.C_emb = config['C_emb']
+    def _load_regularization_params(self) -> None:
+        self.C2 = self.policy_config['C2']
+        self.C_emb = self.policy_config['C_emb']
         self.scale_loss_by_action_counts = \
             config['scale_loss_by_action_counts']
-        self.droprate = {"a": config['droprate_a'],
-                         "b": config['droprate_b'],
-                         "rnn": config['droprate_rnn']}
+        self.droprate = {"a": self.policy_config['droprate_a'],
+                         "b": self.policy_config['droprate_b'],
+                         "rnn": self.policy_config['droprate_rnn']}
 
-    def _load_attn_params(self, config: Dict[Text, Any]) -> None:
-        self.sparse_attention = config['sparse_attention']
-        self.attn_shift_range = config['attn_shift_range']
-        self.attn_after_rnn = config['attn_after_rnn']
-        self.attn_before_rnn = config['attn_before_rnn']
+    def _load_attn_params(self) -> None:
+        self.sparse_attention = self.policy_config['sparse_attention']
+        self.attn_shift_range = self.policy_config['attn_shift_range']
+        self.attn_after_rnn = self.policy_config['attn_after_rnn']
+        self.attn_before_rnn = self.policy_config['attn_before_rnn']
 
     def is_using_attention(self):
         return self.attn_after_rnn or self.attn_before_rnn
 
-    def _load_visual_params(self, config: Dict[Text, Any]) -> None:
-        self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
+    def _load_visual_params(self) -> None:
+        self.evaluate_every_num_epochs = (
+                                self.policy_config['evaluate_every_num_epochs'])
         if self.evaluate_every_num_epochs < 1:
             self.evaluate_every_num_epochs = self.epochs
-        self.evaluate_on_num_examples = config['evaluate_on_num_examples']
+        self.evaluate_on_num_examples = (
+                                self.policy_config['evaluate_on_num_examples'])
 
-    def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        config = copy.deepcopy(self.defaults)
-        config.update(kwargs)
-
-        self._tf_config = self._load_tf_config(config)
-        self._load_nn_architecture_params(config)
-        self._load_embedding_params(config)
-        self._load_regularization_params(config)
-        self._load_attn_params(config)
-        self._load_visual_params(config)
+    def _load_params(self) -> None:
+        self._tf_config = self._load_tf_config()
+        self._load_nn_architecture_params()
+        self._load_embedding_params()
+        self._load_regularization_params()
+        self._load_attn_params()
+        self._load_visual_params()
 
     # data helpers
     # noinspection PyPep8Naming
@@ -1370,10 +1368,8 @@ class EmbeddingPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        meta = {"priority": self.priority}
-
         meta_file = os.path.join(path, 'embedding_policy.json')
-        utils.dump_obj_as_json_to_file(meta_file, meta)
+        utils.dump_obj_as_json_to_file(meta_file, self.policy_config)
 
         file_name = 'tensorflow_embedding.ckpt'
         checkpoint = os.path.join(path, file_name)
@@ -1421,9 +1417,9 @@ class EmbeddingPolicy(Policy):
         with open(encoded_actions_file, 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
 
-        tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
-        with open(tf_config_file, 'wb') as f:
-            pickle.dump(self._tf_config, f)
+        # tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
+        # with open(tf_config_file, 'wb') as f:
+        #     pickle.dump(self._tf_config, f)
 
     @staticmethod
     def load_tensor(name: Text) -> Optional[tf.Tensor]:
@@ -1494,8 +1490,8 @@ class EmbeddingPolicy(Policy):
         with open(encoded_actions_file, 'rb') as f:
             encoded_all_actions = pickle.load(f)
 
-        return cls(featurizer=featurizer,
-                   priority=meta["priority"],
+        return cls(policy_config=meta,
+                   featurizer=featurizer,
                    encoded_all_actions=encoded_all_actions,
                    graph=graph,
                    session=sess,

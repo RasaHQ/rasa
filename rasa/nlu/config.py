@@ -48,14 +48,16 @@ def load(filename: Optional[Text] = None,
 def override_defaults(defaults: Optional[Dict[Text, Any]],
                       custom: Optional[Dict[Text, Any]]
                       ) -> Dict[Text, Any]:
+    """Load the default config of a class and override it with custom config."""
+
     if defaults:
-        cfg = copy.deepcopy(defaults)
+        config = copy.deepcopy(defaults)
     else:
-        cfg = {}
+        config = {}
 
     if custom:
-        cfg.update(custom)
-    return cfg
+        config.update(custom)
+    return config
 
 
 def make_path_absolute(path: Text) -> Text:
