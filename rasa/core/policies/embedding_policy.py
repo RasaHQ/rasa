@@ -142,7 +142,7 @@ class EmbeddingPolicy(Policy):
 
     def __init__(
         self,
-        policy_config: Optional[Dict[Text, Any]] = None,
+        config: Optional[Dict[Text, Any]] = None,
         featurizer: Optional[TrackerFeaturizer] = None,
         encoded_all_actions: Optional[np.ndarray] = None,
         graph: Optional[tf.Graph] = None,
@@ -171,7 +171,7 @@ class EmbeddingPolicy(Policy):
                 raise TypeError("Passed tracker featurizer of type {}, "
                                 "should be FullDialogueTrackerFeaturizer."
                                 "".format(type(featurizer).__name__))
-        super(EmbeddingPolicy, self).__init__(policy_config, featurizer)
+        super(EmbeddingPolicy, self).__init__(config, featurizer)
 
         # flag if to use the same embeddings for user and bot
         try:
@@ -179,7 +179,21 @@ class EmbeddingPolicy(Policy):
         except AttributeError:
             self.share_embedding = False
 
-        self._load_params()
+        # sanity check on evaluate_every_num_epochs
+        if self.config["evaluate_every_num_epochs"] < 1:
+            self.config["evaluate_every_num_epochs"] = self.config["epochs"]
+
+        if self.share_embedding and (self.config["hidden_layers_sizes_a"] != self.config["hidden_layers_sizes_b"]):
+            raise ValueError(
+                "Due to sharing vocabulary "
+                "in the featurizer, embedding weights "
+                "are shared as well. "
+                "So hidden_layers_sizes_a={} should be "
+                "equal to hidden_layers_sizes_b={}"
+                "".format(
+                    self.config["hidden_layers_sizes_a"], self.config["hidden_layers_sizes_b"]
+                )
+            )
 
         # chrono initialization for forget bias
         self.characteristic_time = None
@@ -222,76 +236,12 @@ class EmbeddingPolicy(Policy):
         self._is_training = None
         self._loss_scales = None
 
-    # init helpers
-    def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
-        self.hidden_layer_sizes = {
-            "a": config["hidden_layers_sizes_a"],
-            "b": config["hidden_layers_sizes_b"],
-        }
-
-        if self.share_embedding:
-            if self.hidden_layer_sizes["a"] != self.hidden_layer_sizes["b"]:
-                raise ValueError(
-                    "Due to sharing vocabulary "
-                    "in the featurizer, embedding weights "
-                    "are shared as well. "
-                    "So hidden_layers_sizes_a={} should be "
-                    "equal to hidden_layers_sizes_b={}"
-                    "".format(
-                        self.hidden_layer_sizes["a"], self.hidden_layer_sizes["b"]
-                    )
-                )
-
-        self.rnn_size = config["rnn_size"]
-        self.layer_norm = config["layer_norm"]
-
-        self.batch_size = config["batch_size"]
-
-        self.epochs = config["epochs"]
-
-        self.random_seed = config["random_seed"]
-
-    def _load_embedding_params(self) -> None:
-        self.embed_dim = self.policy_config['embed_dim']
-        self.mu_pos = self.policy_config['mu_pos']
-        self.mu_neg = self.policy_config['mu_neg']
-        self.similarity_type = self.policy_config['similarity_type']
-        self.num_neg = self.policy_config['num_neg']
-        self.use_max_sim_neg = self.policy_config['use_max_sim_neg']
-
-    def _load_regularization_params(self) -> None:
-        self.C2 = self.policy_config['C2']
-        self.C_emb = self.policy_config['C_emb']
-        self.scale_loss_by_action_counts = \
-            config['scale_loss_by_action_counts']
-        self.droprate = {"a": self.policy_config['droprate_a'],
-                         "b": self.policy_config['droprate_b'],
-                         "rnn": self.policy_config['droprate_rnn']}
-
-    def _load_attn_params(self) -> None:
-        self.sparse_attention = self.policy_config['sparse_attention']
-        self.attn_shift_range = self.policy_config['attn_shift_range']
-        self.attn_after_rnn = self.policy_config['attn_after_rnn']
-        self.attn_before_rnn = self.policy_config['attn_before_rnn']
-
+    @property
     def is_using_attention(self):
-        return self.attn_after_rnn or self.attn_before_rnn
-
-    def _load_visual_params(self) -> None:
-        self.evaluate_every_num_epochs = (
-                                self.policy_config['evaluate_every_num_epochs'])
-        if self.evaluate_every_num_epochs < 1:
-            self.evaluate_every_num_epochs = self.epochs
-        self.evaluate_on_num_examples = (
-                                self.policy_config['evaluate_on_num_examples'])
+        return self.config["attn_after_rnn"] or self.config["attn_before_rnn"]
 
     def _load_params(self) -> None:
         self._tf_config = self._load_tf_config()
-        self._load_nn_architecture_params()
-        self._load_embedding_params()
-        self._load_regularization_params()
-        self._load_attn_params()
-        self._load_visual_params()
 
     # data helpers
     # noinspection PyPep8Naming
@@ -402,7 +352,7 @@ class EmbeddingPolicy(Policy):
     ) -> tf.Tensor:
         """Create nn with hidden layers and name suffix."""
 
-        reg = tf.contrib.layers.l2_regularizer(self.C2)
+        reg = tf.contrib.layers.l2_regularizer(self.config["C2"])
         x = tf.nn.relu(x_in)
         for i, layer_size in enumerate(layer_sizes):
             x = tf.layers.dense(
@@ -419,10 +369,10 @@ class EmbeddingPolicy(Policy):
     def _create_embed(self, x: tf.Tensor, layer_name_suffix: Text) -> tf.Tensor:
         """Create dense embedding layer with a name."""
 
-        reg = tf.contrib.layers.l2_regularizer(self.C2)
+        reg = tf.contrib.layers.l2_regularizer(self.config["C2"])
         embed_x = tf.layers.dense(
             inputs=x,
-            units=self.embed_dim,
+            units=self.config["embed_dim"],
             activation=None,
             kernel_regularizer=reg,
             name="embed_layer_{}".format(layer_name_suffix),
@@ -437,8 +387,8 @@ class EmbeddingPolicy(Policy):
 
         a = self._create_tf_nn(
             a_in,
-            self.hidden_layer_sizes["a"],
-            self.droprate["a"],
+            self.config["hidden_layers_sizes_a"],
+            self.config['droprate_a'],
             layer_name_suffix=layer_name_suffix,
         )
         return self._create_embed(a, layer_name_suffix=layer_name_suffix)
@@ -450,8 +400,8 @@ class EmbeddingPolicy(Policy):
 
         b = self._create_tf_nn(
             b_in,
-            self.hidden_layer_sizes["b"],
-            self.droprate["b"],
+            self.config["hidden_layers_sizes_b"],
+            self.config['droprate_b'],
             layer_name_suffix=layer_name_suffix,
         )
         return self._create_embed(b, layer_name_suffix=layer_name_suffix)
@@ -463,7 +413,7 @@ class EmbeddingPolicy(Policy):
 
         x_for_no_intent = self._create_tf_nn(
             x_for_no_intent_i,
-            self.hidden_layer_sizes["a"],
+            self.config["hidden_layers_sizes_a"],
             droprate=0,
             layer_name_suffix=layer_name_suffix,
         )
@@ -478,7 +428,7 @@ class EmbeddingPolicy(Policy):
 
         y_for_no_action = self._create_tf_nn(
             y_for_no_action_in,
-            self.hidden_layer_sizes["b"],
+            self.config["hidden_layers_sizes_b"],
             droprate=0,
             layer_name_suffix=layer_name_suffix,
         )
@@ -496,22 +446,22 @@ class EmbeddingPolicy(Policy):
 
         # right border that initializes forget gate close to 1
         bias_1 = np.log(self.characteristic_time - 1.0)
-        fbias = (bias_1 - bias_0) * np.random.random(self.rnn_size) + bias_0
+        fbias = (bias_1 - bias_0) * np.random.random(self.config["rnn_size"]) + bias_0
 
-        if self.attn_after_rnn:
+        if self.config["attn_after_rnn"]:
             # since attention is copied to rnn output,
             # embedding should be performed inside the cell
-            embed_layer_size = self.embed_dim
+            embed_layer_size = self.config["embed_dim"]
         else:
             embed_layer_size = None
 
         keep_prob = 1.0 - (
-            self.droprate["rnn"] * tf.cast(self._is_training, tf.float32)
+            self.config['droprate_rnn'] * tf.cast(self._is_training, tf.float32)
         )
 
         return ChronoBiasLayerNormBasicLSTMCell(
-            num_units=self.rnn_size,
-            layer_norm=self.layer_norm,
+            num_units=self.config["rnn_size"],
+            layer_norm=self.config["layer_norm"],
             forget_bias=fbias,
             input_bias=-fbias,
             dropout_keep_prob=keep_prob,
@@ -560,7 +510,7 @@ class EmbeddingPolicy(Policy):
         """
 
         if num_cell_input_memory_units:
-            if num_cell_input_memory_units == self.embed_dim:
+            if num_cell_input_memory_units == self.config["embed_dim"]:
                 # since attention can contain additional
                 # attention mechanisms, only attention
                 # from previous user input is used as an input
@@ -568,9 +518,9 @@ class EmbeddingPolicy(Policy):
                 # is the same size as embed_utter
                 return tf.concat(
                     [
-                        rnn_inputs[:, : self.embed_dim]
+                        rnn_inputs[:, : self.config["embed_dim"]]
                         + attention[:, :num_cell_input_memory_units],
-                        rnn_inputs[:, self.embed_dim :],
+                        rnn_inputs[:, self.config["embed_dim"] :],
                     ],
                     -1,
                 )
@@ -583,7 +533,7 @@ class EmbeddingPolicy(Policy):
                     "equal to number of utter units {}. "
                     "Please modify cell input function "
                     "accordingly."
-                    "".format(num_cell_input_memory_units, self.embed_dim)
+                    "".format(num_cell_input_memory_units, self.config["embed_dim"])
                 )
         else:
             return rnn_inputs
@@ -608,13 +558,13 @@ class EmbeddingPolicy(Policy):
         # in hope that algorithm would learn correct attention
         # regardless of the hidden state c of an lstm and slots
         if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
-            attn_inputs = tf.concat([inputs[:, : self.embed_dim], cell_state.h], -1)
+            attn_inputs = tf.concat([inputs[:, : self.config["embed_dim"]], cell_state.h], -1)
         else:
-            attn_inputs = tf.concat([inputs[:, : self.embed_dim], cell_state], -1)
+            attn_inputs = tf.concat([inputs[:, : self.config["embed_dim"]], cell_state], -1)
 
         # include slots in inputs but exclude previous action, since
         # rnn should get previous action from its hidden state
-        rnn_inputs = inputs[:, : (self.embed_dim + self.embed_dim)]
+        rnn_inputs = inputs[:, : (2 * self.config["embed_dim"])]
 
         return rnn_inputs, attn_inputs
 
@@ -630,7 +580,7 @@ class EmbeddingPolicy(Policy):
     ) -> tf.contrib.rnn.RNNCell:
         """Wrap cell in attention wrapper with given memory."""
 
-        if self.attn_before_rnn:
+        if self.config["attn_before_rnn"]:
             # create attention over previous user input
             num_memory_units_before_rnn = self._num_units(embed_utter)
             attn_mech = self._create_attn_mech(embed_utter, real_length)
@@ -648,7 +598,7 @@ class EmbeddingPolicy(Policy):
             num_memory_units_before_rnn = None
             attn_shift_range = None
 
-        if self.attn_after_rnn:
+        if self.config["attn_after_rnn"]:
             # create attention over previous bot actions
             attn_mech_after_rnn = self._create_attn_mech(embed_prev_action, real_length)
 
@@ -672,11 +622,11 @@ class EmbeddingPolicy(Policy):
                 # create a list of attention mechanisms
                 attn_mech = [attn_mech, attn_mech_after_rnn]
                 ignore_mask = [ignore_mask, ignore_mask_listen]
-                attn_shift_range = [attn_shift_range, self.attn_shift_range]
+                attn_shift_range = [attn_shift_range, self.config["attn_shift_range"]]
             else:
                 attn_mech = attn_mech_after_rnn
                 ignore_mask = ignore_mask_listen
-                attn_shift_range = self.attn_shift_range
+                attn_shift_range = self.config["attn_shift_range"]
 
             # this particular attention mechanism is unusual
             # in the sense that its calculated attention vector is directly
@@ -693,7 +643,7 @@ class EmbeddingPolicy(Policy):
             attention_mechanism=attn_mech,
             sequence_len=self._dialogue_len,
             attn_shift_range=attn_shift_range,
-            sparse_attention=self.sparse_attention,
+            sparse_attention=self.config["sparse_attention"],
             rnn_and_attn_inputs_fn=self.rnn_and_attn_inputs_fn,
             ignore_mask=ignore_mask,
             cell_input_fn=lambda inputs, attention: (
@@ -724,7 +674,7 @@ class EmbeddingPolicy(Policy):
 
         real_length = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
 
-        if self.is_using_attention():
+        if self.is_using_attention:
             cell = self._create_attn_cell(
                 cell,
                 embed_utter,
@@ -769,7 +719,7 @@ class EmbeddingPolicy(Policy):
     def _sims_rnn_to_max_from(self, cell_output: tf.Tensor) -> List[tf.Tensor]:
         """Save intermediate tensors for debug purposes."""
 
-        if self.attn_after_rnn:
+        if self.config["attn_after_rnn"]:
             # extract additional debug tensors
             num_add = TimeAttentionWrapper.additional_output_size()
             self.copy_attn_debug = cell_output[:, :, -num_add:]
@@ -784,26 +734,26 @@ class EmbeddingPolicy(Policy):
     def _embed_dialogue_from(self, cell_output: tf.Tensor) -> tf.Tensor:
         """Extract or calculate dialogue level embedding from cell_output."""
 
-        if self.attn_after_rnn:
+        if self.config["attn_after_rnn"]:
             # embedding layer is inside rnn cell
-            embed_dialogue = cell_output[:, :, : self.embed_dim]
+            embed_dialogue = cell_output[:, :, : self.config["embed_dim"]]
 
             # extract additional debug tensors
             num_add = TimeAttentionWrapper.additional_output_size()
             self.rnn_embed = cell_output[
-                :, :, self.embed_dim : (self.embed_dim + self.embed_dim)
+                :, :, self.config["embed_dim"] : (2 * self.config["embed_dim"])
             ]
             self.attn_embed = cell_output[
-                :, :, (self.embed_dim + self.embed_dim) : -num_add
+                :, :, (2 * self.config["embed_dim"]) : -num_add
             ]
         else:
             # add embedding layer to rnn cell output
             embed_dialogue = self._create_embed(
-                cell_output[:, :, : self.rnn_size], layer_name_suffix="out"
+                cell_output[:, :, : self.config["rnn_size"]], layer_name_suffix="out"
             )
-            if self.attn_before_rnn:
+            if self.config["attn_before_rnn"]:
                 # extract additional debug tensors
-                self.attn_embed = cell_output[:, :, self.rnn_size :]
+                self.attn_embed = cell_output[:, :, self.config["rnn_size"] :]
 
         return embed_dialogue
 
@@ -827,19 +777,19 @@ class EmbeddingPolicy(Policy):
         because it is necessary for them to be mathematically identical.
         """
 
-        if self.similarity_type == "cosine":
+        if self.config["similarity_type"] == "cosine":
             # normalize embedding vectors for cosine similarity
             embed_dialogue = tf.nn.l2_normalize(embed_dialogue, -1)
             embed_action = tf.nn.l2_normalize(embed_action, -1)
 
-        if self.similarity_type in {"cosine", "inner"}:
+        if self.config["similarity_type"] in {"cosine", "inner"}:
 
             if len(embed_dialogue.shape) == len(embed_action.shape):
                 # calculate similarity between
                 # two embedding vectors of the same size
                 sim = tf.reduce_sum(embed_dialogue * embed_action, -1, keepdims=True)
                 bin_sim = tf.where(
-                    sim > (self.mu_pos - self.mu_neg) / 2.0,
+                    sim > (self.config["mu_pos"] - self.config["mu_neg"]) / 2.0,
                     tf.ones_like(sim),
                     tf.zeros_like(sim),
                 )
@@ -868,15 +818,15 @@ class EmbeddingPolicy(Policy):
             raise ValueError(
                 "Wrong similarity type {}, "
                 "should be 'cosine' or 'inner'"
-                "".format(self.similarity_type)
+                "".format(self.config["similarity_type"])
             )
 
     def _regularization_loss(self):
         # type: () -> Union[tf.Tensor, int]
         """Add regularization to the embed layer inside rnn cell."""
 
-        if self.attn_after_rnn:
-            return self.C2 * tf.add_n(
+        if self.config["attn_after_rnn"]:
+            return self.config["C2"] * tf.add_n(
                 [
                     tf.nn.l2_loss(tf_var)
                     for tf_var in tf.trainable_variables()
@@ -896,25 +846,25 @@ class EmbeddingPolicy(Policy):
         """Define loss."""
 
         # loss for maximizing similarity with correct action
-        loss = tf.maximum(0.0, self.mu_pos - sim[:, :, 0])
+        loss = tf.maximum(0.0, self.config["mu_pos"] - sim[:, :, 0])
 
         # loss for minimizing similarity with `num_neg` incorrect actions
-        if self.use_max_sim_neg:
+        if self.config["use_max_sim_neg"]:
             # minimize only maximum similarity over incorrect actions
             max_sim_neg = tf.reduce_max(sim[:, :, 1:], -1)
-            loss += tf.maximum(0.0, self.mu_neg + max_sim_neg)
+            loss += tf.maximum(0.0, self.config["mu_neg"] + max_sim_neg)
         else:
             # minimize all similarities with incorrect actions
-            max_margin = tf.maximum(0.0, self.mu_neg + sim[:, :, 1:])
+            max_margin = tf.maximum(0.0, self.config["mu_neg"] + sim[:, :, 1:])
             loss += tf.reduce_sum(max_margin, -1)
 
-        if self.scale_loss_by_action_counts:
+        if self.config["scale_loss_by_action_counts"]:
             # scale loss inverse proportionally to number of action counts
             loss *= self._loss_scales
 
         # penalize max similarity between intent embeddings
         loss_act = tf.maximum(0.0, tf.reduce_max(sim_act, -1))
-        loss += loss_act * self.C_emb
+        loss += loss_act * self.config["C_emb"]
 
         # maximize similarity returned by time attention wrapper
         for sim_to_add in sims_rnn_to_max:
@@ -947,14 +897,14 @@ class EmbeddingPolicy(Policy):
         logger.debug("Started training embedding policy.")
 
         # set numpy random seed
-        np.random.seed(self.random_seed)
+        np.random.seed(self.config["random_seed"])
 
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
         # assume that characteristic time is the mean length of the dialogues
         self.characteristic_time = np.mean(training_data.true_length)
-        if self.attn_shift_range is None:
-            self.attn_shift_range = int(self.characteristic_time / 2)
+        if self.config["attn_shift_range"] is None:
+            self.config["attn_shift_range"] = int(self.characteristic_time / 2)
 
         # encode all actions with policies' featurizer
         self.encoded_all_actions = self.featurizer.state_featurizer.create_encoded_all_actions(
@@ -966,9 +916,9 @@ class EmbeddingPolicy(Policy):
             "Check if num_neg {} is smaller "
             "than number of actions {}, "
             "else set num_neg to the number of actions - 1"
-            "".format(self.num_neg, domain.num_actions)
+            "".format(self.config["num_neg"], domain.num_actions)
         )
-        self.num_neg = min(self.num_neg, domain.num_actions - 1)
+        self.config["num_neg"] = min(self.config["num_neg"], domain.num_actions - 1)
 
         # extract actual training data to feed to tf session
         session_data = self._create_tf_session_data(
@@ -979,7 +929,7 @@ class EmbeddingPolicy(Policy):
 
         with self.graph.as_default():
             # set random seed in tf
-            tf.set_random_seed(self.random_seed)
+            tf.set_random_seed(self.config["random_seed"])
 
             dialogue_len = None  # use dynamic time for rnn
             # create placeholders
@@ -1058,7 +1008,7 @@ class EmbeddingPolicy(Policy):
                 embed_for_action_listen,
             )
             # process rnn output
-            if self.is_using_attention():
+            if self.is_using_attention:
                 self.alignment_history = self._alignments_history_from(final_state)
 
                 self.all_time_masks = self._all_time_masks_from(final_state)
@@ -1087,16 +1037,16 @@ class EmbeddingPolicy(Policy):
         The idea comes from https://arxiv.org/abs/1711.00489.
         """
 
-        if not isinstance(self.batch_size, list):
-            return int(self.batch_size)
+        if not isinstance(self.config["batch_size"], list):
+            return int(self.config["batch_size"])
 
-        if self.epochs > 1:
+        if self.config["epochs"] > 1:
             return int(
-                self.batch_size[0]
-                + epoch * (self.batch_size[1] - self.batch_size[0]) / (self.epochs - 1)
+                self.config["batch_size"][0]
+                + epoch * (self.config["batch_size"][1] - self.config["batch_size"][0]) / (self.config["epochs"] - 1)
             )
         else:
-            return int(self.batch_size[0])
+            return int(self.config["batch_size"][0])
 
     def _create_batch_b(
         self, batch_pos_b: np.ndarray, intent_ids: np.ndarray
@@ -1114,7 +1064,7 @@ class EmbeddingPolicy(Policy):
             (
                 batch_pos_b.shape[0],
                 batch_pos_b.shape[1],
-                self.num_neg,
+                self.config["num_neg"],
                 batch_pos_b.shape[-1],
             ),
             dtype=int,
@@ -1129,7 +1079,7 @@ class EmbeddingPolicy(Policy):
                     if i != intent_ids[b, h]
                 ]
 
-                negs = np.random.choice(negative_indexes, size=self.num_neg)
+                negs = np.random.choice(negative_indexes, size=self.config["num_neg"])
 
                 batch_neg_b[b, h] = self.encoded_all_actions[negs]
 
@@ -1145,7 +1095,7 @@ class EmbeddingPolicy(Policy):
     ) -> Union[np.ndarray, List[List]]:
         """Calculate inverse proportionality of repeated actions."""
 
-        if self.scale_loss_by_action_counts:
+        if self.config["scale_loss_by_action_counts"]:
             full_X = np.concatenate(
                 [X, slots, previous_actions, actions_for_Y[:, :, np.newaxis]], -1
             )
@@ -1168,12 +1118,12 @@ class EmbeddingPolicy(Policy):
 
         self.session.run(tf.global_variables_initializer())
 
-        if self.evaluate_on_num_examples:
+        if self.config['evaluate_on_num_examples']:
             logger.info(
                 "Accuracy is updated every {} epochs"
-                "".format(self.evaluate_every_num_epochs)
+                "".format(self.config["evaluate_every_num_epochs"])
             )
-        pbar = tqdm(range(self.epochs), desc="Epochs", disable=is_logging_disabled())
+        pbar = tqdm(range(self.config["epochs"]), desc="Epochs", disable=is_logging_disabled())
         train_acc = 0
         last_loss = 0
         for ep in pbar:
@@ -1231,11 +1181,11 @@ class EmbeddingPolicy(Policy):
                 ep_loss += _loss / batches_per_epoch
 
             # calculate train accuracy
-            if self.evaluate_on_num_examples:
+            if self.config['evaluate_on_num_examples']:
                 if (
                     (ep + 1) == 1
-                    or (ep + 1) % self.evaluate_every_num_epochs == 0
-                    or (ep + 1) == self.epochs
+                    or (ep + 1) % self.config["evaluate_every_num_epochs"] == 0
+                    or (ep + 1) == self.config["epochs"]
                 ):
                     train_acc = self._calc_train_acc(session_data, mask)
                     last_loss = ep_loss
@@ -1249,7 +1199,7 @@ class EmbeddingPolicy(Policy):
             else:
                 pbar.set_postfix({"loss": "{:.3f}".format(ep_loss)})
 
-        if self.evaluate_on_num_examples:
+        if self.config['evaluate_on_num_examples']:
             logger.info(
                 "Finished training embedding policy, "
                 "loss={:.3f}, train accuracy={:.3f}"
@@ -1260,7 +1210,7 @@ class EmbeddingPolicy(Policy):
         """Calculate training accuracy."""
 
         # choose n examples to calculate train accuracy
-        n = self.evaluate_on_num_examples
+        n = self.config['evaluate_on_num_examples']
         ids = np.random.permutation(len(session_data.X))[:n]
         # noinspection PyPep8Naming
         all_Y_d_x = np.stack(
@@ -1369,10 +1319,10 @@ class EmbeddingPolicy(Policy):
         )
 
         result = _sim[0, -1, :]
-        if self.similarity_type == "cosine":
+        if self.config["similarity_type"] == "cosine":
             # clip negative values to zero
             result[result < 0] = 0
-        elif self.similarity_type == "inner":
+        elif self.config["similarity_type"] == "inner":
             # normalize result to [0, 1] with softmax
             result = np.exp(result)
             result /= np.sum(result)
@@ -1398,7 +1348,7 @@ class EmbeddingPolicy(Policy):
         self.featurizer.persist(path)
 
         meta_file = os.path.join(path, 'embedding_policy.json')
-        utils.dump_obj_as_json_to_file(meta_file, self.policy_config)
+        utils.dump_obj_as_json_to_file(meta_file, self.config)
 
         file_name = "tensorflow_embedding.ckpt"
         checkpoint = os.path.join(path, file_name)
@@ -1513,7 +1463,7 @@ class EmbeddingPolicy(Policy):
         with open(encoded_actions_file, "rb") as f:
             encoded_all_actions = pickle.load(f)
 
-        return cls(policy_config=meta,
+        return cls(config=meta,
                    featurizer=featurizer,
                    encoded_all_actions=encoded_all_actions,
                    graph=graph,
