@@ -7,8 +7,8 @@ assignees: ''
 
 ---
 
-<!-- THIS INFORMATION IS MANDATORY - YOUR ISSUE WILL BE CLOSED IF IT IS MISSING. If you don't know your Rasa version, use `pip list | grep rasa`. 
-Please format any code or console output with three ticks ``` above and below. 
+<!-- THIS INFORMATION IS MANDATORY - YOUR ISSUE WILL BE CLOSED IF IT IS MISSING. If you don't know your Rasa version, use `rasa --version`. 
+Please format any code or console output with three ticks ``` above and below.
 If you are asking a usage question (e.g. "How do I do xyz") please post your question on https://forum.rasa.com instead -->
 
 **Rasa version**:
