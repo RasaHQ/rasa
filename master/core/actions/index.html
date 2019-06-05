@@ -305,12 +305,16 @@ E.g. it is recommended to run Rasa in a docker container and
 create a separate container for your action server. In this
 separate container, you only need to install <code class="docutils literal notranslate"><span class="pre">rasa-sdk</span></code>.</p>
 </div>
-<p>If your actions are defined in a file
-called <code class="docutils literal notranslate"><span class="pre">actions.py</span></code>, run this command:</p>
+<p>The file that contains your custom actions should be called <code class="docutils literal notranslate"><span class="pre">actions.py</span></code>.</p>
+<p>If you have <code class="docutils literal notranslate"><span class="pre">rasa</span></code> installed, run this command to start your action server:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run actions
+</pre></div>
+</div>
+<p id="custom-action-example">Otherwise, if you do not have <code class="docutils literal notranslate"><span class="pre">rasa</span></code> installed, run this command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m rasa_sdk --actions actions
 </pre></div>
 </div>
-<p id="custom-action-example">In a restaurant bot, if the user says “show me a Mexican restaurant”,
+<p id="custom-action-example-verbose">In a restaurant bot, if the user says “show me a Mexican restaurant”,
 your bot could execute the action <code class="docutils literal notranslate"><span class="pre">ActionCheckRestaurants</span></code>,
 which might look like this:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa_sdk</span> <span class="kn">import</span> <span class="n">Action</span>
