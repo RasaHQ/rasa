@@ -1,5 +1,5 @@
 import logging
-from typing import Text, Set, Dict, Optional, List
+from typing import Text, Set, Dict, Optional, List, Union
 import os
 
 import rasa.utils.io as io_utils
@@ -13,23 +13,27 @@ class SkillSelector:
         self,
         imports: Set[Text],
         project_directory: Text = os.getcwd(),
-        additional_training_paths: Optional[List[Text]] = None,
+        additional_paths: Optional[Union[Text, List[Text]]] = None,
     ):
         self._imports = imports
         self._project_directory = project_directory
+        self._additional_paths = self._get_additional_training_paths(additional_paths)
 
-        additional_training_paths = additional_training_paths or []
+    @staticmethod
+    def _get_additional_training_paths(
+        paths: Optional[Union[Text, List[Text]]]
+    ) -> List[Text]:
+        additional_training_paths = paths or []
         if not isinstance(additional_training_paths, list):
             additional_training_paths = [additional_training_paths]
-        self._additional_training_paths = [
-            os.path.abspath(p) for p in additional_training_paths
-        ]
+
+        return [os.path.abspath(p) for p in additional_training_paths]
 
     @classmethod
     def all_skills(
         cls,
         project_directory: Text = os.getcwd(),
-        project_data_paths: Optional[List[Text]] = None,
+        project_data_paths: Optional[Union[Text, List[Text]]] = None,
     ) -> "SkillSelector":
         """Returns a `SkillSelector` instance which does not specify any skills."""
 
@@ -37,7 +41,9 @@ class SkillSelector:
 
     @classmethod
     def load(
-        cls, config: Text, additional_training_paths: Optional[List[Text]] = None
+        cls,
+        config: Text,
+        additional_training_paths: Optional[Union[Text, List[Text]]] = None,
     ) -> "SkillSelector":
         """
         Loads the specification from the config files.
@@ -135,9 +141,7 @@ class SkillSelector:
             }
         )
 
-        return SkillSelector(
-            imports, self._project_directory, self._additional_training_paths
-        )
+        return SkillSelector(imports, self._project_directory, self._additional_paths)
 
     def no_skills_selected(self) -> bool:
         return not self._imports
@@ -171,7 +175,7 @@ class SkillSelector:
         return (
             self.no_skills_selected()
             or self._is_in_project_directory(absolute_path)
-            or self._is_in_additional_training_paths(absolute_path)
+            or self._is_in_additional_paths(absolute_path)
             or self._is_in_imported_paths(absolute_path)
         )
 
@@ -183,12 +187,12 @@ class SkillSelector:
         else:
             return path == self._project_directory
 
-    def _is_in_additional_training_paths(self, path: Text) -> bool:
-        included = path in self._additional_training_paths
+    def _is_in_additional_paths(self, path: Text) -> bool:
+        included = path in self._additional_paths
 
         if not included and os.path.isfile(path):
             parent_directory = os.path.abspath(os.path.dirname(path))
-            included = parent_directory in self._additional_training_paths
+            included = parent_directory in self._additional_paths
 
         return included
 
