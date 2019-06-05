@@ -7,5 +7,10 @@ assignees: ''
 
 ---
 
-<!-- IF YOU ARE ASKING A USAGE QUESTION (E.G. "HOW DO I DO XYZ") PLEASE POST
-YOUR QUESTION ON https://forum.rasa.com INSTEAD -->
+<!--
+Hi! If you have a question about how to do something with Rasa, we are happy
+to help out!
+
+Please ask these questions in the forum (https://forum.rasa.com).
+
+We only use Github issues for bugs and feature requests. -->
