@@ -234,6 +234,15 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
         )
         sys.exit(1)
 
+    if args.port == args.rasa_x_port:
+        print_error(
+            "The port for Rasa X and the port of the Rasa server are the same. "
+            "We need two different ports, one to run Rasa X (e.g. delivering the UI) "
+            "and another one to run a normal Rasa server.\nPlease specify two "
+            "different ports using the arguments '--port' and '--rasa-x-port'."
+        )
+        sys.exit(1)
+
     if not is_rasa_project_setup(project_path):
         print_error(
             "This directory is not a valid Rasa project. Use 'rasa init' "
