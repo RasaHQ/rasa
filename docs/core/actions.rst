@@ -84,6 +84,8 @@ The only thing your action server needs to install is ``rasa-sdk``:
     create a separate container for your action server. In this
     separate container, you only need to install ``rasa-sdk``.
 
+The file that contains your custom actions should be called ``actions.py``.
+
 If you have ``rasa`` installed, run this command to start your action server:
 
 .. code-block:: bash
@@ -92,8 +94,7 @@ If you have ``rasa`` installed, run this command to start your action server:
 
 .. _custom_action_example:
 
-Otherwise, if your actions are defined in a file
-called ``actions.py`` and you do not have ``rasa`` installed, run this command:
+Otherwise, if you do not have ``rasa`` installed, run this command:
 
 .. code-block:: bash
 
