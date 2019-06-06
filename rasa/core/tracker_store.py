@@ -362,7 +362,8 @@ class SQLTrackerStore(TrackerStore):
         parsed = urlsplit(host)
         if parsed.scheme:
             return host
-        else:
+
+        if host:
             # add fake scheme to properly parse components
             parsed = urlsplit("schema://" + host)
 
@@ -370,14 +371,14 @@ class SQLTrackerStore(TrackerStore):
             port = parsed.port or port
             host = parsed.hostname or host
 
-            return URL(
-                dialect,
-                username,
-                password,
-                host,
-                port,
-                database=login_db if login_db else db,
-            )
+        return URL(
+            dialect,
+            username,
+            password,
+            host,
+            port,
+            database=login_db if login_db else db,
+        )
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
         """Create databse `db` and update engine to reflect the updated
