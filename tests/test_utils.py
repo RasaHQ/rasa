@@ -1,5 +1,6 @@
+import pytest
 from aioresponses import aioresponses
-from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig, concat_url
 from tests.utilities import latest_request, json_of_latest_request
 from rasa.utils.common import sort_list_of_dicts_by_first_key
 
@@ -61,3 +62,15 @@ def test_sort_dicts_by_keys():
     actual = sort_list_of_dicts_by_first_key(test_data)
 
     assert actual == expected
+
+
+@pytest.mark.parametrize('base, subpath, expected_result', [
+    ("https://example.com", None, "https://example.com"),
+    ("https://example.com/test", None, "https://example.com/test"),
+    ("https://example.com/", None, "https://example.com"),
+    ("https://example.com//", None, "https://example.com"),
+    ("https://example.com/", "test", "https://example.com/test"),
+    ("https://example.com/", "test/", "https://example.com/test/"),
+])
+def test_concat_url(base, subpath, expected_result):
+    assert concat_url(base, subpath) == expected_result
