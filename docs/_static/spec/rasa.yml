@@ -673,7 +673,7 @@ components:
       description: >-
         Model that should be used for evaluation.
         If the parameter is set, the model will be
-        fetched with the currently loadedconfiguration
+        fetched with the currently loaded configuration
         setup. However, the currently loaded model
         will not be updated. The state of the server
         will not change. If the parameter is not set,
