@@ -12,12 +12,6 @@ ENV PATH="/build/bin:$PATH"
 # Stage to build and install everything
 FROM base as builder
 
-# Copy only what we really need
-COPY README.md .
-COPY rasa ./rasa
-COPY setup.py .
-COPY requirements.txt .
-
 # Install all required build libraries
 RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
@@ -35,9 +29,17 @@ RUN apt-get update -qq && \
   libpq-dev \
   curl
 
+# Copy only what we really need
+COPY README.md .
+COPY setup.py .
+COPY requirements.txt .
+
 # Install Rasa and its dependencies
-RUN pip install -r requirements.txt && \
-    pip install -e .[sql]
+RUN pip install -r requirements.txt
+
+# Install Rasa as package
+COPY rasa ./rasa
+RUN pip install -e .
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
@@ -47,8 +49,11 @@ COPY --from=builder /build /build
 
 WORKDIR /app
 
+# Create a volume for temporary data
+VOLUME /tmp
+
 # Make sure the default group has the same permissions as the owner
-RUN chmod -R g=u .
+RUN chgrp -R 0 . && chmod -R g=u .
 
 # Don't run as root
 USER 1001
