@@ -713,14 +713,15 @@ Check out more details in <a class="reference internal" href="../evaluating-mode
                  [--url URL] [-u NLU] [--report [REPORT]]
                  [--successes [SUCCESSES]] [--errors ERRORS]
                  [--histogram HISTOGRAM] [--confmat CONFMAT]
-                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--cross-validation] [-c CONFIG] [-f FOLDS]
                  {core,nlu} ...
 
 positional arguments:
   {core,nlu}
-    core                Tests Rasa Core models using your test stories.
-    nlu                 Tests Rasa NLU models using your test NLU data.
+    core                Tests a trained Rasa Core model using your test
+                        stories.
+    nlu                 Tests a trained Rasa NLU model using your test NLU
+                        data.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -774,12 +775,6 @@ NLU Test Arguments:
                         hist.png)
   --confmat CONFMAT     Output path for the confusion matrix plot. (default:
                         confmat.png)
-  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
-                        Model configuration file. If a single file is passed
-                        and cross validation mode is chosen, cross-validation
-                        is performed, if multiple configs or a folder of
-                        configs are passed, models will be trained and
-                        compared directly. (default: [&#39;config.yml&#39;])
 </pre></div>
 </div>
 </div>
