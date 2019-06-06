@@ -131,7 +131,7 @@ def test_nlu(args: argparse.Namespace) -> None:
     elif args.cross_validation:
         logger.info("Test model using cross validation.")
         config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
-        perform_nlu_cross_validation(config, nlu_data, args.folds)
+        perform_nlu_cross_validation(config, nlu_data, vars(args))
     else:
         model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
         test_nlu(model_path, nlu_data, vars(args))

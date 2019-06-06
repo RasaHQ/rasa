@@ -1,7 +1,8 @@
+import argparse
 import asyncio
 import logging
 import tempfile
-from typing import Text, Dict, Optional, List
+from typing import Text, Dict, Optional, List, Any
 import os
 
 from rasa.core.interpreter import RegexInterpreter
@@ -164,7 +165,9 @@ def compare_nlu_models(
     plot_curve(output, intent_examples_present, mode="nlu")
 
 
-def perform_nlu_cross_validation(config: Text, nlu: Text, kwargs: Optional[Dict]):
+def perform_nlu_cross_validation(
+    config: Text, nlu: Text, kwargs: Optional[Dict[Text, Any]]
+):
     import rasa.nlu.config
     from rasa.nlu.test import (
         drop_intents_below_freq,
