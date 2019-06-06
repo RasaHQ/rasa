@@ -62,7 +62,7 @@ a comparative examination between the pipelines.
     --nlu data/nlu.md --runs 3 --percentages 0 25 50 70 90
 
 
-By default, it will create a train/test split from your data,
+The command in the example above will create a train/test split from your data,
 then train each pipeline multiple times with 0, 25, 50, 70 and 90% of your intent data excluded from the training set.
 The models are then evaluated on the test set and the f1-score for each exclusion percentage is recorded. This process
 runs three times (i.e. with 3 test sets in total) and then a graph is plotted using the means and standard deviations of

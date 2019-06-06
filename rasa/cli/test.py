@@ -12,6 +12,7 @@ from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
+    DEFAULT_NLU_RESULTS_PATH,
 )
 from rasa.test import test_compare_core, compare_nlu_models
 
@@ -90,7 +91,6 @@ def test_nlu(args: argparse.Namespace) -> None:
     from rasa.test import test_nlu, perform_nlu_cross_validation
     from rasa.nlu.utils import validate_pipeline_yaml
     from rasa.nlu.config import InvalidConfigError
-    import os
 
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
@@ -100,14 +100,15 @@ def test_nlu(args: argparse.Namespace) -> None:
         if os.path.isdir(args.config):
             config_dir = args.config
             config_files = os.listdir(config_dir)
-            args.config = list(
-                map(
-                    lambda c: os.path.join(os.path.abspath(config_dir), c), config_files
-                )
-            )
+            args.config = [
+                os.path.join(config_dir, os.path.abspath(config))
+                for config in config_files
+            ]
 
     if isinstance(args.config, list):
-        logger.info("Multiple configs specified, running nlu comparison mode.")
+        logger.info(
+            "Multiple configuration files specified, running nlu comparison mode."
+        )
 
         config_files = []
         for file in args.config:
@@ -120,7 +121,7 @@ def test_nlu(args: argparse.Namespace) -> None:
                 )
                 continue
 
-        output = args.report or "nlu_comparison_results"
+        output = args.report or DEFAULT_NLU_RESULTS_PATH
         compare_nlu_models(
             configs=config_files,
             nlu=nlu_data,

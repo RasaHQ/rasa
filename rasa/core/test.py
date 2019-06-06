@@ -621,12 +621,14 @@ async def compare(models: Text, stories_file: Text, output: Text) -> None:
     utils.dump_obj_as_json_to_file(os.path.join(output, "results.json"), num_correct)
 
 
-def plot_curve(output: Text, no_examples: List[int], mode: Text = "core") -> None:
+def plot_curve(
+    output: Text, number_of_examples: List[int], mode: Text = "core"
+) -> None:
     """Plot the results from a model comparison.
 
     Args:
         output: Output directory to save resulting plots to
-        no_examples: Number of examples per run
+        number_of_examples: Number of examples per run
         mode: "core" or "nlu" to fill in correct axes titles
 
     """
@@ -638,7 +640,7 @@ def plot_curve(output: Text, no_examples: List[int], mode: Text = "core") -> Non
 
     # load results from file
     data = rasa.utils.io.read_json_file(os.path.join(output, "results.json"))
-    x = no_examples
+    x = number_of_examples
 
     # compute mean of all the runs for keras/embed policies
     for label in data.keys():
@@ -667,7 +669,7 @@ def plot_curve(output: Text, no_examples: List[int], mode: Text = "core") -> Non
 
     plt.savefig(graph_path, format="pdf")
 
-    print_success("Comparison graph saved to {}".format(graph_path))
+    logger.info("Comparison graph saved to '{}'".format(graph_path))
 
 
 if __name__ == "__main__":

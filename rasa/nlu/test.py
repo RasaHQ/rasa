@@ -1,9 +1,9 @@
 import itertools
-from collections import defaultdict, namedtuple
-
 import os
 import logging
 import numpy as np
+from collections import defaultdict, namedtuple
+from tqdm import tqdm
 from typing import (
     Iterable,
     Iterator,
@@ -18,15 +18,10 @@ from typing import (
 )
 
 from rasa.model import get_model
-
 from rasa.train import train_nlu
-
-from rasa.nlu.utils import write_to_file
-
 from rasa.utils.io import create_path
-from tqdm import tqdm
-
 from rasa.nlu import config, training_data, utils
+from rasa.nlu.utils import write_to_file
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
