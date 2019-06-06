@@ -62,7 +62,7 @@ def add_domain_param(
 
 def add_config_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
-    default: Text = DEFAULT_CONFIG_PATH,
+    default: Optional[Text] = DEFAULT_CONFIG_PATH,
 ):
     parser.add_argument(
         "-c",
