@@ -14,6 +14,8 @@ Added
 
 Changed
 -------
+- update the tracker in interactive learning through reverting and appending events
+  instead of replacing the tracker
 
 Removed
 -------

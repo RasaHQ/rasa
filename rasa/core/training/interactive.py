@@ -35,9 +35,17 @@ from rasa.core.constants import (
     REQUESTED_SLOT,
 )
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, BotUttered, Event, Restarted, UserUttered
+from rasa.core.events import (
+    ActionExecuted,
+    ActionReverted,
+    BotUttered,
+    Event,
+    Restarted,
+    UserUttered,
+    UserUtteranceReverted,
+)
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, NaturalLanguageInterpreter
-from rasa.core.trackers import EventVerbosity
+from rasa.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.core.training import visualization
 from rasa.core.training.structures import Story
 from rasa.core.training.visualization import (
@@ -227,24 +235,14 @@ async def send_event(
     return await endpoint.request(json=evt, method="post", subpath=subpath)
 
 
-async def replace_events(
-    endpoint: EndpointConfig, sender_id: Text, evts: List[Dict[Text, Any]]
-) -> Dict[Text, Any]:
-    """Replace all the events of a conversation with the provided ones."""
-
-    subpath = "/conversations/{}/tracker/events".format(sender_id)
-
-    return await endpoint.request(json=evts, method="put", subpath=subpath)
-
-
-def format_bot_output(message: Dict[Text, Any]) -> Text:
+def format_bot_output(message: BotUttered) -> Text:
     """Format a bot response to be displayed in the history table."""
 
     # First, add text to output
-    output = message.get("text") or ""
+    output = message.text or ""
 
     # Then, append all additional items
-    data = message.get("data", {})
+    data = message.data or {}
     if not data:
         return output
 
@@ -416,6 +414,7 @@ async def _request_intent_from_user(
         choices, sender_id, endpoint
     )
 
+    # TODO: Should we not always set the confidence = 1.0?
     if intent_name == OTHER_INTENT:
         intent_name = await _request_free_text_intent(sender_id, endpoint)
         return {"name": intent_name, "confidence": 1.0}
@@ -451,21 +450,21 @@ def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
     Also includes additional information, like any events and
     prediction probabilities."""
 
-    def wrap(txt, max_width):
+    def wrap(txt: Text, max_width: float) -> Text:
         return "\n".join(textwrap.wrap(txt, max_width, replace_whitespace=False))
 
-    def colored(txt, color):
+    def colored(txt: Text, color: Text) -> Text:
         return "{" + color + "}" + txt + "{/" + color + "}"
 
-    def format_user_msg(user_evt, max_width):
-        _parsed = user_evt.get("parse_data", {})
-        _intent = _parsed.get("intent", {}).get("name")
-        _confidence = _parsed.get("intent", {}).get("confidence", 1.0)
-        _md = _as_md_message(_parsed)
+    def format_user_msg(user_event: UserUttered, max_width: float) -> Text:
+        intent = user_event.intent or {}
+        intent_name = intent.get("name", "")
+        _confidence = intent.get("confidence", 1.0)
+        _md = _as_md_message(user_event.parse_data)
 
         _lines = [
             colored(wrap(_md, max_width), "hired"),
-            "intent: {} {:03.2f}".format(_intent, _confidence),
+            "intent: {} {:03.2f}".format(intent_name, _confidence),
         ]
         return "\n".join(_lines)
 
@@ -495,31 +494,34 @@ def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
     table = SingleTable(table_data, "Chat History")
 
     bot_column = []
-    for idx, evt in enumerate(evts):
-        if evt.get("event") == ActionExecuted.type_name:
-            bot_column.append(colored(evt["name"], "autocyan"))
-            if evt["confidence"] is not None:
+
+    tracker = DialogueStateTracker.from_dict("any", evts)
+    applied_events = tracker.applied_events()
+
+    for idx, event in enumerate(applied_events):
+        if isinstance(event, ActionExecuted):
+            bot_column.append(colored(event.action_name, "autocyan"))
+            if event.confidence is not None:
                 bot_column[-1] += colored(
-                    " {:03.2f}".format(evt["confidence"]), "autowhite"
+                    " {:03.2f}".format(event.confidence), "autowhite"
                 )
 
-        elif evt.get("event") == UserUttered.type_name:
+        elif isinstance(event, UserUttered):
             if bot_column:
                 text = "\n".join(bot_column)
                 add_bot_cell(table_data, text)
                 bot_column = []
 
-            msg = format_user_msg(evt, user_width(table))
+            msg = format_user_msg(event, user_width(table))
             add_user_cell(table_data, msg)
 
-        elif evt.get("event") == BotUttered.type_name:
-            wrapped = wrap(format_bot_output(evt), bot_width(table))
+        elif isinstance(event, BotUttered):
+            wrapped = wrap(format_bot_output(event), bot_width(table))
             bot_column.append(colored(wrapped, "autoblue"))
 
         else:
-            e = Event.from_parameters(evt)
-            if e.as_story_string():
-                bot_column.append(wrap(e.as_story_string(), bot_width(table)))
+            if event.as_story_string():
+                bot_column.append(wrap(event.as_story_string(), bot_width(table)))
 
     if bot_column:
         text = "\n".join(bot_column)
@@ -910,19 +912,14 @@ async def _correct_wrong_nlu(
 ) -> None:
     """A wrong NLU prediction got corrected, update core's tracker."""
 
+    # revert wrong classification
+    event_to_revert_latest_user_utterance = UserUtteranceReverted().as_dict()
+    await send_event(endpoint, sender_id, event_to_revert_latest_user_utterance)
+
+    # Add corrected event
     latest_message = latest_user_message(evts)
-    corrected_events = all_events_before_latest_user_msg(evts)
-
     latest_message["parse_data"] = corrected_nlu
-
-    await replace_events(endpoint, sender_id, corrected_events)
-
-    await send_message(
-        endpoint,
-        sender_id,
-        latest_message.get("text"),
-        latest_message.get("parse_data"),
-    )
+    await send_event(endpoint, sender_id, latest_message)
 
 
 async def _correct_wrong_action(
@@ -933,7 +930,7 @@ async def _correct_wrong_action(
 ) -> None:
     """A wrong action prediction got corrected, update core's tracker."""
 
-    result = await send_action(
+    _ = await send_action(
         endpoint, sender_id, corrected_action, is_new_action=is_new_action
     )
 
@@ -1209,20 +1206,24 @@ async def _undo_latest(sender_id: Text, endpoint: EndpointConfig) -> None:
 
     tracker = await retrieve_tracker(endpoint, sender_id, EventVerbosity.ALL)
 
-    cutoff_index = None
+    # Get latest `UserUtterance` or `ActionExecuted` event.
+    last_event_type = None
     for i, e in enumerate(reversed(tracker.get("events", []))):
-        if e.get("event") in {ActionExecuted.type_name, UserUttered.type_name}:
-            cutoff_index = i
+        last_event_type = e.get("event")
+        if last_event_type in {ActionExecuted.type_name, UserUttered.type_name}:
             break
-        elif e.get("event") == Restarted.type_name:
+        elif last_event_type == Restarted.type_name:
             break
 
-    if cutoff_index is not None:
-        events_to_keep = tracker["events"][: -(cutoff_index + 1)]
+    if last_event_type == ActionExecuted.type_name:
+        undo_action = ActionReverted().as_dict()
+        await send_event(endpoint, sender_id, undo_action)
+    elif last_event_type == UserUttered.type_name:
+        undo_user_message = UserUtteranceReverted().as_dict()
+        await send_event(endpoint, sender_id, undo_user_message)
 
-        # reset the events of the conversation to the events before
-        # the most recent bot or user event
-        await replace_events(endpoint, sender_id, events_to_keep)
+        listen_for_next_message = ActionExecuted(ACTION_LISTEN_NAME).as_dict()
+        await send_event(endpoint, sender_id, listen_for_next_message)
 
 
 async def _fetch_events(
