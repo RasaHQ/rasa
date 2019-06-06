@@ -812,29 +812,6 @@ class Domain(object):
                     )
             return message
 
-        def warn_missing_templates(
-            action_names: List[Text], templates: Dict[Text, Any]
-        ) -> None:
-            """Warn user of utterance names which have no specified template."""
-
-            utterances = [
-                act for act in action_names if act.startswith(action.UTTER_PREFIX)
-            ]
-
-            missing_templates = [t for t in utterances if t not in templates.keys()]
-
-            if missing_templates:
-                message = ""
-                for template in missing_templates:
-                    message += (
-                        "\nUtterance '{}' is listed as an "
-                        "action in the domain file, but there is "
-                        "no matching utterance template. Please "
-                        "check your domain."
-                    ).format(template)
-                print_warning(message)
-
-        warn_missing_templates(self.action_names, self.templates)
         duplicate_actions = get_duplicates(self.action_names)
         duplicate_slots = get_duplicates([s.name for s in self.slots])
         duplicate_entities = get_duplicates(self.entities)
@@ -856,6 +833,24 @@ class Domain(object):
                     incorrect_mappings,
                 )
             )
+
+    def check_missing_templates(self) -> None:
+        """Warn user of utterance names which have no specified template."""
+
+        utterances = [
+            act for act in self.action_names if act.startswith(action.UTTER_PREFIX)
+        ]
+
+        missing_templates = [t for t in utterances if t not in self.templates.keys()]
+
+        if missing_templates:
+            for template in missing_templates:
+                logger.warning(
+                    "Utterance '{}' is listed as an "
+                    "action in the domain file, but there is "
+                    "no matching utterance template. Please "
+                    "check your domain.".format(template)
+                )
 
 
 class TemplateDomain(Domain):
