@@ -6,19 +6,28 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.6.aX] - `master`_
+[Unreleased 1.0.8.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
 - nlu configs can now be directly compared for performance on a dataset in ``rasa test nlu``
-- added argument ``--rasa-x-port`` to specify the port of Rasa X when running Rasa X locally via ``rasa x``
 
 Changed
 -------
 
 Removed
 -------
+
+Fixed
+-----
+
+[1.0.7] - 2019-06-06
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added argument ``--rasa-x-port`` to specify the port of Rasa X when running Rasa X locally via ``rasa x``
 
 Fixed
 -----
