@@ -5,8 +5,12 @@ import pickle
 import pytest
 import tempfile
 
+from yaml import YAMLError
+
 import rasa.utils.io
+from rasa.constants import DEFAULT_CONFIG_PATH
 from rasa.nlu import utils
+from rasa.nlu.config import InvalidConfigError
 from rasa.nlu.utils import (
     create_dir,
     is_model_dir,
@@ -16,9 +20,11 @@ from rasa.nlu.utils import (
     remove_model,
     write_json_to_file,
     write_to_file,
+    validate_pipeline_yaml,
 )
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io as io_utils
+from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
 
 
 @pytest.fixture
@@ -237,3 +243,10 @@ def test_custom_token_name():
     actual = EndpointConfig.from_dict(test_data)
 
     assert actual.token_name == "test_token"
+
+
+def test_validate_pipeline_yaml():
+    validate_pipeline_yaml(CONFIG_DEFAULTS_PATH)
+
+    with pytest.raises(InvalidConfigError):
+        validate_pipeline_yaml("data/test_config/example_config.yaml")

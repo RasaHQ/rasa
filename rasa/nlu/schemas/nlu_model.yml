@@ -2,7 +2,9 @@ allowempty: True
 mapping:
   language:
     type: "str"
+    required: True
   pipeline:
     type: "seq"
+    required: True
     sequence:
     - type: "str"

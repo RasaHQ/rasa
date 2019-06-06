@@ -96,11 +96,15 @@ def test_nlu(args: argparse.Namespace) -> None:
     nlu_data = data.get_nlu_directory(nlu_data)
 
     if len(args.config) == 1:
-        args.config = args.config[0]
-        config_path = os.path.abspath(args.config)
-
-        if os.path.isdir(config_path):
-            args.config = os.listdir(args.config)
+        args.config = os.path.abspath(args.config[0])
+        if os.path.isdir(args.config):
+            config_dir = args.config
+            config_files = os.listdir(config_dir)
+            args.config = list(
+                map(
+                    lambda c: os.path.join(os.path.abspath(config_dir), c), config_files
+                )
+            )
 
     if isinstance(args.config, list):
         logger.info("Multiple configs specified, running nlu comparison mode.")

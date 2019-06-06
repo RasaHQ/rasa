@@ -218,16 +218,15 @@ def validate_pipeline_yaml(yaml):
     log.setLevel(logging.WARN)
 
     try:
-        schema_file = pkg_resources.resource_filename(
-            "rasa", "nlu/schemas/nlu_model.yml"
-        )
-        source_data = rasa.utils.io.read_yaml(yaml)
+        source_data = rasa.utils.io.read_yaml_file(yaml)
     except YAMLError:
         raise InvalidConfigError(
             "The provided config file is invalid. You can use "
             "http://www.yamllint.com/ to validate the yaml syntax "
             "of your config file."
         )
+
+    schema_file = pkg_resources.resource_filename("rasa", "nlu/schemas/nlu_model.yml")
 
     try:
         c = Core(source_data=source_data, schema_files=[schema_file])
