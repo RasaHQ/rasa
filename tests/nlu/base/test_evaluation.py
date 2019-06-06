@@ -5,7 +5,7 @@ import logging
 import pytest
 
 import rasa.utils.io
-from rasa.test import test_compare_nlu
+from rasa.test import compare_nlu_models
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -445,16 +445,17 @@ def test_nlu_comparison(tmpdir):
     ]
     output = tmpdir.strpath
 
-    test_compare_nlu(
+    compare_nlu_models(
         configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
     )
 
-    assert os.listdir(output) == [
-        "run_1",
-        "run_2",
-        "results.json",
-        "nlu_model_comparison_graph.pdf",
-    ]
+    assert (
+        os.listdir(output).sort()
+        == ["run_1", "run_2", "results.json", "nlu_model_comparison_graph.pdf"].sort()
+    )
 
     run_1_path = os.path.join(output, "run_1")
-    assert os.listdir(run_1_path) == ["80%_exclusion", "95%_exclusion", "test.md"]
+    assert (
+        os.listdir(run_1_path).sort()
+        == ["80%_exclusion", "95%_exclusion", "test.md"].sort()
+    )

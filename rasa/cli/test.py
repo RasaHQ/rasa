@@ -13,7 +13,7 @@ from rasa.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
 )
-from rasa.test import test_compare_core, test_compare_nlu
+from rasa.test import test_compare_core, compare_nlu_models
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ def test_core(args: argparse.Namespace) -> None:
 
 
 def test_nlu(args: argparse.Namespace) -> None:
-    from rasa.test import test_nlu, test_nlu_with_cross_validation
+    from rasa.test import test_nlu, perform_nlu_cross_validation
     from rasa.nlu.utils import validate_pipeline_yaml
     from rasa.nlu.config import InvalidConfigError
     import os
@@ -117,7 +117,7 @@ def test_nlu(args: argparse.Namespace) -> None:
                 continue
 
         output = args.report or "nlu_comparison_results"
-        test_compare_nlu(
+        compare_nlu_models(
             configs=config_files,
             nlu=nlu_data,
             output=output,
@@ -127,7 +127,7 @@ def test_nlu(args: argparse.Namespace) -> None:
     elif args.cross_validation:
         logger.info("Test model using cross validation.")
         config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
-        test_nlu_with_cross_validation(config, nlu_data, args.folds)
+        perform_nlu_cross_validation(config, nlu_data, args.folds)
     else:
         model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
         test_nlu(model_path, nlu_data, vars(args))

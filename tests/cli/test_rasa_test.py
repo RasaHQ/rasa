@@ -33,7 +33,7 @@ def test_test_help(run):
                  [--url URL] [-u NLU] [--report [REPORT]]
                  [--successes [SUCCESSES]] [--errors ERRORS]
                  [--histogram HISTOGRAM] [--confmat CONFMAT]
-                 [--cross-validation] [-c CONFIG [CONFIG ...]] [-f FOLDS]
+                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
                  [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  {core,nlu} ..."""
 
@@ -49,8 +49,8 @@ def test_test_nlu_help(run):
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU]
                      [--report [REPORT]] [--successes [SUCCESSES]]
                      [--errors ERRORS] [--histogram HISTOGRAM]
-                     [--confmat CONFMAT] [--cross-validation]
-                     [-c CONFIG [CONFIG ...]] [-f FOLDS] [-r RUNS]
+                     [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
+                     [--cross-validation] [-f FOLDS] [-r RUNS]
                      [-p PERCENTAGES [PERCENTAGES ...]]"""
 
     lines = help_text.split("\n")

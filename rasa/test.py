@@ -130,7 +130,7 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
         )
 
 
-def test_compare_nlu(
+def compare_nlu_models(
     configs: List[Text],
     nlu: Text,
     output: Text,
@@ -198,10 +198,11 @@ def test_compare_nlu(
                     )
                 except Exception as e:
                     logger.warning(
-                        "Training model with config '{}' failed. Error: {}".format(
-                            model_path, str(e)
+                        "Training model '{}' failed. Error: {}".format(
+                            model_name, str(e)
                         )
                     )
+                    micros[model_name][run].append(0.0)
                     continue
 
                 model_path = os.path.join(get_model(model_path), "nlu")
@@ -221,7 +222,7 @@ def test_compare_nlu(
     plot_curve(output, intent_examples_present, mode="nlu")
 
 
-def test_nlu_with_cross_validation(config: Text, nlu: Text, kwargs: Optional[Dict]):
+def perform_nlu_cross_validation(config: Text, nlu: Text, kwargs: Optional[Dict]):
     import rasa.nlu.config
     from rasa.nlu.test import (
         drop_intents_below_freq,
