@@ -23,6 +23,7 @@ Fixed
 - slack notifications from bots correctly render text
 - fixed usage of ``--log-file`` argument for ``rasa run`` and ``rasa shell``
 - check if correct tracker store is configured in local mode
+- loading of additional training data loading with the ``SkillSelector``
 
 [1.0.6] - 2019-06-03
 ^^^^^^^^^^^^^^^^^^^^
