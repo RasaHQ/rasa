@@ -4,7 +4,26 @@ from collections import defaultdict, namedtuple
 import os
 import logging
 import numpy as np
-from typing import Iterable, Iterator, Tuple, List, Set, Optional, Text, Union, Dict
+from typing import (
+    Iterable,
+    Iterator,
+    Tuple,
+    List,
+    Set,
+    Optional,
+    Text,
+    Union,
+    Dict,
+    Any,
+)
+
+from rasa.model import get_model
+
+from rasa.train import train_nlu
+
+from rasa.nlu.utils import write_to_file
+
+from rasa.utils.io import create_path
 from tqdm import tqdm
 
 from rasa.nlu import config, training_data, utils
@@ -896,6 +915,79 @@ def compute_metrics(
     entity_metrics = _compute_entity_metrics(entity_results, interpreter)
 
     return (intent_metrics, entity_metrics, intent_results, entity_results)
+
+
+def compare_nlu(
+    configs: List[Text],
+    data: TrainingData,
+    exclusion_percentages: List[int],
+    micros: Dict[Text, Any],
+    model_names: List[Text],
+    output: Text,
+    runs: int,
+) -> List[int]:
+    intent_examples_present = []
+
+    for run in range(runs):
+
+        logger.info("Beginning comparison run {}/{}".format(run + 1, runs))
+        train, test = data.train_test_split()
+
+        run_path = os.path.join(output, "run_{}".format(run + 1))
+        create_path(run_path)
+
+        test_path = os.path.join(run_path, "test.md")
+        create_path(test_path)
+
+        write_to_file(test_path, test.as_markdown())
+        intent_examples_present = []
+
+        for percentage in exclusion_percentages:
+            percent_string = "{}%_exclusion".format(percentage)
+
+            _, train = train.train_test_split(percentage / 100)
+            intent_examples_present.append(len(train.training_examples))
+
+            out_path = os.path.join(run_path, percent_string)
+            train_split_path = os.path.join(out_path, "train.md")
+            create_path(train_split_path)
+
+            write_to_file(train_split_path, train.as_markdown())
+
+            for nlu_config, model_name in zip(configs, model_names):
+
+                logger.info(
+                    "Evaluating config '{}' with {}".format(model_name, percent_string)
+                )
+
+                try:
+                    model_path = train_nlu(
+                        nlu_config,
+                        train_split_path,
+                        out_path,
+                        fixed_model_name=model_name,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "Training model '{}' failed. Error: {}".format(
+                            model_name, str(e)
+                        )
+                    )
+                    micros[model_name][run].append(0.0)
+                    continue
+
+                model_path = os.path.join(get_model(model_path), "nlu")
+
+                report_path = os.path.join(out_path, "{}_report".format(model_name))
+                errors_path = os.path.join(report_path, "errors.json")
+                result = run_evaluation(
+                    test_path, model_path, report=report_path, errors=errors_path
+                )
+
+                f1 = result["intent_evaluation"]["f1_score"]
+                micros[model_name][run].append(f1)
+
+    return intent_examples_present
 
 
 def _compute_intent_metrics(
