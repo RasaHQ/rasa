@@ -4,15 +4,11 @@ import io
 import json
 import os
 import re
-import tempfile
-from collections import namedtuple
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Text
 
-import simplejson
-
-import rasa.utils.io
-
-from rasa.utils.endpoints import read_endpoint_config
+# backwards compatibility 1.0.x
+# noinspection PyUnresolvedReferences
+from rasa.utils.io import read_json_file
 
 
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
@@ -31,17 +27,6 @@ def create_dir(dir_path: Text) -> None:
 
     try:
         os.makedirs(dir_path)
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
-
-
-def create_dir_for_file(file_path: Text) -> None:
-    """Creates any missing parent directories of this files path."""
-
-    try:
-        os.makedirs(os.path.dirname(file_path))
     except OSError as e:
         # be happy if someone already created the path
         if e.errno != errno.EEXIST:
@@ -127,22 +112,6 @@ def module_path_from_object(o: Any) -> Text:
     return o.__class__.__module__ + "." + o.__class__.__name__
 
 
-def class_from_module_path(module_path: Text) -> Type[Any]:
-    """Given the module name and path of a class, tries to retrieve the class.
-
-    The loaded class can be used to instantiate new objects. """
-    import importlib
-
-    # load the module, will raise ImportError if module cannot be loaded
-    if "." in module_path:
-        module_name, _, class_name = module_path.rpartition(".")
-        m = importlib.import_module(module_name)
-        # get the class, will raise AttributeError if class cannot be found
-        return getattr(m, class_name)
-    else:
-        return globals()[module_path]
-
-
 def json_to_string(obj: Any, **kwargs: Any) -> Text:
     indent = kwargs.pop("indent", 2)
     ensure_ascii = kwargs.pop("ensure_ascii", False)
@@ -160,18 +129,6 @@ def write_to_file(filename: Text, text: Text) -> None:
 
     with io.open(filename, "w", encoding="utf-8") as f:
         f.write(str(text))
-
-
-def read_json_file(filename: Text) -> Any:
-    """Read json from a file."""
-    content = rasa.utils.io.read_file(filename)
-    try:
-        return simplejson.loads(content)
-    except ValueError as e:
-        raise ValueError(
-            "Failed to read json from '{}'. Error: "
-            "{}".format(os.path.abspath(filename), e)
-        )
 
 
 def build_entity(
@@ -223,22 +180,6 @@ def remove_model(model_dir: Text) -> bool:
             "Cannot remove {}, it seems it is not a model "
             "directory".format(model_dir)
         )
-
-
-def configure_colored_logging(loglevel: Text) -> None:
-    import coloredlogs
-
-    field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
-    field_styles["asctime"] = {}
-    level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
-    level_styles["debug"] = {}
-    coloredlogs.install(
-        level=loglevel,
-        use_chroot=False,
-        fmt="%(asctime)s %(levelname)-8s %(name)s  - %(message)s",
-        level_styles=level_styles,
-        field_styles=field_styles,
-    )
 
 
 def json_unpickle(file_name: Text) -> Any:
@@ -328,7 +269,9 @@ def validate_pipeline_yaml(yaml):
     log.setLevel(logging.WARN)
 
     try:
-        schema_file = pkg_resources.resource_filename("rasa", "nlu/schemas/nlu_model.yml")
+        schema_file = pkg_resources.resource_filename(
+            "rasa", "nlu/schemas/nlu_model.yml"
+        )
         source_data = rasa.utils.io.read_yaml(yaml)
     except YAMLError:
         raise InvalidConfigError(

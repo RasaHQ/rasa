@@ -7,6 +7,23 @@ def test_test_core(run_in_default_project):
     assert os.path.exists("results")
 
 
+def test_test(run_in_default_project):
+    run_in_default_project("test", "--report", "report")
+
+    assert os.path.exists("report")
+    assert os.path.exists("results")
+    assert os.path.exists("hist.png")
+    assert os.path.exists("confmat.png")
+
+
+def test_test_nlu(run_in_default_project):
+    run_in_default_project("test", "nlu", "--nlu", "data", "--success", "success.json")
+
+    assert os.path.exists("hist.png")
+    assert os.path.exists("confmat.png")
+    assert os.path.exists("success.json")
+
+
 def test_test_help(run):
     output = run("test", "--help")
 

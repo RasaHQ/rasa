@@ -585,7 +585,7 @@ class Domain(object):
         """Persists the domain specification to storage."""
 
         domain_spec_path = os.path.join(model_path, "domain.json")
-        utils.create_dir_for_file(domain_spec_path)
+        rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         metadata = {"states": self.input_states}
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)

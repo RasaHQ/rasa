@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def test_compare_core(models: List[Text], stories: Text, output: Text):
     from rasa.core.test import compare, plot_curve
-    import rasa.core.utils as core_utils
+    import rasa.utils.io
 
     model_directory = copy_models_to_compare(models)
 
@@ -29,7 +29,7 @@ def test_compare_core(models: List[Text], stories: Text, output: Text):
     loop.run_until_complete(compare(model_directory, stories, output))
 
     story_n_path = os.path.join(model_directory, "num_stories.json")
-    number_of_stories = core_utils.read_json_file(story_n_path)
+    number_of_stories = rasa.utils.io.read_json_file(story_n_path)
     plot_curve(output, number_of_stories)
 
 

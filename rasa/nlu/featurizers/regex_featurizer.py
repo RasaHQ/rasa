@@ -10,6 +10,7 @@ from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
+import rasa.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,7 @@ class RegexFeaturizer(Featurizer):
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):
-            known_patterns = utils.read_json_file(regex_file)
+            known_patterns = rasa.utils.io.read_json_file(regex_file)
             return RegexFeaturizer(meta, known_patterns=known_patterns)
         else:
             return RegexFeaturizer(meta)

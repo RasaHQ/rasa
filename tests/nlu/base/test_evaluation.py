@@ -230,11 +230,12 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {"affirm", "restaurant_search"}
 
 
-def test_run_evaluation(trained_moodbot_path):
+def test_run_evaluation(unpacked_trained_moodbot_path):
     data = DEFAULT_DATA_PATH
-    model = trained_moodbot_path
 
-    result = run_evaluation(data, model, errors=None)
+    result = run_evaluation(
+        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=None
+    )
     assert result.get("intent_evaluation")
     assert result.get("entity_evaluation").get("CRFEntityExtractor")
 
@@ -434,8 +435,8 @@ def test_label_replacement():
     original_labels = ["O", "location"]
     target_labels = ["no_entity", "location"]
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
-    
-    
+
+
 def test_nlu_comparison(tmpdir):
 
     configs = [

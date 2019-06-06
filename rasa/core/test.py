@@ -632,12 +632,12 @@ def plot_curve(output: Text, no_examples: List[int], mode: Text = "core") -> Non
     """
     import matplotlib.pyplot as plt
     import numpy as np
-    from rasa.core import utils
+    import rasa.utils.io
 
     ax = plt.gca()
 
     # load results from file
-    data = utils.read_json_file(os.path.join(output, "results.json"))
+    data = rasa.utils.io.read_json_file(os.path.join(output, "results.json"))
     x = no_examples
 
     # compute mean of all the runs for keras/embed policies
