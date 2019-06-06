@@ -838,7 +838,7 @@ class Domain(object):
         """Warn user of utterance names which have no specified template."""
 
         utterances = [
-            act for act in self.action_names if act.startswith(action.UTTER_PREFIX)
+            a for a in self.action_names if a.startswith(action.UTTER_PREFIX)
         ]
 
         missing_templates = [t for t in utterances if t not in self.templates.keys()]
