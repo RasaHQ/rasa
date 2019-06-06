@@ -17,6 +17,7 @@ Changed
 -------
 - update the tracker in interactive learning through reverting and appending events
   instead of replacing the tracker
+- ``POST /conversations/{conversation_id}/tracker/events`` supports a list of events
 
 Removed
 -------

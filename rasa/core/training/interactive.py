@@ -226,7 +226,9 @@ async def send_action(
 
 
 async def send_event(
-    endpoint: EndpointConfig, sender_id: Text, evt: Dict[Text, Any]
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    evt: Union[List[Dict[Text, Any]], Dict[Text, Any]],
 ) -> Dict[Text, Any]:
     """Log an event to a conversation."""
 
@@ -906,20 +908,21 @@ async def _predict_till_next_listen(
 
 async def _correct_wrong_nlu(
     corrected_nlu: Dict[Text, Any],
-    evts: List[Dict[Text, Any]],
+    events: List[Dict[Text, Any]],
     endpoint: EndpointConfig,
     sender_id: Text,
 ) -> None:
     """A wrong NLU prediction got corrected, update core's tracker."""
 
-    # revert wrong classification
-    event_to_revert_latest_user_utterance = UserUtteranceReverted().as_dict()
-    await send_event(endpoint, sender_id, event_to_revert_latest_user_utterance)
-
-    # Add corrected event
-    latest_message = latest_user_message(evts)
-    latest_message["parse_data"] = corrected_nlu
-    await send_event(endpoint, sender_id, latest_message)
+    revert_latest_user_utterance = UserUtteranceReverted().as_dict()
+    listen_for_next_message = ActionExecuted(ACTION_LISTEN_NAME).as_dict()
+    corrected_message = latest_user_message(events)
+    corrected_message["parse_data"] = corrected_nlu
+    await send_event(
+        endpoint,
+        sender_id,
+        [revert_latest_user_utterance, listen_for_next_message, corrected_message],
+    )
 
 
 async def _correct_wrong_action(
@@ -1220,10 +1223,11 @@ async def _undo_latest(sender_id: Text, endpoint: EndpointConfig) -> None:
         await send_event(endpoint, sender_id, undo_action)
     elif last_event_type == UserUttered.type_name:
         undo_user_message = UserUtteranceReverted().as_dict()
-        await send_event(endpoint, sender_id, undo_user_message)
-
         listen_for_next_message = ActionExecuted(ACTION_LISTEN_NAME).as_dict()
-        await send_event(endpoint, sender_id, listen_for_next_message)
+
+        await send_event(
+            endpoint, sender_id, [undo_user_message, listen_for_next_message]
+        )
 
 
 async def _fetch_events(
