@@ -16,6 +16,7 @@ FROM base as builder
 COPY README.md .
 COPY rasa ./rasa
 COPY setup.py .
+COPY requirements.txt .
 
 # Install all required build libraries
 RUN apt-get update -qq && \
@@ -35,9 +36,8 @@ RUN apt-get update -qq && \
   curl
 
 # Install Rasa and its dependencies
-RUN pip install -e .[sql] && \
-    # Remove pip from virtualenv since we don't need it anymore
-    pip uninstall --yes pip
+RUN pip install -r requirements.txt && \
+    pip install -e .[sql]
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
