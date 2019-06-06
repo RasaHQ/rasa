@@ -175,31 +175,33 @@ def _enrich_config(
 
 
 def _get_valid_config(
-    config: Optional[Text] = None,
+    config: Optional[Text],
+    mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,
-    mandatory_keys: List[Text] = CONFIG_MANDATORY_KEYS,
 ) -> Text:
     if config:
-        # config is provided via '-c' argument
+        # config is provided via '-c' argument. config file needs to contain
+        # all mandatory keys
         missing_keys = missing_config_keys(config, mandatory_keys)
         if missing_keys:
             print_error(
                 "Configuration file '{}' is missing mandatory parameters: "
-                "{}. Add missing parameters to configuration file and try again."
-                "".format(config, ", ".join(missing_keys))
+                "'{}'. Add missing parameters to configuration file and try again."
+                "".format(config, "', '".join(missing_keys))
             )
             exit(1)
         return config
 
-    config_path = get_validated_path(default_config, "config", FALLBACK_CONFIG_PATH)
-    missing_keys = missing_config_keys(config_path, mandatory_keys)
+    # use default config path and enrich it in case mandatory keys are missing
+    config = get_validated_path(default_config, "config", FALLBACK_CONFIG_PATH)
+    missing_keys = missing_config_keys(config, mandatory_keys)
 
     if missing_keys:
         print_warning(
             "Configuration file '{}' is missing mandatory parameters: "
-            "{}. Filling missing parameters from fallback configuration file: '{}'."
-            "".format(config, ", ".join(missing_keys), FALLBACK_CONFIG_PATH)
+            "'{}'. Filling missing parameters from fallback configuration file: '{}'."
+            "".format(config, "', '".join(missing_keys), FALLBACK_CONFIG_PATH)
         )
-        _enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
+        _enrich_config(config, missing_keys, FALLBACK_CONFIG_PATH)
 
-    return config_path
+    return config
