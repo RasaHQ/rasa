@@ -357,6 +357,7 @@ class Interpreter(object):
         text: Text,
         time: Optional[datetime.datetime] = None,
         only_output_properties: bool = True,
+        params: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         """Parse the input text, classify it and return pipeline result.
 
@@ -371,7 +372,7 @@ class Interpreter(object):
             output["text"] = ""
             return output
 
-        message = Message(text, self.default_output_attributes(), time=time)
+        message = Message(text, self.default_output_attributes(), time=time, params=params)
 
         for component in self.pipeline:
             component.process(message, **self.context)

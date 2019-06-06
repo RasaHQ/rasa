@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class NaturalLanguageInterpreter(object):
-    async def parse(self, text, message_id=None):
+    async def parse(self, text, message_id=None, params=None):
         raise NotImplementedError(
             "Interpreter needs to be able to parse messages into structured output."
         )
@@ -153,7 +153,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             )
             return None, 0.0, []
 
-    async def parse(self, text, message_id=None):
+    async def parse(self, text, message_id=None, params=None):
         """Parse a text message."""
 
         intent, confidence, entities = self.extract_intent_and_entities(text)
@@ -183,7 +183,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         else:
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    async def parse(self, text, message_id=None):
+    async def parse(self, text, message_id=None, params=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
@@ -247,14 +247,14 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         else:
             self.interpreter = None
 
-    async def parse(self, text, message_id=None):
+    async def parse(self, text, message_id=None, params=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
-        result = self.interpreter.parse(text)
+        result = self.interpreter.parse(text, params=params)
 
         return result
 

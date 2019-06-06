@@ -4,10 +4,11 @@ from rasa.nlu.utils import ordered
 
 
 class Message(object):
-    def __init__(self, text, data=None, output_properties=None, time=None):
+    def __init__(self, text, data=None, output_properties=None, time=None, params=None):
         self.text = text
         self.time = time
         self.data = data if data else {}
+        self.params = params
 
         if output_properties:
             self.output_properties = output_properties

@@ -794,7 +794,7 @@ def create_app(
 
         try:
             data = emulator.normalise_request_json(request.json)
-            parse_data = await app.agent.interpreters.get(request.json.get("lang")).parse(data.get("text"))
+            parse_data = await app.agent.interpreters.get(request.json.get("lang")).parse(data.get("text"), params=dict(request.query_args))
             response_data = emulator.normalise_response_json(parse_data)
 
             return response.json(response_data)
