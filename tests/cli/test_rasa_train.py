@@ -284,3 +284,8 @@ def test_get_valid_config(parameters):
         if expected_data is not None:
             for k, v in expected_data.items():
                 assert config_data[k] == v
+
+
+def test_get_valid_config_with_non_existing_file():
+    with pytest.raises(SystemExit):
+        _get_valid_config("non-existing-file.yml", CONFIG_MANDATORY_KEYS)

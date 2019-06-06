@@ -1,4 +1,5 @@
 import argparse
+import os
 import tempfile
 from typing import List, Optional, Text, Dict
 import rasa.cli.arguments as arguments
@@ -182,6 +183,14 @@ def _get_valid_config(
     if config:
         # config is provided via '-c' argument. config file needs to contain
         # all mandatory keys
+        if not os.path.exists(config):
+            print_error(
+                "The config file '{}' does not exist. Use '--config' to specify a "
+                "valid config file."
+                "".format(config)
+            )
+            exit(1)
+
         missing_keys = missing_config_keys(config, mandatory_keys)
         if missing_keys:
             print_error(
