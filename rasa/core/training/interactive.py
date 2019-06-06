@@ -237,14 +237,6 @@ async def replace_events(
     return await endpoint.request(json=evts, method="put", subpath=subpath)
 
 
-async def send_finetune(
-    endpoint: EndpointConfig, evts: List[Dict[Text, Any]]
-) -> Dict[Text, Any]:
-    """Finetune a core model on the provided additional training samples."""
-
-    return await endpoint.request(json=evts, method="post", subpath="/finetune")
-
-
 def format_bot_output(message: Dict[Text, Any]) -> Text:
     """Format a bot response to be displayed in the history table."""
 
@@ -862,7 +854,6 @@ async def _write_domain_to_file(
 async def _predict_till_next_listen(
     endpoint: EndpointConfig,
     sender_id: Text,
-    finetune: bool,
     sender_ids: List[Text],
     plot_file: Optional[Text],
 ) -> None:
@@ -884,13 +875,7 @@ async def _predict_till_next_listen(
         )
 
         listen = await _validate_action(
-            action_name,
-            policy,
-            confidence,
-            predictions,
-            endpoint,
-            sender_id,
-            finetune=finetune,
+            action_name, policy, confidence, predictions, endpoint, sender_id
         )
 
         await _plot_trackers(sender_ids, plot_file, endpoint)
@@ -944,7 +929,6 @@ async def _correct_wrong_action(
     corrected_action: Text,
     endpoint: EndpointConfig,
     sender_id: Text,
-    finetune: bool = False,
     is_new_action: bool = False,
 ) -> None:
     """A wrong action prediction got corrected, update core's tracker."""
@@ -952,9 +936,6 @@ async def _correct_wrong_action(
     result = await send_action(
         endpoint, sender_id, corrected_action, is_new_action=is_new_action
     )
-
-    if finetune:
-        await send_finetune(endpoint, result.get("tracker", {}).get("events", []))
 
 
 def _form_is_rejected(action_name, tracker):
@@ -1019,7 +1000,6 @@ async def _validate_action(
     predictions: List[Dict[Text, Any]],
     endpoint: EndpointConfig,
     sender_id: Text,
-    finetune: bool = False,
 ) -> bool:
     """Query the user to validate if an action prediction is correct.
 
@@ -1056,11 +1036,7 @@ async def _validate_action(
 
     if not is_correct:
         await _correct_wrong_action(
-            action_name,
-            endpoint,
-            sender_id,
-            finetune=finetune,
-            is_new_action=is_new_action,
+            action_name, endpoint, sender_id, is_new_action=is_new_action
         )
     else:
         await send_action(endpoint, sender_id, action_name, policy, confidence)
@@ -1323,7 +1299,6 @@ async def record_messages(
     endpoint: EndpointConfig,
     sender_id: Text = UserMessage.DEFAULT_SENDER_ID,
     max_message_limit: Optional[int] = None,
-    finetune: bool = False,
     stories: Optional[Text] = None,
     skip_visualization: bool = False,
 ):
@@ -1367,7 +1342,7 @@ async def record_messages(
                     await _enter_user_message(sender_id, endpoint)
                     await _validate_nlu(intents, endpoint, sender_id)
                 await _predict_till_next_listen(
-                    endpoint, sender_id, finetune, sender_ids, plot_file
+                    endpoint, sender_id, sender_ids, plot_file
                 )
 
                 num_messages += 1
@@ -1404,7 +1379,7 @@ async def record_messages(
         raise
 
 
-def _serve_application(app, stories, finetune, skip_visualization):
+def _serve_application(app, stories, skip_visualization):
     """Start a core server and attach the interactive learning IO."""
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
@@ -1415,7 +1390,6 @@ def _serve_application(app, stories, finetune, skip_visualization):
         await record_messages(
             endpoint=endpoint,
             stories=stories,
-            finetune=finetune,
             skip_visualization=skip_visualization,
             sender_id=uuid.uuid4().hex,
         )
@@ -1508,7 +1482,6 @@ async def wait_til_server_is_running(endpoint, max_retries=30, sleep_between_ret
 
 def run_interactive_learning(
     stories: Text = None,
-    finetune: bool = False,
     skip_visualization: bool = False,
     server_args: Dict[Text, Any] = None,
     additional_arguments: Dict[Text, Any] = None,
@@ -1549,7 +1522,7 @@ def run_interactive_learning(
             "before_server_start",
         )
 
-    _serve_application(app, stories, finetune, skip_visualization)
+    _serve_application(app, stories, skip_visualization)
 
     if not skip_visualization:
         p.terminate()
