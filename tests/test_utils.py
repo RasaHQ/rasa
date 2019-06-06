@@ -64,13 +64,16 @@ def test_sort_dicts_by_keys():
     assert actual == expected
 
 
-@pytest.mark.parametrize('base, subpath, expected_result', [
-    ("https://example.com", None, "https://example.com"),
-    ("https://example.com/test", None, "https://example.com/test"),
-    ("https://example.com/", None, "https://example.com"),
-    ("https://example.com//", None, "https://example.com"),
-    ("https://example.com/", "test", "https://example.com/test"),
-    ("https://example.com/", "test/", "https://example.com/test/"),
-])
+@pytest.mark.parametrize(
+    "base, subpath, expected_result",
+    [
+        ("https://example.com", None, "https://example.com"),
+        ("https://example.com/test", None, "https://example.com/test"),
+        ("https://example.com/", None, "https://example.com"),
+        ("https://example.com//", None, "https://example.com"),
+        ("https://example.com/", "test", "https://example.com/test"),
+        ("https://example.com/", "test/", "https://example.com/test/"),
+    ],
+)
 def test_concat_url(base, subpath, expected_result):
     assert concat_url(base, subpath) == expected_result
