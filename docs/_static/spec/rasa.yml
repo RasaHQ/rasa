@@ -1,7 +1,7 @@
-openapi: "3.0.1"
+openapi: 3.0.1
 info:
   title: "Rasa - Server Endpoints"
-  version: "0.0.0"
+  version: "1.0.0"
   description: >-
     The Rasa server provides endpoints to retrieve trackers of
     conversations as well as endpoints to modify them. Additionally,
@@ -76,19 +76,25 @@ paths:
             application/json:
               schema:
                 type: object
-              example:
-                fingerprint:
-                  config:
-                    - 7625d69d93053ac8520a544d0852c626
-                  domain:
-                    - 229b51e41876bbcbbbfbeddf79548d5a
-                  messages:
-                    - cf7eda7edcae128a75ee8c95d3bbd680
-                  stories:
-                    - b5facea681fd00bc7ecc6818c70d9639
-                  trained_at: 1556527123.42784
-                  version: 1.0.0
-                model_file: 20190429-103105.tar.gz
+                properties:
+                  fingerprint:
+                    type: object
+                    description: Fingerprint of the loaded model
+                    example:
+                      config:
+                        - 7625d69d93053ac8520a544d0852c626
+                      domain:
+                        - 229b51e41876bbcbbbfbeddf79548d5a
+                      messages:
+                        - cf7eda7edcae128a75ee8c95d3bbd680
+                      stories:
+                        - b5facea681fd00bc7ecc6818c70d9639
+                      trained_at: 1556527123.42784
+                      version: 1.0.0
+                  model_file:
+                    type: string
+                    description: Path of the loaded model
+                    example: 20190429-103105.tar.gz
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
@@ -142,7 +148,11 @@ paths:
       - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
       requestBody:
-        $ref: '#/components/requestBodies/Event'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
@@ -173,7 +183,11 @@ paths:
       - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
       requestBody:
-        $ref: '#/components/requestBodies/EventList'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventList'
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
@@ -236,23 +250,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  description: >-
-                    Name of the action to be executed.
-                  type: string
-                policy:
-                  description: >-
-                    Name of the policy that predicted the action (optional).
-                  type: string
-                confidence:
-                  description: >-
-                    Confidence of the prediction (optional).
-                  type: number
-              required: ["name"]
-            example:
-              name: utter_greet
+              $ref: '#/components/schemas/ActionRequest'
       responses:
         200:
           description: Success
@@ -301,9 +299,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PredictResult'
-              example:
-                PredictResult:
-                  $ref: '#/components/examples/PredictResult'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -338,35 +333,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                text:
-                  type: string
-                  description: >-
-                    Message text
-                sender:
-                  type: string
-                  description: >-
-                    Origin of the message - who sent it
-                  enum:
-                    - user
-                parse_data:
-                  $ref: '#/components/schemas/ParseResult'
-              required: ["text", "sender"]
-            example:
-              sender: user
-              text: hello
-              parse_data:
-                text: hello
-                entities: []
-                intent:
-                  confidence: 0.57
-                  name: greet
-                intent_ranking:
-                - confidence: 0.57
-                  name: greet
-                - confidence: 0.33
-                  name: goodbye
+              $ref: '#/components/schemas/Message'
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
@@ -399,9 +366,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TrainingRequest'
-            example:
-              TrainingRequest:
-                $ref: '#/components/examples/TrainingRequest'
       responses:
         200:
           description: Zipped Rasa model
@@ -436,14 +400,7 @@ paths:
         content:
           text/markdown:
             schema:
-              type: string
-            example: >-
-              ## story_00055028
-              * greet
-               - utter_ask_howcanhelp
-              * inform{"cuisine": "indian", "people": "two", "price": "moderate"}
-               - utter_on_it
-               - utter_ask_location
+              $ref: '#/components/schemas/StoriesTrainingData'
       responses:
         200:
           description: Success
@@ -451,9 +408,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EvaluationStoriesResult'
-              example:
-                PredictResult:
-                  $ref: '#/components/examples/EvaluationStoriesResult'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -482,15 +436,7 @@ paths:
         content:
           text/markdown:
             schema:
-              type: string
-            example: >-
-              ## intent:greet
-              - hey
-              - hello
-
-              ## intent:goodbye
-              - cu
-              - good by
+              $ref: '#/components/schemas/NLUTrainingData'
       responses:
         200:
           description: Intent evaluation result
@@ -498,9 +444,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EvaluationIntentsResult'
-              example:
-                IntentEvaluation:
-                  $ref: '#/components/examples/EvaluationIntentsResult'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -529,7 +472,11 @@ paths:
       parameters:
       - $ref: '#/components/parameters/include_events'
       requestBody:
-        $ref: '#/components/requestBodies/EventList'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventList'
       responses:
         200:
           description: Success
@@ -537,9 +484,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PredictResult'
-              example:
-                PredictResult:
-                  $ref: '#/components/examples/PredictResult'
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -576,8 +520,7 @@ paths:
                 text:
                   type: string
                   description: Message to be parsed
-            example:
-              text: "Hello, I am Rasa!"
+                  example: "Hello, I am Rasa!"
       responses:
         200:
           description: Success
@@ -608,10 +551,14 @@ paths:
         Secondly, tries to load the model from the provided model server configuration.
         Last, tries to load the model from the provided remote storage.
       requestBody:
-        $ref: '#/components/requestBodies/ModelRequest'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelRequest'
       responses:
         204:
-          description: Could successfully replace model.
+          description: Model was successfully replaced.
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -632,7 +579,7 @@ paths:
         Unloads the currently loaded trained model from the server.
       responses:
         204:
-          description: Could sucessfully unload model.
+          description: Model was sucessfully unloaded.
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
@@ -688,8 +635,8 @@ components:
     conversation_id:
       in: path
       name: conversation_id
-      example: default
       description: Id of the conversation
+      example: default
       schema:
         type: string
       required: true
@@ -697,6 +644,7 @@ components:
       in: query
       name: batch_size
       description: Batch size to use for training.
+      example: 5
       schema:
         type: number
         default: 5
@@ -705,6 +653,7 @@ components:
       in: query
       name: epochs
       description: Number of epochs to train.
+      example: 30
       schema:
         type: number
         default: 30
@@ -712,7 +661,8 @@ components:
     e2e:
       in: query
       name: e2e
-      description: Perform an end-to-end evaluation on the posted stories
+      description: Perform an end-to-end evaluation on the posted stories.
+      example: false
       schema:
         type: boolean
         default: false
@@ -722,9 +672,14 @@ components:
       name: model
       description: >-
         Model that should be used for evaluation.
-        If the parameter is set, the model will be fetched with the currently loaded configuration setup. However,
-        the currently loaded model will not be updated. The state of the server will not change.
-        If the parameter is not set, the currently loaded model will be used for the evaluation.
+        If the parameter is set, the model will be
+        fetched with the currently loaded configuration
+        setup. However, the currently loaded model
+        will not be updated. The state of the server
+        will not change. If the parameter is not set,
+        the currently loaded model will be used for
+        the evaluation.
+      example: rasa-model.tar.gz
       schema:
         type: string
       required: false
@@ -734,6 +689,7 @@ components:
       description: >-
         Specify which events of the tracker the response
         should contain.
+      example: AFTER_RESTART
       schema:
         type: string
         default: AFTER_RESTART
@@ -747,6 +703,7 @@ components:
       name: emulation_mode
       description: >-
         Specify the emulation mode.
+      example: LUIS
       schema:
         type: string
         enum:
@@ -759,66 +716,11 @@ components:
       description: >-
         All events previous to the passed timestamp will be replayed.
         Events that occur exactly at the target time will be included.
+      example: 1559744410
       schema:
         type: number
         default: None
       required: false
-
-
-  requestBodies:
-
-    Event:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              event:
-                type: string
-                description: Event name
-                example: "slot"
-              timestamp:
-                type: integer
-                description: Time of application
-            required: ["event"]
-    EventList:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              type: object
-              properties:
-                event:
-                  type: string
-                  description: Event name
-                  example: "action"
-                timestamp:
-                  type: integer
-                  description: Time of application
-    ModelRequest:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              model_file:
-                type: string
-                description: Path to model file
-                example: "/models/20190512.tar.gz"
-              model_server:
-                $ref: '#/components/schemas/EndpointConfig'
-              remote_storage:
-                description: Name of remote storage system
-                type: string
-                example: "aws"
-                enum:
-                  - aws
-                  - gcs
-                  - azure
 
   responses:
 
@@ -828,9 +730,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Tracker'
-          example:
-            Tracker:
-              $ref: '#/components/examples/Tracker'
     200Story:
       description: Success
       content:
@@ -923,6 +822,62 @@ components:
 
   schemas:
 
+    ModelRequest:
+      type: object
+      properties:
+        model_file:
+          type: string
+          description: Path to model file
+          example: "/models/20190512.tar.gz"
+        model_server:
+          $ref: '#/components/schemas/EndpointConfig'
+        remote_storage:
+          description: Name of remote storage system
+          type: string
+          example: "aws"
+          enum:
+            - aws
+            - gcs
+            - azure
+
+    ActionRequest:
+      type: object
+      properties:
+        name:
+          description: >-
+            Name of the action to be executed.
+          type: string
+          example: utter_greet
+        policy:
+          description: >-
+            Name of the policy that predicted the action (optional).
+          type: string
+        confidence:
+          description: >-
+            Confidence of the prediction (optional).
+          type: number
+          example: 0.987232
+      required: ["name"]
+
+    Message:
+      type: object
+      properties:
+        text:
+          type: string
+          description: >-
+            Message text
+          example: Hello!
+        sender:
+          type: string
+          description: >-
+            Origin of the message - who sent it
+          example: user
+          enum:
+            - user
+        parse_data:
+          $ref: '#/components/schemas/ParseResult'
+      required: ["text", "sender"]
+
     Entity:
       type: object
       description: Entities within a message
@@ -942,6 +897,7 @@ components:
         confidence:
           type: number
       required: ["start", "end", "value", "entity"]
+
     Intent:
       type: object
       description: Intent of the text
@@ -949,10 +905,13 @@ components:
         confidence:
           type: number
           description: Confidence of the intent
+          example: 0.6323
         name:
           type: string
           description: Intent name
+          example: greet
       required: ["confidence", "name"]
+
     ParseResult:
       type: object
       properties:
@@ -971,23 +930,31 @@ components:
         text:
           type: string
           description: Text of the message
+          example: "Hello!"
       description: >-
         NLU parser information. If set, message
         will not be passed through NLU, but instead
         this parsing information will be used.
       required: ["text"]
+
     Event:
       type: object
       properties:
         event:
           type: string
           description: Event name
+          example: "slot"
         timestamp:
           type: integer
           description: Time of application
+          example: 1559744410
       required: ["event"]
-      discriminator:
-        propertyName: event
+
+    EventList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Event'
+
     Domain:
       type: object
       description: The bot's domain.
@@ -999,6 +966,7 @@ components:
             store_entities_as_slots:
               type: boolean
               description: Store all entites as slot when found
+              example: false
         intents:
           type: array
           description: All intent names and properties
@@ -1009,6 +977,7 @@ components:
           description: All entity names
           items:
             type: string
+          example: ['person', 'location']
         slots:
           description: Slot names and configuration
           type: object
@@ -1024,6 +993,8 @@ components:
           type: array
           items:
             type: string
+          example: ['utter_greet', 'utter_goodbye', 'action_listen']
+
     BotMessage:
       type: object
       properties:
@@ -1060,6 +1031,7 @@ components:
               payload:
                 type: string
                 description: Attachement payload
+
     Tracker:
       type: object
       description: Conversation tracker which stores the conversation state.
@@ -1067,6 +1039,7 @@ components:
         conversation_id:
           type: string
           description: Id of the conversation
+          example: default
         slots:
           type: array
           description: Slot values
@@ -1077,12 +1050,14 @@ components:
         latest_event_time:
           type: number
           description: Most recent event time
+          example: 1537645578.314389
         followup_action:
           type: string
           description: Deterministic scheduled next action
         paused:
           type: boolean
           description: Bot is pasued
+          example: false
         events:
           type: array
           description: Event history
@@ -1091,9 +1066,11 @@ components:
         latest_input_channel:
           type: string
           description: Communication channel
+          example: rest
         latest_action_name:
           type: string
           description: Name of last bot action
+          example: action_listen
         active_form:
           type: object
           description: Name of the active form
@@ -1101,6 +1078,8 @@ components:
             name:
               type: string
               description: Name of the acive form
+              example: restaurant_form
+
     Error:
       type: object
       properties:
@@ -1126,6 +1105,7 @@ components:
         code:
           type: number
           description: HTTP status code
+
     PredictResult:
       type: object
       properties:
@@ -1138,15 +1118,19 @@ components:
               action:
                 type: string
                 description: Action name
+                example: utter_greet
               score:
                 type: number
                 description: Assigned score
+                example: 1.0
         policy:
           type: string
           description: >-
             Policy which predicted the most likely action
+          example: policy_2_KerasPolicy
         tracker:
           $ref: '#/components/schemas/Tracker'
+
     EndpointConfig:
       type: object
       properties:
@@ -1171,32 +1155,111 @@ components:
         wait_time_between_pulls:
           type: integer
           description: Time to wait between pulls from model server
+
     TrainingRequest:
       type: object
       properties:
         domain:
-          type: string
-          description: Rasa domain in plain text
+          $ref: '#/components/schemas/DomainFile'
         config:
-          type: string
-          description: Rasa config in plain text
+          $ref: '#/components/schemas/ConfigFile'
         nlu:
-          type: string
-          description: Rasa NLU training data in markdown format
+          $ref: '#/components/schemas/NLUTrainingData'
         stories:
-          type: string
-          description: Rasa Core stories in markdown format
+          $ref: '#/components/schemas/StoriesTrainingData'
         out:
           type: string
           description: Output directory
+          example: models
         force:
           type: boolean
           description: >-
             Force a model training even if the data has not changed
+          example: false
       required: ["config"]
+
+    NLUTrainingData:
+      type: string
+      description: Rasa NLU training data in markdown format
+      example:  >-
+        ## intent:greet
+        - hey
+        - hello
+
+        ## intent:goodbye
+        - cu
+        - goodbye
+
+    StoriesTrainingData:
+      type: string
+      description: Rasa Core stories in markdown format
+      example: >-
+        ## happy path
+        * greet
+          - utter_greet
+        * mood_great
+          - utter_happy
+
+        ## sad path 1
+        * greet
+          - utter_greet
+        * mood_unhappy
+
+    DomainFile:
+      type: string
+      description: Rasa domain in plain text
+      example: >-
+        intents:
+          - greet
+          - goodbye
+          - affirm
+          - deny
+          - mood_great
+          - mood_unhappy
+
+        actions:
+        - utter_greet
+        - utter_cheer_up
+        - utter_did_that_help
+        - utter_happy
+        - utter_goodbye
+
+        templates:
+          utter_greet:
+          - text: "Hey! How are you?"
+
+          utter_cheer_up:
+          - text: "Here is something to cheer you up:"
+            image: "https://i.imgur.com/nGF1K8f.jpg"
+
+          utter_did_that_help:
+          - text: "Did that help you?"
+
+          utter_happy:
+          - text: "Great carry on!"
+
+          utter_goodbye:
+          - text: "Bye"
+
+    ConfigFile:
+      type: string
+      description: Rasa config in plain text
+      example: >-
+        # Configuration for Rasa NLU.
+        # https://rasa.com/docs/nlu/components/
+        language: en
+        pipeline: supervised_embeddings
+
+        # Configuration for Rasa Core.
+        # https://rasa.com/docs/core/policies
+        policies:
+          - name: MemoizationPolicy
+          - name: KerasPolicy
+
     TrainingResult:
       type: string
       format: binary
+
     EvaluationIntentsResult:
       type: object
       properties:
@@ -1206,12 +1269,29 @@ components:
           properties:
             report:
               type: string
+              example:  >-
+                # intent evaluation report
+                          precision    recall  f1-score   support
+
+                goodbye        1.00      1.00      1.00         4
+                greet          1.00      1.00      1.00         6
+                affirm         1.00      1.00      1.00         5
+                deny           1.00      1.00      1.00         6
+                mood_great     1.00      1.00      1.00         8
+                mood_unhappy   1.00      1.00      1.00        10
+
+                micro avg      1.00      1.00      1.00        39
+                macro avg      1.00      1.00      1.00        39
+                weighted avg   1.00      1.00      1.00        39
             accuracy:
               type: number
+              example: 0.19047619047619047
             f1_score:
               type: number
+              example: 0.06095238095238095
             precision:
               type: number
+              example: 0.036281179138321996
             predictions:
               type: array
               items:
@@ -1219,12 +1299,16 @@ components:
                 properties:
                   intent:
                     type: string
+                    example: greet
                   predicted:
                     type: string
+                    example: greet
                   text:
                     type: string
+                    example: "hey"
                   confidence:
                     type: number
+                    example: 0.9973567
         entity_evaluation:
           type: object
           description: Rasa NLU entity evaluation
@@ -1232,15 +1316,29 @@ components:
             extractor_name:
               type: object
               description: Entity evaluation result for entity extractor
+              example: CRFEntityExtractor
               properties:
                 report:
                   type: string
+                  example: >-
+                    # entity evaluation report
+                               precision     recall  f1-score   support
+
+                    no_entity       1.00      1.00      1.00        70
+
+                    micro avg       1.00      1.00      1.00        70
+                    macro avg       1.00      1.00      1.00        70
+                    weighted avg    1.00      1.00      1.00        70
                 precision:
                   type: number
+                  example: 0.9769792
                 f1_score:
                   type: number
+                  example: 0.967869
                 accuracy:
                   type: number
+                  example: 0.978567
+
     EvaluationStoriesResult:
       type: object
       properties:
@@ -1252,58 +1350,82 @@ components:
               action:
                 type: string
                 description: Name of the actual action
+                example: utter_ask_howcanhelp
               predicted:
                 type: string
                 description: Name of the predicted action
+                example: utter_ask_howcanhelp
               policy:
                 type: string
                 description: Machine-learning policy used in the prediction
+                example: policy_0_MemoizationPolicy
               confidence:
                 type: string
                 description: Confidence score of the prediction
+                example: 1.0
           description: >-
             Accuracy of the classification,
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
         is_end_to_end_evaluation:
           type: boolean
           description: True if evaluation is end-to-end, false otherwise
+          example: true
         precision:
           type: number
           description: >-
             Precision of the classification, see
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+          example: 1.0
         f1:
           type: number
           description: >-
             F1 score of the classification,
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+          example: 0.9333333333333333
         accuracy:
           type: number
           description: >-
             Accuracy of the classification,
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
+          example: 0.9
         in_training_data_fraction:
           type: number
           description: >-
             Fraction of stories that are present in the training data of the
             model loaded at evaluation time.
+          example: 0.8571428571428571
         report:
           type: string
           description: >-
             Sklearn classifcation report, see
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
+          example:  >-
+            # classification report
+                                   precision    recall  f1-score   support
+                    action_listen       1.00      1.00      1.00         3
+                            greet       1.00      1.00      1.00         1
+                           inform       1.00      1.00      1.00         2
+             utter_ask_howcanhelp       1.00      1.00      1.00         1
+               utter_ask_location       1.00      1.00      1.00         1
+              utter_ask_numpeople       0.00      0.00      0.00         0
+                      utter_on_it       1.00      0.50      0.67         2
+
+                      avg / total       1.00      0.90      0.93        10
+
     Slot:
       type: object
       additionalProperties:
         $ref: '#/components/schemas/SlotValue'
       example:
         slot_name: slot_value
+
     SlotValue:
       oneOf:
         - type: string
         - type: array
           items:
             type: string
+
     SlotDescription:
       type: object
       properties:
@@ -1319,6 +1441,7 @@ components:
           items:
             type: string
       required: ['type', 'auto_fill']
+
     TemplateDescription:
       type: object
       properties:
@@ -1326,6 +1449,7 @@ components:
           type: string
           description: Template text
       required: ['text']
+
     IntentDescription:
       type: object
       additionalProperties:
@@ -1334,242 +1458,3 @@ components:
           use_entities:
             type: boolean
 
-
-  examples:
-
-    Tracker:
-      value:
-        conversation_id: default
-        latest_event_time: 1537645578.314389
-        latest_input_channel: rest
-        paused: false
-        slots: {}
-        followup_action:
-        latest_message:
-          text: hello
-          entities: []
-          intent:
-            confidence: 0.57
-            name: greet
-          intent_ranking:
-            - confidence: 0.57
-              name: greet
-            - confidence: 0.33
-              name: goodbye
-        events:
-          - event: action
-            name: action_listen
-            timestamp: 1537645578.274815
-          - event: user
-            input_channel: rest
-            text: hello
-            timestamp: 1537645578.314389
-            parse_data:
-              text: hello
-              entities: []
-              intent:
-                confidence: 0.57
-                name: greet
-              intent_ranking:
-                - confidence: 0.57
-                  name: greet
-                - confidence: 0.33
-                  name: goodbye
-    Event:
-      value:
-        event: action
-        name: action_listen
-    Events:
-      value:
-      - event: action
-        name: action_listen
-      - event: user
-        text: hello
-        parse_data:
-          entities: []
-          intent:
-            confidence: 0.57
-            name: greet
-          text: hello
-    PredictResult:
-      value:
-        scores:
-          - action: utter_greet
-            score: 0.85
-          - action: action_listen
-            score: 0.15
-        policy: "policy_2_KerasPolicy"
-        tracker:
-          conversation_id: default
-          latest_event_time: 1537645578.314389
-          latest_input_channel: rest
-          paused: false
-          slots: {}
-          followup_action:
-          latest_message:
-            text: hello
-            entities: []
-            intent:
-              confidence: 0.57
-              name: greet
-            intent_ranking:
-              - confidence: 0.57
-                name: greet
-              - confidence: 0.33
-                name: goodbye
-          events:
-            - event: action
-              name: action_listen
-              timestamp: 1537645578.274815
-            - event: user
-              input_channel: rest
-              text: hello
-              timestamp: 1537645578.314389
-              parse_data:
-                text: hello
-                entities: []
-                intent:
-                  confidence: 0.57
-                  name: greet
-                intent_ranking:
-                  - confidence: 0.57
-                    name: greet
-                  - confidence: 0.33
-                    name: goodbye
-    EvaluationStoriesResult:
-      value:
-        accuracy: 0.9
-        f1: 0.9333333333333333
-        in_training_data_fraction: 0.8571428571428571
-        precision: 1.0
-        is_end_to_end_evaluation: true
-        actions:
-          - action: utter_ask_howcanhelp
-            confidence: 1.0
-            policy: policy_0_MemoizationPolicy
-            predicted: utter_ask_howcanhelp
-          - action: action_listen
-            confidence: 0.7885686478768559
-            policy: policy_1_RestaurantPolicy
-            predicted: utter_ask_numpeople
-        report: >-
-          # classification report
-                                 precision    recall  f1-score   support
-                  action_listen       1.00      1.00      1.00         3
-                          greet       1.00      1.00      1.00         1
-                         inform       1.00      1.00      1.00         2
-           utter_ask_howcanhelp       1.00      1.00      1.00         1
-             utter_ask_location       1.00      1.00      1.00         1
-            utter_ask_numpeople       0.00      0.00      0.00         0
-                    utter_on_it       1.00      0.50      0.67         2
-
-                    avg / total       1.00      0.90      0.93        10
-    EvaluationIntentsResult:
-          value:
-            intent_evaluation:
-              - accuracy: 0.19047619047619047
-                f1_score: 0.06095238095238095
-                precision: 0.036281179138321996
-                predictions:
-                  - intent: greet
-                    predicted: greet
-                    text: hey
-                    confidence: 1.0
-                  - confidence: 0.9667317867279053
-                    intent: mood_unhappy
-                    predicted: mood_unhappy
-                    text: not very good
-                report: >-
-                  # intent evaluation report
-                            precision    recall  f1-score   support
-
-                  goodbye        1.00      1.00      1.00         4
-                  greet          1.00      1.00      1.00         6
-                  affirm         1.00      1.00      1.00         5
-                  deny           1.00      1.00      1.00         6
-                  mood_great     1.00      1.00      1.00         8
-                  mood_unhappy   1.00      1.00      1.00        10
-
-                  micro avg      1.00      1.00      1.00        39
-                  macro avg      1.00      1.00      1.00        39
-                  weighted avg   1.00      1.00      1.00        39
-            entity_evaluation:
-              CRFEntityExtractor:
-                accuracy: 1.0
-                f1_score: 1.0
-                precision: 1.0
-                report: >-
-                  # entity evaluation report
-                             precision     recall  f1-score   support
-
-                  no_entity       1.00      1.00      1.00        70
-
-                  micro avg       1.00      1.00      1.00        70
-                  macro avg       1.00      1.00      1.00        70
-                  weighted avg    1.00      1.00      1.00        70
-    TrainingRequest:
-      value:
-        config: >-
-          # Configuration for Rasa NLU.
-          # https://rasa.com/docs/nlu/components/
-          language: en
-          pipeline: supervised_embeddings
-
-          # Configuration for Rasa Core.
-          # https://rasa.com/docs/core/policies
-          policies:
-            - name: MemoizationPolicy
-            - name: KerasPolicy
-        domain: >-
-          intents:
-            - greet
-            - goodbye
-            - affirm
-            - deny
-            - mood_great
-            - mood_unhappy
-
-          actions:
-          - utter_greet
-          - utter_cheer_up
-          - utter_did_that_help
-          - utter_happy
-          - utter_goodbye
-
-          templates:
-            utter_greet:
-            - text: "Hey! How are you?"
-
-            utter_cheer_up:
-            - text: "Here is something to cheer you up:"
-              image: "https://i.imgur.com/nGF1K8f.jpg"
-
-            utter_did_that_help:
-            - text: "Did that help you?"
-
-            utter_happy:
-            - text: "Great carry on!"
-
-            utter_goodbye:
-            - text: "Bye"
-        nlu: >-
-          ## intent:greet
-          - hey
-          - hello
-
-          ## intent:goodbye
-          - cu
-          - good by
-        stories: >-
-          ## happy path
-          * greet
-            - utter_greet
-          * mood_great
-            - utter_happy
-
-          ## sad path 1
-          * greet
-            - utter_greet
-          * mood_unhappy
-        out: models
-        force: false
