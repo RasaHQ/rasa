@@ -151,6 +151,8 @@ def test_compare_nlu(
 
     create_path(output)
 
+    intent_examples_present = []
+
     bases = [os.path.basename(nlu_config) for nlu_config in configs]
     model_names = [os.path.splitext(base)[0] for base in bases]
     micros = dict((model_name, [[] for _ in range(runs)]) for model_name in model_names)
@@ -183,13 +185,24 @@ def test_compare_nlu(
 
             for nlu_config, model_name in zip(configs, model_names):
 
-                print_success(
+                logger.info(
                     "Evaluating config '{}' with {}".format(model_name, percent_string)
                 )
 
-                model_path = train_nlu(
-                    nlu_config, train_split_path, out_path, fixed_model_name=model_name
-                )
+                try:
+                    model_path = train_nlu(
+                        nlu_config,
+                        train_split_path,
+                        out_path,
+                        fixed_model_name=model_name,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "Training model with config '{}' failed. Error: {}".format(
+                            model_path, str(e)
+                        )
+                    )
+                    continue
 
                 model_path = os.path.join(get_model(model_path), "nlu")
 

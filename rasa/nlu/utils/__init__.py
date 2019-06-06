@@ -204,58 +204,6 @@ def json_pickle(file_name: Text, obj: Any) -> None:
         f.write(jsonpickle.dumps(obj))
 
 
-def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
-    """Creates a tempfile.NamedTemporaryFile object for data.
-
-    mode defines NamedTemporaryFile's  mode parameter in py3."""
-
-    encoding = None if "b" in mode else "utf-8"
-    f = tempfile.NamedTemporaryFile(
-        mode=mode, suffix=suffix, delete=False, encoding=encoding
-    )
-    f.write(data)
-
-    f.close()
-    return f.name
-
-
-def zip_folder(folder: Text) -> Text:
-    """Create an archive from a folder."""
-    import tempfile
-    import shutil
-
-    # WARN: not thread save!
-    zipped_path = tempfile.NamedTemporaryFile(delete=False)
-    zipped_path.close()
-    return shutil.make_archive(zipped_path.name, str("zip"), folder)
-
-
-def concat_url(base: Text, subpath: Optional[Text]) -> Text:
-    """Append a subpath to a base url.
-
-    Strips leading slashes from the subpath if necessary. This behaves
-    differently than `urlparse.urljoin` and will not treat the subpath
-    as a base url if it starts with `/` but will always append it to the
-    `base`."""
-
-    if subpath:
-        url = base
-        if not base.endswith("/"):
-            url += "/"
-        if subpath.startswith("/"):
-            subpath = subpath[1:]
-        return url + subpath
-    else:
-        return base
-
-
-def read_endpoints(endpoint_file: Text) -> "AvailableEndpoints":
-    model = read_endpoint_config(endpoint_file, endpoint_type="model")
-    data = read_endpoint_config(endpoint_file, endpoint_type="data")
-
-    return AvailableEndpoints(model, data)
-
-
 def validate_pipeline_yaml(yaml):
     """Validate NLU pipeline yaml."""
     from pykwalify.core import Core
@@ -263,6 +211,7 @@ def validate_pipeline_yaml(yaml):
     from pykwalify.errors import SchemaError
     from ruamel.yaml import YAMLError
     from rasa.nlu.config import InvalidConfigError
+    import rasa.utils.io
     import logging
 
     log = logging.getLogger("pykwalify")
@@ -292,8 +241,3 @@ def validate_pipeline_yaml(yaml):
             "You can also validate your config's yaml "
             "syntax using http://www.yamllint.com/."
         )
-
-
-# The EndpointConfig class is currently used to define external endpoints
-# for pulling NLU models from a server and training data
-AvailableEndpoints = namedtuple("AvailableEndpoints", "model data")

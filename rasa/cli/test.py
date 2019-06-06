@@ -88,7 +88,6 @@ def test_core(args: argparse.Namespace) -> None:
 
 def test_nlu(args: argparse.Namespace) -> None:
     from rasa.test import test_nlu, test_nlu_with_cross_validation
-    from rasa.train import _get_valid_config
     from rasa.nlu.utils import validate_pipeline_yaml
     from rasa.nlu.config import InvalidConfigError
     import os
@@ -112,7 +111,9 @@ def test_nlu(args: argparse.Namespace) -> None:
                 validate_pipeline_yaml(file)
                 config_files.append(file)
             except InvalidConfigError:
-                logger.debug("Ignoring file '{}' as it is not a valid config file.".format(file))
+                logger.debug(
+                    "Ignoring file '{}' as it is not a valid config file.".format(file)
+                )
                 continue
 
         output = args.report or "nlu_comparison_results"
