@@ -61,13 +61,14 @@ def add_domain_param(
 
 
 def add_config_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    default: Text = DEFAULT_CONFIG_PATH,
 ):
     parser.add_argument(
         "-c",
         "--config",
         type=str,
-        default=DEFAULT_CONFIG_PATH,
+        default=default,
         help="The policy and NLU pipeline configuration of your bot.",
     )
 
