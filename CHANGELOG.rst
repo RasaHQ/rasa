@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- added argument ``--rasa-x-port`` to specify the port of Rasa X when running Rasa X locally via ``rasa x``
 
 Changed
 -------
