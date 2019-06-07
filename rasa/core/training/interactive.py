@@ -920,6 +920,8 @@ async def _correct_wrong_nlu(
     """A wrong NLU prediction got corrected, update core's tracker."""
 
     revert_latest_user_utterance = UserUtteranceReverted().as_dict()
+    # `UserUtteranceReverted` also removes the `ACTION_LISTEN` event before, hence we
+    # have to replay it.
     listen_for_next_message = ActionExecuted(ACTION_LISTEN_NAME).as_dict()
     corrected_message = latest_user_message(events)
     corrected_message["parse_data"] = corrected_nlu
