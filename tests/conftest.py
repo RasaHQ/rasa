@@ -48,7 +48,7 @@ async def trained_moodbot_path():
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def unpacked_trained_moodbot_path(trained_moodbot_path):
     return get_model(trained_moodbot_path)
 

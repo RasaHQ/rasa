@@ -448,7 +448,7 @@ def test_nlu_comparison(tmpdir):
         configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
     )
 
-    assert set(os.listdir(output).sort()) == {
+    assert set(os.listdir(output)) == {
         "run_1",
         "run_2",
         "results.json",
@@ -456,4 +456,4 @@ def test_nlu_comparison(tmpdir):
     }
 
     run_1_path = os.path.join(output, "run_1")
-    assert set(os.listdir(run_1_path)) == {"80%_exclusion", "95%_exclusion", "test.md"}
+    assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.md"}
