@@ -23,6 +23,7 @@ Removed
 Fixed
 -----
 - loading of additional training data with the ``SkillSelector``
+- non-featurizer training parameters don't break `SklearnPolicy` anymore
 
 [1.0.7] - 2019-06-06
 ^^^^^^^^^^^^^^^^^^^^
