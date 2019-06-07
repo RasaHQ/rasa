@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 - support for specifying full database urls in the ``SQLTrackerStore`` configuration
+- maximum number of predictions can be set via the environment variable ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
 
 Changed
 -------

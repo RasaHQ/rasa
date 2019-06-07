@@ -893,22 +893,25 @@ async def _predict_till_next_listen(
         endpoint, sender_id, EventVerbosity.AFTER_RESTART
     )
     events = tracker_dump.get("events", [])
-    last_event = events[-2]  # last event before action_listen
-    # if bot message includes buttons the user will get a list choice to reply
-    # the list choice is displayed in place of action listen
-    if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
-        "buttons", None
-    ):
-        data = last_event["data"]
-        message = last_event.get("text", "")
-        choices = [
-            button_to_string(button, idx)
-            for idx, button in enumerate(data.get("buttons"))
-        ]
 
-        question = questionary.select(message, choices)
-        button_payload = cliutils.payload_from_button_question(question)
-        await send_message(endpoint, sender_id, button_payload)
+    if len(events) >= 2:
+        last_event = events[-2]  # last event before action_listen
+
+        # if bot message includes buttons the user will get a list choice to reply
+        # the list choice is displayed in place of action listen
+        if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
+            "buttons", None
+        ):
+            data = last_event["data"]
+            message = last_event.get("text", "")
+            choices = [
+                button_to_string(button, idx)
+                for idx, button in enumerate(data.get("buttons"))
+            ]
+
+            question = questionary.select(message, choices)
+            button_payload = cliutils.payload_from_button_question(question)
+            await send_message(endpoint, sender_id, button_payload)
 
 
 async def _correct_wrong_nlu(
