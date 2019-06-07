@@ -940,7 +940,7 @@ async def _correct_wrong_action(
 ) -> None:
     """A wrong action prediction got corrected, update core's tracker."""
 
-    _ = await send_action(
+    await send_action(
         endpoint, sender_id, corrected_action, is_new_action=is_new_action
     )
 
