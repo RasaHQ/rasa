@@ -243,14 +243,3 @@ def test_custom_token_name():
     actual = EndpointConfig.from_dict(test_data)
 
     assert actual.token_name == "test_token"
-
-
-def test_validate_pipeline_yaml():
-    validate_pipeline_yaml("sample_configs/config_defaults.yml")
-
-    validate_pipeline_yaml("sample_configs/confg_supervised_embeddings.yml")
-
-    validate_pipeline_yaml("sample_configs/config_crf_custom_fetaure.yml")
-
-    with pytest.raises(InvalidConfigError):
-        validate_pipeline_yaml("data/test_config/example_config.yaml")

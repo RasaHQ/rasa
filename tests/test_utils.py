@@ -1,7 +1,10 @@
+import pytest
 from aioresponses import aioresponses
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.validation import validate_pipeline_yaml, InvalidYamlFileError
 from tests.utilities import latest_request, json_of_latest_request
 from rasa.utils.common import sort_list_of_dicts_by_first_key
+import rasa.utils.io
 
 
 async def test_endpoint_config():
@@ -61,3 +64,50 @@ def test_sort_dicts_by_keys():
     actual = sort_list_of_dicts_by_first_key(test_data)
 
     assert actual == expected
+
+
+def test_validate_pipeline_yaml():
+    # should raise no exception
+    validate_pipeline_yaml(
+        rasa.utils.io.read_file("examples/restaurantbot/domain.yml"),
+        "core/schemas/domain.yml",
+    )
+
+    validate_pipeline_yaml(
+        rasa.utils.io.read_file("sample_configs/config_defaults.yml"),
+        "nlu/schemas/config.yml",
+    )
+
+    validate_pipeline_yaml(
+        rasa.utils.io.read_file("sample_configs/config_supervised_embeddings.yml"),
+        "nlu/schemas/config.yml",
+    )
+
+    validate_pipeline_yaml(
+        rasa.utils.io.read_file("sample_configs/config_crf_custom_features.yml"),
+        "nlu/schemas/config.yml",
+    )
+
+
+def test_validate_pipeline_yaml_fails_on_invalid_domain():
+    with pytest.raises(InvalidYamlFileError):
+        validate_pipeline_yaml(
+            rasa.utils.io.read_file("data/test_domains/invalid_format.yml"),
+            "core/schemas/domain.yml",
+        )
+
+
+def test_validate_pipeline_yaml_fails_on_nlu_data():
+    with pytest.raises(InvalidYamlFileError):
+        validate_pipeline_yaml(
+            rasa.utils.io.read_file("examples/restaurantbot/data/nlu.md"),
+            "core/schemas/domain.yml",
+        )
+
+
+def test_validate_pipeline_yaml_fails_on_missing_keys():
+    with pytest.raises(InvalidYamlFileError):
+        validate_pipeline_yaml(
+            rasa.utils.io.read_file("data/test_config/example_config.yaml"),
+            "nlu/schemas/config.yml",
+        )

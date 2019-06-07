@@ -15,6 +15,7 @@ from rasa.constants import (
     DEFAULT_NLU_RESULTS_PATH,
 )
 from rasa.test import test_compare_core, compare_nlu_models
+from rasa.utils.validation import validate_pipeline_yaml, InvalidYamlFileError
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +90,7 @@ def test_core(args: argparse.Namespace) -> None:
 
 def test_nlu(args: argparse.Namespace) -> None:
     from rasa.test import test_nlu, perform_nlu_cross_validation
-    from rasa.nlu.utils import validate_pipeline_yaml
-    from rasa.nlu.config import InvalidConfigError
+    import rasa.utils.io
 
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
@@ -113,9 +113,11 @@ def test_nlu(args: argparse.Namespace) -> None:
         config_files = []
         for file in args.config:
             try:
-                validate_pipeline_yaml(file)
+                validate_pipeline_yaml(
+                    rasa.utils.io.read_file(file), "nlu/schemas/config.yml"
+                )
                 config_files.append(file)
-            except InvalidConfigError:
+            except InvalidYamlFileError:
                 logger.debug(
                     "Ignoring file '{}' as it is not a valid config file.".format(file)
                 )

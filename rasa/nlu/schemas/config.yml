@@ -4,7 +4,5 @@ mapping:
     type: "str"
     required: True
   pipeline:
-    type: "seq"
+    type: "any"
     required: True
-    sequence:
-    - type: "str"

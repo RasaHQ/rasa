@@ -128,27 +128,6 @@ def test_utter_templates():
     assert domain.random_template_for("utter_greet") == expected_template
 
 
-def test_restaurant_domain_is_valid():
-    # should raise no exception
-    Domain.validate_domain_yaml(
-        rasa.utils.io.read_file("examples/restaurantbot/domain.yml")
-    )
-
-
-def test_validate_on_invalid_domain():
-    with pytest.raises(InvalidDomain):
-        Domain.validate_domain_yaml(
-            rasa.utils.io.read_file("data/test_domains/invalid_format.yml")
-        )
-
-
-def test_validate_on_fails_on_nlu_data():
-    with pytest.raises(InvalidDomain):
-        Domain.validate_domain_yaml(
-            rasa.utils.io.read_file("examples/restaurantbot/data/nlu.md")
-        )
-
-
 def test_custom_slot_type(tmpdir):
     domain_path = utilities.write_text_to_file(
         tmpdir,
