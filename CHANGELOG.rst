@@ -23,6 +23,8 @@ Removed
 
 Fixed
 -----
+- fixed creation of ``RasaNLUHttpInterpreter``
+
 
 [1.0.9] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
