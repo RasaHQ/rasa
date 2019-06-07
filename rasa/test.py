@@ -7,7 +7,7 @@ import os
 
 from rasa.core.interpreter import RegexInterpreter
 
-from rasa.constants import DEFAULT_RESULTS_PATH
+from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.model import get_model, get_model_subdirectories, unpack_model
 from rasa.cli.utils import (
     minimal_kwargs,
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_compare_core(models: List[Text], stories: Text, output: Text):
-    from rasa.core.test import compare, plot_curve
+    from rasa.core.test import compare, plot_core_results
     import rasa.utils.io
 
     model_directory = copy_models_to_compare(models)
@@ -31,7 +31,7 @@ def test_compare_core(models: List[Text], stories: Text, output: Text):
 
     story_n_path = os.path.join(model_directory, "num_stories.json")
     number_of_stories = rasa.utils.io.read_json_file(story_n_path)
-    plot_curve(output, number_of_stories)
+    plot_core_results(output, number_of_stories)
 
 
 def test(
@@ -143,8 +143,8 @@ def compare_nlu_models(
     from rasa.nlu.training_data import load_data
     from rasa.nlu.utils import write_json_to_file
     from rasa.utils.io import create_path
-    from rasa.core.test import plot_curve
     from rasa.nlu.test import compare_nlu
+    from rasa.core.test import plot_nlu_results
 
     data = load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=5)
@@ -159,10 +159,10 @@ def compare_nlu_models(
         configs, data, exclusion_percentages, micros, model_names, output, runs
     )
 
-    f1_path = os.path.join(output, "results.json")
+    f1_path = os.path.join(output, RESULTS_FILE)
     write_json_to_file(f1_path, micros)
 
-    plot_curve(output, intent_examples_present, mode="nlu")
+    plot_nlu_results(output, intent_examples_present)
 
 
 def perform_nlu_cross_validation(

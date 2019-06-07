@@ -621,9 +621,39 @@ async def compare(models: Text, stories_file: Text, output: Text) -> None:
     utils.dump_obj_as_json_to_file(os.path.join(output, "results.json"), num_correct)
 
 
-def plot_curve(
-    output: Text, number_of_examples: List[int], mode: Text = "core"
-) -> None:
+def plot_nlu_results(output: Text, number_of_examples: List[int]):
+
+    graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
+
+    _plot_curve(
+        output,
+        number_of_examples,
+        x_label_text="Number of intent examples present during training",
+        y_label_text="Label-weighted average F1 score on test set",
+        graph_path=graph_path,
+    )
+
+
+def plot_core_results(output: Text, number_of_examples: List[int]):
+
+    graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
+
+    _plot_curve(
+        output,
+        number_of_examples,
+        x_label_text="Number of stories present during training",
+        y_label_text="Number of correct test stories",
+        graph_path=graph_path,
+    )
+
+
+def _plot_curve(
+    output: Text,
+    number_of_examples: List[int],
+    x_label_text: Text,
+    y_label_text: Text,
+    graph_path: Text,
+):
     """Plot the results from a model comparison.
 
     Args:
@@ -658,18 +688,12 @@ def plot_curve(
         )
     ax.legend(loc=4)
 
-    if mode == "core":
-        ax.set_xlabel("Number of stories present during training")
-        ax.set_ylabel("Number of correct test stories")
-        graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
-    elif mode == "nlu":
-        ax.set_xlabel("Number of intent examples present during training")
-        ax.set_ylabel("Label-weighted average F1 score on test set")
-        graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
+    ax.set_xlabel(x_label_text)
+    ax.set_ylabel(y_label_text)
 
     plt.savefig(graph_path, format="pdf")
 
-    logger.info("Comparison graph saved to '{}'".format(graph_path))
+    logger.info("Comparison graph saved to '{}'.".format(graph_path))
 
 
 if __name__ == "__main__":

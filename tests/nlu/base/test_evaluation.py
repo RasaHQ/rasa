@@ -438,7 +438,6 @@ def test_label_replacement():
 
 
 def test_nlu_comparison(tmpdir):
-
     configs = [
         NLU_DEFAULT_CONFIG_PATH,
         "sample_configs/config_supervised_embeddings.yml",
@@ -449,13 +448,12 @@ def test_nlu_comparison(tmpdir):
         configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
     )
 
-    assert (
-        os.listdir(output).sort()
-        == ["run_1", "run_2", "results.json", "nlu_model_comparison_graph.pdf"].sort()
-    )
+    assert set(os.listdir(output).sort()) == {
+        "run_1",
+        "run_2",
+        "results.json",
+        "nlu_model_comparison_graph.pdf",
+    }
 
     run_1_path = os.path.join(output, "run_1")
-    assert (
-        os.listdir(run_1_path).sort()
-        == ["80%_exclusion", "95%_exclusion", "test.md"].sort()
-    )
+    assert set(os.listdir(run_1_path)) == {"80%_exclusion", "95%_exclusion", "test.md"}

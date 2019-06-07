@@ -12,6 +12,10 @@ DEFAULT_RESULTS_PATH = "results"
 DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
+TEST_DATA_FILE = "test.md"
+TRAIN_DATA_FILE = "train.md"
+RESULTS_FILE = "results.json"
+
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
 

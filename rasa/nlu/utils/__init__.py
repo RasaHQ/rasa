@@ -204,7 +204,7 @@ def json_pickle(file_name: Text, obj: Any) -> None:
         f.write(jsonpickle.dumps(obj))
 
 
-def validate_pipeline_yaml(yaml):
+def validate_pipeline_yaml(yaml_file: Text) -> None:
     """Validate NLU pipeline yaml."""
     from pykwalify.core import Core
     import pkg_resources
@@ -218,7 +218,7 @@ def validate_pipeline_yaml(yaml):
     log.setLevel(logging.WARN)
 
     try:
-        source_data = rasa.utils.io.read_yaml_file(yaml)
+        source_data = rasa.utils.io.read_yaml_file(yaml_file)
     except YAMLError:
         raise InvalidConfigError(
             "The provided config file is invalid. You can use "

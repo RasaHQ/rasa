@@ -151,7 +151,7 @@ def add_test_nlu_argument_group(
         nargs="+",
         type=int,
         default=[0, 25, 50, 75, 90],
-        help="Percentages of data to exclude during comparison.",
+        help="Percentages of training data to exclude during comparison.",
     )
 
 
