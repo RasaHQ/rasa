@@ -6,6 +6,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+from rasa.constants import RESULTS_FILE
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.cli.utils import print_success
 
@@ -669,7 +670,7 @@ def _plot_curve(
     ax = plt.gca()
 
     # load results from file
-    data = rasa.utils.io.read_json_file(os.path.join(output, "results.json"))
+    data = rasa.utils.io.read_json_file(os.path.join(output, RESULTS_FILE))
     x = number_of_examples
 
     # compute mean of all the runs for keras/embed policies

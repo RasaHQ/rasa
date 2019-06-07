@@ -917,18 +917,22 @@ def compare_nlu(
     configs: List[Text],
     data: TrainingData,
     exclusion_percentages: List[int],
-    micros: Dict[Text, Any],
+    f_score_results: Dict[Text, Any],
     model_names: List[Text],
     output: Text,
     runs: int,
 ) -> List[int]:
     """
-    Trains and compare multiple NLU models.
+    Trains and compares multiple NLU models.
+    For each run and each exclusion percentage a model per config file is trained.
+    Thereby, the model is trained only on the current percentage of training data.
+    Afterwards, the model is tested on the complete test data of that run.
+    All results are stored in the provided output directory.
 
     :param configs: config files needed for training
     :param data: training data
-    :param exclusion_percentages: exclude the given percentages from training data
-    :param micros:
+    :param exclusion_percentages: exclusion percentages for the training data
+    :param f_score_results: dictionary of model name to f-score results per run
     :param model_names: names of the models to train
     :param output: the output directory
     :param runs: number of runs
@@ -936,7 +940,7 @@ def compare_nlu(
     :return: number of training examples per run
     """
 
-    intent_examples_present = []
+    training_examples_per_run = []
 
     for run in range(runs):
 
@@ -950,13 +954,13 @@ def compare_nlu(
         create_path(test_path)
 
         write_to_file(test_path, test.as_markdown())
-        intent_examples_present = []
+        training_examples_per_run = []
 
         for percentage in exclusion_percentages:
             percent_string = "{}%_exclusion".format(percentage)
 
             _, train = train.train_test_split(percentage / 100)
-            intent_examples_present.append(len(train.training_examples))
+            training_examples_per_run.append(len(train.training_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, TRAIN_DATA_FILE)
@@ -985,7 +989,7 @@ def compare_nlu(
                             model_name, str(e)
                         )
                     )
-                    micros[model_name][run].append(0.0)
+                    f_score_results[model_name][run].append(0.0)
                     continue
 
                 model_path = os.path.join(get_model(model_path), "nlu")
@@ -999,9 +1003,9 @@ def compare_nlu(
                 )
 
                 f1 = result["intent_evaluation"]["f1_score"]
-                micros[model_name][run].append(f1)
+                f_score_results[model_name][run].append(f1)
 
-    return intent_examples_present
+    return training_examples_per_run
 
 
 def _compute_intent_metrics(

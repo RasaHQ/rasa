@@ -153,16 +153,18 @@ def compare_nlu_models(
 
     bases = [os.path.basename(nlu_config) for nlu_config in configs]
     model_names = [os.path.splitext(base)[0] for base in bases]
-    micros = dict((model_name, [[] for _ in range(runs)]) for model_name in model_names)
+    f_score_results = dict(
+        (model_name, [[] for _ in range(runs)]) for model_name in model_names
+    )
 
-    intent_examples_present = compare_nlu(
-        configs, data, exclusion_percentages, micros, model_names, output, runs
+    training_examples_per_run = compare_nlu(
+        configs, data, exclusion_percentages, f_score_results, model_names, output, runs
     )
 
     f1_path = os.path.join(output, RESULTS_FILE)
-    write_json_to_file(f1_path, micros)
+    write_json_to_file(f1_path, f_score_results)
 
-    plot_nlu_results(output, intent_examples_present)
+    plot_nlu_results(output, training_examples_per_run)
 
 
 def perform_nlu_cross_validation(
