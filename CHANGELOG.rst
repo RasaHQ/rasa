@@ -13,6 +13,7 @@ Added
 -----
 - nlu configs can now be directly compared for performance on a dataset in ``rasa test nlu``
 - support for specifying full database urls in the ``SQLTrackerStore`` configuration
+- maximum number of predictions can be set via the environment variable ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
 
 Changed
 -------
