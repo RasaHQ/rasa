@@ -33,6 +33,26 @@ def test_test_nlu_cross_validation(run_in_default_project):
     assert os.path.exists("confmat.png")
 
 
+def test_test_nlu_compareison(run_in_default_project):
+    from shutil import copyfile
+
+    copyfile("config.yml", "nlu-config.yml")
+
+    run_in_default_project(
+        "test",
+        "nlu",
+        "-c",
+        "config.yml",
+        "nlu-config.yml",
+        "--report",
+        "nlu-report",
+        "--run",
+        "2",
+    )
+
+    assert os.path.exists("nlu-report")
+
+
 def test_test_help(run):
     output = run("test", "--help")
 

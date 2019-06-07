@@ -96,7 +96,7 @@ def test_nlu(args: argparse.Namespace) -> None:
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
 
-    if len(args.config) == 1:
+    if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])
         if os.path.isdir(args.config):
             config_dir = args.config
@@ -115,7 +115,9 @@ def test_nlu(args: argparse.Namespace) -> None:
         for file in args.config:
             try:
                 validate_pipeline_yaml(
-                    rasa.utils.io.read_file(file), CONFIG_SCHEMA_FILE
+                    rasa.utils.io.read_file(file),
+                    CONFIG_SCHEMA_FILE,
+                    show_validation_errors=False,
                 )
                 config_files.append(file)
             except InvalidYamlFileError:

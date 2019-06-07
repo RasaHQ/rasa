@@ -4,13 +4,8 @@ import os
 import pickle
 import pytest
 import tempfile
-
-from yaml import YAMLError
-
 import rasa.utils.io
-from rasa.constants import DEFAULT_CONFIG_PATH
 from rasa.nlu import utils
-from rasa.nlu.config import InvalidConfigError
 from rasa.nlu.utils import (
     create_dir,
     is_model_dir,
@@ -20,15 +15,13 @@ from rasa.nlu.utils import (
     remove_model,
     write_json_to_file,
     write_to_file,
-    validate_pipeline_yaml,
 )
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io as io_utils
-from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
 
 
-@pytest.fixture
-def empty_model_dir(scope="function"):
+@pytest.fixture(scope="function")
+def empty_model_dir():
     temp_path = tempfile.mkdtemp()
     yield temp_path
     if os.path.exists(temp_path):

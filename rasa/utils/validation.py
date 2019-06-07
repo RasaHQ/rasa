@@ -10,7 +10,15 @@ class InvalidYamlFileError(ValueError):
         super(InvalidYamlFileError, self).__init__(message)
 
 
-def validate_pipeline_yaml(yaml_file_content: Text, schema_path: Text) -> None:
+def validate_pipeline_yaml(
+    yaml_file_content: Text, schema_path: Text, show_validation_errors: bool = True
+) -> None:
+    """
+    Validate a yaml file.
+    :param yaml_file_content: the content of the yaml file to be validated
+    :param schema_path: the schema of the yaml file
+    :param show_validation_errors: if true, validation errors are shown
+    """
     from pykwalify.core import Core
     from pykwalify.errors import SchemaError
     from ruamel.yaml import YAMLError
@@ -19,7 +27,10 @@ def validate_pipeline_yaml(yaml_file_content: Text, schema_path: Text) -> None:
     import logging
 
     log = logging.getLogger("pykwalify")
-    log.setLevel(logging.WARN)
+    if show_validation_errors:
+        log.setLevel(logging.WARN)
+    else:
+        log.setLevel(logging.CRITICAL)
 
     try:
         source_data = rasa.utils.io.read_yaml(yaml_file_content)
@@ -44,9 +55,8 @@ def validate_pipeline_yaml(yaml_file_content: Text, schema_path: Text) -> None:
     except SchemaError:
         raise InvalidYamlFileError(
             "Failed to validate yaml file. "
-            "Please make sure the file is correct; to do so, "
+            "Please make sure the file is correct and all "
+            "mandatory parameters are specified; to do so, "
             "take a look at the errors logged during "
-            "validation previous to this exception. "
-            "You can also validate the yaml "
-            "syntax of our file using http://www.yamllint.com/."
+            "validation previous to this exception."
         )

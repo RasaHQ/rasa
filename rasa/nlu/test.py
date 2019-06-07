@@ -924,18 +924,18 @@ def compare_nlu(
 ) -> List[int]:
     """
     Trains and compares multiple NLU models.
-    For each run and each exclusion percentage a model per config file is trained.
+    For each run and exclusion percentage a model per config file is trained.
     Thereby, the model is trained only on the current percentage of training data.
     Afterwards, the model is tested on the complete test data of that run.
     All results are stored in the provided output directory.
 
     :param configs: config files needed for training
     :param data: training data
-    :param exclusion_percentages: exclusion percentages for the training data
+    :param exclusion_percentages: percentages of training data to exclude during comparison
     :param f_score_results: dictionary of model name to f-score results per run
     :param model_names: names of the models to train
     :param output: the output directory
-    :param runs: number of runs
+    :param runs: number of comparison runs
 
     :return: number of training examples per run
     """
@@ -945,7 +945,6 @@ def compare_nlu(
     for run in range(runs):
 
         logger.info("Beginning comparison run {}/{}".format(run + 1, runs))
-        train, test = data.train_test_split()
 
         run_path = os.path.join(output, "run_{}".format(run + 1))
         create_path(run_path)
@@ -953,7 +952,9 @@ def compare_nlu(
         test_path = os.path.join(run_path, TEST_DATA_FILE)
         create_path(test_path)
 
+        train, test = data.train_test_split()
         write_to_file(test_path, test.as_markdown())
+
         training_examples_per_run = []
 
         for percentage in exclusion_percentages:
@@ -965,11 +966,9 @@ def compare_nlu(
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, TRAIN_DATA_FILE)
             create_path(train_split_path)
-
             write_to_file(train_split_path, train.as_markdown())
 
             for nlu_config, model_name in zip(configs, model_names):
-
                 logger.info(
                     "Evaluating configuration '{}' with {} training data.".format(
                         model_name, percent_string
