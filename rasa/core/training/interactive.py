@@ -417,12 +417,16 @@ async def _request_intent_from_user(
         choices, sender_id, endpoint
     )
 
-    # TODO: Should we not always set the confidence = 1.0?
     if intent_name == OTHER_INTENT:
         intent_name = await _request_free_text_intent(sender_id, endpoint)
-        return {"name": intent_name, "confidence": 1.0}
-    # returns the selected intent with the original probability value
-    return next((x for x in predictions if x["name"] == intent_name), None)
+        selected_intent = {"name": intent_name, "confidence": 1.0}
+    else:
+        # returns the selected intent with the original probability value
+        selected_intent = next(
+            (x for x in predictions if x["name"] == intent_name), {"name": None}
+        )
+
+    return selected_intent
 
 
 async def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
@@ -1125,6 +1129,9 @@ async def _validate_nlu(
         corrected_intent = await _request_intent_from_user(
             latest_message, intents, sender_id, endpoint
         )
+        # corrected intents have confidence 1.0
+        corrected_intent["confidence"] = 1.0
+
         events = tracker.get("events", [])
 
         entities = await _correct_entities(latest_message, endpoint, sender_id)
