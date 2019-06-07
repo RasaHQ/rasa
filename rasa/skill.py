@@ -1,5 +1,5 @@
 import logging
-from typing import Text, Set, Dict
+from typing import Text, Set, Dict, Optional, List, Union
 import os
 
 import rasa.utils.io as io_utils
@@ -9,22 +9,47 @@ logger = logging.getLogger(__name__)
 
 
 class SkillSelector:
-    def __init__(self, imports: Set[Text], project_directory: Text = os.getcwd()):
+    def __init__(
+        self,
+        imports: Set[Text],
+        project_directory: Text = os.getcwd(),
+        additional_paths: Optional[Union[Text, List[Text]]] = None,
+    ):
         self._imports = imports
         self._project_directory = project_directory
+        self._additional_paths = self._get_additional_training_paths(additional_paths)
+
+    @staticmethod
+    def _get_additional_training_paths(
+        paths: Optional[Union[Text, List[Text]]]
+    ) -> List[Text]:
+        additional_training_paths = paths or []
+        if not isinstance(additional_training_paths, list):
+            additional_training_paths = [additional_training_paths]
+
+        return [os.path.abspath(p) for p in additional_training_paths]
 
     @classmethod
-    def all_skills(cls, project_directory: Text = os.getcwd()) -> "SkillSelector":
+    def all_skills(
+        cls,
+        project_directory: Text = os.getcwd(),
+        project_data_paths: Optional[Union[Text, List[Text]]] = None,
+    ) -> "SkillSelector":
         """Returns a `SkillSelector` instance which does not specify any skills."""
 
-        return cls(set(), project_directory)
+        return cls(set(), project_directory, project_data_paths)
 
     @classmethod
-    def load(cls, config: Text) -> "SkillSelector":
+    def load(
+        cls,
+        config: Text,
+        additional_training_paths: Optional[Union[Text, List[Text]]] = None,
+    ) -> "SkillSelector":
         """
         Loads the specification from the config files.
         Args:
             config: Path to the root configuration file in the project directory.
+            additional_training_paths: Paths to additional training files.
 
         Returns:
             `SkillSelector` which specifies the loaded skills.
@@ -34,13 +59,13 @@ class SkillSelector:
 
         # Create a base selector which keeps track of the imports during the
         # skill config loading in order to avoid cyclic imports
-        selector = cls.all_skills(os.path.dirname(config))
+        selector = cls.all_skills(os.path.dirname(config), additional_training_paths)
 
         selector = cls._from_file(config, selector)
 
         logger.debug(
-            "Selected skills: {}.".format(
-                ["\n- {}".format(i) for i in selector._imports]
+            "Selected skills: {}".format(
+                "".join(["\n-{}".format(i) for i in selector._imports])
             )
         )
 
@@ -116,7 +141,7 @@ class SkillSelector:
             }
         )
 
-        return SkillSelector(imports, self._project_directory)
+        return SkillSelector(imports, self._project_directory, self._additional_paths)
 
     def no_skills_selected(self) -> bool:
         return not self._imports
@@ -150,6 +175,7 @@ class SkillSelector:
         return (
             self.no_skills_selected()
             or self._is_in_project_directory(absolute_path)
+            or self._is_in_additional_paths(absolute_path)
             or self._is_in_imported_paths(absolute_path)
         )
 
@@ -160,6 +186,15 @@ class SkillSelector:
             return parent_directory == self._project_directory
         else:
             return path == self._project_directory
+
+    def _is_in_additional_paths(self, path: Text) -> bool:
+        included = path in self._additional_paths
+
+        if not included and os.path.isfile(path):
+            parent_directory = os.path.abspath(os.path.dirname(path))
+            included = parent_directory in self._additional_paths
+
+        return included
 
     def _is_in_imported_paths(self, path):
         return any([io_utils.is_subdirectory(path, i) for i in self._imports])
