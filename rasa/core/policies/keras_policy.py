@@ -275,7 +275,7 @@ class KerasPolicy(Policy):
 
             model_file = os.path.join(path, meta["model"])
             # makes sure the model directory exists
-            utils.create_dir_for_file(model_file)
+            rasa.utils.io.create_directory_for_file(model_file)
             with self.graph.as_default(), self.session.as_default():
                 self.model.save(model_file, overwrite=True)
 

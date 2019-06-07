@@ -1,4 +1,5 @@
 ## Setup py requirements
+requests==2.22.0
 boto3==1.9.146
 matplotlib==3.0.3
 simplejson==3.16.0

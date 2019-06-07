@@ -68,7 +68,6 @@ async def train_async(
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
-        uncompress: If `True` the model will not be compressed.
         kwargs: Additional training parameters.
 
     Returns:
@@ -77,9 +76,10 @@ async def train_async(
     config = _get_valid_config(config, CONFIG_MANDATORY_KEYS)
     train_path = tempfile.mkdtemp()
 
-    skill_imports = SkillSelector.load(config)
+    skill_imports = SkillSelector.load(config, training_files)
     try:
         domain = Domain.load(domain, skill_imports)
+        domain.check_missing_templates()
     except InvalidDomain as e:
         print_error(
             "Could not load domain due to error: {} \nTo specify a valid domain "
@@ -255,11 +255,12 @@ async def train_core_async(
     """
 
     config = _get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
-    skill_imports = SkillSelector.load(config)
+    skill_imports = SkillSelector.load(config, stories)
 
     if isinstance(domain, str):
         try:
             domain = Domain.load(domain, skill_imports)
+            domain.check_missing_templates()
         except InvalidDomain as e:
             print_error(
                 "Could not load domain due to: '{}'. To specify a valid domain path "
@@ -355,7 +356,7 @@ def train_nlu(
     config = _get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
     # training NLU only hence the training files still have to be selected
-    skill_imports = SkillSelector.load(config)
+    skill_imports = SkillSelector.load(config, nlu_data)
     nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
 
     if not os.listdir(nlu_data_directory):

@@ -63,6 +63,13 @@ every turn, the policy which predicts the next action with the
 highest confidence will be used. If two policies predict with equal
 confidence, the policy with the higher priority will be used.
 
+.. note::
+
+    Per default a maximum of 10 next actions can be predicted
+    by the agent after every user message. To update this value
+    you can set the environment variable ``MAX_NUMBER_OF_PREDICTIONS``
+    to the desired number of maximum predictions.
+
 
 Your project's ``config.yml`` file takes a ``policies`` key
 which you can use to customize the policies your assistant uses.
@@ -342,6 +349,7 @@ training data. It predicts the next action with confidence ``1.0``
 if this exact conversation exists in the training data, otherwise it
 predicts ``None`` with confidence ``0.0``.
 
+.. _mapping-policy:
 
 Mapping Policy
 ^^^^^^^^^^^^^^

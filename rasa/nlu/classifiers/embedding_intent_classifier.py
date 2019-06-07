@@ -22,6 +22,9 @@ if typing.TYPE_CHECKING:
 
 try:
     import tensorflow as tf
+
+    # avoid warning println on contrib import - remove for tf 2
+    tf.contrib._warning = None
 except ImportError:
     tf = None
 

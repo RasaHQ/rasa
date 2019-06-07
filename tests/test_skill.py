@@ -4,6 +4,7 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 import os
 
+from rasa.nlu.training_data.formats import RasaReader
 from rasa import model
 from rasa.core import utils
 from rasa.core.domain import Domain
@@ -38,7 +39,7 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
     subdirectory_3 = root / "Skill C"
     subdirectory_3.mkdir()
 
-    actual = SkillSelector.load(root / "config.yml")
+    actual = SkillSelector.load(str(root / "config.yml"))
     expected = {
         os.path.join(str(skill_a_directory)),
         os.path.join(str(skill_b_directory)),
@@ -60,9 +61,9 @@ def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
     skill_b_directory.mkdir()
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", empty_config)
 
-    actual = SkillSelector.load(root / "config.yml")
+    actual = SkillSelector.load(str(root / "config.yml"))
 
-    assert actual.is_imported(root / "Skill C")
+    assert actual.is_imported(str(root / "Skill C"))
 
 
 @pytest.mark.parametrize("input_dict", [{}, {"imports": None}])
@@ -82,7 +83,7 @@ def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFa
     skill_a_imports = {"imports": ["Skill B"]}
     utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
 
-    actual = SkillSelector.load(config_path)
+    actual = SkillSelector.load(str(config_path))
 
     assert actual.is_imported(str(skill_a_directory))
 
@@ -131,7 +132,7 @@ def test_cyclic_imports(tmpdir_factory):
     skill_b_imports = {"imports": ["../Skill A"]}
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
 
-    actual = SkillSelector.load(root / "config.yml")
+    actual = SkillSelector.load(str(root / "config.yml"))
 
     assert actual._imports == {str(skill_a_directory), str(skill_b_directory)}
 
@@ -151,37 +152,99 @@ def test_import_outside_project_directory(tmpdir_factory):
     skill_b_imports = {"imports": ["../Skill C"]}
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
 
-    actual = SkillSelector.load(skill_a_directory / "config.yml")
+    actual = SkillSelector.load(str(skill_a_directory / "config.yml"))
 
     assert actual._imports == {str(skill_b_directory), str(root / "Skill C")}
+
+
+def test_importing_additional_files(tmpdir_factory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config = {"imports": ["bots/Bot A"]}
+    config_path = str(root / "config.yml")
+    utils.dump_obj_as_yaml_to_file(config_path, config)
+
+    additional_file = root / "directory" / "file.yml"
+    selector = SkillSelector.load(
+        config_path, [str(root / "data"), str(additional_file)]
+    )
+    # create intermediate directories and fake files
+    additional_file.write({}, ensure=True)
+    additional_directory = root / "data"
+    (additional_directory / "file.yml").write({}, ensure=True)
+
+    assert selector.is_imported(str(additional_directory))
+    assert selector.is_imported(str(additional_directory / "file.yml"))
+
+    assert selector.is_imported(str(additional_file))
+
+
+def test_not_importing_not_relevant_additional_files(tmpdir_factory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config = {"imports": ["bots/Bot A"]}
+    config_path = str(root / "config.yml")
+    utils.dump_obj_as_yaml_to_file(config_path, config)
+
+    additional_file = root / "directory" / "file.yml"
+    selector = SkillSelector.load(
+        config_path, [str(root / "data"), str(additional_file)]
+    )
+
+    not_relevant_file1 = root / "data" / "another directory" / "file.yml"
+    not_relevant_file1.write({}, ensure=True)
+    not_relevant_file2 = root / "directory" / "another_file.yml"
+    not_relevant_file2.write({}, ensure=True)
+
+    assert not selector.is_imported(str(not_relevant_file1))
+    assert not selector.is_imported(str(not_relevant_file2))
+
+
+def test_single_additional_file(tmpdir_factory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config_path = str(root / "config.yml")
+    empty_config = {}
+    utils.dump_obj_as_yaml_to_file(config_path, empty_config)
+
+    additional_file = root / "directory" / "file.yml"
+    additional_file.write({}, ensure=True)
+
+    selector = SkillSelector.load(config_path, str(additional_file))
+    assert isinstance(selector._additional_paths, list)
+
+    assert selector.is_imported(str(additional_file))
 
 
 async def test_multi_skill_training():
     example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
+    files_of_root_project = os.path.join(example_directory, "data")
     trained_stack_model_path = await train_async(
-        config=config_file, domain=None, training_files=None
+        config=config_file, domain=None, training_files=files_of_root_project
     )
 
     unpacked = model.unpack_model(trained_stack_model_path)
     model_fingerprint = model.fingerprint_from_path(unpacked)
 
-    assert len(model_fingerprint["messages"]) == 2
-    assert len(model_fingerprint["stories"]) == 2
+    assert len(model_fingerprint["messages"]) == 3
+    assert len(model_fingerprint["stories"]) == 3
 
     domain_file = os.path.join(unpacked, "core", "domain.yml")
     domain = Domain.load(domain_file)
 
-    expected_intents = [
+    expected_intents = {
         "greet",
         "goodbye",
         "affirm",
         "deny",
         "mood_great",
         "mood_unhappy",
-    ]
+    }
 
     assert all([i in domain.intents for i in expected_intents])
+
+    nlu_training_data_file = os.path.join(unpacked, "nlu", "training_data.json")
+    nlu_training_data = RasaReader().read(nlu_training_data_file)
+
+    assert expected_intents == nlu_training_data.intents
 
     expected_actions = [
         "utter_greet",

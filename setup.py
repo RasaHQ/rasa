@@ -14,22 +14,19 @@ with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 tests_requires = [
-    "pytest~=3.5",
-    "pytest-pycodestyle~=1.4",
-    "pytest-cov~=2.5",
-    "pytest_sanic~=0.1.0",
-    "pytest_localserver~=0.4.1",
-    "treq~=17.8",
+    "pytest~=4.5",
+    "pytest-cov~=2.7",
+    "pytest-localserver~=0.5.0",
+    "pytest-sanic~=1.0.0",
     "responses~=0.9.0",
-    "httpretty~=0.9.0",
     "freezegun~=0.3.0",
     "nbsphinx>=0.3",
-    "aioresponses~=0.5.2",
+    "aioresponses~=0.6.0",
     "moto~=1.3.8",
-    "mock~=2.0",
 ]
 
 install_requires = [
+    "requests~=2.22",
     "boto3~=1.9",
     "matplotlib~=3.0",
     "simplejson~=3.16",

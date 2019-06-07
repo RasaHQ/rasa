@@ -6,11 +6,13 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.2.aX] - `master`_
+[Unreleased 1.0.8.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+- support for specifying full database urls in the ``SQLTrackerStore`` configuration
+- maximum number of predictions can be set via the environment variable ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
 
 Changed
 -------
@@ -20,6 +22,71 @@ Removed
 
 Fixed
 -----
+- loading of additional training data with the ``SkillSelector``
+
+[1.0.7] - 2019-06-06
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added argument ``--rasa-x-port`` to specify the port of Rasa X when running Rasa X locally via ``rasa x``
+
+Fixed
+-----
+- slack notifications from bots correctly render text
+- fixed usage of ``--log-file`` argument for ``rasa run`` and ``rasa shell``
+- check if correct tracker store is configured in local mode
+
+[1.0.6] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed backwards incompatible utils changes
+
+[1.0.5] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed spacy being a required dependency (regression)
+
+[1.0.4] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- automatic creation of index on the ``sender_id`` column when using an SQL
+  tracker store. If you have an existing data and you are running into performance
+  issues, please make sure to add an index manually using
+  ``CREATE INDEX event_idx_sender_id ON events (sender_id);``.
+
+Changed
+-------
+- NLU evaluation in cross-validation mode now also provides intent/entity reports,
+  confusion matrix, etc.
+
+[1.0.3] - 2019-05-30
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- non-ascii characters render correctly in stories generated from interactive learning
+- validate domain file before usage, e.g. print proper error messages if domain file
+  is invalid instead of raising errors
+
+[1.0.2] - 2019-05-29
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added ``domain_warnings()`` method to ``Domain`` which returns a dict containing the
+  diff between supplied {actions, intents, entities, slots} and what's contained in the
+  domain
+
+Fixed
+-----
+- fix lookup table files failed to load issues/3622
 - buttons can now be properly selected during cmdline chat or when in interactive learning
 - set slots correctly when events are added through the API
 - mapping policy no longer ignores NLU threshold

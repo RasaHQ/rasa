@@ -1,7 +1,8 @@
 import json
 import logging
 import pickle
-from typing import Iterator, Optional, Text, Iterable
+import typing
+from typing import Iterator, Optional, Text, Iterable, Union
 
 import itertools
 
@@ -12,7 +13,11 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.broker import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
-from rasa.core.utils import class_from_module_path
+from rasa.utils.common import class_from_module_path
+
+if typing.TYPE_CHECKING:
+    from sqlalchemy.engine.url import URL
+
 
 logger = logging.getLogger(__name__)
 
@@ -274,7 +279,7 @@ class SQLTrackerStore(TrackerStore):
         __tablename__ = "events"
 
         id = Column(Integer, primary_key=True)
-        sender_id = Column(String, nullable=False)
+        sender_id = Column(String, nullable=False, index=True)
         type_name = Column(String, nullable=False)
         timestamp = Column(Float)
         intent_name = Column(String)
@@ -295,18 +300,11 @@ class SQLTrackerStore(TrackerStore):
     ) -> None:
         import sqlalchemy
         from sqlalchemy.orm import sessionmaker
-        from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
 
-        engine_url = URL(
-            dialect,
-            username,
-            password,
-            host,
-            port,
-            database=login_db if login_db else db,
+        engine_url = self._get_db_url(
+            dialect, host, port, db, username, password, login_db
         )
-
         logger.debug(
             "Attempting to connect to database "
             'via "{}"'.format(engine_url.__to_string__())
@@ -346,6 +344,41 @@ class SQLTrackerStore(TrackerStore):
         logger.debug("Connection to SQL database '{}' successful".format(db))
 
         super(SQLTrackerStore, self).__init__(domain, event_broker)
+
+    @staticmethod
+    def _get_db_url(
+        dialect: Text = "sqlite",
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
+        db: Text = "rasa.db",
+        username: Text = None,
+        password: Text = None,
+        login_db: Optional[Text] = None,
+    ) -> Union[Text, "URL"]:
+        from urllib.parse import urlsplit
+        from sqlalchemy.engine.url import URL
+
+        # Users might specify a url in the host
+        parsed = urlsplit(host)
+        if parsed.scheme:
+            return host
+
+        if host:
+            # add fake scheme to properly parse components
+            parsed = urlsplit("schema://" + host)
+
+            # users might include the port in the url
+            port = parsed.port or port
+            host = parsed.hostname or host
+
+        return URL(
+            dialect,
+            username,
+            password,
+            host,
+            port,
+            database=login_db if login_db else db,
+        )
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
         """Create databse `db` and update engine to reflect the updated

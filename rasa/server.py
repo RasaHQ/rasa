@@ -15,6 +15,7 @@ import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
+from rasa.core.domain import InvalidDomain
 from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
@@ -200,11 +201,6 @@ async def authenticate(request: Request):
     )
 
 
-def _configure_logging(loglevel: Text, logfile: Text):
-    logging.basicConfig(filename=logfile, level=loglevel)
-    logging.captureWarnings(True)
-
-
 def _create_emulator(mode: Optional[Text]) -> NoEmulator:
     """Create emulator for specified mode.
     If no emulator is specified, we will use the Rasa NLU format."""
@@ -260,8 +256,6 @@ async def _load_agent(
 def create_app(
     agent: Optional["Agent"] = None,
     cors_origins: Union[Text, List[Text]] = "*",
-    loglevel: Text = "INFO",
-    logfile: Optional[Text] = None,
     auth_token: Optional[Text] = None,
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
@@ -274,8 +268,6 @@ def create_app(
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
     )
-
-    _configure_logging(loglevel, logfile)
 
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:
@@ -601,8 +593,13 @@ def create_app(
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
             )
-
             return await response.file(model_path)
+        except InvalidDomain as e:
+            raise ErrorResponse(
+                400,
+                "InvalidDomainError",
+                "Provided domain file is invalid. Error: {}".format(e),
+            )
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
