@@ -660,8 +660,9 @@ def _plot_curve(
     Args:
         output: Output directory to save resulting plots to
         number_of_examples: Number of examples per run
-        mode: "core" or "nlu" to fill in correct axes titles
-
+        x_label_text: text for the x axis
+        y_label_text: text for the y axis
+        graph_path: output path of the plot
     """
     import matplotlib.pyplot as plt
     import numpy as np
