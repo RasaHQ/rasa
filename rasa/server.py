@@ -15,13 +15,14 @@ import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
+from rasa.core.domain import InvalidDomain
 from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DEFAULT_MODELS_PATH,
     DEFAULT_DOMAIN_PATH,
+    DOCS_BASE_URL,
 )
-from rasa.core import constants
 from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
@@ -52,7 +53,7 @@ class ErrorResponse(Exception):
 
 def _docs(sub_url: Text) -> Text:
     """Create a url to a subpart of the docs."""
-    return constants.DOCS_BASE_URL + sub_url
+    return DOCS_BASE_URL + sub_url
 
 
 def ensure_loaded_agent(app: Sanic):
@@ -67,7 +68,7 @@ def ensure_loaded_agent(app: Sanic):
                     "Conflict",
                     "No agent loaded. To continue processing, a "
                     "model of a trained agent needs to be loaded.",
-                    help_url=_docs("/server.html#running-the-http-server"),
+                    help_url=_docs("/user-guide/running-the-server/"),
                 )
 
             return f(*args, **kwargs)
@@ -132,7 +133,9 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                     403,
                     "NotAuthorized",
                     "User has insufficient permissions.",
-                    help_url=_docs("/server.html#security-considerations"),
+                    help_url=_docs(
+                        "/user-guide/running-the-server/#security-considerations"
+                    ),
                 )
             elif token is None and app.config.get("USE_JWT") is None:
                 # authentication is disabled
@@ -144,7 +147,9 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 401,
                 "NotAuthenticated",
                 "User is not authenticated.",
-                help_url=_docs("/server.html#security-considerations"),
+                help_url=_docs(
+                    "/user-guide/running-the-server/#security-considerations"
+                ),
             )
 
         return decorated
@@ -194,11 +199,6 @@ async def authenticate(request: Request):
         "a valid JWT from an authentication provider, Rasa will just make "
         "sure that the token is valid, but not issue new tokens."
     )
-
-
-def _configure_logging(loglevel: Text, logfile: Text):
-    logging.basicConfig(filename=logfile, level=loglevel)
-    logging.captureWarnings(True)
 
 
 def _create_emulator(mode: Optional[Text]) -> NoEmulator:
@@ -256,8 +256,6 @@ async def _load_agent(
 def create_app(
     agent: Optional["Agent"] = None,
     cors_origins: Union[Text, List[Text]] = "*",
-    loglevel: Text = "INFO",
-    logfile: Optional[Text] = None,
     auth_token: Optional[Text] = None,
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
@@ -270,8 +268,6 @@ def create_app(
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
     )
-
-    _configure_logging(loglevel, logfile)
 
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:
@@ -372,7 +368,7 @@ def create_app(
 
         if evt:
             try:
-                tracker.update(evt)
+                tracker.update(evt, app.agent.domain)
                 app.agent.tracker_store.save(tracker)
                 return response.json(tracker.current_state(verbosity))
             except Exception as e:
@@ -597,8 +593,13 @@ def create_app(
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
             )
-
             return await response.file(model_path)
+        except InvalidDomain as e:
+            raise ErrorResponse(
+                400,
+                "InvalidDomainError",
+                "Provided domain file is invalid. Error: {}".format(e),
+            )
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(

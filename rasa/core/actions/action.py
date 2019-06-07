@@ -7,9 +7,9 @@ from typing import List, Text, Optional, Dict, Any
 import aiohttp
 
 import rasa.core
+from rasa.constants import DOCS_BASE_URL
 from rasa.core import events
 from rasa.core.constants import (
-    DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
     REQUESTED_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
@@ -79,20 +79,6 @@ def combine_user_with_default_actions(user_actions):
     # action names from the users list instead of the defaults
     unique_user_actions = [a for a in user_actions if a not in default_action_names()]
     return default_action_names() + unique_user_actions
-
-
-def ensure_action_name_uniqueness(action_names: List[Text]) -> None:
-    """Check and raise an exception if there are two actions with same name."""
-
-    unique_action_names = set()  # used to collect unique action names
-    for a in action_names:
-        if a in unique_action_names:
-            raise ValueError(
-                "Action names are not unique! Found two actions with name"
-                " '{}'. Either rename or remove one of them.".format(a)
-            )
-        else:
-            unique_action_names.add(a)
 
 
 def action_from_name(
@@ -350,7 +336,7 @@ class RemoteAction(Action):
                 ". Failed to validate Action server response from API, "
                 "make sure your response from the Action endpoint is valid. "
                 "For more information about the format visit "
-                "{}/customactions/".format(DOCS_BASE_URL)
+                "{}/core/actions/".format(DOCS_BASE_URL)
             )
             raise e
 
@@ -398,7 +384,7 @@ class RemoteAction(Action):
                 "but you didn't configure an endpoint to "
                 "run this custom action. Please take a look at "
                 "the docs and set an endpoint configuration. "
-                "{}/customactions/"
+                "{}/core/actions"
                 "".format(self.name(), DOCS_BASE_URL)
             )
 

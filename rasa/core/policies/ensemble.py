@@ -10,8 +10,8 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 import numpy as np
 
 import rasa.core
-import rasa.constants
 import rasa.utils.io
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
 
 from rasa.core import utils, training
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -24,6 +24,7 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
+from rasa.utils.common import class_from_module_path
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +75,8 @@ class PolicyEnsemble(object):
                         "in PolicyEnsemble. When personalizing "
                         "priorities, be sure to give all policies "
                         "different priorities. More information: "
-                        "https://rasa.com/docs/core/"
-                        "policies/"
-                    ).format(v, k)
+                        "{}/core/policies/"
+                    ).format(v, k, DOCS_BASE_URL)
                 )
 
     def train(
@@ -143,7 +143,7 @@ class PolicyEnsemble(object):
         # make sure the directory we persist exists
         domain_spec_path = os.path.join(path, "metadata.json")
         training_data_path = os.path.join(path, "stories.md")
-        utils.create_dir_for_file(domain_spec_path)
+        rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [utils.module_path_from_instance(p) for p in self.policies]
 
@@ -190,7 +190,7 @@ class PolicyEnsemble(object):
         from packaging import version
 
         if version_to_check is None:
-            version_to_check = rasa.constants.MINIMUM_COMPATIBLE_VERSION
+            version_to_check = MINIMUM_COMPATIBLE_VERSION
 
         model_version = metadata.get("rasa", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
@@ -232,7 +232,7 @@ class PolicyEnsemble(object):
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
-        ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
+        ensemble_cls = class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble

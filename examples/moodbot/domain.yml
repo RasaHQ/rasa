@@ -30,7 +30,7 @@ templates:
   - text: "Did that help you?"
 
   utter_happy:
-  - text: "Great carry on!"
+  - text: "Great, carry on!"
 
   utter_goodbye:
   - text: "Bye"

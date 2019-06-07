@@ -28,7 +28,7 @@ class FallbackPolicy(Policy):
 
     def __init__(
         self,
-        priority: int = 3,
+        priority: int = 4,
         nlu_threshold: float = 0.3,
         core_threshold: float = 0.3,
         fallback_action_name: Text = "action_default_fallback",
@@ -108,7 +108,7 @@ class FallbackPolicy(Policy):
         elif self.should_nlu_fallback(nlu_confidence, tracker.latest_action_name):
             logger.debug(
                 "NLU confidence {} is lower "
-                "than NLU threshold {}. "
+                "than NLU threshold {:.2f}. "
                 "".format(nlu_confidence, self.nlu_threshold)
             )
             result = self.fallback_scores(domain)
@@ -138,7 +138,7 @@ class FallbackPolicy(Policy):
             "core_threshold": self.core_threshold,
             "fallback_action_name": self.fallback_action_name,
         }
-        utils.create_dir_for_file(config_file)
+        rasa.utils.io.create_directory_for_file(config_file)
         utils.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod

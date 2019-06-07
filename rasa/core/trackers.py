@@ -1,9 +1,7 @@
 import copy
 import logging
-import typing
-from collections import deque
+from collections import deque, defaultdict
 from enum import Enum
-import typing
 from typing import Dict, Text, Any, Optional, Iterator, Type, List
 
 from rasa.core import events
@@ -20,12 +18,10 @@ from rasa.core.events import (
     BotUttered,
     Form,
 )
+from rasa.core.domain import Domain
 from rasa.core.slots import Slot
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    from rasa.core.domain import Domain
 
 
 class EventVerbosity(Enum):
@@ -47,6 +43,17 @@ class EventVerbosity(Enum):
     ALL = 4
 
 
+class AnySlotDict(dict):
+    """A slot dictionary that pretends every slot exists, by creating slots on demand.
+
+    This only uses the generic slot type! This means certain functionality wont work,
+    e.g. properly featurizing the slot."""
+
+    def __missing__(self, key):
+        value = self[key] = Slot(key)
+        return value
+
+
 class DialogueStateTracker(object):
     """Maintains the state of a conversation.
 
@@ -58,7 +65,7 @@ class DialogueStateTracker(object):
         cls,
         sender_id: Text,
         events_as_dict: List[Dict[Text, Any]],
-        slots: List[Slot],
+        slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
     ) -> "DialogueStateTracker":
         """Create a tracker from dump.
@@ -74,7 +81,7 @@ class DialogueStateTracker(object):
         cls,
         sender_id: Text,
         evts: List[Event],
-        slots: List[Slot],
+        slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
     ):
         tracker = cls(sender_id, slots, max_event_history)
@@ -96,7 +103,10 @@ class DialogueStateTracker(object):
         # id of the source of the messages
         self.sender_id = sender_id
         # slots that can be filled in this domain
-        self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
+        if slots is not None:
+            self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
+        else:
+            self.slots = AnySlotDict()
 
         ###
         # current state of the tracker - MUST be re-creatable by processing
@@ -400,13 +410,18 @@ class DialogueStateTracker(object):
 
         return Dialogue(self.sender_id, list(self.events))
 
-    def update(self, event: Event) -> None:
+    def update(self, event: Event, domain: Optional[Domain] = None) -> None:
         """Modify the state of the tracker according to an ``Event``. """
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
 
         self.events.append(event)
         event.apply_to(self)
+
+        if domain and isinstance(event, UserUttered):
+            # store all entities as slots
+            for e in domain.slots_for_entities(event.parse_data["entities"]):
+                self.update(e)
 
     def export_stories(self, e2e=False) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.

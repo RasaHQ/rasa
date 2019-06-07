@@ -11,7 +11,7 @@ import aiohttp
 
 import rasa
 import rasa.utils.io
-from rasa.constants import DEFAULT_DOMAIN_PATH
+from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
 from rasa.core import constants, jobs, training
 from rasa.core.channels import (
     InputChannel,
@@ -20,7 +20,7 @@ from rasa.core.channels import (
     CollectingOutputChannel,
 )
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -258,7 +258,7 @@ async def load_agent(
             )
 
         else:
-            logger.error("No valid configuration given to load agent.")
+            logger.warning("No valid configuration given to load agent.")
             return None
 
     except Exception as e:
@@ -636,7 +636,7 @@ class Agent(object):
                 "to `agent.train(...)` is not supported anymore. "
                 "Pass appropriate featurizer directly "
                 "to the policy configuration instead. More info "
-                "https://rasa.com/docs/core/migrations.html"
+                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
             )
         if (
             kwargs.get("epochs")
@@ -648,7 +648,7 @@ class Agent(object):
                 "to `agent.train(...)` is not supported "
                 "anymore. Specify parameters directly in the "
                 "policy configuration instead. More info "
-                "https://rasa.com/docs/core/migrations.html"
+                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
             )
 
         if isinstance(training_trackers, str):
@@ -662,8 +662,6 @@ class Agent(object):
             )
 
         logger.debug("Agent trainer got kwargs: {}".format(kwargs))
-
-        check_domain_sanity(self.domain)
 
         self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
         self._set_fingerprint()
@@ -808,7 +806,9 @@ class Agent(object):
     def _create_domain(domain: Union[None, Domain, Text]) -> Domain:
 
         if isinstance(domain, str):
-            return Domain.load(domain)
+            domain = Domain.load(domain)
+            domain.check_missing_templates()
+            return domain
         elif isinstance(domain, Domain):
             return domain
         elif domain is not None:

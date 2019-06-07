@@ -14,9 +14,9 @@ from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import BUILTIN_CHANNELS, InputChannel, console
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.utils import AvailableEndpoints
+from rasa.core.utils import AvailableEndpoints, configure_file_logging
 from rasa.model import get_model_subdirectories, get_model
-from rasa.utils.common import update_sanic_log_level
+from rasa.utils.common import update_sanic_log_level, class_from_module_path
 
 logger = logging.getLogger()  # get the root logger
 
@@ -45,7 +45,7 @@ def _create_single_channel(channel, credentials):
     else:
         # try to load channel based on class name
         try:
-            input_channel_class = utils.class_from_module_path(channel)
+            input_channel_class = class_from_module_path(channel)
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
             raise Exception(
@@ -66,6 +66,7 @@ def configure_app(
     jwt_method: Optional[Text] = None,
     route: Optional[Text] = "/webhooks/",
     port: int = constants.DEFAULT_SERVER_PORT,
+    log_file: Optional[Text] = None,
 ):
     """Run the agent."""
     from rasa import server
@@ -78,8 +79,10 @@ def configure_app(
             jwt_method=jwt_method,
         )
     else:
-        app = Sanic(__name__)
+        app = Sanic(__name__, configure_logging=False)
         CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
+
+    configure_file_logging(log_file)
 
     if input_channels:
         rasa.core.channels.channel.register(input_channels, app, route=route)
@@ -90,11 +93,11 @@ def configure_app(
         utils.list_routes(app)
 
     # configure async loop logging
-    async def configure_logging():
+    async def configure_async_logging():
         if logger.isEnabledFor(logging.DEBUG):
             rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())
 
-    app.add_task(configure_logging)
+    app.add_task(configure_async_logging)
 
     if "cmdline" in {c.name() for c in input_channels}:
 
@@ -125,6 +128,7 @@ def serve_application(
     jwt_method: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
     remote_storage: Optional[Text] = None,
+    log_file: Optional[Text] = None,
 ):
     if not channel and not credentials:
         channel = "cmdline"
@@ -132,7 +136,14 @@ def serve_application(
     input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(
-        input_channels, cors, auth_token, enable_api, jwt_secret, jwt_method, port=port
+        input_channels,
+        cors,
+        auth_token,
+        enable_api,
+        jwt_secret,
+        jwt_method,
+        port=port,
+        log_file=log_file,
     )
 
     logger.info(
@@ -145,7 +156,7 @@ def serve_application(
         "before_server_start",
     )
 
-    update_sanic_log_level()
+    update_sanic_log_level(log_file)
 
     app.run(host="0.0.0.0", port=port)
 
@@ -189,8 +200,8 @@ async def load_agent_on_start(
     )
 
     if not app.agent:
-        logger.error(
-            "Agent could not be loaded with the provided configuration."
+        logger.warning(
+            "Agent could not be loaded with the provided configuration. "
             "Load default agent without any model."
         )
         app.agent = Agent(

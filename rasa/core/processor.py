@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple
 
@@ -40,6 +41,9 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
+MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
+
+
 class MessageProcessor(object):
     def __init__(
         self,
@@ -49,7 +53,7 @@ class MessageProcessor(object):
         tracker_store: TrackerStore,
         generator: NaturalLanguageGenerator,
         action_endpoint: Optional[EndpointConfig] = None,
-        max_number_of_predictions: int = 10,
+        max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         message_preprocessor: Optional[LambdaType] = None,
         on_circuit_break: Optional[LambdaType] = None,
     ):
@@ -295,11 +299,9 @@ class MessageProcessor(object):
                 parse_data,
                 input_channel=message.input_channel,
                 message_id=message.message_id,
-            )
+            ),
+            self.domain,
         )
-        # store all entities as slots
-        for e in self.domain.slots_for_entities(parse_data["entities"]):
-            tracker.update(e)
 
         if parse_data["entities"]:
             self._log_slots(tracker)

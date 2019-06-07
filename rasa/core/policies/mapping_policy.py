@@ -1,6 +1,11 @@
 import logging
+import json
+import os
 from typing import Any, List, Text
 
+import rasa.utils.io
+
+from rasa.core import utils
 from rasa.core.actions.action import (
     ACTION_BACK_NAME,
     ACTION_LISTEN_NAME,
@@ -22,7 +27,7 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
-    def __init__(self, priority: int = 5) -> None:
+    def __init__(self, priority: int = 3) -> None:
         """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__(priority=priority)
@@ -95,12 +100,21 @@ class MappingPolicy(Policy):
         return prediction
 
     def persist(self, path: Text) -> None:
-        """Does nothing since there is no data to be saved."""
+        """Only persists the priority."""
 
-        pass
+        config_file = os.path.join(path, "mapping_policy.json")
+        meta = {"priority": self.priority}
+        rasa.utils.io.create_directory_for_file(config_file)
+        utils.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "MappingPolicy":
-        """Just returns the class since there is no data to be loaded."""
+        """Returns the class with the configured priority."""
 
-        return cls()
+        meta = {}
+        if os.path.exists(path):
+            meta_path = os.path.join(path, "mapping_policy.json")
+            if os.path.isfile(meta_path):
+                meta = json.loads(rasa.utils.io.read_file(meta_path))
+
+        return cls(**meta)

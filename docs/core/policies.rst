@@ -63,6 +63,13 @@ every turn, the policy which predicts the next action with the
 highest confidence will be used. If two policies predict with equal
 confidence, the policy with the higher priority will be used.
 
+.. note::
+
+    Per default a maximum of 10 next actions can be predicted
+    by the agent after every user message. To update this value
+    you can set the environment variable ``MAX_NUMBER_OF_PREDICTIONS``
+    to the desired number of maximum predictions.
+
 
 Your project's ``config.yml`` file takes a ``policies`` key
 which you can use to customize the policies your assistant uses.
@@ -342,50 +349,54 @@ training data. It predicts the next action with confidence ``1.0``
 if this exact conversation exists in the training data, otherwise it
 predicts ``None`` with confidence ``0.0``.
 
-
-Form Policy
-^^^^^^^^^^^
-
-The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which
-handles the filling of forms. Once a ``FormAction`` is called, the
-``FormPolicy`` will continually predict the ``FormAction`` until all slots
-in the form are filled. For more information, see :ref:`forms`.
-
+.. _mapping-policy:
 
 Mapping Policy
 ^^^^^^^^^^^^^^
 
-The ``MappingPolicy`` can be used to directly map intents to actions such that
-the mapped action will always be executed. The mappings are assigned by giving
-and intent the property `'triggers'`, e.g.:
+The ``MappingPolicy`` can be used to directly map intents to actions. The
+mappings are assigned by giving an intent the property ``triggers``, e.g.:
 
 .. code-block:: yaml
 
   intents:
-   - greet:
-       triggers: utter_greet
+   - ask_is_bot:
+       triggers: action_is_bot
 
 An intent can only be mapped to at most one action. The bot will run
-the action once it receives a message of the mapped intent. Afterwards,
-it will listen for the next message.
+the mapped action once it receives a message of the triggering intent. Afterwards,
+it will listen for the next message. With the next
+user message, normal prediction will resume.
+
+If you do not want your intent-action mapping to affect the dialogue
+history, the mapped action must return a ``UserUtteranceReverted()``
+event. This will delete the user's latest message, along with any events that
+happened after it, from the dialogue history. This means you should not
+include the intent-action interaction in your stories.
+
+For example, if a user asks "Are you a bot?" off-topic in the middle of the
+flow, you probably want to answer without that interaction affecting the next
+action prediction. A triggered custom action can do anything, but here's a
+simple example that dispatches a bot utterance and then reverts the interaction:
+
+.. code-block:: python
+
+  class ActionIsBot(Action):
+  """Revertible mapped action for utter_is_bot"""
+
+  def name(self):
+      return "action_is_bot"
+
+  def run(self, dispatcher, tracker, domain):
+      dispatcher.utter_template("utter_is_bot", tracker)
+      return [UserUtteranceReverted()]
 
 .. note::
 
-  The mapping policy will predict the mapped action after the intent (e.g.
-  ``utter_greet`` in the above example) and afterwards it will wait for
-  the next user message (predicting ``action_listen``). With the next
-  user message normal prediction will resume.
-
-  You should have an example like
-
-  .. code-block:: story
-
-    * greet
-      - utter_greet
-
-  in your stories. Otherwise any machine learning policy might be confused
-  by the sudden appearance of the predicted ``utter_greet`` in
-  the dialogue history.
+  If you use the ``MappingPolicy`` to predict bot utterances directly (e.g.
+  ``triggers: utter_{}``), these interactions must go in your stories, as in this
+  case there is no ``UserUtteranceReverted()`` and the
+  intent and the mapped utterance will appear in the dialogue history.
 
 .. _fallback-policy:
 
@@ -514,3 +525,13 @@ by trying to disambiguate the user input.
 
       You can include either the ``FallbackPolicy`` or the
       ``TwoStageFallbackPolicy`` in your configuration, but not both.
+
+
+
+Form Policy
+^^^^^^^^^^^
+
+The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which
+handles the filling of forms. Once a ``FormAction`` is called, the
+``FormPolicy`` will continually predict the ``FormAction`` until all required
+slots in the form are filled. For more information, see :ref:`forms`.

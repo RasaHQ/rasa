@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def test_compare(models: List[Text], stories: Text, output: Text):
     from rasa.core.test import compare, plot_curve
-    import rasa.core.utils as core_utils
+    import rasa.utils.io
 
     model_directory = copy_models_to_compare(models)
 
@@ -23,7 +23,7 @@ def test_compare(models: List[Text], stories: Text, output: Text):
     loop.run_until_complete(compare(model_directory, stories, output))
 
     story_n_path = os.path.join(model_directory, "num_stories.json")
-    number_of_stories = core_utils.read_json_file(story_n_path)
+    number_of_stories = rasa.utils.io.read_json_file(story_n_path)
     plot_curve(output, number_of_stories)
 
 
@@ -124,7 +124,7 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
         )
 
 
-def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int = 3):
+def test_nlu_with_cross_validation(config: Text, nlu: Text, kwargs: Optional[Dict]):
     import rasa.nlu.config
     from rasa.nlu.test import (
         drop_intents_below_freq,
@@ -133,10 +133,13 @@ def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int = 3):
         return_entity_results,
     )
 
+    kwargs = kwargs or {}
+    folds = int(kwargs.get("folds", 3))
     nlu_config = rasa.nlu.config.load(config)
     data = rasa.nlu.training_data.load_data(nlu)
-    data = drop_intents_below_freq(data, cutoff=5)
-    results, entity_results = cross_validate(data, int(folds), nlu_config)
+    data = drop_intents_below_freq(data, cutoff=folds)
+    kwargs = minimal_kwargs(kwargs, cross_validate)
+    results, entity_results = cross_validate(data, folds, nlu_config, **kwargs)
     logger.info("CV evaluation (n={})".format(folds))
 
     if any(results):

@@ -32,17 +32,14 @@ class SlackBot(SlackClient, OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        text_blocks = []
         for message_part in text.split("\n\n"):
-            text_blocks.append(
-                {
-                    "type": "section",
-                    "text": {"type": "plain_text", "text": message_part},
-                }
+            super(SlackBot, self).api_call(
+                "chat.postMessage",
+                channel=recipient,
+                as_user=True,
+                text=message_part,
+                type="mrkdwn",
             )
-        super(SlackBot, self).api_call(
-            "chat.postMessage", channel=recipient, as_user=True, blocks=text_blocks
-        )
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
@@ -50,19 +47,24 @@ class SlackBot(SlackClient, OutputChannel):
         recipient = self.slack_channel or recipient_id
         image_block = {"type": "image", "image_url": image, "alt_text": image}
         return super(SlackBot, self).api_call(
-            "chat.postMessage", channel=recipient, as_user=True, blocks=[image_block]
+            "chat.postMessage",
+            channel=recipient,
+            as_user=True,
+            text=image,
+            blocks=[image_block],
         )
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
+        text = attachment.get("text", "Attachment")
         return super(SlackBot, self).api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
+            text=text,
             attachments=[attachment],
-            **kwargs
         )
 
     async def send_text_with_buttons(
@@ -136,17 +138,18 @@ class SlackInput(InputChannel):
         https://github.com/slackapi/python-slackclient
 
         Args:
-            slack_token: Your Slack Authentication token. You can find or
-                generate a test token
-                `here <https://api.slack.com/docs/oauth-test-tokens>`_.
+            slack_token: Your Slack Authentication token. You can create a
+                Slack app and get your Bot User OAuth Access Token
+                `here <https://api.slack.com/slack-apps>`_.
             slack_channel: the string identifier for a channel to which
-                the bot posts, or channel name (e.g. 'C1234ABC', 'bot-test'
-                or '#bot-test') If unset, messages will be sent back
-                to the user they came from.
-            errors_ignore_retry: If error code given by slack
-                included in this list then it will ignore the event.
-                The code is listed here:
-                https://api.slack.com/events-api#errors
+                the bot posts, or channel name (e.g. '#bot-test')
+                If not set, messages will be sent back
+                to the "App" DM channel of your bot's name.
+            errors_ignore_retry: Any error codes given by Slack
+                included in this list will be ignored.
+                Error codes are listed
+                `here <https://api.slack.com/events-api#errors>`_.
+
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel

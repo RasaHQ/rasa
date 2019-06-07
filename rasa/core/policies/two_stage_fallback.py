@@ -45,7 +45,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
     def __init__(
         self,
-        priority: int = 3,
+        priority: int = 4,
         nlu_threshold: float = 0.3,
         core_threshold: float = 0.3,
         fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
@@ -189,7 +189,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             "fallback_nlu_action_name": self.fallback_nlu_action_name,
             "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
         }
-        utils.create_dir_for_file(config_file)
+        rasa.utils.io.create_directory_for_file(config_file)
         utils.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
