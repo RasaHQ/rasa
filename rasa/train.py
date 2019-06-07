@@ -79,6 +79,7 @@ async def train_async(
     skill_imports = SkillSelector.load(config, training_files)
     try:
         domain = Domain.load(domain, skill_imports)
+        domain.check_missing_templates()
     except InvalidDomain as e:
         print_error(
             "Could not load domain due to error: {} \nTo specify a valid domain "
@@ -259,6 +260,7 @@ async def train_core_async(
     if isinstance(domain, str):
         try:
             domain = Domain.load(domain, skill_imports)
+            domain.check_missing_templates()
         except InvalidDomain as e:
             print_error(
                 "Could not load domain due to: '{}'. To specify a valid domain path "
