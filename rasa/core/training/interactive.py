@@ -20,7 +20,7 @@ import rasa.cli.utils
 from questionary import Choice, Form, Question
 
 from rasa.cli import utils as cliutils
-from rasa.core import constants, events, run, train, utils
+from rasa.core import constants, run, train, utils
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     default_action_names,
@@ -35,6 +35,7 @@ from rasa.core.constants import (
     REQUESTED_SLOT,
 )
 from rasa.core.domain import Domain
+import rasa.core.events
 from rasa.core.events import (
     ActionExecuted,
     ActionReverted,
@@ -274,24 +275,24 @@ def format_bot_output(message: BotUttered) -> Text:
     return output
 
 
-def latest_user_message(evts: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]:
+def latest_user_message(events: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]:
     """Return most recent user message."""
 
-    for i, e in enumerate(reversed(evts)):
+    for i, e in enumerate(reversed(events)):
         if e.get("event") == UserUttered.type_name:
             return e
     return None
 
 
 def all_events_before_latest_user_msg(
-    evts: List[Dict[Text, Any]]
+    events: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Any]]:
     """Return all events that happened before the most recent user message."""
 
-    for i, e in enumerate(reversed(evts)):
+    for i, e in enumerate(reversed(events)):
         if e.get("event") == UserUttered.type_name:
-            return evts[: -(i + 1)]
-    return evts
+            return events[: -(i + 1)]
+    return events
 
 
 async def _ask_questions(
@@ -430,9 +431,9 @@ async def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
     tracker_dump = await retrieve_tracker(
         endpoint, sender_id, EventVerbosity.AFTER_RESTART
     )
-    evts = tracker_dump.get("events", [])
+    events = tracker_dump.get("events", [])
 
-    table = _chat_history_table(evts)
+    table = _chat_history_table(events)
     slot_strs = _slot_history(tracker_dump)
 
     print ("------")
@@ -446,7 +447,7 @@ async def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
     print ("------")
 
 
-def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
+def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
     """Create a table containing bot and user messages.
 
     Also includes additional information, like any events and
@@ -497,7 +498,7 @@ def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
 
     bot_column = []
 
-    tracker = DialogueStateTracker.from_dict("any", evts)
+    tracker = DialogueStateTracker.from_dict("any", events)
     applied_events = tracker.applied_events()
 
     for idx, event in enumerate(applied_events):
@@ -556,11 +557,11 @@ async def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
     story_path, nlu_path, domain_path = _request_export_info()
 
     tracker = await retrieve_tracker(endpoint, sender_id)
-    evts = tracker.get("events", [])
+    events = tracker.get("events", [])
 
-    await _write_stories_to_file(story_path, evts)
-    await _write_nlu_to_file(nlu_path, evts)
-    await _write_domain_to_file(domain_path, evts, endpoint)
+    await _write_stories_to_file(story_path, events)
+    await _write_nlu_to_file(nlu_path, events)
+    await _write_domain_to_file(domain_path, events, endpoint)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -679,7 +680,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
 
 
 def _split_conversation_at_restarts(
-    evts: List[Dict[Text, Any]]
+    events: List[Dict[Text, Any]]
 ) -> List[List[Dict[Text, Any]]]:
     """Split a conversation at restart events.
 
@@ -687,7 +688,7 @@ def _split_conversation_at_restarts(
 
     sub_conversations = []
     current = []
-    for e in evts:
+    for e in events:
         if e.get("event") == "restart":
             if current:
                 sub_conversations.append(current)
@@ -701,7 +702,7 @@ def _split_conversation_at_restarts(
     return sub_conversations
 
 
-def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
+def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
     into a list"""
     from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
@@ -710,9 +711,9 @@ def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
 
     msgs = []
 
-    for evt in evts:
-        if evt.get("event") == UserUttered.type_name:
-            data = evt.get("parse_data")
+    for event in events:
+        if event.get("event") == UserUttered.type_name:
+            data = event.get("parse_data")
 
             for entity in data.get("entities", []):
 
@@ -736,18 +737,18 @@ def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
     return msgs
 
 
-def _collect_actions(evts: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
+def _collect_actions(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
     """Collect all the `ActionExecuted` events into a list."""
 
-    return [evt for evt in evts if evt.get("event") == ActionExecuted.type_name]
+    return [evt for evt in events if evt.get("event") == ActionExecuted.type_name]
 
 
 async def _write_stories_to_file(
-    export_story_path: Text, evts: List[Dict[Text, Any]]
+    export_story_path: Text, events: List[Dict[Text, Any]]
 ) -> None:
     """Write the conversation of the sender_id to the file paths."""
 
-    sub_conversations = _split_conversation_at_restarts(evts)
+    sub_conversations = _split_conversation_at_restarts(events)
 
     create_path(export_story_path)
 
@@ -758,18 +759,18 @@ async def _write_stories_to_file(
 
     with open(export_story_path, append_write, encoding="utf-8") as f:
         for conversation in sub_conversations:
-            parsed_events = events.deserialise_events(conversation)
+            parsed_events = rasa.core.events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
             f.write("\n" + s.as_story_string(flat=True))
 
 
 async def _write_nlu_to_file(
-    export_nlu_path: Text, evts: List[Dict[Text, Any]]
+    export_nlu_path: Text, events: List[Dict[Text, Any]]
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
     from rasa.nlu.training_data import TrainingData
 
-    msgs = _collect_messages(evts)
+    msgs = _collect_messages(events)
 
     # noinspection PyBroadException
     try:
@@ -821,7 +822,7 @@ def _intents_from_messages(messages):
 
 
 async def _write_domain_to_file(
-    domain_path: Text, evts: List[Dict[Text, Any]], endpoint: EndpointConfig
+    domain_path: Text, events: List[Dict[Text, Any]], endpoint: EndpointConfig
 ) -> None:
     """Write an updated domain file to the file path."""
 
@@ -830,8 +831,8 @@ async def _write_domain_to_file(
     domain = await retrieve_domain(endpoint)
     old_domain = Domain.from_dict(domain)
 
-    messages = _collect_messages(evts)
-    actions = _collect_actions(evts)
+    messages = _collect_messages(events)
+    actions = _collect_actions(events)
     templates = NEW_TEMPLATES
 
     # TODO for now there is no way to distinguish between action and form
@@ -1124,7 +1125,7 @@ async def _validate_nlu(
         corrected_intent = await _request_intent_from_user(
             latest_message, intents, sender_id, endpoint
         )
-        evts = tracker.get("events", [])
+        events = tracker.get("events", [])
 
         entities = await _correct_entities(latest_message, endpoint, sender_id)
         corrected_nlu = {
@@ -1133,7 +1134,7 @@ async def _validate_nlu(
             "text": latest_message.get("text"),
         }
 
-        await _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id)
+        await _correct_wrong_nlu(corrected_nlu, events, endpoint, sender_id)
 
 
 async def _correct_entities(
@@ -1239,10 +1240,10 @@ async def _fetch_events(
     for sender_id in sender_ids:
         if isinstance(sender_id, str):
             tracker = await retrieve_tracker(endpoint, sender_id)
-            evts = tracker.get("events", [])
+            events = tracker.get("events", [])
 
-            for conversation in _split_conversation_at_restarts(evts):
-                parsed_events = events.deserialise_events(conversation)
+            for conversation in _split_conversation_at_restarts(events):
+                parsed_events = rasa.core.events.deserialise_events(conversation)
                 event_sequences.append(parsed_events)
         else:
             event_sequences.append(sender_id)
@@ -1365,12 +1366,12 @@ async def record_messages(
             except ForkTracker:
                 await _print_history(sender_id, endpoint)
 
-                evts_fork = await _request_fork_from_user(sender_id, endpoint)
+                events_fork = await _request_fork_from_user(sender_id, endpoint)
 
                 await send_event(endpoint, sender_id, Restarted().as_dict())
 
-                if evts_fork:
-                    for evt in evts_fork:
+                if events_fork:
+                    for evt in events_fork:
                         await send_event(endpoint, sender_id, evt)
                 logger.info("Restarted conversation at fork.")
 
