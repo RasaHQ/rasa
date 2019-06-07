@@ -16,6 +16,9 @@ TEST_DATA_FILE = "test.md"
 TRAIN_DATA_FILE = "train.md"
 RESULTS_FILE = "results.json"
 
+CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
+DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"
+
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
 

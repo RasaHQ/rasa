@@ -13,6 +13,7 @@ from rasa.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
     DEFAULT_NLU_RESULTS_PATH,
+    CONFIG_SCHEMA_FILE,
 )
 from rasa.test import test_compare_core, compare_nlu_models
 from rasa.utils.validation import validate_pipeline_yaml, InvalidYamlFileError
@@ -114,7 +115,7 @@ def test_nlu(args: argparse.Namespace) -> None:
         for file in args.config:
             try:
                 validate_pipeline_yaml(
-                    rasa.utils.io.read_file(file), "nlu/schemas/config.yml"
+                    rasa.utils.io.read_file(file), CONFIG_SCHEMA_FILE
                 )
                 config_files.append(file)
             except InvalidYamlFileError:

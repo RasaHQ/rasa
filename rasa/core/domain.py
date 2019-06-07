@@ -13,6 +13,7 @@ from ruamel.yaml.constructor import DuplicateKeyError
 import rasa.utils.io
 from rasa import data
 from rasa.cli.utils import print_warning, bcolors
+from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
 from rasa.core.actions import Action, action
 from rasa.core.constants import REQUESTED_SLOT
@@ -105,7 +106,7 @@ class Domain(object):
     @classmethod
     def from_yaml(cls, yaml: Text) -> "Domain":
         try:
-            validate_pipeline_yaml(yaml, "core/schemas/domain.yml")
+            validate_pipeline_yaml(yaml, DOMAIN_SCHEMA_FILE)
         except InvalidYamlFileError as e:
             raise InvalidDomain(str(e))
 
