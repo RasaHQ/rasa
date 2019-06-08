@@ -64,7 +64,7 @@ Here is how you add it using Python code:
     pika_broker = PikaProducer('localhost',
                                 'username',
                                 'password',
-                                queue='rasa_core_events')
+                                queue='rasa_production_events')
 
     tracker_store = InMemoryTrackerStore(db=db, event_broker=pika_broker)
 
@@ -101,7 +101,7 @@ example:
         # start consumption of channel
         channel = connection.channel()
         channel.basic_consume(_callback,
-                              queue='rasa_core_events',
+                              queue='rasa_production_events',
                               no_ack=True)
         channel.start_consuming()
 
@@ -145,7 +145,7 @@ The code below shows an example on how to instantiate a Kafka producer in you sc
     from rasa.core.tracker_store import InMemoryTrackerStore
 
     kafka_broker = KafkaProducer(host='localhost:9092',
-                                 topic='rasa_core_events')
+                                 topic='rasa_production_events')
 
     tracker_store = InMemoryTrackerStore(event_broker=kafka_broker)
 
@@ -164,7 +164,7 @@ list of strings. e.g.:
     kafka_broker = KafkaProducer(host=['kafka_broker_1:9092',
                                        'kafka_broker_2:2030',
                                        'kafka_broker_3:9092'],
-                                 topic='rasa_core_events')
+                                 topic='rasa_production_events')
 
 Authentication and authorization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -185,7 +185,7 @@ previously configured in the broker server.
                                  sasl_plain_username='kafka_username',
                                  sasl_plain_password='kafka_password',
                                  security_protocol='SASL_PLAINTEXT',
-                                 topic='rasa_core_events')
+                                 topic='rasa_production_events')
 
 
 If the clients or the brokers in the kafka cluster are located in different
@@ -202,7 +202,7 @@ be provided as arguments, as well as the CA's root certificate.
                                  ssl_keyfile='key.pem',
                                  ssl_check_hostname=True,
                                  security_protocol='SSL',
-                                 topic='rasa_core_events')
+                                 topic='rasa_production_events')
 
 If the ``ssl_check_hostname`` parameter is enabled, the clients will verify
 if the broker's hostname matches the certificate. It's used on client's connections
@@ -220,7 +220,7 @@ according to the security protocol being used. The following implementation show
     from kafka import KafkaConsumer
     from json import loads
 
-    consumer = KafkaConsumer('rasa_core_events',
+    consumer = KafkaConsumer('rasa_production_events',
                               bootstrap_servers=['localhost:29093'],
                               value_deserializer=lambda m: json.loads(m.decode('utf-8')),
                               security_protocol='SSL',
