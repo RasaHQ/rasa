@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.10.aX] - `master`_
+[Unreleased 1.0.9.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -21,8 +21,14 @@ Removed
 Fixed
 -----
 
-[1.0.9] - 2019-06-08
+[1.0.8] - 2019-06-08
 ^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- support for specifying full database urls in the ``SQLTrackerStore`` configuration
+- maximum number of predictions can be set via the environment variable
+  ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
 
 Changed
 -------
@@ -32,13 +38,6 @@ Fixed
 -----
 - loading of additional training data with the ``SkillSelector``
 - strip trailing slashes in endpoint URLs
-
-[1.0.8] - 2019-06-08
-^^^^^^^^^^^^^^^^^^^^
-
-Added
------
-- support for specifying full database urls in the ``SQLTrackerStore`` configuration
 
 [1.0.7] - 2019-06-06
 ^^^^^^^^^^^^^^^^^^^^
