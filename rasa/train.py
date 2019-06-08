@@ -76,7 +76,7 @@ async def train_async(
     config = _get_valid_config(config, CONFIG_MANDATORY_KEYS)
     train_path = tempfile.mkdtemp()
 
-    skill_imports = SkillSelector.load(config)
+    skill_imports = SkillSelector.load(config, training_files)
     try:
         domain = Domain.load(domain, skill_imports)
         domain.check_missing_templates()
@@ -255,7 +255,7 @@ async def train_core_async(
     """
 
     config = _get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
-    skill_imports = SkillSelector.load(config)
+    skill_imports = SkillSelector.load(config, stories)
 
     if isinstance(domain, str):
         try:
@@ -356,7 +356,7 @@ def train_nlu(
     config = _get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
     # training NLU only hence the training files still have to be selected
-    skill_imports = SkillSelector.load(config)
+    skill_imports = SkillSelector.load(config, nlu_data)
     nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
 
     if not os.listdir(nlu_data_directory):
