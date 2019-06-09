@@ -608,7 +608,7 @@ def create_app(
         try:
             model_path = await train_async(
                 domain=domain_path,
-                configs=config_paths,
+                config=config_paths,
                 training_files=temp_dir,
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),

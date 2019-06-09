@@ -1,7 +1,7 @@
 import os
 import tempfile
 import time
-from typing import Text, Optional, List
+from typing import Text, Optional, List, Dict
 
 import pytest
 
@@ -61,24 +61,24 @@ def test_get_model_from_directory_with_subdirectories(trained_model):
 
 def _fingerprint(
     config: Optional[Text] = None,
-    config_nlu: Optional[Text] = None,
+    config_nlu: Optional[Dict[Text, Text]] = None,
     config_core: Optional[Text] = None,
     domain: Optional[List[Text]] = None,
     rasa_version: Text = "1.0",
     stories: Optional[List[Text]] = None,
-    nlu: Optional[List[Text]] = None,
+    nlu: Optional[Dict[Text, Text]] = None,
 ):
     return {
         FINGERPRINT_CONFIG_KEY: config if config is not None else ["test"],
         FINGERPRINT_CONFIG_CORE_KEY: config_core
         if config_core is not None
         else ["test"],
-        FINGERPRINT_CONFIG_NLU_KEY: config_nlu if config_nlu is not None else ["test"],
+        FINGERPRINT_CONFIG_NLU_KEY: config_nlu if config_nlu is not None else {"en": "test_en", "fr": "test_fr"},
         FINGERPRINT_DOMAIN_KEY: domain if domain is not None else ["test"],
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa_version,
         FINGERPRINT_STORIES_KEY: stories if stories is not None else ["test"],
-        FINGERPRINT_NLU_DATA_KEY: nlu if nlu is not None else ["test"],
+        FINGERPRINT_NLU_DATA_KEY: nlu if nlu is not None else {"en": "test_en", "fr": "test_fr"},
     }
 
 
@@ -113,15 +113,41 @@ def test_core_fingerprint_changed(fingerprint2):
 @pytest.mark.parametrize(
     "fingerprint2",
     [
-        _fingerprint(config=["other"]),
-        _fingerprint(nlu=["test", "other"]),
-        _fingerprint(rasa_version="100"),
-        _fingerprint(rasa_version="100", config=["other"]),
+        _fingerprint(),
     ],
 )
-def test_nlu_fingerprint_changed(fingerprint2):
+def test_nlu_fingerprint_not_changed(fingerprint2):
     fingerprint1 = _fingerprint()
-    assert nlu_fingerprint_changed(fingerprint1, fingerprint2)
+    assert not nlu_fingerprint_changed(fingerprint1, fingerprint2)
+
+
+@pytest.mark.parametrize(
+    "fingerprint2",
+    [
+        _fingerprint(config=["other"]),
+        _fingerprint(rasa_version="100"),
+        _fingerprint(rasa_version="100", config=["other"]),
+        _fingerprint(config_nlu={"en": "test_en", "fr": "test_fr_changed"}, nlu={"en": "test_en_changed", "fr": "test_fr"}),
+        _fingerprint(nlu={"en": "test_en_changed", "fr": "test_fr_changed"}),
+        _fingerprint(config_nlu={"en": "test_en_changed", "fr": "test_fr_changed"}),
+
+    ],
+)
+def test_nlu_fingerprint_changed_all(fingerprint2):
+    fingerprint1 = _fingerprint()
+    assert nlu_fingerprint_changed(fingerprint1, fingerprint2) == ["en", "fr"]
+
+
+@pytest.mark.parametrize(
+    "fingerprint2",
+    [
+        _fingerprint(config_nlu={"en": "test_en", "fr": "test_fr_changed"}),
+        _fingerprint(nlu={"en": "test_en", "fr": "test_fr_changed"}),
+    ],
+)
+def test_nlu_fingerprint_changed_fr(fingerprint2):
+    fingerprint1 = _fingerprint()
+    assert nlu_fingerprint_changed(fingerprint1, fingerprint2) == ["fr"]
 
 
 def _project_files(
@@ -212,37 +238,61 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
             "new": _fingerprint(),
             "old": _fingerprint(stories=["others"]),
             "retrain_core": True,
-            "retrain_nlu": False,
+            "retrain_nlu": [],
         },
         {
-            "new": _fingerprint(nlu=["others"]),
+            "new": _fingerprint(nlu={"en": "test_en", "fr": "test_fr_changed"}),
             "old": _fingerprint(),
             "retrain_core": False,
-            "retrain_nlu": True,
+            "retrain_nlu": ["fr"],
+        },
+        {
+            "new": _fingerprint(nlu={"en": "test_en_changed", "fr": "test_fr_changed"}),
+            "old": _fingerprint(),
+            "retrain_core": False,
+            "retrain_nlu": ["en", "fr"],
+        },
+        {
+            "new": _fingerprint(nlu={"en": "test_en_changed", "fr": "test_fr"}),
+            "old": _fingerprint(),
+            "retrain_core": False,
+            "retrain_nlu": ["en"],
         },
         {
             "new": _fingerprint(config="others"),
-            "old": _fingerprint(),
+            "old": _fingerprint(nlu={"en": "test_en_changed", "fr": "test_fr"}),
             "retrain_core": True,
-            "retrain_nlu": True,
+            "retrain_nlu": ["en", "fr"],
         },
         {
             "new": _fingerprint(config_core="others"),
             "old": _fingerprint(),
             "retrain_core": True,
-            "retrain_nlu": False,
+            "retrain_nlu": [],
         },
         {
-            "new": _fingerprint(),
-            "old": _fingerprint(config_nlu="others"),
+            "new": _fingerprint(config_nlu={"en": "test_en", "fr": "test_fr_changed"}),
+            "old": _fingerprint(),
             "retrain_core": False,
-            "retrain_nlu": True,
+            "retrain_nlu": ["fr"],
+        },
+        {
+            "new": _fingerprint(config_nlu={"en": "test_en_changed", "fr": "test_fr_changed"}),
+            "old": _fingerprint(),
+            "retrain_core": False,
+            "retrain_nlu": ["en", "fr"],
+        },
+        {
+            "new": _fingerprint(config_nlu={"en": "test_en_changed", "fr": "test_fr"}),
+            "old": _fingerprint(),
+            "retrain_core": False,
+            "retrain_nlu": ["en"],
         },
         {
             "new": _fingerprint(),
             "old": _fingerprint(),
             "retrain_core": False,
-            "retrain_nlu": False,
+            "retrain_nlu": [],
         },
     ],
 )
@@ -254,7 +304,7 @@ def test_should_retrain(trained_model, fingerprint):
     )
 
     assert retrain_core == fingerprint["retrain_core"]
-    assert retrain_nlu == fingerprint["retrain_nlu"]
+    assert sorted(retrain_nlu) == fingerprint["retrain_nlu"]
 
 
 def set_fingerprint(

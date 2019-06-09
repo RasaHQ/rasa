@@ -175,9 +175,9 @@ def model_fingerprint(
     data.
 
     Args:
-        config_file: Path to the configuration file.
+        config_files: Paths to the configuration files.
         domain: Path to the models domain file.
-        nlu_data: Path to the used NLU training data.
+        nlu_data: Paths to the used NLU training data files.
         stories: Path to the used story training data.
 
     Returns:
@@ -192,6 +192,11 @@ def model_fingerprint(
     else:
         domain_hash = _get_hashes_for_paths(domain)
 
+    # botfront: multilingual fingerprints
+    # nlu config and data have per language hash (dict)
+    nlu_files = list(os.path.join(nlu_data, file) for file in os.listdir(nlu_data))
+    from rasa.core.utils import get_file_hash
+
     return {
         FINGERPRINT_CONFIG_KEY: _get_hash_of_config(
             config_files[list(config_files.keys())[0]], exclude_keys=CONFIG_MANDATORY_KEYS
@@ -199,10 +204,12 @@ def model_fingerprint(
         FINGERPRINT_CONFIG_CORE_KEY: _get_hash_of_config(
             config_files[list(config_files.keys())[0]], include_keys=CONFIG_MANDATORY_KEYS_CORE
         ),
-        FINGERPRINT_CONFIG_NLU_KEY: {key: _get_hash_of_config(value, exclude_keys=CONFIG_MANDATORY_KEYS)
+        FINGERPRINT_CONFIG_NLU_KEY: {key: _get_hash_of_config(value, include_keys=CONFIG_MANDATORY_KEYS_NLU)
                                      for (key, value) in config_files.items()},
         FINGERPRINT_DOMAIN_KEY: domain_hash,
-        FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
+        FINGERPRINT_NLU_DATA_KEY: {file.split('.')[0][-2:]: get_file_hash(file)
+                                   for file in nlu_files},
+
         FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
@@ -226,7 +233,7 @@ def _get_hashes_for_paths(path: Text) -> List[Text]:
 def _get_hash_of_config(
         config_path: Text,
         include_keys: Optional[List[Text]] = None,
-        exclude_keys: Optional[List[Text]] = None,
+        exclude_keys: Optional[List[Text]] = [],
 ) -> Text:
     if not config_path or not os.path.exists(config_path):
         return ""
@@ -312,7 +319,7 @@ def core_fingerprint_changed(
 
 def nlu_fingerprint_changed(
         fingerprint1: Fingerprint, fingerprint2: Fingerprint
-) -> bool:
+) -> List[Text]:
     """Checks whether the fingerprints of the NLU model changed.
 
     Args:
@@ -330,12 +337,18 @@ def nlu_fingerprint_changed(
         FINGERPRINT_NLU_DATA_KEY,
         FINGERPRINT_RASA_VERSION_KEY,
     ]
-
+    all_languages = list(fingerprint1.get(FINGERPRINT_CONFIG_NLU_KEY).keys())
+    languages_to_retrain = set()
     for k in relevant_keys:
-        if fingerprint1.get(k) != fingerprint2.get(k):
-            logger.info("Data ({}) for NLU model changed.".format(k))
-            return True
-    return False
+        if not isinstance(fingerprint1.get(k), dict):
+            if fingerprint1.get(k) != fingerprint2.get(k):
+                logger.info("Data ({}) for NLU model changed.".format(k))
+                return all_languages
+        else:
+            for lang in fingerprint1.get(k).keys():
+                if fingerprint1.get(k).get(lang) != fingerprint2.get(k).get(lang):
+                    languages_to_retrain.add(lang)
+    return list(languages_to_retrain)
 
 
 def merge_model(source: Text, target: Text) -> bool:
@@ -384,8 +397,11 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
         target_path = os.path.join(train_path, "core")
         retrain_core = not merge_model(old_core, target_path)
 
-    if not nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
-        target_path = os.path.join(train_path, "nlu")
-        retrain_nlu = not merge_model(old_nlu, target_path)
+    # bf: copy existing NLU models for languages not needing to be retrained
+    languages_to_train = nlu_fingerprint_changed(last_fingerprint, new_fingerprint)
+    for lang in old_nlu.keys():
+        target_path = os.path.join(train_path, "nlu-{}".format(lang))
+        if not merge_model(old_nlu.get(lang), target_path):
+            languages_to_train.append(lang)
 
-    return retrain_core, retrain_nlu
+    return retrain_core, languages_to_train

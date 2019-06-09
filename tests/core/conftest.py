@@ -36,7 +36,13 @@ DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
+# bf: Multilingual NLU data
+DEFAULT_BF_CONFIG_DATA = "data/test_config/bf-config"
+
 DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.md"
+
+# bf: Multilingual NLU data
+DEFAULT_BF_NLU_DATA = "examples/moodbot/data/bf-nlu"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
@@ -91,14 +97,16 @@ def default_stories_file():
     return DEFAULT_STORIES_FILE
 
 
+# bf: using Multilingual data instead
 @pytest.fixture(scope="session")
 def default_stack_config():
-    return DEFAULT_STACK_CONFIG
+    return DEFAULT_BF_CONFIG_DATA
 
 
+# bf: using Multilingual data instead
 @pytest.fixture(scope="session")
 def default_nlu_data():
-    return DEFAULT_NLU_DATA
+    return DEFAULT_BF_NLU_DATA
 
 
 @pytest.fixture(scope="session")
@@ -166,9 +174,8 @@ def moodbot_metadata(unpacked_trained_moodbot_path):
 
 @pytest.fixture()
 async def trained_stack_model(
-    default_domain_path, default_stack_config, default_nlu_data, default_stories_file
+        default_domain_path, default_stack_config, default_nlu_data, default_stories_file
 ):
-
     trained_stack_model_path = await train_async(
         domain=default_domain_path,
         config=default_stack_config,
@@ -225,8 +232,12 @@ def train_model(project: Text, filename: Text = "test.tar.gz"):
 
     output = os.path.join(project, DEFAULT_MODELS_PATH, filename)
     domain = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    config = os.path.join(project, DEFAULT_CONFIG_PATH)
+    config = os.path.join(project, 'config')
     training_files = os.path.join(project, DEFAULT_DATA_PATH)
+
+    config = {
+        f.split(".")[0][-2:]: os.path.join(config, f) for f in os.listdir(config)
+    }
 
     rasa.train(domain, config, training_files, output)
 

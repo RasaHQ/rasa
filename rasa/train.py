@@ -52,7 +52,7 @@ def train(
 
 async def train_async(
     domain: Union[Domain, Text],
-    configs: Dict[Text, Text],
+    config: Dict[Text, Text],
     training_files: Optional[Union[Text, List[Text]]],
     output_path: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
@@ -63,7 +63,7 @@ async def train_async(
 
     Args:
         domain: Path to the domain file.
-        configs: Dict of paths to the config for Core and NLU. Keys are language codes
+        config: Dict of paths to the config for Core and NLU. Keys are language codes
         training_files: Paths to the training data for Core and NLU.
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
@@ -73,8 +73,8 @@ async def train_async(
     Returns:
         Path of the trained model archive.
     """
-    for lang in configs.keys():
-        configs[lang] = _get_valid_config(configs[lang], CONFIG_MANDATORY_KEYS)
+    for lang in config.keys():
+        config[lang] = _get_valid_config(config[lang], CONFIG_MANDATORY_KEYS)
     train_path = tempfile.mkdtemp()
 
     # botfront: see how to re-enable skills
@@ -93,7 +93,7 @@ async def train_async(
         training_files, skill_imports
     )
     new_fingerprint = model.model_fingerprint(
-        configs, domain, nlu_data_directory, story_directory
+        config, domain, nlu_data_directory, story_directory
     )
 
     dialogue_data_not_present = not os.listdir(story_directory)
@@ -111,7 +111,7 @@ async def train_async(
             "No dialogue data present. Just a Rasa NLU model will be trained."
         )
         return _train_nlu_with_validated_data(
-            config=configs,
+            config=config,
             nlu_data_directory=nlu_data_directory,
             output=output_path,
             fixed_model_name=fixed_model_name,
@@ -121,7 +121,7 @@ async def train_async(
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
         return await _train_core_with_validated_data(
             domain=domain,
-            config=configs,
+            config=config,
             story_directory=story_directory,
             output=output_path,
             fixed_model_name=fixed_model_name,
@@ -130,11 +130,10 @@ async def train_async(
 
     old_model = model.get_latest_model(output_path)
     retrain_core, retrain_nlu = should_retrain(new_fingerprint, old_model, train_path)
-    # todo: botfront - retrain_nlu by lang
     if force_training or retrain_core or retrain_nlu:
         await _do_training(
             domain=domain,
-            config=configs,
+            config=config,
             output_path=output_path,
             train_path=train_path,
             nlu_data_directory=nlu_data_directory,
@@ -169,7 +168,7 @@ async def _do_training(
     train_path: Text,
     force_training: bool = False,
     retrain_core: bool = True,
-    retrain_nlu: bool = True,
+    retrain_nlu: Union[bool, List[Text]] = True,
     fixed_model_name: Optional[Text] = None,
     kwargs: Optional[Dict] = None,
 ):
@@ -197,6 +196,7 @@ async def _do_training(
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
+            retrain_nlu=retrain_nlu
         )
     else:
         print_color(
@@ -382,6 +382,7 @@ def _train_nlu_with_validated_data(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
+    retrain_nlu: Union[bool, List[Text]] = True
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
 
@@ -395,13 +396,16 @@ def _train_nlu_with_validated_data(
     pattern = r'(\w\w)*(?=\.)'
     for file in os.listdir(nlu_data_directory):
         lang = re.search(pattern, file).groups()[0]
-        nlu_file_path = os.path.join(nlu_data_directory, file)
-        print_color("Start training {} NLU model ...".format(lang), color=bcolors.OKBLUE)
-        nlu_config = cfg_loader.load(config[lang])
-        nlu_config.language = lang
-        _, models[lang], _ = rasa.nlu.train(
-            nlu_config, nlu_file_path, _train_path, fixed_model_name="nlu-{}".format(lang)
-        )
+        if isinstance(retrain_nlu, bool) and retrain_nlu or lang in retrain_nlu:
+            nlu_file_path = os.path.join(nlu_data_directory, file)
+            print_color("Start training {} NLU model ...".format(lang), color=bcolors.OKBLUE)
+            nlu_config = cfg_loader.load(config[lang])
+            nlu_config.language = lang
+            _, models[lang], _ = rasa.nlu.train(
+                nlu_config, nlu_file_path, _train_path, fixed_model_name="nlu-{}".format(lang)
+            )
+        else:
+            print_color("{} NLU data didn't change, skipping training...".format(lang), color=bcolors.OKBLUE)
 
     print_color("NLU model training completed.", color=bcolors.OKBLUE)
 
