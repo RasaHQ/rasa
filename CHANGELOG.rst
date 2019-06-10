@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.9.aX] - `master`_
+[Unreleased 1.0.10.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -20,6 +20,14 @@ Removed
 
 Fixed
 -----
+
+[1.0.9] - 2019-06-10
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- revert PR #3739 (as this is a breaking change): set ``PikaProducer`` and
+  ``KafkaProducer`` default queues back to ``rasa_core_events``
 
 [1.0.8] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
