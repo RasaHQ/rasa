@@ -279,12 +279,12 @@ class SQLTrackerStore(TrackerStore):
         __tablename__ = "events"
 
         id = Column(Integer, primary_key=True)
-        sender_id = Column(String, nullable=False, index=True)
-        type_name = Column(String, nullable=False)
+        sender_id = Column(String(255), nullable=False, index=True)
+        type_name = Column(String(255), nullable=False)
         timestamp = Column(Float)
-        intent_name = Column(String)
-        action_name = Column(String)
-        data = Column(String)
+        intent_name = Column(String(255))
+        action_name = Column(String(255))
+        data = Column(String(255))
 
     def __init__(
         self,
