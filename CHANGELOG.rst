@@ -14,7 +14,6 @@ Added
 
 Changed
 -------
-- exclude unfeaturized slots from domain warnings
 
 Removed
 -------
@@ -22,7 +21,7 @@ Removed
 Fixed
 -----
 
-[1.0.8] - 2019-06-08
+[1.0.8] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -34,6 +33,7 @@ Added
 Changed
 -------
 - default ``PikaProducer`` and ``KafkaProducer`` queues to ``rasa_production_events``
+- exclude unfeaturized slots from domain warnings
 
 Fixed
 -----
