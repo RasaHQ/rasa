@@ -60,7 +60,7 @@ class PikaProducer(EventChannel):
         host,
         username,
         password,
-        queue="rasa_core_events",
+        queue="rasa_production_events",
         loglevel=logging.WARNING,
     ):
         import pika
@@ -163,7 +163,7 @@ class KafkaProducer(EventChannel):
         ssl_certfile=None,
         ssl_keyfile=None,
         ssl_check_hostname=False,
-        topic="rasa_core_events",
+        topic="rasa_production_events",
         security_protocol="SASL_PLAINTEXT",
         loglevel=logging.ERROR,
     ):
