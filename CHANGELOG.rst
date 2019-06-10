@@ -14,6 +14,7 @@ Added
 
 Changed
 -------
+- exclude unfeaturized slots from domain warnings
 
 Removed
 -------
