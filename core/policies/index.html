@@ -187,12 +187,13 @@ require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.0.7
+          viewing: 1.0.8
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.0.8/core/policies/">1.0.8</a>
               <a href="../.././1.0.7/core/policies/">1.0.7</a>
               <a href="../.././1.0.6/core/policies/">1.0.6</a>
               <a href="../.././1.0.5/core/policies/">1.0.5</a>
@@ -286,6 +287,13 @@ multiple policies in a single <a class="reference internal" href="../../api/agen
 every turn, the policy which predicts the next action with the
 highest confidence will be used. If two policies predict with equal
 confidence, the policy with the higher priority will be used.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Per default a maximum of 10 next actions can be predicted
+by the agent after every user message. To update this value
+you can set the environment variable <code class="docutils literal notranslate"><span class="pre">MAX_NUMBER_OF_PREDICTIONS</span></code>
+to the desired number of maximum predictions.</p>
+</div>
 <p>Your project’s <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> file takes a <code class="docutils literal notranslate"><span class="pre">policies</span></code> key
 which you can use to customize the policies your assistant uses.
 In the example below, the last two lines show how to use a custom

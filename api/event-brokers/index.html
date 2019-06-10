@@ -183,12 +183,13 @@ you to stream events to a message broker." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.0.7
+          viewing: 1.0.8
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.0.8/api/event-brokers/">1.0.8</a>
               <a href="../.././1.0.7/api/event-brokers/">1.0.7</a>
               <a href="../.././1.0.6/api/event-brokers/">1.0.6</a>
               <a href="../.././1.0.5/api/event-brokers/">1.0.5</a>
@@ -278,7 +279,7 @@ endpoint configuration, e.g. <code class="docutils literal notranslate"><span cl
 <span class="n">pika_broker</span> <span class="o">=</span> <span class="n">PikaProducer</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
                             <span class="s1">&#39;username&#39;</span><span class="p">,</span>
                             <span class="s1">&#39;password&#39;</span><span class="p">,</span>
-                            <span class="n">queue</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+                            <span class="n">queue</span><span class="o">=</span><span class="s1">&#39;rasa_production_events&#39;</span><span class="p">)</span>
 
 <span class="n">tracker_store</span> <span class="o">=</span> <span class="n">InMemoryTrackerStore</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">event_broker</span><span class="o">=</span><span class="n">pika_broker</span><span class="p">)</span>
 </pre></div>
@@ -312,7 +313,7 @@ example:</p>
     <span class="c1"># start consumption of channel</span>
     <span class="n">channel</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">channel</span><span class="p">()</span>
     <span class="n">channel</span><span class="o">.</span><span class="n">basic_consume</span><span class="p">(</span><span class="n">_callback</span><span class="p">,</span>
-                          <span class="n">queue</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">,</span>
+                          <span class="n">queue</span><span class="o">=</span><span class="s1">&#39;rasa_production_events&#39;</span><span class="p">,</span>
                           <span class="n">no_ack</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
     <span class="n">channel</span><span class="o">.</span><span class="n">start_consuming</span><span class="p">()</span>
 </pre></div>
@@ -364,7 +365,7 @@ when running Rasa, as following example:</p>
 <span class="kn">from</span> <span class="nn">rasa.core.tracker_store</span> <span class="kn">import</span> <span class="n">InMemoryTrackerStore</span>
 
 <span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaProducer</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost:9092&#39;</span><span class="p">,</span>
-                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_production_events&#39;</span><span class="p">)</span>
 
 <span class="n">tracker_store</span> <span class="o">=</span> <span class="n">InMemoryTrackerStore</span><span class="p">(</span><span class="n">event_broker</span><span class="o">=</span><span class="n">kafka_broker</span><span class="p">)</span>
 </pre></div>
@@ -379,7 +380,7 @@ list of strings. e.g.:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaProducer</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;kafka_broker_1:9092&#39;</span><span class="p">,</span>
                                    <span class="s1">&#39;kafka_broker_2:2030&#39;</span><span class="p">,</span>
                                    <span class="s1">&#39;kafka_broker_3:9092&#39;</span><span class="p">],</span>
-                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_production_events&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -397,7 +398,7 @@ previously configured in the broker server.</p>
                              <span class="n">sasl_plain_username</span><span class="o">=</span><span class="s1">&#39;kafka_username&#39;</span><span class="p">,</span>
                              <span class="n">sasl_plain_password</span><span class="o">=</span><span class="s1">&#39;kafka_password&#39;</span><span class="p">,</span>
                              <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SASL_PLAINTEXT&#39;</span><span class="p">,</span>
-                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_production_events&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If the clients or the brokers in the kafka cluster are located in different
@@ -411,7 +412,7 @@ be provided as arguments, as well as the CA’s root certificate.</p>
                              <span class="n">ssl_keyfile</span><span class="o">=</span><span class="s1">&#39;key.pem&#39;</span><span class="p">,</span>
                              <span class="n">ssl_check_hostname</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
                              <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SSL&#39;</span><span class="p">,</span>
-                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_production_events&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If the <code class="docutils literal notranslate"><span class="pre">ssl_check_hostname</span></code> parameter is enabled, the clients will verify
@@ -425,7 +426,7 @@ according to the security protocol being used. The following implementation show
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">kafka</span> <span class="kn">import</span> <span class="n">KafkaConsumer</span>
 <span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">loads</span>
 
-<span class="n">consumer</span> <span class="o">=</span> <span class="n">KafkaConsumer</span><span class="p">(</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">,</span>
+<span class="n">consumer</span> <span class="o">=</span> <span class="n">KafkaConsumer</span><span class="p">(</span><span class="s1">&#39;rasa_production_events&#39;</span><span class="p">,</span>
                           <span class="n">bootstrap_servers</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;localhost:29093&#39;</span><span class="p">],</span>
                           <span class="n">value_deserializer</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)),</span>
                           <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SSL&#39;</span><span class="p">,</span>
