@@ -494,9 +494,10 @@ class Domain(object):
         latest_message = tracker.latest_message
         intent_name = latest_message.intent.get("name")
 
-        for entity_name in self._get_featurized_entities(latest_message):
-            key = "entity_{0}".format(entity_name)
-            state_dict[key] = 1.0
+        if intent_name:
+            for entity_name in self._get_featurized_entities(latest_message):
+                key = "entity_{0}".format(entity_name)
+                state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
