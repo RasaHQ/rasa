@@ -493,30 +493,8 @@ class Domain(object):
         # be ignored for the current intent
         latest_message = tracker.latest_message
         intent_name = latest_message.intent.get("name")
-        # only featurize entities if an intent has been recognized
-        
-        intent_config = self.intent_config(intent_name)
-        entities = latest_message.entities
-        entity_names = {entity["entity"] for entity in entities if "entity" in entity.keys()}
 
-        # use_entities is either a list of explicitly included entities
-        # or `True` if all should be included
-        include = intent_config.get("use_entities")
-        included_entities = set(entity_names if include is True else include)
-        excluded_entities = set(intent_config.get("ignore_entities"))
-        wanted_entities = included_entities - excluded_entities
-        ambiguous_entities = included_entities.intersection(excluded_entities)
-        existing_wanted_entities = entity_names.intersection(wanted_entities)
-
-        if ambiguous_entities:
-            logger.warning(
-                "Entities: '{}' are explicitly included and excluded."
-                "Excluding takes precedence in this case."
-                "Please resolve that ambiguity."
-                "".format(ambiguous_entities)
-            )
-
-        for entity_name in existing_wanted_entities:
+        for entity_name in self._get_featurized_entities(intent_name):
             key = "entity_{0}".format(entity_name)
             state_dict[key] = 1.0
 
@@ -528,19 +506,41 @@ class Domain(object):
                         slot_id = "slot_{}_{}".format(key, i)
                         state_dict[slot_id] = slot_value
 
-        latest_message = tracker.latest_message
-
         if "intent_ranking" in latest_message.parse_data:
             for intent in latest_message.parse_data["intent_ranking"]:
                 if intent.get("name"):
                     intent_id = "intent_{}".format(intent["name"])
                     state_dict[intent_id] = intent["confidence"]
 
-        elif latest_message.intent.get("name"):
+        elif intent_name:
             intent_id = "intent_{}".format(latest_message.intent["name"])
             state_dict[intent_id] = latest_message.intent.get("confidence", 1.0)
 
         return state_dict
+    
+    def _get_featurized_entities(self, intent_name: Text) -> List[Text]:
+        intent_config = self.intent_config(intent_name)
+        entities = latest_message.entities
+        entity_names = {entity["entity"] for entity in entities if "entity" in entity.keys()}
+
+        # use_entities is either a list of explicitly included entities
+        # or `True` if all should be included
+        include = intent_config.get("use_entities")
+        included_entities = set(entity_names if include is True else include)
+        excluded_entities = set(intent_config.get("ignore_entities"))
+        wanted_entities = included_entities - excluded_entities
+        ambiguous_entities = included_entities & excluded_entities
+        existing_wanted_entities = entity_names & wanted_entities
+
+        if ambiguous_entities:
+            logger.warning(
+                "Entities: '{}' are explicitly included and excluded."
+                "Excluding takes precedence in this case."
+                "Please resolve that ambiguity."
+                "".format(ambiguous_entities)
+            )
+            
+        return existing_wanted_entities
 
     def get_prev_action_states(
         self, tracker: "DialogueStateTracker"
