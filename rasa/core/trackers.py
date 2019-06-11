@@ -332,8 +332,8 @@ class DialogueStateTracker(object):
         """Returns all actions that should be applied - w/o reverted events."""
 
         def undo_till_previous(event_type, done_events):
-            """Removes events from `done_events` until `event_type` is
-               found."""
+            """Removes events from `done_events` until the first
+               occurrence `event_type` is found which is also removed."""
             # list gets modified - hence we need to copy events!
             for e in reversed(done_events[:]):
                 del done_events[-1]
@@ -349,8 +349,8 @@ class DialogueStateTracker(object):
             elif isinstance(event, UserUtteranceReverted):
                 # Seeing a user uttered event automatically implies there was
                 # a listen event right before it, so we'll first rewind the
-                # user utterance, then get the action right before it (the
-                # listen action).
+                # user utterance, then get the action right before it (also removes
+                # the `action_listen` action right before it).
                 undo_till_previous(UserUttered, applied_events)
                 undo_till_previous(ActionExecuted, applied_events)
             else:
