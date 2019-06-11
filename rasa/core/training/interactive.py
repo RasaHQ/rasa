@@ -359,10 +359,10 @@ async def _request_free_text_utterance(
     return await _ask_questions(question, sender_id, endpoint)
 
 
-async def _request_selection_from_intent_list(
-    intent_list: List[Dict[Text, Text]], sender_id: Text, endpoint: EndpointConfig
+async def _request_selection_from_intents(
+    intents: List[Dict[Text, Text]], sender_id: Text, endpoint: EndpointConfig
 ) -> Text:
-    question = questionary.select("What intent is it?", choices=intent_list)
+    question = questionary.select("What intent is it?", choices=intents)
     return await _ask_questions(question, sender_id, endpoint)
 
 
@@ -420,7 +420,7 @@ async def _request_intent_from_user(
         {"name": "<create_new_intent>", "value": OTHER_INTENT}
     ] + _selection_choices_from_intent_prediction(predictions)
 
-    intent_name = await _request_selection_from_intent_list(
+    intent_name = await _request_selection_from_intents(
         choices, sender_id, endpoint
     )
 
@@ -844,7 +844,7 @@ async def _write_domain_to_file(
     )
 
     new_domain = Domain(
-        intent_list=_intents_from_messages(messages),
+        intents=_intents_from_messages(messages),
         entities=_entities_from_messages(messages),
         slots=[],
         templates=templates,

@@ -306,7 +306,7 @@ templates:
 
 
 @pytest.mark.parametrize(
-    "intent_list, intent_properties",
+    "intents, intent_properties",
     [
         (
             ["greet", "goodbye"],
@@ -358,8 +358,8 @@ templates:
         ),
     ],
 )
-def test_collect_intent_properties(intent_list, intent_properties):
-    assert Domain.collect_intent_properties(intent_list) == intent_properties
+def test_collect_intent_properties(intents, intent_properties):
+    assert Domain.collect_intent_properties(intents) == intent_properties
 
 
 def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
@@ -440,7 +440,7 @@ def test_domain_warnings():
 def test_check_domain_sanity_on_invalid_domain():
     with pytest.raises(InvalidDomain):
         Domain(
-            intent_list={},
+            intents={},
             entities=[],
             slots=[],
             templates={},
@@ -450,7 +450,7 @@ def test_check_domain_sanity_on_invalid_domain():
 
     with pytest.raises(InvalidDomain):
         Domain(
-            intent_list={},
+            intents={},
             entities=[],
             slots=[TextSlot("random_name"), TextSlot("random_name")],
             templates={},
@@ -460,7 +460,7 @@ def test_check_domain_sanity_on_invalid_domain():
 
     with pytest.raises(InvalidDomain):
         Domain(
-            intent_list={},
+            intents={},
             entities=["random_name", "random_name", "other_name", "other_name"],
             slots=[],
             templates={},
@@ -470,7 +470,7 @@ def test_check_domain_sanity_on_invalid_domain():
 
     with pytest.raises(InvalidDomain):
         Domain(
-            intent_list={},
+            intents={},
             entities=[],
             slots=[],
             templates={},

@@ -77,7 +77,7 @@ def test_action_instantiation_from_names():
 
 def test_domain_action_instantiation():
     domain = Domain(
-        intent_list={},
+        intents={},
         entities=[],
         slots=[],
         templates={},
