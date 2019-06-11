@@ -25,7 +25,6 @@ from rasa.core.channels.slack import SlackInput  # nopep8
 from rasa.core.channels.telegram import TelegramInput  # nopep8
 from rasa.core.channels.twilio import TwilioInput  # nopep8
 from rasa.core.channels.webexteams import WebexTeamsInput  # nopep8
-from rasa.core.channels.webchat import SocketIOInput as WebchatInput  # nopep8
 
 input_channel_classes = [
     CmdlineInput,
@@ -41,7 +40,6 @@ input_channel_classes = [
     RestInput,
     SocketIOInput,
     WebexTeamsInput,
-    WebchatInput,
 ]  # type: List[InputChannel]
 
 # Mapping from a input channel name to its class to allow name based lookup.
