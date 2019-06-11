@@ -7,7 +7,7 @@ import rasa.utils.io
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.slots import TextSlot
+from rasa.core.slots import TextSlot, UnfeaturizedSlot
 from tests.core import utilities
 from tests.core.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
@@ -349,7 +349,12 @@ def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
 def test_domain_warnings():
     domain = Domain.load(DEFAULT_DOMAIN_PATH)
 
-    warning_types = ["action_warnings", "intent_warnings", "entity_warnings"]
+    warning_types = [
+        "action_warnings",
+        "intent_warnings",
+        "entity_warnings",
+        "slot_warnings",
+    ]
 
     actions = ["action_1", "action_2"]
     intents = ["intent_1", "intent_2"]
@@ -379,6 +384,24 @@ def test_domain_warnings():
 
     for diff_dict in domain_warnings.values():
         assert all(not diff_set for diff_set in diff_dict.values())
+
+
+def test_unfeaturized_slot_in_domain_warnings():
+    # create empty domain
+    domain = Domain.empty()
+
+    # add one unfeaturized and one text slot
+    unfeaturized_slot = UnfeaturizedSlot("unfeaturized_slot", "value1")
+    text_slot = TextSlot("text_slot", "value2")
+    domain.slots.extend([unfeaturized_slot, text_slot])
+
+    # ensure both are in domain
+    assert all(slot in domain.slots for slot in (unfeaturized_slot, text_slot))
+
+    # text slot should appear in domain warnings, unfeaturized slot should not
+    in_domain_slot_warnings = domain.domain_warnings()["slot_warnings"]["in_domain"]
+    assert text_slot.name in in_domain_slot_warnings
+    assert unfeaturized_slot.name not in in_domain_slot_warnings
 
 
 def test_check_domain_sanity_on_invalid_domain():
