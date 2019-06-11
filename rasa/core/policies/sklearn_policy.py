@@ -90,9 +90,7 @@ class SklearnPolicy(Policy):
 
     def model_architecture(self, **kwargs):
         # filter out kwargs that cannot be passed to model
-        train_params = self._get_valid_params(
-            self.model.__init__, **kwargs
-        )
+        train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)
 
     def _extract_training_data(self, training_data):
