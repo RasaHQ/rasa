@@ -289,10 +289,10 @@ into account you can use this syntax:
 
   intents:
   - greet:
-    include_entities: 
+    use_entities: 
       - name
       - entity2
-    exclude_entities
+    ignore_entities
       - location
       - entity4
 
