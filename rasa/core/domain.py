@@ -692,6 +692,15 @@ class Domain(object):
     def intents(self):
         return sorted(self.intent_properties.keys())
 
+    @property
+    def _slots_for_domain_warnings(self) -> List[Text]:
+        """Fetch names of slots that are used in domain warnings.
+
+        Excludes slots of type `UnfeaturizedSlot`.
+        """
+
+        return [s.name for s in self.slots if not isinstance(s, UnfeaturizedSlot)]
+
     @staticmethod
     def _get_symmetric_difference(
         domain_elements: Union[List[Text], Set[Text]],
@@ -724,14 +733,15 @@ class Domain(object):
         """Generate domain warnings from intents, entities, actions and slots.
 
         Returns a dictionary with entries for `intent_warnings`,
-        `entity_warnings`, `action_warnings` and `slot_warnings`.
+        `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
+        of type `UnfeaturizedSlot` from domain warnings.
         """
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
         entity_warnings = self._get_symmetric_difference(self.entities, entities)
         action_warnings = self._get_symmetric_difference(self.user_actions, actions)
         slot_warnings = self._get_symmetric_difference(
-            [s.name for s in self.slots], slots
+            self._slots_for_domain_warnings, slots
         )
 
         return {

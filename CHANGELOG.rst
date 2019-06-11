@@ -6,13 +6,11 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.8.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.0.10.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- support for specifying full database urls in the ``SQLTrackerStore`` configuration
-- maximum number of predictions can be set via the environment variable ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
 
 Changed
 -------
@@ -25,7 +23,33 @@ Removed
 
 Fixed
 -----
+
+[1.0.9] - 2019-06-10
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- revert PR #3739 (as this is a breaking change): set ``PikaProducer`` and
+  ``KafkaProducer`` default queues back to ``rasa_core_events``
+
+[1.0.8] - 2019-06-10
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- support for specifying full database urls in the ``SQLTrackerStore`` configuration
+- maximum number of predictions can be set via the environment variable
+  ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
+
+Changed
+-------
+- default ``PikaProducer`` and ``KafkaProducer`` queues to ``rasa_production_events``
+- exclude unfeaturized slots from domain warnings
+
+Fixed
+-----
 - loading of additional training data with the ``SkillSelector``
+- strip trailing slashes in endpoint URLs
 
 [1.0.7] - 2019-06-06
 ^^^^^^^^^^^^^^^^^^^^
