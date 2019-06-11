@@ -353,7 +353,7 @@ def create_app(
     @app.post("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def append_event(request: Request, conversation_id: Text):
+    async def append_events(request: Request, conversation_id: Text):
         """Append a list of events to the state of a conversation"""
         validate_request_body(
             request,
@@ -361,34 +361,42 @@ def create_app(
             "to the state of a conversation.",
         )
 
-        evt = Event.from_parameters(request.json)
-        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+        events = request.json
+        if not isinstance(events, list):
+            events = [events]
 
+        events = [Event.from_parameters(event) for event in events]
+        events = [event for event in events if event]
+
+        if not events:
+            logger.warning(
+                "Append event called, but could not extract a valid event. "
+                "Request JSON: {}".format(request.json)
+            )
+            raise ErrorResponse(
+                400,
+                "BadRequest",
+                "Couldn't extract a proper event from the request body.",
+                {"parameter": "", "in": "body"},
+            )
+
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         tracker = obtain_tracker_store(app.agent, conversation_id)
 
-        if evt:
-            try:
-                tracker.update(evt, app.agent.domain)
-                app.agent.tracker_store.save(tracker)
-                return response.json(tracker.current_state(verbosity))
-            except Exception as e:
-                logger.debug(traceback.format_exc())
-                raise ErrorResponse(
-                    500,
-                    "ConversationError",
-                    "An unexpected error occurred. Error: {}".format(e),
-                )
+        try:
+            for event in events:
+                tracker.update(event, app.agent.domain)
 
-        logger.warning(
-            "Append event called, but could not extract a valid event. "
-            "Request JSON: {}".format(request.json)
-        )
-        raise ErrorResponse(
-            400,
-            "BadRequest",
-            "Couldn't extract a proper event from the request body.",
-            {"parameter": "", "in": "body"},
-        )
+            app.agent.tracker_store.save(tracker)
+
+            return response.json(tracker.current_state(verbosity))
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500,
+                "ConversationError",
+                "An unexpected error occurred. Error: {}".format(e),
+            )
 
     @app.put("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
