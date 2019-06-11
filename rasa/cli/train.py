@@ -162,12 +162,12 @@ def extract_additional_arguments(args: argparse.Namespace) -> Dict:
 
 
 def _enrich_config(
-    config_path: Text, missing_keys: List[Text], FALLBACK_CONFIG_PATH: Text
+    config_path: Text, missing_keys: List[Text], fallback_config_path: Text
 ):
     import rasa.utils.io
 
     config_data = rasa.utils.io.read_yaml_file(config_path)
-    fallback_config_data = rasa.utils.io.read_yaml_file(FALLBACK_CONFIG_PATH)
+    fallback_config_data = rasa.utils.io.read_yaml_file(fallback_config_path)
 
     for k in missing_keys:
         config_data[k] = fallback_config_data[k]
