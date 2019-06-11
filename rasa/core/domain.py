@@ -494,7 +494,7 @@ class Domain(object):
         latest_message = tracker.latest_message
         intent_name = latest_message.intent.get("name")
 
-        for entity_name in self._get_featurized_entities(intent_name):
+        for entity_name in self._get_featurized_entities(latest_message):
             key = "entity_{0}".format(entity_name)
             state_dict[key] = 1.0
 
@@ -518,7 +518,7 @@ class Domain(object):
 
         return state_dict
     
-    def _get_featurized_entities(self, latest_message) -> List[Text]:
+    def _get_featurized_entities(self, latest_message) -> List[Text]: #todo which type has latest_message
         intent_name = latest_message.intent.get("name")
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
