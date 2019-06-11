@@ -518,7 +518,8 @@ class Domain(object):
 
         return state_dict
     
-    def _get_featurized_entities(self, intent_name: Text) -> List[Text]:
+    def _get_featurized_entities(self, latest_message) -> List[Text]:
+        intent_name = latest_message.intent.get("name")
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
         entity_names = {entity["entity"] for entity in entities if "entity" in entity.keys()}
