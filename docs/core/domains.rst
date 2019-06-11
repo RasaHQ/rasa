@@ -288,8 +288,13 @@ into account you can use this syntax:
 .. code-block:: yaml
 
   intents:
-    - greet: {include_entities: [name]}
-    - goodbye: {exclude_entities: [location]}
+  - greet:
+    include_entities: 
+      - name
+      - entity2
+    exclude_entities
+      - location
+      - entity4
 
 This means that excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
