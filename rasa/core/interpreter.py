@@ -61,7 +61,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         return INTENT_MESSAGE_PREFIX
 
     @staticmethod
-    def _create_entities(parsed_entities: Dict, sidx: int, eidx: int):
+    def _create_entities(parsed_entities: Dict[Text, Union[Text, List[Text]]], sidx: int, eidx: int) -> List[Dict[Text, Any]]:
         entities = []
         for k, vs in parsed_entities.items():
             if not isinstance(vs, list):
