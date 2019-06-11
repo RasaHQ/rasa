@@ -359,7 +359,8 @@ class RemoteAction(Action):
                 kwargs = response.copy()
                 del kwargs["template"]
                 draft = await nlg.generate(
-                    response["template"], tracker, output_channel.name(), **kwargs
+                    # bf: added language kwarg
+                    response["template"], tracker, output_channel.name(), **kwargs, language=output_channel.language
                 )
                 if not draft:
                     continue
