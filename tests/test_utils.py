@@ -2,8 +2,8 @@ import pytest
 from aioresponses import aioresponses
 
 from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
-from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import validate_pipeline_yaml, InvalidYamlFileError
+from rasa.utils.endpoints import EndpointConfig, concat_url
 from tests.utilities import latest_request, json_of_latest_request
 from rasa.utils.common import sort_list_of_dicts_by_first_key
 import rasa.utils.io
@@ -112,3 +112,18 @@ def test_validate_pipeline_yaml_fails_on_missing_keys():
             rasa.utils.io.read_file("data/test_config/example_config.yaml"),
             CONFIG_SCHEMA_FILE,
         )
+
+
+@pytest.mark.parametrize(
+    "base, subpath, expected_result",
+    [
+        ("https://example.com", None, "https://example.com"),
+        ("https://example.com/test", None, "https://example.com/test"),
+        ("https://example.com/", None, "https://example.com"),
+        ("https://example.com//", None, "https://example.com"),
+        ("https://example.com/", "test", "https://example.com/test"),
+        ("https://example.com/", "test/", "https://example.com/test/"),
+    ],
+)
+def test_concat_url(base, subpath, expected_result):
+    assert concat_url(base, subpath) == expected_result
