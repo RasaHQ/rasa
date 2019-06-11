@@ -75,6 +75,15 @@ To check that the command completed correctly, look at the contents of your work
 
 The initial project files should all be there, as well as a ``models`` directory that contains your trained model.
 
+
+.. note::
+
+   By default Docker runs containers as ``root`` user. Hence, all files created by
+   these containers will be owned by ``root``. See the `documentation of docker
+   <https://docs.docker.com/v17.12/edge/engine/reference/commandline/run/>`_
+   and `docker-compose <https://docs.docker.com/compose/compose-file/>`_ if you want to
+   run the containers with a different user.
+
 Talking to Your Assistant
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
