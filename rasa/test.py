@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import logging
 import tempfile
@@ -9,13 +8,7 @@ from rasa.core.interpreter import RegexInterpreter
 
 from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.model import get_model, get_model_subdirectories, unpack_model
-from rasa.cli.utils import (
-    minimal_kwargs,
-    print_error,
-    print_warning,
-    print_info,
-    print_success,
-)
+from rasa.cli.utils import minimal_kwargs, print_error, print_warning
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +132,7 @@ def compare_nlu_models(
     exclusion_percentages: List[int],
 ):
     """Trains multiple models, compares them and saves the results."""
+
     from rasa.nlu.test import drop_intents_below_freq
     from rasa.nlu.training_data import load_data
     from rasa.nlu.utils import write_json_to_file
@@ -153,16 +147,22 @@ def compare_nlu_models(
 
     bases = [os.path.basename(nlu_config) for nlu_config in configs]
     model_names = [os.path.splitext(base)[0] for base in bases]
-    f_score_results = dict(
+    f1_score_results = dict(
         (model_name, [[] for _ in range(runs)]) for model_name in model_names
     )
 
     training_examples_per_run = compare_nlu(
-        configs, data, exclusion_percentages, f_score_results, model_names, output, runs
+        configs,
+        data,
+        exclusion_percentages,
+        f1_score_results,
+        model_names,
+        output,
+        runs,
     )
 
     f1_path = os.path.join(output, RESULTS_FILE)
-    write_json_to_file(f1_path, f_score_results)
+    write_json_to_file(f1_path, f1_score_results)
 
     plot_nlu_results(output, training_examples_per_run)
 

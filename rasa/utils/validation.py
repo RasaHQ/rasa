@@ -2,6 +2,8 @@ from typing import Text
 
 from ruamel.yaml.constructor import DuplicateKeyError
 
+from rasa.constants import PACKAGE_NAME
+
 
 class InvalidYamlFileError(ValueError):
     """Raised if an invalid yaml file was provided."""
@@ -10,7 +12,7 @@ class InvalidYamlFileError(ValueError):
         super(InvalidYamlFileError, self).__init__(message)
 
 
-def validate_pipeline_yaml(
+def validate_yaml_schema(
     yaml_file_content: Text, schema_path: Text, show_validation_errors: bool = True
 ) -> None:
     """
@@ -42,13 +44,13 @@ def validate_pipeline_yaml(
         )
     except DuplicateKeyError as e:
         raise InvalidYamlFileError(
-            "The provided yaml file contains a duplicated key: {}. You can use "
+            "The provided yaml file contains a duplicated key: '{}'. You can use "
             "http://www.yamllint.com/ to validate the yaml syntax "
             "of your file.".format(str(e))
         )
 
     try:
-        schema_file = pkg_resources.resource_filename("rasa", schema_path)
+        schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
 
         c = Core(source_data=source_data, schema_files=[schema_file])
         c.validate(raise_exception=True)

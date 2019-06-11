@@ -21,7 +21,7 @@ from rasa.core.events import SlotSet
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.validation import validate_pipeline_yaml, InvalidYamlFileError
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ class Domain(object):
     @classmethod
     def from_yaml(cls, yaml: Text) -> "Domain":
         try:
-            validate_pipeline_yaml(yaml, DOMAIN_SCHEMA_FILE)
+            validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
         except InvalidYamlFileError as e:
             raise InvalidDomain(str(e))
 

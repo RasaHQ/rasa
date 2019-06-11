@@ -622,7 +622,7 @@ async def compare(models: Text, stories_file: Text, output: Text) -> None:
     utils.dump_obj_as_json_to_file(os.path.join(output, "results.json"), num_correct)
 
 
-def plot_nlu_results(output: Text, number_of_examples: List[int]):
+def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
 
     graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
 
@@ -635,7 +635,7 @@ def plot_nlu_results(output: Text, number_of_examples: List[int]):
     )
 
 
-def plot_core_results(output: Text, number_of_examples: List[int]):
+def plot_core_results(output: Text, number_of_examples: List[int]) -> None:
 
     graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
 
@@ -654,7 +654,7 @@ def _plot_curve(
     x_label_text: Text,
     y_label_text: Text,
     graph_path: Text,
-):
+) -> None:
     """Plot the results from a model comparison.
 
     Args:
