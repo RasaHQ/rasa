@@ -68,50 +68,31 @@ def test_sort_dicts_by_keys():
     assert actual == expected
 
 
-def test_validate_pipeline_yaml():
+@pytest.mark.parametrize(
+    "file, schema",
+    [
+        ("examples/restaurantbot/domain.yml", DOMAIN_SCHEMA_FILE),
+        ("sample_configs/config_defaults.yml", CONFIG_SCHEMA_FILE),
+        ("sample_configs/config_supervised_embeddings.yml", CONFIG_SCHEMA_FILE),
+        ("sample_configs/config_crf_custom_features.yml", CONFIG_SCHEMA_FILE),
+    ],
+)
+def test_validate_yaml_schema(file, schema):
     # should raise no exception
-    validate_yaml_schema(
-        rasa.utils.io.read_file("examples/restaurantbot/domain.yml"), DOMAIN_SCHEMA_FILE
-    )
-
-    validate_yaml_schema(
-        rasa.utils.io.read_file("sample_configs/config_defaults.yml"),
-        CONFIG_SCHEMA_FILE,
-    )
-
-    validate_yaml_schema(
-        rasa.utils.io.read_file("sample_configs/config_supervised_embeddings.yml"),
-        CONFIG_SCHEMA_FILE,
-    )
-
-    validate_yaml_schema(
-        rasa.utils.io.read_file("sample_configs/config_crf_custom_features.yml"),
-        CONFIG_SCHEMA_FILE,
-    )
+    validate_yaml_schema(rasa.utils.io.read_file(file), schema)
 
 
-def test_validate_pipeline_yaml_fails_on_invalid_domain():
+@pytest.mark.parametrize(
+    "file, schema",
+    [
+        ("data/test_domains/invalid_format.yml", DOMAIN_SCHEMA_FILE),
+        ("examples/restaurantbot/data/nlu.md", DOMAIN_SCHEMA_FILE),
+        ("data/test_config/example_config.yaml", CONFIG_SCHEMA_FILE),
+    ],
+)
+def test_validate_yaml_schema_raise_exception(file, schema):
     with pytest.raises(InvalidYamlFileError):
-        validate_yaml_schema(
-            rasa.utils.io.read_file("data/test_domains/invalid_format.yml"),
-            DOMAIN_SCHEMA_FILE,
-        )
-
-
-def test_validate_pipeline_yaml_fails_on_nlu_data():
-    with pytest.raises(InvalidYamlFileError):
-        validate_yaml_schema(
-            rasa.utils.io.read_file("examples/restaurantbot/data/nlu.md"),
-            DOMAIN_SCHEMA_FILE,
-        )
-
-
-def test_validate_pipeline_yaml_fails_on_missing_keys():
-    with pytest.raises(InvalidYamlFileError):
-        validate_yaml_schema(
-            rasa.utils.io.read_file("data/test_config/example_config.yaml"),
-            CONFIG_SCHEMA_FILE,
-        )
+        validate_yaml_schema(rasa.utils.io.read_file(file), schema)
 
 
 @pytest.mark.parametrize(

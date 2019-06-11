@@ -16,10 +16,12 @@ def validate_yaml_schema(
     yaml_file_content: Text, schema_path: Text, show_validation_errors: bool = True
 ) -> None:
     """
-    Validate a yaml file.
-    :param yaml_file_content: the content of the yaml file to be validated
-    :param schema_path: the schema of the yaml file
-    :param show_validation_errors: if true, validation errors are shown
+    Validate yaml content.
+
+    Args:
+        yaml_file_content: the content of the yaml file to be validated
+        schema_path: the schema of the yaml file
+        show_validation_errors: if true, validation errors are shown
     """
     from pykwalify.core import Core
     from pykwalify.errors import SchemaError

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import tempfile
+from collections import defaultdict
 from typing import Text, Dict, Optional, List, Any
 import os
 
@@ -147,9 +148,10 @@ def compare_nlu_models(
 
     bases = [os.path.basename(nlu_config) for nlu_config in configs]
     model_names = [os.path.splitext(base)[0] for base in bases]
-    f1_score_results = dict(
-        (model_name, [[] for _ in range(runs)]) for model_name in model_names
-    )
+
+    f1_score_results = {
+        model_name: [[] for _ in range(runs)] for model_name in model_names
+    }
 
     training_examples_per_run = compare_nlu(
         configs,
