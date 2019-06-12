@@ -21,7 +21,7 @@ Getting Credentials
      ``message.groups``, ``message.im`` and ``message.mpim`` events)
   3. The ``slack_channel`` is the target your bot posts to.
      This can be a channel or an individual person. You can leave out
-     the argument to post to the bot's "App" page.
+     the argument to post DMs to the bot.
   4. Use the entry for ``Bot User OAuth Access Token`` in the
      "OAuth & Permissions" tab as your ``slack_token``. It should start
      with ``xoxob``.
