@@ -161,56 +161,28 @@ def extract_additional_arguments(args: argparse.Namespace) -> Dict:
     return arguments
 
 
-def _enrich_config(
-    config_path: Text, missing_keys: List[Text], fallback_config_path: Text
-):
-    import rasa.utils.io
-
-    config_data = rasa.utils.io.read_yaml_file(config_path)
-    fallback_config_data = rasa.utils.io.read_yaml_file(fallback_config_path)
-
-    for k in missing_keys:
-        config_data[k] = fallback_config_data[k]
-
-    rasa.utils.io.write_yaml_file(config_data, config_path)
-
-
 def _get_valid_config(
     config: Optional[Text],
     mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,
 ) -> Text:
-    if config:
-        # config is provided via '-c' argument. config file needs to contain
-        # all mandatory keys
-        if not os.path.exists(config):
-            print_error(
-                "The config file '{}' does not exist. Use '--config' to specify a "
-                "valid config file."
-                "".format(config)
-            )
-            exit(1)
+    config = get_validated_path(config, "config", default_config)
 
-        missing_keys = missing_config_keys(config, mandatory_keys)
-        if missing_keys:
-            print_error(
-                "Configuration file '{}' is missing mandatory parameters: "
-                "'{}'. Add missing parameters to configuration file and try again."
-                "".format(config, "', '".join(missing_keys))
-            )
-            exit(1)
-        return config
-
-    # use default config path and enrich it in case mandatory keys are missing
-    config = get_validated_path(default_config, "config", FALLBACK_CONFIG_PATH)
-    missing_keys = missing_config_keys(config, mandatory_keys)
-
-    if missing_keys:
-        print_warning(
-            "Configuration file '{}' is missing mandatory parameters: "
-            "'{}'. Filling missing parameters from fallback configuration file: '{}'."
-            "".format(config, "', '".join(missing_keys), FALLBACK_CONFIG_PATH)
+    if not os.path.exists(config):
+        print_error(
+            "The config file '{}' does not exist. Use '--config' to specify a "
+            "valid config file."
+            "".format(config)
         )
-        _enrich_config(config, missing_keys, FALLBACK_CONFIG_PATH)
+        exit(1)
+
+    missing_keys = missing_config_keys(config, mandatory_keys)
+    if missing_keys:
+        print_error(
+            "The config file '{}' is missing mandatory parameters: "
+            "'{}'. Add missing parameters to config file and try again."
+            "".format(config, "', '".join(missing_keys))
+        )
+        exit(1)
 
     return config

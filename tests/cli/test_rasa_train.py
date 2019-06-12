@@ -189,7 +189,7 @@ def test_train_core_help(run):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policy": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["KerasPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
             "error": True,
@@ -199,20 +199,20 @@ def test_train_core_help(run):
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policy": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["KerasPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
             "error": True,
         },
         {
             "config_data": {
-                "policy": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["KerasPolicy", "FallbackPolicy"],
                 "imports": "other-folder",
             },
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policy": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["KerasPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
             "error": True,
@@ -221,17 +221,17 @@ def test_train_core_help(run):
             "config_data": None,
             "default_config": {
                 "pipeline": "supervised",
-                "policy": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["KerasPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
-            "error": False,
+            "error": True,
         },
         {
             "config_data": None,
             "default_config": {
                 "language": "en",
                 "pipeline": "supervised",
-                "policy": ["KerasPolicy", "FallbackPolicy"],
+                "policies": ["KerasPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
             "error": False,
@@ -240,13 +240,13 @@ def test_train_core_help(run):
             "config_data": None,
             "default_config": {"language": "en", "pipeline": "supervised"},
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
-            "error": False,
+            "error": True,
         },
         {
             "config_data": None,
             "default_config": None,
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
-            "error": False,
+            "error": True,
         },
     ],
 )
@@ -258,16 +258,14 @@ def test_get_valid_config(parameters):
         config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
         rasa.utils.io.write_yaml_file(parameters["config_data"], config_path)
 
-    default_config_path = DEFAULT_CONFIG_PATH
+    default_config_path = None
     if parameters["default_config"] is not None:
         default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
         rasa.utils.io.write_yaml_file(parameters["default_config"], default_config_path)
 
     if parameters["error"]:
         with pytest.raises(SystemExit):
-            _get_valid_config(
-                config_path, parameters["mandatory_keys"], default_config_path
-            )
+            _get_valid_config(config_path, parameters["mandatory_keys"])
 
     else:
         config_path = _get_valid_config(
@@ -278,12 +276,6 @@ def test_get_valid_config(parameters):
 
         for k in parameters["mandatory_keys"]:
             assert k in config_data
-
-        expected_data = parameters["config_data"] or parameters["default_config"]
-
-        if expected_data is not None:
-            for k, v in expected_data.items():
-                assert config_data[k] == v
 
 
 def test_get_valid_config_with_non_existing_file():
