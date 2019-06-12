@@ -93,8 +93,8 @@ also be asked to sign a
 To build & edit the docs, first install all necessary dependencies:
 
 ```
-brew install sphinx
 pip3 install -r requirements-dev.txt
+pip3 install -r requirements-docs.txt
 ```
 
 After the installation has finished, you can run and view the documentation
@@ -114,20 +114,30 @@ make test
 ```
 
 ### Steps to release a new version
-Releasing a new version is quite simple, as the packages are build and distributed by travis. The following things need to be done to release a new version
-1. Update [rasa/version.py](https://github.com/RasaHQ/rasa/blob/master/rasa/version.py) to reflect the correct version number
-2. Edit the [CHANGELOG.rst](https://github.com/RasaHQ/rasa/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
-3. Edit the [migration guide](https://github.com/RasaHQ/rasa/blob/master/docs/migration-guide.rst) to provide assistance for users updating to the new version
-4. Commit all the above changes and tag a new release, e.g. using
+Releasing a new version is quite simple, as the packages are build and distributed by travis.
+
+*Terminology*:
+* patch release (third version part increases): 1.1.2 -> 1.1.3
+* minor release (second version part increases): 1.1.3 -> 1.2.0
+* major release (first version part increases): 1.2.0 -> 2.0.0
+
+*Release steps*:
+1. Create a new branch and 
+
+  * Update [rasa/version.py](https://github.com/RasaHQ/rasa/blob/master/rasa/version.py) to reflect the correct version number
+  * Edit the [CHANGELOG.rst](https://github.com/RasaHQ/rasa/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
+  * Edit the [migration guide](https://github.com/RasaHQ/rasa/blob/master/docs/migration-guide.rst) to provide assistance for users updating to the new version
+2. Commit the changes and create a PR against master or the release branch (e.g. `1.2.x`)
+3. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
     ```
-    git tag -f 0.7.0 -m "Some helpful line describing the release"
-    git push origin 0.7.0
+    git tag -f 1.2.0 -m "Some helpful line describing the release"
+    git push origin 1.2.0
     ```
     travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa)
-5. only if it is a **major release**, a new branch should be created pointing to the same commit as the tag to allow for future minor patches, e.g.
+5. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
     ```
-    git checkout -b 0.7.x
-    git push origin 0.7.x
+    git checkout -b 1.2.x
+    git push origin 1.2.x
     ```
 
 ### Code Style

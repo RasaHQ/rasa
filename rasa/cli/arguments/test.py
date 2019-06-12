@@ -110,6 +110,16 @@ def add_test_nlu_argument_group(
         default="confmat.png",
         help="Output path for the confusion matrix plot.",
     )
+    parser.add_argument(
+        "-c",
+        "--config",
+        nargs="+",
+        default=None,
+        help="Model configuration file. If a single file is passed and cross "
+        "validation mode is chosen, cross-validation is performed, if "
+        "multiple configs or a folder of configs are passed, models "
+        "will be trained and compared directly.",
+    )
 
     cross_validation_arguments = parser.add_argument_group("Cross Validation")
     cross_validation_arguments.add_argument(
@@ -119,18 +129,29 @@ def add_test_nlu_argument_group(
         help="Switch on cross validation mode. Any provided model will be ignored.",
     )
     cross_validation_arguments.add_argument(
-        "-c",
-        "--config",
-        type=str,
-        default=DEFAULT_CONFIG_PATH,
-        help="Model configuration file (cross validation only).",
-    )
-    cross_validation_arguments.add_argument(
         "-f",
         "--folds",
         required=False,
         default=10,
         help="Number of cross validation folds (cross validation only).",
+    )
+    comparison_arguments = parser.add_argument_group("Comparison Mode")
+    comparison_arguments.add_argument(
+        "-r",
+        "--runs",
+        required=False,
+        default=3,
+        type=int,
+        help="Number of comparison runs to make.",
+    )
+    comparison_arguments.add_argument(
+        "-p",
+        "--percentages",
+        required=False,
+        nargs="+",
+        type=int,
+        default=[0, 25, 50, 75, 90],
+        help="Percentages of training data to exclude during comparison.",
     )
 
 

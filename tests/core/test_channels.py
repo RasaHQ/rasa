@@ -643,6 +643,7 @@ async def test_slackbot_send_attachment_only():
     assert r.request.body == {
         "channel": ["General"],
         "as_user": ["True"],
+        "text": ["Attachment"],
         "attachments": [json.dumps([attachment])],
     }
 
@@ -659,13 +660,13 @@ async def test_slackbot_send_attachment_withtext():
     )
 
     bot = SlackBot("DummyToken", "General")
-    kwargs = {"text": "Sample text"}
     attachment = {
         "fallback": "Financial Advisor Summary",
         "color": "#36a64f",
         "author_name": "ABE",
         "title": "Financial Advisor Summary",
         "title_link": "http://tenfactorialrocks.com",
+        "text": "Here is the summary:",
         "image_url": "https://r.com/cancel/r12",
         "thumb_url": "https://r.com/cancel/r12",
         "actions": [
@@ -692,14 +693,14 @@ async def test_slackbot_send_attachment_withtext():
         "ts": 1531889719,
     }
 
-    await bot.send_attachment("ID", attachment, **kwargs)
+    await bot.send_attachment("ID", attachment)
 
     r = responses.calls[-1]
 
     assert r.request.body == {
         "channel": ["General"],
         "as_user": ["True"],
-        "text": ["Sample text"],
+        "text": ["Here is the summary:"],
         "attachments": [json.dumps([attachment])],
     }
 
@@ -745,12 +746,12 @@ async def test_slackbot_send_text():
 
     r = responses.calls[-1]
 
-    assert r.request.body["as_user"] == ["True"]
-    assert r.request.body["channel"] == ["General"]
-    assert len(r.request.body["blocks"]) == 1
-    assert '"type": "section"' in r.request.body["blocks"][0]
-    assert '"type": "plain_text"' in r.request.body["blocks"][0]
-    assert '"text": "my message"' in r.request.body["blocks"][0]
+    assert r.parsed_body == {
+        "as_user": ["True"],
+        "channel": ["General"],
+        "text": ["my message"],
+        "type": ["mrkdwn"],
+    }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")

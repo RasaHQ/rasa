@@ -396,6 +396,12 @@ def cmp_dict_list(firsts, seconds):
             "md",
             None,
         ),
+        (
+            "data/test/training_data_containing_special_chars.json",
+            "data/test/json_with_special_chars_convered_to_md.md",
+            "md",
+            None,
+        ),
     ],
 )
 def test_training_data_conversion(

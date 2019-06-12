@@ -1,6 +1,16 @@
 import os
 import shutil
+import tempfile
 
+import pytest
+
+from rasa.cli.train import _get_valid_config
+from rasa.constants import (
+    CONFIG_MANDATORY_KEYS_CORE,
+    CONFIG_MANDATORY_KEYS,
+    CONFIG_MANDATORY_KEYS_NLU,
+    DEFAULT_CONFIG_PATH,
+)
 from rasa.nlu.utils import list_files
 
 
@@ -169,3 +179,105 @@ def test_train_core_help(run):
 
     for i, line in enumerate(lines):
         assert output.outlines[i] == line
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {
+            "config_data": {"language": "en", "pipeline": "supervised"},
+            "default_config": {
+                "language": "en",
+                "pipeline": "supervised",
+                "policies": ["KerasPolicy", "FallbackPolicy"],
+            },
+            "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
+            "error": True,
+        },
+        {
+            "config_data": {},
+            "default_config": {
+                "language": "en",
+                "pipeline": "supervised",
+                "policies": ["KerasPolicy", "FallbackPolicy"],
+            },
+            "mandatory_keys": CONFIG_MANDATORY_KEYS,
+            "error": True,
+        },
+        {
+            "config_data": {
+                "policies": ["KerasPolicy", "FallbackPolicy"],
+                "imports": "other-folder",
+            },
+            "default_config": {
+                "language": "en",
+                "pipeline": "supervised",
+                "policies": ["KerasPolicy", "FallbackPolicy"],
+            },
+            "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
+            "error": True,
+        },
+        {
+            "config_data": None,
+            "default_config": {
+                "pipeline": "supervised",
+                "policies": ["KerasPolicy", "FallbackPolicy"],
+            },
+            "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
+            "error": True,
+        },
+        {
+            "config_data": None,
+            "default_config": {
+                "language": "en",
+                "pipeline": "supervised",
+                "policies": ["KerasPolicy", "FallbackPolicy"],
+            },
+            "mandatory_keys": CONFIG_MANDATORY_KEYS,
+            "error": False,
+        },
+        {
+            "config_data": None,
+            "default_config": {"language": "en", "pipeline": "supervised"},
+            "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
+            "error": True,
+        },
+        {
+            "config_data": None,
+            "default_config": None,
+            "mandatory_keys": CONFIG_MANDATORY_KEYS,
+            "error": True,
+        },
+    ],
+)
+def test_get_valid_config(parameters):
+    import rasa.utils.io
+
+    config_path = None
+    if parameters["config_data"] is not None:
+        config_path = os.path.join(tempfile.mkdtemp(), "config.yml")
+        rasa.utils.io.write_yaml_file(parameters["config_data"], config_path)
+
+    default_config_path = None
+    if parameters["default_config"] is not None:
+        default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
+        rasa.utils.io.write_yaml_file(parameters["default_config"], default_config_path)
+
+    if parameters["error"]:
+        with pytest.raises(SystemExit):
+            _get_valid_config(config_path, parameters["mandatory_keys"])
+
+    else:
+        config_path = _get_valid_config(
+            config_path, parameters["mandatory_keys"], default_config_path
+        )
+
+        config_data = rasa.utils.io.read_yaml_file(config_path)
+
+        for k in parameters["mandatory_keys"]:
+            assert k in config_data
+
+
+def test_get_valid_config_with_non_existing_file():
+    with pytest.raises(SystemExit):
+        _get_valid_config("non-existing-file.yml", CONFIG_MANDATORY_KEYS)

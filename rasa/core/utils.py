@@ -20,18 +20,23 @@ from sanic.views import CompositionView
 import rasa.utils.io as io_utils
 from rasa.utils.endpoints import read_endpoint_config
 
+
+# backwards compatibility 1.0.x
+# noinspection PyUnresolvedReferences
+from rasa.utils.endpoints import concat_url
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from random import Random
 
 
-def configure_file_logging(loglevel, logfile):
-    if logfile:
-        fh = logging.FileHandler(logfile, encoding="utf-8")
-        fh.setLevel(loglevel)
-        logging.getLogger("").addHandler(fh)
-    logging.captureWarnings(True)
+def configure_file_logging(log_file: Optional[Text]):
+    if log_file is not None:
+        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
 
 def module_path_from_instance(inst: Any) -> Text:

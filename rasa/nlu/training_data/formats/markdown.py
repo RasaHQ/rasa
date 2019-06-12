@@ -27,6 +27,22 @@ item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
 
+ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+
+ESCAPE = re.compile(r"[\b\f\n\r\t]")
+
+
+def encode_string(s):
+    """Return a encoded python string
+
+    """
+
+    def replace(match):
+        return ESCAPE_DCT[match.group(0)]
+
+    return ESCAPE.sub(replace, s)
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -258,17 +274,17 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_section_header_md(section_type, title, prepend_newline=True):
         """generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
-        return prefix + "## {}:{}\n".format(section_type, title)
+        return prefix + "## {}:{}\n".format(section_type, encode_string(title))
 
     @staticmethod
     def _generate_item_md(text):
         """generates markdown for a list item."""
-        return "- {}\n".format(text)
+        return "- {}\n".format(encode_string(text))
 
     @staticmethod
     def _generate_fname_md(text):
         """generates markdown for a lookup table file path."""
-        return "  {}\n".format(text)
+        return "  {}\n".format(encode_string(text))
 
     def _generate_message_md(self, message):
         """generates markdown for a message object."""
