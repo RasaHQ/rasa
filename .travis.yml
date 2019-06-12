@@ -5,6 +5,7 @@ cache:
   directories:
   - $HOME/.cache/pip
   - /tmp/cached/
+  - .pytype
 python: '3.6'
 env:
   # needed to fix issues with boto during testing:
