@@ -160,6 +160,9 @@ class OutputChannel(object):
     async def send_response(self, recipient_id: Text, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
 
+        if message.get("text"):
+            await self.send_text_message(recipient_id, message.pop("text"), **message)
+
         if message.get("custom"):
             await self.send_custom_json(recipient_id, message.pop("custom"), **message)
 
@@ -175,9 +178,6 @@ class OutputChannel(object):
             await self.send_text_with_buttons(
                 recipient_id, message.pop("text"), message.pop("buttons"), **message
             )
-
-        if message.get("text"):
-            await self.send_text_message(recipient_id, message.pop("text"), **message)
 
         # if there is an image we handle it separately as an attachment
         if message.get("image"):
