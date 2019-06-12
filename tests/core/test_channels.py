@@ -85,7 +85,8 @@ async def test_send_response(default_channel, default_tracker):
         "recipient_id": "my-sender",
         "image": "https://i.imgur.com/T5xVo.jpg",
     }
-    assert collected[4] == {
+    assert collected[4] == {"recipient_id": "my-sender", "text": "look at this"}
+    assert collected[5] == {
         "recipient_id": "my-sender",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
