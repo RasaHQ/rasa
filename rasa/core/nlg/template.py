@@ -103,8 +103,8 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Getting the slot values in the template variables
         template_vars = self._template_variables(filled_slots, kwargs)
 
-        # Filling the template variables in the template
-        if template_vars:
+        # Filling the template variables in the template text
+        if template_vars and "text" in template:
             try:
                 # transforming template tags from
                 # "{tag_name}" to "{0[tag_name]}"
