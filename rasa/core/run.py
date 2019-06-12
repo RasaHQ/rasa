@@ -66,6 +66,7 @@ def configure_app(
     jwt_method: Optional[Text] = None,
     route: Optional[Text] = "/webhooks/",
     port: int = constants.DEFAULT_SERVER_PORT,
+    endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
 ):
     """Run the agent."""
@@ -77,6 +78,7 @@ def configure_app(
             auth_token=auth_token,
             jwt_secret=jwt_secret,
             jwt_method=jwt_method,
+            endpoints=endpoints,
         )
     else:
         app = Sanic(__name__, configure_logging=False)
@@ -143,6 +145,7 @@ def serve_application(
         jwt_secret,
         jwt_method,
         port=port,
+        endpoints=endpoints,
         log_file=log_file,
     )
 
