@@ -23,16 +23,17 @@ from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DOCS_BASE_URL,
 )
+from rasa.core import broker
 from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.core.utils import dump_obj_as_str_to_file
+from rasa.core.utils import dump_obj_as_str_to_file, AvailableEndpoints
 from rasa.model import get_model_subdirectories, fingerprint_from_path
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
-
+from rasa.core.tracker_store import TrackerStore
 
 logger = logging.getLogger(__name__)
 
@@ -233,9 +234,29 @@ async def _load_agent(
     model_path: Optional[Text] = None,
     model_server: Optional[EndpointConfig] = None,
     remote_storage: Optional[Text] = None,
+    endpoints: Optional[AvailableEndpoints] = None,
 ) -> Agent:
     try:
-        loaded_agent = await load_agent(model_path, model_server, remote_storage)
+        tracker_store = None
+        generator = None
+        action_endpoint = None
+
+        if endpoints:
+            _broker = broker.from_endpoint_config(endpoints.event_broker)
+            tracker_store = TrackerStore.find_tracker_store(
+                None, endpoints.tracker_store, _broker
+            )
+            generator = endpoints.nlg
+            action_endpoint = endpoints.action
+
+        loaded_agent = await load_agent(
+            model_path,
+            model_server,
+            remote_storage,
+            generator=generator,
+            tracker_store=tracker_store,
+            action_endpoint=action_endpoint,
+        )
     except Exception as e:
         logger.debug(traceback.format_exc())
         raise ErrorResponse(
@@ -259,6 +280,7 @@ def create_app(
     auth_token: Optional[Text] = None,
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
+    endpoints: Optional[AvailableEndpoints] = None,
 ):
     """Class representing a Rasa HTTP server."""
 
@@ -353,7 +375,7 @@ def create_app(
     @app.post("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def append_event(request: Request, conversation_id: Text):
+    async def append_events(request: Request, conversation_id: Text):
         """Append a list of events to the state of a conversation"""
         validate_request_body(
             request,
@@ -361,34 +383,42 @@ def create_app(
             "to the state of a conversation.",
         )
 
-        evt = Event.from_parameters(request.json)
-        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+        events = request.json
+        if not isinstance(events, list):
+            events = [events]
 
+        events = [Event.from_parameters(event) for event in events]
+        events = [event for event in events if event]
+
+        if not events:
+            logger.warning(
+                "Append event called, but could not extract a valid event. "
+                "Request JSON: {}".format(request.json)
+            )
+            raise ErrorResponse(
+                400,
+                "BadRequest",
+                "Couldn't extract a proper event from the request body.",
+                {"parameter": "", "in": "body"},
+            )
+
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         tracker = obtain_tracker_store(app.agent, conversation_id)
 
-        if evt:
-            try:
-                tracker.update(evt, app.agent.domain)
-                app.agent.tracker_store.save(tracker)
-                return response.json(tracker.current_state(verbosity))
-            except Exception as e:
-                logger.debug(traceback.format_exc())
-                raise ErrorResponse(
-                    500,
-                    "ConversationError",
-                    "An unexpected error occurred. Error: {}".format(e),
-                )
+        try:
+            for event in events:
+                tracker.update(event, app.agent.domain)
 
-        logger.warning(
-            "Append event called, but could not extract a valid event. "
-            "Request JSON: {}".format(request.json)
-        )
-        raise ErrorResponse(
-            400,
-            "BadRequest",
-            "Couldn't extract a proper event from the request body.",
-            {"parameter": "", "in": "body"},
-        )
+            app.agent.tracker_store.save(tracker)
+
+            return response.json(tracker.current_state(verbosity))
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500,
+                "ConversationError",
+                "An unexpected error occurred. Error: {}".format(e),
+            )
 
     @app.put("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
@@ -788,7 +818,9 @@ def create_app(
         model_server = request.json.get("model_server", None)
         remote_storage = request.json.get("remote_storage", None)
 
-        app.agent = await _load_agent(model_path, model_server, remote_storage)
+        app.agent = await _load_agent(
+            model_path, model_server, remote_storage, endpoints
+        )
 
         logger.debug("Successfully loaded model '{}'.".format(model_path))
         return response.json(None, status=204)

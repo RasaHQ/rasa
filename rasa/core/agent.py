@@ -258,7 +258,7 @@ async def load_agent(
             )
 
         else:
-            logger.error("No valid configuration given to load agent.")
+            logger.warning("No valid configuration given to load agent.")
             return None
 
     except Exception as e:
@@ -806,7 +806,9 @@ class Agent(object):
     def _create_domain(domain: Union[None, Domain, Text]) -> Domain:
 
         if isinstance(domain, str):
-            return Domain.load(domain)
+            domain = Domain.load(domain)
+            domain.check_missing_templates()
+            return domain
         elif isinstance(domain, Domain):
             return domain
         elif domain is not None:

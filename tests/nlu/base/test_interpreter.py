@@ -2,8 +2,16 @@ import rasa.nlu
 
 import pytest
 
+from rasa.core.interpreter import (
+    NaturalLanguageInterpreter,
+    RasaNLUHttpInterpreter,
+    RasaNLUInterpreter,
+    RegexInterpreter,
+)
+from rasa.model import get_model_subdirectories, get_model
 from rasa.nlu import registry, training_data
 from rasa.nlu.model import Interpreter
+from rasa.utils.endpoints import EndpointConfig
 from tests.nlu import utilities
 
 
@@ -64,3 +72,31 @@ def test_model_not_compatible(metadata):
 def test_model_is_compatible(metadata):
     # should not raise an exception
     assert Interpreter.ensure_model_compatibility(metadata) is None
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {
+            "obj": "not-existing",
+            "endpoint": EndpointConfig(url="http://localhost:8080/"),
+            "type": RasaNLUHttpInterpreter,
+        },
+        {
+            "obj": "trained_nlu_model",
+            "endpoint": EndpointConfig(url="http://localhost:8080/"),
+            "type": RasaNLUHttpInterpreter,
+        },
+        {"obj": "trained_nlu_model", "endpoint": None, "type": RasaNLUInterpreter},
+        {"obj": "not-existing", "endpoint": None, "type": RegexInterpreter},
+        {"obj": ["list-object"], "endpoint": None, "type": RegexInterpreter},
+    ],
+)
+def test_create_interpreter(parameters, trained_nlu_model):
+    obj = parameters["obj"]
+    if obj == "trained_nlu_model":
+        _, obj = get_model_subdirectories(get_model(trained_nlu_model))
+
+    interpreter = NaturalLanguageInterpreter.create(obj, parameters["endpoint"])
+
+    assert isinstance(interpreter, parameters["type"])

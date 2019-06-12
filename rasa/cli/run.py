@@ -1,10 +1,10 @@
 import argparse
 import logging
 import os
-from typing import List
+from typing import List, Text, Optional
 
 from rasa.cli.arguments import run as arguments
-from rasa.cli.utils import get_validated_path
+from rasa.cli.utils import get_validated_path, print_error
 from rasa.constants import (
     DEFAULT_ACTIONS_PATH,
     DEFAULT_CREDENTIALS_PATH,
@@ -56,10 +56,41 @@ def run_actions(args: argparse.Namespace):
     sdk.main_from_args(args)
 
 
+def _validate_model_path(model_path: Text, parameter: Text, default: Text):
+
+    if model_path is not None and not os.path.exists(model_path):
+        reason_str = "'{}' not found.".format(model_path)
+        if model_path is None:
+            reason_str = "Parameter '{}' not set.".format(parameter)
+
+        logger.debug(
+            "{} Using default location '{}' instead.".format(reason_str, default)
+        )
+
+        os.makedirs(default, exist_ok=True)
+        model_path = default
+
+    return model_path
+
+
 def run(args: argparse.Namespace):
     import rasa.run
 
-    args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
+
+    if not args.enable_api:
+        # if the API is enabled you can start without a model as you can train a
+        # model via the API once the server is up and running
+        from rasa.model import get_model
+
+        model_path = get_model(args.model)
+        if not model_path:
+            print_error(
+                "No model found. Train a model before running the "
+                "server using `rasa train`."
+            )
+            return
+
     args.endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )

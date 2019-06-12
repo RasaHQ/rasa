@@ -8,8 +8,8 @@ from rasa.utils.endpoints import EndpointConfig
 def test_x_help(run):
     output = run("x", "--help")
 
-    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--no-prompt]
-              [--production] [--data DATA] [--log-file LOG_FILE]
+    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
+              [--production] [--rasa-x-port RASA_X_PORT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
               [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
