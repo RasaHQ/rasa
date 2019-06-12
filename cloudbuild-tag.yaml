@@ -1,0 +1,26 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ "login",
+          "-u", "$_DOCKER_LOGIN",
+          "-p", "$_DOCKER_PASSWORD",
+  ]
+
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - docker pull botfront/botfront:latest || exit 0
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ "build",
+          "-f", "docker/Dockerfile_botfront",
+          "-t", "botfront/rasa-core-bf:$TAG_NAME",
+          "-t", "botfront/rasa-for-botfront:latest",
+          "--cache-from", "botfront/rasa-for-botfront:latest",
+          "."]
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ "push", "botfront/rasa-for-botfront:$TAG_NAME"]
+
+
+timeout: 1800s
