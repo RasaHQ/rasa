@@ -67,7 +67,7 @@ async def test_http_parsing():
 
     endpoint = EndpointConfig("https://interpreter.com")
     with aioresponses() as mocked:
-        mocked.post("https://interpreter.com/parse", repeat=True, status=200)
+        mocked.post("https://interpreter.com/model/parse", repeat=True, status=200)
 
         inter = RasaNLUHttpInterpreter(endpoint=endpoint)
         try:
@@ -77,10 +77,9 @@ async def test_http_parsing():
         except KeyError:
             pass  # logger looks for intent and entities, so we except
 
-        r = latest_request(mocked, "POST", "https://interpreter.com/parse")
+        r = latest_request(mocked, "POST", "https://interpreter.com/model/parse")
 
         assert r
-        assert json_of_latest_request(r)["message_id"] == message.message_id
 
 
 async def test_reminder_scheduled(

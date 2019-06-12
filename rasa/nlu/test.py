@@ -1,11 +1,10 @@
 import itertools
-from collections import defaultdict, namedtuple
-
 import os
 import logging
 import numpy as np
+from collections import defaultdict, namedtuple
+from tqdm import tqdm
 from typing import (
-    Any,
     Iterable,
     Iterator,
     Tuple,
@@ -15,10 +14,15 @@ from typing import (
     Text,
     Union,
     Dict,
+    Any,
 )
-from tqdm import tqdm
 
+from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
+from rasa.model import get_model
+from rasa.train import train_nlu
+from rasa.utils.io import create_path
 from rasa.nlu import config, training_data, utils
+from rasa.nlu.utils import write_to_file
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
@@ -905,6 +909,101 @@ def compute_metrics(
     entity_metrics = _compute_entity_metrics(entity_results, interpreter)
 
     return (intent_metrics, entity_metrics, intent_results, entity_results)
+
+
+def compare_nlu(
+    configs: List[Text],
+    data: TrainingData,
+    exclusion_percentages: List[int],
+    f_score_results: Dict[Text, Any],
+    model_names: List[Text],
+    output: Text,
+    runs: int,
+) -> List[int]:
+    """
+    Trains and compares multiple NLU models.
+    For each run and exclusion percentage a model per config file is trained.
+    Thereby, the model is trained only on the current percentage of training data.
+    Afterwards, the model is tested on the complete test data of that run.
+    All results are stored in the provided output directory.
+
+    Args:
+        configs: config files needed for training
+        data: training data
+        exclusion_percentages: percentages of training data to exclude during comparison
+        f_score_results: dictionary of model name to f-score results per run
+        model_names: names of the models to train
+        output: the output directory
+        runs: number of comparison runs
+
+    Returns: training examples per run
+    """
+
+    training_examples_per_run = []
+
+    for run in range(runs):
+
+        logger.info("Beginning comparison run {}/{}".format(run + 1, runs))
+
+        run_path = os.path.join(output, "run_{}".format(run + 1))
+        create_path(run_path)
+
+        test_path = os.path.join(run_path, TEST_DATA_FILE)
+        create_path(test_path)
+
+        train, test = data.train_test_split()
+        write_to_file(test_path, test.as_markdown())
+
+        training_examples_per_run = []
+
+        for percentage in exclusion_percentages:
+            percent_string = "{}%_exclusion".format(percentage)
+
+            _, train = train.train_test_split(percentage / 100)
+            training_examples_per_run.append(len(train.training_examples))
+
+            model_output_path = os.path.join(run_path, percent_string)
+            train_split_path = os.path.join(model_output_path, TRAIN_DATA_FILE)
+            create_path(train_split_path)
+            write_to_file(train_split_path, train.as_markdown())
+
+            for nlu_config, model_name in zip(configs, model_names):
+                logger.info(
+                    "Evaluating configuration '{}' with {} training data.".format(
+                        model_name, percent_string
+                    )
+                )
+
+                try:
+                    model_path = train_nlu(
+                        nlu_config,
+                        train_split_path,
+                        model_output_path,
+                        fixed_model_name=model_name,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "Training model '{}' failed. Error: {}".format(
+                            model_name, str(e)
+                        )
+                    )
+                    f_score_results[model_name][run].append(0.0)
+                    continue
+
+                model_path = os.path.join(get_model(model_path), "nlu")
+
+                report_path = os.path.join(
+                    model_output_path, "{}_report".format(model_name)
+                )
+                errors_path = os.path.join(report_path, "errors.json")
+                result = run_evaluation(
+                    test_path, model_path, report=report_path, errors=errors_path
+                )
+
+                f1 = result["intent_evaluation"]["f1_score"]
+                f_score_results[model_name][run].append(f1)
+
+    return training_examples_per_run
 
 
 def _compute_intent_metrics(

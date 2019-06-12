@@ -1,8 +1,7 @@
-import argparse
 import logging
 from typing import Any, Optional, Text, Tuple, Union
 
-from rasa.nlu import config, utils
+from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer

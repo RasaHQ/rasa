@@ -1,20 +1,21 @@
 import asyncio
 import logging
 import tempfile
-from typing import Text, Dict, Optional, List
+from collections import defaultdict
+from typing import Text, Dict, Optional, List, Any
 import os
 
 from rasa.core.interpreter import RegexInterpreter
 
-from rasa.constants import DEFAULT_RESULTS_PATH
+from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.model import get_model, get_model_subdirectories, unpack_model
 from rasa.cli.utils import minimal_kwargs, print_error, print_warning
 
 logger = logging.getLogger(__name__)
 
 
-def test_compare(models: List[Text], stories: Text, output: Text):
-    from rasa.core.test import compare, plot_curve
+def test_compare_core(models: List[Text], stories: Text, output: Text):
+    from rasa.core.test import compare, plot_core_results
     import rasa.utils.io
 
     model_directory = copy_models_to_compare(models)
@@ -24,7 +25,7 @@ def test_compare(models: List[Text], stories: Text, output: Text):
 
     story_n_path = os.path.join(model_directory, "num_stories.json")
     number_of_stories = rasa.utils.io.read_json_file(story_n_path)
-    plot_curve(output, number_of_stories)
+    plot_core_results(output, number_of_stories)
 
 
 def test(
@@ -124,7 +125,53 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
         )
 
 
-def test_nlu_with_cross_validation(config: Text, nlu: Text, kwargs: Optional[Dict]):
+def compare_nlu_models(
+    configs: List[Text],
+    nlu: Text,
+    output: Text,
+    runs: int,
+    exclusion_percentages: List[int],
+):
+    """Trains multiple models, compares them and saves the results."""
+
+    from rasa.nlu.test import drop_intents_below_freq
+    from rasa.nlu.training_data import load_data
+    from rasa.nlu.utils import write_json_to_file
+    from rasa.utils.io import create_path
+    from rasa.nlu.test import compare_nlu
+    from rasa.core.test import plot_nlu_results
+
+    data = load_data(nlu)
+    data = drop_intents_below_freq(data, cutoff=5)
+
+    create_path(output)
+
+    bases = [os.path.basename(nlu_config) for nlu_config in configs]
+    model_names = [os.path.splitext(base)[0] for base in bases]
+
+    f1_score_results = {
+        model_name: [[] for _ in range(runs)] for model_name in model_names
+    }
+
+    training_examples_per_run = compare_nlu(
+        configs,
+        data,
+        exclusion_percentages,
+        f1_score_results,
+        model_names,
+        output,
+        runs,
+    )
+
+    f1_path = os.path.join(output, RESULTS_FILE)
+    write_json_to_file(f1_path, f1_score_results)
+
+    plot_nlu_results(output, training_examples_per_run)
+
+
+def perform_nlu_cross_validation(
+    config: Text, nlu: Text, kwargs: Optional[Dict[Text, Any]]
+):
     import rasa.nlu.config
     from rasa.nlu.test import (
         drop_intents_below_freq,
