@@ -71,7 +71,7 @@ def test_get_valid_config(parameters):
     rasa.utils.io.write_yaml_file(parameters["config_data"], config_path)
 
     config_path = _get_valid_config(config_path, parameters["mandatory_keys"])
-    config_data = rasa.utils.io.read_yaml_file(config_path)
+    config_data = rasa.utils.io.read_config_file(config_path)
 
     for k in parameters["mandatory_keys"]:
         assert k in config_data

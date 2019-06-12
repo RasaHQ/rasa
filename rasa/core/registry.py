@@ -6,7 +6,7 @@ import typing
 from typing import Text, Type
 
 if typing.TYPE_CHECKING:
-    from rasa.core.policies import Policy
+    from rasa.core.policies.policy import Policy
     from rasa.core.featurizers import TrackerFeaturizer
 
 logger = logging.getLogger(__name__)

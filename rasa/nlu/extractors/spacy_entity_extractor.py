@@ -5,7 +5,7 @@ from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
-    from spacy.tokens.doc import Doc
+    from spacy.tokens.doc import Doc  # pytype: disable=import-error
 
 
 class SpacyEntityExtractor(EntityExtractor):

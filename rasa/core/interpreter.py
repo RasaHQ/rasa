@@ -5,7 +5,7 @@ import logging
 import re
 
 import os
-from typing import Text, List, Dict, Any
+from typing import Text, List, Dict, Any, Optional, Tuple
 
 from rasa.core import constants
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class NaturalLanguageInterpreter(object):
-    async def parse(self, text, message_id=None):
+    async def parse(
+        self, text: Text, message_id: Optional[Text] = None
+    ) -> Dict[Text, Any]:
         raise NotImplementedError(
             "Interpreter needs to be able to parse messages into structured output."
         )
@@ -50,7 +52,7 @@ class NaturalLanguageInterpreter(object):
             # using the default project name
             return RasaNLUHttpInterpreter(name_parts[0], endpoint)
         elif len(name_parts) == 2:
-            return RasaNLUHttpInterpreter(name_parts[1], endpoint, name_parts[0])
+            return RasaNLUHttpInterpreter(name_parts[1], endpoint)
         else:
             raise Exception(
                 "You have configured an endpoint to use for "
@@ -133,7 +135,9 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         return False
 
     @staticmethod
-    def extract_intent_and_entities(user_input: Text) -> object:
+    def extract_intent_and_entities(
+        user_input: Text
+    ) -> Tuple[Optional[Text], float, List[Dict[Text, Any]]]:
         """Parse the user input using regexes to extract intent & entities."""
 
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
@@ -183,7 +187,9 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         else:
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    async def parse(self, text, message_id=None):
+    async def parse(
+        self, text: Text, message_id: Optional[Text] = None
+    ) -> Dict[Text, Any]:
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
@@ -247,7 +253,9 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         else:
             self.interpreter = None
 
-    async def parse(self, text, message_id=None):
+    async def parse(
+        self, text: Text, message_id: Optional[Text] = None
+    ) -> Dict[Text, Any]:
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""

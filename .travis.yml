@@ -37,7 +37,15 @@ jobs:
   - stage: test
     name: "Black Formatting"
     python: 3.6
-    script: pip install black; black --check .
+    script:
+    - pip install black
+    - black --check .
+  - stage: test
+    name: "Type Check"
+    python: 3.6
+    script:
+    - pip install pytype
+    - pytype rasa
   - &run-tests
     stage: test
     name: "Test 3.5"

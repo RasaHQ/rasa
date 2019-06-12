@@ -304,8 +304,7 @@ for example:
 .. code-block:: python
 
     @staticmethod
-    def required_slots(tracker):
-       # type: () -> List[Text]
+    def required_slots(tracker) -> List[Text]:
        """A list of required slots that the form has to fill"""
 
        if tracker.get_slot('cuisine') == 'greek':

@@ -6,6 +6,7 @@ exclude = '''
   /(
       \.eggs
     | \.git
+    | \.pytype
     | \.pytest_cache
     | build
     | dist

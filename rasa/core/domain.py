@@ -14,7 +14,8 @@ import rasa.utils.io
 from rasa import data
 from rasa.cli.utils import print_warning, bcolors
 from rasa.core import utils
-from rasa.core.actions import Action, action
+from rasa.core.actions import action  # pytype: disable=pyi-error
+from rasa.core.actions.action import Action  # pytype: disable=pyi-error
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.events import SlotSet
 from rasa.core.slots import Slot, UnfeaturizedSlot
@@ -154,7 +155,11 @@ class Domain(object):
         domain_dict = domain.as_dict()
         combined = self.as_dict()
 
-        def merge_dicts(d1, d2, override_existing_values=False):
+        def merge_dicts(
+            d1: Dict[Text, Any],
+            d2: Dict[Text, Any],
+            override_existing_values: bool = False,
+        ) -> Dict[Text, Any]:
             if override_existing_values:
                 a, b = d1.copy(), d2.copy()
             else:
@@ -162,11 +167,12 @@ class Domain(object):
             a.update(b)
             return a
 
-        def merge_lists(l1, l2):
+        def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
             return sorted(list(set(l1 + l2)))
 
         if override:
-            for key, val in domain_dict["config"].items():
+            config = domain_dict["config"]
+            for key, val in config.items():  # pytype: disable=attribute-error
                 combined["config"][key] = val
 
         # intents is list of dicts
@@ -423,8 +429,7 @@ class Domain(object):
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def slot_states(self):
-        # type: () -> List[Text]
+    def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
 
         return [
@@ -652,7 +657,7 @@ class Domain(object):
                 if intent.get("use_entities"):
                     domain_data["intents"][idx] = name
 
-        for slot in domain_data["slots"].values():
+        for slot in domain_data["slots"].values():  # pytype: disable=attribute-error
             if slot["initial_value"] is None:
                 del slot["initial_value"]
             if slot["auto_fill"]:

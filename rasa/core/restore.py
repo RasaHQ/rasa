@@ -5,14 +5,19 @@ from difflib import SequenceMatcher
 
 import rasa.cli.utils
 import rasa.utils.io
+import typing
 from typing import List, Text, Tuple
 
 from rasa.cli import utils as cliutils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.channels import UserMessage, CollectingOutputChannel, console
+from rasa.core.channels import console
+from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
+
+if typing.TYPE_CHECKING:
+    from rasa.core.agent import Agent
 
 logger = logging.getLogger()  # get the root logger
 

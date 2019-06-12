@@ -8,8 +8,6 @@ import rasa.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH
 from rasa.nlu.utils import json_to_string
 
-DEFAULT_CONFIG = {"language": "en", "pipeline": [], "data": None}
-
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +24,7 @@ def load(filename: Optional[Text] = None, **kwargs: Any) -> "RasaNLUModelConfig"
 
     if filename is not None:
         try:
-            file_config = rasa.utils.io.read_yaml_file(filename)
+            file_config = rasa.utils.io.read_config_file(filename)
         except yaml.parser.ParserError as e:
             raise InvalidConfigError(
                 "Failed to read configuration file "
@@ -73,13 +71,16 @@ def component_config_from_pipeline(
 
 class RasaNLUModelConfig(object):
     def __init__(self, configuration_values=None):
-        """Create a model configuration, optionally overridding
+        """Create a model configuration, optionally overriding
         defaults with a dictionary ``configuration_values``.
         """
         if not configuration_values:
             configuration_values = {}
 
-        self.override(DEFAULT_CONFIG)
+        self.language = "en"
+        self.pipeline = []
+        self.data = None
+
         self.override(configuration_values)
 
         if self.__dict__["pipeline"] is None:

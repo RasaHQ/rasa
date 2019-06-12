@@ -55,7 +55,7 @@ def do_train_in_worker(
         _, _, persisted_path = train(
             cfg, data, path, fixed_model_name, storage, component_builder
         )
-        return persisted_path
+        return persisted_path or ""
     except BaseException as e:
         logger.exception("Failed to train on data '{}'.".format(data))
         raise TrainingException(path, e)
@@ -70,7 +70,7 @@ def train(
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
     **kwargs: Any
-) -> Tuple[Trainer, Interpreter, Text]:
+) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
 
     if isinstance(nlu_config, str):

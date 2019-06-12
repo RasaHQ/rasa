@@ -414,8 +414,8 @@ def _enrich_config(
 ):
     import rasa.utils.io
 
-    config_data = rasa.utils.io.read_yaml_file(config_path)
-    fallback_config_data = rasa.utils.io.read_yaml_file(FALLBACK_CONFIG_PATH)
+    config_data = rasa.utils.io.read_config_file(config_path)
+    fallback_config_data = rasa.utils.io.read_config_file(FALLBACK_CONFIG_PATH)
 
     for k in missing_keys:
         config_data[k] = fallback_config_data[k]
@@ -436,7 +436,7 @@ def _get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
         )
         _enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
 
-    return config_path
+    return config_path  # pytype: disable=bad-return-type
 
 
 def _package_model(
