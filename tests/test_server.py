@@ -478,6 +478,29 @@ def test_pushing_event(rasa_app, event):
     assert Event.from_parameters(evt) == event
 
 
+def test_push_multiple_events(rasa_app):
+    cid = str(uuid.uuid1())
+    conversation = "/conversations/{}".format(cid)
+
+    events = [e.as_dict() for e in test_events]
+    data = json.dumps(events)
+    _, response = rasa_app.post(
+        "{}/tracker/events".format(conversation),
+        data=data,
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.json is not None
+    assert response.status == 200
+
+    _, tracker_response = rasa_app.get("/conversations/{}/tracker".format(cid))
+    tracker = tracker_response.json
+    assert tracker is not None
+
+    # there is also an `ACTION_LISTEN` event at the start
+    assert len(tracker.get("events")) == len(test_events) + 1
+    assert tracker.get("events")[1:] == events
+
+
 def test_put_tracker(rasa_app):
     data = json.dumps([event.as_dict() for event in test_events])
     _, response = rasa_app.put(
@@ -563,7 +586,7 @@ def test_list_routes(default_agent):
         "version",
         "status",
         "retrieve_tracker",
-        "append_event",
+        "append_events",
         "replace_events",
         "retrieve_story",
         "execute_action",

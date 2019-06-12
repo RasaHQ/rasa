@@ -2,6 +2,8 @@ from typing import Text
 
 from ruamel.yaml.constructor import DuplicateKeyError
 
+from rasa.constants import PACKAGE_NAME
+
 
 class InvalidYamlFileError(ValueError):
     """Raised if an invalid yaml file was provided."""
@@ -10,14 +12,16 @@ class InvalidYamlFileError(ValueError):
         super(InvalidYamlFileError, self).__init__(message)
 
 
-def validate_pipeline_yaml(
+def validate_yaml_schema(
     yaml_file_content: Text, schema_path: Text, show_validation_errors: bool = True
 ) -> None:
     """
-    Validate a yaml file.
-    :param yaml_file_content: the content of the yaml file to be validated
-    :param schema_path: the schema of the yaml file
-    :param show_validation_errors: if true, validation errors are shown
+    Validate yaml content.
+
+    Args:
+        yaml_file_content: the content of the yaml file to be validated
+        schema_path: the schema of the yaml file
+        show_validation_errors: if true, validation errors are shown
     """
     from pykwalify.core import Core
     from pykwalify.errors import SchemaError
@@ -42,13 +46,13 @@ def validate_pipeline_yaml(
         )
     except DuplicateKeyError as e:
         raise InvalidYamlFileError(
-            "The provided yaml file contains a duplicated key: {}. You can use "
+            "The provided yaml file contains a duplicated key: '{}'. You can use "
             "http://www.yamllint.com/ to validate the yaml syntax "
             "of your file.".format(str(e))
         )
 
     try:
-        schema_file = pkg_resources.resource_filename("rasa", schema_path)
+        schema_file = pkg_resources.resource_filename(PACKAGE_NAME, schema_path)
 
         c = Core(source_data=source_data, schema_files=[schema_file])
         c.validate(raise_exception=True)

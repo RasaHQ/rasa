@@ -21,7 +21,7 @@ from rasa.core.events import SlotSet
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.validation import validate_pipeline_yaml, InvalidYamlFileError
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ class Domain(object):
     @classmethod
     def from_yaml(cls, yaml: Text) -> "Domain":
         try:
-            validate_pipeline_yaml(yaml, DOMAIN_SCHEMA_FILE)
+            validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
         except InvalidYamlFileError as e:
             raise InvalidDomain(str(e))
 
@@ -670,6 +670,19 @@ class Domain(object):
 
         return [s.name for s in self.slots if not isinstance(s, UnfeaturizedSlot)]
 
+    @property
+    def _actions_for_domain_warnings(self) -> List[Text]:
+        """Fetch names of actions that are used in domain warnings.
+
+        Includes user and form actions, but excludes those that are default actions.
+        """
+
+        from rasa.core.actions.action import default_action_names
+
+        return [
+            a for a in self.user_actions_and_forms if a not in default_action_names()
+        ]
+
     @staticmethod
     def _get_symmetric_difference(
         domain_elements: Union[List[Text], Set[Text]],
@@ -708,7 +721,9 @@ class Domain(object):
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
         entity_warnings = self._get_symmetric_difference(self.entities, entities)
-        action_warnings = self._get_symmetric_difference(self.user_actions, actions)
+        action_warnings = self._get_symmetric_difference(
+            self._actions_for_domain_warnings, actions
+        )
         slot_warnings = self._get_symmetric_difference(
             self._slots_for_domain_warnings, slots
         )

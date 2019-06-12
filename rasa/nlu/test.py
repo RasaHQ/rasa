@@ -929,15 +929,16 @@ def compare_nlu(
     Afterwards, the model is tested on the complete test data of that run.
     All results are stored in the provided output directory.
 
-    :param configs: config files needed for training
-    :param data: training data
-    :param exclusion_percentages: percentages of training data to exclude during comparison
-    :param f_score_results: dictionary of model name to f-score results per run
-    :param model_names: names of the models to train
-    :param output: the output directory
-    :param runs: number of comparison runs
+    Args:
+        configs: config files needed for training
+        data: training data
+        exclusion_percentages: percentages of training data to exclude during comparison
+        f_score_results: dictionary of model name to f-score results per run
+        model_names: names of the models to train
+        output: the output directory
+        runs: number of comparison runs
 
-    :return: number of training examples per run
+    Returns: training examples per run
     """
 
     training_examples_per_run = []

@@ -139,9 +139,9 @@ paths:
       - JWT: []
       tags:
       - Tracker
-      summary: Append an event to a tracker
+      summary: Append events to a tracker
       description: >-
-        Appends a new event to the tracker state of the conversation.
+        Appends one or multiple new events to the tracker state of the conversation.
         Any existing events will be kept and the new events will be
         appended, updating the existing state.
       parameters:
@@ -152,7 +152,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Event'
+              oneOf:
+              - $ref: '#/components/schemas/Event'
+              - type: array
+                items:
+                  $ref: '#/components/schemas/Event'
       responses:
         200:
           $ref: '#/components/responses/200Tracker'

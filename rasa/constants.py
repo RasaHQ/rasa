@@ -16,6 +16,8 @@ TEST_DATA_FILE = "test.md"
 TRAIN_DATA_FILE = "train.md"
 RESULTS_FILE = "results.json"
 
+PACKAGE_NAME = "rasa"
+
 CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
 DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"
 

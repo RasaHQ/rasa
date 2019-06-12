@@ -15,12 +15,19 @@ Added
 
 Changed
 -------
+- update the tracker in interactive learning through reverting and appending events
+  instead of replacing the tracker
+- ``POST /conversations/{conversation_id}/tracker/events`` supports a list of events
 
 Removed
 -------
 
 Fixed
 -----
+- fixed creation of ``RasaNLUHttpInterpreter``
+- form actions are included in domain warnings
+- default actions overriden by custom actions and listed in the domain are excluded
+  from domain warnings
 - bot responses can contain ``custom`` messages besides other message types
 
 [1.0.9] - 2019-06-10
