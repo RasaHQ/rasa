@@ -14,7 +14,7 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: [ "build",
           "-f", "docker/Dockerfile_botfront",
-          "-t", "botfront/rasa-core-bf:$TAG_NAME",
+          "-t", "botfront/rasa-for-botfront:$TAG_NAME",
           "-t", "botfront/rasa-for-botfront:latest",
           "--cache-from", "botfront/rasa-for-botfront:latest",
           "."]
