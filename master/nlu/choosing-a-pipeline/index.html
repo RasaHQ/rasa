@@ -255,8 +255,6 @@ use the <code class="docutils literal notranslate"><span class="pre">supervised_
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;supervised_embeddings&quot;</span>
 </pre></div>
 </div>
-<p>It’s good practice to define the <code class="docutils literal notranslate"><span class="pre">language</span></code> parameter in your configuration, but
-for the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline this parameter doesn’t affect anything.</p>
 </div>
 <div class="section" id="a-longer-answer">
 <h2>A Longer Answer<a class="headerlink" href="#a-longer-answer" title="Permalink to this headline">¶</a></h2>
@@ -274,6 +272,8 @@ but very different to the word “cash”. In a banking domain, “balance” an
 and you’d like your model to capture that. This pipeline doesn’t use a language-specific model,
 so it will work with any language that you can tokenize (on whitespace or using a custom tokenizer).</p>
 <p>You can read more about this topic <a class="reference external" href="https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8">here</a> .</p>
+<p>Rasa gives you the tools to compare the performance of both of these pipelines on your data directly,
+see <a class="reference internal" href="../../user-guide/evaluating-models/#comparing-nlu-pipelines"><span class="std std-ref">Comparing NLU Pipelines</span></a>.</p>
 <p>You can also use MITIE as a source of word vectors in your pipeline, see <a class="reference internal" href="#section-mitie-pipeline"><span class="std std-ref">mitie</span></a>.
 We do not recommend that you use these; mitie support is likely to be deprecated in a future release.</p>
 <div class="admonition note">
