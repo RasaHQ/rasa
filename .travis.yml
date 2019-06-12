@@ -46,7 +46,7 @@ jobs:
     python: 3.6
     script:
     - pip install pytype
-    - pytype rasa
+    - pytype --keep-going rasa
   - &run-tests
     stage: test
     name: "Test 3.5"
