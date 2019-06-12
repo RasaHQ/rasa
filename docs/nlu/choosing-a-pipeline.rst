@@ -38,13 +38,13 @@ A Longer Answer
 
 The two most important pipelines are ``supervised_embeddings`` and ``pretrained_embeddings_spacy``.
 The biggest difference between them is that the ``pretrained_embeddings_spacy`` pipeline uses pre-trained
-word vectors from either GloVe or fastText. Instead, the supervised embeddings pipeline
+word vectors from either GloVe or fastText. The ``supervised embeddings`` pipeline, on the other hand,
 doesn't use any pre-trained word vectors, but instead fits these specifically for your dataset.
 
 The advantage of the ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
 already knows that the words "apples" and "pears" are very similar. This is especially useful
-if you don't have very much training data.
+if you don't have much training data.
 
 The advantage of the ``supervised_embeddings`` pipeline is that your word vectors will be customised
 for your domain. For example, in general English, the word "balance" is closely related to "symmetry",
