@@ -25,7 +25,9 @@ Removed
 Fixed
 -----
 - fixed creation of ``RasaNLUHttpInterpreter``
-
+- form actions are included in domain warnings
+- default actions overriden by custom actions and listed in the domain are excluded
+  from domain warnings
 
 [1.0.9] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
