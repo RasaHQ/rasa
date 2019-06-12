@@ -28,6 +28,7 @@ Fixed
 - form actions are included in domain warnings
 - default actions overriden by custom actions and listed in the domain are excluded
   from domain warnings
+- SQL ``data`` column type to ``Text`` for compatibility with MySQL
 
 [1.0.9] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
