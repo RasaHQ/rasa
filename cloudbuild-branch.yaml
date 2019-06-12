@@ -10,7 +10,7 @@ steps:
   entrypoint: 'bash'
   args:
     - '-c'
-    - docker pull botfront/botfront:$BRANCH_NAME || exit 0
+    - docker pull botfront/botfront:branch-$BRANCH_NAME || exit 0
 
 - name: 'gcr.io/cloud-builders/docker'
   args: [ "build",
