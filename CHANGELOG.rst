@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- nlu configs can now be directly compared for performance on a dataset in ``rasa test nlu``
 
 Changed
 -------

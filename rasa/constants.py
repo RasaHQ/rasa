@@ -9,7 +9,17 @@ DEFAULT_ACTIONS_PATH = "actions"
 DEFAULT_MODELS_PATH = "models"
 DEFAULT_DATA_PATH = "data"
 DEFAULT_RESULTS_PATH = "results"
+DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+
+TEST_DATA_FILE = "test.md"
+TRAIN_DATA_FILE = "train.md"
+RESULTS_FILE = "results.json"
+
+PACKAGE_NAME = "rasa"
+
+CONFIG_SCHEMA_FILE = "nlu/schemas/config.yml"
+DOMAIN_SCHEMA_FILE = "core/schemas/domain.yml"
 
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
