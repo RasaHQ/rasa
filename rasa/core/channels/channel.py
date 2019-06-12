@@ -161,9 +161,7 @@ class OutputChannel(object):
         """Send a message to the client."""
 
         if message.get("custom"):
-            return await self.send_custom_json(
-                recipient_id, message.pop("custom"), **message
-            )
+            await self.send_custom_json(recipient_id, message.pop("custom"), **message)
 
         if message.get("quick_replies"):
             await self.send_quick_replies(
