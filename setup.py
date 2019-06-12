@@ -74,8 +74,6 @@ install_requires = [
     "SQLAlchemy~=1.3.0",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
-    # temporary dependency, until https://github.com/boto/botocore/issues/1733 is fixed
-    "urllib3<1.25",
 ]
 
 extras_requires = {
