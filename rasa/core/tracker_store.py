@@ -274,7 +274,7 @@ class SQLTrackerStore(TrackerStore):
     Base = declarative_base()
 
     class SQLEvent(Base):
-        from sqlalchemy import Column, Integer, String, Float
+        from sqlalchemy import Column, Integer, String, Float, Text
 
         __tablename__ = "events"
 
@@ -284,7 +284,7 @@ class SQLTrackerStore(TrackerStore):
         timestamp = Column(Float)
         intent_name = Column(String(255))
         action_name = Column(String(255))
-        data = Column(String(255))
+        data = Column(Text)
 
     def __init__(
         self,
