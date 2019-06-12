@@ -13,6 +13,7 @@ from ruamel.yaml.constructor import DuplicateKeyError
 import rasa.utils.io
 from rasa import data
 from rasa.cli.utils import print_warning, bcolors
+from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
 from rasa.core.actions import Action, action
 from rasa.core.constants import REQUESTED_SLOT
@@ -20,6 +21,7 @@ from rasa.core.events import SlotSet
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +105,11 @@ class Domain(object):
 
     @classmethod
     def from_yaml(cls, yaml: Text) -> "Domain":
-        cls.validate_domain_yaml(yaml)
+        try:
+            validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
+        except InvalidYamlFileError as e:
+            raise InvalidDomain(str(e))
+
         data = rasa.utils.io.read_yaml(yaml)
         return cls.from_dict(data)
 
@@ -187,43 +193,6 @@ class Domain(object):
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
-
-    @classmethod
-    def validate_domain_yaml(cls, yaml):
-        """Validate domain yaml."""
-        from pykwalify.core import Core
-
-        log = logging.getLogger("pykwalify")
-        log.setLevel(logging.WARN)
-
-        try:
-            schema_file = pkg_resources.resource_filename(
-                __name__, "schemas/domain.yml"
-            )
-            source_data = rasa.utils.io.read_yaml(yaml)
-        except YAMLError:
-            raise InvalidDomain(
-                "The provided domain file is invalid. You can use "
-                "http://www.yamllint.com/ to validate the yaml syntax "
-                "of your domain file."
-            )
-        except DuplicateKeyError as e:
-            raise InvalidDomain(
-                "The provided domain file contains a duplicated key: {}".format(str(e))
-            )
-
-        try:
-            c = Core(source_data=source_data, schema_files=[schema_file])
-            c.validate(raise_exception=True)
-        except SchemaError:
-            raise InvalidDomain(
-                "Failed to validate your domain yaml. "
-                "Please make sure the file is correct; to do so, "
-                "take a look at the errors logged during "
-                "validation previous to this exception. "
-                "You can also validate your domain file's yaml "
-                "syntax using http://www.yamllint.com/."
-            )
 
     @staticmethod
     def collect_slots(slot_dict):
@@ -692,6 +661,15 @@ class Domain(object):
     def intents(self):
         return sorted(self.intent_properties.keys())
 
+    @property
+    def _slots_for_domain_warnings(self) -> List[Text]:
+        """Fetch names of slots that are used in domain warnings.
+
+        Excludes slots of type `UnfeaturizedSlot`.
+        """
+
+        return [s.name for s in self.slots if not isinstance(s, UnfeaturizedSlot)]
+
     @staticmethod
     def _get_symmetric_difference(
         domain_elements: Union[List[Text], Set[Text]],
@@ -724,14 +702,15 @@ class Domain(object):
         """Generate domain warnings from intents, entities, actions and slots.
 
         Returns a dictionary with entries for `intent_warnings`,
-        `entity_warnings`, `action_warnings` and `slot_warnings`.
+        `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
+        of type `UnfeaturizedSlot` from domain warnings.
         """
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
         entity_warnings = self._get_symmetric_difference(self.entities, entities)
         action_warnings = self._get_symmetric_difference(self.user_actions, actions)
         slot_warnings = self._get_symmetric_difference(
-            [s.name for s in self.slots], slots
+            self._slots_for_domain_warnings, slots
         )
 
         return {
