@@ -1,10 +1,24 @@
 import argparse
+import os
 import tempfile
 from typing import List, Optional, Text, Dict
 import rasa.cli.arguments as arguments
 
-from rasa.cli.utils import get_validated_path
-from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.cli.utils import (
+    get_validated_path,
+    missing_config_keys,
+    print_error,
+    print_warning,
+)
+from rasa.constants import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATH,
+    FALLBACK_CONFIG_PATH,
+    CONFIG_MANDATORY_KEYS_NLU,
+    CONFIG_MANDATORY_KEYS_CORE,
+    CONFIG_MANDATORY_KEYS,
+)
 
 
 # noinspection PyProtectedMember
@@ -52,7 +66,8 @@ def train(args: argparse.Namespace) -> Optional[Text]:
     domain = get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
-    config = args.config or DEFAULT_CONFIG_PATH
+
+    config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
 
     training_files = [
         get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
@@ -94,7 +109,7 @@ def train_core(
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        config = args.config or DEFAULT_CONFIG_PATH
+        config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
 
         return train_core(
             domain=args.domain,
@@ -119,7 +134,7 @@ def train_nlu(
 
     output = train_path or args.out
 
-    config = args.config or DEFAULT_CONFIG_PATH
+    config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
     nlu_data = get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
@@ -144,3 +159,30 @@ def extract_additional_arguments(args: argparse.Namespace) -> Dict:
         arguments["debug_plots"] = args.debug_plots
 
     return arguments
+
+
+def _get_valid_config(
+    config: Optional[Text],
+    mandatory_keys: List[Text],
+    default_config: Text = DEFAULT_CONFIG_PATH,
+) -> Text:
+    config = get_validated_path(config, "config", default_config)
+
+    if not os.path.exists(config):
+        print_error(
+            "The config file '{}' does not exist. Use '--config' to specify a "
+            "valid config file."
+            "".format(config)
+        )
+        exit(1)
+
+    missing_keys = missing_config_keys(config, mandatory_keys)
+    if missing_keys:
+        print_error(
+            "The config file '{}' is missing mandatory parameters: "
+            "'{}'. Add missing parameters to config file and try again."
+            "".format(config, "', '".join(missing_keys))
+        )
+        exit(1)
+
+    return config

@@ -32,8 +32,6 @@ use the ``supervised_embeddings`` pipeline:
 
     pipeline: "supervised_embeddings"
 
-It's good practice to define the ``language`` parameter in your configuration, but
-for the ``supervised_embeddings`` pipeline this parameter doesn't affect anything.
 
 A Longer Answer
 ---------------
@@ -55,6 +53,9 @@ and you'd like your model to capture that. This pipeline doesn't use a language-
 so it will work with any language that you can tokenize (on whitespace or using a custom tokenizer).
 
 You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
+
+Rasa gives you the tools to compare the performance of both of these pipelines on your data directly,
+see :ref:`comparing-nlu-pipelines`.
 
 
 You can also use MITIE as a source of word vectors in your pipeline, see :ref:`section_mitie_pipeline`.
