@@ -708,7 +708,9 @@ class Domain(object):
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
         entity_warnings = self._get_symmetric_difference(self.entities, entities)
-        action_warnings = self._get_symmetric_difference(self.user_actions, actions)
+        action_warnings = self._get_symmetric_difference(
+            self.user_actions_and_forms, actions
+        )
         slot_warnings = self._get_symmetric_difference(
             self._slots_for_domain_warnings, slots
         )
