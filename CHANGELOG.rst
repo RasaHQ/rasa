@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- bot responses can contain ``custom`` messages besides other message types
 
 [1.0.9] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
