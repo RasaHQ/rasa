@@ -32,10 +32,10 @@ def test_search(validator):
 def test_verify_intents(validator):
     valid_intents = ["greet", "goodbye", "affirm"]
     validator.verify_intents()
-    assert validator.valid_intents == valid_intents
+    assert set(validator.valid_intents) == set(valid_intents)
 
 
 def test_verify_utters(validator):
     valid_utterances = ["utter_greet", "utter_goodbye", "utter_default"]
     validator.verify_utterances()
-    assert validator.valid_utterances == valid_utterances
+    assert set(validator.valid_utterances) == set(valid_utterances)
