@@ -68,7 +68,7 @@ async def test_send_response(default_channel, default_tracker):
     await default_channel.send_response(default_tracker.sender_id, custom_json_message)
     collected = default_channel.messages
 
-    assert len(collected) == 5
+    assert len(collected) == 6
 
     # text only message
     assert collected[0] == {"recipient_id": "my-sender", "text": "hey"}
