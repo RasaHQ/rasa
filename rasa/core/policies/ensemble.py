@@ -67,8 +67,8 @@ class PolicyEnsemble(object):
         for p in self.policies:
             priority_dict[p.priority].append(type(p).__name__)
 
-        for k, v in priority_dict.items():
-            if len(v) > 1:
+        for prio, policies in priority_dict.items():
+            if len(policies) > 1:
                 logger.warning(
                     (
                         "Found policies {} with same priority {} "
@@ -76,7 +76,7 @@ class PolicyEnsemble(object):
                         "priorities, be sure to give all policies "
                         "different priorities. More information: "
                         "{}/core/policies/"
-                    ).format(v, k, DOCS_BASE_URL)
+                    ).format(policies, prio, DOCS_BASE_URL)
                 )
 
     def train(
@@ -254,19 +254,10 @@ class PolicyEnsemble(object):
         parsed_policies = []
 
         for policy in policies:
-<<<<<<< HEAD
             policy_name = policy.pop('name')
             if policy.pop('featurizer'):
                 featurizer_func, featurizer_config = \
                     cls.get_featurizer_from_dict(policy)
-=======
-
-            policy_name = policy.pop("name")
-            if policy.get("featurizer"):
-                featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
-                    policy
-                )
->>>>>>> 8f15261934118f1cbcd7e20cf0a75785d1722e6d
 
                 if featurizer_config.get("state_featurizer"):
                     state_featurizer_func, state_featurizer_config = cls.get_state_featurizer_from_dict(
@@ -280,13 +271,10 @@ class PolicyEnsemble(object):
                     )
 
                 # override policy's featurizer with real featurizer class
-<<<<<<< HEAD
                 featurizer = featurizer_func(**featurizer_config)
             else:
                 featurizer = None
-=======
                 policy["featurizer"] = featurizer_func(**featurizer_config)
->>>>>>> 8f15261934118f1cbcd7e20cf0a75785d1722e6d
 
             try:
                 constr_func = registry.policy_from_module_path(policy_name)

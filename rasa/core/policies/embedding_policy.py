@@ -1,5 +1,4 @@
 from collections import namedtuple
-import copy
 import json
 import logging
 import os
@@ -165,7 +164,7 @@ class EmbeddingPolicy(Policy):
         attn_embed: Optional[tf.Tensor] = None,
         copy_attn_debug: Optional[tf.Tensor] = None,
         all_time_masks: Optional[tf.Tensor] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         if featurizer:
             if not isinstance(featurizer, FullDialogueTrackerFeaturizer):

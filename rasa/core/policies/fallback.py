@@ -49,11 +49,6 @@ class FallbackPolicy(Policy):
         """
         super(FallbackPolicy, self).__init__(config)
 
-    def set_params(self):
-        self.nlu_threshold = self.polcy_config["nlu_threshold"]
-        self.core_threshold = self.pocy_config["core_threshold"]
-        self.fallback_action_name = self.config["fallback_action_name"]
-
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
@@ -75,7 +70,7 @@ class FallbackPolicy(Policy):
         """
 
         return (
-            nlu_confidence < self.nlu_threshold
+            nlu_confidence < self.config["nlu_threshold"]
             and last_action_name == ACTION_LISTEN_NAME
         )
 
@@ -83,7 +78,7 @@ class FallbackPolicy(Policy):
         """Prediction scores used if a fallback is necessary."""
 
         result = [0.0] * domain.num_actions
-        idx = domain.index_for_action(self.fallback_action_name)
+        idx = domain.index_for_action(self.config["fallback_action_name"])
         result[idx] = fallback_score
         return result
 
@@ -103,7 +98,7 @@ class FallbackPolicy(Policy):
         # to not override standard behaviour
         nlu_confidence = nlu_data.get("intent", {}).get("confidence", 1.0)
 
-        if tracker.latest_action_name == self.fallback_action_name:
+        if tracker.latest_action_name == self.config["fallback_action_name"]:
             result = [0.0] * domain.num_actions
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
@@ -112,7 +107,7 @@ class FallbackPolicy(Policy):
             logger.debug(
                 "NLU confidence {} is lower "
                 "than NLU threshold {:.2f}. "
-                "".format(nlu_confidence, self.nlu_threshold)
+                "".format(nlu_confidence, self.config["nlu_threshold"])
             )
             result = self.fallback_scores(domain)
 
@@ -124,10 +119,10 @@ class FallbackPolicy(Policy):
             logger.debug(
                 "NLU confidence threshold met, confidence of "
                 "fallback action set to core threshold ({}).".format(
-                    self.core_threshold
+                    self.pocy_config["core_threshold"]
                 )
             )
-            result = self.fallback_scores(domain, self.core_threshold)
+            result = self.fallback_scores(domain, self.pocy_config["core_threshold"])
 
         return result
 
