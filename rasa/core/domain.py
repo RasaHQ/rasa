@@ -670,6 +670,19 @@ class Domain(object):
 
         return [s.name for s in self.slots if not isinstance(s, UnfeaturizedSlot)]
 
+    @property
+    def _actions_for_domain_warnings(self) -> List[Text]:
+        """Fetch names of actions that are used in domain warnings.
+
+        Includes user and form actions, but excludes those that are default actions.
+        """
+
+        from rasa.core.actions.action import default_action_names
+
+        return [
+            a for a in self.user_actions_and_forms if a not in default_action_names()
+        ]
+
     @staticmethod
     def _get_symmetric_difference(
         domain_elements: Union[List[Text], Set[Text]],
@@ -709,7 +722,7 @@ class Domain(object):
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
         entity_warnings = self._get_symmetric_difference(self.entities, entities)
         action_warnings = self._get_symmetric_difference(
-            self.user_actions_and_forms, actions
+            self._actions_for_domain_warnings, actions
         )
         slot_warnings = self._get_symmetric_difference(
             self._slots_for_domain_warnings, slots
