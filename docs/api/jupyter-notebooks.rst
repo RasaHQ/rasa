@@ -9,10 +9,23 @@ You need to create a project if you don't already have one.
 To do this, run:
 
 .. runnable::
-   rasa init --no-prompt
+   import os
+   from rasa.cli.scaffold import _create_initial_project
+
+   project = "test-project"
+   _create_initial_project(project)
+   os.chdir(project)
 
 Now that you have a project, the relevant files and folders exist.
-Define some variables that contain these paths:
+To check this, run:
+
+.. runnable::
+   os.listdir(project)
+
+
+To train a model, you will have to tell the ``train`` function
+where to find the relevant files.
+To define variables that contain these paths, run:
 
 .. runnable::
 
@@ -21,12 +34,13 @@ Define some variables that contain these paths:
    domain = "domain.yml"
    output = "models/"
 
+
 Train a Model
 ~~~~~~~~~~~~~
 
 Now we can train a model by passing in the paths to the ``rasa.train`` function.
 Note that the training files are passed as a list.
-When training has finished, this returns the path where the trained model has been saved.
+When training has finished, ``rasa.train`` returns the path where the trained model has been saved.
 
 .. runnable::
 
