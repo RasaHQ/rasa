@@ -519,7 +519,7 @@ the train script to train your models:</p>
 <p>For each policy configuration provided, Rasa Core will be trained multiple times
 with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
 data. This is done for multiple runs to ensure consistent results.</p>
-<p>Once this script has finished, you can use the evaluate script in compare
+<p>Once this script has finished, you can use the evaluate script in <code class="docutils literal notranslate"><span class="pre">compare</span></code>
 mode to evaluate the models you just trained:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa <span class="nb">test</span> core -m comparison_models/&lt;model-1&gt;.tar.gz comparison_models/&lt;model-2&gt;.tar.gz <span class="se">\</span>
   --stories stories_folder --out comparison_results
