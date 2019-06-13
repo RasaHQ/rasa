@@ -8,9 +8,9 @@ Rasa as open source alternative to Microsoft LUIS - Migration Guide
 
 This guide shows you how to migrate your application built with Microsoft LUIS to Rasa. Here are a few reasons why we see developers switching:
 
-* **Faster**: Runs locally - no https requests and server round trips required
+* **Faster**: Runs locally - no http requests and server round trips required
 * **Customizable**: Tune models and get higher accuracy with your data set
-* **Open source**: No risk of vendor lock-in - the Rasa Stack comes with an Apache 2.0 licence and you can use it in commercial projects
+* **Open source**: No risk of vendor lock-in - Rasa is under the Apache 2.0 licence and you can use it in commercial projects
 
 
 .. raw:: html
@@ -33,26 +33,70 @@ on the three dots menu next to the app you want to export.
 
 Select 'Export App'. This will download a file with a ``.json`` extension that's ready for importing to Rasa.
 
-Step 2: Train your Rasa NLU model
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 2: Create a Rasa Project
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Follow the instructions in the `NLU Quickstart <https://rasa.com/docs/nlu/quickstart/>`_, using your downloaded file as the training data.
-
-
-Step 3: Modify your app to call your Rasa NLU Server
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Your existing application will have some code to make API requests to LUIS.
-Modify the API url to point to your Rasa NLU server.
-If you are testing this on your development machine, that will be at ``http://localhost:5000``
-When you start the Rasa NLU server, you can also pass an ``emulate`` argument:
+To create a Rasa project, run:
 
 .. code-block:: bash
 
-    python -m rasa_nlu.server -e luis
+   rasa init
 
-By adding this parameter, Rasa NLU's responses will be in the same format as LUIS provides,
-so that you don't have to modify anything other than the URL in your API call.
+This will create a directory called ``data``. 
+Remove the files in this directory, and
+move your json file into this directory.
+
+.. code-block:: bash
+
+   rm -r data/*
+   mv /path/to/file.json data/
+
+Step 3: Train your NLU model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To train a model using your LUIS data, run:
+
+.. code-block:: bash
+
+    rasa train nlu
+
+Step 4: Test your NLU model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Let's see how your NLU model will interpret some test messages.
+To start a testing session, run:
+
+.. code-block:: bash
+
+   rasa shell nlu
+
+This will prompt your for input.
+Type a test message and press 'Enter'.
+The output of your NLU model will be printed to the screen.
+You can keep entering messages and test as many as you like.
+Press 'control + C' to quit.
+
+
+Step 5: Start a Server with your NLU Model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To start a server with your NLU model, run:
+
+.. code-block:: bash
+
+   rasa run nlu
+
+This will start a server listening on port 5005.
+
+To send a request to the server, run:
+
+.. copyable::
+
+   curl 'localhost:5005/model/parse?emulation_mode=luis' -d '{"text": "hello"}'
+
+The ``emulation_mode`` parameter tells Rasa that you want your json
+response to have the same format as you would get from LUIS.
+You can also leave it out to get the result in the usual Rasa format.
 
 Terminology:
 ^^^^^^^^^^^^
