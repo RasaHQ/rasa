@@ -31,6 +31,7 @@ class TrainingData(object):
         entity_synonyms: Optional[Dict[Text, Text]] = None,
         regex_features: Optional[List[Dict[Text, Text]]] = None,
         lookup_tables: Optional[List[Dict[Text, Text]]] = None,
+        gazette: Optional[List[Dict[Text, List[Text]]]] = None
     ) -> None:
 
         if training_examples:
@@ -41,6 +42,7 @@ class TrainingData(object):
         self.regex_features = regex_features if regex_features else []
         self.sort_regex_features()
         self.lookup_tables = lookup_tables if lookup_tables else []
+        self.gazette = gazette if gazette else []
 
         self.print_stats()
 
@@ -51,11 +53,13 @@ class TrainingData(object):
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
         lookup_tables = deepcopy(self.lookup_tables)
+        gazette = deepcopy(self.gazette)
 
         for o in others:
             training_examples.extend(deepcopy(o.training_examples))
             regex_features.extend(deepcopy(o.regex_features))
             lookup_tables.extend(deepcopy(o.lookup_tables))
+            gazette.extend(deepcopy(o.gazette))
 
             for text, syn in o.entity_synonyms.items():
                 check_duplicate_synonym(
@@ -65,7 +69,7 @@ class TrainingData(object):
             entity_synonyms.update(o.entity_synonyms)
 
         return TrainingData(
-            training_examples, entity_synonyms, regex_features, lookup_tables
+            training_examples, entity_synonyms, regex_features, lookup_tables, gazette
         )
 
     @staticmethod
@@ -215,12 +219,14 @@ class TrainingData(object):
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
             lookup_tables=self.lookup_tables,
+            gazette=self.gazette,
         )
         data_test = TrainingData(
             test,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
             lookup_tables=self.lookup_tables,
+            gazette=self.gazette,
         )
         return data_train, data_test
 
