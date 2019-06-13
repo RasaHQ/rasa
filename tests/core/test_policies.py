@@ -295,6 +295,12 @@ class TestSklearnPolicy(PolicyTestCollection):
     async def trackers(self, default_domain):
         return await train_trackers(default_domain, augmentation_factor=20)
 
+    def test_additional_train_args_do_not_raise(
+        self, mock_search, default_domain, trackers, featurizer, priority
+    ):
+        policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
+        policy.train(trackers, domain=default_domain, this_is_not_a_feature=True)
+
     def test_cv_none_does_not_trigger_search(
         self, mock_search, default_domain, trackers, featurizer, priority
     ):
