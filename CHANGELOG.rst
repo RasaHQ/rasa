@@ -20,6 +20,8 @@ Removed
 
 Fixed
 -----
+- fixed PUT /model with model_server by deserializing the model_server to 
+  EndpointConfig.
 
 [1.1.1] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
