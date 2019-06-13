@@ -480,5 +480,5 @@ class SQLTrackerStore(TrackerStore):
 
     def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
-
-        return tracker.events[self.number_of_existing_events(tracker.sender_id):]
+        n_events = self.number_of_existing_events(tracker.sender_id)
+        return itertools.islice(tracker.events, n_events, len(tracker.events))
