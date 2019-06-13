@@ -56,7 +56,7 @@ async def test_send_response(default_channel, default_tracker):
         "image": "https://i.imgur.com/T5xVo.jpg",
     }
     custom_json_message = {
-        "text": "look at this",  # this value will be ignored
+        "text": "look at this",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
 
@@ -68,7 +68,7 @@ async def test_send_response(default_channel, default_tracker):
     await default_channel.send_response(default_tracker.sender_id, custom_json_message)
     collected = default_channel.messages
 
-    assert len(collected) == 5
+    assert len(collected) == 6
 
     # text only message
     assert collected[0] == {"recipient_id": "my-sender", "text": "hey"}
@@ -85,7 +85,8 @@ async def test_send_response(default_channel, default_tracker):
         "recipient_id": "my-sender",
         "image": "https://i.imgur.com/T5xVo.jpg",
     }
-    assert collected[4] == {
+    assert collected[4] == {"recipient_id": "my-sender", "text": "look at this"}
+    assert collected[5] == {
         "recipient_id": "my-sender",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }

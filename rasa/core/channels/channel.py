@@ -160,11 +160,6 @@ class OutputChannel(object):
     async def send_response(self, recipient_id: Text, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
 
-        if message.get("custom"):
-            return await self.send_custom_json(
-                recipient_id, message.pop("custom"), **message
-            )
-
         if message.get("quick_replies"):
             await self.send_quick_replies(
                 recipient_id,
@@ -172,14 +167,15 @@ class OutputChannel(object):
                 message.pop("quick_replies"),
                 **message
             )
-
-        if message.get("buttons"):
+        elif message.get("buttons"):
             await self.send_text_with_buttons(
                 recipient_id, message.pop("text"), message.pop("buttons"), **message
             )
-
-        if message.get("text"):
+        elif message.get("text"):
             await self.send_text_message(recipient_id, message.pop("text"), **message)
+
+        if message.get("custom"):
+            await self.send_custom_json(recipient_id, message.pop("custom"), **message)
 
         # if there is an image we handle it separately as an attachment
         if message.get("image"):

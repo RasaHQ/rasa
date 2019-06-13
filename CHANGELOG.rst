@@ -21,6 +21,14 @@ Removed
 Fixed
 -----
 
+[1.1.1] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed compatibility with Rasa SDK
+- bot responses can contain ``custom`` messages besides other message types
+
 [1.1.0] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -42,7 +50,7 @@ Fixed
 - default actions, which are overriden by custom actions and are listed in the
   domain are excluded from domain warnings
 - SQL ``data`` column type to ``Text`` for compatibility with MySQL
-- non-featurizer training parameters don't break ``SklearnPolicy`` anymore
+- non-featurizer training parameters don't break `SklearnPolicy` anymore
 
 [1.0.9] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
