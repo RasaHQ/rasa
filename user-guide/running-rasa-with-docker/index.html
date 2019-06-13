@@ -183,12 +183,13 @@ Docker-compatible machine or cluster." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.0.9
+          viewing: 1.1.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.1.0/user-guide/running-rasa-with-docker/">1.1.0</a>
               <a href="../.././1.0.9/user-guide/running-rasa-with-docker/">1.0.9</a>
               <a href="../.././1.0.8/user-guide/running-rasa-with-docker/">1.0.8</a>
               <a href="../.././1.0.7/user-guide/running-rasa-with-docker/">1.0.7</a>
@@ -234,36 +235,36 @@ Docker-compatible machine or cluster." />
 If you haven’t used Rasa before, we’d recommend that you start with the <a class="reference internal" href="../rasa-tutorial/#rasa-tutorial"><span class="std std-ref">Rasa Tutorial</span></a>.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#installing-docker" id="id2">Installing Docker</a></li>
-<li><a class="reference internal" href="#building-an-assistant-with-rasa-and-docker" id="id3">Building an Assistant with Rasa and Docker</a><ul>
-<li><a class="reference internal" href="#setup" id="id4">Setup</a></li>
-<li><a class="reference internal" href="#talking-to-your-assistant" id="id5">Talking to Your Assistant</a></li>
+<li><a class="reference internal" href="#installing-docker" id="id3">Installing Docker</a></li>
+<li><a class="reference internal" href="#building-an-assistant-with-rasa-and-docker" id="id4">Building an Assistant with Rasa and Docker</a><ul>
+<li><a class="reference internal" href="#setup" id="id5">Setup</a></li>
+<li><a class="reference internal" href="#talking-to-your-assistant" id="id6">Talking to Your Assistant</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#customizing-your-model" id="id6">Customizing your Model</a><ul>
-<li><a class="reference internal" href="#choosing-a-tag" id="id7">Choosing a Tag</a></li>
-<li><a class="reference internal" href="#training-a-custom-rasa-model-with-docker" id="id8">Training a Custom Rasa Model with Docker</a></li>
+<li><a class="reference internal" href="#customizing-your-model" id="id7">Customizing your Model</a><ul>
+<li><a class="reference internal" href="#choosing-a-tag" id="id8">Choosing a Tag</a></li>
+<li><a class="reference internal" href="#training-a-custom-rasa-model-with-docker" id="id9">Training a Custom Rasa Model with Docker</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-the-rasa-server" id="id9">Running the Rasa Server</a></li>
-<li><a class="reference internal" href="#using-docker-compose-to-run-multiple-services" id="id10">Using Docker Compose to Run Multiple Services</a></li>
-<li><a class="reference internal" href="#adding-custom-actions" id="id11">Adding Custom Actions</a><ul>
-<li><a class="reference internal" href="#creating-a-custom-action" id="id12">Creating a Custom Action</a></li>
-<li><a class="reference internal" href="#adding-the-action-server" id="id13">Adding the Action Server</a></li>
-<li><a class="reference internal" href="#adding-custom-dependencies" id="id14">Adding Custom Dependencies</a></li>
+<li><a class="reference internal" href="#running-the-rasa-server" id="id10">Running the Rasa Server</a></li>
+<li><a class="reference internal" href="#using-docker-compose-to-run-multiple-services" id="id11">Using Docker Compose to Run Multiple Services</a></li>
+<li><a class="reference internal" href="#adding-custom-actions" id="id12">Adding Custom Actions</a><ul>
+<li><a class="reference internal" href="#creating-a-custom-action" id="id13">Creating a Custom Action</a></li>
+<li><a class="reference internal" href="#adding-the-action-server" id="id14">Adding the Action Server</a></li>
+<li><a class="reference internal" href="#adding-custom-dependencies" id="id15">Adding Custom Dependencies</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#adding-a-custom-tracker-store" id="id15">Adding a Custom Tracker Store</a><ul>
-<li><a class="reference internal" href="#using-postgresql-as-tracker-store" id="id16">Using PostgreSQL as Tracker Store</a></li>
-<li><a class="reference internal" href="#using-mongodb-as-tracker-store" id="id17">Using MongoDB as Tracker Store</a></li>
-<li><a class="reference internal" href="#using-redis-as-tracker-store" id="id18">Using Redis as Tracker Store</a></li>
-<li><a class="reference internal" href="#using-a-custom-tracker-store-implementation" id="id19">Using a Custom Tracker Store Implementation</a></li>
+<li><a class="reference internal" href="#adding-a-custom-tracker-store" id="id16">Adding a Custom Tracker Store</a><ul>
+<li><a class="reference internal" href="#using-postgresql-as-tracker-store" id="id17">Using PostgreSQL as Tracker Store</a></li>
+<li><a class="reference internal" href="#using-mongodb-as-tracker-store" id="id18">Using MongoDB as Tracker Store</a></li>
+<li><a class="reference internal" href="#using-redis-as-tracker-store" id="id19">Using Redis as Tracker Store</a></li>
+<li><a class="reference internal" href="#using-a-custom-tracker-store-implementation" id="id20">Using a Custom Tracker Store Implementation</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="section" id="installing-docker">
-<h2><a class="toc-backref" href="#id2">Installing Docker</a><a class="headerlink" href="#installing-docker" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id3">Installing Docker</a><a class="headerlink" href="#installing-docker" title="Permalink to this headline">¶</a></h2>
 <p>If you’re not sure if you have Docker installed, you can check by running:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker -v <span class="o">&amp;&amp;</span> docker-compose -v
@@ -278,7 +279,7 @@ install Docker.
 See <a class="reference external" href="https://docs.docker.com/install/">Docker Installation</a> for details.</p>
 </div>
 <div class="section" id="building-an-assistant-with-rasa-and-docker">
-<h2><a class="toc-backref" href="#id3">Building an Assistant with Rasa and Docker</a><a class="headerlink" href="#building-an-assistant-with-rasa-and-docker" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4">Building an Assistant with Rasa and Docker</a><a class="headerlink" href="#building-an-assistant-with-rasa-and-docker" title="Permalink to this headline">¶</a></h2>
 <p>This section will cover the following:</p>
 <blockquote>
 <div><ul class="simple">
@@ -291,7 +292,7 @@ See <a class="reference external" href="https://docs.docker.com/install/">Docker
 </ul>
 </div></blockquote>
 <div class="section" id="setup">
-<h3><a class="toc-backref" href="#id4">Setup</a><a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5">Setup</a><a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h3>
 <p>Just like in the <a class="reference internal" href="../rasa-tutorial/#rasa-tutorial"><span class="std std-ref">tutorial</span></a>, you’ll use the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> command to create a project.
 The only difference is that you’ll be running Rasa inside a Docker container, using
 the image <code class="docutils literal notranslate"><span class="pre">rasa/rasa</span></code>. To initialize your project, run:</p>
@@ -318,9 +319,16 @@ have to type <code class="docutils literal notranslate"><span class="pre">rasa</
 </pre></div>
 </div>
 <p>The initial project files should all be there, as well as a <code class="docutils literal notranslate"><span class="pre">models</span></code> directory that contains your trained model.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">By default Docker runs containers as <code class="docutils literal notranslate"><span class="pre">root</span></code> user. Hence, all files created by
+these containers will be owned by <code class="docutils literal notranslate"><span class="pre">root</span></code>. See the <a class="reference external" href="https://docs.docker.com/v17.12/edge/engine/reference/commandline/run/">documentation of docker</a>
+and <a class="reference external" href="https://docs.docker.com/compose/compose-file/">docker-compose</a> if you want to
+run the containers with a different user.</p>
+</div>
 </div>
 <div class="section" id="talking-to-your-assistant">
-<h3><a class="toc-backref" href="#id5">Talking to Your Assistant</a><a class="headerlink" href="#talking-to-your-assistant" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6">Talking to Your Assistant</a><a class="headerlink" href="#talking-to-your-assistant" title="Permalink to this headline">¶</a></h3>
 <p>To talk to your newly-trained assistant, run this command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker run -it -v <span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>:/app rasa/rasa shell
 </pre></div>
@@ -333,9 +341,9 @@ you need to pass the <code class="docutils literal notranslate"><span class="pre
 </div>
 </div>
 <div class="section" id="customizing-your-model">
-<h2><a class="toc-backref" href="#id6">Customizing your Model</a><a class="headerlink" href="#customizing-your-model" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Customizing your Model</a><a class="headerlink" href="#customizing-your-model" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="choosing-a-tag">
-<h3><a class="toc-backref" href="#id7">Choosing a Tag</a><a class="headerlink" href="#choosing-a-tag" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8">Choosing a Tag</a><a class="headerlink" href="#choosing-a-tag" title="Permalink to this headline">¶</a></h3>
 <p>To keep images as small as possible, we publish different tags of the <code class="docutils literal notranslate"><span class="pre">rasa/rasa</span></code> image
 with different dependencies installed. See <a class="reference internal" href="../../nlu/choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">Choosing a Pipeline</span></a> for more information
 about depedencies.</p>
@@ -358,7 +366,7 @@ Alternatively, you can use the <code class="docutils literal notranslate"><span 
 </div>
 </div>
 <div class="section" id="training-a-custom-rasa-model-with-docker">
-<span id="model-training-docker"></span><h3><a class="toc-backref" href="#id8">Training a Custom Rasa Model with Docker</a><a class="headerlink" href="#training-a-custom-rasa-model-with-docker" title="Permalink to this headline">¶</a></h3>
+<span id="model-training-docker"></span><h3><a class="toc-backref" href="#id9">Training a Custom Rasa Model with Docker</a><a class="headerlink" href="#training-a-custom-rasa-model-with-docker" title="Permalink to this headline">¶</a></h3>
 <p>Edit the <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> file to use the pipeline you want, and place
 your NLU and Core data into the <code class="docutils literal notranslate"><span class="pre">data/</span></code> directory.
 Now you can train your Rasa model by running:</p>
@@ -395,7 +403,7 @@ environment variable <code class="docutils literal notranslate"><span class="pre
 </div>
 </div>
 <div class="section" id="running-the-rasa-server">
-<h2><a class="toc-backref" href="#id9">Running the Rasa Server</a><a class="headerlink" href="#running-the-rasa-server" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id10">Running the Rasa Server</a><a class="headerlink" href="#running-the-rasa-server" title="Permalink to this headline">¶</a></h2>
 <p>To run your AI assistant in production, configure your required
 <a class="reference internal" href="../messaging-and-voice-channels/#messaging-and-voice-channels"><span class="std std-ref">Messaging and Voice Channels</span></a> in <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>. If this file does not
 exist, create it using:</p>
@@ -422,7 +430,7 @@ in the container</li>
 </div></blockquote>
 </div>
 <div class="section" id="using-docker-compose-to-run-multiple-services">
-<h2><a class="toc-backref" href="#id10">Using Docker Compose to Run Multiple Services</a><a class="headerlink" href="#using-docker-compose-to-run-multiple-services" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id11">Using Docker Compose to Run Multiple Services</a><a class="headerlink" href="#using-docker-compose-to-run-multiple-services" title="Permalink to this headline">¶</a></h2>
 <p>To run Rasa together with other services, such as a server for custom actions, it is
 recommend to use <a class="reference external" href="https://docs.docker.com/compose/">Docker Compose</a>.
 Docker Compose provides an easy way to run multiple containers together without
@@ -465,12 +473,12 @@ possible to connect to the command line of a single container after executing th
 </div>
 </div>
 <div class="section" id="adding-custom-actions">
-<h2><a class="toc-backref" href="#id11">Adding Custom Actions</a><a class="headerlink" href="#adding-custom-actions" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id12">Adding Custom Actions</a><a class="headerlink" href="#adding-custom-actions" title="Permalink to this headline">¶</a></h2>
 <p>To create more sophisticated assistants, you will want to use <a class="reference internal" href="../../core/actions/#custom-actions"><span class="std std-ref">Custom Actions</span></a>.
 Continuing the example from above, you might want to add an action which tells
 the user a joke to cheer them up.</p>
 <div class="section" id="creating-a-custom-action">
-<h3><a class="toc-backref" href="#id12">Creating a Custom Action</a><a class="headerlink" href="#creating-a-custom-action" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13">Creating a Custom Action</a><a class="headerlink" href="#creating-a-custom-action" title="Permalink to this headline">¶</a></h3>
 <p>Start by creating the custom actions in a directory <code class="docutils literal notranslate"><span class="pre">actions</span></code>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir actions
 <span class="c1"># Rasa SDK expects a python module.</span>
@@ -502,7 +510,7 @@ Continuing with the example bot from <code class="docutils literal notranslate">
 <code class="docutils literal notranslate"><span class="pre">action_joke</span></code> to the actions in the domain file.</p>
 </div>
 <div class="section" id="adding-the-action-server">
-<h3><a class="toc-backref" href="#id13">Adding the Action Server</a><a class="headerlink" href="#adding-the-action-server" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14">Adding the Action Server</a><a class="headerlink" href="#adding-the-action-server" title="Permalink to this headline">¶</a></h3>
 <p>The custom actions are run by the action server.
 To spin it up together with the Rasa instance, add a service
 <code class="docutils literal notranslate"><span class="pre">action_server</span></code> to the <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>:</p>
@@ -534,7 +542,7 @@ Add this to your <code class="docutils literal notranslate"><span class="pre">en
 with Rasa.</p>
 </div>
 <div class="section" id="adding-custom-dependencies">
-<h3><a class="toc-backref" href="#id14">Adding Custom Dependencies</a><a class="headerlink" href="#adding-custom-dependencies" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15">Adding Custom Dependencies</a><a class="headerlink" href="#adding-custom-dependencies" title="Permalink to this headline">¶</a></h3>
 <p>If your custom action has additional dependencies of systems or Python libraries,
 you can add these by extending the official image.</p>
 <p>To do so, create a file named <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> in which you extend the official
@@ -558,13 +566,13 @@ image and add your custom dependencies. For example:</p>
 </div>
 </div>
 <div class="section" id="adding-a-custom-tracker-store">
-<h2><a class="toc-backref" href="#id15">Adding a Custom Tracker Store</a><a class="headerlink" href="#adding-a-custom-tracker-store" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id16">Adding a Custom Tracker Store</a><a class="headerlink" href="#adding-a-custom-tracker-store" title="Permalink to this headline">¶</a></h2>
 <p>By default, all conversations are saved in memory. This means that all
 conversations are lost as soon as you restart the Rasa server.
 If you want to persist your conversations, you can use a different
 <a class="reference internal" href="../../api/tracker-stores/#tracker-stores"><span class="std std-ref">Tracker Store</span></a>.</p>
 <div class="section" id="using-postgresql-as-tracker-store">
-<h3><a class="toc-backref" href="#id16">Using PostgreSQL as Tracker Store</a><a class="headerlink" href="#using-postgresql-as-tracker-store" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17">Using PostgreSQL as Tracker Store</a><a class="headerlink" href="#using-postgresql-as-tracker-store" title="Permalink to this headline">¶</a></h3>
 <p>Start by adding PostgreSQL to your docker-compose file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">postgres</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">postgres:latest</span>
@@ -581,7 +589,7 @@ configuration <code class="docutils literal notranslate"><span class="pre">confi
 </div>
 </div>
 <div class="section" id="using-mongodb-as-tracker-store">
-<h3><a class="toc-backref" href="#id17">Using MongoDB as Tracker Store</a><a class="headerlink" href="#using-mongodb-as-tracker-store" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">Using MongoDB as Tracker Store</a><a class="headerlink" href="#using-mongodb-as-tracker-store" title="Permalink to this headline">¶</a></h3>
 <p>Start by adding MongoDB to your docker-compose file. The following example
 adds the MongoDB as well as a UI (you can skip this), which will be available
 at <code class="docutils literal notranslate"><span class="pre">localhost:8081</span></code>. Username and password for the MongoDB instance are
@@ -612,7 +620,7 @@ configuration <code class="docutils literal notranslate"><span class="pre">endpo
 <p>Then start all components with <code class="docutils literal notranslate"><span class="pre">docker-compose</span> <span class="pre">up</span></code>.</p>
 </div>
 <div class="section" id="using-redis-as-tracker-store">
-<h3><a class="toc-backref" href="#id18">Using Redis as Tracker Store</a><a class="headerlink" href="#using-redis-as-tracker-store" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">Using Redis as Tracker Store</a><a class="headerlink" href="#using-redis-as-tracker-store" title="Permalink to this headline">¶</a></h3>
 <p>Start by adding Redis to your docker-compose file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">redis</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">redis:latest</span>
@@ -627,7 +635,7 @@ configuration <code class="docutils literal notranslate"><span class="pre">endpo
 </div>
 </div>
 <div class="section" id="using-a-custom-tracker-store-implementation">
-<h3><a class="toc-backref" href="#id19">Using a Custom Tracker Store Implementation</a><a class="headerlink" href="#using-a-custom-tracker-store-implementation" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20">Using a Custom Tracker Store Implementation</a><a class="headerlink" href="#using-a-custom-tracker-store-implementation" title="Permalink to this headline">¶</a></h3>
 <p>If you have a custom implementation of a tracker store you have two options
 to add this store to Rasa:</p>
 <blockquote>
