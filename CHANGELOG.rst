@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.1] - `master`_
+[Unreleased 1.1.3] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -20,6 +20,13 @@ Removed
 
 Fixed
 -----
+
+[1.1.2] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed duplicate events appearing in tracker when using a PostgreSQL tracker store
 
 [1.1.1] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
