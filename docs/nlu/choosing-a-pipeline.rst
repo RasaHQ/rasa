@@ -38,7 +38,7 @@ A Longer Answer
 
 The two most important pipelines are ``supervised_embeddings`` and ``pretrained_embeddings_spacy``.
 The biggest difference between them is that the ``pretrained_embeddings_spacy`` pipeline uses pre-trained
-word vectors from either GloVe or fastText. Instead, the supervised embeddings pipeline
+word vectors from either GloVe or fastText. The ``supervised embeddings`` pipeline, on the other hand,
 doesn't use any pre-trained word vectors, but instead fits these specifically for your dataset.
 
 The advantage of the ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
