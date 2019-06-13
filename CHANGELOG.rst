@@ -20,6 +20,7 @@ Removed
 
 Fixed
 -----
+- bot responses can contain ``custom`` messages besides other message types
 
 [1.1.0] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
@@ -43,7 +44,6 @@ Fixed
   domain are excluded from domain warnings
 - SQL ``data`` column type to ``Text`` for compatibility with MySQL
 - non-featurizer training parameters don't break `SklearnPolicy` anymore
-- bot responses can contain ``custom`` messages besides other message types
 
 [1.0.9] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
