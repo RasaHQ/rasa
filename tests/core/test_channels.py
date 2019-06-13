@@ -56,7 +56,7 @@ async def test_send_response(default_channel, default_tracker):
         "image": "https://i.imgur.com/T5xVo.jpg",
     }
     custom_json_message = {
-        "text": "look at this",  # this value will be ignored
+        "text": "look at this",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
 
