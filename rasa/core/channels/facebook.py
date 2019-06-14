@@ -51,6 +51,14 @@ class Messenger:
             and not message["message"].get("is_echo")
         )
 
+    @staticmethod
+    def _is_quick_reply_message(message: Dict[Text, Any]) -> bool:
+        """Check if the message is a quick reply message."""
+
+        return (message.get('message')
+                and message['message'].get('quick_reply')
+                and message['message']['quick_reply'].get('payload'))
+
     async def handle(self, payload):
         for entry in payload["entry"]:
             for message in entry["messaging"]:
@@ -63,7 +71,11 @@ class Messenger:
     async def message(self, message: Dict[Text, Any]) -> None:
         """Handle an incoming event from the fb webhook."""
 
-        if self._is_user_message(message):
+        # quick reply and user message both share 'text' attribute
+        # so quick reply should be checked first
+        if self._is_quick_reply_message(message):
+            text = message['message']['quick_reply']['payload']
+        elif self._is_user_message(message):
             text = message["message"]["text"]
         elif self._is_audio_message(message):
             attachment = message["message"]["attachments"][0]
