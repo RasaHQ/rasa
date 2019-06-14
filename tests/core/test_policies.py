@@ -13,14 +13,14 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     ActionRevertFallbackEvents,
 )
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import (
     BinarySingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.policies import TwoStageFallbackPolicy
+from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.embedding_policy import EmbeddingPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy

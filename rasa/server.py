@@ -25,7 +25,7 @@ from rasa.constants import (
 )
 from rasa.core import broker
 from rasa.core.agent import load_agent, Agent
-from rasa.core.channels import UserMessage, CollectingOutputChannel
+from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
@@ -82,7 +82,7 @@ def ensure_loaded_agent(app: Sanic):
 def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
     """Wraps a request handler with token authentication."""
 
-    def decorator(f: Callable[[Any, Any, Any], Any]) -> Callable[[Any, Any], Any]:
+    def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
             argnames = rasa.utils.common.arguments_of(f)
 

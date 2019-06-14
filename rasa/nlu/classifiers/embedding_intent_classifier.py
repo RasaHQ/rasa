@@ -14,7 +14,7 @@ from rasa.utils.common import is_logging_disabled
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    import tensorflow as tf
+    from tensorflow import Graph, Session, Tensor
     from rasa.nlu.config import RasaNLUModelConfig
     from rasa.nlu.training_data import TrainingData
     from rasa.nlu.model import Metadata
@@ -110,13 +110,13 @@ class EmbeddingIntentClassifier(Component):
         component_config: Optional[Dict[Text, Any]] = None,
         inv_intent_dict: Optional[Dict[int, Text]] = None,
         encoded_all_intents: Optional[np.ndarray] = None,
-        session: Optional["tf.Session"] = None,
-        graph: Optional["tf.Graph"] = None,
-        message_placeholder: Optional["tf.Tensor"] = None,
-        intent_placeholder: Optional["tf.Tensor"] = None,
-        similarity_op: Optional["tf.Tensor"] = None,
-        word_embed: Optional["tf.Tensor"] = None,
-        intent_embed: Optional["tf.Tensor"] = None,
+        session: Optional["Session"] = None,
+        graph: Optional["Graph"] = None,
+        message_placeholder: Optional["Tensor"] = None,
+        intent_placeholder: Optional["Tensor"] = None,
+        similarity_op: Optional["Tensor"] = None,
+        word_embed: Optional["Tensor"] = None,
+        intent_embed: Optional["Tensor"] = None,
     ) -> None:
         """Declare instant variables with default values"""
 
@@ -275,12 +275,8 @@ class EmbeddingIntentClassifier(Component):
 
     # tf helpers:
     def _create_tf_embed_nn(
-        self,
-        x_in: "tf.Tensor",
-        is_training: "tf.Tensor",
-        layer_sizes: List[int],
-        name: Text,
-    ) -> "tf.Tensor":
+        self, x_in: "Tensor", is_training: "Tensor", layer_sizes: List[int], name: Text
+    ) -> "Tensor":
         """Create nn with hidden layers and name"""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
@@ -304,8 +300,8 @@ class EmbeddingIntentClassifier(Component):
         return x
 
     def _create_tf_embed(
-        self, a_in: "tf.Tensor", b_in: "tf.Tensor", is_training: "tf.Tensor"
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        self, a_in: "Tensor", b_in: "Tensor", is_training: "Tensor"
+    ) -> Tuple["Tensor", "Tensor"]:
         """Create tf graph for training"""
 
         emb_a = self._create_tf_embed_nn(
@@ -316,9 +312,7 @@ class EmbeddingIntentClassifier(Component):
         )
         return emb_a, emb_b
 
-    def _tf_sim(
-        self, a: "tf.Tensor", b: "tf.Tensor"
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+    def _tf_sim(self, a: "Tensor", b: "Tensor") -> Tuple["Tensor", "Tensor"]:
         """Define similarity
 
         in two cases:
@@ -344,7 +338,7 @@ class EmbeddingIntentClassifier(Component):
                 "".format(self.similarity_type)
             )
 
-    def _tf_loss(self, sim: "tf.Tensor", sim_emb: "tf.Tensor") -> "tf.Tensor":
+    def _tf_loss(self, sim: "Tensor", sim_emb: "Tensor") -> "Tensor":
         """Define loss"""
 
         # loss for maximizing similarity with correct action
@@ -420,9 +414,9 @@ class EmbeddingIntentClassifier(Component):
         X: np.ndarray,
         Y: np.ndarray,
         intents_for_X: np.ndarray,
-        loss: "tf.Tensor",
-        is_training: "tf.Tensor",
-        train_op: "tf.Tensor",
+        loss: "Tensor",
+        is_training: "Tensor",
+        train_op: "Tensor",
     ) -> None:
         """Train tf graph"""
 
@@ -492,7 +486,7 @@ class EmbeddingIntentClassifier(Component):
 
     # noinspection PyPep8Naming
     def _output_training_stat(
-        self, X: np.ndarray, intents_for_X: np.ndarray, is_training: "tf.Tensor"
+        self, X: np.ndarray, intents_for_X: np.ndarray, is_training: "Tensor"
     ) -> np.ndarray:
         """Output training statistics"""
 
