@@ -32,7 +32,7 @@ def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir_factory
         credentials_path, "http://localhost:5002"
     )
 
-    actual = io_utils.read_yaml_file(tmp_credentials)
+    actual = io_utils.read_config_file(tmp_credentials)
 
     assert actual["rasa"]["url"] == "http://localhost:5002"
 
@@ -49,7 +49,7 @@ def test_prepare_credentials_if_already_valid(tmpdir_factory):
 
     x._prepare_credentials_for_rasa_x(credentials_path)
 
-    actual = io_utils.read_yaml_file(credentials_path)
+    actual = io_utils.read_config_file(credentials_path)
 
     assert actual == credentials
 

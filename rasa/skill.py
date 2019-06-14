@@ -1,9 +1,8 @@
 import logging
-from typing import Text, Set, Dict, Optional, List, Union
+from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
 import rasa.utils.io as io_utils
-from rasa import data
 
 logger = logging.getLogger(__name__)
 
@@ -83,19 +82,23 @@ class SkillSelector:
 
     @classmethod
     def _from_file(cls, path: Text, skill_selector: "SkillSelector") -> "SkillSelector":
+        from rasa import data  # pytype: disable=pyi-error
+
         path = os.path.abspath(path)
         if os.path.exists(path) and data.is_config_file(path):
-            config = io_utils.read_yaml_file(path)
+            config = io_utils.read_config_file(path)
 
-            if isinstance(config, dict):
-                parent_directory = os.path.dirname(path)
-                return cls._from_dict(config, parent_directory, skill_selector)
+            parent_directory = os.path.dirname(path)
+            return cls._from_dict(config, parent_directory, skill_selector)
 
         return cls.all_skills()
 
     @classmethod
     def _from_dict(
-        cls, _dict: Dict, parent_directory: Text, skill_selector: "SkillSelector"
+        cls,
+        _dict: Dict[Text, Any],
+        parent_directory: Text,
+        skill_selector: "SkillSelector",
     ) -> "SkillSelector":
         imports = _dict.get("imports") or []
         imports = {os.path.join(parent_directory, i) for i in imports}
@@ -121,6 +124,8 @@ class SkillSelector:
     def _from_directory(
         cls, path: Text, skill_selector: "SkillSelector"
     ) -> "SkillSelector":
+        from rasa import data  # pytype: disable=pyi-error
+
         for parent, _, files in os.walk(path):
             for file in files:
                 full_path = os.path.join(parent, file)
@@ -199,5 +204,5 @@ class SkillSelector:
     def _is_in_imported_paths(self, path):
         return any([io_utils.is_subdirectory(path, i) for i in self._imports])
 
-    def add_import(self, path: Text) -> bool:
+    def add_import(self, path: Text) -> None:
         self._imports.add(path)

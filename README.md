@@ -143,7 +143,10 @@ Releasing a new version is quite simple, as the packages are build and distribut
 ### Code Style
 
 To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black).
-If your code is not formatted properly, travis will fail to build.
+To ensure our type annotations are correct we use the type checker [pytype](https://github.com/google/pytype). 
+If your code is not formatted properly or doesn't type check, travis will fail to build.
+
+#### Formatting
 
 If you want to automatically format your code on every commit, you can use [pre-commit](https://pre-commit.com/).
 Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
@@ -153,6 +156,14 @@ If you want to set it up manually, install black via `pip install black`.
 To reformat files execute
 ```
 black .
+```
+
+#### Type Checking
+
+If you want to check types on the codebase, install `pytype` using `pip install pytype`.
+To check the types execute
+```
+pytype rasa
 ```
 
 ## License

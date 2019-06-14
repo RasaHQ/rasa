@@ -3,18 +3,21 @@ import os
 import shutil
 import tempfile
 import uuid
+import typing
 from typing import Tuple, List, Text, Set, Union, Optional
 import re
 
 import rasa.utils.io as io_utils
-from rasa.skill import SkillSelector
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa.skill import SkillSelector
 
 
 def get_core_directory(
     paths: Optional[Union[Text, List[Text]]],
-    skill_imports: Optional[SkillSelector] = None,
+    skill_imports: Optional["SkillSelector"] = None,
 ) -> Text:
     """Recursively collects all Core training files from a list of paths.
 
@@ -32,7 +35,7 @@ def get_core_directory(
 
 def get_nlu_directory(
     paths: Optional[Union[Text, List[Text]]],
-    skill_imports: Optional[SkillSelector] = None,
+    skill_imports: Optional["SkillSelector"] = None,
 ) -> Text:
     """Recursively collects all NLU training files from a list of paths.
 
@@ -50,7 +53,7 @@ def get_nlu_directory(
 
 def get_core_nlu_directories(
     paths: Optional[Union[Text, List[Text]]],
-    skill_imports: Optional[SkillSelector] = None,
+    skill_imports: Optional["SkillSelector"] = None,
 ) -> Tuple[Text, Text]:
     """Recursively collects all training files from a list of paths.
 
@@ -74,7 +77,7 @@ def get_core_nlu_directories(
 
 def get_core_nlu_files(
     paths: Optional[Union[Text, List[Text]]],
-    skill_imports: Optional[SkillSelector] = None,
+    skill_imports: Optional["SkillSelector"] = None,
 ) -> Tuple[Set[Text], Set[Text]]:
     """Recursively collects all training files from a list of paths.
 
@@ -86,6 +89,7 @@ def get_core_nlu_files(
     Returns:
         Tuple of paths to story and NLU files.
     """
+    from rasa.skill import SkillSelector
 
     story_files = set()
     nlu_data_files = set()
@@ -121,7 +125,7 @@ def get_core_nlu_files(
 
 
 def _find_core_nlu_files_in_directory(
-    directory: Text, skill_imports: SkillSelector
+    directory: Text, skill_imports: "SkillSelector"
 ) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
