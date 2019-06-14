@@ -100,13 +100,17 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
-        old_tracker = self.retrieve(tracker.sender_id)
-        offset = len(old_tracker.events) if old_tracker else 0
+        offset = self.number_of_existing_events(tracker.sender_id)
         evts = tracker.events
         for evt in list(itertools.islice(evts, offset, len(evts))):
             body = {"sender_id": tracker.sender_id}
             body.update(evt.as_dict())
             self.event_broker.publish(body)
+
+    def number_of_existing_events(self, sender_id: Text) -> int:
+        """Return number of stored events for a given sender id."""
+        old_tracker = self.retrieve(sender_id)
+        return len(old_tracker.events) if old_tracker else 0
 
     def keys(self) -> Iterable[Text]:
         raise NotImplementedError()
@@ -472,23 +476,13 @@ class SQLTrackerStore(TrackerStore):
             "stored to database".format(tracker.sender_id)
         )
 
+    def number_of_existing_events(self, sender_id: Text) -> int:
+        """Return number of stored events for a given sender id."""
+
+        query = self.session.query(self.SQLEvent.sender_id)
+        return query.filter_by(sender_id=sender_id).count() or 0
+
     def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
-
-        from sqlalchemy import func
-
-        query = self.session.query(func.max(self.SQLEvent.timestamp))
-        max_timestamp = query.filter_by(sender_id=tracker.sender_id).scalar()
-
-        if max_timestamp is None:
-            max_timestamp = 0
-
-        latest_events = []
-
-        for event in reversed(tracker.events):
-            if event.timestamp > max_timestamp:
-                latest_events.append(event)
-            else:
-                break
-
-        return reversed(latest_events)
+        n_events = self.number_of_existing_events(tracker.sender_id)
+        return itertools.islice(tracker.events, n_events, len(tracker.events))
