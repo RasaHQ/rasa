@@ -54,10 +54,11 @@ class Messenger:
     @staticmethod
     def _is_quick_reply_message(message: Dict[Text, Any]) -> bool:
         """Check if the message is a quick reply message."""
-
-        return (message.get('message')
-                and message['message'].get('quick_reply')
-                and message['message']['quick_reply'].get('payload'))
+        return (
+            message.get("message")
+            and message["message"].get("quick_reply")
+            and message["message"]["quick_reply"].get("payload")
+        )
 
     async def handle(self, payload):
         for entry in payload["entry"]:
