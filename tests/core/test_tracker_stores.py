@@ -1,6 +1,6 @@
 import pytest
 
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, Restarted
 from rasa.core.tracker_store import (

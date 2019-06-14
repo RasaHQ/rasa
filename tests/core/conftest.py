@@ -9,7 +9,8 @@ import pytest
 import rasa.utils.io
 from rasa.core import train
 from rasa.core.agent import Agent
-from rasa.core.channels import CollectingOutputChannel, RestInput, channel
+from rasa.core.channels import channel
+from rasa.core.channels.channel import CollectingOutputChannel, RestInput
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator

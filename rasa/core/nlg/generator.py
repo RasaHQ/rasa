@@ -25,11 +25,15 @@ class NaturalLanguageGenerator(object):
         if isinstance(obj, NaturalLanguageGenerator):
             return obj
         elif isinstance(obj, EndpointConfig):
-            from rasa.core.nlg import CallbackNaturalLanguageGenerator
+            from rasa.core.nlg import (  # pytype: disable=pyi-error
+                CallbackNaturalLanguageGenerator,
+            )
 
             return CallbackNaturalLanguageGenerator(obj)
         elif obj is None:
-            from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+            from rasa.core.nlg import (  # pytype: disable=pyi-error
+                TemplatedNaturalLanguageGenerator,
+            )
 
             templates = domain.templates if domain else []
             return TemplatedNaturalLanguageGenerator(templates)

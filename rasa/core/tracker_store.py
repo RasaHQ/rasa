@@ -17,6 +17,7 @@ from rasa.utils.common import class_from_module_path
 
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
+    from sqlalchemy.engine import Engine
 
 
 logger = logging.getLogger(__name__)
@@ -119,11 +120,14 @@ class TrackerStore(object):
         dialogue = tracker.as_dialogue()
         return pickle.dumps(dialogue)
 
-    def deserialise_tracker(self, sender_id, _json):
+    def deserialise_tracker(self, sender_id, _json) -> Optional[DialogueStateTracker]:
         dialogue = pickle.loads(_json)
         tracker = self.init_tracker(sender_id)
-        tracker.recreate_from_dialogue(dialogue)
-        return tracker
+        if tracker:
+            tracker.recreate_from_dialogue(dialogue)
+            return tracker
+        else:
+            return None
 
 
 class InMemoryTrackerStore(TrackerStore):
@@ -310,8 +314,7 @@ class SQLTrackerStore(TrackerStore):
             dialect, host, port, db, username, password, login_db
         )
         logger.debug(
-            "Attempting to connect to database "
-            'via "{}"'.format(engine_url.__to_string__())
+            "Attempting to connect to database " 'via "{}"'.format(repr(engine_url))
         )
 
         # Database might take a while to come up
@@ -363,7 +366,7 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.engine.url import URL
 
         # Users might specify a url in the host
-        parsed = urlsplit(host)
+        parsed = urlsplit(host or "")
         if parsed.scheme:
             return host
 
@@ -421,7 +424,7 @@ class SQLTrackerStore(TrackerStore):
         sender_ids = self.session.query(self.SQLEvent.sender_id).distinct().all()
         return [sender_id for (sender_id,) in sender_ids]
 
-    def retrieve(self, sender_id: Text) -> DialogueStateTracker:
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
         query = self.session.query(self.SQLEvent)
@@ -438,6 +441,7 @@ class SQLTrackerStore(TrackerStore):
                 "sender id '{}' from SQL storage.  "
                 "Returning `None` instead.".format(sender_id)
             )
+            return None
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""

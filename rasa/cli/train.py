@@ -185,4 +185,4 @@ def _get_valid_config(
         )
         exit(1)
 
-    return config
+    return config  # pytype: disable=bad-return-type

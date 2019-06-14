@@ -9,7 +9,7 @@ from aioresponses import aioresponses
 from sanic import Sanic
 
 from rasa.core import utils
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
@@ -758,8 +758,8 @@ async def test_slackbot_send_text():
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_channel_inheritance():
-    from rasa.core.channels import RestInput
-    from rasa.core.channels import RasaChatInput
+    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels.rasa_chat import RasaChatInput
     from rasa.core.agent import Agent
     from rasa.core.interpreter import RegexInterpreter
 
@@ -780,7 +780,7 @@ def test_channel_inheritance():
 
 
 def test_int_sender_id_in_user_message():
-    from rasa.core.channels import UserMessage
+    from rasa.core.channels.channel import UserMessage
 
     # noinspection PyTypeChecker
     message = UserMessage("A text", sender_id=1234567890)
@@ -789,7 +789,7 @@ def test_int_sender_id_in_user_message():
 
 
 def test_int_message_id_in_user_message():
-    from rasa.core.channels import UserMessage
+    from rasa.core.channels.channel import UserMessage
 
     # noinspection PyTypeChecker
     message = UserMessage("B text", message_id=987654321)
@@ -810,7 +810,7 @@ async def test_send_elements_without_buttons():
 
 
 def test_newsline_strip():
-    from rasa.core.channels import UserMessage
+    from rasa.core.channels.channel import UserMessage
 
     message = UserMessage("\n/restart\n")
 
@@ -819,7 +819,7 @@ def test_newsline_strip():
 
 def test_register_channel_without_route():
     """Check we properly connect the input channel blueprint if route is None"""
-    from rasa.core.channels import RestInput
+    from rasa.core.channels.channel import RestInput
     import rasa.core
 
     input_channel = RestInput()

@@ -377,7 +377,7 @@ def _in_training_data_fraction(action_list):
     """Given a list of action items, returns the fraction of actions
 
     that were predicted using one of the Memoization policies."""
-    from rasa.core.policies import SimplePolicyEnsemble
+    from rasa.core.policies.ensemble import SimplePolicyEnsemble
 
     in_training_data = [
         a["action"]

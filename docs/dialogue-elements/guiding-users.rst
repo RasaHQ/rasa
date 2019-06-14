@@ -7,6 +7,24 @@ Guiding Users
 .. contents::
    :local:
 
+.. _implicit-confirmation:
+
+Implicit Confirmation
+---------------------
+
+Implicit confirmation involves repeating details back to the user to reassure
+them that they were understood correctly.
+This also gives the user a chance to intervene if your assistant misunderstood.
+
+.. conversations::
+   examples:
+     -
+       - Can I get a large hawaiian and bbq pizza
+       - ( Sure, that's one large hawaiian and one regular bbq pizza.
+       - ( Anything else?
+       - No they should both be large!
+
+
 .. _explicit-confirmation:
 
 Explicit Confirmation

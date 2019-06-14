@@ -147,9 +147,7 @@ def log_evaluation_table(
 
 
 def get_evaluation_metrics(
-    targets: Iterable[Optional[Text]],
-    predictions: Iterable[Optional[Text]],
-    output_dict: bool = False,
+    targets: Iterable[Any], predictions: Iterable[Any], output_dict: bool = False
 ) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]:
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
@@ -185,7 +183,7 @@ def remove_empty_intent_examples(
     return filtered
 
 
-def clean_intent_labels(labels: Iterable[Optional[Text]]) -> List[Text]:
+def clean_intent_labels(labels: Iterable[Any]) -> List[Text]:
     """Get rid of `None` intents. sklearn metrics do not support them."""
     return [l if l is not None else "" for l in labels]
 

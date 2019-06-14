@@ -4,7 +4,7 @@ from sanic.request import Request
 from typing import Text, Optional, Dict, Any
 from webexteamssdk import WebexTeamsAPI, Webhook
 
-from rasa.core.channels import InputChannel
+from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)

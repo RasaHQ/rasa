@@ -62,9 +62,8 @@ class BotFramework(OutputChannel):
                 access_token = token_data["access_token"]
                 token_expiration = token_data["expires_in"]
 
-                BotFramework.token_expiration_date = datetime.datetime.now() + datetime.timedelta(
-                    seconds=int(token_expiration)
-                )
+                delta = datetime.timedelta(seconds=int(token_expiration))
+                BotFramework.token_expiration_date = datetime.datetime.now() + delta
 
                 BotFramework.headers = {
                     "content-type": "application/json",
@@ -76,9 +75,9 @@ class BotFramework(OutputChannel):
         else:
             return BotFramework.headers
 
-    async def prepare_message(
+    def prepare_message(
         self, recipient_id: Text, message_data: Dict[Text, Any]
-    ) -> None:
+    ) -> Dict[Text, Any]:
         data = {
             "type": "message",
             "recipient": {"id": recipient_id},
@@ -86,7 +85,8 @@ class BotFramework(OutputChannel):
             "channelData": {"notification": {"alert": "true"}},
             "text": "",
         }
-        return data.update(message_data)
+        data.update(message_data)
+        return data
 
     async def send(self, message_data: Dict[Text, Any]) -> None:
         post_message_uri = "{}conversations/{}/activities".format(
@@ -142,12 +142,14 @@ class BotFramework(OutputChannel):
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
-        message = self.prepare_message(recipient_id, elements[0])
-        await self.send(message)
+        for e in elements:
+            message = self.prepare_message(recipient_id, e)
+            await self.send(message)
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
+        # pytype: disable=attribute-error
         json_message.setdefault("type", "message")
         json_message.setdefault("recipient", {}).setdefault("id", recipient_id)
         json_message.setdefault("from", self.bot)
@@ -156,6 +158,7 @@ class BotFramework(OutputChannel):
         ).setdefault("alert", "true")
         json_message.setdefault("text", "")
         await self.send(json_message)
+        # pytype: enable=attribute-error
 
 
 class BotFrameworkInput(InputChannel):
@@ -187,6 +190,7 @@ class BotFrameworkInput(InputChannel):
 
         botframework_webhook = Blueprint("botframework_webhook", __name__)
 
+        # noinspection PyUnusedLocal
         @botframework_webhook.route("/", methods=["GET"])
         async def health(request: Request):
             return response.json({"status": "ok"})
