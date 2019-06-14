@@ -75,7 +75,7 @@ class Messenger:
         # quick reply and user message both share 'text' attribute
         # so quick reply should be checked first
         if self._is_quick_reply_message(message):
-            text = message['message']['quick_reply']['payload']
+            text = message["message"]["quick_reply"]["payload"]
         elif self._is_user_message(message):
             text = message["message"]["text"]
         elif self._is_audio_message(message):
