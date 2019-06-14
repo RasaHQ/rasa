@@ -103,7 +103,7 @@ Terminology:
 
 The words ``intent``, ``entity``, and ``utterance`` have the same meaning in Rasa as they do
 in LUIS.
-LUIS's ``patterns`` feature is very similar to Rasa NLU's `regex features </docs/nlu/dataformat/>`_
+LUIS's ``patterns`` feature is very similar to Rasa NLU's `regex features </docs/rasa/nlu/training-data-format/#regular-expression-features>`_
 LUIS's ``phrase lists`` feature does not currently have an equivalent in Rasa NLU.
 
 
