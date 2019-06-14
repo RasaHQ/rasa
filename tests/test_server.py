@@ -617,8 +617,7 @@ def test_unload_model_error(rasa_app):
     assert response.status == 204
 
     _, response = rasa_app.get("/status")
-    assert response.status == 200
-    assert "model_file" in response.json and response.json["model_file"] is None
+    assert response.status == 409
 
 
 def test_get_domain(rasa_app):
