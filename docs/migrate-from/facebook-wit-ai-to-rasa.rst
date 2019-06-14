@@ -1,5 +1,5 @@
 
-:desc: Open source alternative to Facebooks Wit.ai for conversational bots and NLP
+:desc: Open source alternative to Facebook's Wit.ai for conversational bots and NLP
 
 .. _facebook-wit-ai-to-rasa:
 
