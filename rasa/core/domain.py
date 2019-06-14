@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
 import rasa.utils.io
 from rasa import data
-from rasa.cli.utils import print_warning, bcolors
+from rasa.cli.utils import bcolors
 from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
