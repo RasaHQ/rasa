@@ -47,7 +47,7 @@ class Domain(object):
 
     @classmethod
     def empty(cls) -> "Domain":
-        return cls({}, [], [], {}, [], [])
+        return cls([], [], [], {}, [], [])
 
     @classmethod
     def load(
