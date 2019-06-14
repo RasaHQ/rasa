@@ -67,7 +67,7 @@ class DucklingHTTPExtractor(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        language: Optional[List[Text]] = None,
+        language: Optional[Text] = None,
     ) -> None:
 
         super(DucklingHTTPExtractor, self).__init__(component_config)
@@ -84,7 +84,8 @@ class DucklingHTTPExtractor(EntityExtractor):
         if not self.component_config.get("locale"):
             # this is king of a quick fix to generate a proper locale
             # works most of the time
-            locale_fix = "{}_{}".format(self.language, self.language.upper())
+            language = self.language or ""
+            locale_fix = "{}_{}".format(language, language.upper())
             self.component_config["locale"] = locale_fix
         return self.component_config.get("locale")
 
@@ -179,9 +180,10 @@ class DucklingHTTPExtractor(EntityExtractor):
         cls,
         meta: Dict[Text, Any],
         model_dir: Text = None,
-        model_metadata: Metadata = None,
+        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["DucklingHTTPExtractor"] = None,
         **kwargs: Any
     ) -> "DucklingHTTPExtractor":
 
-        return cls(meta, model_metadata.get("language"))
+        language = model_metadata.get("language") if model_metadata else None
+        return cls(meta, language)

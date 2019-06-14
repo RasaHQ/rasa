@@ -6,7 +6,9 @@ import warnings
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+from rasa.constants import RESULTS_FILE
 from rasa.core.events import ActionExecuted, UserUttered
+from rasa.cli.utils import print_success
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -375,7 +377,7 @@ def _in_training_data_fraction(action_list):
     """Given a list of action items, returns the fraction of actions
 
     that were predicted using one of the Memoization policies."""
-    from rasa.core.policies import SimplePolicyEnsemble
+    from rasa.core.policies.ensemble import SimplePolicyEnsemble
 
     in_training_data = [
         a["action"]
@@ -620,12 +622,47 @@ async def compare(models: Text, stories_file: Text, output: Text) -> None:
     utils.dump_obj_as_json_to_file(os.path.join(output, "results.json"), num_correct)
 
 
-def plot_curve(output: Text, no_stories: List[int]) -> None:
-    """Plot the results from run_comparison_evaluation.
+def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
+
+    graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
+
+    _plot_curve(
+        output,
+        number_of_examples,
+        x_label_text="Number of intent examples present during training",
+        y_label_text="Label-weighted average F1 score on test set",
+        graph_path=graph_path,
+    )
+
+
+def plot_core_results(output: Text, number_of_examples: List[int]) -> None:
+
+    graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
+
+    _plot_curve(
+        output,
+        number_of_examples,
+        x_label_text="Number of stories present during training",
+        y_label_text="Number of correct test stories",
+        graph_path=graph_path,
+    )
+
+
+def _plot_curve(
+    output: Text,
+    number_of_examples: List[int],
+    x_label_text: Text,
+    y_label_text: Text,
+    graph_path: Text,
+) -> None:
+    """Plot the results from a model comparison.
 
     Args:
         output: Output directory to save resulting plots to
-        no_stories: Number of stories per run
+        number_of_examples: Number of examples per run
+        x_label_text: text for the x axis
+        y_label_text: text for the y axis
+        graph_path: output path of the plot
     """
     import matplotlib.pyplot as plt
     import numpy as np
@@ -634,8 +671,8 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
     ax = plt.gca()
 
     # load results from file
-    data = rasa.utils.io.read_json_file(os.path.join(output, "results.json"))
-    x = no_stories
+    data = rasa.utils.io.read_json_file(os.path.join(output, RESULTS_FILE))
+    x = number_of_examples
 
     # compute mean of all the runs for keras/embed policies
     for label in data.keys():
@@ -652,10 +689,13 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
             alpha=0.2,
         )
     ax.legend(loc=4)
-    ax.set_xlabel("Number of stories present during training")
-    ax.set_ylabel("Number of correct test stories")
-    plt.savefig(os.path.join(output, "model_comparison_graph.pdf"), format="pdf")
-    plt.show()
+
+    ax.set_xlabel(x_label_text)
+    ax.set_ylabel(y_label_text)
+
+    plt.savefig(graph_path, format="pdf")
+
+    logger.info("Comparison graph saved to '{}'.".format(graph_path))
 
 
 if __name__ == "__main__":

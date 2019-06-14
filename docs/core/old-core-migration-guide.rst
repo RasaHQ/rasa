@@ -256,8 +256,7 @@ Changes to Input and Output Channels
 
   .. code-block:: python
 
-     def send_text_message(self, recipient_id, message):
-         # type: (Text, Text) -> None
+     def send_text_message(self, recipient_id: Text, message: Text) -> None:
          """Send a message through this channel."""
 
          for message_part in message.split("\n\n"):

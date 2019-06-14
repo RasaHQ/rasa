@@ -1,7 +1,12 @@
+import pytest
 from aioresponses import aioresponses
-from rasa.utils.endpoints import EndpointConfig
+
+from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
+from rasa.utils.endpoints import EndpointConfig, concat_url
 from tests.utilities import latest_request, json_of_latest_request
 from rasa.utils.common import sort_list_of_dicts_by_first_key
+import rasa.utils.io
 
 
 async def test_endpoint_config():
@@ -61,3 +66,45 @@ def test_sort_dicts_by_keys():
     actual = sort_list_of_dicts_by_first_key(test_data)
 
     assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "file, schema",
+    [
+        ("examples/restaurantbot/domain.yml", DOMAIN_SCHEMA_FILE),
+        ("sample_configs/config_defaults.yml", CONFIG_SCHEMA_FILE),
+        ("sample_configs/config_supervised_embeddings.yml", CONFIG_SCHEMA_FILE),
+        ("sample_configs/config_crf_custom_features.yml", CONFIG_SCHEMA_FILE),
+    ],
+)
+def test_validate_yaml_schema(file, schema):
+    # should raise no exception
+    validate_yaml_schema(rasa.utils.io.read_file(file), schema)
+
+
+@pytest.mark.parametrize(
+    "file, schema",
+    [
+        ("data/test_domains/invalid_format.yml", DOMAIN_SCHEMA_FILE),
+        ("examples/restaurantbot/data/nlu.md", DOMAIN_SCHEMA_FILE),
+        ("data/test_config/example_config.yaml", CONFIG_SCHEMA_FILE),
+    ],
+)
+def test_validate_yaml_schema_raise_exception(file, schema):
+    with pytest.raises(InvalidYamlFileError):
+        validate_yaml_schema(rasa.utils.io.read_file(file), schema)
+
+
+@pytest.mark.parametrize(
+    "base, subpath, expected_result",
+    [
+        ("https://example.com", None, "https://example.com"),
+        ("https://example.com/test", None, "https://example.com/test"),
+        ("https://example.com/", None, "https://example.com"),
+        ("https://example.com//", None, "https://example.com"),
+        ("https://example.com/", "test", "https://example.com/test"),
+        ("https://example.com/", "test/", "https://example.com/test/"),
+    ],
+)
+def test_concat_url(base, subpath, expected_result):
+    assert concat_url(base, subpath) == expected_result
