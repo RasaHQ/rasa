@@ -612,6 +612,7 @@ def create_app(
                 training_files=temp_dir,
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
+                fixed_model_name=rjs.get("fixed_model_name", False),
             )
             return await response.file(model_path)
         except InvalidDomain as e:
