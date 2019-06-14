@@ -15,6 +15,8 @@ Added
 Changed
 -------
 
+- removed leading underscore from name of '_create_initial_project' function.
+
 Removed
 -------
 
