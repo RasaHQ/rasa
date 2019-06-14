@@ -211,7 +211,7 @@ class Domain(object):
     @staticmethod
     def collect_intent_properties(
         intents: List[Union[Text, Dict[Text, Any]]]
-    ) -> Dict[Text, Dict[Union[bool, List]]]:
+    ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
         intent_properties = {}
         for intent in intents:
             if isinstance(intent, dict):
