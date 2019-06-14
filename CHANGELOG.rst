@@ -6,8 +6,8 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.2.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.1.3] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -20,6 +20,135 @@ Removed
 
 Fixed
 -----
+
+[1.1.2] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed duplicate events appearing in tracker when using a PostgreSQL tracker store
+
+[1.1.1] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed compatibility with Rasa SDK
+- bot responses can contain ``custom`` messages besides other message types
+
+[1.1.0] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- nlu configs can now be directly compared for performance on a dataset
+  in ``rasa test nlu``
+
+Changed
+-------
+- update the tracker in interactive learning through reverting and appending events
+  instead of replacing the tracker
+- ``POST /conversations/{conversation_id}/tracker/events`` supports a list of events
+
+Fixed
+-----
+- fixed creation of ``RasaNLUHttpInterpreter``
+- form actions are included in domain warnings
+- default actions, which are overriden by custom actions and are listed in the
+  domain are excluded from domain warnings
+- SQL ``data`` column type to ``Text`` for compatibility with MySQL
+- non-featurizer training parameters don't break `SklearnPolicy` anymore
+
+[1.0.9] - 2019-06-10
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- revert PR #3739 (as this is a breaking change): set ``PikaProducer`` and
+  ``KafkaProducer`` default queues back to ``rasa_core_events``
+
+[1.0.8] - 2019-06-10
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- support for specifying full database urls in the ``SQLTrackerStore`` configuration
+- maximum number of predictions can be set via the environment variable
+  ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
+
+Changed
+-------
+- default ``PikaProducer`` and ``KafkaProducer`` queues to ``rasa_production_events``
+- exclude unfeaturized slots from domain warnings
+
+Fixed
+-----
+- loading of additional training data with the ``SkillSelector``
+- strip trailing slashes in endpoint URLs
+
+[1.0.7] - 2019-06-06
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added argument ``--rasa-x-port`` to specify the port of Rasa X when running Rasa X locally via ``rasa x``
+
+Fixed
+-----
+- slack notifications from bots correctly render text
+- fixed usage of ``--log-file`` argument for ``rasa run`` and ``rasa shell``
+- check if correct tracker store is configured in local mode
+
+[1.0.6] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed backwards incompatible utils changes
+
+[1.0.5] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed spacy being a required dependency (regression)
+
+[1.0.4] - 2019-06-03
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- automatic creation of index on the ``sender_id`` column when using an SQL
+  tracker store. If you have an existing data and you are running into performance
+  issues, please make sure to add an index manually using
+  ``CREATE INDEX event_idx_sender_id ON events (sender_id);``.
+
+Changed
+-------
+- NLU evaluation in cross-validation mode now also provides intent/entity reports,
+  confusion matrix, etc.
+
+[1.0.3] - 2019-05-30
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- non-ascii characters render correctly in stories generated from interactive learning
+- validate domain file before usage, e.g. print proper error messages if domain file
+  is invalid instead of raising errors
+
+[1.0.2] - 2019-05-29
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added ``domain_warnings()`` method to ``Domain`` which returns a dict containing the
+  diff between supplied {actions, intents, entities, slots} and what's contained in the
+  domain
+
+Fixed
+-----
+- fix lookup table files failed to load issues/3622
 - buttons can now be properly selected during cmdline chat or when in interactive learning
 - set slots correctly when events are added through the API
 - mapping policy no longer ignores NLU threshold

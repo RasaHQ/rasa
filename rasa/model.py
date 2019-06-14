@@ -1,12 +1,9 @@
 import glob
-import json
 import logging
 import os
 import shutil
-import tarfile
 import tempfile
-from _md5 import md5
-from typing import Text, Tuple, Union, Optional, List, Dict, Any
+from typing import Text, Tuple, Union, Optional, List, Dict
 
 import yaml.parser
 
@@ -23,7 +20,7 @@ from rasa.core import config
 from rasa.core.domain import Domain
 from rasa.core.utils import get_dict_hash
 
-Fingerprint = Dict[Text, Union[Text, List[Text]]]
+Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +48,8 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
     """
     if not model_path:
+        return None
+    elif not os.path.exists(model_path):
         return None
     elif os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
@@ -80,48 +79,6 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
         return None
 
     return max(list_of_files, key=os.path.getctime)
-
-
-def add_evaluation_file_to_model(
-    model_path: Text, payload: Union[Text, Dict[Text, Any]], data_format: Text = "json"
-) -> Text:
-    """Adds NLU data `payload` to zipped model at `model_path`.
-
-    Args:
-        model_path: Path to zipped Rasa Stack model.
-        payload: Json payload to be added to the Rasa Stack model.
-        data_format: NLU data format of `payload` ('json' or 'md').
-
-    Returns:
-        Path of the new archive in a temporary directory.
-    """
-
-    # create temporary directory
-    tmpdir = tempfile.mkdtemp()
-
-    # unpack archive
-    _ = unpack_model(model_path, tmpdir)
-
-    # add model file to folder
-    if data_format == "json":
-        data_path = os.path.join(tmpdir, "data.json")
-        with open(data_path, "w") as f:
-            f.write(json.dumps(payload))
-    elif data_format == "md":
-        data_path = os.path.join(tmpdir, "nlu.md")
-        with open(data_path, "w") as f:
-            f.write(payload)
-    else:
-        raise ValueError("`data_format` needs to be either `md` or `json`.")
-
-    zipped_path = os.path.join(tmpdir, os.path.basename(model_path))
-
-    # re-archive and post
-    with tarfile.open(zipped_path, "w:gz") as tar:
-        for elem in os.scandir(tmpdir):
-            tar.add(elem.path, arcname=elem.name)
-
-    return zipped_path
 
 
 def unpack_model(model_file: Text, working_directory: Optional[Text] = None) -> Text:
@@ -271,20 +228,19 @@ def _get_hash_of_config(
         return ""
 
     try:
-        config_dict = rasa.utils.io.read_yaml_file(config_path)
+        config_dict = rasa.utils.io.read_config_file(config_path)
+        keys = include_keys or list(
+            filter(lambda k: k not in exclude_keys, config_dict.keys())
+        )
+
+        sub_config = dict((k, config_dict[k]) for k in keys if k in config_dict)
+
+        return get_dict_hash(sub_config)
     except yaml.parser.ParserError as e:
         logger.debug(
             "Failed to read config file '{}'. Error: {}".format(config_path, e)
         )
         return ""
-
-    keys = include_keys or list(
-        filter(lambda k: k not in exclude_keys, config_dict.keys())
-    )
-
-    sub_config = dict((k, config_dict[k]) for k in keys if k in config_dict)
-
-    return get_dict_hash(sub_config)
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:

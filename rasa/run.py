@@ -38,12 +38,6 @@ def run(
     from rasa.core.utils import AvailableEndpoints
 
     model_path = get_model(model)
-    if not model_path:
-        print_error(
-            "No model found. Train a model before running the "
-            "server using `rasa train`."
-        )
-        return
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
@@ -65,7 +59,8 @@ def run(
         **kwargs
     )
 
-    shutil.rmtree(model_path)
+    if model_path is not None:
+        shutil.rmtree(model_path)
 
 
 def create_agent(model: Text, endpoints: Text = None) -> "Agent":

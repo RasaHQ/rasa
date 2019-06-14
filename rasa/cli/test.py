@@ -12,8 +12,11 @@ from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
+    DEFAULT_NLU_RESULTS_PATH,
+    CONFIG_SCHEMA_FILE,
 )
-from rasa.test import test_compare
+from rasa.test import test_compare_core, compare_nlu_models
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +30,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Tests a trained Rasa model using your test NLU data and stories.",
+        help="Tests Rasa models using your test NLU data and stories.",
     )
 
     arguments.set_test_arguments(test_parser)
@@ -38,7 +41,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Tests a trained Rasa Core model using your test stories.",
+        help="Tests Rasa Core models using your test stories.",
     )
     arguments.set_test_core_arguments(test_core_parser)
 
@@ -46,7 +49,7 @@ def add_subparser(
         "nlu",
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Tests a trained Rasa NLU model using your test NLU data.",
+        help="Tests Rasa NLU models using your test NLU data.",
     )
     arguments.set_test_nlu_arguments(test_nlu_parser)
 
@@ -83,23 +86,61 @@ def test_core(args: argparse.Namespace) -> None:
         )
 
     else:
-        test_compare(args.model, stories, output)
+        test_compare_core(args.model, stories, output)
 
 
 def test_nlu(args: argparse.Namespace) -> None:
-    from rasa.test import test_nlu, test_nlu_with_cross_validation
+    from rasa.test import test_nlu, perform_nlu_cross_validation
+    import rasa.utils.io
 
     nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
 
-    if not args.cross_validation:
+    if args.config is not None and len(args.config) == 1:
+        args.config = os.path.abspath(args.config[0])
+        if os.path.isdir(args.config):
+            config_dir = args.config
+            config_files = os.listdir(config_dir)
+            args.config = [
+                os.path.join(config_dir, os.path.abspath(config))
+                for config in config_files
+            ]
+
+    if isinstance(args.config, list):
+        logger.info(
+            "Multiple configuration files specified, running nlu comparison mode."
+        )
+
+        config_files = []
+        for file in args.config:
+            try:
+                validate_yaml_schema(
+                    rasa.utils.io.read_file(file),
+                    CONFIG_SCHEMA_FILE,
+                    show_validation_errors=False,
+                )
+                config_files.append(file)
+            except InvalidYamlFileError:
+                logger.debug(
+                    "Ignoring file '{}' as it is not a valid config file.".format(file)
+                )
+                continue
+
+        output = args.report or DEFAULT_NLU_RESULTS_PATH
+        compare_nlu_models(
+            configs=config_files,
+            nlu=nlu_data,
+            output=output,
+            runs=args.runs,
+            exclusion_percentages=args.percentages,
+        )
+    elif args.cross_validation:
+        logger.info("Test model using cross validation.")
+        config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+        perform_nlu_cross_validation(config, nlu_data, vars(args))
+    else:
         model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
         test_nlu(model_path, nlu_data, vars(args))
-    else:
-        print ("No model specified. Model will be trained using cross validation.")
-        config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
-
-        test_nlu_with_cross_validation(config, nlu_data, args.folds)
 
 
 def test(args: argparse.Namespace):

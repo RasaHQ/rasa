@@ -7,7 +7,7 @@ from aioresponses import aioresponses
 
 import rasa.utils.io
 from rasa.core import jobs
-from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
     ActionExecuted,
     BotUttered,
@@ -24,9 +24,11 @@ from tests.utilities import json_of_latest_request, latest_request
 
 @pytest.fixture(scope="session")
 def loop():
-    from pytest_sanic.plugin import loop as sanic_loop
-
-    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
 
 async def test_message_processor(
@@ -65,7 +67,7 @@ async def test_http_parsing():
 
     endpoint = EndpointConfig("https://interpreter.com")
     with aioresponses() as mocked:
-        mocked.post("https://interpreter.com/parse", repeat=True, status=200)
+        mocked.post("https://interpreter.com/model/parse", repeat=True, status=200)
 
         inter = RasaNLUHttpInterpreter(endpoint=endpoint)
         try:
@@ -75,10 +77,9 @@ async def test_http_parsing():
         except KeyError:
             pass  # logger looks for intent and entities, so we except
 
-        r = latest_request(mocked, "POST", "https://interpreter.com/parse")
+        r = latest_request(mocked, "POST", "https://interpreter.com/model/parse")
 
         assert r
-        assert json_of_latest_request(r)["message_id"] == message.message_id
 
 
 async def test_reminder_scheduled(

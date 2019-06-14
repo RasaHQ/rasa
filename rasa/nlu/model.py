@@ -10,12 +10,13 @@ from typing import Text
 
 import rasa.nlu
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.nlu import components, utils
-from rasa.nlu.components import Component, ComponentBuilder
+from rasa.nlu import components, utils  # pytype: disable=pyi-error
+from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.utils import create_dir, write_json_to_file
+import rasa.utils.io
 
 MODEL_NAME_PREFIX = "nlu_"
 
@@ -64,7 +65,7 @@ class Metadata(object):
         """
         try:
             metadata_file = os.path.join(model_dir, "metadata.json")
-            data = utils.read_json_file(metadata_file)
+            data = rasa.utils.io.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
@@ -134,8 +135,7 @@ class Trainer(object):
 
         self.config = cfg
         self.skip_validation = skip_validation
-        self.training_data = None
-        # type: Optional[TrainingData]
+        self.training_data = None  # type: Optional[TrainingData]
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in

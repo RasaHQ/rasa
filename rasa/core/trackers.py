@@ -1,13 +1,13 @@
 import copy
 import logging
-from collections import deque
+from collections import deque, defaultdict
 from enum import Enum
-from typing import Dict, Text, Any, Optional, Iterator, Type, List
+from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List
 
-from rasa.core import events
-from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.conversation import Dialogue
-from rasa.core.events import (
+from rasa.core import events  # pytype: disable=pyi-error
+from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
+from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
+from rasa.core.events import (  # pytype: disable=pyi-error
     UserUttered,
     ActionExecuted,
     Event,
@@ -18,7 +18,7 @@ from rasa.core.events import (
     BotUttered,
     Form,
 )
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,17 @@ class EventVerbosity(Enum):
     ALL = 4
 
 
+class AnySlotDict(dict):
+    """A slot dictionary that pretends every slot exists, by creating slots on demand.
+
+    This only uses the generic slot type! This means certain functionality wont work,
+    e.g. properly featurizing the slot."""
+
+    def __missing__(self, key):
+        value = self[key] = Slot(key)
+        return value
+
+
 class DialogueStateTracker(object):
     """Maintains the state of a conversation.
 
@@ -54,7 +65,7 @@ class DialogueStateTracker(object):
         cls,
         sender_id: Text,
         events_as_dict: List[Dict[Text, Any]],
-        slots: List[Slot],
+        slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
     ) -> "DialogueStateTracker":
         """Create a tracker from dump.
@@ -70,7 +81,7 @@ class DialogueStateTracker(object):
         cls,
         sender_id: Text,
         evts: List[Event],
-        slots: List[Slot],
+        slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
     ):
         tracker = cls(sender_id, slots, max_event_history)
@@ -92,7 +103,10 @@ class DialogueStateTracker(object):
         # id of the source of the messages
         self.sender_id = sender_id
         # slots that can be filled in this domain
-        self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
+        if slots is not None:
+            self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
+        else:
+            self.slots = AnySlotDict()
 
         ###
         # current state of the tracker - MUST be re-creatable by processing
@@ -183,7 +197,7 @@ class DialogueStateTracker(object):
             # reset form rejection if it was predicted again
             self.active_form["rejected"] = False
 
-    def current_slot_values(self) -> [Dict[Text, Any]]:
+    def current_slot_values(self) -> Dict[Text, Any]:
         """Return the currently set values of the slots"""
         return {key: slot.value for key, slot in self.slots.items()}
 
@@ -215,6 +229,7 @@ class DialogueStateTracker(object):
         for e in reversed(self.events):
             if isinstance(e, UserUttered):
                 return e.input_channel
+        return None
 
     def is_paused(self) -> bool:
         """State whether the tracker is currently paused."""
@@ -235,17 +250,17 @@ class DialogueStateTracker(object):
         """Return a list of events after the most recent restart."""
         return list(self.events)[self.idx_after_latest_restart() :]
 
-    def init_copy(self):
-        # type: () -> DialogueStateTracker
+    def init_copy(self) -> "DialogueStateTracker":
         """Creates a new state tracker with the same initial values."""
-        from rasa.core.channels import UserMessage
+        from rasa.core.channels.channel import UserMessage
 
         return DialogueStateTracker(
             UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
         )
 
-    def generate_all_prior_trackers(self):
-        # type: () -> Generator[DialogueStateTracker, None, None]
+    def generate_all_prior_trackers(
+        self
+    ) -> Generator["DialogueStateTracker", None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
         The resulting array is representing
@@ -318,8 +333,8 @@ class DialogueStateTracker(object):
         """Returns all actions that should be applied - w/o reverted events."""
 
         def undo_till_previous(event_type, done_events):
-            """Removes events from `done_events` until `event_type` is
-               found."""
+            """Removes events from `done_events` until the first
+               occurrence `event_type` is found which is also removed."""
             # list gets modified - hence we need to copy events!
             for e in reversed(done_events[:]):
                 del done_events[-1]
@@ -335,8 +350,8 @@ class DialogueStateTracker(object):
             elif isinstance(event, UserUtteranceReverted):
                 # Seeing a user uttered event automatically implies there was
                 # a listen event right before it, so we'll first rewind the
-                # user utterance, then get the action right before it (the
-                # listen action).
+                # user utterance, then get the action right before it (also removes
+                # the `action_listen` action right before it).
                 undo_till_previous(UserUttered, applied_events)
                 undo_till_previous(ActionExecuted, applied_events)
             else:

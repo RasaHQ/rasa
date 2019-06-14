@@ -19,11 +19,12 @@ from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.policies import Policy
+from rasa.core.policies.policy import Policy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
+from rasa.utils.common import class_from_module_path
 
 logger = logging.getLogger(__name__)
 
@@ -94,11 +95,10 @@ class PolicyEnsemble(object):
 
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[List[float], Text]:
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
         raise NotImplementedError
 
-    def _max_histories(self):
-        # type: () -> List[Optional[int]]
+    def _max_histories(self) -> List[Optional[int]]:
         """Return max history."""
 
         max_histories = []
@@ -130,7 +130,8 @@ class PolicyEnsemble(object):
         for package_name in self.versioned_packages:
             try:
                 p = importlib.import_module(package_name)
-                metadata[package_name] = p.__version__
+                v = p.__version__  # pytype: disable=attribute-error
+                metadata[package_name] = v
             except ImportError:
                 pass
 
@@ -142,7 +143,7 @@ class PolicyEnsemble(object):
         # make sure the directory we persist exists
         domain_spec_path = os.path.join(path, "metadata.json")
         training_data_path = os.path.join(path, "stories.md")
-        utils.create_dir_for_file(domain_spec_path)
+        rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [utils.module_path_from_instance(p) for p in self.policies]
 
@@ -231,7 +232,7 @@ class PolicyEnsemble(object):
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
-        ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
+        ensemble_cls = class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
@@ -332,7 +333,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[List[float], Text]:
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
         result = None
         max_confidence = -1
         best_policy_name = None
@@ -356,7 +357,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 best_policy_priority = p.priority
 
         if (
-            result.index(max_confidence) == domain.index_for_action(ACTION_LISTEN_NAME)
+            result is not None
+            and result.index(max_confidence)
+            == domain.index_for_action(ACTION_LISTEN_NAME)
             and tracker.latest_action_name == ACTION_LISTEN_NAME
             and self.is_not_memo_policy(best_policy_name)
         ):

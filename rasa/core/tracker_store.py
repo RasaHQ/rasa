@@ -1,7 +1,8 @@
 import json
 import logging
 import pickle
-from typing import Iterator, Optional, Text, Iterable
+import typing
+from typing import Iterator, Optional, Text, Iterable, Union
 
 import itertools
 
@@ -12,7 +13,12 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.broker import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
-from rasa.core.utils import class_from_module_path
+from rasa.utils.common import class_from_module_path
+
+if typing.TYPE_CHECKING:
+    from sqlalchemy.engine.url import URL
+    from sqlalchemy.engine import Engine
+
 
 logger = logging.getLogger(__name__)
 
@@ -94,13 +100,17 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
-        old_tracker = self.retrieve(tracker.sender_id)
-        offset = len(old_tracker.events) if old_tracker else 0
+        offset = self.number_of_existing_events(tracker.sender_id)
         evts = tracker.events
         for evt in list(itertools.islice(evts, offset, len(evts))):
             body = {"sender_id": tracker.sender_id}
             body.update(evt.as_dict())
             self.event_broker.publish(body)
+
+    def number_of_existing_events(self, sender_id: Text) -> int:
+        """Return number of stored events for a given sender id."""
+        old_tracker = self.retrieve(sender_id)
+        return len(old_tracker.events) if old_tracker else 0
 
     def keys(self) -> Iterable[Text]:
         raise NotImplementedError()
@@ -110,11 +120,14 @@ class TrackerStore(object):
         dialogue = tracker.as_dialogue()
         return pickle.dumps(dialogue)
 
-    def deserialise_tracker(self, sender_id, _json):
+    def deserialise_tracker(self, sender_id, _json) -> Optional[DialogueStateTracker]:
         dialogue = pickle.loads(_json)
         tracker = self.init_tracker(sender_id)
-        tracker.recreate_from_dialogue(dialogue)
-        return tracker
+        if tracker:
+            tracker.recreate_from_dialogue(dialogue)
+            return tracker
+        else:
+            return None
 
 
 class InMemoryTrackerStore(TrackerStore):
@@ -269,17 +282,17 @@ class SQLTrackerStore(TrackerStore):
     Base = declarative_base()
 
     class SQLEvent(Base):
-        from sqlalchemy import Column, Integer, String, Float
+        from sqlalchemy import Column, Integer, String, Float, Text
 
         __tablename__ = "events"
 
         id = Column(Integer, primary_key=True)
-        sender_id = Column(String, nullable=False)
-        type_name = Column(String, nullable=False)
+        sender_id = Column(String(255), nullable=False, index=True)
+        type_name = Column(String(255), nullable=False)
         timestamp = Column(Float)
-        intent_name = Column(String)
-        action_name = Column(String)
-        data = Column(String)
+        intent_name = Column(String(255))
+        action_name = Column(String(255))
+        data = Column(Text)
 
     def __init__(
         self,
@@ -295,21 +308,13 @@ class SQLTrackerStore(TrackerStore):
     ) -> None:
         import sqlalchemy
         from sqlalchemy.orm import sessionmaker
-        from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
 
-        engine_url = URL(
-            dialect,
-            username,
-            password,
-            host,
-            port,
-            database=login_db if login_db else db,
+        engine_url = self._get_db_url(
+            dialect, host, port, db, username, password, login_db
         )
-
         logger.debug(
-            "Attempting to connect to database "
-            'via "{}"'.format(engine_url.__to_string__())
+            "Attempting to connect to database " 'via "{}"'.format(repr(engine_url))
         )
 
         # Database might take a while to come up
@@ -346,6 +351,41 @@ class SQLTrackerStore(TrackerStore):
         logger.debug("Connection to SQL database '{}' successful".format(db))
 
         super(SQLTrackerStore, self).__init__(domain, event_broker)
+
+    @staticmethod
+    def _get_db_url(
+        dialect: Text = "sqlite",
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
+        db: Text = "rasa.db",
+        username: Text = None,
+        password: Text = None,
+        login_db: Optional[Text] = None,
+    ) -> Union[Text, "URL"]:
+        from urllib.parse import urlsplit
+        from sqlalchemy.engine.url import URL
+
+        # Users might specify a url in the host
+        parsed = urlsplit(host or "")
+        if parsed.scheme:
+            return host
+
+        if host:
+            # add fake scheme to properly parse components
+            parsed = urlsplit("schema://" + host)
+
+            # users might include the port in the url
+            port = parsed.port or port
+            host = parsed.hostname or host
+
+        return URL(
+            dialect,
+            username,
+            password,
+            host,
+            port,
+            database=login_db if login_db else db,
+        )
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
         """Create databse `db` and update engine to reflect the updated
@@ -384,7 +424,7 @@ class SQLTrackerStore(TrackerStore):
         sender_ids = self.session.query(self.SQLEvent.sender_id).distinct().all()
         return [sender_id for (sender_id,) in sender_ids]
 
-    def retrieve(self, sender_id: Text) -> DialogueStateTracker:
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
         query = self.session.query(self.SQLEvent)
@@ -401,6 +441,7 @@ class SQLTrackerStore(TrackerStore):
                 "sender id '{}' from SQL storage.  "
                 "Returning `None` instead.".format(sender_id)
             )
+            return None
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
@@ -435,23 +476,13 @@ class SQLTrackerStore(TrackerStore):
             "stored to database".format(tracker.sender_id)
         )
 
+    def number_of_existing_events(self, sender_id: Text) -> int:
+        """Return number of stored events for a given sender id."""
+
+        query = self.session.query(self.SQLEvent.sender_id)
+        return query.filter_by(sender_id=sender_id).count() or 0
+
     def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
-
-        from sqlalchemy import func
-
-        query = self.session.query(func.max(self.SQLEvent.timestamp))
-        max_timestamp = query.filter_by(sender_id=tracker.sender_id).scalar()
-
-        if max_timestamp is None:
-            max_timestamp = 0
-
-        latest_events = []
-
-        for event in reversed(tracker.events):
-            if event.timestamp > max_timestamp:
-                latest_events.append(event)
-            else:
-                break
-
-        return reversed(latest_events)
+        n_events = self.number_of_existing_events(tracker.sender_id)
+        return itertools.islice(tracker.events, n_events, len(tracker.events))

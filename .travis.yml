@@ -5,13 +5,13 @@ cache:
   directories:
   - $HOME/.cache/pip
   - /tmp/cached/
+  - .pytype
 python: '3.6'
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global:
   - BOTO_CONFIG=/dev/null
-  - COVERALLS_PARALLEL=true
   - PIP_USE_PEP517=false
 
 install:
@@ -20,7 +20,7 @@ install:
   - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r requirements-dev.txt
   - pip install -e .
-  - pip install coveralls==1.3.0
+  - pip install coveralls==1.7.0
   - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > jnk
   - python -m spacy link en_core_web_md en
   - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > jnk
@@ -33,50 +33,34 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-after_success:
-  - coveralls
 jobs:
   include:
   - stage: test
     name: "Black Formatting"
     python: 3.6
-    script: pip install black; black --check .
-  - &test-core
-    stage: test
-    name: "Test Core 3.6"
-    python: "3.6"
     script:
-      - py.test tests/core --cov rasa -v --cov-append
-  - <<: *test-core
-    name: "Test Core 3.5"
-    python: '3.5'
-  - <<: *test-core
-    name: "Test Core 3.7"
-    python: '3.7'
-  - &test-nlu-base
-    stage: test
-    name: "Test NLU 3.6"
-    python: "3.6"
+    - pip install black
+    - black --check .
+  - stage: test
+    name: "Type Check"
+    python: 3.6
     script:
-      - py.test tests/nlu/base --cov rasa -v --cov-append
-  - <<: *test-nlu-base
-    name: "Test NLU 3.5"
-    python: '3.5'
-  - <<: *test-nlu-base
-    name: "Test NLU 3.7"
-    python: '3.7'
-  - &test-nlu-training
+    - pip install pytype
+    - pytype --keep-going rasa
+  - &run-tests
     stage: test
-    name: "Test NLU training 3.6"
-    python: "3.6"
+    name: "Test 3.5"
+    python: "3.5"
     script:
-      - py.test tests/nlu/training --cov rasa -v --cov-append
-  - <<: *test-nlu-training
-    name: "Test NLU training 3.5"
-    python: '3.5'
-  - <<: *test-nlu-training
-    name: "Test NLU training 3.7"
+      - py.test tests --cov rasa -v
+  - <<: *run-tests
+    name: "Test 3.6"
+    python: '3.6'
+  - <<: *run-tests
+    name: "Test 3.7"
     python: '3.7'
+    after_success:
+      - coveralls   # only this version will submit results to coveralls
   - stage: integration
     name: "Test API specification"
     language: python
@@ -85,8 +69,6 @@ jobs:
     script:
     - swagger-cli validate docs/_static/spec/action-server.yml
     - swagger-cli validate docs/_static/spec/rasa.yml
-    after_success:
-    - coveralls
   - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "NLU starter pack (NLU only)"

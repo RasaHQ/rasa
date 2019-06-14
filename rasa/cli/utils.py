@@ -6,7 +6,6 @@ from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -54,7 +53,7 @@ def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List:
     if not os.path.exists(path):
         return mandatory_keys
 
-    config_data = rasa.utils.io.read_yaml_file(path)
+    config_data = rasa.utils.io.read_config_file(path)
 
     return [k for k in mandatory_keys if k not in config_data or config_data[k] is None]
 

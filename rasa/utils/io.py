@@ -1,4 +1,5 @@
 import asyncio
+import errno
 import json
 import logging
 import os
@@ -10,6 +11,8 @@ from asyncio import AbstractEventLoop
 from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader, StringIO
+
+import simplejson
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 
@@ -122,13 +125,39 @@ def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
         return f.read()
 
 
-def read_json_file(filename: Text) -> Union[Dict, List]:
-    """Read json from a file"""
-    with open(filename) as f:
-        return json.load(f)
+def read_json_file(filename: Text) -> Any:
+    """Read json from a file."""
+    content = read_file(filename)
+    try:
+        return simplejson.loads(content)
+    except ValueError as e:
+        raise ValueError(
+            "Failed to read json from '{}'. Error: "
+            "{}".format(os.path.abspath(filename), e)
+        )
 
 
-def read_yaml_file(filename: Text) -> Union[Dict, List]:
+def read_config_file(filename: Text) -> Dict[Text, Any]:
+    """Parses a yaml configuration file. Content needs to be a dictionary
+
+     Args:
+        filename: The path to the file which should be read.
+    """
+    content = read_yaml(read_file(filename, "utf-8"))
+
+    if content is None:
+        return {}
+    elif isinstance(content, dict):
+        return content
+    else:
+        raise ValueError(
+            "Tried to load invalid config file '{}'. "
+            "Expected a key value mapping but found {}"
+            ".".format(filename, type(content))
+        )
+
+
+def read_yaml_file(filename: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
      Args:
@@ -161,7 +190,7 @@ def write_yaml_file(data: Dict, filename: Text):
         data: The data to write.
         filename: The path to the file which should be written.
     """
-    with open(filename, "w") as outfile:
+    with open(filename, "w", encoding="utf-8") as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
 
 
@@ -196,3 +225,26 @@ def create_path(file_path: Text):
     parent_dir = os.path.dirname(os.path.abspath(file_path))
     if not os.path.exists(parent_dir):
         os.makedirs(parent_dir)
+
+
+def zip_folder(folder: Text) -> Text:
+    """Create an archive from a folder."""
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)
+
+
+def create_directory_for_file(file_path: Text) -> None:
+    """Creates any missing parent directories of this file path."""
+
+    try:
+        os.makedirs(os.path.dirname(file_path))
+    except OSError as e:
+        # be happy if someone already created the path
+        if e.errno != errno.EEXIST:
+            raise

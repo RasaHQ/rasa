@@ -33,10 +33,11 @@ if typing.TYPE_CHECKING:
     from rasa.core.policies.tf_utils import TimeAttentionWrapperState
 
 try:
-    import cPickle as pickle
+    import cPickle as pickle  # pytype: disable=import-error
 except ImportError:
     import pickle
 
+tf.contrib._warning = None  # avoid warning println on contrib import - remove for tf 2
 
 logger = logging.getLogger(__name__)
 
@@ -490,8 +491,7 @@ class EmbeddingPolicy(Policy):
             self._create_embed(y_for_no_action, layer_name_suffix=layer_name_suffix)
         )
 
-    def _create_rnn_cell(self):
-        # type: () -> tf.contrib.rnn.RNNCell
+    def _create_rnn_cell(self) -> tf.contrib.rnn.RNNCell:
         """Create one rnn cell."""
 
         # chrono initialization for forget bias
@@ -876,8 +876,7 @@ class EmbeddingPolicy(Policy):
                 "".format(self.similarity_type)
             )
 
-    def _regularization_loss(self):
-        # type: () -> Union[tf.Tensor, int]
+    def _regularization_loss(self) -> Union[tf.Tensor, int]:
         """Add regularization to the embed layer inside rnn cell."""
 
         if self.attn_after_rnn:
@@ -1409,7 +1408,7 @@ class EmbeddingPolicy(Policy):
 
         file_name = "tensorflow_embedding.ckpt"
         checkpoint = os.path.join(path, file_name)
-        utils.create_dir_for_file(checkpoint)
+        rasa.utils.io.create_directory_for_file(checkpoint)
 
         with self.graph.as_default():
             self._persist_tensor("intent_placeholder", self.a_in)

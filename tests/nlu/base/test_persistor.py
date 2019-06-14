@@ -1,5 +1,6 @@
-import mock
 import os
+from unittest.mock import patch
+
 from moto import mock_s3
 
 from rasa.nlu import persistor, train
@@ -61,7 +62,7 @@ def test_list_models_method_in_GCSPersistor():
 
         self.bucket.list_blobs = mocked_list_blobs
 
-    with mock.patch.object(persistor.GCSPersistor, "__init__", mocked_init):
+    with patch.object(persistor.GCSPersistor, "__init__", mocked_init):
         result = persistor.GCSPersistor("").list_models()
 
     assert result == ["model_name"]
@@ -81,7 +82,7 @@ def test_list_models_method_raise_exeception_in_GCSPersistor():
 
         self.bucket.list_blobs = mocked_list_blobs
 
-    with mock.patch.object(persistor.GCSPersistor, "__init__", mocked_init):
+    with patch.object(persistor.GCSPersistor, "__init__", mocked_init):
         result = persistor.GCSPersistor("").list_models()
 
     assert result == []
@@ -105,7 +106,7 @@ def test_list_models_method_in_AzurePersistor():
 
         self.blob_client.list_blobs = mocked_list_blobs
 
-    with mock.patch.object(persistor.AzurePersistor, "__init__", mocked_init):
+    with patch.object(persistor.AzurePersistor, "__init__", mocked_init):
         result = persistor.AzurePersistor("", "", "").list_models()
 
     assert result == ["model_name"]
@@ -125,7 +126,7 @@ def test_list_models_method_raise_exeception_in_AzurePersistor():
 
         self.blob_client.list_blobs = mocked_list_blobs
 
-    with mock.patch.object(persistor.AzurePersistor, "__init__", mocked_init):
+    with patch.object(persistor.AzurePersistor, "__init__", mocked_init):
         result = persistor.AzurePersistor("", "", "").list_models()
 
     assert result == []

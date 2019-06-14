@@ -4,7 +4,7 @@ import uuid
 from aioresponses import aioresponses
 
 import rasa.utils.io
-from rasa.core import utils
+from rasa.core.events import BotUttered
 from rasa.core.training import interactive
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.actions.action import default_actions
@@ -49,6 +49,7 @@ async def test_request_prediction(mock_endpoint):
 
 def test_bot_output_format():
     message = {
+        "event": "bot",
         "text": "Hello!",
         "data": {
             "image": "http://example.com/myimage.png",
@@ -79,7 +80,13 @@ def test_bot_output_format():
             ],
         },
     }
-    formatted = interactive.format_bot_output(message)
+    from rasa.core.events import Event
+
+    bot_event = Event.from_parameters(message)
+
+    assert isinstance(bot_event, BotUttered)
+
+    formatted = interactive.format_bot_output(bot_event)
     assert formatted == (
         "Hello!\n"
         "Image: http://example.com/myimage.png\n"
@@ -243,32 +250,29 @@ def test_validate_user_message():
 
 async def test_undo_latest_msg(mock_endpoint):
     tracker_dump = rasa.utils.io.read_file("data/test_trackers/tracker_moodbot.json")
-    tracker_json = json.loads(tracker_dump)
-    evts = tracker_json.get("events")
 
     sender_id = uuid.uuid4().hex
 
     url = "{}/conversations/{}/tracker?include_events=ALL".format(
         mock_endpoint.url, sender_id
     )
-    replace_url = "{}/conversations/{}/tracker/events".format(
+    append_url = "{}/conversations/{}/tracker/events".format(
         mock_endpoint.url, sender_id
     )
     with aioresponses() as mocked:
         mocked.get(url, body=tracker_dump)
-        mocked.put(replace_url)
+        mocked.post(append_url)
 
         await interactive._undo_latest(sender_id, mock_endpoint)
 
-        r = latest_request(mocked, "put", replace_url)
+        r = latest_request(mocked, "post", append_url)
 
         assert r
 
         # this should be the events the interactive call send to the endpoint
         # these events should have the last utterance omitted
-        replaced_evts = json_of_latest_request(r)
-        assert len(replaced_evts) == 6
-        assert replaced_evts == evts[:6]
+        corrected_event = json_of_latest_request(r)
+        assert corrected_event["event"] == "undo"
 
 
 def test_utter_custom_message():
@@ -297,7 +301,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
     # Test method interactive._write_domain_to_file
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = utils.read_json_file(tracker_dump)
+    tracker_json = rasa.utils.io.read_json_file(tracker_dump)
 
     events = tracker_json.get("events", [])
 
@@ -309,7 +313,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
 
         await interactive._write_domain_to_file(domain_path, events, mock_endpoint)
 
-    saved_domain = rasa.utils.io.read_yaml_file(domain_path)
+    saved_domain = rasa.utils.io.read_config_file(domain_path)
 
     for default_action in default_actions():
         assert default_action.name() not in saved_domain["actions"]

@@ -7,6 +7,7 @@ from rasa.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
 
@@ -154,12 +155,8 @@ async def do_compare_training(cmdline_args, stories, additional_arguments):
 def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
     from rasa.core.training import interactive
 
-    if cmdline_args.core and cmdline_args.finetune:
-        raise ValueError("--core can only be used without --finetune flag.")
-
     interactive.run_interactive_learning(
         stories,
-        finetune=cmdline_args.finetune,
         skip_visualization=cmdline_args.skip_visualization,
         server_args=cmdline_args.__dict__,
         additional_arguments=additional_arguments,

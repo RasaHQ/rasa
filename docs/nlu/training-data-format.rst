@@ -9,8 +9,8 @@ Training Data Format
 Data Format
 ~~~~~~~~~~~
 
-You can provide training data as markdown or as json, as a single file or as a directory containing multiple files.
-Note that markdown is usually easier to work with.
+You can provide training data as Markdown or as JSON, as a single file or as a directory containing multiple files.
+Note that Markdown is usually easier to work with.
 
 
 Markdown Format
@@ -19,7 +19,7 @@ Markdown Format
 Markdown is the easiest Rasa NLU format for humans to read and write.
 Examples are listed using the unordered
 list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
-Examples are grouped by intent, and entities are annotated as markdown links,
+Examples are grouped by intent, and entities are annotated as Markdown links,
 e.g. ``[entity](entity name)``.
 
 .. code-block:: md
@@ -233,10 +233,9 @@ Lookup Tables
 -------------
 Lookup tables in the form of external files or lists of elements may also be specified in the training data.
 The externally supplied lookup tables must be in a newline-separated format.
-For example, ``data/test/lookup_tables/plates.txt`` may contain
+For example, ``data/test/lookup_tables/plates.txt`` may contain:
 
-# TODO: This is broken
-.. include:: ../../data/test/lookup_tables/plates.txt
+.. literalinclude:: ../../data/test/lookup_tables/plates.txt
 
 And can be loaded as:
 

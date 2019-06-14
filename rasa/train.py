@@ -11,20 +11,12 @@ from rasa.skill import SkillSelector
 from rasa.cli.utils import (
     create_output_path,
     print_success,
-    missing_config_keys,
     print_warning,
-    get_validated_path,
     print_error,
     bcolors,
     print_color,
 )
-from rasa.constants import (
-    DEFAULT_MODELS_PATH,
-    CONFIG_MANDATORY_KEYS,
-    CONFIG_MANDATORY_KEYS_CORE,
-    CONFIG_MANDATORY_KEYS_NLU,
-    FALLBACK_CONFIG_PATH,
-)
+from rasa.constants import DEFAULT_MODELS_PATH
 
 
 def train(
@@ -68,18 +60,17 @@ async def train_async(
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
-        uncompress: If `True` the model will not be compressed.
         kwargs: Additional training parameters.
 
     Returns:
         Path of the trained model archive.
     """
-    config = _get_valid_config(config, CONFIG_MANDATORY_KEYS)
     train_path = tempfile.mkdtemp()
 
-    skill_imports = SkillSelector.load(config)
+    skill_imports = SkillSelector.load(config, training_files)
     try:
         domain = Domain.load(domain, skill_imports)
+        domain.check_missing_templates()
     except InvalidDomain as e:
         print_error(
             "Could not load domain due to error: {} \nTo specify a valid domain "
@@ -254,12 +245,12 @@ async def train_core_async(
 
     """
 
-    config = _get_valid_config(config, CONFIG_MANDATORY_KEYS_CORE)
-    skill_imports = SkillSelector.load(config)
+    skill_imports = SkillSelector.load(config, stories)
 
     if isinstance(domain, str):
         try:
             domain = Domain.load(domain, skill_imports)
+            domain.check_missing_templates()
         except InvalidDomain as e:
             print_error(
                 "Could not load domain due to: '{}'. To specify a valid domain path "
@@ -352,10 +343,9 @@ def train_nlu(
         otherwise the path to the directory with the trained model files.
 
     """
-    config = _get_valid_config(config, CONFIG_MANDATORY_KEYS_NLU)
 
     # training NLU only hence the training files still have to be selected
-    skill_imports = SkillSelector.load(config)
+    skill_imports = SkillSelector.load(config, nlu_data)
     nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
 
     if not os.listdir(nlu_data_directory):
@@ -406,36 +396,6 @@ def _train_nlu_with_validated_data(
         )
 
     return _train_path
-
-
-def _enrich_config(
-    config_path: Text, missing_keys: List[Text], FALLBACK_CONFIG_PATH: Text
-):
-    import rasa.utils.io
-
-    config_data = rasa.utils.io.read_yaml_file(config_path)
-    fallback_config_data = rasa.utils.io.read_yaml_file(FALLBACK_CONFIG_PATH)
-
-    for k in missing_keys:
-        config_data[k] = fallback_config_data[k]
-
-    rasa.utils.io.write_yaml_file(config_data, config_path)
-
-
-def _get_valid_config(config: Text, mandatory_keys: List[Text]) -> Text:
-    config_path = get_validated_path(config, "config", FALLBACK_CONFIG_PATH)
-
-    missing_keys = missing_config_keys(config_path, mandatory_keys)
-
-    if missing_keys:
-        print_warning(
-            "Configuration file '{}' is missing mandatory parameters: "
-            "{}. Filling missing parameters from fallback configuration file: '{}'."
-            "".format(config, ", ".join(missing_keys), FALLBACK_CONFIG_PATH)
-        )
-        _enrich_config(config_path, missing_keys, FALLBACK_CONFIG_PATH)
-
-    return config_path
 
 
 def _package_model(

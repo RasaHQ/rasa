@@ -23,17 +23,37 @@ def read_endpoint_config(
         return None
 
     try:
-        content = rasa.utils.io.read_yaml_file(filename)
+        content = rasa.utils.io.read_config_file(filename)
+
+        if endpoint_type in content:
+            return EndpointConfig.from_dict(content[endpoint_type])
+        else:
+            return None
     except FileNotFoundError:
         logger.error(
             "Failed to read endpoint configuration "
             "from {}. No such file.".format(os.path.abspath(filename))
         )
-
-    if endpoint_type in content:
-        return EndpointConfig.from_dict(content[endpoint_type])
-    else:
         return None
+
+
+def concat_url(base: Text, subpath: Optional[Text]) -> Text:
+    """Append a subpath to a base url.
+
+    Strips leading slashes from the subpath if necessary. This behaves
+    differently than `urlparse.urljoin` and will not treat the subpath
+    as a base url if it starts with `/` but will always append it to the
+    `base`."""
+
+    if not subpath:
+        return base.rstrip("/")
+
+    url = base
+    if not base.endswith("/"):
+        url += "/"
+    if subpath.startswith("/"):
+        subpath = subpath[1:]
+    return url + subpath
 
 
 class EndpointConfig(object):
@@ -57,25 +77,6 @@ class EndpointConfig(object):
         self.token_name = token_name
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
         self.kwargs = kwargs
-
-    @staticmethod
-    def _concat_url(base: Text, subpath: Optional[Text]) -> Text:
-        """Append a subpath to a base url.
-
-        Strips leading slashes from the subpath if necessary. This behaves
-        differently than `urlparse.urljoin` and will not treat the subpath
-        as a base url if it starts with `/` but will always append it to the
-        `base`."""
-
-        if not subpath:
-            return base
-
-        url = base
-        if not base.endswith("/"):
-            url += "/"
-        if subpath.startswith("/"):
-            subpath = subpath[1:]
-        return url + subpath
 
     def session(self):
         # create authentication parameters
@@ -110,6 +111,7 @@ class EndpointConfig(object):
         method: Text = "post",
         subpath: Optional[Text] = None,
         content_type: Optional[Text] = "application/json",
+        return_method: Text = "json",
         **kwargs: Any
     ):
         """Send a HTTP request to the endpoint.
@@ -126,7 +128,7 @@ class EndpointConfig(object):
             headers.update(kwargs["headers"])
             del kwargs["headers"]
 
-        url = self._concat_url(self.url, subpath)
+        url = concat_url(self.url, subpath)
         async with self.session() as session:
             async with session.request(
                 method,
@@ -139,11 +141,22 @@ class EndpointConfig(object):
                     raise ClientResponseError(
                         resp.status, resp.reason, await resp.content.read()
                     )
-                return await resp.json()
+                return await getattr(resp, return_method)()
 
     @classmethod
     def from_dict(cls, data):
         return EndpointConfig(**data)
+
+    def copy(self):
+        return EndpointConfig(
+            self.url,
+            self.params,
+            self.headers,
+            self.basic_auth,
+            self.token,
+            self.token_name,
+            **self.kwargs
+        )
 
     def __eq__(self, other):
         if isinstance(self, type(other)):

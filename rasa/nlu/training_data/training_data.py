@@ -9,7 +9,7 @@ import warnings
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
-from rasa.nlu.training_data import Message
+from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import lazyproperty, list_to_str, write_to_file
 
@@ -118,21 +118,22 @@ class TrainingData(object):
 
     def as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
-        from rasa.nlu.training_data.formats import RasaWriter
+        from rasa.nlu.training_data.formats import (  # pytype: disable=pyi-error
+            RasaWriter,
+        )
 
         return RasaWriter().dumps(self)
 
     def as_markdown(self) -> Text:
         """Generates the markdown representation of the TrainingData."""
-        from rasa.nlu.training_data.formats import MarkdownWriter
+        from rasa.nlu.training_data.formats import (  # pytype: disable=pyi-error
+            MarkdownWriter,
+        )
 
         return MarkdownWriter().dumps(self)
 
     def persist(
-        self,
-        dir_name: Text,
-        filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH,
-        fformat: Text = "json",
+        self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
     ) -> Dict[Text, Any]:
         """Persists this training data to disk and returns necessary
         information to load it again."""
@@ -142,9 +143,9 @@ class TrainingData(object):
 
         data_file = os.path.join(dir_name, filename)
 
-        if fformat == "json":
+        if data_file.endswith("json"):
             write_to_file(data_file, self.as_json(indent=2))
-        elif fformat == "md":
+        elif data_file.endswith("md"):
             write_to_file(data_file, self.as_markdown())
         else:
             ValueError(
@@ -152,7 +153,7 @@ class TrainingData(object):
                 "and 'md'."
             )
 
-        return {"training_data": DEFAULT_TRAINING_DATA_OUTPUT_PATH}
+        return {"training_data": data_file}
 
     def sorted_entities(self) -> List[Any]:
         """Extract all entities from examples and sorts them by entity type."""

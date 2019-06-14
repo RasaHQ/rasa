@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import patch
 
 import numpy as np
@@ -12,14 +13,14 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     ActionRevertFallbackEvents,
 )
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import (
     BinarySingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.policies import TwoStageFallbackPolicy
+from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.embedding_policy import EmbeddingPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
@@ -69,9 +70,11 @@ async def train_trackers(domain, augmentation_factor=20):
 
 @pytest.fixture(scope="module")
 def loop():
-    from pytest_sanic.plugin import loop as sanic_loop
-
-    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
 
 # We are going to use class style testing here since unfortunately pytest
@@ -155,14 +158,12 @@ class PolicyTestCollection(object):
 
 
 class TestKerasPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         p = KerasPolicy(featurizer, priority)
         return p
 
 
 class TestKerasPolicyWithTfConfig(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         p = KerasPolicy(featurizer, priority, **tf_defaults())
         return p
@@ -177,7 +178,6 @@ class TestKerasPolicyWithTfConfig(PolicyTestCollection):
 
 
 class TestFallbackPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         p = FallbackPolicy(priority=priority)
         return p
@@ -201,14 +201,12 @@ class TestFallbackPolicy(PolicyTestCollection):
 
 
 class TestMappingPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         p = MappingPolicy()
         return p
 
 
 class TestMemoizationPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
@@ -264,7 +262,6 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
 
 class TestAugmentedMemoizationPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
@@ -297,6 +294,12 @@ class TestSklearnPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
     async def trackers(self, default_domain):
         return await train_trackers(default_domain, augmentation_factor=20)
+
+    def test_additional_train_args_do_not_raise(
+        self, mock_search, default_domain, trackers, featurizer, priority
+    ):
+        policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
+        policy.train(trackers, domain=default_domain, this_is_not_a_feature=True)
 
     def test_cv_none_does_not_trigger_search(
         self, mock_search, default_domain, trackers, featurizer, priority
@@ -391,7 +394,6 @@ class TestSklearnPolicy(PolicyTestCollection):
 
 
 class TestEmbeddingPolicyNoAttention(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
@@ -402,7 +404,6 @@ class TestEmbeddingPolicyNoAttention(PolicyTestCollection):
 
 
 class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
@@ -413,7 +414,6 @@ class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
 
 
 class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
@@ -424,7 +424,6 @@ class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
 
 
 class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
@@ -435,7 +434,6 @@ class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
 
 
 class TestEmbeddingPolicyWithTfConfig(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
@@ -452,7 +450,6 @@ class TestEmbeddingPolicyWithTfConfig(PolicyTestCollection):
 
 
 class TestFormPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         p = FormPolicy(priority=priority)
         return p
@@ -517,7 +514,6 @@ class TestFormPolicy(PolicyTestCollection):
 
 
 class TestTwoStageFallbackPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
     def create_policy(self, featurizer, priority):
         p = TwoStageFallbackPolicy(
             priority=priority, deny_suggestion_intent_name="deny"

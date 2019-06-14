@@ -81,20 +81,6 @@ def combine_user_with_default_actions(user_actions):
     return default_action_names() + unique_user_actions
 
 
-def ensure_action_name_uniqueness(action_names: List[Text]) -> None:
-    """Check and raise an exception if there are two actions with same name."""
-
-    unique_action_names = set()  # used to collect unique action names
-    for a in action_names:
-        if a in unique_action_names:
-            raise ValueError(
-                "Action names are not unique! Found two actions with name"
-                " '{}'. Either rename or remove one of them.".format(a)
-            )
-        else:
-            unique_action_names.add(a)
-
-
 def action_from_name(
     name: Text, action_endpoint: Optional[EndpointConfig], user_actions: List[Text]
 ) -> "Action":
@@ -103,7 +89,7 @@ def action_from_name(
     defaults = {a.name(): a for a in default_actions()}
 
     if name in defaults and name not in user_actions:
-        return defaults.get(name)
+        return defaults[name]
     elif name.startswith(UTTER_PREFIX):
         return ActionUtterTemplate(name)
     else:
@@ -131,8 +117,9 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
             "elements": message.pop("elements", None),
             "quick_replies": message.pop("quick_replies", None),
             "buttons": message.pop("buttons", None),
-            # for legacy / compatibility reasons we need to set the image to be the attachment if there
-            # is no other attachment (the `.get` is intentional - no `pop` as we still need the image`
+            # for legacy / compatibility reasons we need to set the image
+            # to be the attachment if there is no other attachment (the
+            # `.get` is intentional - no `pop` as we still need the image`
             # property to set it in the following line)
             "attachment": message.pop("attachment", None) or message.get("image", None),
             "image": message.pop("image", None),
@@ -158,7 +145,7 @@ class Action(object):
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
-    ) -> List["Event"]:
+    ) -> List[Event]:
         """
         Execute the side effects of this action.
 
@@ -223,9 +210,9 @@ class ActionBack(ActionUtterTemplate):
 
     async def run(self, output_channel, nlg, tracker, domain):
         # only utter the template if it is available
-        events = await super(ActionBack, self).run(output_channel, nlg, tracker, domain)
+        evts = await super(ActionBack, self).run(output_channel, nlg, tracker, domain)
 
-        return events + [UserUtteranceReverted(), UserUtteranceReverted()]
+        return evts + [UserUtteranceReverted(), UserUtteranceReverted()]
 
 
 class ActionListen(Action):
@@ -256,11 +243,11 @@ class ActionRestart(ActionUtterTemplate):
         from rasa.core.events import Restarted
 
         # only utter the template if it is available
-        events = await super(ActionRestart, self).run(
+        evts = await super(ActionRestart, self).run(
             output_channel, nlg, tracker, domain
         )
 
-        return events + [Restarted()]
+        return evts + [Restarted()]
 
 
 class ActionDefaultFallback(ActionUtterTemplate):
@@ -277,11 +264,11 @@ class ActionDefaultFallback(ActionUtterTemplate):
         from rasa.core.events import UserUtteranceReverted
 
         # only utter the template if it is available
-        events = await super(ActionDefaultFallback, self).run(
+        evts = await super(ActionDefaultFallback, self).run(
             output_channel, nlg, tracker, domain
         )
 
-        return events + [UserUtteranceReverted()]
+        return evts + [UserUtteranceReverted()]
 
 
 class ActionDeactivateForm(Action):
@@ -389,7 +376,7 @@ class RemoteAction(Action):
             bot_messages.append(create_bot_utterance(draft))
         return bot_messages
 
-    async def run(self, output_channel, nlg, tracker, domain):
+    async def run(self, output_channel, nlg, tracker, domain) -> List[Event]:
         json_body = self._action_call_format(tracker, domain)
 
         if not self.action_endpoint:
@@ -493,16 +480,14 @@ class ActionRevertFallbackEvents(Action):
     ) -> List[Event]:
         from rasa.core.policies.two_stage_fallback import has_user_rephrased
 
-        revert_events = []
-
         # User rephrased
         if has_user_rephrased(tracker):
-            revert_events = _revert_successful_rephrasing(tracker)
+            return _revert_successful_rephrasing(tracker)
         # User affirmed
         elif has_user_affirmed(tracker):
-            revert_events = _revert_affirmation_events(tracker)
-
-        return revert_events
+            return _revert_affirmation_events(tracker)
+        else:
+            return []
 
 
 def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:

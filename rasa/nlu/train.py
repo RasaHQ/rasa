@@ -1,14 +1,12 @@
-import argparse
 import logging
 from typing import Any, Optional, Text, Tuple, Union
 
-from rasa.nlu import config, utils
+from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.training_data import load_data
 from rasa.nlu.training_data.loading import load_data_from_endpoint
-from rasa.nlu.utils import read_endpoints
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -56,7 +54,7 @@ def do_train_in_worker(
         _, _, persisted_path = train(
             cfg, data, path, fixed_model_name, storage, component_builder
         )
-        return persisted_path
+        return persisted_path or ""
     except BaseException as e:
         logger.exception("Failed to train on data '{}'.".format(data))
         raise TrainingException(path, e)
@@ -71,7 +69,7 @@ def train(
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
     **kwargs: Any
-) -> Tuple[Trainer, Interpreter, Text]:
+) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
 
     if isinstance(nlu_config, str):

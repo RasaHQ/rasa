@@ -13,18 +13,19 @@ import rasa
 import rasa.utils.io
 from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
 from rasa.core import constants, jobs, training
-from rasa.core.channels import (
+from rasa.core.channels.channel import (
     InputChannel,
     OutputChannel,
     UserMessage,
     CollectingOutputChannel,
 )
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.policies import FormPolicy, Policy
+from rasa.core.policies.policy import Policy
+from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
@@ -39,9 +40,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-async def load_from_server(
-    agent, model_server: Optional[EndpointConfig] = None
-) -> "Agent":
+async def load_from_server(agent: "Agent", model_server: EndpointConfig) -> "Agent":
     """Load a persisted model from a server."""
 
     # We are going to pull the model once first, and then schedule a recurring
@@ -258,7 +257,7 @@ async def load_agent(
             )
 
         else:
-            logger.error("No valid configuration given to load agent.")
+            logger.warning("No valid configuration given to load agent.")
             return None
 
     except Exception as e:
@@ -311,7 +310,7 @@ class Agent(object):
 
     def update_model(
         self,
-        domain: Union[Text, Domain],
+        domain: Domain,
         policy_ensemble: PolicyEnsemble,
         fingerprint: Optional[Text],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
@@ -398,7 +397,7 @@ class Agent(object):
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         **kwargs
-    ) -> Optional[List[Text]]:
+    ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
 
         if not isinstance(message, UserMessage):
@@ -450,7 +449,7 @@ class Agent(object):
                 )
 
     # noinspection PyUnusedLocal
-    def predict_next(self, sender_id: Text, **kwargs: Any) -> Dict[Text, Any]:
+    def predict_next(self, sender_id: Text, **kwargs: Any) -> Optional[Dict[Text, Any]]:
         """Handle a single message."""
 
         processor = self.create_processor()
@@ -663,8 +662,6 @@ class Agent(object):
 
         logger.debug("Agent trainer got kwargs: {}".format(kwargs))
 
-        check_domain_sanity(self.domain)
-
         self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
         self._set_fingerprint()
 
@@ -805,10 +802,12 @@ class Agent(object):
         )
 
     @staticmethod
-    def _create_domain(domain: Union[None, Domain, Text]) -> Domain:
+    def _create_domain(domain: Union[Domain, Text]) -> Domain:
 
         if isinstance(domain, str):
-            return Domain.load(domain)
+            domain = Domain.load(domain)
+            domain.check_missing_templates()
+            return domain
         elif isinstance(domain, Domain):
             return domain
         elif domain is not None:
@@ -887,7 +886,7 @@ class Agent(object):
         tracker_store: Optional[TrackerStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
-    ) -> "Agent":
+    ) -> Optional["Agent"]:
         from rasa.nlu.persistor import get_persistor
 
         persistor = get_persistor(remote_storage)
@@ -911,7 +910,7 @@ class Agent(object):
     def _is_form_policy_present(self) -> bool:
         """Check whether form policy is present and used."""
 
-        has_form_policy = self.policy_ensemble and any(
+        has_form_policy = self.policy_ensemble is not None and any(
             isinstance(p, FormPolicy) for p in self.policy_ensemble.policies
         )
         return not self.domain or not self.domain.form_names or has_form_policy

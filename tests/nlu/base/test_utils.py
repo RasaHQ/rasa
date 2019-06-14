@@ -4,7 +4,6 @@ import os
 import pickle
 import pytest
 import tempfile
-
 import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.utils import (
@@ -18,10 +17,11 @@ from rasa.nlu.utils import (
     write_to_file,
 )
 from rasa.utils.endpoints import EndpointConfig
+import rasa.utils.io as io_utils
 
 
-@pytest.fixture
-def empty_model_dir(scope="function"):
+@pytest.fixture(scope="function")
+def empty_model_dir():
     temp_path = tempfile.mkdtemp()
     yield temp_path
     if os.path.exists(temp_path):
@@ -187,7 +187,7 @@ def test_emojis_in_tmp_file():
             - one 😁💯 👩🏿‍💻👨🏿‍💻
             - two £ (?u)\\b\\w+\\b f\u00fcr
         """
-    test_file = utils.create_temporary_file(test_data)
+    test_file = io_utils.create_temporary_file(test_data)
     with io.open(test_file, mode="r", encoding="utf-8") as f:
         content = f.read()
     actual = rasa.utils.io.read_yaml(content)

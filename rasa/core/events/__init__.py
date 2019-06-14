@@ -80,15 +80,15 @@ class Event(object):
 
     type_name = "event"
 
-    def __init__(self, timestamp=None):
+    def __init__(self, timestamp: Optional[float] = None):
         self.timestamp = timestamp if timestamp else time.time()
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
         return not (self == other)
 
-    def as_story_string(self):
+    def as_story_string(self) -> Text:
         raise NotImplementedError
 
     @staticmethod
@@ -131,7 +131,7 @@ class Event(object):
         return {"event": self.type_name, "timestamp": self.timestamp}
 
     @classmethod
-    def _from_parameters(cls, parameters):
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> Optional["Event"]:
         """Called to convert a dictionary of parameters to a single event.
 
         By default uses the same implementation as the story line
@@ -276,7 +276,8 @@ class UserUttered(Event):
         if self.intent:
             if self.entities:
                 ent_string = json.dumps(
-                    {ent["entity"]: ent["value"] for ent in self.entities}
+                    {ent["entity"]: ent["value"] for ent in self.entities},
+                    ensure_ascii=False,
                 )
             else:
                 ent_string = ""
@@ -425,7 +426,7 @@ class SlotSet(Event):
             return (self.key, self.value) == (other.key, other.value)
 
     def as_story_string(self):
-        props = json.dumps({self.key: self.value})
+        props = json.dumps({self.key: self.value}, ensure_ascii=False)
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
@@ -483,7 +484,9 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker):
-        from rasa.core.actions.action import ACTION_LISTEN_NAME
+        from rasa.core.actions.action import (  # pytype: disable=pyi-error
+            ACTION_LISTEN_NAME,
+        )
 
         tracker._reset()
         tracker.trigger_followup_action(ACTION_LISTEN_NAME)
@@ -649,7 +652,7 @@ class ReminderCancelled(Event):
         super(ReminderCancelled, self).__init__(timestamp)
 
     def __hash__(self):
-        return hash(self.name)
+        return hash(self.action_name)
 
     def __eq__(self, other):
         return isinstance(other, ReminderCancelled)
@@ -658,7 +661,7 @@ class ReminderCancelled(Event):
         return "ReminderCancelled(action: {})".format(self.action_name)
 
     def as_story_string(self):
-        props = json.dumps(self._data_obj())
+        props = json.dumps({"action": self.action_name})
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
@@ -823,7 +826,13 @@ class ActionExecuted(Event):
 
     type_name = "action"
 
-    def __init__(self, action_name, policy=None, confidence=None, timestamp=None):
+    def __init__(
+        self,
+        action_name: Text,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[int] = None,
+    ):
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
