@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- added agent readiness check to the `/status` resource
 
 Changed
 -------
