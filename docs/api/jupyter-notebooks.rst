@@ -9,18 +9,20 @@ You need to create a project if you don't already have one.
 To do this, run:
 
 .. runnable::
-   import os
+
    from rasa.cli.scaffold import _create_initial_project
 
    project = "test-project"
    _create_initial_project(project)
-   os.chdir(project)
 
 Now that you have a project, the relevant files and folders exist.
 To check this, run:
 
 .. runnable::
-   os.listdir(project)
+
+   import os
+   os.chdir(project)
+   os.listdir(".")
 
 
 To train a model, you will have to tell the ``train`` function
