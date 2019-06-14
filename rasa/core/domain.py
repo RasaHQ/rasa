@@ -5,11 +5,6 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
-import pkg_resources
-from pykwalify.errors import SchemaError
-from ruamel.yaml import YAMLError
-from ruamel.yaml.constructor import DuplicateKeyError
-
 import rasa.utils.io
 from rasa import data
 from rasa.cli.utils import print_warning, bcolors
@@ -18,7 +13,7 @@ from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
 from rasa.core.constants import REQUESTED_SLOT
-from rasa.core.events import SlotSet
+from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
@@ -214,7 +209,9 @@ class Domain(object):
         return slots
 
     @staticmethod
-    def collect_intent_properties(intents):
+    def collect_intent_properties(
+        intents: List[Union[Text, Dict[Text, Any]]]
+    ) -> Dict[Text, Dict[Union[bool, List]]]:
         intent_properties = {}
         for intent in intents:
             if isinstance(intent, dict):
@@ -282,7 +279,7 @@ class Domain(object):
 
     def __init__(
         self,
-        intents: List[Union[Text, Dict[Text, Any]]],
+        intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, Any],
@@ -492,21 +489,25 @@ class Domain(object):
             state_dict[intent_id] = latest_message.intent.get("confidence", 1.0)
 
         return state_dict
-    
-    def _get_featurized_entities(self, latest_message) -> List[Text]: #todo which type has latest_message
+
+    def _get_featurized_entities(
+        self, latest_message: Optional[UserUttered]
+    ) -> Set[Text]:
         intent_name = latest_message.intent.get("name")
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
-        entity_names = {entity["entity"] for entity in entities if "entity" in entity.keys()}
+        entity_names = {
+            entity["entity"] for entity in entities if "entity" in entity.keys()
+        }
 
-        # use_entities is either a list of explicitly included entities
+        # `use_entities` is either a list of explicitly included entities
         # or `True` if all should be included
         include = intent_config.get("use_entities")
         included_entities = set(entity_names if include is True else include)
         excluded_entities = set(intent_config.get("ignore_entities"))
         wanted_entities = included_entities - excluded_entities
-        ambiguous_entities = included_entities & excluded_entities
-        existing_wanted_entities = entity_names & wanted_entities
+        ambiguous_entities = included_entities.intersection(excluded_entities)
+        existing_wanted_entities = entity_names.intersection(wanted_entities)
 
         if ambiguous_entities:
             logger.warning(
@@ -515,7 +516,7 @@ class Domain(object):
                 "Please resolve that ambiguity."
                 "".format(ambiguous_entities)
             )
-            
+
         return existing_wanted_entities
 
     def get_prev_action_states(
