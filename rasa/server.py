@@ -825,7 +825,7 @@ def create_app(
                 raise ErrorResponse(
                     400,
                     "BadRequest",
-                    "Supplied model_server is not valid. {}".format(e),
+                    "Supplied 'model_server' is not valid. Error: {}".format(e),
                     {"parameter": "model_server", "in": "body"},
                 )
         app.agent = await _load_agent(
