@@ -5,8 +5,7 @@ import logging
 import pytest
 
 import rasa.utils.io
-from rasa.model import get_model
-from rasa.nlu.components import Component
+from rasa.test import compare_nlu_models
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -38,7 +37,7 @@ import json
 import os
 from rasa.nlu import training_data, config
 from tests.nlu import utilities
-from tests.nlu.conftest import DEFAULT_DATA_PATH
+from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
 
 logging.basicConfig(level="DEBUG")
 
@@ -436,3 +435,25 @@ def test_label_replacement():
     original_labels = ["O", "location"]
     target_labels = ["no_entity", "location"]
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
+
+
+def test_nlu_comparison(tmpdir):
+    configs = [
+        NLU_DEFAULT_CONFIG_PATH,
+        "sample_configs/config_supervised_embeddings.yml",
+    ]
+    output = tmpdir.strpath
+
+    compare_nlu_models(
+        configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
+    )
+
+    assert set(os.listdir(output)) == {
+        "run_1",
+        "run_2",
+        "results.json",
+        "nlu_model_comparison_graph.pdf",
+    }
+
+    run_1_path = os.path.join(output, "run_1")
+    assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.md"}

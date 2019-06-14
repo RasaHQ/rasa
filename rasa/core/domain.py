@@ -13,13 +13,16 @@ from ruamel.yaml.constructor import DuplicateKeyError
 import rasa.utils.io
 from rasa import data
 from rasa.cli.utils import print_warning, bcolors
+from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
-from rasa.core.actions import Action, action
+from rasa.core.actions import action  # pytype: disable=pyi-error
+from rasa.core.actions.action import Action  # pytype: disable=pyi-error
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.events import SlotSet
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +106,11 @@ class Domain(object):
 
     @classmethod
     def from_yaml(cls, yaml: Text) -> "Domain":
-        cls.validate_domain_yaml(yaml)
+        try:
+            validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
+        except InvalidYamlFileError as e:
+            raise InvalidDomain(str(e))
+
         data = rasa.utils.io.read_yaml(yaml)
         return cls.from_dict(data)
 
@@ -154,7 +161,11 @@ class Domain(object):
         domain_dict = domain.as_dict()
         combined = self.as_dict()
 
-        def merge_dicts(d1, d2, override_existing_values=False):
+        def merge_dicts(
+            d1: Dict[Text, Any],
+            d2: Dict[Text, Any],
+            override_existing_values: bool = False,
+        ) -> Dict[Text, Any]:
             if override_existing_values:
                 a, b = d1.copy(), d2.copy()
             else:
@@ -162,11 +173,12 @@ class Domain(object):
             a.update(b)
             return a
 
-        def merge_lists(l1, l2):
+        def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
             return sorted(list(set(l1 + l2)))
 
         if override:
-            for key, val in domain_dict["config"].items():
+            config = domain_dict["config"]
+            for key, val in config.items():  # pytype: disable=attribute-error
                 combined["config"][key] = val
 
         # intents is list of dicts
@@ -187,43 +199,6 @@ class Domain(object):
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
-
-    @classmethod
-    def validate_domain_yaml(cls, yaml):
-        """Validate domain yaml."""
-        from pykwalify.core import Core
-
-        log = logging.getLogger("pykwalify")
-        log.setLevel(logging.WARN)
-
-        try:
-            schema_file = pkg_resources.resource_filename(
-                __name__, "schemas/domain.yml"
-            )
-            source_data = rasa.utils.io.read_yaml(yaml)
-        except YAMLError:
-            raise InvalidDomain(
-                "The provided domain file is invalid. You can use "
-                "http://www.yamllint.com/ to validate the yaml syntax "
-                "of your domain file."
-            )
-        except DuplicateKeyError as e:
-            raise InvalidDomain(
-                "The provided domain file contains a duplicated key: {}".format(str(e))
-            )
-
-        try:
-            c = Core(source_data=source_data, schema_files=[schema_file])
-            c.validate(raise_exception=True)
-        except SchemaError:
-            raise InvalidDomain(
-                "Failed to validate your domain yaml. "
-                "Please make sure the file is correct; to do so, "
-                "take a look at the errors logged during "
-                "validation previous to this exception. "
-                "You can also validate your domain file's yaml "
-                "syntax using http://www.yamllint.com/."
-            )
 
     @staticmethod
     def collect_slots(slot_dict):
@@ -428,8 +403,7 @@ class Domain(object):
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def slot_states(self):
-        # type: () -> List[Text]
+    def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
 
         return [
@@ -679,7 +653,7 @@ class Domain(object):
                 if intent.get("use_entities"):
                     domain_data["intents"][idx] = name
 
-        for slot in domain_data["slots"].values():
+        for slot in domain_data["slots"].values():  # pytype: disable=attribute-error
             if slot["initial_value"] is None:
                 del slot["initial_value"]
             if slot["auto_fill"]:
@@ -719,6 +693,30 @@ class Domain(object):
     def intents(self):
         return sorted(self.intent_properties.keys())
 
+    @property
+    def _slots_for_domain_warnings(self) -> List[Text]:
+        """Fetch names of slots that are used in domain warnings.
+
+        Excludes slots of type `UnfeaturizedSlot`.
+        """
+
+        return [s.name for s in self.slots if not isinstance(s, UnfeaturizedSlot)]
+
+    @property
+    def _actions_for_domain_warnings(self) -> List[Text]:
+        """Fetch names of actions that are used in domain warnings.
+
+        Includes user and form actions, but excludes those that are default actions.
+        """
+
+        from rasa.core.actions.action import (  # pytype: disable=pyi-error
+            default_action_names,
+        )
+
+        return [
+            a for a in self.user_actions_and_forms if a not in default_action_names()
+        ]
+
     @staticmethod
     def _get_symmetric_difference(
         domain_elements: Union[List[Text], Set[Text]],
@@ -751,14 +749,17 @@ class Domain(object):
         """Generate domain warnings from intents, entities, actions and slots.
 
         Returns a dictionary with entries for `intent_warnings`,
-        `entity_warnings`, `action_warnings` and `slot_warnings`.
+        `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
+        of type `UnfeaturizedSlot` from domain warnings.
         """
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
         entity_warnings = self._get_symmetric_difference(self.entities, entities)
-        action_warnings = self._get_symmetric_difference(self.user_actions, actions)
+        action_warnings = self._get_symmetric_difference(
+            self._actions_for_domain_warnings, actions
+        )
         slot_warnings = self._get_symmetric_difference(
-            [s.name for s in self.slots], slots
+            self._slots_for_domain_warnings, slots
         )
 
         return {
@@ -839,29 +840,6 @@ class Domain(object):
                     )
             return message
 
-        def warn_missing_templates(
-            action_names: List[Text], templates: Dict[Text, Any]
-        ) -> None:
-            """Warn user of utterance names which have no specified template."""
-
-            utterances = [
-                act for act in action_names if act.startswith(action.UTTER_PREFIX)
-            ]
-
-            missing_templates = [t for t in utterances if t not in templates.keys()]
-
-            if missing_templates:
-                message = ""
-                for template in missing_templates:
-                    message += (
-                        "\nUtterance '{}' is listed as an "
-                        "action in the domain file, but there is "
-                        "no matching utterance template. Please "
-                        "check your domain."
-                    ).format(template)
-                print_warning(message)
-
-        warn_missing_templates(self.action_names, self.templates)
         duplicate_actions = get_duplicates(self.action_names)
         duplicate_slots = get_duplicates([s.name for s in self.slots])
         duplicate_entities = get_duplicates(self.entities)
@@ -883,6 +861,22 @@ class Domain(object):
                     incorrect_mappings,
                 )
             )
+
+    def check_missing_templates(self) -> None:
+        """Warn user of utterance names which have no specified template."""
+
+        utterances = [a for a in self.action_names if a.startswith(action.UTTER_PREFIX)]
+
+        missing_templates = [t for t in utterances if t not in self.templates.keys()]
+
+        if missing_templates:
+            for template in missing_templates:
+                logger.warning(
+                    "Utterance '{}' is listed as an "
+                    "action in the domain file, but there is "
+                    "no matching utterance template. Please "
+                    "check your domain.".format(template)
+                )
 
 
 class TemplateDomain(Domain):

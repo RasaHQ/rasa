@@ -23,16 +23,17 @@ def read_endpoint_config(
         return None
 
     try:
-        content = rasa.utils.io.read_yaml_file(filename)
+        content = rasa.utils.io.read_config_file(filename)
+
+        if endpoint_type in content:
+            return EndpointConfig.from_dict(content[endpoint_type])
+        else:
+            return None
     except FileNotFoundError:
         logger.error(
             "Failed to read endpoint configuration "
             "from {}. No such file.".format(os.path.abspath(filename))
         )
-
-    if endpoint_type in content:
-        return EndpointConfig.from_dict(content[endpoint_type])
-    else:
         return None
 
 
@@ -45,7 +46,7 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     `base`."""
 
     if not subpath:
-        return base
+        return base.rstrip("/")
 
     url = base
     if not base.endswith("/"):
@@ -110,6 +111,7 @@ class EndpointConfig(object):
         method: Text = "post",
         subpath: Optional[Text] = None,
         content_type: Optional[Text] = "application/json",
+        return_method: Text = "json",
         **kwargs: Any
     ):
         """Send a HTTP request to the endpoint.
@@ -139,7 +141,7 @@ class EndpointConfig(object):
                     raise ClientResponseError(
                         resp.status, resp.reason, await resp.content.read()
                     )
-                return await resp.json()
+                return await getattr(resp, return_method)()
 
     @classmethod
     def from_dict(cls, data):

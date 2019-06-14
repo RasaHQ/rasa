@@ -9,7 +9,7 @@ from aioresponses import aioresponses
 from sanic import Sanic
 
 from rasa.core import utils
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
@@ -56,7 +56,7 @@ async def test_send_response(default_channel, default_tracker):
         "image": "https://i.imgur.com/T5xVo.jpg",
     }
     custom_json_message = {
-        "text": "look at this",  # this value will be ignored
+        "text": "look at this",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
 
@@ -68,7 +68,7 @@ async def test_send_response(default_channel, default_tracker):
     await default_channel.send_response(default_tracker.sender_id, custom_json_message)
     collected = default_channel.messages
 
-    assert len(collected) == 5
+    assert len(collected) == 6
 
     # text only message
     assert collected[0] == {"recipient_id": "my-sender", "text": "hey"}
@@ -85,7 +85,8 @@ async def test_send_response(default_channel, default_tracker):
         "recipient_id": "my-sender",
         "image": "https://i.imgur.com/T5xVo.jpg",
     }
-    assert collected[4] == {
+    assert collected[4] == {"recipient_id": "my-sender", "text": "look at this"}
+    assert collected[5] == {
         "recipient_id": "my-sender",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
@@ -643,6 +644,7 @@ async def test_slackbot_send_attachment_only():
     assert r.request.body == {
         "channel": ["General"],
         "as_user": ["True"],
+        "text": ["Attachment"],
         "attachments": [json.dumps([attachment])],
     }
 
@@ -659,13 +661,13 @@ async def test_slackbot_send_attachment_withtext():
     )
 
     bot = SlackBot("DummyToken", "General")
-    kwargs = {"text": "Sample text"}
     attachment = {
         "fallback": "Financial Advisor Summary",
         "color": "#36a64f",
         "author_name": "ABE",
         "title": "Financial Advisor Summary",
         "title_link": "http://tenfactorialrocks.com",
+        "text": "Here is the summary:",
         "image_url": "https://r.com/cancel/r12",
         "thumb_url": "https://r.com/cancel/r12",
         "actions": [
@@ -692,14 +694,14 @@ async def test_slackbot_send_attachment_withtext():
         "ts": 1531889719,
     }
 
-    await bot.send_attachment("ID", attachment, **kwargs)
+    await bot.send_attachment("ID", attachment)
 
     r = responses.calls[-1]
 
     assert r.request.body == {
         "channel": ["General"],
         "as_user": ["True"],
-        "text": ["Sample text"],
+        "text": ["Here is the summary:"],
         "attachments": [json.dumps([attachment])],
     }
 
@@ -745,19 +747,19 @@ async def test_slackbot_send_text():
 
     r = responses.calls[-1]
 
-    assert r.request.body["as_user"] == ["True"]
-    assert r.request.body["channel"] == ["General"]
-    assert len(r.request.body["blocks"]) == 1
-    assert '"type": "section"' in r.request.body["blocks"][0]
-    assert '"type": "plain_text"' in r.request.body["blocks"][0]
-    assert '"text": "my message"' in r.request.body["blocks"][0]
+    assert r.parsed_body == {
+        "as_user": ["True"],
+        "channel": ["General"],
+        "text": ["my message"],
+        "type": ["mrkdwn"],
+    }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_channel_inheritance():
-    from rasa.core.channels import RestInput
-    from rasa.core.channels import RasaChatInput
+    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels.rasa_chat import RasaChatInput
     from rasa.core.agent import Agent
     from rasa.core.interpreter import RegexInterpreter
 
@@ -778,7 +780,7 @@ def test_channel_inheritance():
 
 
 def test_int_sender_id_in_user_message():
-    from rasa.core.channels import UserMessage
+    from rasa.core.channels.channel import UserMessage
 
     # noinspection PyTypeChecker
     message = UserMessage("A text", sender_id=1234567890)
@@ -787,7 +789,7 @@ def test_int_sender_id_in_user_message():
 
 
 def test_int_message_id_in_user_message():
-    from rasa.core.channels import UserMessage
+    from rasa.core.channels.channel import UserMessage
 
     # noinspection PyTypeChecker
     message = UserMessage("B text", message_id=987654321)
@@ -808,7 +810,7 @@ async def test_send_elements_without_buttons():
 
 
 def test_newsline_strip():
-    from rasa.core.channels import UserMessage
+    from rasa.core.channels.channel import UserMessage
 
     message = UserMessage("\n/restart\n")
 
@@ -817,7 +819,7 @@ def test_newsline_strip():
 
 def test_register_channel_without_route():
     """Check we properly connect the input channel blueprint if route is None"""
-    from rasa.core.channels import RestInput
+    from rasa.core.channels.channel import RestInput
     import rasa.core
 
     input_channel = RestInput()

@@ -6,8 +6,8 @@ from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 from typing import Dict, Text, Any
 
-from rasa.core.channels import InputChannel
-from rasa.core.channels import UserMessage, OutputChannel
+from rasa.core.channels.channel import InputChannel
+from rasa.core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 

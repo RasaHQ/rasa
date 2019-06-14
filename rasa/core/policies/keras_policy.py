@@ -5,6 +5,7 @@ import os
 import tensorflow as tf
 import numpy as np
 import warnings
+import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 import rasa.utils.io
@@ -20,6 +21,9 @@ from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import obtain_verbosity
 
+# there are a number of issues with imports from tensorflow. hence the deactivation
+# pytype: disable=import-error
+# pytype: disable=module-attr
 try:
     import cPickle as pickle
 except ImportError:
@@ -258,6 +262,8 @@ class KerasPolicy(Policy):
             return y_pred[-1].tolist()
         elif len(y_pred.shape) == 3:
             return y_pred[0, -1].tolist()
+        else:
+            raise Exception("Network prediction has invalid shape.")
 
     def persist(self, path: Text) -> None:
 
@@ -328,3 +334,7 @@ class KerasPolicy(Policy):
                 "Failed to load dialogue model. Path {} "
                 "doesn't exist".format(os.path.abspath(path))
             )
+
+
+# pytype: enable=import-error
+# pytype: disable=module-attr

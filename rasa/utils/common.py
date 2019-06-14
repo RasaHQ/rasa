@@ -26,7 +26,7 @@ def read_global_config() -> Dict[Text, Any]:
     """Read global Rasa configuration."""
     # noinspection PyBroadException
     try:
-        return rasa.utils.io.read_yaml_file(GLOBAL_USER_CONFIG_PATH)
+        return rasa.utils.io.read_config_file(GLOBAL_USER_CONFIG_PATH)
     except Exception:
         # if things go south we pretend there is no config
         return {}
@@ -116,7 +116,7 @@ def update_tensorflow_log_level():
     logging.getLogger("tensorflow").propagate = False
 
 
-def update_sanic_log_level():
+def update_sanic_log_level(log_file: Optional[Text] = None):
     """Set the log level of sanic loggers to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     from sanic.log import logger, error_logger, access_logger
@@ -130,6 +130,15 @@ def update_sanic_log_level():
     logger.propagate = False
     error_logger.propagate = False
     access_logger.propagate = False
+
+    if log_file is not None:
+        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+
+        logger.addHandler(file_handler)
+        error_logger.addHandler(file_handler)
+        access_logger.addHandler(file_handler)
 
 
 def update_asyncio_log_level():

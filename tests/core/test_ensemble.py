@@ -1,6 +1,6 @@
 import pytest
 
-from rasa.core.policies import Policy
+from rasa.core.policies.policy import Policy
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
     InvalidPolicyConfig,

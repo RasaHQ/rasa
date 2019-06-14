@@ -1,10 +1,13 @@
-from rasa.core.channels import UserMessage
+import pytest
+
+from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, Restarted
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
     RedisTrackerStore,
+    SQLTrackerStore,
 )
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
@@ -120,3 +123,41 @@ def test_tracker_store_from_invalid_string(default_domain):
     tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
 
     assert isinstance(tracker_store, InMemoryTrackerStore)
+
+
+@pytest.mark.parametrize(
+    "full_url",
+    [
+        "postgresql://localhost",
+        "postgresql://localhost:5432",
+        "postgresql://user:secret@localhost",
+    ],
+)
+def test_get_db_url_with_fully_specified_url(full_url):
+    assert SQLTrackerStore._get_db_url(host=full_url) == full_url
+
+
+def test_get_db_url_with_port_in_host():
+    host = "localhost:1234"
+    dialect = "postgresql"
+    db = "mydb"
+
+    expected = "{}://{}/{}".format(dialect, host, db)
+
+    assert (
+        str(SQLTrackerStore._get_db_url(dialect="postgresql", host=host, db=db))
+        == expected
+    )
+
+
+def test_get_db_url_with_correct_host():
+    expected = "postgresql://localhost:5005/mydb"
+
+    assert (
+        str(
+            SQLTrackerStore._get_db_url(
+                dialect="postgresql", host="localhost", port=5005, db="mydb"
+            )
+        )
+        == expected
+    )
