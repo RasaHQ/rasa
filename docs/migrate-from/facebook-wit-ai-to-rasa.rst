@@ -51,7 +51,7 @@ move the expressions.json file into this directory.
 Step 3: Train your NLU model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To train a model using your wit data, run:
+To train a model using your Wit data, run:
 
 .. code-block:: bash
 
