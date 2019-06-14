@@ -623,7 +623,7 @@ class Domain(object):
         domain_data = self.as_dict()
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
-                if intent.get("use_entities"):
+                if intent.get("use_entities") and len(intent) == 1:
                     domain_data["intents"][idx] = name
 
         for slot in domain_data["slots"].values():  # pytype: disable=attribute-error
