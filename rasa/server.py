@@ -329,6 +329,7 @@ def create_app(
 
     @app.get("/status")
     @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
     async def status(request: Request):
         """Respond with the model name and the fingerprint of that model."""
 
