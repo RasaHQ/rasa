@@ -4,9 +4,10 @@ import logging
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
+from fbmessenger.quick_replies import QuickReplies, QuickReply
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, List, Optional, Dict, Any, Callable, Awaitable, Iterable
+from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -178,6 +179,7 @@ class MessengerBot(OutputChannel):
         """Sends quick replies to the output."""
 
         self._add_text_info(quick_replies)
+        quick_replies = self._convert_to_quick_reply(quick_replies)
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
     async def send_elements(
@@ -221,6 +223,27 @@ class MessengerBot(OutputChannel):
         for button in buttons:
             if "type" not in button:
                 button["type"] = "postback"
+
+    @staticmethod
+    def _convert_to_quick_reply(quick_replies: List[Dict[Text, Any]]) -> None:
+        """Convert the List[Dict] to a List[QuickReply]
+        """
+        tmp_quick_replies = []
+        for ind, quick_reply in enumerate(quick_replies):
+            if "content_type" in quick_reply.keys():
+                content_type = quick_reply["content_type"]
+            else:
+                content_type = "text"
+            if "title" and "payload" in quick_reply.keys():
+                title = quick_reply["title"]
+                payload = quick_reply["payload"]
+            else:
+                raise ValueError("You need to specify the title and the payload")
+            tmp_quick_replies.append(QuickReply(title=title, content_type=content_type, payload=payload))
+
+        quick_replies.clear()
+        quick_replies = tmp_quick_replies.copy()
+        return QuickReplies(quick_replies=quick_replies)
 
 
 class FacebookInput(InputChannel):
