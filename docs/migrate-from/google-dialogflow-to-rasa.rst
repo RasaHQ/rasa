@@ -113,7 +113,7 @@ Terminology:
 ^^^^^^^^^^^^
 
 The words ``intent``, ``entity``, and ``utterance`` have the same meaning in Rasa as they do in Dialogflow.
-In Dialogflow, there is a concept called ``Fulfillment``. In Rasa we call this a `Custom Action </docs/rasa/core/actions/>`_.
+In Dialogflow, there is a concept called ``Fulfillment``. In Rasa we call this a `Custom Action </docs/rasa/core/actions/#custom-actions>`_.
 
 
 Join the `Rasa Community Forum <https://forum.rasa.com/>`_ and let us know how your migration went!
