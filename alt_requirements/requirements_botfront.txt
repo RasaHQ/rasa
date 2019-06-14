@@ -1,6 +1,2 @@
-# Minimum Instal Requirements
--r ../requirements.txt
-
 https://github.com/botfront/rasa-addons/archive/rasa-1.0.zip
-
 jieba==0.39

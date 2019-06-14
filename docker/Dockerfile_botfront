@@ -32,18 +32,17 @@ RUN apt-get update -qq && \
 
 WORKDIR /install
 
-# Copy as early as possible so we can cache ...
-COPY alt_requirements/ ./alt_requirements
 COPY requirements.txt .
-
-RUN pip install -r alt_requirements/requirements_botfront.txt
+RUN pip install -r requirements.txt
 
 COPY --from=builder /build/rasa.tar.gz .
 RUN pip install ./rasa.tar.gz[spacy]
 
-
 RUN python -m spacy download fr_core_news_sm \
     && python -m spacy link fr_core_news_sm fr
+
+COPY alt_requirements/ ./alt_requirements
+RUN pip install -r alt_requirements/requirements_botfront.txt
 
 VOLUME ["/app"]
 WORKDIR /app
