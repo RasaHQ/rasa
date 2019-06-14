@@ -13,6 +13,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -173,6 +174,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Change Log</a></li>
 </ul>
+<p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/google-dialogflow-to-rasa/">Dialogflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
 
 <div class="versions">
     <p class="caption">Versions</p>
@@ -235,14 +243,57 @@
 <span id="id1"></span><h1>Guiding Users<a class="headerlink" href="#guiding-users" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#explicit-confirmation" id="id4">Explicit Confirmation</a></li>
-<li><a class="reference internal" href="#explaining-possibilities" id="id5">Explaining Possibilities</a></li>
-<li><a class="reference internal" href="#collecting-user-feedback" id="id6">Collecting User Feedback</a></li>
-<li><a class="reference internal" href="#handing-off-to-a-human" id="id7">Handing off to a Human</a></li>
+<li><a class="reference internal" href="#implicit-confirmation" id="id5">Implicit Confirmation</a></li>
+<li><a class="reference internal" href="#explicit-confirmation" id="id6">Explicit Confirmation</a></li>
+<li><a class="reference internal" href="#explaining-possibilities" id="id7">Explaining Possibilities</a></li>
+<li><a class="reference internal" href="#collecting-user-feedback" id="id8">Collecting User Feedback</a></li>
+<li><a class="reference internal" href="#handing-off-to-a-human" id="id9">Handing off to a Human</a></li>
 </ul>
 </div>
+<div class="section" id="implicit-confirmation">
+<span id="id2"></span><h2><a class="toc-backref" href="#id5">Implicit Confirmation</a><a class="headerlink" href="#implicit-confirmation" title="Permalink to this headline">¶</a></h2>
+<p>Implicit confirmation involves repeating details back to the user to reassure
+them that they were understood correctly.
+This also gives the user a chance to intervene if your assistant misunderstood.</p>
+
+
+<div class="dialogue-conversations">
+  <div class="columns smtb tinycard">
+    
+      <div class="column">
+          <div class="dialogue-example">
+            
+              
+                <div class="chat-bubble user">
+                  <p>Can I get a large hawaiian and bbq pizza</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>Sure, that's one large hawaiian and one regular bbq pizza.</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble bot">
+                  <p>Anything else?</p>
+                </div>
+              
+            
+              
+                <div class="chat-bubble user">
+                  <p>No they should both be large!</p>
+                </div>
+              
+            
+          </div>
+      </div>
+    
+  </div>
+</div></div>
 <div class="section" id="explicit-confirmation">
-<span id="id2"></span><h2><a class="toc-backref" href="#id4">Explicit Confirmation</a><a class="headerlink" href="#explicit-confirmation" title="Permalink to this headline">¶</a></h2>
+<span id="id3"></span><h2><a class="toc-backref" href="#id6">Explicit Confirmation</a><a class="headerlink" href="#explicit-confirmation" title="Permalink to this headline">¶</a></h2>
 <p>Explicit confirmation means asking the user to clarify how you should help them.
 An important thing to remember about AI assistants is that <strong>the user is never wrong</strong>.
 When a user tells you something like <cite>I just moved</cite>, they are being perfectly clear,
@@ -299,7 +350,7 @@ To do this, configure the policy as in this example:</p>
 </div>
 </div>
 <div class="section" id="explaining-possibilities">
-<span id="id3"></span><h2><a class="toc-backref" href="#id5">Explaining Possibilities</a><a class="headerlink" href="#explaining-possibilities" title="Permalink to this headline">¶</a></h2>
+<span id="id4"></span><h2><a class="toc-backref" href="#id7">Explaining Possibilities</a><a class="headerlink" href="#explaining-possibilities" title="Permalink to this headline">¶</a></h2>
 <p>AI assistants are always limited to helping users with a specific set of
 tasks, and should be able to explain to a user what they can do.
 That includes coherently responding to requests that are out of scope.</p>
@@ -365,7 +416,7 @@ but these example stories show some common cases:</p>
 </div>
 </div>
 <div class="section" id="collecting-user-feedback">
-<h2><a class="toc-backref" href="#id6">Collecting User Feedback</a><a class="headerlink" href="#collecting-user-feedback" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id8">Collecting User Feedback</a><a class="headerlink" href="#collecting-user-feedback" title="Permalink to this headline">¶</a></h2>
 <p>Asking for feedback is one of the best tools you have to understand
 your users and determine whether you solved their problem!
 Storing this feedback is a powerful way to figure out how you can improve your assistant.</p>
@@ -445,7 +496,7 @@ Storing this feedback is a powerful way to figure out how you can improve your a
 </div>
 </div>
 <div class="section" id="handing-off-to-a-human">
-<h2><a class="toc-backref" href="#id7">Handing off to a Human</a><a class="headerlink" href="#handing-off-to-a-human" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id9">Handing off to a Human</a><a class="headerlink" href="#handing-off-to-a-human" title="Permalink to this headline">¶</a></h2>
 <p>Users will be very frustrated if your assistant cannot help them and there is no way to reroute
 the conversation to a human agent. There should always be a way to break out of a conversation!
 There are multiple reasons why you might trigger a human handoff:</p>
