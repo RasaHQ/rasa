@@ -12,7 +12,7 @@ Guiding Users
 Implicit Confirmation
 ---------------------
 
-Implicit confirmation involves repeating some details back to the user to reassure
+Implicit confirmation involves repeating details back to the user to reassure
 them that they were understood correctly.
 This also gives the user a chance to intervene if your assistant misunderstood.
 
