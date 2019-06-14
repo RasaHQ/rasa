@@ -34,7 +34,7 @@ steps:
    ```
    docker run -p 8000:8000 rasa/duckling
    ```
-   or installing duckling directly on your machine and starting the server.
+   or [installing duckling](https://github.com/facebook/duckling#requirements) directly on your machine and starting the server.
 
 3. Test the assistant by running:
     ```
