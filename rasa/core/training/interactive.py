@@ -413,9 +413,7 @@ async def _request_intent_from_user(
         {"name": "<create_new_intent>", "value": OTHER_INTENT}
     ] + _selection_choices_from_intent_prediction(predictions)
 
-    intent_name = await _request_selection_from_intents(
-        choices, sender_id, endpoint
-    )
+    intent_name = await _request_selection_from_intents(choices, sender_id, endpoint)
 
     if intent_name == OTHER_INTENT:
         intent_name = await _request_free_text_intent(sender_id, endpoint)
