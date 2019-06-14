@@ -183,12 +183,14 @@ in open source bot framework Rasa Stack." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.1
+          viewing: 1.1.3
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.1.3/core/forms/">1.1.3</a>
+              <a href="../.././1.1.2/core/forms/">1.1.2</a>
               <a href="../.././1.1.1/core/forms/">1.1.1</a>
               <a href="../.././1.1.0/core/forms/">1.1.0</a>
               <a href="../.././1.0.9/core/forms/">1.0.9</a>
@@ -292,7 +294,7 @@ happy paths.</p>
 <p>In this story the user intent is <code class="docutils literal notranslate"><span class="pre">request_restaurant</span></code>, which is followed by
 the form action <code class="docutils literal notranslate"><span class="pre">restaurant_form</span></code>. With <code class="docutils literal notranslate"><span class="pre">form{&quot;name&quot;:</span> <span class="pre">&quot;restaurant_form&quot;}</span></code> the
 form is activated and with <code class="docutils literal notranslate"><span class="pre">form{&quot;name&quot;:</span> <span class="pre">null}</span></code> the form is deactivated again.
-As shown in the section <a class="reference internal" href="#section-unhappy"><span class="std std-ref">Handling unhappy paths</span></a> the the bot can execute any kind of
+As shown in the section <a class="reference internal" href="#section-unhappy"><span class="std std-ref">Handling unhappy paths</span></a> the bot can execute any kind of
 actions outside the form while the form is still active. On the “happy path”,
 where the user is cooperating well and the system understands the user input correctly,
 the form is filling all requested slots without interruption.</p>
@@ -560,8 +562,7 @@ ask if they are looking for somewhere with outside seating.</p>
 <p>You can achieve this by writing some logic into the <code class="docutils literal notranslate"><span class="pre">required_slots()</span></code> method,
 for example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">required_slots</span><span class="p">(</span><span class="n">tracker</span><span class="p">):</span>
-   <span class="c1"># type: () -&gt; List[Text]</span>
+<span class="k">def</span> <span class="nf">required_slots</span><span class="p">(</span><span class="n">tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
    <span class="sd">&quot;&quot;&quot;A list of required slots that the form has to fill&quot;&quot;&quot;</span>
 
    <span class="k">if</span> <span class="n">tracker</span><span class="o">.</span><span class="n">get_slot</span><span class="p">(</span><span class="s1">&#39;cuisine&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;greek&#39;</span><span class="p">:</span>

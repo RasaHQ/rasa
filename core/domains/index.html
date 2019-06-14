@@ -183,12 +183,14 @@ AI Assistants and chatbots using open source bot framework Rasa Stack." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.1
+          viewing: 1.1.3
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.1.3/core/domains/">1.1.3</a>
+              <a href="../.././1.1.2/core/domains/">1.1.2</a>
               <a href="../.././1.1.1/core/domains/">1.1.1</a>
               <a href="../.././1.1.0/core/domains/">1.1.0</a>
               <a href="../.././1.0.9/core/domains/">1.0.9</a>
@@ -387,7 +389,7 @@ printing the options.</p>
 <code class="docutils literal notranslate"><span class="pre">custom:</span></code> key. Note that since the domain is in yaml format, the json
 payload should first be converted to yaml format.</p>
 <p>For example, although date pickers are not a defined parameter in utterance
-templates because they are not supported by most channels, a slack date picker
+templates because they are not supported by most channels, a Slack date picker
 can be sent like so:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_take_bet</span><span class="p p-Indicator">:</span>
@@ -418,7 +420,7 @@ output payloads that will only work in certain channels.</p>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Which</span><span class="nv"> </span><span class="s">game</span><span class="nv"> </span><span class="s">would</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">like</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">play?&quot;</span>
     <span class="l l-Scalar l-Scalar-Plain">channel</span><span class="p p-Indicator">:</span> <span class="s">&quot;slack&quot;</span>
     <span class="l l-Scalar l-Scalar-Plain">custom</span><span class="p p-Indicator">:</span>
-      <span class="p p-Indicator">-</span> <span class="c1"># payload for slack dropdown menu to choose a game</span>
+      <span class="p p-Indicator">-</span> <span class="c1"># payload for Slack dropdown menu to choose a game</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Which</span><span class="nv"> </span><span class="s">game</span><span class="nv"> </span><span class="s">would</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">like</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">play?&quot;</span>
     <span class="l l-Scalar l-Scalar-Plain">buttons</span><span class="p p-Indicator">:</span>
     <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">title</span><span class="p p-Indicator">:</span> <span class="s">&quot;Chess&quot;</span>

@@ -183,12 +183,14 @@ like resetting slots, scheduling reminder or pausing a conversation." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.1
+          viewing: 1.1.3
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.1.3/api/events/">1.1.3</a>
+              <a href="../.././1.1.2/api/events/">1.1.2</a>
               <a href="../.././1.1.1/api/events/">1.1.1</a>
               <a href="../.././1.1.0/api/events/">1.1.0</a>
               <a href="../.././1.0.9/api/events/">1.0.9</a>
@@ -328,7 +330,9 @@ the slots).</p>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
-    <span class="kn">from</span> <span class="nn">rasa.core.actions.action</span> <span class="k">import</span> <span class="n">ACTION_LISTEN_NAME</span>
+    <span class="kn">from</span> <span class="nn">rasa.core.actions.action</span> <span class="k">import</span> <span class="p">(</span>  <span class="c1"># pytype: disable=pyi-error</span>
+        <span class="n">ACTION_LISTEN_NAME</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="n">tracker</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
     <span class="n">tracker</span><span class="o">.</span><span class="n">trigger_followup_action</span><span class="p">(</span><span class="n">ACTION_LISTEN_NAME</span><span class="p">)</span>

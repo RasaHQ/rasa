@@ -183,12 +183,14 @@ source natural language processing." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.1
+          viewing: 1.1.3
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.1.3/nlu/training-data-format/">1.1.3</a>
+              <a href="../.././1.1.2/nlu/training-data-format/">1.1.2</a>
               <a href="../.././1.1.1/nlu/training-data-format/">1.1.1</a>
               <a href="../.././1.1.0/nlu/training-data-format/">1.1.0</a>
               <a href="../.././1.0.9/nlu/training-data-format/">1.0.9</a>
@@ -234,14 +236,14 @@ source natural language processing." />
 <span id="id1"></span><h1>Training Data Format<a class="headerlink" href="#training-data-format" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="data-format">
 <h2>Data Format<a class="headerlink" href="#data-format" title="Permalink to this headline">¶</a></h2>
-<p>You can provide training data as markdown or as json, as a single file or as a directory containing multiple files.
-Note that markdown is usually easier to work with.</p>
+<p>You can provide training data as Markdown or as JSON, as a single file or as a directory containing multiple files.
+Note that Markdown is usually easier to work with.</p>
 <div class="section" id="markdown-format">
 <h3>Markdown Format<a class="headerlink" href="#markdown-format" title="Permalink to this headline">¶</a></h3>
 <p>Markdown is the easiest Rasa NLU format for humans to read and write.
 Examples are listed using the unordered
 list syntax, e.g. minus <code class="docutils literal notranslate"><span class="pre">-</span></code>, asterisk <code class="docutils literal notranslate"><span class="pre">*</span></code>, or plus <code class="docutils literal notranslate"><span class="pre">+</span></code>.
-Examples are grouped by intent, and entities are annotated as markdown links,
+Examples are grouped by intent, and entities are annotated as Markdown links,
 e.g. <code class="docutils literal notranslate"><span class="pre">[entity](entity</span> <span class="pre">name)</span></code>.</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:check_balance
 <span class="k">-</span> what is my balance &lt;!-- no entity --&gt;
@@ -434,9 +436,14 @@ training data!</p>
 <span id="id2"></span><h3>Lookup Tables<a class="headerlink" href="#lookup-tables" title="Permalink to this headline">¶</a></h3>
 <p>Lookup tables in the form of external files or lists of elements may also be specified in the training data.
 The externally supplied lookup tables must be in a newline-separated format.
-For example, <code class="docutils literal notranslate"><span class="pre">data/test/lookup_tables/plates.txt</span></code> may contain</p>
-<p># TODO: This is broken
-.. include:: ../../data/test/lookup_tables/plates.txt</p>
+For example, <code class="docutils literal notranslate"><span class="pre">data/test/lookup_tables/plates.txt</span></code> may contain:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tacos</span>
+<span class="n">beef</span>
+<span class="n">mapo</span> <span class="n">tofu</span>
+<span class="n">burrito</span>
+<span class="n">lettuce</span> <span class="n">wrap</span>
+</pre></div>
+</div>
 <p>And can be loaded as:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;rasa_nlu_data&quot;</span><span class="p">:</span> <span class="p">{</span>

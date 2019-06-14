@@ -187,12 +187,14 @@ for open source NLU." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.1
+          viewing: 1.1.3
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.1.3/nlu/choosing-a-pipeline/">1.1.3</a>
+              <a href="../.././1.1.2/nlu/choosing-a-pipeline/">1.1.2</a>
               <a href="../.././1.1.1/nlu/choosing-a-pipeline/">1.1.1</a>
               <a href="../.././1.1.0/nlu/choosing-a-pipeline/">1.1.0</a>
               <a href="../.././1.0.9/nlu/choosing-a-pipeline/">1.0.9</a>
@@ -259,7 +261,7 @@ use the <code class="docutils literal notranslate"><span class="pre">supervised_
 <h2>A Longer Answer<a class="headerlink" href="#a-longer-answer" title="Permalink to this headline">¶</a></h2>
 <p>The two most important pipelines are <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> and <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code>.
 The biggest difference between them is that the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> pipeline uses pre-trained
-word vectors from either GloVe or fastText. Instead, the supervised embeddings pipeline
+word vectors from either GloVe or fastText. The <code class="docutils literal notranslate"><span class="pre">supervised</span> <span class="pre">embeddings</span></code> pipeline, on the other hand,
 doesn’t use any pre-trained word vectors, but instead fits these specifically for your dataset.</p>
 <p>The advantage of the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> pipeline is that if you have a training example like:
 “I want to buy apples”, and Rasa is asked to predict the intent for “get pears”, your model

@@ -189,6 +189,8 @@ in open source bot framework Rasa Stack." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.1.3/core/forms/">1.1.3</a>
+              <a href="../../../1.1.2/core/forms/">1.1.2</a>
               <a href="../../../1.1.1/core/forms/">1.1.1</a>
               <a href="../../../1.1.0/core/forms/">1.1.0</a>
               <a href="../../../1.0.9/core/forms/">1.0.9</a>
@@ -232,7 +234,7 @@ in open source bot framework Rasa Stack." />
 
 
 
-    <p class="scv-banner"><a href="../../../1.1.1/core/forms/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.1.1.</a></p>
+    <p class="scv-banner"><a href="../../../1.1.3/core/forms/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.1.3.</a></p>
 <div class="section" id="forms">
 <span id="id1"></span><h1>Forms<a class="headerlink" href="#forms" title="Permalink to this headline">¶</a></h1>
 <div class="admonition note">
@@ -563,8 +565,7 @@ ask if they are looking for somewhere with outside seating.</p>
 <p>You can achieve this by writing some logic into the <code class="docutils literal notranslate"><span class="pre">required_slots()</span></code> method,
 for example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">required_slots</span><span class="p">(</span><span class="n">tracker</span><span class="p">):</span>
-   <span class="c1"># type: () -&gt; List[Text]</span>
+<span class="k">def</span> <span class="nf">required_slots</span><span class="p">(</span><span class="n">tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
    <span class="sd">&quot;&quot;&quot;A list of required slots that the form has to fill&quot;&quot;&quot;</span>
 
    <span class="k">if</span> <span class="n">tracker</span><span class="o">.</span><span class="n">get_slot</span><span class="p">(</span><span class="s1">&#39;cuisine&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;greek&#39;</span><span class="p">:</span>
