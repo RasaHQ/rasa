@@ -20,7 +20,7 @@ This also gives the user a chance to intervene if your assistant misunderstood.
    examples:
      -
        - Can I get a large hawaiian and bbq pizza
-       - ( Sure, that's one large hawaiian and one regular bbc pizza.
+       - ( Sure, that's one large hawaiian and one regular bbq pizza.
        - ( Anything else?
        - No they should both be large!
 
