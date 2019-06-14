@@ -207,10 +207,10 @@ def default_tracker(default_domain):
 @pytest.fixture(scope="session")
 def project() -> Text:
     import tempfile
-    from rasa.cli.scaffold import _create_initial_project
+    from rasa.cli.scaffold import create_initial_project
 
     directory = tempfile.mkdtemp()
-    _create_initial_project(directory)
+    create_initial_project(directory)
 
     return directory
 
