@@ -178,7 +178,6 @@ class MessengerBot(OutputChannel):
     ) -> None:
         """Sends quick replies to the output."""
 
-        self._add_text_info(quick_replies)
         quick_replies = self._convert_to_quick_reply(quick_replies)
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
@@ -208,16 +207,6 @@ class MessengerBot(OutputChannel):
         self.messenger_client.send(json_message, recipient_id, "RESPONSE")
 
     @staticmethod
-    def _add_text_info(quick_replies: List[Dict[Text, Any]]) -> None:
-        """Set quick reply type to text for all buttons without content type.
-
-        Happens in place."""
-
-        for quick_reply in quick_replies:
-            if not quick_reply.get("type"):
-                quick_reply["content_type"] = "text"
-
-    @staticmethod
     def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
         """Make sure every button has a type. Modifications happen in place."""
         for button in buttons:
@@ -225,25 +214,25 @@ class MessengerBot(OutputChannel):
                 button["type"] = "postback"
 
     @staticmethod
-    def _convert_to_quick_reply(quick_replies: List[Dict[Text, Any]]) -> None:
-        """Convert the List[Dict] to a List[QuickReply]
-        """
-        tmp_quick_replies = []
-        for ind, quick_reply in enumerate(quick_replies):
-            if "content_type" in quick_reply.keys():
-                content_type = quick_reply["content_type"]
-            else:
-                content_type = "text"
-            if "title" and "payload" in quick_reply.keys():
-                title = quick_reply["title"]
-                payload = quick_reply["payload"]
-            else:
-                raise ValueError("You need to specify the title and the payload")
-            tmp_quick_replies.append(QuickReply(title=title, content_type=content_type, payload=payload))
+    def _convert_to_quick_reply(quick_replies: List[Dict[Text, Any]]) -> QuickReplies:
+        """Convert quick reply dictionary to FB QuickReplies object"""
 
-        quick_replies.clear()
-        quick_replies = tmp_quick_replies.copy()
-        return QuickReplies(quick_replies=quick_replies)
+        fb_quick_replies = []
+        for quick_reply in quick_replies:
+            try:
+                fb_quick_replies.append(
+                    QuickReply(
+                        title=quick_reply["title"],
+                        payload=quick_reply["payload"],
+                        content_type=quick_reply.get("content_type"),
+                    )
+                )
+            except KeyError as e:
+                raise ValueError(
+                    'Facebook quick replies must define a "{}" field.'.format(e.args[0])
+                )
+
+        return QuickReplies(quick_replies=fb_quick_replies)
 
 
 class FacebookInput(InputChannel):
