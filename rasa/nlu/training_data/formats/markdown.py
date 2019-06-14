@@ -16,7 +16,8 @@ INTENT = "intent"
 SYNONYM = "synonym"
 REGEX = "regex"
 LOOKUP = "lookup"
-available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
+GAZETTE = "gazette"
+available_sections = [INTENT, SYNONYM, REGEX, LOOKUP, GAZETTE]
 
 # regex for: `[entity_text](entity_type(:entity_synonym)?)`
 ent_regex = re.compile(
@@ -41,6 +42,7 @@ class MarkdownReader(TrainingDataReader):
         self.regex_features = []
         self.section_regexes = self._create_section_regexes(available_sections)
         self.lookup_tables = []
+        self.gazette = []
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
@@ -61,6 +63,7 @@ class MarkdownReader(TrainingDataReader):
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
+            self.gazette,
         )
 
     @staticmethod
@@ -112,6 +115,16 @@ class MarkdownReader(TrainingDataReader):
                 )
             elif self.current_section == LOOKUP:
                 self._add_item_to_lookup(item)
+            elif self.current_section == GAZETTE:
+                self._add_item_to_gazette(item)
+    
+    def _add_item_to_gazette(self, item):
+        matches = [l for l in self.gazette if l["value"] == self.current_title]
+        if not matches:
+            self.gazette.append({"value": self.current_title, "gazette": [item]})
+        else:
+            gazette_els = matches[0]["gazette"]
+            gazette_els.append(item)
 
     def _add_item_to_lookup(self, item):
         """Takes a list of lookup table dictionaries.  Finds the one associated
@@ -191,6 +204,7 @@ class MarkdownWriter(TrainingDataWriter):
         md += self._generate_synonyms_md(training_data)
         md += self._generate_regex_features_md(training_data)
         md += self._generate_lookup_tables_md(training_data)
+        md += self._generate_gazette_md(training_data)
 
         return md
 
@@ -252,6 +266,19 @@ class MarkdownWriter(TrainingDataWriter):
                     md += self._generate_item_md(e)
             else:
                 md += self._generate_fname_md(elements)
+        return md
+
+    def _generate_gazette_md(self, training_data):
+        md = ""
+        gazette = training_data.gazette
+        for i, item in enumerate(gazette):
+            md += self._generate_section_header_md(GAZETTE, item["value"])
+            gazette_els = item["gazette"]
+            if isinstance(gazette_els, list):
+                for e in gazette_els:
+                    md += self._generate_item_md(e)
+            else:
+                md += self._generate_fname_md(gazette_els)
         return md
 
     @staticmethod
