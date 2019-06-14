@@ -22,7 +22,6 @@ At Rasa, we hear a few different reasons why developers switch from cloud-based 
 
      In addition, our open source tools allow developers to build contextual AI assistants and manage dialogues with machine learning instead of rules - learn more in <a class="reference external" href="http://blog.rasa.com/a-new-approach-to-conversational-software/" target="_blank">this blog post</a>.
 
-|
 
 .. button::
      :link: ../get_started_step1/
