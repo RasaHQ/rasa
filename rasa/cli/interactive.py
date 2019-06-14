@@ -44,7 +44,6 @@ def add_subparser(
 
 
 def interactive(args: argparse.Namespace):
-    args.finetune = False  # Don't support finetuning
     args.fixed_model_name = None
     args.store_uncompressed = False
 
@@ -58,7 +57,6 @@ def interactive(args: argparse.Namespace):
 
 
 def interactive_core(args: argparse.Namespace):
-    args.finetune = False  # Don't support finetuning
     args.fixed_model_name = None
     args.store_uncompressed = False
 

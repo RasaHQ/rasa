@@ -4,7 +4,6 @@ import os
 import pickle
 import pytest
 import tempfile
-
 import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.utils import (
@@ -21,8 +20,8 @@ from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io as io_utils
 
 
-@pytest.fixture
-def empty_model_dir(scope="function"):
+@pytest.fixture(scope="function")
+def empty_model_dir():
     temp_path = tempfile.mkdtemp()
     yield temp_path
     if os.path.exists(temp_path):

@@ -157,7 +157,7 @@ You can also send any arbitrary output to the output channel using the
 payload should first be converted to yaml format.
 
 For example, although date pickers are not a defined parameter in utterance
-templates because they are not supported by most channels, a slack date picker
+templates because they are not supported by most channels, a Slack date picker
 can be sent like so:
 
 .. code-block:: yaml
@@ -195,7 +195,7 @@ output payloads that will only work in certain channels.
     - text: "Which game would you like to play?"
       channel: "slack"
       custom:
-        - # payload for slack dropdown menu to choose a game
+        - # payload for Slack dropdown menu to choose a game
     - text: "Which game would you like to play?"
       buttons:
       - title: "Chess"

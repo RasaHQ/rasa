@@ -314,11 +314,11 @@ def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> in
     for i, e in enumerate(t_cleaned):
         if i == len(o_cleaned):
             break
-        elif e.type_name == "user" and o_cleaned[i].type_name == "user":
+        elif isinstance(e, UserUttered) and isinstance(o_cleaned[i], UserUttered):
             continue
         elif (
-            e.type_name == "action"
-            and o_cleaned[i].type_name == "action"
+            isinstance(e, ActionExecuted)
+            and isinstance(o_cleaned[i], ActionExecuted)
             and o_cleaned[i].action_name == e.action_name
         ):
             num_common_actions += 1
@@ -368,7 +368,7 @@ def sanitize(s):
 
 def _add_message_edge(
     graph: "networkx.MultiDiGraph",
-    message: Dict[Text, Any],
+    message: Optional[Dict[Text, Any]],
     current_node: int,
     next_node_idx: int,
     is_current: bool,

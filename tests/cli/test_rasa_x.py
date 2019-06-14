@@ -8,8 +8,8 @@ from rasa.utils.endpoints import EndpointConfig
 def test_x_help(run):
     output = run("x", "--help")
 
-    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--no-prompt]
-              [--production] [--data DATA] [--log-file LOG_FILE]
+    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
+              [--production] [--rasa-x-port RASA_X_PORT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
               [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
@@ -32,7 +32,7 @@ def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir_factory
         credentials_path, "http://localhost:5002"
     )
 
-    actual = io_utils.read_yaml_file(tmp_credentials)
+    actual = io_utils.read_config_file(tmp_credentials)
 
     assert actual["rasa"]["url"] == "http://localhost:5002"
 
@@ -49,7 +49,7 @@ def test_prepare_credentials_if_already_valid(tmpdir_factory):
 
     x._prepare_credentials_for_rasa_x(credentials_path)
 
-    actual = io_utils.read_yaml_file(credentials_path)
+    actual = io_utils.read_config_file(credentials_path)
 
     assert actual == credentials
 

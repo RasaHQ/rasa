@@ -43,7 +43,7 @@ of the tracker has a couple steps:
 
         The target labels correspond to actions taken by the bot.
         To convert the features into vector format, there are different
-        feaurizers available:
+        featurizers available:
 
         - ``BinarySingleStateFeaturizer`` creates a binary one-hot encoding:
             The vectors ``X, y`` indicate a presence of a certain intent,
