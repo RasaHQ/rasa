@@ -31,7 +31,7 @@ on the three dots menu next to the app you want to export.
    :width: 240
    :alt: LUIS Export
 
-Select 'Export App'. This will download a file with a ``.json`` extension that's ready for importing to Rasa.
+Select 'Export App'. This will download a file with a ``.json`` extension that can be imported directly into Rasa.
 
 Step 2: Create a Rasa Project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
