@@ -55,7 +55,7 @@ class Messenger:
     def _is_quick_reply_message(message: Dict[Text, Any]) -> bool:
         """Check if the message is a quick reply message."""
         return (
-            message.get("message")
+            message.get("message") is not None
             and message["message"].get("quick_reply")
             and message["message"]["quick_reply"].get("payload")
         )
