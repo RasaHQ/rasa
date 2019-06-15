@@ -1,5 +1,5 @@
 import logging
-from typing import Text, Any, Dict, Optional
+from typing import Text, Any, Dict, Optional, List
 
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg.generator import NaturalLanguageGenerator
@@ -94,7 +94,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         tracker: DialogueStateTracker,
         output_channel: Text,
         **kwargs: Any
-    ) -> Dict[Text, Any]:
+    ) -> List[Dict[Text, Any]]:
         """Retrieve a named template from the domain using an endpoint."""
 
         body = nlg_request_format(template_name, tracker, output_channel, **kwargs)
@@ -104,14 +104,20 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
             "".format(template_name, self.nlg_endpoint.url)
         )
 
-        response = await self.nlg_endpoint.request(
-            method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT
-        )
+        try:
+            response = await self.nlg_endpoint.request(
+                method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT
+            )
+        except Exception:
+            logger.error("NLG web endpoint returned an invalid response.")
+            return [{"text": template_name}]
 
         if self.validate_response(response):
             return response
         else:
-            raise Exception("NLG web endpoint returned an invalid response.")
+            logger.error("NLG web endpoint returned an invalid response.")
+            return [{"text": template_name}]
+
 
     @staticmethod
     def validate_response(content: Optional[Dict[Text, Any]]) -> bool:
