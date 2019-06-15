@@ -671,7 +671,6 @@ def test_load_model_from_model_server(rasa_app, trained_core_model):
     with open(trained_core_model, "rb") as f:
         with aioresponses(passthrough=["http://127.0.0.1"]) as mocked:
             headers = {}
-            f = open(trained_core_model, "rb")
             fs = os.fstat(f.fileno())
             headers["Content-Length"] = str(fs[6])
             mocked.get(
