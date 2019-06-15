@@ -56,7 +56,7 @@ class Messenger:
         """Check if the message is a quick reply message."""
         return (
             message.get("message") is not None
-            and message["message"].get("quick_reply")
+            and message["message"].get("quick_reply") is not None
             and message["message"]["quick_reply"].get("payload")
         )
 
