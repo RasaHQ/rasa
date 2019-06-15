@@ -815,8 +815,17 @@ def create_app(
         model_path = request.json.get("model_file", None)
         model_server = request.json.get("model_server", None)
         remote_storage = request.json.get("remote_storage", None)
-
-        app.agent = await _load_agent(model_path, model_server, remote_storage)
+        # botfront: instead of using _agent_load, use the standard method and keep current interpreters,
+        # nlg and TrackerStore
+        from rasa.core.agent import load_agent
+        app.agent = await load_agent(
+            model_path,
+            model_server,
+            remote_storage,
+            interpreters=app.agent.interpreters,
+            generator=app.agent.nlg,
+            tracker_store=app.agent.tracker_store
+        )
 
         logger.debug("Successfully loaded model '{}'.".format(model_path))
         return response.json(None, status=204)
