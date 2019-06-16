@@ -194,7 +194,7 @@ def model_fingerprint(
 
     # botfront: multilingual fingerprints
     # nlu config and data have per language hash (dict)
-    nlu_files = list(os.path.join(nlu_data, file) for file in os.listdir(nlu_data))
+    nlu_files = list(os.path.join(nlu_data, file) for file in os.listdir(nlu_data)) if nlu_data else []
     from rasa.core.utils import get_file_hash
 
     return {

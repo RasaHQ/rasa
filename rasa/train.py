@@ -317,8 +317,9 @@ async def _train_core_with_validated_data(
 
     if train_path is None:
         # Only Core was trained.
+        # botfront: 'config' replaced by {'en': config} as modified model_fingerprint expects a Dict
         new_fingerprint = model.model_fingerprint(
-            config, domain, stories=story_directory
+            {'en': config}, domain, stories=story_directory
         )
         return _package_model(
             new_fingerprint=new_fingerprint,
