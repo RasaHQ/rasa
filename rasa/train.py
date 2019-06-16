@@ -121,7 +121,7 @@ async def train_async(
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
         return await _train_core_with_validated_data(
             domain=domain,
-            config=config,
+            config=config[list(config.keys())[0]],
             story_directory=story_directory,
             output=output_path,
             fixed_model_name=fixed_model_name,
@@ -280,7 +280,7 @@ async def train_core_async(
 
     return await _train_core_with_validated_data(
         domain=domain,
-        config=config,
+        config=config[list(config.keys())[0]],
         story_directory=story_directory,
         output=output,
         train_path=train_path,
