@@ -121,9 +121,8 @@ class Validator(object):
             found = self._search(actions, utterance)
             if not found:
                 logger.error(
-                    "The utterance '{}' is not listed under 'actions' in the domain file.".format(
-                        utterance
-                    )
+                    "The utterance '{}' is not listed under 'actions' in the "
+                    "domain file.".format(utterance)
                 )
             else:
                 self.valid_utterances.append(utterance)
@@ -164,8 +163,7 @@ class Validator(object):
             found = self._search(stories_utterances, utterance)
             if not found:
                 logger.warning(
-                    "The utterance '{}' is not used in any "
-                    "story.".format(utterance)
+                    "The utterance '{}' is not used in any story.".format(utterance)
                 )
 
     def verify_all(self):
