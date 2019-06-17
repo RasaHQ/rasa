@@ -786,7 +786,8 @@ class Domain(object):
                 if count > 1
             ]
 
-        def check_mappings(intent_properties):
+        def check_mappings(intent_properties: Dict[Text, Dict[Text, Union[bool, List]]]
+                           ) -> List[Tuple[Text, Text]]:
             """Check whether intent-action mappings use proper action names."""
 
             incorrect = list()
