@@ -59,12 +59,18 @@ class Policy(object):
         self.config = override_defaults(self.defaults, config)
         self.__featurizer = self._create_featurizer(featurizer)
 
-    def __getattr__(self, item):
+    def __getattr__(self, name):
         try:
             return self.config[name]
         except KeyError:
-            raise AttributeError("{} has no attribute {}."
-                                 "".format(self.__name__, item))
+            pass
+        return super(Policy, self).__getattribute__(name)
+
+    def __setattr__(self, name, value):
+        if name in self.config.keys():
+            self.config[name] = value
+        else:
+            super(Policy, self).__setattr__(name, value)
 
     @property
     def priority(self):
