@@ -12,9 +12,12 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 - unfeaturize single entities
+- added agent readiness check to the ``/status`` resource
 
 Changed
 -------
+
+- removed leading underscore from name of '_create_initial_project' function.
 
 Removed
 -------
