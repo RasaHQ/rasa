@@ -7,7 +7,7 @@ from aioresponses import aioresponses
 
 import rasa.utils.io
 from rasa.core import jobs
-from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
     ActionExecuted,
     BotUttered,

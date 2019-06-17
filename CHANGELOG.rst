@@ -6,12 +6,48 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.10.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.1.3] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- nlu configs can now be directly compared for performance on a dataset in ``rasa test nlu``
+- added agent readiness check to the ``/status`` resource
+
+Changed
+-------
+
+- removed leading underscore from name of '_create_initial_project' function.
+
+Removed
+-------
+
+Fixed
+-----
+- fixed bug where facebook quick replies were not rendering
+- take FB quick reply payload rather than text as input
+
+[1.1.2] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed duplicate events appearing in tracker when using a PostgreSQL tracker store
+
+[1.1.1] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed compatibility with Rasa SDK
+- bot responses can contain ``custom`` messages besides other message types
+
+[1.1.0] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- nlu configs can now be directly compared for performance on a dataset
+  in ``rasa test nlu``
 
 Changed
 -------
@@ -19,15 +55,14 @@ Changed
   instead of replacing the tracker
 - ``POST /conversations/{conversation_id}/tracker/events`` supports a list of events
 
-Removed
--------
-
 Fixed
 -----
 - fixed creation of ``RasaNLUHttpInterpreter``
 - form actions are included in domain warnings
-- default actions overriden by custom actions and listed in the domain are excluded
-  from domain warnings
+- default actions, which are overriden by custom actions and are listed in the
+  domain are excluded from domain warnings
+- SQL ``data`` column type to ``Text`` for compatibility with MySQL
+- non-featurizer training parameters don't break `SklearnPolicy` anymore
 
 [1.0.9] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
