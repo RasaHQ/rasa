@@ -40,12 +40,12 @@ async def load_from_remote(
                     return None
                 elif resp.status == 404:
                     logger.warning("Tried to fetch {} from server but got a 404 response".format(name))
-                    return None
+                    raise requests.exceptions.InvalidURL(server.url)
                 elif resp.status != 200:
                     logger.warning("Tried to fetch {} from server, but server response "
                                    "status code is {}."
                                    "".format(name, resp.status))
-                    return None
+                    raise requests.exceptions.InvalidURL(server.url)
 
                 if temp_file is True:
                     with tempfile.NamedTemporaryFile(mode='w', delete=False) as yamlfile:
@@ -58,6 +58,7 @@ async def load_from_remote(
             logger.warning("Tried to fetch rules from server, but couldn't reach "
                            "server. We'll retry later... Error: {}."
                            "".format(e))
+            raise requests.exceptions.InvalidURL(server.url)
 
 
 def set_endpoints_credentials_args_from_remote(args):
