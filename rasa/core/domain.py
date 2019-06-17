@@ -120,7 +120,7 @@ class Domain(object):
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         cls.check_duplicate_intents(data.get("intents", {}))
-        intent_properties = cls.collect_intent_properties(data.get("intents", {}))
+        intent_properties = cls.combine_intents_in_dict(data.get("intents", {}))
         return cls(
             intent_properties,
             data.get("entities", []),
@@ -233,16 +233,11 @@ class Domain(object):
 
 
     @staticmethod
-    def collect_intent_properties(intent_list):
+    def combine_intents_in_dict(intent_list):
         intent_properties = {}
         for intent in intent_list:
-            if isinstance(intent, dict):
-                for properties in intent.values():
-                    if "use_entities" not in properties:
-                        properties["use_entities"] = True
-            else:
-                intent = {intent: {"use_entities": True}}
-
+            if not isinstance(intent, dict):
+                intent = {intent: {}}
             intent_properties.update(intent)
         return intent_properties
 
@@ -634,7 +629,7 @@ class Domain(object):
         domain_data = self.as_dict()
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
-                if intent.get("use_entities") and len(intent) == 1:
+                if len(intent) == 0: #if no properties specified store only the name
                     domain_data["intents"][idx] = name
 
         for slot in domain_data["slots"].values():  # pytype: disable=attribute-error

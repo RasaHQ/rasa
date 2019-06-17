@@ -255,18 +255,18 @@ templates:
     "intent_list, intent_properties",
     [
         (
-            ["greet", "goodbye"],
-            {"greet": {"use_entities": True}, "goodbye": {"use_entities": True}},
+            ["greet", {"goodbye": {"use_entities": True}}],
+            {"greet": {}, "goodbye": {"use_entities": True}},
         ),
         (
             [{"greet": {"use_entities": False}}, "goodbye"],
-            {"greet": {"use_entities": False}, "goodbye": {"use_entities": True}},
+            {"greet": {"use_entities": False}, "goodbye": {}},
         ),
         (
             [{"greet": {"triggers": "utter_goodbye"}}, "goodbye"],
             {
-                "greet": {"use_entities": True, "triggers": "utter_goodbye"},
-                "goodbye": {"use_entities": True},
+                "greet": {"triggers": "utter_goodbye"},
+                "goodbye": {},
             },
         ),
         (
@@ -279,10 +279,20 @@ templates:
                 "goodbye": {"use_entities": False},
             },
         ),
+        (
+            [
+                {"greet": {"triggers": "utter_goodbye", "use_entities": True}},
+                {"goodbye": {"use_entities": False}},
+            ],
+            {
+                "greet": {"use_entities": True, "triggers": "utter_goodbye"},
+                "goodbye": {"use_entities": False},
+            },
+        ),
     ],
 )
 def test_collect_intent_properties(intent_list, intent_properties):
-    assert Domain.collect_intent_properties(intent_list) == intent_properties
+    assert Domain.combine_intents_in_dict(intent_list) == intent_properties
 
 
 def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
