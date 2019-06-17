@@ -172,7 +172,7 @@ class CountVectorsFeaturizer(Featurizer):
         if self.lowercase:
             text = text.lower()
 
-        if self.OOV_token:
+        if self.OOV_token and self.analyzer == "word":
             text_tokens = text.split()
             if hasattr(self.vectorizer, "vocabulary_"):
                 # CountVectorizer is trained, process for prediction
