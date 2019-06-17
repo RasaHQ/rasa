@@ -26,7 +26,7 @@ from rasa.core.actions.action import (
     default_action_names,
     UTTER_PREFIX,
 )
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.channel import button_to_string, element_to_string
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,
@@ -317,7 +317,7 @@ async def _ask_questions(
 
 def _selection_choices_from_intent_prediction(
     predictions: List[Dict[Text, Any]]
-) -> List[Dict[Text, Text]]:
+) -> List[Dict[Text, Any]]:
     """"Given a list of ML predictions create a UI choice list."""
 
     sorted_intents = sorted(predictions, key=lambda k: (-k["confidence"], k["name"]))
@@ -457,13 +457,13 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
     Also includes additional information, like any events and
     prediction probabilities."""
 
-    def wrap(txt: Text, max_width: float) -> Text:
+    def wrap(txt: Text, max_width: int) -> Text:
         return "\n".join(textwrap.wrap(txt, max_width, replace_whitespace=False))
 
     def colored(txt: Text, color: Text) -> Text:
         return "{" + color + "}" + txt + "{/" + color + "}"
 
-    def format_user_msg(user_event: UserUttered, max_width: float) -> Text:
+    def format_user_msg(user_event: UserUttered, max_width: int) -> Text:
         intent = user_event.intent or {}
         intent_name = intent.get("name", "")
         _confidence = intent.get("confidence", 1.0)
@@ -547,7 +547,7 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     """Create an array of slot representations to be displayed."""
 
     slot_strs = []
-    for k, s in tracker_dump.get("slots").items():
+    for k, s in tracker_dump.get("slots", {}).items():
         colored_value = cliutils.wrap_with_color(
             str(s), color=rasa.cli.utils.bcolors.WARNING
         )
@@ -604,7 +604,7 @@ async def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
 
 async def _request_action_from_user(
     predictions: List[Dict[Text, Any]], sender_id: Text, endpoint: EndpointConfig
-) -> (Text, bool):
+) -> Tuple[Text, bool]:
     """Ask the user to correct an action prediction."""
 
     await _print_history(sender_id, endpoint)
@@ -717,7 +717,7 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
 
     for event in events:
         if event.get("event") == UserUttered.type_name:
-            data = event.get("parse_data")
+            data = event.get("parse_data", {})
 
             for entity in data.get("entities", []):
 
@@ -927,6 +927,10 @@ async def _correct_wrong_nlu(
     # have to replay it.
     listen_for_next_message = ActionExecuted(ACTION_LISTEN_NAME).as_dict()
     corrected_message = latest_user_message(events)
+
+    if corrected_message is None:
+        raise Exception("Failed to correct NLU data. User message not found.")
+
     corrected_message["parse_data"] = corrected_nlu
     await send_event(
         endpoint,
@@ -1059,7 +1063,7 @@ def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     from rasa.nlu.training_data.formats import MarkdownWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
-        return parse_data.get("text")
+        return parse_data["text"]
 
     if not parse_data.get("entities"):
         parse_data["entities"] = []
@@ -1123,9 +1127,11 @@ async def _validate_nlu(
 
     tracker = await retrieve_tracker(endpoint, sender_id, EventVerbosity.AFTER_RESTART)
 
-    latest_message = latest_user_message(tracker.get("events", []))
+    latest_message = latest_user_message(tracker.get("events", [])) or {}
 
-    if latest_message.get("text").startswith(INTENT_MESSAGE_PREFIX):
+    if latest_message.get("text", "").startswith(  # pytype: disable=attribute-error
+        INTENT_MESSAGE_PREFIX
+    ):
         valid = _validate_user_regex(latest_message, intents)
     else:
         valid = await _validate_user_text(latest_message, endpoint, sender_id)
@@ -1519,7 +1525,7 @@ def run_interactive_learning(
 
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))
-        p.deamon = True
+        p.daemon = True
         p.start()
     else:
         p = None
@@ -1542,6 +1548,6 @@ def run_interactive_learning(
 
     _serve_application(app, stories, skip_visualization)
 
-    if not skip_visualization:
+    if not skip_visualization and p is not None:
         p.terminate()
         p.join()

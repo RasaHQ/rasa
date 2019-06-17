@@ -539,7 +539,7 @@ MitieEntityExtractor
         }
 
 :Description:
-    This uses the MITIE entitiy extraction to find entities in a message. The underlying classifier
+    This uses the MITIE entity extraction to find entities in a message. The underlying classifier
     is using a multi class linear SVM with a sparse linear kernel and custom features.
     The MITIE component does not provide entity confidence values.
 :Configuration:

@@ -2,7 +2,7 @@ import logging
 from sanic import Blueprint, response
 from sanic.request import Request
 
-from rasa.core.channels import CollectingOutputChannel, UserMessage, RestInput
+from rasa.core.channels.channel import CollectingOutputChannel, UserMessage, RestInput
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class CallbackInput(RestInput):
 
         @callback_webhook.route("/webhook", methods=["POST"])
         async def webhook(request: Request):
-            sender_id = self._extract_sender(request)
+            sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
 
             collector = CallbackOutput(self.callback_endpoint)

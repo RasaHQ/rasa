@@ -566,7 +566,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[Dict]], List[List[Text]]]:
+    ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
 
         trackers_as_states = []
         trackers_as_actions = []

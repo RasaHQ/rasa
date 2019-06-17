@@ -7,7 +7,7 @@ from rasa.nlu.tokenizers import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
-    from spacy.tokens.doc import Doc
+    from spacy.tokens.doc import Doc  # pytype: disable=import-error
 
 
 class SpacyTokenizer(Tokenizer, Component):

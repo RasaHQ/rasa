@@ -703,7 +703,7 @@ class StoryGraph(object):
 
     def visualize(self, output_file=None):
         import networkx as nx
-        from rasa.core.training import visualization
+        from rasa.core.training import visualization  # pytype: disable=pyi-error
         from colorhash import ColorHash
 
         graph = nx.MultiDiGraph()

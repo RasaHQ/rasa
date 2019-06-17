@@ -22,6 +22,7 @@ clean:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f  {} +
 	rm -rf build/
+	rm -rf .pytype/
 	rm -rf dist/
 	rm -rf *.egg-info
 	rm -rf docs/_build

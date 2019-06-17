@@ -354,6 +354,7 @@ nitpick_ignore = [
     ("py:class", "typing.Dict"),
     ("py:class", "typing.List"),
     ("py:class", "typing.Optional"),
+    ("py:class", "typing.Generator"),
     ("py:class", "typing.Iterator"),
     ("py:class", "collections.deque"),
     ("py:class", "sanic.app.Sanic"),

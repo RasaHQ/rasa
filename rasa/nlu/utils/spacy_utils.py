@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
-    from spacy.tokens.doc import Doc
+    from spacy.tokens.doc import Doc  # pytype: disable=import-error
     from rasa.nlu.model import Metadata
 
 

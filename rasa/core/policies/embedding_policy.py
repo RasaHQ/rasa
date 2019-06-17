@@ -32,7 +32,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.policies.tf_utils import TimeAttentionWrapperState
 
 try:
-    import cPickle as pickle
+    import cPickle as pickle  # pytype: disable=import-error
 except ImportError:
     import pickle
 
@@ -821,8 +821,7 @@ class EmbeddingPolicy(Policy):
                 "".format(self.similarity_type)
             )
 
-    def _regularization_loss(self):
-        # type: () -> Union[tf.Tensor, int]
+    def _regularization_loss(self) -> Union[tf.Tensor, int]:
         """Add regularization to the embed layer inside rnn cell."""
 
         if self.attn_after_rnn:

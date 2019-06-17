@@ -9,7 +9,8 @@ import pytest
 import rasa.utils.io
 from rasa.core import train
 from rasa.core.agent import Agent
-from rasa.core.channels import CollectingOutputChannel, RestInput, channel
+from rasa.core.channels import channel
+from rasa.core.channels.channel import CollectingOutputChannel, RestInput
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -206,10 +207,10 @@ def default_tracker(default_domain):
 @pytest.fixture(scope="session")
 def project() -> Text:
     import tempfile
-    from rasa.cli.scaffold import _create_initial_project
+    from rasa.cli.scaffold import create_initial_project
 
     directory = tempfile.mkdtemp()
-    _create_initial_project(directory)
+    create_initial_project(directory)
 
     return directory
 

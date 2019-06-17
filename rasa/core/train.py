@@ -7,6 +7,7 @@ from rasa.core.domain import Domain
 
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
 

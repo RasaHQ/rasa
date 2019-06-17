@@ -6,7 +6,7 @@ from sanic.request import Request
 from slackclient import SlackClient
 from typing import Text, Optional, List, Dict, Any
 
-from rasa.core.channels import InputChannel
+from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)

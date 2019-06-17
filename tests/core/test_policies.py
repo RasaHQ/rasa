@@ -13,14 +13,14 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     ActionRevertFallbackEvents,
 )
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import (
     BinarySingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.policies import TwoStageFallbackPolicy
+from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.embedding_policy import EmbeddingPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
@@ -294,6 +294,12 @@ class TestSklearnPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
     async def trackers(self, default_domain):
         return await train_trackers(default_domain, augmentation_factor=20)
+
+    def test_additional_train_args_do_not_raise(
+        self, mock_search, default_domain, trackers, featurizer, priority
+    ):
+        policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
+        policy.train(trackers, domain=default_domain, this_is_not_a_feature=True)
 
     def test_cv_none_does_not_trigger_search(
         self, mock_search, default_domain, trackers, featurizer, priority

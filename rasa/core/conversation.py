@@ -15,8 +15,7 @@ class Dialogue(object):
         self.name = name
         self.events = events
 
-    def __str__(self):
-        # type: () -> Text
+    def __str__(self) -> Text:
 
         # This function returns the dialogue and turns.
         return "Dialogue with name '{}' and turns:\n{}".format(
