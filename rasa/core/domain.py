@@ -463,6 +463,10 @@ class Domain(object):
         # Set all found entities with the state value 1.0, unless they should
         # be ignored for the current intent
         latest_message = tracker.latest_message
+
+        if not latest_message:
+            return state_dict
+
         intent_name = latest_message.intent.get("name")
 
         if intent_name:
@@ -490,9 +494,7 @@ class Domain(object):
 
         return state_dict
 
-    def _get_featurized_entities(
-        self, latest_message: Optional[UserUttered]
-    ) -> Set[Text]:
+    def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
         intent_name = latest_message.intent.get("name")
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
@@ -794,8 +796,9 @@ class Domain(object):
             incorrect = list()
             for intent, properties in intent_properties.items():
                 if "triggers" in properties:
-                    if properties.get("triggers") not in self.action_names:
-                        incorrect.append((intent, properties["triggers"]))
+                    triggered_action = properties.get("triggers")
+                    if triggered_action not in self.action_names:
+                        incorrect.append((intent, str(triggered_action)))
             return incorrect
 
         def get_exception_message(
