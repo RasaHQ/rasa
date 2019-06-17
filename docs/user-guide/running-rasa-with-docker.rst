@@ -319,7 +319,7 @@ To spin it up together with the Rasa instance, add a service
        command:
          - run
      action_server:
-       image: rasa/rasa_sdk:latest
+       image: rasa/rasa-sdk:latest
        volumes:
          - ./actions:/app/actions
 
@@ -349,7 +349,7 @@ image and add your custom dependencies. For example:
 .. code-block:: docker
 
     # Extend the official Rasa SDK image
-    FROM rasa/rasa_sdk:latest
+    FROM rasa/rasa-sdk:latest
 
     # Add a custom system library (e.g. git)
     RUN apt-get update && \
@@ -359,7 +359,7 @@ image and add your custom dependencies. For example:
     RUN pip install --no-cache-dir jupyter
 
 You can then build the image via the following command, and use it in your
-``docker-compose.yml`` instead of the ``rasa/rasa_sdk`` image.
+``docker-compose.yml`` instead of the ``rasa/rasa-sdk`` image.
 
 .. code-block:: bash
 
