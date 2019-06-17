@@ -24,6 +24,7 @@ Removed
 
 Fixed
 -----
+- fixed bug where facebook quick replies were not rendering
 
 [1.1.2] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
