@@ -305,7 +305,7 @@ templates:
             [
                 {
                     "greet": {
-                        "maps_to": "utter_goodbye",
+                        "triggers": "utter_goodbye",
                         "use_entities": ["entity"],
                         "ignore_entities": ["other"],
                     }
@@ -314,7 +314,7 @@ templates:
             ],
             {
                 "greet": {
-                    "maps_to": "utter_goodbye",
+                    "triggers": "utter_goodbye",
                     "use_entities": ["entity"],
                     "ignore_entities": ["other"],
                 },
@@ -323,14 +323,14 @@ templates:
         ),
         (
             [
-                {"greet": {"maps_to": "utter_goodbye", "use_entities": None}},
+                {"greet": {"triggers": "utter_goodbye", "use_entities": None}},
                 {"goodbye": {"use_entities": [], "ignore_entities": []}},
             ],
             {
                 "greet": {
                     "use_entities": [],
                     "ignore_entities": [],
-                    "maps_to": "utter_goodbye",
+                    "triggers": "utter_goodbye",
                 },
                 "goodbye": {"use_entities": [], "ignore_entities": []},
             },
