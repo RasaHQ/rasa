@@ -504,9 +504,9 @@ class Domain(object):
 
         # `use_entities` is either a list of explicitly included entities
         # or `True` if all should be included
-        include = intent_config.get("use_entities")
+        include = intent_config.get("use_entities", True)
         included_entities = set(entity_names if include is True else include)
-        excluded_entities = set(intent_config.get("ignore_entities"))
+        excluded_entities = set(intent_config.get("ignore_entities", []))
         wanted_entities = included_entities - excluded_entities
         ambiguous_entities = included_entities.intersection(excluded_entities)
         existing_wanted_entities = entity_names.intersection(wanted_entities)
