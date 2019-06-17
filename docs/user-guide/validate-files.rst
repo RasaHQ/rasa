@@ -11,17 +11,17 @@ Validate Files
 Test files for mistakes
 -----------------------
 
-To verify if there are any mistakes in your domain file, nlu or story data, run the validate script.
+To verify if there are any mistakes in your domain file, NLU data, or story data, run the validate script.
 You can run it with the following command:
 
 .. code-block:: bash
 
-  $ rasa data validate -s data/stories.md -d domain.yml -u data/nlu.md
+  rasa data validate
 
 The script above runs all the validations on your files. Here is the list of options to
 the script:
 
-.. program-output:: rasa data validate --help 
+.. program-output:: rasa data validate --help
 
 You can also run these validations through the Python API by importing the `Validator` class,
 which has the following methods:
@@ -45,7 +45,7 @@ To use these functions it is necessary to create a `Validator` object and initia
 
   import logging
   from rasa import utils
-  from rasa.core.validate import Validate
+  from rasa.core.validator import Validator
 
   logger = logging.getLogger(__name__)
 
