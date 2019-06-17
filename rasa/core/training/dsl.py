@@ -198,20 +198,19 @@ class StoryFileReader(object):
         return story_steps
 
     def verify_stories_format(self, filename):
-        stories = self._remove_comments(filename)
+        story_lines = self._remove_comments(filename)
 
-        for line in range(len(stories)):
-            stories[line] = stories[line].strip()
+        for line in range(len(story_lines)):
+            story_lines[line] = story_lines[line].strip()
 
-        for line in stories:
+        for line in story_lines:
             if len(line) > 0 and line[0] not in {"*", "#", "-", ">"}:
                 logger.error(
                     "There is an error with the following line "
-                    "in your stories file"
-                    " {}:".format(filename)
+                    "in your stories file: {}".format(filename)
                 )
                 logger.error(line)
-        return stories
+        return story_lines
 
     def _clean_string(self, st: Text, story_file: Text):
         fragments = []
@@ -220,7 +219,7 @@ class StoryFileReader(object):
             _, close, st = st.partition("-->")
             if open_ and not close or close and not open_:
                 logger.error(
-                    "The story file {} has a unclosed comment".format(story_file)
+                    "The story file {} has a unclosed comment.".format(story_file)
                 )
             fragments.append(fragment)
         return "".join(fragments)

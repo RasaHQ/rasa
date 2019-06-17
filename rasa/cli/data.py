@@ -66,7 +66,7 @@ def add_subparser(
         "validate",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Validate files for possible mistakes.",
+        help="Validates domain and data files to check for possible mistakes.",
     )
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)

@@ -2,14 +2,14 @@
        learning, context and state of the conversation to predict the
        next action of the AI Assistant.
 
-.. _validate_files:
+.. _validate-files:
 
-Validate Files
-==============
+Validate Data
+=============
 
 
-Test files for mistakes
------------------------
+Test Domain and Data Files for Mistakes
+---------------------------------------
 
 To verify if there are any mistakes in your domain file, NLU data, or story data, run the validate script.
 You can run it with the following command:
@@ -28,11 +28,11 @@ which has the following methods:
 
 **from_files():** Creates the instance from string paths to the necessary files.
 
-**verify_intents():** Checks if intents listed in domain file are consistent with the nlu data.
+**verify_intents():** Checks if intents listed in domain file are consistent with the NLU data.
 
 **verify_intents_in_stories():** Verification for intents in the stories, to check if they are valid.
 
-**verify_utterances():** Checks for domain file for consistency between utterance templates and those listed in the
+**verify_utterances():** Checks domain file for consistency between utterance templates and utterances listed under
 actions.
 
 **verify_utterances_in_stories():** Verification for utterances in stories, to check if they are valid.
@@ -55,4 +55,4 @@ To use these functions it is necessary to create a `Validator` object and initia
                                    nlu_data='data/nlu_data.md',
                                    stories='data/stories.md')
 
-  validator.verify_all().
+  validator.verify_all()

@@ -35,7 +35,7 @@ def test_verify_intents(validator):
     assert set(validator.valid_intents) == set(valid_intents)
 
 
-def test_verify_utters(validator):
+def test_verify_utterances(validator):
     valid_utterances = ["utter_greet", "utter_goodbye", "utter_default"]
     validator.verify_utterances()
     assert set(validator.valid_utterances) == set(valid_utterances)
