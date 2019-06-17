@@ -25,6 +25,7 @@ Removed
 Fixed
 -----
 - fixed bug where facebook quick replies were not rendering
+- take FB quick reply payload rather than text as input
 
 [1.1.2] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
