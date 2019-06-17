@@ -264,10 +264,7 @@ templates:
         ),
         (
             [{"greet": {"triggers": "utter_goodbye"}}, "goodbye"],
-            {
-                "greet": {"triggers": "utter_goodbye"},
-                "goodbye": {},
-            },
+            {"greet": {"triggers": "utter_goodbye"}, "goodbye": {}},
         ),
         (
             [

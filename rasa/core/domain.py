@@ -214,7 +214,6 @@ class Domain(object):
             slots.append(slot)
         return slots
 
-
     @staticmethod
     def check_duplicate_intents(intent_list):
         intent_names = list()
@@ -230,7 +229,6 @@ class Domain(object):
                 )
             else:
                 intent_names.append(name)
-
 
     @staticmethod
     def combine_intents_in_dict(intent_list):
@@ -629,7 +627,7 @@ class Domain(object):
         domain_data = self.as_dict()
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
-                if len(intent) == 0: #if no properties specified store only the name
+                if len(intent) == 0:  # if no properties specified store only the name
                     domain_data["intents"][idx] = name
 
         for slot in domain_data["slots"].values():  # pytype: disable=attribute-error

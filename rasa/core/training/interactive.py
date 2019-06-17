@@ -840,9 +840,7 @@ async def _write_domain_to_file(
     templates = NEW_TEMPLATES
 
     # TODO for now there is no way to distinguish between action and form
-    intent_properties = Domain.combine_intents_in_dict(
-        _intents_from_messages(messages)
-    )
+    intent_properties = Domain.combine_intents_in_dict(_intents_from_messages(messages))
 
     collected_actions = list(
         {e["name"] for e in actions if e["name"] not in default_action_names()}
