@@ -539,7 +539,7 @@ To spin it up together with the Rasa instance, add a service
     <span class="l l-Scalar l-Scalar-Plain">command</span><span class="p p-Indicator">:</span>
       <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">run</span>
 <span class="hll">  <span class="l l-Scalar l-Scalar-Plain">action_server</span><span class="p p-Indicator">:</span>
-</span><span class="hll">    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">rasa/rasa_sdk:latest</span>
+</span><span class="hll">    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">rasa/rasa-sdk:latest</span>
 </span><span class="hll">    <span class="l l-Scalar l-Scalar-Plain">volumes</span><span class="p p-Indicator">:</span>
 </span><span class="hll">      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">./actions:/app/actions</span>
 </span></pre></div>
@@ -562,7 +562,7 @@ you can add these by extending the official image.</p>
 <p>To do so, create a file named <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> in which you extend the official
 image and add your custom dependencies. For example:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># Extend the official Rasa SDK image</span>
-<span class="k">FROM</span><span class="s"> rasa/rasa_sdk:latest</span>
+<span class="k">FROM</span><span class="s"> rasa/rasa-sdk:latest</span>
 
 <span class="c"># Add a custom system library (e.g. git)</span>
 <span class="k">RUN</span> apt-get update <span class="o">&amp;&amp;</span> <span class="se">\</span>
@@ -573,7 +573,7 @@ image and add your custom dependencies. For example:</p>
 </pre></div>
 </div>
 <p>You can then build the image via the following command, and use it in your
-<code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code> instead of the <code class="docutils literal notranslate"><span class="pre">rasa/rasa_sdk</span></code> image.</p>
+<code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code> instead of the <code class="docutils literal notranslate"><span class="pre">rasa/rasa-sdk</span></code> image.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker build . -t &lt;name of your custom image&gt;:&lt;tag of your custom image&gt;
 </pre></div>
 </div>
