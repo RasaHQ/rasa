@@ -119,6 +119,7 @@ class Domain(object):
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
+        cls.check_duplicate_intents(data.get("intents", {}))
         intent_properties = cls.collect_intent_properties(data.get("intents", {}))
         return cls(
             intent_properties,
@@ -213,24 +214,34 @@ class Domain(object):
             slots.append(slot)
         return slots
 
+
+    @staticmethod
+    def check_duplicate_intents(intent_list):
+        intent_names = list()
+        for intent in intent_list:
+            if isinstance(intent, dict):
+                name = list(intent.keys())[0]
+            else:
+                name = intent
+            if name in intent_names:
+                raise InvalidDomain(
+                    "Intents are not unique! Found two intents with name '{}'. "
+                    "Either rename or remove one of them.".format(name)
+                )
+            else:
+                intent_names.append(name)
+
+
     @staticmethod
     def collect_intent_properties(intent_list):
         intent_properties = {}
         for intent in intent_list:
             if isinstance(intent, dict):
-                name = list(intent.keys())[0]
                 for properties in intent.values():
                     if "use_entities" not in properties:
                         properties["use_entities"] = True
             else:
-                name = intent
                 intent = {intent: {"use_entities": True}}
-
-            if name in intent_properties.keys():
-                raise InvalidDomain(
-                    "Intents are not unique! Found two intents with name '{}'. "
-                    "Either rename or remove one of them.".format(name)
-                )
 
             intent_properties.update(intent)
         return intent_properties
