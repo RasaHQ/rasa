@@ -822,7 +822,6 @@ def create_app(
             model_path,
             model_server,
             remote_storage,
-            interpreters=app.agent.interpreters,
             generator=app.agent.nlg,
             tracker_store=app.agent.tracker_store
         )

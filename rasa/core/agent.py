@@ -848,7 +848,7 @@ class Agent(object):
     @staticmethod
     def load_local_model(
         model_path: Text,
-        interpreters: Optional[NaturalLanguageInterpreter] = None,
+        interpreters: Optional[Dict[Text, NaturalLanguageInterpreter]] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
