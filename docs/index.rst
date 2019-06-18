@@ -89,9 +89,13 @@ Understand messages, hold conversations, and connect to messaging channels and A
    migration-guide
    changelog
 
-.. toctree:
+.. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Migration (beta)
+   :caption: Migrate from (beta)
 
-   migrate-from/google-dialogflow-to-rasa
+   Dialogflow <migrate-from/google-dialogflow-to-rasa>
+   Wit.ai <migrate-from/facebook-wit-ai-to-rasa>
+   LUIS <migrate-from/microsoft-luis-to-rasa>
+   IBM Watson <migrate-from/ibm-watson-to-rasa>
+

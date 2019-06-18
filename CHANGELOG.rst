@@ -11,15 +11,21 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- unfeaturize single entities
+- added agent readiness check to the ``/status`` resource
 
 Changed
 -------
+
+- removed leading underscore from name of '_create_initial_project' function.
 
 Removed
 -------
 
 Fixed
 -----
+- fixed bug where facebook quick replies were not rendering
+- take FB quick reply payload rather than text as input
 
 
 [1.1.3] - 2019-06-14
