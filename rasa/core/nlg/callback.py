@@ -108,8 +108,8 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
             response = await self.nlg_endpoint.request(
                 method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT
             )
-        except Exception:
-            logger.error("NLG web endpoint returned an invalid response.")
+        except Exception as e:
+            logger.error("NLG web endpoint returned an invalid response: {}".format(e))
             return [{"text": template_name}]
 
         if self.validate_response(response):
