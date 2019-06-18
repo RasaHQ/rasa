@@ -509,16 +509,20 @@ class Domain(object):
         included_entities = set(entity_names if include is True else include)
         excluded_entities = set(intent_config.get("ignore_entities", []))
         wanted_entities = included_entities - excluded_entities
-        ambiguous_entities = included_entities.intersection(excluded_entities)
-        existing_wanted_entities = entity_names.intersection(wanted_entities)
 
-        if ambiguous_entities:
+        # Only print a warning for ambiguous configurations if entities were included
+        # as list
+        explicitly_included = isinstance(include, list)
+        ambiguous_entities = included_entities.intersection(excluded_entities)
+        if explicitly_included and ambiguous_entities:
             logger.warning(
-                "Entities: '{}' are explicitly included and excluded."
-                "Excluding takes precedence in this case."
+                "Entities: '{}' are explicitly included and excluded for intent '{}'. "
+                "Excluding takes precedence in this case. "
                 "Please resolve that ambiguity."
-                "".format(ambiguous_entities)
+                "".format(ambiguous_entities, intent_name)
             )
+
+        existing_wanted_entities = entity_names.intersection(wanted_entities)
 
         return existing_wanted_entities
 
