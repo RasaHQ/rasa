@@ -829,3 +829,24 @@ def test_register_channel_without_route():
 
     routes_list = utils.list_routes(app)
     assert routes_list.get("custom_webhook_RestInput.receive").startswith("/webhook")
+
+
+def test_channel_registration_with_absolute_url_prefix_overwrites_route():
+    from rasa.core.channels.channel import RestInput
+    import rasa.core
+
+    input_channel = RestInput()
+    test_route = "/absolute_route"
+    input_channel.url_prefix = lambda: test_route
+
+    app = Sanic(__name__)
+    ignored_base_route = "/should_be_ignored"
+    rasa.core.channels.channel.register(
+        [input_channel], app, route="/should_be_ignored"
+    )
+
+    # Assure that an absolute url returned by `url_prefix` overwrites route parameter
+    # given in `register`.
+    routes_list = utils.list_routes(app)
+    assert routes_list.get("custom_webhook_RestInput.health").startswith(test_route)
+    assert ignored_base_route not in routes_list.get("custom_webhook_RestInput.health")
