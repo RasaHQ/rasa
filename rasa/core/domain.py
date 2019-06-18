@@ -510,8 +510,8 @@ class Domain(object):
         excluded_entities = set(intent_config.get("ignore_entities", []))
         wanted_entities = included_entities - excluded_entities
 
-        # Only print a warning for ambiguous configurations if entities were included
-        # as list
+        # Only print warning for ambiguous configurations if entities were included
+        # explicitly.
         explicitly_included = isinstance(include, list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
@@ -522,9 +522,7 @@ class Domain(object):
                 "".format(ambiguous_entities, intent_name)
             )
 
-        existing_wanted_entities = entity_names.intersection(wanted_entities)
-
-        return existing_wanted_entities
+        return entity_names.intersection(wanted_entities)
 
     def get_prev_action_states(
         self, tracker: "DialogueStateTracker"
