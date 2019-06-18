@@ -42,7 +42,6 @@ async def load_data(
     debug_plots=False,
     exclusion_percentage: int = None,
 ) -> List["DialogueStateTracker"]:
-    from rasa.core.training import extract_story_graph
     from rasa.core.training.generator import TrainingDataGenerator
 
     if resource_name:

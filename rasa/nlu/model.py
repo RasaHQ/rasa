@@ -10,8 +10,8 @@ from typing import Text
 
 import rasa.nlu
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.nlu import components, utils
-from rasa.nlu.components import Component, ComponentBuilder
+from rasa.nlu import components, utils  # pytype: disable=pyi-error
+from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import TrainingData, Message
@@ -135,8 +135,7 @@ class Trainer(object):
 
         self.config = cfg
         self.skip_validation = skip_validation
-        self.training_data = None
-        # type: Optional[TrainingData]
+        self.training_data = None  # type: Optional[TrainingData]
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in

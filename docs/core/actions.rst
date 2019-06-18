@@ -84,14 +84,23 @@ The only thing your action server needs to install is ``rasa-sdk``:
     create a separate container for your action server. In this
     separate container, you only need to install ``rasa-sdk``.
 
-If your actions are defined in a file
-called ``actions.py``, run this command:
+The file that contains your custom actions should be called ``actions.py``.
+
+If you have ``rasa`` installed, run this command to start your action server:
+
+.. code-block:: bash
+
+    rasa run actions
+
+.. _custom_action_example:
+
+Otherwise, if you do not have ``rasa`` installed, run this command:
 
 .. code-block:: bash
 
     python -m rasa_sdk --actions actions
 
-.. _custom_action_example:
+.. _custom_action_example_verbose:
 
 In a restaurant bot, if the user says "show me a Mexican restaurant",
 your bot could execute the action ``ActionCheckRestaurants``,
@@ -103,12 +112,13 @@ which might look like this:
    from rasa_sdk.events import SlotSet
 
    class ActionCheckRestaurants(Action):
-      def name(self):
-         # type: () -> Text
+      def name(self) -> Text:
          return "action_check_restaurants"
 
-      def run(self, dispatcher, tracker, domain):
-         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict[Text, Any]]
+      def run(self,
+              dispatcher: CollectingDispatcher,
+              tracker: Tracker,
+              domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
 
          cuisine = tracker.get_slot('cuisine')
          q = "select * from restaurants where cuisine='{0}' limit 1".format(cuisine)

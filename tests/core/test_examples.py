@@ -10,7 +10,6 @@ import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
-from rasa.model import get_model
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 

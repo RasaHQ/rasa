@@ -3,8 +3,9 @@ import pytest
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
-from rasa.core.channels import RestInput, channel
-from rasa.core.policies import AugmentedMemoizationPolicy
+from rasa.core.channels.channel import RestInput
+from rasa.core.channels import channel
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.model import get_model
 from rasa.train import train_async, train
 from tests.core.conftest import (

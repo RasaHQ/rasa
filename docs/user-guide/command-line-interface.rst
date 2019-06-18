@@ -25,6 +25,7 @@ Command                    Effect
 ``rasa test``              Tests a trained Rasa model using your test NLU data and stories.
 ``rasa data split nlu``    Performs a split of your NLU data according to the specified percentages.
 ``rasa data convert nlu``  Converts NLU training data between different formats.
+``rasa x``                 Launch Rasa X locally.
 ``rasa -h``                Shows all available commands.
 =========================  =============================================================================================
 
@@ -233,8 +234,8 @@ This command will attempt to keep the proportions of intents the same in train a
 Convert Data Between Markdown and JSON
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To convert NLU data from LUIS data format, WIT data format, Dialogflow data format, json, or Markdown
-to json or Markdown, run:
+To convert NLU data from LUIS data format, WIT data format, Dialogflow data format, JSON, or Markdown
+to JSON or Markdown, run:
 
 .. code:: bash
 
@@ -246,3 +247,33 @@ You can specify the input file, output file, and the output format with the foll
 
 
 .. _section_evaluation:
+
+
+Start Rasa X
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. raw:: html
+
+    Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa framework.
+    You can find more information about it <a class="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.
+
+You can start Rasa X locally by executing
+
+.. code:: bash
+
+   rasa x
+
+.. raw:: html
+
+    To be able to start Rasa X you need to have Rasa X installed (instruction can be found
+    <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/" target="_blank">here</a>)
+    and you need to be in a Rasa project.
+
+.. note::
+
+    By default Rasa X runs on the port 5002. Using the argument ``--rasa-x-port`` allows you to change it to
+    any other port.
+
+The following arguments are available for ``rasa x``:
+
+.. program-output:: rasa x --help

@@ -118,7 +118,7 @@ The ``policies`` key defines the :ref:`policies <policies>` that the Core model 
 4. Write Your First Stories
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-At this stage, you will teach your assistant to how respond to your messages.
+At this stage, you will teach your assistant how to respond to your messages.
 This is called dialogue management, and is handled by your Core model.
 
 Core models learn from real conversational data in the form of training "stories".
