@@ -1,6 +1,6 @@
 language: en
 pipeline:
-- name: "intent_featurizer_count_vectors"
+- name: "CountVectorsFeaturizer"
   max_ngram: 3
-- name: "intent_classifier_tensorflow_embedding"
+- name: "EmbeddingIntentClassifier"
   epochs: 10

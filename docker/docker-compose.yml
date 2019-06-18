@@ -1,15 +1,37 @@
 version: '3.0'
 
 services:
-  rasanlu:
-    image: rasa/rasa_nlu:latest-full
+  rasa:
+    image: rasa/rasa:latest-full
     networks: ['rasa-network']
     ports:
-    - "5000:5000"
+    - "5005:5005"
     volumes:
+    - "./rasa-app-data/models:/app/models"
+    - "./rasa-app-data/config:/app/config"
+    - "./rasa-app-data/project:/app/project"
     - "./rasa-app-data/projects:/app/projects"
     - "./rasa-app-data/logs:/app/logs"
     - "./rasa-app-data/data:/app/data"
+    command:
+    - start
+    - -d
+    - ./model
+    - -c
+    - rest
+    - -u
+    - current/nlu
+    - --endpoints
+    - config/endpoints.yml
+
+  action_server:
+    image: rasa/rasa-sdk:latest
+    networks: ['rasa-network']
+    ports:
+    - "5055:5055"
+    volumes:
+    - "./rasa-app-data/actions:/app/actions"
+
   duckling:
     image: rasa/duckling:latest
     networks: ['rasa-network']

@@ -1,0 +1,4 @@
+# Minimum Install Requirements
+-r ../requirements.txt
+
+git+https://github.com/tmbo/MITIE.git#egg=mitie

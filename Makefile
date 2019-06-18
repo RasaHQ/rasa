@@ -1,4 +1,4 @@
-.PHONY: clean test lint
+.PHONY: clean test lint init check-readme
 
 TEST_PATH=./
 
@@ -11,21 +11,31 @@ help:
 	@echo "        Run py.test"
 	@echo "    check-readme"
 	@echo "        Check if the readme can be converted from md to rst for pypi"
+	@echo "    init"
+	@echo "        Install Rasa Core"
+
+init:
+	pip install -r requirements.txt
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f  {} +
 	rm -rf build/
+	rm -rf .pytype/
 	rm -rf dist/
 	rm -rf *.egg-info
 	rm -rf docs/_build
 
 lint:
-	py.test --pep8 -m pep8
+	black .
 
 test: clean
-	py.test tests --verbose --pep8 --color=yes $(TEST_PATH)
+	py.test tests --verbose --color=yes $(TEST_PATH)
+	black --check .
+
+doctest: clean
+	cd docs && make doctest
 
 livedocs:
 	cd docs && make livehtml

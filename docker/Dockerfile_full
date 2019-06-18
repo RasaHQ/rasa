@@ -1,44 +1,64 @@
+FROM python:3.6-slim as builder
+# if this installation process changes, the enterprise container needs to be
+# updated as well
+WORKDIR /build
+COPY . .
+RUN python setup.py sdist bdist_wheel
+RUN find dist -maxdepth 1 -mindepth 1 -name '*.tar.gz' -print0 | xargs -0 -I {} mv {} rasa.tar.gz
+
 FROM python:3.6-slim
 
-ENV RASA_NLU_DOCKER="YES" \
-    RASA_NLU_HOME=/app \
-    RASA_NLU_PYTHON_PACKAGES=/usr/local/lib/python3.6/dist-packages
+SHELL ["/bin/bash", "-c"]
 
-# Run updates, install basics and cleanup
-# - build-essential: Compile specific dependencies
-# - git-core: Checkout git repos
-RUN apt-get update -qq \
-    && apt-get install -y --no-install-recommends build-essential git-core openssl libssl-dev libffi6 libffi-dev curl  \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update -qq && \
+  apt-get install -y --no-install-recommends \
+  build-essential \
+  wget \
+  openssh-client \
+  graphviz-dev \
+  pkg-config \
+  git-core \
+  openssl \
+  libssl-dev \
+  libffi6 \
+  libffi-dev \
+  libpng-dev \
+  libpq-dev \
+  curl && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+  mkdir /install && \
+  mkdir /app
 
-WORKDIR ${RASA_NLU_HOME}
+WORKDIR /install
 
-# use bash always
-RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-
-COPY . ${RASA_NLU_HOME}
+# Copy as early as possible so we can cache ...
+COPY alt_requirements/ ./alt_requirements
+COPY requirements.txt .
 
 RUN pip install -r alt_requirements/requirements_full.txt
 
-RUN pip install -e .
+COPY --from=builder /build/rasa.tar.gz .
+RUN pip install ./rasa.tar.gz[sql,spacy,mitie]
 
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends wget \
-    && wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
+    && wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
     && apt-get remove -y wget \
     && apt-get autoremove -y
 
-RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > /dev/null \
+RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
     && python -m spacy link en_core_web_md en \
-    && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > /dev/null \
+    && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > /dev/null \
     && python -m spacy link de_core_news_sm de
 
-COPY sample_configs/config_spacy_duckling.yml ${RASA_NLU_HOME}/config.yml
+COPY sample_configs/config_pretrained_embeddings_spacy_duckling.yml /app/config.yml
 
-VOLUME ["/app/projects", "/app/logs", "/app/data"]
+VOLUME ["/app"]
+WORKDIR /app
 
-EXPOSE 5000
+EXPOSE 5005
 
-ENTRYPOINT ["./entrypoint.sh"]
-CMD ["start", "-c", "config.yml", "--path", "/app/projects"]
+ENTRYPOINT ["rasa"]
+
+CMD ["--help"]

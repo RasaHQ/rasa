@@ -1,0 +1,12 @@
+sphinx==1.8.2
+sphinx-autobuild==0.7.1
+sphinxcontrib-programoutput==0.11
+nbsphinx==0.3.2
+pygments==2.2.0
+sphinxcontrib-httpdomain==1.6.1
+sphinxcontrib-websupport==1.1.0
+sphinxcontrib-trio==1.0.2
+sphinx-autodoc-typehints==1.6.0
+https://storage.googleapis.com/docs-theme/rasabaster-0.7.20.tar.gz
+git+https://github.com/RasaHQ/sphinxcontrib-versioning.git#egg=sphinxcontrib-versioning
+git+https://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme

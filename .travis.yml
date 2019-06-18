@@ -1,47 +1,107 @@
 language: python
 sudo: enabled
+dist: xenial
 cache:
   directories:
   - $HOME/.cache/pip
   - /tmp/cached/
-python:
-  - '2.7'
-  - '3.5'
-  - '3.6'
+  - .pytype
+python: '3.6'
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
-  global: BOTO_CONFIG=/dev/null
-install: 
+  global:
+  - BOTO_CONFIG=/dev/null
+  - PIP_USE_PEP517=false
+
+install:
+  - sudo apt-get install graphviz graphviz-dev
+  - python -m pip install -U pip
   - pip install git+https://github.com/tmbo/MITIE.git
-  - pip install -r alt_requirements/requirements_dev.txt
+  - pip install -r requirements-dev.txt
   - pip install -e .
-  - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > jnk
+  - pip install coveralls==1.7.0
+  - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > jnk
   - python -m spacy link en_core_web_md en
-  - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > jnk
+  - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > jnk
   - python -m spacy link de_core_news_sm de
-  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
+  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then
+    travis_wait wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
     fi
   - mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
   - pip list
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-script: 
-  - py.test --pep8 -m pep8
-  - py.test tests/base --cov rasa_nlu -v --cov-append
-  - py.test tests/training --cov rasa_nlu -v --cov-append
-after_success:
-  - coveralls
 jobs:
   include:
+  - stage: test
+    name: "Black Formatting"
+    python: 3.6
+    script:
+    - pip install black
+    - black --check .
+  - stage: test
+    name: "Type Check"
+    python: 3.6
+    script:
+    - pip install pytype
+    - pytype --keep-going rasa
+  - &run-tests
+    stage: test
+    name: "Test 3.5"
+    python: "3.5"
+    script:
+      - py.test tests --cov rasa -v
+  - <<: *run-tests
+    name: "Test 3.6"
+    python: '3.6'
+  - <<: *run-tests
+    name: "Test 3.7"
+    python: '3.7'
+    after_success:
+      - coveralls   # only this version will submit results to coveralls
+  - stage: integration
+    name: "Test API specification"
+    language: python
+    install:
+    - npm install -g swagger-cli
+    script:
+    - swagger-cli validate docs/_static/spec/action-server.yml
+    - swagger-cli validate docs/_static/spec/rasa.yml
+  - stage: test
+    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
+    name: "NLU starter pack (NLU only)"
+    python: 3.6
+    script:
+    - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-nlu.git
+    - cd starter-pack-rasa-nlu
+    - python -m pytest tests
+  - stage: test
+    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
+    name: "Stack starter pack"
+    python: 3.6
+    script:
+    - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - cd starter-pack-rasa-stack
+    - python -m pytest tests
+  - stage: test
+    name: "Test Docs"
+    install:
+    - pip install -r requirements-docs.txt
+    - pip install -e .[sql]
+    - pip list
+    script:
+      # be strict about warnings --> they will be treated as errors
+    - cd docs
+    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
   - stage: docs
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
-    - RASABASTER=rasabaster-0.7.18.tar.gz
+    - RASABASTER=rasabaster-0.7.20.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
     - pip install $RASABASTER
-    - pip install --no-cache-dir -r alt_requirements/requirements_docs.txt
+    - pip install --no-cache-dir -r requirements-docs.txt
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
     - pip install -e .
     - pip list
@@ -59,7 +119,7 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
+    - sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
   - stage: trigger website rebuild
     if: fork = false AND branch = "master" AND type != "pull_request"
     script:
@@ -78,23 +138,10 @@ jobs:
     - git config --global user.name "Travis CI"
     - git clone -b master --single-branch git@github.com:RasaHQ/rasa-website.git
     - cd rasa-website
-    - git commit --allow-empty -m "trigger nlu docs update"
+    - git commit --allow-empty -m "trigger rasa docs update"
     - git push origin master
-  - stage: Test starter packs
-    name: "NLU starter pack"
-    python: 3.6
-    script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
-    - cd starter-pack-rasa-nlu
-    - python -m pytest tests/test_nlu.py
-  - stage: Test starter packs
-    name: "Stack starter pack (NLU only)"
-    python: 3.6
-    script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
-    - cd starter-pack-rasa-stack
-    - python -m pytest tests/test_nlu.py
   - stage: deploy
+    name: "Deploy to PyPI"
     python: 3.6
     install: skip
     script: skip

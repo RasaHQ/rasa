@@ -1,15 +1,10 @@
 # Minimum Instal Requirements
--r requirements_bare.txt
+-r ../requirements.txt
 
 # Spacy Requirements
--r requirements_spacy_sklearn.txt
-
-# Tensorflow Requirements
--r requirements_tensorflow_sklearn.txt
+-r requirements_pretrained_embeddings_spacy.txt
 
 # MITIE Requirements
--r requirements_mitie.txt
+-r requirements_pretrained_embeddings_mitie.txt
 
-duckling==1.8.0
-Jpype1==0.6.2
 jieba==0.39

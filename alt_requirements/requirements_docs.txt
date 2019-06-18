@@ -1,8 +1,3 @@
-# docs
-sphinx==1.7.5
-sphinx-autobuild==0.7.1
-sphinxcontrib-programoutput==0.11
-nbsphinx==0.3.2
-sphinxcontrib-httpdomain==1.5.0
-https://storage.googleapis.com/docs-theme/rasabaster-0.7.18.tar.gz
--e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
+# deprecated, will be removed. please use the `requirements-docs.txt`
+# in the mainfolder instead
+-r ../requirements-docs.txt

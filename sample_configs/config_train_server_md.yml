@@ -1,6 +1,6 @@
 language: "en"
 
-pipeline: "spacy_sklearn"
+pipeline: "pretrained_embeddings_spacy"
 
 # data contains the same md, as described in the training data section
 data: |

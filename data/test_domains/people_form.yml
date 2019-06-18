@@ -1,0 +1,17 @@
+# all hashtags are comments :)
+intents:
+ - inform
+ - enter_name
+
+slots:
+  person_name:
+    type: text
+  requested_slot:
+    type: unfeaturized
+
+templates:
+  utter_ask_person_name:
+    - text: "what's the name of the person you're looking for?"
+
+actions:
+  - action_search_people

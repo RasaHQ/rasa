@@ -1,52 +1,20 @@
+:desc: Learn more about open-source natural language processing library Rasa NLU
+       for intent classification and entity extraction in on premise chatbots.
 
-Rasa NLU: Language Understanding for chatbots and AI assistants
-===============================================================
+.. _index:
+
+Build contextual chatbots and AI assistants with Rasa
+=====================================================
 
 .. note::
-    This is the documentation for version |release| of Rasa NLU. Please make sure you are reading the documentation 
+    These docs are for Rasa 1.0 and later. Docs for older versions are at http://legacy-docs.rasa.com.
+
+    This is the documentation for version |release| of Rasa. Please make sure you are reading the documentation
     that matches the version you have installed.
 
 
-
-Rasa NLU is an open-source natural language processing tool for intent classification and entity extraction in chatbots. For example, taking a sentence like
-
-.. code-block:: console
-
-    "I am looking for a Mexican restaurant in the center of town"
-
-and returning structured data like
-
-.. code-block:: json
-
-    { 
-      "intent": "search_restaurant",
-      "entities": {
-        "cuisine" : "Mexican",
-        "location" : "center"
-      }
-    }
-
-
-The target audience is developers building chatbots and voice apps.
-
-The main reasons for using open source NLU are that:
-
-- you don't have to hand over all your training data to Google, Microsoft, Amazon, or Facebook.
-- Machine Learning is not one-size-fits all. You can tweak and customize models for your training data.
-- Rasa NLU runs wherever you want, so you don't have to make an extra network request for every message that comes in.
-
-You can read about the advantages of using open source NLU in this `blog post <https://medium.com/rasa-blog/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d>`_ .
-You can see an independent benchmark comparing Rasa NLU to closed source alternatives `here <https://drive.google.com/file/d/0B0l-QQUtZzsdVEpaWEpyVzhZQzQ/view>`_. 
-
-.. include:: feedback.inc
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Getting Started
-   :hidden:
-
-   Try It Out <quickstart>
-   installation
+Rasa is an open source machine learning framework for automated text and voice-based conversations.
+Understand messages, hold conversations, and connect to messaging channels and APIs.
 
 
 .. toctree::
@@ -54,35 +22,80 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    :caption: User Guide
    :hidden:
 
-   choosing_pipeline
-   languages
-   entities
-   evaluation
-   fallback
-   faq
+   user-guide/installation
+   user-guide/rasa-tutorial
+   user-guide/command-line-interface
+   user-guide/architecture
+   user-guide/messaging-and-voice-channels
+   user-guide/evaluating-models
+   user-guide/running-the-server
+   user-guide/running-rasa-with-docker
+   user-guide/cloud-storage
+
+.. toctree::
+   :maxdepth: 1
+   :caption: NLU
+   :hidden:
+
+   About <nlu/about>
+   nlu/using-nlu-only
+   nlu/training-data-format
+   nlu/choosing-a-pipeline
+   nlu/language-support
+   nlu/entity-extraction
+   nlu/components
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Core
+   :hidden:
+
+   About <core/about>
+   core/stories
+   core/domains
+   core/responses
+   core/actions
+   core/policies
+   core/slots
+   core/forms
+   core/interactive-learning
+   core/fallback-actions
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Conversation Design
+   :hidden:
+
+   dialogue-elements/dialogue-elements
+   dialogue-elements/small-talk
+   dialogue-elements/completing-tasks
+   dialogue-elements/guiding-users
 
 .. toctree::
    :maxdepth: 1
    :hidden:
    :caption: API Reference
 
-   dataformat
-   components
-   config
-   http
-   python
-   persist
-   endpoint_configuration
-   docker
+   api/action-server
+   api/http-api
+   api/jupyter-notebooks
+   api/agent
+   api/custom-nlu-components
+   api/events
+   api/tracker
+   api/tracker-stores
+   api/event-brokers
+   api/featurization
+   migration-guide
+   changelog
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :hidden:
-   :caption: Developer Documentation
+   :caption: Migrate from (beta)
 
-   customcomponents
-   migrations
-   license
-   changelog
-   support
+   Dialogflow <migrate-from/google-dialogflow-to-rasa>
+   Wit.ai <migrate-from/facebook-wit-ai-to-rasa>
+   LUIS <migrate-from/microsoft-luis-to-rasa>
+   IBM Watson <migrate-from/ibm-watson-to-rasa>
 

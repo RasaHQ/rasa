@@ -1,0 +1,20 @@
+# all hashtags are comments :)
+intents:
+ - inform
+
+slots:
+  username:
+    type: text
+  query:
+    type: text
+  requested_slot:
+    type: unfeaturized
+
+templates:
+  utter_ask_username:
+    - text: "what is your name?"
+  utter_ask_query:
+    - text: "hello {username}, what can I help you with?"
+
+actions:
+  - action_perform_query

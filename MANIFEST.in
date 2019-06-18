@@ -1,1 +1,4 @@
-include LICENSE README.rst requirements.txt
+include LICENSE.txt README.md requirements.txt requirements-dev.txt
+include rasa/core/schemas/* rasa/core/training/visualization.html
+include rasa/cli/default_config.yml
+recursive-include rasa/cli/initial_project *

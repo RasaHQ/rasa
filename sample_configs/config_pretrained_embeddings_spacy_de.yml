@@ -1,0 +1,3 @@
+language: "de"
+
+pipeline: "pretrained_embeddings_spacy"

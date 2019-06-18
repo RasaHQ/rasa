@@ -1,0 +1,3 @@
+language: "en"
+
+pipeline: "supervised_embeddings"

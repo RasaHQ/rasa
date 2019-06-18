@@ -1,12 +1,13 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import rasa.nlu
+import sys
+import warnings
 
-import logging
+# this makes sure old code can still import from `rasa_nlu`
+# although the package has been moved to `rasa.nlu`
+sys.modules["rasa_nlu"] = rasa.nlu
 
-import rasa_nlu.version
-
-logging.getLogger(__name__).addHandler(logging.NullHandler())
-
-__version__ = rasa_nlu.version.__version__
+warnings.warn(
+    "The 'rasa_nlu' package has been renamed. You should change "
+    "your imports to use 'rasa.nlu' instead.",
+    UserWarning,
+)

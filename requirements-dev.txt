@@ -1,0 +1,21 @@
+# install requirements
+-r requirements.txt
+
+# test
+pytest==4.5.0
+pytest-cov==2.7.1
+pytest-localserver==0.5.0
+pytest-sanic==1.0.0
+freezegun==0.3.12
+responses==0.9.0
+nbsphinx==0.3.2
+aioresponses==0.6.0
+moto==1.3.8
+
+# pipeline dependencies
+spacy==2.1.4
+jieba==0.39
+
+# other
+google-cloud-storage==1.7.0
+azure-storage-blob==1.0.0

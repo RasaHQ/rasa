@@ -1,0 +1,25 @@
+nlg:
+  url: http://localhost:5055/nlg    # url of the nlg endpoint
+  # you can also specify additional parameters, if you need them:
+  # headers:
+  #   my-custom-header: value
+  # token: "my_authentication_token"    # will be passed as a get parameter
+  # basic_auth:
+  #   username: user
+  #   password: pass
+# example of redis external tracker store config
+tracker_store:
+  type: redis
+  url: localhost
+  port: 6379
+  db: 0
+  password: password
+  record_exp: 30000
+# example of mongoDB external tracker store config
+#tracker_store:
+  #type: mongod
+  #url: mongodb://localhost:27017
+  #db: rasa
+  #user: username
+  #password: password
+  

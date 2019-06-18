@@ -1,0 +1,28 @@
+# all hashtags are comments :)
+intents:
+ - inform
+
+entities:
+- number
+- cuisine
+
+slots:
+  cuisine:
+    type: text
+  people:
+    type: text
+  vegetarian:
+    type: bool
+  requested_slot:
+    type: unfeaturized
+  search_results:
+    type: unfeaturized
+
+templates:
+  utter_ask_people:
+    - text: "for how many people?"
+  utter_ask_cuisine:
+    - text: "what cuisine would you like?"
+
+actions:
+  - action_search_restaurants
