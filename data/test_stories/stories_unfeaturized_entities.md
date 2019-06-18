@@ -9,3 +9,7 @@
     - utter_default
 * goodbye{"name": "Peter", "unrelated_recognized_entity": "whatever", "other": "foo"}
     - utter_goodbye
+* thank{"name": "Peter", "unrelated_recognized_entity": "whatever", "other": "foo"}
+    - utter_default
+* ask{"name": "Peter", "unrelated_recognized_entity": "whatever", "other": "foo"}
+    - utter_default
