@@ -496,15 +496,27 @@ multiple responses and Rasa will randomly pick one of them, e.g.:</p>
 </div>
 <div class="section" id="ignoring-entities-for-certain-intents">
 <h2>Ignoring entities for certain intents<a class="headerlink" href="#ignoring-entities-for-certain-intents" title="Permalink to this headline">¶</a></h2>
-<p>If you want entities to be ignored for certain intents, you can
-add the <code class="docutils literal notranslate"><span class="pre">use_entities:</span> <span class="pre">false</span></code> parameter to the intent in your domain
+<p>If you want all entities to be ignored for certain intents, you can
+add the <code class="docutils literal notranslate"><span class="pre">use_entities:</span> <span class="pre">None</span></code> parameter to the intent in your domain
 file like this:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span>
-      <span class="l l-Scalar l-Scalar-Plain">use_entities</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+      <span class="l l-Scalar l-Scalar-Plain">use_entities</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
-<p>This means that entities for those intents will be unfeaturized and therefore
+<p>To ignore some entities or explicitly take only certain entities
+into account you can use this syntax:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">use_entities</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">entity2</span>
+  <span class="l l-Scalar l-Scalar-Plain">ignore_entities</span>
+    <span class="l l-Scalar l-Scalar-Plain">- location</span>
+    <span class="l l-Scalar l-Scalar-Plain">- entity4</span>
+</pre></div>
+</div>
+<p>This means that excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
 an intent where you don’t care about the entities being picked up. If you list
 your intents as normal without this parameter, the entities will be
