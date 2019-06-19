@@ -5,20 +5,15 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
-import pkg_resources
-from pykwalify.errors import SchemaError
-from ruamel.yaml import YAMLError
-from ruamel.yaml.constructor import DuplicateKeyError
-
 import rasa.utils.io
 from rasa import data
-from rasa.cli.utils import print_warning, bcolors
+from rasa.cli.utils import bcolors
 from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
 from rasa.core.constants import REQUESTED_SLOT
-from rasa.core.events import SlotSet
+from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
@@ -52,7 +47,7 @@ class Domain(object):
 
     @classmethod
     def empty(cls) -> "Domain":
-        return cls({}, [], [], {}, [], [])
+        return cls([], [], [], {}, [], [])
 
     @classmethod
     def load(
@@ -119,9 +114,10 @@ class Domain(object):
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
-        intent_properties = cls.collect_intent_properties(data.get("intents", {}))
+        intents = data.get("intents", {})
+
         return cls(
-            intent_properties,
+            intents,
             data.get("entities", []),
             slots,
             utter_templates,
@@ -214,17 +210,24 @@ class Domain(object):
         return slots
 
     @staticmethod
-    def collect_intent_properties(intent_list):
+    def collect_intent_properties(
+        intents: List[Union[Text, Dict[Text, Any]]]
+    ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
         intent_properties = {}
-        for intent in intent_list:
+        for intent in intents:
             if isinstance(intent, dict):
                 name = list(intent.keys())[0]
                 for properties in intent.values():
-                    if "use_entities" not in properties:
-                        properties["use_entities"] = True
+                    properties.setdefault("use_entities", True)
+                    properties.setdefault("ignore_entities", [])
+                    if (
+                        properties["use_entities"] is None
+                        or properties["use_entities"] is False
+                    ):
+                        properties["use_entities"] = []
             else:
                 name = intent
-                intent = {intent: {"use_entities": True}}
+                intent = {intent: {"use_entities": True, "ignore_entities": []}}
 
             if name in intent_properties.keys():
                 raise InvalidDomain(
@@ -277,7 +280,7 @@ class Domain(object):
 
     def __init__(
         self,
-        intent_properties: Dict[Text, Any],
+        intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, Any],
@@ -286,7 +289,7 @@ class Domain(object):
         store_entities_as_slots: bool = True,
     ) -> None:
 
-        self.intent_properties = intent_properties
+        self.intent_properties = self.collect_intent_properties(intents)
         self.entities = entities
         self.form_names = form_names
         self.slots = slots
@@ -460,14 +463,17 @@ class Domain(object):
 
         # Set all found entities with the state value 1.0, unless they should
         # be ignored for the current intent
-        for entity in tracker.latest_message.entities:
-            intent_name = tracker.latest_message.intent.get("name")
-            intent_config = self.intent_config(intent_name)
-            should_use_entity = intent_config.get("use_entities", True)
-            if should_use_entity:
-                if "entity" in entity:
-                    key = "entity_{0}".format(entity["entity"])
-                    state_dict[key] = 1.0
+        latest_message = tracker.latest_message
+
+        if not latest_message:
+            return state_dict
+
+        intent_name = latest_message.intent.get("name")
+
+        if intent_name:
+            for entity_name in self._get_featurized_entities(latest_message):
+                key = "entity_{0}".format(entity_name)
+                state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
@@ -477,19 +483,46 @@ class Domain(object):
                         slot_id = "slot_{}_{}".format(key, i)
                         state_dict[slot_id] = slot_value
 
-        latest_message = tracker.latest_message
-
         if "intent_ranking" in latest_message.parse_data:
             for intent in latest_message.parse_data["intent_ranking"]:
                 if intent.get("name"):
                     intent_id = "intent_{}".format(intent["name"])
                     state_dict[intent_id] = intent["confidence"]
 
-        elif latest_message.intent.get("name"):
+        elif intent_name:
             intent_id = "intent_{}".format(latest_message.intent["name"])
             state_dict[intent_id] = latest_message.intent.get("confidence", 1.0)
 
         return state_dict
+
+    def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
+        intent_name = latest_message.intent.get("name")
+        intent_config = self.intent_config(intent_name)
+        entities = latest_message.entities
+        entity_names = {
+            entity["entity"] for entity in entities if "entity" in entity.keys()
+        }
+
+        # `use_entities` is either a list of explicitly included entities
+        # or `True` if all should be included
+        include = intent_config.get("use_entities", True)
+        included_entities = set(entity_names if include is True else include)
+        excluded_entities = set(intent_config.get("ignore_entities", []))
+        wanted_entities = included_entities - excluded_entities
+
+        # Only print warning for ambiguous configurations if entities were included
+        # explicitly.
+        explicitly_included = isinstance(include, list)
+        ambiguous_entities = included_entities.intersection(excluded_entities)
+        if explicitly_included and ambiguous_entities:
+            logger.warning(
+                "Entities: '{}' are explicitly included and excluded for intent '{}'. "
+                "Excluding takes precedence in this case. "
+                "Please resolve that ambiguity."
+                "".format(ambiguous_entities, intent_name)
+            )
+
+        return entity_names.intersection(wanted_entities)
 
     def get_prev_action_states(
         self, tracker: "DialogueStateTracker"
@@ -758,14 +791,17 @@ class Domain(object):
                 if count > 1
             ]
 
-        def check_mappings(intent_properties):
+        def check_mappings(
+            intent_properties: Dict[Text, Dict[Text, Union[bool, List]]]
+        ) -> List[Tuple[Text, Text]]:
             """Check whether intent-action mappings use proper action names."""
 
             incorrect = list()
             for intent, properties in intent_properties.items():
                 if "triggers" in properties:
-                    if properties.get("triggers") not in self.action_names:
-                        incorrect.append((intent, properties["triggers"]))
+                    triggered_action = properties.get("triggers")
+                    if triggered_action not in self.action_names:
+                        incorrect.append((intent, str(triggered_action)))
             return incorrect
 
         def get_exception_message(
