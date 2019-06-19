@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 <!--
-PLEASE DO NOT OPEN THIS ISSUE, IT WILL BE CLOSED:
+PLEASE DO NOT CREATE ISSUES TO ASK QUESTIONS, THEY WILL BE CLOSED:
 
 Hi! If you have a question about how to do something with Rasa, we are happy
 to help out!
