@@ -1,9 +1,0 @@
-intents:
-  - goodbye
-
-actions:
-- utter_goodbye
-
-templates:
-  utter_goodbye:
-    - text: "Bye"
