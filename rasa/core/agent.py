@@ -358,10 +358,16 @@ class Agent(object):
             )
 
         core_model, nlu_models = get_model_subdirectories(unpacked_model_path)
-        if not interpreters and len(nlu_models):
-            interpreters = {}
-            for lang, model_path in nlu_models.items():
-                interpreters[lang] = NaturalLanguageInterpreter.create(os.path.join(unpacked_model_path, model_path))
+        if len(nlu_models):
+            if not interpreters:
+                interpreters = {}
+                for lang, model_path in nlu_models.items():
+                    interpreters[lang] = NaturalLanguageInterpreter.create(os.path.join(unpacked_model_path, model_path))
+        else:
+            from rasa.model import fingerprint_from_path, FINGERPRINT_CONFIG_NLU_KEY
+            fingerprint = fingerprint_from_path(unpacked_model_path)
+            if len(fingerprint.get(FINGERPRINT_CONFIG_NLU_KEY).keys()):
+                interpreters = {list(fingerprint.get(FINGERPRINT_CONFIG_NLU_KEY).keys())[0]: RegexInterpreter()}
 
         domain = None
         ensemble = None
