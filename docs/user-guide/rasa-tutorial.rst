@@ -27,6 +27,8 @@ The first step is to create a new Rasa project. To do this, run:
 
 .. runnable::
    :description: stack-init
+   :kerneltype: bash
+   :language: shell
 
    rasa init --no-prompt
 
@@ -66,6 +68,8 @@ To check that all the files were created, run:
 
 .. runnable::
    :description: stack-ls
+   :kerneltype: bash
+   :language: shell
 
    ls -1
 
@@ -84,6 +88,8 @@ the ``rasa init`` command:
 
 .. runnable::
    :description: stack-cat-nlu
+   :kerneltype: bash
+   :language: shell
 
    cat data/nlu.md
 
@@ -106,6 +112,8 @@ Let's take a look at your model configuration file.
 
 .. runnable::
    :description: stack-cat-config
+   :kerneltype: bash
+   :language: shell
 
    cat config.yml
 
@@ -148,6 +156,8 @@ Run the command below to view the example stories inside the file ``data/stories
 
 .. runnable::
    :description: core-cat-stories
+   :kerneltype: bash
+   :language: shell
 
    cat data/stories.md
 
@@ -164,6 +174,8 @@ file called ``domain.yml``:
 
 .. runnable::
    :description: stack-cat-domain
+   :kerneltype: bash
+   :language: shell
 
    cat domain.yml
 
@@ -201,6 +213,8 @@ the training results for each training epoch.
 
 .. runnable::
    :description: stack-train
+   :kerneltype: bash
+   :language: shell
 
    rasa train
 
