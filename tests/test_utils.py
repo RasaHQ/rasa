@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from aioresponses import aioresponses
 
@@ -100,11 +102,19 @@ def test_validate_yaml_schema_raise_exception(file, schema):
     [
         ("https://example.com", None, "https://example.com"),
         ("https://example.com/test", None, "https://example.com/test"),
-        ("https://example.com/", None, "https://example.com"),
-        ("https://example.com//", None, "https://example.com"),
+        ("https://example.com/", None, "https://example.com/"),
         ("https://example.com/", "test", "https://example.com/test"),
         ("https://example.com/", "test/", "https://example.com/test/"),
     ],
 )
 def test_concat_url(base, subpath, expected_result):
     assert concat_url(base, subpath) == expected_result
+
+
+def test_warning_for_base_paths_with_trailing_slash(caplog):
+    test_path = "base/"
+
+    with caplog.at_level(logging.DEBUG):
+        assert concat_url(test_path, None) == test_path
+
+    assert len(caplog.records) == 1
