@@ -6,7 +6,8 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.3] - `master`_
+
+[Unreleased 1.1.5] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -20,6 +21,33 @@ Removed
 
 Fixed
 -----
+
+[1.1.4] - 2019-06-18
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- unfeaturize single entities
+- added agent readiness check to the ``/status`` resource
+
+Changed
+-------
+- removed leading underscore from name of '_create_initial_project' function.
+
+
+Fixed
+-----
+- fixed bug where facebook quick replies were not rendering
+- take FB quick reply payload rather than text as input
+
+
+[1.1.3] - 2019-06-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed any inconsistent type annotations in code and some bugs revealed by
+  type checker
 
 [1.1.2] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^

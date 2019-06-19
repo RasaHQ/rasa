@@ -99,6 +99,8 @@ paths:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
 
 
   /conversations/{conversation_id}/tracker:
@@ -919,7 +921,7 @@ components:
     ParseResult:
       type: object
       properties:
-        entites:
+        entities:
           type: array
           description: Parsed entities
           items:
