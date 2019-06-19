@@ -338,7 +338,11 @@ def nlu_fingerprint_changed(
         FINGERPRINT_NLU_DATA_KEY,
         FINGERPRINT_RASA_VERSION_KEY,
     ]
-    all_languages = list(fingerprint1.get(FINGERPRINT_CONFIG_NLU_KEY).keys())
+    all_languages = list(fingerprint1.get(FINGERPRINT_NLU_DATA_KEY).keys())
+    languages_in_new_model = set(fingerprint2.get(FINGERPRINT_NLU_DATA_KEY).keys())
+    languages_in_old_model = set(fingerprint1.get(FINGERPRINT_NLU_DATA_KEY).keys())
+    languages_added = list(languages_in_new_model - languages_in_old_model)
+    languages_removed = list(languages_in_old_model - languages_in_new_model)
     languages_to_retrain = set()
     for k in relevant_keys:
         if not isinstance(fingerprint1.get(k), dict):
@@ -349,6 +353,12 @@ def nlu_fingerprint_changed(
             for lang in fingerprint1.get(k).keys():
                 if fingerprint1.get(k).get(lang) != fingerprint2.get(k).get(lang):
                     languages_to_retrain.add(lang)
+    for l in languages_added:
+        languages_to_retrain.add(l)
+    for l in languages_removed:
+        if l in languages_to_retrain:
+            languages_to_retrain.remove(l)
+
     return list(languages_to_retrain)
 
 

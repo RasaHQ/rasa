@@ -240,6 +240,7 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
             "retrain_core": True,
             "retrain_nlu": [],
         },
+
         {
             "new": _fingerprint(nlu={"en": "test_en", "fr": "test_fr_changed"}),
             "old": _fingerprint(),
@@ -293,6 +294,48 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
             "old": _fingerprint(),
             "retrain_core": False,
             "retrain_nlu": [],
+        },
+        {
+            "new": _fingerprint(nlu={"en": "test_en", "fr": "test_fr_changed"}),
+            "old": _fingerprint(nlu={}),
+            "retrain_core": False,
+            "retrain_nlu": ["en", "fr"],
+        },
+        {
+            "new": _fingerprint(nlu={}),
+            "old": _fingerprint(nlu={"en": "test_en", "fr": "test_fr_changed"}),
+            "retrain_core": False,
+            "retrain_nlu": ["en", "fr"],
+        },
+        {
+            "new": _fingerprint(nlu={}),
+            "old": _fingerprint(nlu={"en": "test_en"}),
+            "retrain_core": False,
+            "retrain_nlu": ["en"],
+        },
+        {
+            "new": _fingerprint(nlu={"en": "test_en"}),
+            "old": _fingerprint(nlu={"en": "test_en", "fr": "test_fr_changed"}),
+            "retrain_core": False,
+            "retrain_nlu": ["fr"],
+        },
+        {
+            "new": _fingerprint(nlu={"en": "test_en", "fr": "test_fr"}),
+            "old": _fingerprint(nlu={"en": "test_en_changed"}),
+            "retrain_core": False,
+            "retrain_nlu": ["en"],
+        },
+        {
+            "old": _fingerprint(config_nlu={"en": "en"}, nlu={}),
+            "new": _fingerprint(config_nlu={"en": "en"}, nlu={"en": "test_en"}),
+            "retrain_core": False,
+            "retrain_nlu": ["en"],
+        },
+        {
+            "old": _fingerprint(config_nlu={"en": "en"}, nlu={}),
+            "new": _fingerprint(config_nlu={"en": "en"}, nlu={"en": "test_en"}),
+            "retrain_core": False,
+            "retrain_nlu": ["en"],
         },
     ],
 )
