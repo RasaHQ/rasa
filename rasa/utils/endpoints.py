@@ -48,7 +48,7 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     if not subpath:
         if base.endswith("/"):
             logger.debug(
-                "The path '{}' has a trailing slash. Please make sure the "
+                "The URL '{}' has a trailing slash. Please make sure the "
                 "target server supports trailing slashes for this "
                 "endpoint.".format(base)
             )
