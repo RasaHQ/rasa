@@ -867,7 +867,7 @@ class Agent(object):
         working_directory = tempfile.mkdtemp()
         unpacked_model = unpack_model(model_archive, working_directory)
 
-        return Agent.load(
+        agent = Agent.load(
             unpacked_model,
             interpreter=interpreter,
             generator=generator,
@@ -876,6 +876,9 @@ class Agent(object):
             model_server=model_server,
             remote_storage=remote_storage,
         )
+
+        shutil.rmtree(unpacked_model)
+        return agent
 
     @staticmethod
     def load_from_remote_storage(

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import shutil
 from functools import partial
 from typing import List, Optional, Text, Union
 
@@ -180,8 +181,12 @@ async def load_agent_on_start(
     from rasa.core import broker
 
     try:
-        _, nlu_model = get_model_subdirectories(get_model(model_path))
+        unpacked_model = get_model(model_path)
+        _, nlu_model = get_model_subdirectories(unpacked_model)
         _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+
+        shutil.rmtree(unpacked_model)
+
     except Exception:
         logger.debug("Could not load interpreter from '{}'".format(model_path))
         _interpreter = None
