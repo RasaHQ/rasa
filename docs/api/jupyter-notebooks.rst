@@ -8,7 +8,20 @@ This page contains the most important methods for using Rasa in a Jupyter notebo
 You need to create a project if you don't already have one.
 To do this, run:
 
+
+.. raw:: html
+
+   <pre data-executable>
+     from rasa.cli.scaffold import _create_initial_project
+   </pre>
+   <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
+   <script>
+     new Juniper({ repo: 'rasahq/docs-binder', branch: 'python', isolateCells: false , theme: 'xq-light', useStorage: false})
+   </script>
+
+
 .. runnable::
+   :description: jupyter-init-project
 
    from rasa.cli.scaffold import _create_initial_project
 
