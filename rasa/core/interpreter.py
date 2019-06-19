@@ -180,7 +180,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
     async def parse(
-        self, text: Text, message_id: Optional[int] = None
+        self, text: Text, message_id: Optional[Text] = None
     ) -> Dict[Text, Any]:
         """Parse a text message.
 
@@ -191,11 +191,13 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "entities": [],
             "text": "",
         }
-        result = await self._rasa_http_parse(text)
+        result = await self._rasa_http_parse(text, message_id)
 
         return result if result is not None else default_return
 
-    async def _rasa_http_parse(self, text: Text) -> Optional[Dict[Text, Any]]:
+    async def _rasa_http_parse(
+        self, text: Text, message_id: Optional[Text] = None
+    ) -> Optional[Dict[Text, Any]]:
         """Send a text message to a running rasa NLU http server.
         Return `None` on failure."""
         from requests.compat import urljoin  # pytype: disable=import-error
@@ -207,7 +209,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             )
             return None
 
-        params = {"token": self.endpoint.token, "text": text}
+        params = {"token": self.endpoint.token, "text": text, "message_id": message_id}
 
         url = urljoin(self.endpoint.url, "/model/parse")
 
