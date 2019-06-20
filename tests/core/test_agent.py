@@ -169,15 +169,10 @@ async def test_load_agent_on_not_existing_path():
     assert agent is None
 
 
-async def test_agent_load_on_invalid_model_path(trained_model):
+@pytest.mark.parametrize(
+    "model_path",
+    ["non-existing-path", DEFAULT_DOMAIN_PATH, "not-existing-model.tar.gz", None],
+)
+async def test_agent_load_on_invalid_model_path(model_path):
     with pytest.raises(ValueError):
-        Agent.load("non-existing-path")
-
-    with pytest.raises(ValueError):
-        Agent.load(DEFAULT_DOMAIN_PATH)
-
-    with pytest.raises(ValueError):
-        Agent.load("not-existing-model.tar.gz")
-
-    with pytest.raises(ValueError):
-        Agent.load(None)
+        Agent.load(model_path)
