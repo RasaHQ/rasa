@@ -20,6 +20,8 @@ Changed
 
 Removed
 -------
+- revert the stripping of trailing slashes in endpoint URLs since this can lead to
+  problems in case the trailing slash is actually wanted
 
 Fixed
 -----
