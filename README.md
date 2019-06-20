@@ -7,7 +7,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa?branch=master)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/RasaHQ/rasa/labels/good%20first%20issue)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/orgs/RasaHQ/projects/23)
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
@@ -78,8 +78,7 @@ different ways!) [here](http://rasa.com/community/contribute).
 To contribute via pull request, follow these steps:
 
 1. Create an issue describing the feature you want to work on (or
-   have a look at issues with the label
-   [help wanted](https://github.com/RasaHQ/rasa/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
+   have a look at the [contributor board](https://github.com/orgs/RasaHQ/projects/23))
 2. Write your code, tests and documentation, and format them with ``black``
 3. Create a pull request describing your changes
 
