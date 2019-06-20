@@ -178,3 +178,6 @@ async def test_agent_load_on_invalid_model_path(trained_model):
 
     with pytest.raises(ValueError):
         Agent.load("not-existing-model.tar.gz")
+
+    with pytest.raises(ValueError):
+        Agent.load(None)

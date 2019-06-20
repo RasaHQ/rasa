@@ -344,7 +344,7 @@ class Agent(object):
         remote_storage: Optional[Text] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
-        if model_path.endswith("tar.gz"):
+        if model_path is not None and model_path.endswith("tar.gz"):
             model_path = model.get_model(model_path)
 
         if (
