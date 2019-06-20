@@ -161,6 +161,12 @@ def serve_application(
         "before_server_start",
     )
 
+    async def clear_model_files(app, _loop):
+        if app.agent.model_directory:
+            shutil.rmtree(app.agent.model_directory)
+
+    app.register_listener(clear_model_files, "after_server_stop")
+
     update_sanic_log_level(log_file)
 
     app.run(host="0.0.0.0", port=port)
