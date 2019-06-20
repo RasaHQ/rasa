@@ -13,6 +13,7 @@ from rasa.core.channels.channel import UserMessage
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
+from tests.core.conftest import DEFAULT_DOMAIN_PATH
 
 
 @pytest.fixture(scope="session")
@@ -166,3 +167,14 @@ async def test_load_agent_on_not_existing_path():
     agent = await load_agent(model_path="some-random-path")
 
     assert agent is None
+
+
+async def test_agent_load_on_invalid_model_path(trained_model):
+    with pytest.raises(ValueError):
+        Agent.load("non-existing-path")
+
+    with pytest.raises(ValueError):
+        Agent.load(DEFAULT_DOMAIN_PATH)
+
+    with pytest.raises(ValueError):
+        Agent.load("not-existing-model.tar.gz")

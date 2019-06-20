@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
 
+import model
 import rasa
 import rasa.utils.io
 from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
@@ -334,7 +335,7 @@ class Agent(object):
     @classmethod
     def load(
         cls,
-        unpacked_model_path: Text,
+        model_path: Text,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
@@ -343,21 +344,23 @@ class Agent(object):
         remote_storage: Optional[Text] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
-        if not os.path.exists(unpacked_model_path) or not os.path.isdir(
-            unpacked_model_path
+        if model_path.endswith("tar.gz"):
+            model_path = model.get_model(model_path)
+
+        if (
+            model_path is None
+            or not os.path.exists(model_path)
+            or not os.path.isdir(model_path)
         ):
             raise ValueError(
-                "You are trying to load a MODEL from "
-                "('{}'), which is not possible. \n"
-                "The persisted path should be a directory "
-                "containing the various model files in the "
-                "sub-directories 'core' and 'nlu'. \n\n"
-                "If you want to load training data instead of "
-                "a model, use `agent.load_data(...)` "
-                "instead.".format(unpacked_model_path)
+                "You are trying to load a MODEL from '{}', which does not exists. \n"
+                "The persisted path should be a 'tar.gz' file or a directory "
+                "containing the various model files in the sub-directories 'core' "
+                "and 'nlu'. \n\nIf you want to load training data instead of "
+                "a model, use `agent.load_data(...)` instead.".format(model_path)
             )
 
-        core_model, nlu_model = get_model_subdirectories(unpacked_model_path)
+        core_model, nlu_model = get_model_subdirectories(model_path)
 
         if not interpreter and os.path.exists(nlu_model):
             interpreter = NaturalLanguageInterpreter.create(nlu_model)
@@ -379,7 +382,7 @@ class Agent(object):
             generator=generator,
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
-            model_directory=unpacked_model_path,
+            model_directory=model_path,
             model_server=model_server,
             remote_storage=remote_storage,
         )
