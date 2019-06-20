@@ -15,6 +15,8 @@ Added
 
 Changed
 -------
+- deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
+  or ``rasa.core.run.configure_app`` instead.
 
 Removed
 -------

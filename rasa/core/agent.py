@@ -676,6 +676,13 @@ class Agent(object):
 
         from rasa.core import run
 
+        logger.warning(
+            "DEPRECATION warning: Using `handle_channels` is deprecated. "
+            "Please use `rasa.run(...)` or see "
+            "`rasa.core.run.configure_app(...)` if you want to implement "
+            "this on a more detailed level."
+        )
+
         app = run.configure_app(channels, cors, None, enable_api=False, route=route)
 
         app.agent = self

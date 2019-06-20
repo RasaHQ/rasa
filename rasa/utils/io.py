@@ -1,6 +1,5 @@
 import asyncio
 import errno
-import json
 import logging
 import os
 import tarfile
@@ -10,7 +9,7 @@ import zipfile
 from asyncio import AbstractEventLoop
 from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
-from io import BytesIO as IOReader, StringIO
+from io import BytesIO as IOReader
 
 import simplejson
 

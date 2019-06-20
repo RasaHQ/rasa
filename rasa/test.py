@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import tempfile
-from collections import defaultdict
 from typing import Text, Dict, Optional, List, Any
 import os
 
