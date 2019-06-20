@@ -353,8 +353,8 @@ class Agent(object):
             or not os.path.isdir(model_path)
         ):
             raise ValueError(
-                "You are trying to load a MODEL from '{}', which does not exists. \n"
-                "The persisted path should be a 'tar.gz' file or a directory "
+                "You are trying to load a MODEL from '{}', which is not possible. \n"
+                "The model path should be a 'tar.gz' file or a directory "
                 "containing the various model files in the sub-directories 'core' "
                 "and 'nlu'. \n\nIf you want to load training data instead of "
                 "a model, use `agent.load_data(...)` instead.".format(model_path)
