@@ -9,7 +9,6 @@ from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
 
-import model
 import rasa
 import rasa.utils.io
 from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
@@ -33,7 +32,12 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
-from rasa.model import get_model_subdirectories, get_latest_model, unpack_model
+from rasa.model import (
+    get_model_subdirectories,
+    get_latest_model,
+    unpack_model,
+    get_model,
+)
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
@@ -345,7 +349,7 @@ class Agent(object):
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         if model_path is not None and model_path.endswith("tar.gz"):
-            model_path = model.get_model(model_path)
+            model_path = get_model(model_path)
 
         if (
             model_path is None
