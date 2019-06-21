@@ -187,9 +187,15 @@ async def load_agent_on_start(
     from rasa.core import broker
 
     try:
-        with get_model(model_path) as unpacked_model:
-            _, nlu_model = get_model_subdirectories(unpacked_model)
-            _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+        unpacked_model_context = get_model(model_path)
+        if unpacked_model_context:
+            with unpacked_model_context as unpacked_model:
+                _, nlu_model = get_model_subdirectories(unpacked_model)
+                _interpreter = NaturalLanguageInterpreter.create(
+                    nlu_model, endpoints.nlu
+                )
+        else:
+            raise RuntimeError("No model found at: {}".format(model_path))
 
     except Exception:
         logger.debug("Could not load interpreter from '{}'".format(model_path))
