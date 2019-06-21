@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- all temporal model files are now deleted after stopping the Rasa server
 
 [1.1.4] - 2019-06-18
 ^^^^^^^^^^^^^^^^^^^^

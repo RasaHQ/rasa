@@ -161,7 +161,7 @@ def serve_application(
         "before_server_start",
     )
 
-    async def clear_model_files(app, _loop):
+    async def clear_model_files(app: Sanic, _loop: Text):
         if app.agent.model_directory:
             shutil.rmtree(app.agent.model_directory)
 
@@ -187,11 +187,9 @@ async def load_agent_on_start(
     from rasa.core import broker
 
     try:
-        unpacked_model = get_model(model_path)
-        _, nlu_model = get_model_subdirectories(unpacked_model)
-        _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
-
-        shutil.rmtree(unpacked_model)
+        with get_model(model_path) as unpacked_model:
+            _, nlu_model = get_model_subdirectories(unpacked_model)
+            _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
 
     except Exception:
         logger.debug("Could not load interpreter from '{}'".format(model_path))
