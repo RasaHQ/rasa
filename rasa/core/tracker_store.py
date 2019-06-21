@@ -34,21 +34,24 @@ class TrackerStore(object):
     @staticmethod
     def find_tracker_store(domain, store=None, event_broker=None):
         if store is None or store.type is None:
-            return InMemoryTrackerStore(domain, event_broker=event_broker)
+            tracker_store = InMemoryTrackerStore(domain, event_broker=event_broker)
         elif store.type == "redis":
-            return RedisTrackerStore(
+            tracker_store = RedisTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
         elif store.type == "mongod":
-            return MongoTrackerStore(
+            tracker_store = MongoTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
         elif store.type.lower() == "sql":
-            return SQLTrackerStore(
+            tracker_store = SQLTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
         else:
-            return TrackerStore.load_tracker_from_module_string(domain, store)
+            tracker_store = TrackerStore.load_tracker_from_module_string(domain, store)
+
+        logger.debug("Connected to {}.".format(tracker_store.__class__.__name__))
+        return tracker_store
 
     @staticmethod
     def load_tracker_from_module_string(domain, store):

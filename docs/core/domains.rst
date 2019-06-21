@@ -291,10 +291,10 @@ into account you can use this syntax:
   - greet:
     use_entities: 
       - name
-      - entity2
-    ignore_entities
+      - first_name
+    ignore_entities:
       - location
-      - entity4
+      - age
 
 This means that excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
