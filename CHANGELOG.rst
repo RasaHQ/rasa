@@ -12,12 +12,17 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- debug logging now tells you which tracker store is connected
 
 Changed
 -------
+- deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
+  or ``rasa.core.run.configure_app`` instead.
 
 Removed
 -------
+- revert the stripping of trailing slashes in endpoint URLs since this can lead to
+  problems in case the trailing slash is actually wanted
 
 Fixed
 -----
