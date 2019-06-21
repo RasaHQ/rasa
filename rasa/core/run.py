@@ -11,7 +11,8 @@ import rasa.utils
 import rasa.utils.io
 from rasa.core import constants, utils
 from rasa.core.agent import load_agent, Agent
-from rasa.core.channels import BUILTIN_CHANNELS, InputChannel, console
+from rasa.core.channels import BUILTIN_CHANNELS, console
+from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints, configure_file_logging
@@ -27,7 +28,7 @@ def create_http_input_channels(
     """Instantiate the chosen input channel."""
 
     if credentials_file:
-        all_credentials = rasa.utils.io.read_yaml_file(credentials_file)
+        all_credentials = rasa.utils.io.read_config_file(credentials_file)
     else:
         all_credentials = {}
 
@@ -66,6 +67,7 @@ def configure_app(
     jwt_method: Optional[Text] = None,
     route: Optional[Text] = "/webhooks/",
     port: int = constants.DEFAULT_SERVER_PORT,
+    endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
 ):
     """Run the agent."""
@@ -77,6 +79,7 @@ def configure_app(
             auth_token=auth_token,
             jwt_secret=jwt_secret,
             jwt_method=jwt_method,
+            endpoints=endpoints,
         )
     else:
         app = Sanic(__name__, configure_logging=False)
@@ -143,6 +146,7 @@ def serve_application(
         jwt_secret,
         jwt_method,
         port=port,
+        endpoints=endpoints,
         log_file=log_file,
     )
 
@@ -164,7 +168,7 @@ def serve_application(
 # noinspection PyUnusedLocal
 async def load_agent_on_start(
     model_path: Text,
-    endpoints: Optional[AvailableEndpoints],
+    endpoints: AvailableEndpoints,
     remote_storage: Optional[Text],
     app: Sanic,
     loop: Text,

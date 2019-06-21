@@ -15,12 +15,11 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS,
 )
 
-# Type alias for the fingerprint
-from rasa.core import config
 from rasa.core.domain import Domain
 from rasa.core.utils import get_dict_hash
 
-Fingerprint = Dict[Text, Union[Text, List[Text]]]
+# Type alias for the fingerprint
+Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
 
 logger = logging.getLogger(__name__)
 
@@ -228,20 +227,19 @@ def _get_hash_of_config(
         return ""
 
     try:
-        config_dict = rasa.utils.io.read_yaml_file(config_path)
+        config_dict = rasa.utils.io.read_config_file(config_path)
+        keys = include_keys or list(
+            filter(lambda k: k not in exclude_keys, config_dict.keys())
+        )
+
+        sub_config = dict((k, config_dict[k]) for k in keys if k in config_dict)
+
+        return get_dict_hash(sub_config)
     except yaml.parser.ParserError as e:
         logger.debug(
             "Failed to read config file '{}'. Error: {}".format(config_path, e)
         )
         return ""
-
-    keys = include_keys or list(
-        filter(lambda k: k not in exclude_keys, config_dict.keys())
-    )
-
-    sub_config = dict((k, config_dict[k]) for k in keys if k in config_dict)
-
-    return get_dict_hash(sub_config)
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:

@@ -5,21 +5,19 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
-import pkg_resources
-from pykwalify.errors import SchemaError
-from ruamel.yaml import YAMLError
-from ruamel.yaml.constructor import DuplicateKeyError
-
 import rasa.utils.io
 from rasa import data
-from rasa.cli.utils import print_warning, bcolors
+from rasa.cli.utils import bcolors
+from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
-from rasa.core.actions import Action, action
+from rasa.core.actions import action  # pytype: disable=pyi-error
+from rasa.core.actions.action import Action  # pytype: disable=pyi-error
 from rasa.core.constants import REQUESTED_SLOT
-from rasa.core.events import SlotSet
+from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +47,7 @@ class Domain(object):
 
     @classmethod
     def empty(cls) -> "Domain":
-        return cls({}, [], [], {}, [], [])
+        return cls([], [], [], {}, [], [])
 
     @classmethod
     def load(
@@ -103,7 +101,11 @@ class Domain(object):
 
     @classmethod
     def from_yaml(cls, yaml: Text) -> "Domain":
-        cls.validate_domain_yaml(yaml)
+        try:
+            validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
+        except InvalidYamlFileError as e:
+            raise InvalidDomain(str(e))
+
         data = rasa.utils.io.read_yaml(yaml)
         return cls.from_dict(data)
 
@@ -112,9 +114,10 @@ class Domain(object):
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
-        intent_properties = cls.collect_intent_properties(data.get("intents", {}))
+        intents = data.get("intents", {})
+
         return cls(
-            intent_properties,
+            intents,
             data.get("entities", []),
             slots,
             utter_templates,
@@ -154,7 +157,11 @@ class Domain(object):
         domain_dict = domain.as_dict()
         combined = self.as_dict()
 
-        def merge_dicts(d1, d2, override_existing_values=False):
+        def merge_dicts(
+            d1: Dict[Text, Any],
+            d2: Dict[Text, Any],
+            override_existing_values: bool = False,
+        ) -> Dict[Text, Any]:
             if override_existing_values:
                 a, b = d1.copy(), d2.copy()
             else:
@@ -162,11 +169,12 @@ class Domain(object):
             a.update(b)
             return a
 
-        def merge_lists(l1, l2):
+        def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
             return sorted(list(set(l1 + l2)))
 
         if override:
-            for key, val in domain_dict["config"].items():
+            config = domain_dict["config"]
+            for key, val in config.items():  # pytype: disable=attribute-error
                 combined["config"][key] = val
 
         # intents is list of dicts
@@ -188,43 +196,6 @@ class Domain(object):
 
         return self.__class__.from_dict(combined)
 
-    @classmethod
-    def validate_domain_yaml(cls, yaml):
-        """Validate domain yaml."""
-        from pykwalify.core import Core
-
-        log = logging.getLogger("pykwalify")
-        log.setLevel(logging.WARN)
-
-        try:
-            schema_file = pkg_resources.resource_filename(
-                __name__, "schemas/domain.yml"
-            )
-            source_data = rasa.utils.io.read_yaml(yaml)
-        except YAMLError:
-            raise InvalidDomain(
-                "The provided domain file is invalid. You can use "
-                "http://www.yamllint.com/ to validate the yaml syntax "
-                "of your domain file."
-            )
-        except DuplicateKeyError as e:
-            raise InvalidDomain(
-                "The provided domain file contains a duplicated key: {}".format(str(e))
-            )
-
-        try:
-            c = Core(source_data=source_data, schema_files=[schema_file])
-            c.validate(raise_exception=True)
-        except SchemaError:
-            raise InvalidDomain(
-                "Failed to validate your domain yaml. "
-                "Please make sure the file is correct; to do so, "
-                "take a look at the errors logged during "
-                "validation previous to this exception. "
-                "You can also validate your domain file's yaml "
-                "syntax using http://www.yamllint.com/."
-            )
-
     @staticmethod
     def collect_slots(slot_dict):
         # it is super important to sort the slots here!!!
@@ -239,17 +210,24 @@ class Domain(object):
         return slots
 
     @staticmethod
-    def collect_intent_properties(intent_list):
+    def collect_intent_properties(
+        intents: List[Union[Text, Dict[Text, Any]]]
+    ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
         intent_properties = {}
-        for intent in intent_list:
+        for intent in intents:
             if isinstance(intent, dict):
                 name = list(intent.keys())[0]
                 for properties in intent.values():
-                    if "use_entities" not in properties:
-                        properties["use_entities"] = True
+                    properties.setdefault("use_entities", True)
+                    properties.setdefault("ignore_entities", [])
+                    if (
+                        properties["use_entities"] is None
+                        or properties["use_entities"] is False
+                    ):
+                        properties["use_entities"] = []
             else:
                 name = intent
-                intent = {intent: {"use_entities": True}}
+                intent = {intent: {"use_entities": True, "ignore_entities": []}}
 
             if name in intent_properties.keys():
                 raise InvalidDomain(
@@ -302,7 +280,7 @@ class Domain(object):
 
     def __init__(
         self,
-        intent_properties: Dict[Text, Any],
+        intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, Any],
@@ -311,7 +289,7 @@ class Domain(object):
         store_entities_as_slots: bool = True,
     ) -> None:
 
-        self.intent_properties = intent_properties
+        self.intent_properties = self.collect_intent_properties(intents)
         self.entities = entities
         self.form_names = form_names
         self.slots = slots
@@ -423,8 +401,7 @@ class Domain(object):
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def slot_states(self):
-        # type: () -> List[Text]
+    def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
 
         return [
@@ -486,14 +463,17 @@ class Domain(object):
 
         # Set all found entities with the state value 1.0, unless they should
         # be ignored for the current intent
-        for entity in tracker.latest_message.entities:
-            intent_name = tracker.latest_message.intent.get("name")
-            intent_config = self.intent_config(intent_name)
-            should_use_entity = intent_config.get("use_entities", True)
-            if should_use_entity:
-                if "entity" in entity:
-                    key = "entity_{0}".format(entity["entity"])
-                    state_dict[key] = 1.0
+        latest_message = tracker.latest_message
+
+        if not latest_message:
+            return state_dict
+
+        intent_name = latest_message.intent.get("name")
+
+        if intent_name:
+            for entity_name in self._get_featurized_entities(latest_message):
+                key = "entity_{0}".format(entity_name)
+                state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
@@ -503,19 +483,46 @@ class Domain(object):
                         slot_id = "slot_{}_{}".format(key, i)
                         state_dict[slot_id] = slot_value
 
-        latest_message = tracker.latest_message
-
         if "intent_ranking" in latest_message.parse_data:
             for intent in latest_message.parse_data["intent_ranking"]:
                 if intent.get("name"):
                     intent_id = "intent_{}".format(intent["name"])
                     state_dict[intent_id] = intent["confidence"]
 
-        elif latest_message.intent.get("name"):
+        elif intent_name:
             intent_id = "intent_{}".format(latest_message.intent["name"])
             state_dict[intent_id] = latest_message.intent.get("confidence", 1.0)
 
         return state_dict
+
+    def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
+        intent_name = latest_message.intent.get("name")
+        intent_config = self.intent_config(intent_name)
+        entities = latest_message.entities
+        entity_names = {
+            entity["entity"] for entity in entities if "entity" in entity.keys()
+        }
+
+        # `use_entities` is either a list of explicitly included entities
+        # or `True` if all should be included
+        include = intent_config.get("use_entities", True)
+        included_entities = set(entity_names if include is True else include)
+        excluded_entities = set(intent_config.get("ignore_entities", []))
+        wanted_entities = included_entities - excluded_entities
+
+        # Only print warning for ambiguous configurations if entities were included
+        # explicitly.
+        explicitly_included = isinstance(include, list)
+        ambiguous_entities = included_entities.intersection(excluded_entities)
+        if explicitly_included and ambiguous_entities:
+            logger.warning(
+                "Entities: '{}' are explicitly included and excluded for intent '{}'. "
+                "Excluding takes precedence in this case. "
+                "Please resolve that ambiguity."
+                "".format(ambiguous_entities, intent_name)
+            )
+
+        return entity_names.intersection(wanted_entities)
 
     def get_prev_action_states(
         self, tracker: "DialogueStateTracker"
@@ -652,7 +659,7 @@ class Domain(object):
                 if intent.get("use_entities"):
                     domain_data["intents"][idx] = name
 
-        for slot in domain_data["slots"].values():
+        for slot in domain_data["slots"].values():  # pytype: disable=attribute-error
             if slot["initial_value"] is None:
                 del slot["initial_value"]
             if slot["auto_fill"]:
@@ -692,6 +699,30 @@ class Domain(object):
     def intents(self):
         return sorted(self.intent_properties.keys())
 
+    @property
+    def _slots_for_domain_warnings(self) -> List[Text]:
+        """Fetch names of slots that are used in domain warnings.
+
+        Excludes slots of type `UnfeaturizedSlot`.
+        """
+
+        return [s.name for s in self.slots if not isinstance(s, UnfeaturizedSlot)]
+
+    @property
+    def _actions_for_domain_warnings(self) -> List[Text]:
+        """Fetch names of actions that are used in domain warnings.
+
+        Includes user and form actions, but excludes those that are default actions.
+        """
+
+        from rasa.core.actions.action import (  # pytype: disable=pyi-error
+            default_action_names,
+        )
+
+        return [
+            a for a in self.user_actions_and_forms if a not in default_action_names()
+        ]
+
     @staticmethod
     def _get_symmetric_difference(
         domain_elements: Union[List[Text], Set[Text]],
@@ -724,14 +755,17 @@ class Domain(object):
         """Generate domain warnings from intents, entities, actions and slots.
 
         Returns a dictionary with entries for `intent_warnings`,
-        `entity_warnings`, `action_warnings` and `slot_warnings`.
+        `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
+        of type `UnfeaturizedSlot` from domain warnings.
         """
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
         entity_warnings = self._get_symmetric_difference(self.entities, entities)
-        action_warnings = self._get_symmetric_difference(self.user_actions, actions)
+        action_warnings = self._get_symmetric_difference(
+            self._actions_for_domain_warnings, actions
+        )
         slot_warnings = self._get_symmetric_difference(
-            [s.name for s in self.slots], slots
+            self._slots_for_domain_warnings, slots
         )
 
         return {
@@ -757,14 +791,17 @@ class Domain(object):
                 if count > 1
             ]
 
-        def check_mappings(intent_properties):
+        def check_mappings(
+            intent_properties: Dict[Text, Dict[Text, Union[bool, List]]]
+        ) -> List[Tuple[Text, Text]]:
             """Check whether intent-action mappings use proper action names."""
 
             incorrect = list()
             for intent, properties in intent_properties.items():
                 if "triggers" in properties:
-                    if properties.get("triggers") not in self.action_names:
-                        incorrect.append((intent, properties["triggers"]))
+                    triggered_action = properties.get("triggers")
+                    if triggered_action not in self.action_names:
+                        incorrect.append((intent, str(triggered_action)))
             return incorrect
 
         def get_exception_message(

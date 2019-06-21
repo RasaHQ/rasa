@@ -8,13 +8,17 @@ import numpy as np
 import time
 
 from rasa.core import jobs
-from rasa.core.actions import Action
+from rasa.core.actions.action import Action
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     ActionExecutionRejection,
     UTTER_PREFIX,
 )
-from rasa.core.channels import CollectingOutputChannel, UserMessage, OutputChannel
+from rasa.core.channels.channel import (
+    CollectingOutputChannel,
+    UserMessage,
+    OutputChannel,
+)
 from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -67,7 +71,9 @@ class MessageProcessor(object):
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
 
-    async def handle_message(self, message: UserMessage) -> Optional[List[Text]]:
+    async def handle_message(
+        self, message: UserMessage
+    ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
@@ -446,7 +452,6 @@ class MessageProcessor(object):
             events = []
 
         self._log_action_on_tracker(tracker, action.name(), events, policy, confidence)
-
         if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
             UTTER_PREFIX
         ):

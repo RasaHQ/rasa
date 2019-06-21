@@ -6,6 +6,7 @@ import sys
 import os
 import traceback
 from multiprocessing import get_context
+import typing
 from typing import List, Text, Optional
 
 import ruamel.yaml as yaml
@@ -28,6 +29,9 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 DEFAULT_TRACKER_DB = "tracker.db"
+
+if typing.TYPE_CHECKING:
+    from rasa.core.utils import AvailableEndpoints
 
 
 # noinspection PyProtectedMember
@@ -86,7 +90,7 @@ def _prepare_credentials_for_rasa_x(
         credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
     if credentials_path:
-        credentials = io_utils.read_yaml_file(credentials_path)
+        credentials = io_utils.read_config_file(credentials_path)
     else:
         credentials = {}
 
@@ -100,7 +104,7 @@ def _prepare_credentials_for_rasa_x(
 
 
 def _overwrite_endpoints_for_local_x(
-    endpoints: "EndpointConfig", rasa_x_token: Text, rasa_x_url: Text
+    endpoints: "AvailableEndpoints", rasa_x_token: Text, rasa_x_url: Text
 ):
     from rasa.utils.endpoints import EndpointConfig
     import questionary
@@ -301,7 +305,7 @@ def run_in_production(args: argparse.Namespace):
 
 def run_locally(args: argparse.Namespace):
     # noinspection PyUnresolvedReferences
-    from rasax.community import local
+    from rasax.community import local  # pytype: disable=import-error
 
     args.rasa_x_port = args.rasa_x_port or DEFAULT_RASA_X_PORT
     args.port = args.port or DEFAULT_RASA_PORT

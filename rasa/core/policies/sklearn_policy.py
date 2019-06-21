@@ -88,12 +88,10 @@ class SklearnPolicy(Policy):
     def _state(self):
         return {attr: getattr(self, attr) for attr in self._pickle_params}
 
-    def model_architecture(self):
+    def model_architecture(self, **kwargs):
         # filter out kwargs that cannot be passed to model
-        self._train_params = self._get_valid_params(
-            self.model.__init__, **self._train_params
-        )
-        return self.model.set_params(**self._train_params)
+        train_params = self._get_valid_params(self.model.__init__, **kwargs)
+        return self.model.set_params(**train_params)
 
     def _extract_training_data(self, training_data):
         # transform y from one-hot to num_classes
@@ -128,7 +126,8 @@ class SklearnPolicy(Policy):
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
         X, y = self._extract_training_data(training_data)
-        model = self.model_architecture(**kwargs)
+        self._train_params.update(kwargs)
+        model = self.model_architecture(**self._train_params)
         score = None
         # Note: clone is called throughout to avoid mutating default
         # arguments.

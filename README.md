@@ -130,8 +130,8 @@ Releasing a new version is quite simple, as the packages are build and distribut
 2. Commit the changes and create a PR against master or the release branch (e.g. `1.2.x`)
 3. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
     ```
-    git tag -f 1.2.0 -m "Some helpful line describing the release"
-    git push origin 1.2.0
+    git tag 1.2.0 -m "Some helpful line describing the release"
+    git push origin 1.2.0 --tags
     ```
     travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa)
 5. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
@@ -143,7 +143,10 @@ Releasing a new version is quite simple, as the packages are build and distribut
 ### Code Style
 
 To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black).
-If your code is not formatted properly, travis will fail to build.
+To ensure our type annotations are correct we use the type checker [pytype](https://github.com/google/pytype). 
+If your code is not formatted properly or doesn't type check, travis will fail to build.
+
+#### Formatting
 
 If you want to automatically format your code on every commit, you can use [pre-commit](https://pre-commit.com/).
 Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
@@ -153,6 +156,14 @@ If you want to set it up manually, install black via `pip install black`.
 To reformat files execute
 ```
 black .
+```
+
+#### Type Checking
+
+If you want to check types on the codebase, install `pytype` using `pip install pytype`.
+To check the types execute
+```
+pytype rasa
 ```
 
 ## License

@@ -69,6 +69,8 @@ class PikaProducer(EventChannel):
 
         self.queue = queue
         self.host = host
+        self.connection = None
+        self.channel = None
         self.credentials = pika.PlainCredentials(username, password)
 
     @classmethod
@@ -168,6 +170,7 @@ class KafkaProducer(EventChannel):
         loglevel=logging.ERROR,
     ):
 
+        self.producer = None
         self.host = host
         self.topic = topic
         self.security_protocol = security_protocol

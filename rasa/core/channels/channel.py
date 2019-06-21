@@ -13,7 +13,7 @@ from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 
 try:
-    from urlparse import urljoin
+    from urlparse import urljoin  # pytype: disable=import-error
 except ImportError:
     from urllib.parse import urljoin
 
@@ -31,15 +31,12 @@ class UserMessage(object):
         self,
         text: Optional[Text] = None,
         output_channel: Optional["OutputChannel"] = None,
-        sender_id: Text = None,
+        sender_id: Optional[Text] = None,
         parse_data: Dict[Text, Any] = None,
         input_channel: Text = None,
         message_id: Text = None,
     ) -> None:
-        if text:
-            self.text = text.strip()
-        else:
-            self.text = text
+        self.text = text.strip() if text else text
 
         if message_id is not None:
             self.message_id = str(message_id)
@@ -125,7 +122,7 @@ class InputChannel(object):
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
-    ) -> None:
+    ) -> Blueprint:
         """Defines a Sanic blueprint.
 
         The blueprint will be attached to a running sanic server and handle
@@ -160,11 +157,6 @@ class OutputChannel(object):
     async def send_response(self, recipient_id: Text, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
 
-        if message.get("custom"):
-            return await self.send_custom_json(
-                recipient_id, message.pop("custom"), **message
-            )
-
         if message.get("quick_replies"):
             await self.send_quick_replies(
                 recipient_id,
@@ -172,14 +164,15 @@ class OutputChannel(object):
                 message.pop("quick_replies"),
                 **message
             )
-
-        if message.get("buttons"):
+        elif message.get("buttons"):
             await self.send_text_with_buttons(
                 recipient_id, message.pop("text"), message.pop("buttons"), **message
             )
-
-        if message.get("text"):
+        elif message.get("text"):
             await self.send_text_message(recipient_id, message.pop("text"), **message)
+
+        if message.get("custom"):
+            await self.send_custom_json(recipient_id, message.pop("custom"), **message)
 
         # if there is an image we handle it separately as an attachment
         if message.get("image"):
@@ -308,8 +301,8 @@ class CollectingOutputChannel(OutputChannel):
         else:
             return None
 
-    async def _persist_message(self, message):
-        self.messages.append(message)
+    async def _persist_message(self, message) -> None:
+        self.messages.append(message)  # pytype: disable=bad-return-type
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
@@ -358,15 +351,15 @@ class QueueOutputChannel(CollectingOutputChannel):
         return "queue"
 
     # noinspection PyMissingConstructor
-    def __init__(self, message_queue: Queue = None) -> None:
-        super(QueueOutputChannel).__init__()
+    def __init__(self, message_queue: Optional[Queue] = None) -> None:
+        super(QueueOutputChannel, self).__init__()
         self.messages = Queue() if not message_queue else message_queue
 
     def latest_output(self):
         raise NotImplementedError("A queue doesn't allow to peek at messages.")
 
-    async def _persist_message(self, message):
-        await self.messages.put(message)
+    async def _persist_message(self, message) -> None:
+        await self.messages.put(message)  # pytype: disable=bad-return-type
 
 
 class RestInput(InputChannel):
@@ -381,7 +374,12 @@ class RestInput(InputChannel):
         return "rest"
 
     @staticmethod
-    async def on_message_wrapper(on_new_message, text, queue, sender_id):
+    async def on_message_wrapper(
+        on_new_message: Callable[[UserMessage], Awaitable[None]],
+        text: Text,
+        queue: Queue,
+        sender_id: Text,
+    ) -> None:
         collector = QueueOutputChannel(queue)
 
         message = UserMessage(
@@ -389,32 +387,37 @@ class RestInput(InputChannel):
         )
         await on_new_message(message)
 
-        await queue.put("DONE")
+        await queue.put("DONE")  # pytype: disable=bad-return-type
 
-    async def _extract_sender(self, req):
+    async def _extract_sender(self, req) -> Optional[Text]:
         return req.json.get("sender", None)
 
     # noinspection PyMethodMayBeStatic
     def _extract_message(self, req):
         return req.json.get("message", None)
 
-    def stream_response(self, on_new_message, text, sender_id):
-        async def stream(resp):
+    def stream_response(
+        self,
+        on_new_message: Callable[[UserMessage], Awaitable[None]],
+        text: Text,
+        sender_id: Text,
+    ) -> Callable[[Any], Awaitable[None]]:
+        async def stream(resp: Any) -> None:
             q = Queue()
             task = asyncio.ensure_future(
                 self.on_message_wrapper(on_new_message, text, q, sender_id)
             )
             while True:
-                result = await q.get()
+                result = await q.get()  # pytype: disable=bad-return-type
                 if result == "DONE":
                     break
                 else:
                     await resp.write(json.dumps(result) + "\n")
             await task
 
-        return stream
+        return stream  # pytype: disable=bad-return-type
 
-    def blueprint(self, on_new_message):
+    def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[None]]):
         custom_webhook = Blueprint(
             "custom_webhook_{}".format(type(self).__name__),
             inspect.getmodule(self).__name__,
