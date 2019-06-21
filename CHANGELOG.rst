@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- debug logging now tells you which tracker store is connected
 
 Changed
 -------
