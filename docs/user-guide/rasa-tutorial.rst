@@ -25,12 +25,13 @@ and send you a fun picture to cheer you up if you are sad.
 
 The first step is to create a new Rasa project. To do this, run:
 
-.. runnable::
-   :description: stack-init
-   :kerneltype: bash
-   :language: shell
+
+
+.. runnable:: 
+   :language: bash
 
    rasa init --no-prompt
+
 
 The ``rasa init`` command creates all the files that a Rasa project needs.
 If you leave out the ``--no-prompt`` flag you will be asked some questions about
@@ -64,18 +65,9 @@ This creates the following files:
 The most important files are marked with a '*'.
 You will learn about all of these in this tutorial.
 
-To check that all the files were created, run:
 
-.. runnable::
-   :description: stack-ls
-   :kerneltype: bash
-   :language: shell
-
-   ls -1
-
-
-2. Create NLU Examples
-^^^^^^^^^^^^^^^^^^^^^^
+2. View Your NLU Training Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first piece of a Rasa assistant is an NLU model.
 NLU stands for Natural Language Understanding, which means turning
@@ -86,12 +78,14 @@ user messages, and then train a model by showing it those examples.
 Run the code cell below to see the NLU training data created by
 the ``rasa init`` command:
 
+
 .. runnable::
-   :description: stack-cat-nlu
-   :kerneltype: bash
-   :language: shell
+   :language: bash
 
    cat data/nlu.md
+
+
+
 
 The lines starting with ``##`` define the names of your ``intents``, which
 are groups of messages with the same meaning. Rasa's job will be to
@@ -111,11 +105,10 @@ will use. In this example, your NLU model will use the
 Let's take a look at your model configuration file.
 
 .. runnable::
-   :description: stack-cat-config
-   :kerneltype: bash
-   :language: shell
+   :language: bash
 
    cat config.yml
+
 
 
 The ``pipeline`` and ``language`` keys specify how the NLU model should be built.
@@ -154,12 +147,11 @@ including calling an API and interacting with the outside world.
 
 Run the command below to view the example stories inside the file ``data/stories.md``:
 
+
 .. runnable::
-   :description: core-cat-stories
-   :kerneltype: bash
-   :language: shell
 
    cat data/stories.md
+
 
 
 5. Define a Domain
@@ -172,12 +164,12 @@ respond, and what information to store.
 The domain for our assistant is saved in a
 file called ``domain.yml``:
 
+
+
 .. runnable::
-   :description: stack-cat-domain
-   :kerneltype: bash
-   :language: shell
 
    cat domain.yml
+
 
 
 So what do the different parts mean?
@@ -211,14 +203,16 @@ functions and store the trained model
 into the ``models/`` directory. The output of this command will include
 the training results for each training epoch.
 
+
+
 .. runnable::
-   :description: stack-train
-   :kerneltype: bash
-   :language: shell
+   :language: bash
 
    rasa train
 
    echo "Finished training."
+
+
 
 The ``rasa train`` command will look for both NLU and Core data and will train a combined model.
 
