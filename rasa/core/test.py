@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.constants import RESULTS_FILE
 from rasa.core.events import ActionExecuted, UserUttered
-from rasa.cli.utils import print_success
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent

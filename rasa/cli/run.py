@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-from typing import List, Text, Optional
+from typing import List, Text
 
 from rasa.cli.arguments import run as arguments
 from rasa.cli.utils import get_validated_path, print_error

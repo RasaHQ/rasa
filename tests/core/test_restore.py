@@ -17,10 +17,10 @@ def loop():
     loop.close()
 
 
-async def test_restoring_tracker(unpacked_trained_moodbot_path, recwarn):
+async def test_restoring_tracker(trained_moodbot_path, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
-    agent = Agent.load(unpacked_trained_moodbot_path)
+    agent = Agent.load(trained_moodbot_path)
 
     tracker = restore.load_tracker_from_json(tracker_dump, agent.domain)
 

@@ -32,7 +32,12 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
-from rasa.model import get_model_subdirectories, get_latest_model, unpack_model
+from rasa.model import (
+    get_model_subdirectories,
+    get_latest_model,
+    unpack_model,
+    get_model,
+)
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
@@ -334,7 +339,7 @@ class Agent(object):
     @classmethod
     def load(
         cls,
-        unpacked_model_path: Text,
+        model_path: Text,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
@@ -343,21 +348,23 @@ class Agent(object):
         remote_storage: Optional[Text] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
-        if not os.path.exists(unpacked_model_path) or not os.path.isdir(
-            unpacked_model_path
+        if model_path is not None and model_path.endswith("tar.gz"):
+            model_path = get_model(model_path)
+
+        if (
+            model_path is None
+            or not os.path.exists(model_path)
+            or not os.path.isdir(model_path)
         ):
             raise ValueError(
-                "You are trying to load a MODEL from "
-                "('{}'), which is not possible. \n"
-                "The persisted path should be a directory "
-                "containing the various model files in the "
-                "sub-directories 'core' and 'nlu'. \n\n"
-                "If you want to load training data instead of "
-                "a model, use `agent.load_data(...)` "
-                "instead.".format(unpacked_model_path)
+                "You are trying to load a MODEL from '{}', which is not possible. \n"
+                "The model path should be a 'tar.gz' file or a directory "
+                "containing the various model files in the sub-directories 'core' "
+                "and 'nlu'. \n\nIf you want to load training data instead of "
+                "a model, use `agent.load_data(...)` instead.".format(model_path)
             )
 
-        core_model, nlu_model = get_model_subdirectories(unpacked_model_path)
+        core_model, nlu_model = get_model_subdirectories(model_path)
 
         if not interpreter and os.path.exists(nlu_model):
             interpreter = NaturalLanguageInterpreter.create(nlu_model)
@@ -379,7 +386,7 @@ class Agent(object):
             generator=generator,
             tracker_store=tracker_store,
             action_endpoint=action_endpoint,
-            model_directory=unpacked_model_path,
+            model_directory=model_path,
             model_server=model_server,
             remote_storage=remote_storage,
         )
@@ -675,6 +682,13 @@ class Agent(object):
         """Start a webserver attaching the input channels and handling msgs."""
 
         from rasa.core import run
+
+        logger.warning(
+            "DEPRECATION warning: Using `handle_channels` is deprecated. "
+            "Please use `rasa.run(...)` or see "
+            "`rasa.core.run.configure_app(...)` if you want to implement "
+            "this on a more detailed level."
+        )
 
         app = run.configure_app(channels, cors, None, enable_api=False, route=route)
 

@@ -15,11 +15,10 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS,
 )
 
-# Type alias for the fingerprint
-from rasa.core import config
 from rasa.core.domain import Domain
 from rasa.core.utils import get_dict_hash
 
+# Type alias for the fingerprint
 Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
 
 logger = logging.getLogger(__name__)
