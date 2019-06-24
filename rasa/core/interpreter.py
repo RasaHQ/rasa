@@ -216,12 +216,12 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         params = {
             "token": self.endpoint.token,
             "model": self.model_name,
-            "text": text,
+            "project": self.project_name,
+            "q": text,
             "message_id": message_id,
         }
 
         url = "{}/parse".format(self.endpoint.url)
-
         # noinspection PyBroadException
         try:
             async with aiohttp.ClientSession() as session:
