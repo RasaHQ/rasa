@@ -153,7 +153,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             )
             return None, 0.0, []
 
-    async def parse(self, text, message_id=None):
+    async def parse(self, text, message_id=None, tracker=None):
         """Parse a text message."""
 
         intent, confidence, entities = self.extract_intent_and_entities(text)
@@ -220,17 +220,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "message_id": message_id,
         }
 
-        logger.info(
-            "traker:{} endpoint.kwargs:{} nlu_project_slot:{}".format(
-                tracker, self.endpoint.kwargs, self.endpoint.nlu_project_slot
-            )
-        )
-        if tracker and self.endpoint.nlu_project_slot:
-            project = tracker.get_slot(self.endpoint.nlu_project_slot)
-            params["project"] = project
-            url = "https://{}.{}/parse".format(project, self.endpoint.url)
-        else:
-            url = "https://{}/parse".format(self.endpoint.url)
+        url = "{}/parse".format(self.endpoint.url)
 
         # noinspection PyBroadException
         try:
@@ -262,7 +252,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         else:
             self.interpreter = None
 
-    async def parse(self, text, message_id=None):
+    async def parse(self, text, message_id=None, tracker=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""

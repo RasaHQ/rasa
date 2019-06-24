@@ -44,7 +44,6 @@ class EndpointConfig(object):
         self.token = token
         self.token_name = token_name
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
-        self.nlu_project_slot = kwargs.pop("nlu_project_slot", None)
         self.kwargs = kwargs
 
     @staticmethod

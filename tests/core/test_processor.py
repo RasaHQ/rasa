@@ -1,3 +1,4 @@
+import aiohttp
 import datetime
 import pytest
 import uuid
@@ -23,6 +24,9 @@ from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
@@ -60,7 +64,7 @@ async def test_parsing(default_processor):
 async def test_http_parsing():
     message = UserMessage("lunch?")
 
-    endpoint = EndpointConfig("interpreter.com")
+    endpoint = EndpointConfig("https://interpreter.com")
     with aioresponses() as mocked:
         mocked.post("https://interpreter.com/parse", repeat=True, status=200)
 
@@ -78,6 +82,48 @@ async def test_http_parsing():
         assert json_of_latest_request(r)["message_id"] == message.message_id
 
 
+
+# This class is used for the test test_http_parsing_with_tracker in order
+# to validate that the tracker is passed into the interpreter. Also,
+# it could be used as an example of a use-case for leveraging the tracker
+# within an interpterer. In this example, the interpreter obtains a domain name
+# of the NLU endpoint from the tracker state.
+class TrackerAwareNLUHttpInterpreter(RasaNLUHttpInterpreter):
+    async def _rasa_http_parse(self, text, message_id=None, tracker=None):
+        """Send a text message to a running rasa NLU http server.
+
+        Return `None` on failure."""
+
+        params = {
+            "model": self.model_name,
+            "text": text,
+            "message_id": message_id,
+        }
+
+        assert tracker
+        nlu_endpoint_domain = tracker.get_slot('nlu_endpoint_domain')
+        assert nlu_endpoint_domain
+        
+        url = "https://{}/parse".format(nlu_endpoint_domain)
+
+        # noinspection PyBroadException
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=params) as resp:
+                    if resp.status == 200:
+                        return await resp.json()
+                    else:
+                        logger.error(
+                            "Failed to parse text '{}' using rasa NLU over "
+                            "http. Error: {}".format(text, await resp.text())
+                        )
+                        return None
+        except Exception:
+            logger.exception(
+                "Failed to parse text '{}' using rasa NLU over http.".format(text)
+            )
+            return None
+
 # This test sets the endpoint config to specify the slot name that will specify
 # the NLU project name. We also set that slot in the tracker.
 #
@@ -88,19 +134,21 @@ async def test_http_parsing():
 #
 # Thus we're showing a use-case how a multi-language NLU interpretation can be
 # implemented with a single core runtime.
+    
 async def test_http_parsing_with_tracker():
     message = UserMessage("lunch?")
-    tracker = DialogueStateTracker.from_dict("1", [], [Slot("nlu_project")])
-    # we'll expect this value 'en' to be part of the NLU domain name
-    tracker._set_slot("nlu_project", "en")
+    tracker = DialogueStateTracker.from_dict("1", [], [Slot("nlu_endpoint_domain")])
 
-    endpoint = EndpointConfig("interpreter.com", nlu_project_slot="nlu_project")
-    assert endpoint.nlu_project_slot == "nlu_project"
+    # we'll expect this value 'en.interpreter.com' to be part of the NLU domain name
+    tracker._set_slot("nlu_endpoint_domain", "en.interpreter.com")
+
+    endpoint = EndpointConfig("https://interpreter.com")
 
     with aioresponses() as mocked:
         mocked.post("https://en.interpreter.com/parse", repeat=True, status=200)
 
-        inter = RasaNLUHttpInterpreter(endpoint=endpoint)
+        # Using a sub-classed interpreter defined for this test
+        inter = TrackerAwareNLUHttpInterpreter(endpoint=endpoint)
         try:
             # passing the tracker
             await MessageProcessor(inter, None, None, tracker, None)._parse_message(
@@ -181,7 +229,7 @@ async def test_reminder_cancelled(default_processor):
     # cancel reminder for the first user
     trackers[0].update(ReminderCancelled("utter_greet"))
 
-    for i, t in enumerate(trackers):
+    for _, t in enumerate(trackers):
         default_processor.tracker_store.save(t)
         d = Dispatcher(sender_id, out, default_processor.nlg)
         await default_processor._schedule_reminders(t.events, t, d)
