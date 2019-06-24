@@ -1,6 +1,7 @@
 import os
 import logging
 import re
+import typing
 from typing import Any, Dict, Optional, Text
 
 from rasa.nlu import utils
@@ -10,7 +11,6 @@ from rasa.nlu.training_data import Message
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from tensorflow import Graph, Session, Tensor
     from rasa.nlu.config import RasaNLUModelConfig
     from rasa.nlu.training_data import TrainingData
     from rasa.nlu.model import Metadata
@@ -73,15 +73,15 @@ class KeywordIntentClassifier(Component):
     @classmethod
     def load(
         self,
-        meta: Optional["Metadata"] = None,
+        meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["KeywordIntentClassifier"] = None,
         **kwargs: Any
     ) -> "KeywordIntentClassifier":
 
-        file_name = meta.get("file")
-        if file_name is not None:
+        if model_dir and meta.get("file"):
+            file_name = meta.get("file")
             keyword_file = os.path.join(model_dir, file_name)
             if os.path.exists(keyword_file):
                 self.intent_keyword_map = utils.read_json_file(keyword_file)
