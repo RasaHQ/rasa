@@ -12,11 +12,13 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- debug logging now tells you which tracker store is connected
 
 Changed
 -------
 - deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
   or ``rasa.core.run.configure_app`` instead.
+- ``Agent.load()`` also accepts ``tar.gz`` model file
 
 Removed
 -------
