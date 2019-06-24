@@ -4,10 +4,10 @@ import shutil
 import tempfile
 import uuid
 from asyncio import CancelledError
-from sanic import Sanic
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
+from sanic import Sanic
 
 import rasa
 import rasa.utils.io
@@ -23,15 +23,15 @@ from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.policies.policy import Policy
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
+from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.utils import LockCounter
 from rasa.model import get_model_subdirectories, get_latest_model, unpack_model
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
@@ -279,6 +279,7 @@ class Agent(object):
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
+        conversation_lock: Optional[LockStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_directory: Optional[Text] = None,
@@ -300,8 +301,8 @@ class Agent(object):
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
+        self.lock_store = conversation_lock
         self.action_endpoint = action_endpoint
-        self.conversations_in_processing = {}
 
         self._set_fingerprint(fingerprint)
         self.model_directory = model_directory
@@ -419,34 +420,11 @@ class Agent(object):
 
         processor = self.create_processor(message_preprocessor)
 
-        # get the lock for the current conversation
-        lock = self.conversations_in_processing.get(message.sender_id)
-        if not lock:
-            logger.debug(
-                "Created a new lock for conversation '{}'".format(message.sender_id)
-            )
-            lock = LockCounter()
-            self.conversations_in_processing[message.sender_id] = lock
-
         try:
-            async with lock:
-                # this makes sure that there can always only be one coroutine
-                # handling a conversation at any point in time
-                # Note: this doesn't support multi-processing, it just works
-                # for coroutines. If there are multiple processes handling
-                # messages, an external system needs to make sure messages
-                # for the same conversation are always processed by the same
-                # process.
+            async with self.lock_store.lock(message.sender_id):
                 return await processor.handle_message(message)
         finally:
-            if not lock.is_someone_waiting():
-                # dispose of the lock if no one needs it to avoid
-                # accumulating locks
-                del self.conversations_in_processing[message.sender_id]
-                logger.debug(
-                    "Deleted lock for conversation '{}' (unused)"
-                    "".format(message.sender_id)
-                )
+            self.lock_store.cleanup(message.sender_id)
 
     # noinspection PyUnusedLocal
     def predict_next(self, sender_id: Text, **kwargs: Any) -> Optional[Dict[Text, Any]]:

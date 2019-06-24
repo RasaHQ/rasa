@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 import argparse
-import asyncio
 import json
 import logging
 import re
 import sys
-from pathlib import Path
-from typing import Union
 from asyncio import Future
 from hashlib import md5, sha1
 from io import StringIO
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
+from typing import Union
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -18,12 +17,11 @@ from sanic import Sanic
 from sanic.views import CompositionView
 
 import rasa.utils.io as io_utils
-from rasa.utils.endpoints import read_endpoint_config
-
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.endpoints import concat_url
+from rasa.utils.endpoints import read_endpoint_config
 
 logger = logging.getLogger(__name__)
 
@@ -452,29 +450,3 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
             )
 
     return handler
-
-
-class LockCounter(asyncio.Lock):
-    """Decorated asyncio lock that counts how many coroutines are waiting.
-
-    The counter can be used to discard the lock when there is no coroutine
-    waiting for it. For this to work, there should not be any execution yield
-    between retrieving the lock and acquiring it, otherwise there might be
-    race conditions."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.wait_counter = 0
-
-    async def acquire(self) -> bool:
-        """Acquire the lock, makes sure only one coroutine can retrieve it."""
-
-        self.wait_counter += 1
-        try:
-            return await super(LockCounter, self).acquire()  # type: ignore
-        finally:
-            self.wait_counter -= 1
-
-    def is_someone_waiting(self) -> bool:
-        """Check if a coroutine is waiting for this lock to be freed."""
-        return self.wait_counter != 0

@@ -74,6 +74,7 @@ install_requires = [
     "SQLAlchemy~=1.3.0",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
+    "aioredlock~=0.3.0",
 ]
 
 extras_requires = {
