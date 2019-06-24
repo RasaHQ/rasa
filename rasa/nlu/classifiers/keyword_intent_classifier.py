@@ -32,7 +32,7 @@ class KeywordIntentClassifier(Component):
         self.intent_keyword_map = {}
         for intent in training_data.intents:
             self.intent_keyword_map[intent] = [
-                ex for ex in training_data.training_examples if ex.get("intent") == intent]
+                ex.text for ex in training_data.training_examples if ex.get("intent") == intent]
 
     def process(self, message: Message, **kwargs: Any) -> None:
         intent_name = self.parse(message.text)
