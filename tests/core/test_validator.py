@@ -23,6 +23,7 @@ def test_validator_creation(validator):
     assert isinstance(validator.intents, TrainingData)
     assert isinstance(validator.stories, list)
 
+
 def test_verify_intents(validator):
     valid_intents = ["greet", "goodbye", "affirm"]
     validator.verify_intents()
