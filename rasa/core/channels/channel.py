@@ -409,10 +409,10 @@ class RestInput(InputChannel):
             )
             while True:
                 result = await q.get()  # pytype: disable=bad-return-type
-                if result == "DONE":  # pytype: disable=name-error
+                if result == "DONE":
                     break
                 else:
-                    await resp.write(json.dumps(result) + "\n")  # pytype: disable=name-error
+                    await resp.write(json.dumps(result) + "\n")
             await task
 
         return stream  # pytype: disable=bad-return-type
