@@ -68,6 +68,7 @@ in the path to your saved model:
 
 .. runnable::
    :language: python
+
    from rasa.jupyter import chat
    chat(model_path)
 
