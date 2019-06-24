@@ -6,6 +6,7 @@ from rasa.nlu.training_data import load_data, TrainingData
 from rasa.core.training.dsl import StoryFileReader, StoryStep
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
+from rasa.core.actions.action import UTTER_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -36,43 +37,28 @@ class Validator(object):
         intents = load_data(nlu_data)
         return cls(domain, intents, stories)
 
-    def _search(self, vector: List[Any], searched_value: Any) -> bool:
-        """Searches for a element in a vector."""
-
-        vector.append(searched_value)
-        count = 0
-        while searched_value != vector[count]:
-            count += 1
-        if count == len(vector) - 1:
-            return False
-        else:
-            return True
-
     def verify_intents(self):
         """Compares list of intents in domain with intents in NLU training data."""
 
-        domain_intents = []
-        nlu_data_intents = []
+        domain_intents = set()
+        nlu_data_intents = set()
 
         for intent in self.domain.intent_properties:
-            domain_intents.append(intent)
+            domain_intents.add(intent)
+            self.valid_intents.append(intent)
 
         for intent in self.intents.intent_examples:
-            nlu_data_intents.append(intent.data["intent"])
+            nlu_data_intents.add(intent.data["intent"])
 
         for intent in domain_intents:
-            found = self._search(nlu_data_intents, intent)
-            if not found:
-                logger.error(
+            if intent not in nlu_data_intents:
+                logger.warning(
                     "The intent '{}' is listed in the domain file, but "
                     "is not found in the NLU training data.".format(intent)
                 )
-            else:
-                self.valid_intents.append(intent)
 
         for intent in nlu_data_intents:
-            found = self._search(domain_intents, intent)
-            if not found:
+            if intent not in domain_intents:
                 logger.error(
                     "The intent '{}' is in the NLU training data, but "
                     "is not listed in the domain.".format(intent)
@@ -87,23 +73,20 @@ class Validator(object):
         if self.valid_intents == []:
             self.verify_intents()
 
-        stories_intents = []
+        stories_intents = set()
         for story in self.stories:
             for event in story.events:
                 if type(event) == UserUttered:
                     intent = event.intent["name"]
-                    stories_intents.append(intent)
-                    found = self._search(self.valid_intents, intent)
-
-                    if not found:
+                    stories_intents.add(intent)
+                    if intent not in self.valid_intents:
                         logger.error(
                             "The intent '{}' is used in stories, but is not a "
                             "valid intent.".format(intent)
                         )
 
         for intent in self.valid_intents:
-            found = self._search(stories_intents, intent)
-            if not found:
+            if intent not in stories_intents:
                 logger.warning(
                     "The intent '{}' is not used in any story.".format(intent)
                 )
@@ -112,14 +95,13 @@ class Validator(object):
         """Compares list of utterances in actions with utterances in templates."""
 
         actions = self.domain.action_names
-        utterance_templates = []
+        utterance_templates = set()
 
         for utterance in self.domain.templates:
-            utterance_templates.append(utterance)
+            utterance_templates.add(utterance)
 
         for utterance in utterance_templates:
-            found = self._search(actions, utterance)
-            if not found:
+            if utterance not in actions:
                 logger.error(
                     "The utterance '{}' is not listed under 'actions' in the "
                     "domain file.".format(utterance)
@@ -128,11 +110,10 @@ class Validator(object):
                 self.valid_utterances.append(utterance)
 
         for action in actions:
-            if action.split("_")[0] == "utter":
-                found = self._search(utterance_templates, action)
-                if not found:
+            if action.startswith(UTTER_PREFIX):
+                if action not in utterance_templates:
                     logger.error(
-                        "There is no template for utterance '{}'.".format(utterance)
+                        "There is no template for utterance '{}'.".format(action)
                     )
 
     def verify_utterances_in_stories(self):
@@ -144,24 +125,21 @@ class Validator(object):
         if self.valid_utterances == []:
             self.verify_utterances()
 
-        stories_utterances = []
+        stories_utterances = set()
 
         for story in self.stories:
             for event in story.events:
                 if type(event) == ActionExecuted:
                     utterance = event.action_name
-                    stories_utterances.append(utterance)
-                    found = self._search(self.valid_utterances, utterance)
-
-                    if not found:
+                    stories_utterances.add(utterance)
+                    if utterance not in self.valid_utterances:
                         logger.error(
                             "The utterance '{}' is used in stories, but is not a "
                             "valid utterance.".format(utterance)
                         )
 
         for utterance in self.valid_utterances:
-            found = self._search(stories_utterances, utterance)
-            if not found:
+            if utterance not in stories_utterances:
                 logger.warning(
                     "The utterance '{}' is not used in any story.".format(utterance)
                 )

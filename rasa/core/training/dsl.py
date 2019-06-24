@@ -212,17 +212,19 @@ class StoryFileReader(object):
                 logger.error(line)
         return story_lines
 
-    def _clean_string(self, st: Text, story_file: Text):
-        fragments = []
-        while st:
-            fragment, open_, st = st.partition("<!--")
-            _, close, st = st.partition("-->")
-            if open_ and not close or close and not open_:
+    def _clean_string(self, text: Text, story_file: Text):
+        """Removes comments from the text and gives an error if there is
+        any unclosed comment."""
+        text_fragments = []
+        while text:
+            fragment, open_comment, text = text.partition("<!--")
+            _, close_comment, text = text.partition("-->")
+            if open_comment and not close_comment or close_comment and not open_comment:
                 logger.error(
                     "The story file {} has a unclosed comment.".format(story_file)
                 )
-            fragments.append(fragment)
-        return "".join(fragments)
+            text_fragments.append(fragment)
+        return "".join(text_fragments)
 
     def _remove_comments(self, story_file: Text):
         with io.open(story_file, "r", encoding="utf-8") as f:

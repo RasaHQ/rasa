@@ -23,12 +23,6 @@ def test_validator_creation(validator):
     assert isinstance(validator.intents, TrainingData)
     assert isinstance(validator.stories, list)
 
-
-def test_search(validator):
-    vec = ["a", "b", "c", "d", "e"]
-    assert validator._search(vector=vec, searched_value="c")
-
-
 def test_verify_intents(validator):
     valid_intents = ["greet", "goodbye", "affirm"]
     validator.verify_intents()
