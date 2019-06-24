@@ -227,7 +227,7 @@ Added
 - log level can be set via environment variable ``LOG_LEVEL``
 - add ``--store-uncompressed`` to train command to not compress Rasa model
 - log level of libraries, such as tensorflow, can be set via environment variable ``LOG_LEVEL_LIBRARIES``
-- a new keyword_intent_classifier, can be used to classify messages based on user-defined keywords
+- a new keyword_intent_classifier, can be used to classify messages based on keywords
 - if no spaCy model is linked upon building a spaCy pipeline, an appropriate error message
   is now raised with instructions for linking one
 

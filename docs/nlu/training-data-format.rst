@@ -32,7 +32,7 @@ e.g. ``[entity](entity name)``.
 
     ## intent:greet
     - hey
-    - [greet[hello]] <!-- keyword for intent greet>
+    - hello
 
     ## synonym:savings   <!-- synonyms, method 2 -->
     - pink pig
@@ -64,7 +64,7 @@ JSON Format
 -----------
 
 The JSON format consists of a top-level object called ``rasa_nlu_data``, with the keys
-``common_examples``, ``entity_synonyms``, ``regex_features`` and ``intent_keywords``.
+``common_examples``, ``entity_synonyms`` and ``regex_features``.
 The most important one is ``common_examples``.
 
 .. code-block:: json
@@ -75,7 +75,6 @@ The most important one is ``common_examples``.
             "regex_features" : [],
             "lookup_tables"  : [],
             "entity_synonyms": [],
-            "intent_keywords": {}
         }
     }
 
@@ -286,16 +285,3 @@ directly specified in the training data.
     clean data.
 
 
-Intent Keywords
----------------
-Intent Keywords can be specified if the :ref:`keyword_intent_classifier` is being used.
-
-.. code-block:: json
-
-    {
-        "rasa_nlu_data": {
-            "intent_keywords": {
-                    "intent": ["keyword1", "keyword2", "keyword3"]
-            }
-        }
-    }

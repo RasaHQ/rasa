@@ -22,8 +22,7 @@ available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
 ent_regex = re.compile(
     r"\[(?P<entity_text>[^\]]+)" r"\]\((?P<entity>[^:)]*?)" r"(?:\:(?P<value>[^)]+))?\)"
 )
-# regex for: `[intent[keyword]]`
-keyword_regex = re.compile(r"\[(?P<intent>[^\[]*)\[(?P<keyword>[^\]]+)\]\]")
+
 item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
@@ -54,7 +53,6 @@ class MarkdownReader(TrainingDataReader):
         self.current_title = None
         self.current_section = None
         self.training_examples = []
-        self.intent_keywords = dict()
         self.entity_synonyms = {}
         self.regex_features = []
         self.section_regexes = self._create_section_regexes(available_sections)
@@ -79,7 +77,6 @@ class MarkdownReader(TrainingDataReader):
             self.entity_synonyms,
             self.regex_features,
             self.lookup_tables,
-            self.intent_keywords,
         )
 
     @staticmethod
@@ -123,10 +120,6 @@ class MarkdownReader(TrainingDataReader):
             if self.current_section == INTENT:
                 parsed = self._parse_training_example(item)
                 self.training_examples.append(parsed)
-                intents_kw = self._find_keywords_in_training_example(
-                    item, self.current_title
-                )
-                self.intent_keywords.update(intents_kw)
             elif self.current_section == SYNONYM:
                 self._add_synonym(item, self.current_title)
             elif self.current_section == REGEX:
@@ -145,21 +138,6 @@ class MarkdownReader(TrainingDataReader):
         else:
             elements = matches[0]["elements"]
             elements.append(item)
-
-    @staticmethod
-    def _find_keywords_in_training_example(example, current_intent):
-        """Finds keywords in a given training example."""
-        intent_keywords = dict()
-        for match in re.finditer(keyword_regex, example):
-            intent = match.groupdict().get("intent")
-            keyword = match.groupdict()["keyword"]
-            if not intent:
-                intent = current_intent
-            if intent_keywords.get(intent):
-                intent_keywords[intent].append(keyword)
-            else:
-                intent_keywords[intent] = [keyword]
-        return intent_keywords
 
     @staticmethod
     def _find_entities_in_training_example(example):

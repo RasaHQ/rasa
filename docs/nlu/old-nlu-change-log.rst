@@ -48,9 +48,6 @@ Changed
   ``rasa_nlu.test.cross_validate``
 - renamed ``rasa_nlu.train.do_train()`` to ``rasa_nlu.train.train()``
 - train command can now also load config from file
-- KeywordIntentClassifier now gets its keywords from the training data; it will
-  classify a message as the first intent for which it finds a keyword in the
-  message
 - updated to tensorflow 1.13
 
 Removed

@@ -29,7 +29,10 @@ class KeywordIntentClassifier(Component):
         cfg: Optional["RasaNLUModelConfig"] = None,
         **kwargs: Any
     ) -> None:
-        self.intent_keyword_map.update(training_data.intent_keywords)
+        self.intent_keyword_map = {}
+        for intent in training_data.intents:
+            self.intent_keyword_map[intent] = [
+                ex for ex in training_data.training_examples if ex.get("intent") == intent]
 
     def process(self, message: Message, **kwargs: Any) -> None:
         intent_name = self.parse(message.text)

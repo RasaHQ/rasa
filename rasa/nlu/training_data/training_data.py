@@ -31,7 +31,6 @@ class TrainingData(object):
         entity_synonyms: Optional[Dict[Text, Text]] = None,
         regex_features: Optional[List[Dict[Text, Text]]] = None,
         lookup_tables: Optional[List[Dict[Text, Text]]] = None,
-        intent_keywords: Optional[Dict[Text, List]] = None,
     ) -> None:
 
         if training_examples:
@@ -42,7 +41,6 @@ class TrainingData(object):
         self.regex_features = regex_features if regex_features else []
         self.sort_regex_features()
         self.lookup_tables = lookup_tables if lookup_tables else []
-        self.intent_keywords = intent_keywords if intent_keywords else {}
 
         self.print_stats()
 
