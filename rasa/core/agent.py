@@ -421,7 +421,7 @@ class Agent(object):
         processor = self.create_processor(message_preprocessor)
 
         try:
-            async with self.lock_store.lock(message.sender_id):
+            async with self.lock_store.acquire(message.sender_id):
                 return await processor.handle_message(message)
         finally:
             self.lock_store.cleanup(message.sender_id)
