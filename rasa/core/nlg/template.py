@@ -106,13 +106,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Filling the template variables in the template text
         if template_vars and "text" in template:
             try:
-                # transforming template tags from
-                # "{tag_name}" to "{0[tag_name]}"
-                # as described here:
-                # https://stackoverflow.com/questions/7934620/python-dots-in-the-name-of-variable-in-a-format-string#comment9695339_7934969
-                # assuming that slot_name do not contain newline character here
-                text = re.sub(r"{([^\n]+?)}", r"{0[\1]}", template["text"])
-                template["text"] = text.format(template_vars)
+                template["text"] = template["text"].format(**template_vars)
             except KeyError as e:
                 logger.exception(
                     "Failed to fill utterance template '{}'. "
