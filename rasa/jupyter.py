@@ -31,8 +31,7 @@ def chat(
     if model_path:
         from rasa.run import create_agent
 
-        unpacked = model.get_model(model_path)
-        agent = create_agent(unpacked)
+        agent = create_agent(model_path)
 
     elif agent is not None and interpreter is not None:
         # HACK: this skips loading the interpreter and directly

@@ -6,8 +6,31 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.4] - `master`_
+
+[Unreleased 1.1.5] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- debug logging now tells you which tracker store is connected
+
+Changed
+-------
+- deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
+  or ``rasa.core.run.configure_app`` instead.
+- ``Agent.load()`` also accepts ``tar.gz`` model file
+
+Removed
+-------
+- revert the stripping of trailing slashes in endpoint URLs since this can lead to
+  problems in case the trailing slash is actually wanted
+
+Fixed
+-----
+- all temporal model files are now deleted after stopping the Rasa server
+
+[1.1.4] - 2019-06-18
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -16,11 +39,8 @@ Added
 
 Changed
 -------
-
 - removed leading underscore from name of '_create_initial_project' function.
 
-Removed
--------
 
 Fixed
 -----
