@@ -1,11 +1,10 @@
 import logging
-import os
 import shutil
 import typing
 from typing import Dict, Text
 
 from rasa.constants import DOCS_BASE_URL
-from rasa.cli.utils import minimal_kwargs, print_warning, print_error
+from rasa.cli.utils import minimal_kwargs, print_warning
 from rasa.model import get_model
 
 logger = logging.getLogger(__name__)

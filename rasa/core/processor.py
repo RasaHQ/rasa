@@ -452,7 +452,6 @@ class MessageProcessor(object):
             events = []
 
         self._log_action_on_tracker(tracker, action.name(), events, policy, confidence)
-
         if action.name() != ACTION_LISTEN_NAME and not action.name().startswith(
             UTTER_PREFIX
         ):

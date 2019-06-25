@@ -12,15 +12,22 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- debug logging now tells you which tracker store is connected
 
 Changed
 -------
+- deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
+  or ``rasa.core.run.configure_app`` instead.
+- ``Agent.load()`` also accepts ``tar.gz`` model file
 
 Removed
 -------
+- revert the stripping of trailing slashes in endpoint URLs since this can lead to
+  problems in case the trailing slash is actually wanted
 
 Fixed
 -----
+- all temporal model files are now deleted after stopping the Rasa server
 
 [1.1.4] - 2019-06-18
 ^^^^^^^^^^^^^^^^^^^^
