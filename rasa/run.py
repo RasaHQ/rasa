@@ -36,8 +36,6 @@ def run(
     import rasa.nlu.run
     from rasa.core.utils import AvailableEndpoints
 
-    model_path = get_model(model)
-
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     if not connector and not credentials:
@@ -57,9 +55,6 @@ def run(
         endpoints=_endpoints,
         **kwargs
     )
-
-    if model_path is not None:
-        shutil.rmtree(model_path)
 
 
 def create_agent(model: Text, endpoints: Text = None) -> "Agent":

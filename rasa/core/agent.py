@@ -41,6 +41,7 @@ from rasa.model import (
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
+from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -348,14 +349,10 @@ class Agent(object):
         remote_storage: Optional[Text] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
-        if model_path is not None and model_path.endswith("tar.gz"):
-            model_path = get_model(model_path)
-
-        if (
-            model_path is None
-            or not os.path.exists(model_path)
-            or not os.path.isdir(model_path)
-        ):
+        try:
+            if not os.path.isdir(model_path):
+                model_path = get_model(model_path)
+        except ModelNotFound:
             raise ValueError(
                 "You are trying to load a MODEL from '{}', which is not possible. \n"
                 "The model path should be a 'tar.gz' file or a directory "
