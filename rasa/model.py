@@ -3,7 +3,8 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import Text, Tuple, Union, Optional, List, Dict
+from typing import Text, Tuple, Union, Optional, List, Dict, Type
+from types import TracebackType
 
 import yaml.parser
 
@@ -37,14 +38,19 @@ FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
 class UnpackedModelPath(str):
     """Represents a path to an unpacked model on disk. When used as a context
-    manager, it erases all files it points to after exit.
+    manager, it erases the unpacked model files after the context is exited.
 
     """
 
-    def __enter__(self):
+    def __enter__(self) -> "UnpackedModelPath":
         return self
 
-    def __exit__(self, _exc, _value, _tb):
+    def __exit__(
+        self,
+        _exc: Optional[Type[BaseException]],
+        _value: Optional[Exception],
+        _tb: Optional[TracebackType],
+    ) -> bool:
         shutil.rmtree(self)
 
 

@@ -161,7 +161,7 @@ def serve_application(
         "before_server_start",
     )
 
-    async def clear_model_files(app: Sanic, _loop: Text):
+    async def clear_model_files(app: Sanic, _loop: Text) -> None:
         if app.agent.model_directory:
             shutil.rmtree(app.agent.model_directory)
 
@@ -195,10 +195,10 @@ async def load_agent_on_start(
                     nlu_model, endpoints.nlu
                 )
         else:
-            raise RuntimeError("No model found at: {}".format(model_path))
+            raise RuntimeError("No model found at '{}'.".format(model_path))
 
     except Exception:
-        logger.debug("Could not load interpreter from '{}'".format(model_path))
+        logger.debug("Could not load interpreter from '{}'.".format(model_path))
         _interpreter = None
 
     _broker = broker.from_endpoint_config(endpoints.event_broker)
