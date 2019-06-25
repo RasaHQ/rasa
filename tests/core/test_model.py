@@ -62,15 +62,15 @@ def test_get_model_context_manager(trained_model):
 def test_get_model_exception():
     with pytest.raises(ModelNotFound):
         # Does not exist
-        get_model('foobar')
+        get_model("foobar")
 
     with pytest.raises(ModelNotFound):
         # Existing directory, without models
-        get_model('rasa')
+        get_model("rasa")
 
     with pytest.raises(ModelNotFound):
         # Existing file, not a .tar.gz
-        get_model('README.md')
+        get_model("README.md")
 
 
 def test_get_model_from_directory_with_subdirectories(trained_model):

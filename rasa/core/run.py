@@ -189,9 +189,7 @@ async def load_agent_on_start(
     try:
         with get_model(model_path) as unpacked_model:
             _, nlu_model = get_model_subdirectories(unpacked_model)
-            _interpreter = NaturalLanguageInterpreter.create(
-                nlu_model, endpoints.nlu
-            )
+            _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
     except Exception:
         logger.debug("Could not load interpreter from '{}'.".format(model_path))
         _interpreter = None
