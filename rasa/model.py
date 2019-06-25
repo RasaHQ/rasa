@@ -3,7 +3,8 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import Text, Tuple, Union, Optional, List, Dict
+from typing import Text, Tuple, Union, Optional, List, Dict, Type
+from types import TracebackType
 
 import yaml.parser
 
@@ -35,7 +36,25 @@ FINGERPRINT_NLU_DATA_KEY = "messages"
 FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
 
-def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
+class UnpackedModelPath(str):
+    """Represents a path to an unpacked model on disk. When used as a context
+    manager, it erases the unpacked model files after the context is exited.
+
+    """
+
+    def __enter__(self) -> "UnpackedModelPath":
+        return self
+
+    def __exit__(
+        self,
+        _exc: Optional[Type[BaseException]],
+        _value: Optional[Exception],
+        _tb: Optional[TracebackType],
+    ) -> bool:
+        shutil.rmtree(self)
+
+
+def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[UnpackedModelPath]:
     """Gets a model and unpacks it.
 
     Args:
@@ -80,7 +99,9 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     return max(list_of_files, key=os.path.getctime)
 
 
-def unpack_model(model_file: Text, working_directory: Optional[Text] = None) -> Text:
+def unpack_model(
+    model_file: Text, working_directory: Optional[Text] = None
+) -> UnpackedModelPath:
     """Unpacks a zipped Rasa model.
 
     Args:
@@ -107,7 +128,7 @@ def unpack_model(model_file: Text, working_directory: Optional[Text] = None) -> 
     tar.close()
     logger.debug("Extracted model to '{}'.".format(working_directory))
 
-    return working_directory
+    return UnpackedModelPath(working_directory)
 
 
 def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
