@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Callable, Dict, List, Text, Optional, Union
+from typing import Any, Callable, Dict, List, Text, Optional
 
 import rasa.core.utils
 import rasa.utils.io
