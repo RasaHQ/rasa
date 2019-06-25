@@ -19,10 +19,10 @@ class LuisReader(JsonTrainingDataReader):
         regex_features = []
 
         # Simple check to ensure we support this luis data schema version
-        if not js["luis_schema_version"].startswith("2"):
+        if not js["luis_schema_version"].startswith("3"):
             raise Exception(
                 "Invalid luis data schema version {}, "
-                "should be 2.x.x. "
+                "should be 3.x.x. "
                 "Make sure to use the latest luis version "
                 "(e.g. by downloading your data again)."
                 "".format(js["luis_schema_version"])
