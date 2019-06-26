@@ -4,6 +4,8 @@ from rasa.cli.arguments.default_arguments import (
     add_nlu_data_param,
     add_out_param,
     add_data_param,
+    add_stories_param,
+    add_domain_param,
 )
 
 
@@ -43,3 +45,8 @@ def set_split_arguments(parser: argparse.ArgumentParser):
         default="train_test_split",
         help_text="Directory where the split files should be stored.",
     )
+
+
+def set_validator_arguments(parser: argparse.ArgumentParser):
+    add_domain_param(parser)
+    add_data_param(parser)

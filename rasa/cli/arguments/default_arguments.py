@@ -92,7 +92,7 @@ def add_endpoint_param(
 
 def add_data_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
-    default: Optional[Text] = DEFAULT_MODELS_PATH,
+    default: Optional[Text] = DEFAULT_DATA_PATH,
     required: bool = False,
     data_type: Text = "Rasa ",
 ):
@@ -100,7 +100,7 @@ def add_data_param(
         "--data",
         type=str,
         default=default,
-        help="Path to the file or directory containing {}data.".format(data_type),
+        help="Path to the file or directory containing {} data.".format(data_type),
         required=required,
     )
 
