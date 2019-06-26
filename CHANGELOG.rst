@@ -12,15 +12,24 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- debug logging now tells you which tracker store is connected
 
 Changed
 -------
+- deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
+  or ``rasa.core.run.configure_app`` instead.
+- ``Agent.load()`` also accepts ``tar.gz`` model file
 
 Removed
 -------
+- revert the stripping of trailing slashes in endpoint URLs since this can lead to
+  problems in case the trailing slash is actually wanted
 
 Fixed
 -----
+- all temporal model files are now deleted after stopping the Rasa server
+- ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
+
 
 [1.1.4] - 2019-06-18
 ^^^^^^^^^^^^^^^^^^^^
@@ -39,6 +48,7 @@ Fixed
 -----
 - fixed bug where facebook quick replies were not rendering
 - take FB quick reply payload rather than text as input
+- fixed bug where `training_data` path in `metadata.json` was an absolute path
 
 
 [1.1.3] - 2019-06-14
