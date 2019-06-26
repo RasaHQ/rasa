@@ -1,4 +1,4 @@
-:desc: Find out how open source chatbot framework Rasa Stack allows
+:desc: Find out how open source chatbot framework Rasa allows
        you to stream events to a message broker.
 
 .. _event-brokers:
