@@ -10,8 +10,8 @@ from rasa.nlu.training_data import TrainingData
 
 
 @pytest.fixture
-def validator():
-    return Validator.from_files(
+async def validator():
+    return await Validator.from_files(
         domain_file=DEFAULT_DOMAIN_PATH,
         nlu_data=DEFAULT_NLU_DATA,
         story_data=DEFAULT_STORIES_FILE,
@@ -25,12 +25,12 @@ def test_validator_creation(validator):
 
 
 def test_verify_intents(validator):
-    valid_intents = ["greet", "goodbye", "affirm"]
-    validator.verify_intents()
-    assert set(validator.valid_intents) == set(valid_intents)
+    valid_intents = [intent for intent in validator.domain.intents]
+    verified_intents = validator.verify_intents()
+    assert set(verified_intents) == set(valid_intents)
 
 
 def test_verify_utterances(validator):
     valid_utterances = ["utter_greet", "utter_goodbye", "utter_default"]
-    validator.verify_utterances()
-    assert set(validator.valid_utterances) == set(valid_utterances)
+    verified_utterances = validator.verify_utterances()
+    assert set(verified_utterances) == set(valid_utterances)
