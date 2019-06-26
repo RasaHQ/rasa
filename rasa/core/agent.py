@@ -23,7 +23,7 @@ from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.lock_store import LockStore
+from rasa.core.lock_store import LockStore, CounterLockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.form_policy import FormPolicy
@@ -284,7 +284,7 @@ class Agent(object):
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
-        conversation_lock: Optional[LockStore] = None,
+        lock_store: Optional[LockStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_directory: Optional[Text] = None,
@@ -306,7 +306,7 @@ class Agent(object):
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
-        self.lock_store = conversation_lock
+        self.lock_store = self.create_lock_store(lock_store)
         self.action_endpoint = action_endpoint
 
         self._set_fingerprint(fingerprint)
@@ -428,7 +428,7 @@ class Agent(object):
         processor = self.create_processor(message_preprocessor)
 
         try:
-            async with self.lock_store.acquire(message.sender_id):
+            async with self.lock_store.lock(message.sender_id):
                 return await processor.handle_message(message)
         finally:
             self.lock_store.cleanup(message.sender_id)
@@ -820,6 +820,13 @@ class Agent(object):
             return InMemoryTrackerStore(domain)
 
     @staticmethod
+    def create_lock_store(store: Optional[LockStore]) -> LockStore:
+        if store is not None:
+            return store
+        else:
+            return CounterLockStore()
+
+    @staticmethod
     def _create_ensemble(
         policies: Union[List[Policy], PolicyEnsemble, None]
     ) -> Optional[PolicyEnsemble]:
@@ -834,7 +841,7 @@ class Agent(object):
             raise ValueError(
                 "Invalid param `policies`. Passed object is "
                 "of type '{}', but should be policy, an array of "
-                "policies, or a policy ensemble".format(passed_type)
+                "policies, or a policy ensemble.".format(passed_type)
             )
 
     @staticmethod
