@@ -91,15 +91,6 @@ class RedisLockStore(LockStore):
         lock_timeout: float = 0.5,
         retry_count: int = 20,
     ) -> None:
-        """
-
-        :param host:
-        :param port:
-        :param db:
-        :param password:
-        :param lock_timeout:
-        :param retry_count:
-        """
         from aioredlock import Aioredlock
 
         redis_instances = [{"host": host, "port": port, "db": db, "password": password}]
