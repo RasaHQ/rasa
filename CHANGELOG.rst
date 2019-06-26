@@ -29,6 +29,8 @@ Removed
 Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
+- ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
+
 
 [1.1.4] - 2019-06-18
 ^^^^^^^^^^^^^^^^^^^^
@@ -210,12 +212,12 @@ Added
 - added tracker store persisting trackers into a SQL database
   (``SQLTrackerStore``)
 - added rasa command line interface and API
-- Rasa Stack HTTP training endpoint at ``POST /jobs``. This endpoint
+- Rasa  HTTP training endpoint at ``POST /jobs``. This endpoint
   will train a combined Rasa Core and NLU model
 - ``ReminderCancelled(action_name)`` event to cancel given action_name reminder
   for current user
-- Rasa Stack HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
-  This endpoints performs an intent evaluation of a Rasa Stack model
+- Rasa HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
+  This endpoints performs an intent evaluation of a Rasa model
 - option to create template for new utterance action in ``interactive learning``
 - you can now choose actions previously created in the same session
   in ``interactive learning``
