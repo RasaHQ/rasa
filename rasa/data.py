@@ -4,8 +4,9 @@ import shutil
 import tempfile
 import uuid
 import typing
-from typing import Tuple, List, Text, Set, Union, Optional
 import re
+from typing import Tuple, List, Text, Set, Union, Optional
+from rasa.nlu.training_data.loading import guess_format
 
 import rasa.utils.io as io_utils
 
@@ -156,15 +157,7 @@ def _is_valid_filetype(path: Text) -> bool:
 
 
 def _is_nlu_file(file_path: Text) -> bool:
-    with open(file_path, encoding="utf-8") as f:
-        if file_path.endswith(".json"):
-            content = io_utils.read_json_file(file_path)
-            is_nlu_file = (
-                isinstance(content, dict) and content.get("rasa_nlu_data") is not None
-            )
-        else:
-            is_nlu_file = any(_contains_nlu_pattern(l) for l in f)
-    return is_nlu_file
+    return guess_format(file_path) != 'unk'
 
 
 def _contains_nlu_pattern(text: Text) -> bool:
