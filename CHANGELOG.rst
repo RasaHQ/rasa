@@ -28,6 +28,8 @@ Removed
 Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
+- ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
+
 
 [1.1.4] - 2019-06-18
 ^^^^^^^^^^^^^^^^^^^^
@@ -46,6 +48,7 @@ Fixed
 -----
 - fixed bug where facebook quick replies were not rendering
 - take FB quick reply payload rather than text as input
+- fixed bug where `training_data` path in `metadata.json` was an absolute path
 
 
 [1.1.3] - 2019-06-14
