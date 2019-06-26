@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from typing import List, Any, Text
+from typing import List, Text
 from rasa.core.domain import Domain
 from rasa.nlu.training_data import load_data, TrainingData
 from rasa.core.training.dsl import StoryFileReader, StoryStep

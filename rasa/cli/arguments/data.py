@@ -49,5 +49,4 @@ def set_split_arguments(parser: argparse.ArgumentParser):
 
 def set_validator_arguments(parser: argparse.ArgumentParser):
     add_domain_param(parser)
-    add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
-    add_stories_param(parser)
+    add_data_param(parser)

@@ -91,5 +91,7 @@ def split_nlu_data(args):
 def validate_files(args):
     from rasa.core.validator import Validator
 
-    validator = Validator.from_files(args.domain, args.nlu, args.stories)
+    story_directory, nlu_data_directory = data.get_core_nlu_directories(args.data)
+
+    validator = Validator.from_files(args.domain, nlu_data_directory, story_directory)
     validator.verify_all()

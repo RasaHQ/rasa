@@ -54,8 +54,7 @@ def test_data_convert_help(run):
 def test_data_validate_help(run):
     output = run("data", "validate", "--help")
 
-    help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-u NLU]
-                          [-s STORIES]"""
+    help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [--data DATA]"""
 
     lines = help_text.split("\n")
 
