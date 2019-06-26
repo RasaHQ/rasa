@@ -6,17 +6,7 @@ import uuid
 from asyncio import Queue, CancelledError
 from sanic import Sanic, Blueprint, response
 from sanic.request import Request
-from typing import (
-    Text,
-    List,
-    Dict,
-    Any,
-    Optional,
-    Callable,
-    Coroutine,
-    Iterable,
-    Awaitable,
-)
+from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 
 import rasa.utils.endpoints
 from rasa.constants import DOCS_BASE_URL

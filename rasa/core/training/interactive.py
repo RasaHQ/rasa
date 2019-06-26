@@ -352,10 +352,10 @@ async def _request_free_text_utterance(
     return await _ask_questions(question, sender_id, endpoint)
 
 
-async def _request_selection_from_intent_list(
-    intent_list: List[Dict[Text, Text]], sender_id: Text, endpoint: EndpointConfig
+async def _request_selection_from_intents(
+    intents: List[Dict[Text, Text]], sender_id: Text, endpoint: EndpointConfig
 ) -> Text:
-    question = questionary.select("What intent is it?", choices=intent_list)
+    question = questionary.select("What intent is it?", choices=intents)
     return await _ask_questions(question, sender_id, endpoint)
 
 
@@ -413,9 +413,7 @@ async def _request_intent_from_user(
         {"name": "<create_new_intent>", "value": OTHER_INTENT}
     ] + _selection_choices_from_intent_prediction(predictions)
 
-    intent_name = await _request_selection_from_intent_list(
-        choices, sender_id, endpoint
-    )
+    intent_name = await _request_selection_from_intents(choices, sender_id, endpoint)
 
     if intent_name == OTHER_INTENT:
         intent_name = await _request_free_text_intent(sender_id, endpoint)
@@ -820,9 +818,9 @@ def _intents_from_messages(messages):
     """Return all intents that occur in at least one of the messages."""
 
     # set of distinct intents
-    intents = {m.data["intent"] for m in messages if "intent" in m.data}
+    distinct_intents = {m.data["intent"] for m in messages if "intent" in m.data}
 
-    return [{i: {"use_entities": True}} for i in intents]
+    return distinct_intents
 
 
 async def _write_domain_to_file(
@@ -840,16 +838,12 @@ async def _write_domain_to_file(
     templates = NEW_TEMPLATES
 
     # TODO for now there is no way to distinguish between action and form
-    intent_properties = Domain.collect_intent_properties(
-        _intents_from_messages(messages)
-    )
-
     collected_actions = list(
         {e["name"] for e in actions if e["name"] not in default_action_names()}
     )
 
     new_domain = Domain(
-        intent_properties=intent_properties,
+        intents=_intents_from_messages(messages),
         entities=_entities_from_messages(messages),
         slots=[],
         templates=templates,

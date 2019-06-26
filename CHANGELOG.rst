@@ -6,22 +6,57 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.3] - `master`_
+
+[Unreleased 1.1.5] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+- debug logging now tells you which tracker store is connected
 - ``Validator`` class to help developing by checking if the files have any errors
-
 
 Changed
 -------
+- deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
+  or ``rasa.core.run.configure_app`` instead.
+- ``Agent.load()`` also accepts ``tar.gz`` model file
 
 Removed
 -------
+- revert the stripping of trailing slashes in endpoint URLs since this can lead to
+  problems in case the trailing slash is actually wanted
 
 Fixed
 -----
+- all temporal model files are now deleted after stopping the Rasa server
+
+[1.1.4] - 2019-06-18
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- unfeaturize single entities
+- added agent readiness check to the ``/status`` resource
+
+Changed
+-------
+- removed leading underscore from name of '_create_initial_project' function.
+
+
+Fixed
+-----
+- fixed bug where facebook quick replies were not rendering
+- take FB quick reply payload rather than text as input
+- fixed bug where `training_data` path in `metadata.json` was an absolute path
+
+
+[1.1.3] - 2019-06-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed any inconsistent type annotations in code and some bugs revealed by
+  type checker
 
 [1.1.2] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
