@@ -197,41 +197,6 @@ class StoryFileReader(object):
 
         return story_steps
 
-    def verify_stories_format(self, filename):
-        story_lines = self._remove_comments(filename)
-
-        for line in range(len(story_lines)):
-            story_lines[line] = story_lines[line].strip()
-
-        for line in story_lines:
-            if len(line) > 0 and line[0] not in {"*", "#", "-", ">"}:
-                logger.error(
-                    "There is an error with the following line "
-                    "in your stories file: {}".format(filename)
-                )
-                logger.error(line)
-        return story_lines
-
-    def _clean_string(self, text: Text, story_file: Text):
-        """Removes comments from the text and gives an error if there is
-        any unclosed comment."""
-        text_fragments = []
-        while text:
-            fragment, open_comment, text = text.partition("<!--")
-            _, close_comment, text = text.partition("-->")
-            if open_comment and not close_comment or close_comment and not open_comment:
-                logger.error(
-                    "The story file {} has a unclosed comment.".format(story_file)
-                )
-            text_fragments.append(fragment)
-        return "".join(text_fragments)
-
-    def _remove_comments(self, story_file: Text):
-        with io.open(story_file, "r", encoding="utf-8") as f:
-            no_comment = self._clean_string(f.read(), story_file)
-        story_lines = no_comment.split("\n")
-        return story_lines
-
     @staticmethod
     async def read_from_file(
         filename,
@@ -243,8 +208,9 @@ class StoryFileReader(object):
         """Given a md file reads the contained stories."""
 
         try:
+            with open(filename, "r", encoding="utf-8") as f:
+                lines = f.readlines()
             reader = StoryFileReader(domain, interpreter, template_variables, use_e2e)
-            lines = reader.verify_stories_format(filename)
             return await reader.process_lines(lines)
         except ValueError as err:
             file_info = "Invalid story file format. Failed to parse '{}'".format(
