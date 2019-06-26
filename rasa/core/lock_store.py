@@ -1,7 +1,11 @@
 import asyncio
+import json
 import logging
+import time
 import typing
 from typing import Text, Optional
+
+from rasa.core.lock import LockCounter, RedisTicketLock
 
 if typing.TYPE_CHECKING:
     pass
@@ -10,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class LockStore(object):
-    def lock(self, conversation_id: Text):
+    async def lock(self, conversation_id: Text):
         raise NotImplementedError
 
     def cleanup(self, conversation_id: Text):
@@ -19,39 +23,13 @@ class LockStore(object):
         pass
 
 
-class LockCounter(asyncio.Lock):
-    """Decorated asyncio lock that counts how many coroutines are waiting.
-    The counter can be used to discard the lock when there is no coroutine
-    waiting for it. For this to work, there should not be any execution yield
-    between retrieving the lock and acquiring it, otherwise there might be
-    race conditions."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.wait_counter = 0
-
-    async def acquire(self) -> bool:
-        """Acquire the lock, makes sure only one coroutine can retrieve it."""
-
-        self.wait_counter += 1
-        try:
-            return await super(LockCounter, self).acquire()  # type: ignore
-        finally:
-            self.wait_counter -= 1
-
-    def is_someone_waiting(self) -> bool:
-        """Check if a coroutine is waiting for this lock to be freed."""
-
-        return self.wait_counter != 0
-
-
 class CounterLockStore(LockStore):
     """Store for LockCounter locks."""
 
     def __init__(self) -> None:
         self.conversation_locks = {}
 
-    def lock(self, conversation_id: Text) -> LockCounter:
+    async def lock(self, conversation_id: Text) -> LockCounter:
         lock = self._get_lock(conversation_id)
         if not lock:
             lock = self._create_lock(conversation_id)
@@ -82,23 +60,67 @@ class CounterLockStore(LockStore):
 
 
 class RedisLockStore(LockStore):
-    def __init__(
-        self,
-        host: Optional[Text] = None,
-        port: Optional[int] = None,
-        db: Text = "rasa",
-        password: Text = None,
-        lock_timeout: float = 0.5,
-        retry_count: int = 20,
-    ) -> None:
-        from aioredlock import Aioredlock
+    """Lock store for the `RedisTicketLock`"""
 
-        redis_instances = [{"host": host, "port": port, "db": db, "password": password}]
-        self.lock_manager = Aioredlock(
-            redis_connections=[redis_instances],
-            lock_timeout=lock_timeout,
-            retry_count=retry_count,
+    def __init__(self, host="localhost", port=6379, db=1, password=None, lifetime=20):
+        import redis
+
+        self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
+        self.lifetime = lifetime
+
+    async def lock(self, conversation_id: Text):
+        if True:
+            _lock = self._get_or_create_lock(conversation_id)
+
+            if not _lock.is_locked():
+                return _lock.acquire(time.time() + self.lifetime)
+
+            await asyncio.sleep(1)
+
+    def _create_lock_object(
+        self,
+        conversation_id: Text,
+        expires: float,
+        now_serving: Optional[int] = None,
+        last_served: Optional[int] = None,
+    ) -> RedisTicketLock:
+        return RedisTicketLock(
+            conversation_id, expires, now_serving, last_served, self.red
         )
 
-    def lock(self, conversation_id: Text) -> "Aioredlock":
-        return self.lock_manager.lock(conversation_id)
+    def _create_new_lock(self, conversation_id: Text) -> RedisTicketLock:
+        expires = time.time() + self.lifetime
+        _lock = self._create_lock_object(conversation_id, expires)
+        _lock._persist()
+        return _lock
+
+    def _get_lock(self, conversation_id: Text) -> Optional[RedisTicketLock]:
+        existing_lock = self.red.get(conversation_id)
+        if existing_lock:
+            return self._lock_object_from_dump(existing_lock)
+
+        return None
+
+    def _get_or_create_lock(self, conversation_id: Text) -> RedisTicketLock:
+        existing_lock = self._get_lock(conversation_id)
+        if existing_lock:
+            return existing_lock
+
+        return self._create_new_lock(conversation_id)
+
+    def _lock_object_from_dump(self, existing_lock: Text) -> RedisTicketLock:
+        lock_json = json.loads(existing_lock)
+        print ("have lock dump", lock_json)
+        return self._create_lock_object(
+            lock_json.get("conversation_id"),
+            lock_json.get("expires"),
+            lock_json.get("now_serving"),
+            lock_json.get("last_served"),
+        )
+
+    def cleanup(self, conversation_id: Text) -> None:
+        """Delete lock if no one is waiting on it."""
+
+        _lock = self._get_lock(conversation_id)
+        if _lock and not _lock.is_someone_waiting():
+            self.red.delete(conversation_id)

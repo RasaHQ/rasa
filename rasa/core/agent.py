@@ -23,7 +23,7 @@ from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.lock_store import LockStore, CounterLockStore
+from rasa.core.lock_store import LockStore, CounterLockStore, RedisLockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.form_policy import FormPolicy
@@ -428,7 +428,8 @@ class Agent(object):
         processor = self.create_processor(message_preprocessor)
 
         try:
-            async with self.lock_store.lock(message.sender_id):
+            print("sending message", message.text)
+            async with await self.lock_store.lock(message.sender_id):
                 return await processor.handle_message(message)
         finally:
             self.lock_store.cleanup(message.sender_id)
@@ -824,7 +825,8 @@ class Agent(object):
         if store is not None:
             return store
         else:
-            return CounterLockStore()
+            # return CounterLockStore()
+            return RedisLockStore()
 
     @staticmethod
     def _create_ensemble(
