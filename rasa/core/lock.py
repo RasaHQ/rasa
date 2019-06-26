@@ -1,9 +1,10 @@
 import asyncio
 import json
 import logging
-import time
 import typing
 from typing import Text, Optional
+
+import time
 
 if typing.TYPE_CHECKING:
     pass
@@ -43,15 +44,15 @@ class RedisTicketLock:
     def __init__(
         self,
         conversation_id: Text,
-        expires: float,
+        record_exp: float,
         now_serving: Optional[int] = None,
-        last_served: Optional[int] = None,
+        last_issued: Optional[int] = None,
         red=None,
     ):
         self.conversation_id = conversation_id
-        self.expires = expires
+        self.record_exp = record_exp
         self.now_serving = self._now_serving(now_serving)
-        self.last_served = last_served
+        self.last_issued = self._last_issued(last_issued)
         self.red = red
 
     async def __aenter__(self):
@@ -67,64 +68,70 @@ class RedisTicketLock:
 
         return 0
 
-    def _increment_now_serving(self):
-        self.now_serving += 1
+    @staticmethod
+    def _last_issued(last_issued: Optional[int] = None) -> int:
+        if last_issued is not None:
+            return last_issued
 
-    def _increment_last_served(self):
-        self.last_served += 1
+        return 0
 
-    def is_locked(self):
-        """Return whether lock is locked.
+    def is_locked(self, ticket: int) -> bool:
+        """Return whether `ticket` is locked.
 
-        Always returns False if lock has expired. Otherwise returns False if
-        `now_serving` is equal to `last_served`.
+        Returns False if lock has expired.
+        Otherwise returns True if `now_serving` is not equal to `ticket`.
         """
 
-        if time.time() > self.expires:
+        if self.has_lock_expired():
             return False
 
-        is_locked = self.now_serving != self.last_served + 1
+        return self.now_serving != ticket
 
-        return is_locked
+    def has_lock_expired(self):
+        """Returns True if Redis record for `conversation_id` no longer exists."""
+        return self.red.get(self.conversation_id) is None
 
     def is_someone_waiting(self) -> bool:
         """Return whether someone is waiting on the lock to become available.
 
-        Returns True if `now_serving` is greater than `last_served`.
+        Returns True if `now_serving` is greater than `last_issued`.
         """
 
-        return self.now_serving == self.last_served
+        return self.now_serving > self.last_issued
 
-    def acquire(self, update_expires: float):
+    def acquire(self):
         """Issues a RedisTicketLock.
 
-        Updates a lock's expiration time, increments its `last_served` count
-        and persists the lock.
+        Updates the existing record.
         """
-
-        if update_expires:
-            self._update_expiration(update_expires)
-        self._increment_now_serving()
-        self._persist()
 
         return self
 
-    def _release(self):
-        self._increment_last_served()
+    def issue_new_ticket(self) -> None:
+        """Issues a new ticket and return its value.
+
+        Updates the lock's `last_issued` count by 1 and persists the lock.
+        """
+
+        self.last_issued += 1
         self._persist()
 
-    def _update_expiration(self, expires):
-        self.expires = expires
+    def _release(self) -> None:
+        """Increment its `now_serving` count by one and persist the lock."""
+        self.now_serving += 1
+        self._persist()
 
-    def _persist(self):
-        self.red.set(self.conversation_id, self.dumps())
+    def _persist(self) -> None:
+        self.red.set(self.conversation_id, self.dumps(), ex=self.record_exp)
 
-    def dumps(self):
+    def dumps(self) -> Text:
+        """Returns json dump of `RedisTicketLock`."""
+
         return json.dumps(
             dict(
                 conversation_id=self.conversation_id,
                 now_serving=self.now_serving,
-                last_served=self.last_served,
-                expires=self.expires,
+                last_issued=self.last_issued,
+                expires=self.record_exp,
             )
         )

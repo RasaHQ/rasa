@@ -223,6 +223,7 @@ async def load_agent(
     interpreter: Optional[NaturalLanguageInterpreter] = None,
     generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
     tracker_store: Optional[TrackerStore] = None,
+    lock_store: Optional[LockStore] = None,
     action_endpoint: Optional[EndpointConfig] = None,
 ):
     try:
@@ -232,6 +233,7 @@ async def load_agent(
                 interpreter=interpreter,
                 generator=generator,
                 tracker_store=tracker_store,
+                lock_store=lock_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
                 remote_storage=remote_storage,
@@ -243,6 +245,7 @@ async def load_agent(
                     interpreter=interpreter,
                     generator=generator,
                     tracker_store=tracker_store,
+                    lock_store=lock_store,
                     action_endpoint=action_endpoint,
                     model_server=model_server,
                     remote_storage=remote_storage,
@@ -344,6 +347,7 @@ class Agent(object):
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional[LockStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
@@ -386,6 +390,7 @@ class Agent(object):
             interpreter=interpreter,
             generator=generator,
             tracker_store=tracker_store,
+            lock_store=lock_store,
             action_endpoint=action_endpoint,
             model_directory=model_path,
             model_server=model_server,
@@ -428,7 +433,6 @@ class Agent(object):
         processor = self.create_processor(message_preprocessor)
 
         try:
-            print("sending message", message.text)
             async with await self.lock_store.lock(message.sender_id):
                 return await processor.handle_message(message)
         finally:
@@ -852,6 +856,7 @@ class Agent(object):
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional[LockStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
@@ -873,6 +878,7 @@ class Agent(object):
             interpreter=interpreter,
             generator=generator,
             tracker_store=tracker_store,
+            lock_store=lock_store,
             action_endpoint=action_endpoint,
             model_server=model_server,
             remote_storage=remote_storage,

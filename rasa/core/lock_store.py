@@ -1,9 +1,8 @@
 import asyncio
 import json
 import logging
-import time
 import typing
-from typing import Text, Optional
+from typing import Text, Optional, Tuple
 
 from rasa.core.lock import LockCounter, RedisTicketLock
 
@@ -62,35 +61,37 @@ class CounterLockStore(LockStore):
 class RedisLockStore(LockStore):
     """Lock store for the `RedisTicketLock`"""
 
-    def __init__(self, host="localhost", port=6379, db=1, password=None, lifetime=20):
+    def __init__(self, host="localhost", port=6379, db=1, password=None, record_exp=10):
         import redis
 
         self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
-        self.lifetime = lifetime
+        self.record_exp = record_exp
 
     async def lock(self, conversation_id: Text):
-        if True:
-            _lock = self._get_or_create_lock(conversation_id)
+        _lock = self._get_or_create_lock(conversation_id)
+        ticket = _lock.last_issued
 
-            if not _lock.is_locked():
-                return _lock.acquire(time.time() + self.lifetime)
+        while True:
+
+            # todo: update the fetched lock record as things might have changed in
+            # the meantime - although acquire() should set now_serving to ticket
+            if not _lock.is_locked(ticket):
+                return _lock.acquire()
 
             await asyncio.sleep(1)
 
     def _create_lock_object(
         self,
         conversation_id: Text,
-        expires: float,
         now_serving: Optional[int] = None,
-        last_served: Optional[int] = None,
+        last_issued: Optional[int] = None,
     ) -> RedisTicketLock:
         return RedisTicketLock(
-            conversation_id, expires, now_serving, last_served, self.red
+            conversation_id, self.record_exp, now_serving, last_issued, self.red
         )
 
     def _create_new_lock(self, conversation_id: Text) -> RedisTicketLock:
-        expires = time.time() + self.lifetime
-        _lock = self._create_lock_object(conversation_id, expires)
+        _lock = self._create_lock_object(conversation_id)
         _lock._persist()
         return _lock
 
@@ -103,19 +104,20 @@ class RedisLockStore(LockStore):
 
     def _get_or_create_lock(self, conversation_id: Text) -> RedisTicketLock:
         existing_lock = self._get_lock(conversation_id)
+
+        # issue new ticket if lock exists
         if existing_lock:
+            existing_lock.issue_new_ticket()
             return existing_lock
 
         return self._create_new_lock(conversation_id)
 
     def _lock_object_from_dump(self, existing_lock: Text) -> RedisTicketLock:
         lock_json = json.loads(existing_lock)
-        print ("have lock dump", lock_json)
         return self._create_lock_object(
             lock_json.get("conversation_id"),
-            lock_json.get("expires"),
             lock_json.get("now_serving"),
-            lock_json.get("last_served"),
+            lock_json.get("last_issued"),
         )
 
     def cleanup(self, conversation_id: Text) -> None:
