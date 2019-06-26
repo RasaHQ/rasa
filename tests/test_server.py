@@ -216,7 +216,6 @@ def test_train_stack_success(
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
 
-    assert "filename" in response.headers
     assert response.headers["filename"] is not None
 
     # save model to temporary file
