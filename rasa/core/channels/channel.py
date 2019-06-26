@@ -408,7 +408,7 @@ class RestInput(InputChannel):
                 self.on_message_wrapper(on_new_message, text, q, sender_id)
             )
             while True:
-                result = await q.get()
+                result = await q.get()  # pytype: disable=bad-return-type
                 if result == "DONE":
                     break
                 else:
