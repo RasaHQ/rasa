@@ -415,7 +415,7 @@ class RestInput(InputChannel):
                     await resp.write(json.dumps(result) + "\n")
             await task
 
-        return stream
+        return stream  # pytype: disable=bad-return-type
 
     def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[None]]):
         custom_webhook = Blueprint(
