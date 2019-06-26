@@ -27,7 +27,8 @@ The first step is to create a new Rasa project. To do this, run:
 
 
 
-.. runnable:: bash
+.. runnable::
+   :language: bash
 
    rasa init --no-prompt
 
@@ -78,7 +79,8 @@ Run the code cell below to see the NLU training data created by
 the ``rasa init`` command:
 
 
-.. runnable:: bash
+.. runnable::
+   :language: bash
 
    cat data/nlu.md
 
@@ -102,7 +104,8 @@ will use. In this example, your NLU model will use the
 
 Let's take a look at your model configuration file.
 
-.. runnable:: bash
+.. runnable::
+   :language: bash
 
    cat config.yml
 
@@ -145,7 +148,8 @@ including calling an API and interacting with the outside world.
 Run the command below to view the example stories inside the file ``data/stories.md``:
 
 
-.. runnable:: bash
+.. runnable::
+   :language: bash
 
    cat data/stories.md
 
@@ -163,7 +167,8 @@ file called ``domain.yml``:
 
 
 
-.. runnable:: bash
+.. runnable::
+   :language: bash
 
    cat domain.yml
 
@@ -202,7 +207,8 @@ the training results for each training epoch.
 
 
 
-.. runnable:: bash
+.. runnable::
+   :language: bash
 
    rasa train
 
@@ -222,7 +228,7 @@ powered entirely by machine learning.
 The next step is to try it out!
 Start talking to your assistant by running:
 
-.. code-block:: bash
+.. code-block::
 
    rasa shell
 
