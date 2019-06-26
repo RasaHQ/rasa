@@ -125,6 +125,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/evaluating-models/">Evaluating Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user-guide/validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/running-the-server/">Running the Server</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/running-rasa-with-docker/">Running Rasa with Docker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/cloud-storage/">Cloud Storage</a></li>
@@ -251,6 +252,7 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <ul class="simple">
 <li>debug logging now tells you which tracker store is connected</li>
 <li>the response of <code class="docutils literal notranslate"><span class="pre">/model/train</span></code> now includes a response header for the trained model filename</li>
+<li><code class="docutils literal notranslate"><span class="pre">Validator</span></code> class to help developing by checking if the files have any errors</li>
 </ul>
 </div>
 <div class="section" id="changed">
