@@ -351,8 +351,8 @@ class Agent(object):
         """Load a persisted model from the passed path."""
         try:
             if not model_path:
-                raise ModelNotFound()
-            elif not os.path.isdir(model_path):
+                raise ModelNotFound("No path specified.")
+            elif os.path.isfile(model_path):
                 model_path = get_model(model_path)
         except ModelNotFound:
             raise ValueError(

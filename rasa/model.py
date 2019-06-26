@@ -67,17 +67,21 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> UnpackedModelPath:
         Path to the unpacked model.
 
     """
-    if not model_path or not os.path.exists(model_path):
-        raise ModelNotFound()
+    if not model_path:
+        raise ModelNotFound("No path specified.")
+    elif not os.path.exists(model_path):
+        raise ModelNotFound("No file or directory at '{}'.".format(model_path))
 
     if os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
+        if not model_path:
+            raise ModelNotFound(
+                "Could not find any .tar.gz files in '{}'.".format(model_path)
+            )
     elif not model_path.endswith(".tar.gz"):
-        # `model_path` does not point to a directory or a .tar.gz
-        model_path = None
-
-    if not model_path:
-        raise ModelNotFound()
+        raise ModelNotFound(
+            "Path '{}' does not point to a .tar.gz file.".format(model_path)
+        )
 
     return unpack_model(model_path)
 

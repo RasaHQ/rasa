@@ -59,18 +59,10 @@ def test_get_model_context_manager(trained_model):
     assert not os.path.exists(unpacked)
 
 
-def test_get_model_exception():
+@pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
+def test_get_model_exception(model_path):
     with pytest.raises(ModelNotFound):
-        # Does not exist
-        get_model("foobar")
-
-    with pytest.raises(ModelNotFound):
-        # Existing directory, without models
-        get_model("rasa")
-
-    with pytest.raises(ModelNotFound):
-        # Existing file, not a .tar.gz
-        get_model("README.md")
+        get_model(model_path)
 
 
 def test_get_model_from_directory_with_subdirectories(trained_model):
