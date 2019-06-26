@@ -19,22 +19,19 @@ class Validator(object):
 
         self.domain = domain
         self.intents = intents
-        self.valid_intents = []
-        self.valid_utterances = []
         self.stories = stories
 
     @classmethod
-    def from_files(
+    async def from_files(
         cls, domain_file: Text, nlu_data: Text, story_data: Text
     ) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
 
         domain = Domain.load(domain_file)
         loop = asyncio.new_event_loop()
-        stories = loop.run_until_complete(
-            StoryFileReader.read_from_folder(story_data, domain)
-        )
+        stories = await StoryFileReader.read_from_folder(story_data, domain)
         intents = load_data(nlu_data)
+
         return cls(domain, intents, stories)
 
     def verify_intents(self):
@@ -45,7 +42,6 @@ class Validator(object):
 
         for intent in self.domain.intent_properties:
             domain_intents.add(intent)
-            self.valid_intents.append(intent)
 
         for intent in self.intents.intent_examples:
             nlu_data_intents.add(intent.data["intent"])
@@ -64,14 +60,15 @@ class Validator(object):
                     "is not listed in the domain.".format(intent)
                 )
 
+        return domain_intents
+
     def verify_intents_in_stories(self):
         """Checks intents used in stories.
 
         Verifies if the intents used in the stories are valid, and whether
         all valid intents are used in the stories."""
 
-        if self.valid_intents == []:
-            self.verify_intents()
+        domain_intents = self.verify_intents()
 
         stories_intents = set()
         for story in self.stories:
@@ -79,13 +76,13 @@ class Validator(object):
                 if type(event) == UserUttered:
                     intent = event.intent["name"]
                     stories_intents.add(intent)
-                    if intent not in self.valid_intents:
+                    if intent not in domain_intents:
                         logger.error(
-                            "The intent '{}' is used in stories, but is not a "
-                            "valid intent.".format(intent)
+                            "The intent '{}' is used in stories, but is not "
+                            "listed in the domain file.".format(intent)
                         )
 
-        for intent in self.valid_intents:
+        for intent in domain_intents:
             if intent not in stories_intents:
                 logger.warning(
                     "The intent '{}' is not used in any story.".format(intent)
@@ -96,18 +93,19 @@ class Validator(object):
 
         actions = self.domain.action_names
         utterance_templates = set()
+        valid_utterances = set()
 
         for utterance in self.domain.templates:
             utterance_templates.add(utterance)
 
         for utterance in utterance_templates:
-            if utterance not in actions:
+            if utterance in actions:
+                valid_utterances.add(utterance)
+            else:
                 logger.error(
                     "The utterance '{}' is not listed under 'actions' in the "
                     "domain file.".format(utterance)
                 )
-            else:
-                self.valid_utterances.append(utterance)
 
         for action in actions:
             if action.startswith(UTTER_PREFIX):
@@ -116,29 +114,34 @@ class Validator(object):
                         "There is no template for utterance '{}'.".format(action)
                     )
 
+        return valid_utterances
+
     def verify_utterances_in_stories(self):
         """Verifies usage of utterances in stories.
 
         Checks whether utterances used in the stories are valid,
         and whether all valid utterances are used in stories."""
 
-        if self.valid_utterances == []:
-            self.verify_utterances()
-
+        valid_utterances = self.verify_utterances()
         stories_utterances = set()
 
         for story in self.stories:
             for event in story.events:
-                if type(event) == ActionExecuted:
+                if isinstance(event, ActionExecuted) and event.action_name.startswith(
+                    UTTER_PREFIX
+                ):
                     utterance = event.action_name
-                    stories_utterances.add(utterance)
-                    if utterance not in self.valid_utterances:
+                    if (
+                        utterance not in valid_utterances
+                        and utterance not in stories_utterances
+                    ):
                         logger.error(
                             "The utterance '{}' is used in stories, but is not a "
                             "valid utterance.".format(utterance)
                         )
+                    stories_utterances.add(utterance)
 
-        for utterance in self.valid_utterances:
+        for utterance in valid_utterances:
             if utterance not in stories_utterances:
                 logger.warning(
                     "The utterance '{}' is not used in any story.".format(utterance)
