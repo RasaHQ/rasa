@@ -1,6 +1,6 @@
 ---
 name: Ask a question
-about: If you have a "How do I?" question please ask here https://forum.rasa.com
+about: If you have a "How do I?" question please ask in the forum https://forum.rasa.com
 title: ''
 labels: question
 assignees: ''
