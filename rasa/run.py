@@ -59,6 +59,7 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     from rasa.core.tracker_store import TrackerStore
     from rasa.core import broker
     from rasa.core.utils import AvailableEndpoints
+    from rasa.core.agent import Agent
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
