@@ -15,7 +15,7 @@ At Rasa, we hear a few different reasons why developers switch from cloud-based 
 
 * **Faster**: Runs locally - no https requests and server round trips required
 * **Customizable**: Tune models and get higher accuracy with your data set
-* **Open source**: No risk of vendor lock-in - the Rasa Stack comes with an Apache 2.0 licence and you can use it in commercial projects
+* **Open source**: No risk of vendor lock-in - Rasa comes with an Apache 2.0 licence and you can use it in commercial projects
 
 
 .. raw:: html
@@ -25,4 +25,4 @@ At Rasa, we hear a few different reasons why developers switch from cloud-based 
 
 .. button::
      :link: ../get_started_step1/
-     :text: Learn more about the Rasa Stack
+     :text: Learn more about Rasa
