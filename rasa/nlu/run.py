@@ -1,10 +1,10 @@
 import asyncio
-import json
 import logging
 
 from rasa.cli.utils import print_success
 
 from rasa.nlu.model import Interpreter
+from rasa.nlu.utils import json_to_string
 from rasa.core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def run_cmdline(model_path, component_builder=None):
         else:
             result = interpreter.parse(message)
 
-        print (json.dumps(result, indent=2))
+        print (json_to_string(result))
 
 
 if __name__ == "__main__":
