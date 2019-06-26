@@ -76,11 +76,11 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> UnpackedModelPath:
         model_path = get_latest_model(model_path)
         if not model_path:
             raise ModelNotFound(
-                "Could not find any .tar.gz files in '{}'.".format(model_path)
+                "Could not find any Rasa model files in '{}'.".format(model_path)
             )
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(
-            "Path '{}' does not point to a .tar.gz file.".format(model_path)
+            "Path '{}' does not point to a Rasa model file.".format(model_path)
         )
 
     return unpack_model(model_path)

@@ -352,6 +352,8 @@ class Agent(object):
         try:
             if not model_path:
                 raise ModelNotFound("No path specified.")
+            elif not os.path.exists(model_path):
+                raise ModelNotFound("No file or directory at '{}'.".format(model_path))
             elif os.path.isfile(model_path):
                 model_path = get_model(model_path)
         except ModelNotFound:
