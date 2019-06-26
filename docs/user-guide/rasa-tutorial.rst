@@ -228,7 +228,7 @@ powered entirely by machine learning.
 The next step is to try it out!
 Start talking to your assistant by running:
 
-.. code-block::
+.. code-block:: bash
 
    rasa shell
 
