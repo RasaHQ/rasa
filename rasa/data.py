@@ -8,8 +8,6 @@ import re
 from typing import Tuple, List, Text, Set, Union, Optional
 from rasa.nlu.training_data.loading import guess_format
 
-import rasa.utils.io as io_utils
-
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
@@ -24,8 +22,8 @@ def get_core_directory(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files should
-                       be loaded.
+        skill_imports: `SkillSelector` instance which determines which files
+                        should be loaded.
 
     Returns:
         Path to temporary directory containing all found Core training files.
@@ -42,8 +40,8 @@ def get_nlu_directory(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files should
-                       be loaded.
+        skill_imports: `SkillSelector` instance which determines which files
+                        should be loaded.
 
     Returns:
         Path to temporary directory containing all found NLU training files.
@@ -60,8 +58,8 @@ def get_core_nlu_directories(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files should
-                       be loaded.
+        skill_imports: `SkillSelector` instance which determines which files
+                        should be loaded.
 
     Returns:
         Path to directory containing the Core files and path to directory
@@ -84,8 +82,8 @@ def get_core_nlu_files(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files should
-                       be loaded.
+        skill_imports: `SkillSelector` instance which determines which files
+                        should be loaded.
 
     Returns:
         Tuple of paths to story and NLU files.

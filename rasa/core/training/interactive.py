@@ -58,7 +58,7 @@ from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 # noinspection PyProtectedMember
-from rasa.nlu.training_data.loading import _guess_format, load_data
+from rasa.nlu.training_data.loading import guess_format, load_data
 from rasa.nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library
@@ -797,7 +797,7 @@ async def _write_nlu_to_file(
 
     # need to guess the format of the file before opening it to avoid a read
     # in a write
-    if _guess_format(export_nlu_path) in {"md", "unk"}:
+    if guess_format(export_nlu_path) in {"md", "unk"}:
         fformat = "md"
     else:
         fformat = "json"
