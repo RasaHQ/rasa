@@ -13,6 +13,7 @@ from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifi
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.nlu.extractors.crf_role_extractor import CRFRoleExtractor
 from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -53,6 +54,7 @@ component_classes = [
     SpacyEntityExtractor,
     MitieEntityExtractor,
     CRFEntityExtractor,
+    CRFRoleExtractor,
     DucklingHTTPExtractor,
     EntitySynonymMapper,
     # featurizers
@@ -78,6 +80,7 @@ old_style_names = {
     "ner_spacy": "SpacyEntityExtractor",
     "ner_mitie": "MitieEntityExtractor",
     "ner_crf": "CRFEntityExtractor",
+    "roles_crf": "CRFRoleExtractor",
     "ner_duckling_http": "DucklingHTTPExtractor",
     "ner_synonyms": "EntitySynonymMapper",
     "intent_featurizer_spacy": "SpacyFeaturizer",
