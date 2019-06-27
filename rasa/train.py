@@ -1,12 +1,14 @@
 import asyncio
 import os
 import tempfile
+from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
 
 from rasa import model, data
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.model import Fingerprint, should_retrain
 from rasa.skill import SkillSelector
+from rasa.utils.common import TempDirectoryPath
 
 from rasa.cli.utils import (
     create_output_path,
@@ -65,8 +67,6 @@ async def train_async(
     Returns:
         Path of the trained model archive.
     """
-    train_path = tempfile.mkdtemp()
-
     skill_imports = SkillSelector.load(config, training_files)
     try:
         domain = Domain.load(domain, skill_imports)
@@ -81,6 +81,52 @@ async def train_async(
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
         training_files, skill_imports
     )
+
+    with ExitStack() as stack:
+        train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
+        nlu_data = stack.enter_context(TempDirectoryPath(nlu_data_directory))
+        story = stack.enter_context(TempDirectoryPath(story_directory))
+
+        return await _train_async_internal(
+            domain,
+            config,
+            train_path,
+            nlu_data,
+            story,
+            output_path,
+            force_training,
+            fixed_model_name,
+            kwargs,
+        )
+
+
+async def _train_async_internal(
+    domain: Union[Domain, Text],
+    config: Text,
+    train_path: Text,
+    nlu_data_directory: Text,
+    story_directory: Text,
+    output_path: Text,
+    force_training: bool,
+    fixed_model_name: Optional[Text],
+    kwargs: Optional[Dict],
+) -> Optional[Text]:
+    """Trains a Rasa model (Core and NLU). Use only from `train_async`.
+
+    Args:
+        domain: Path to the domain file.
+        config: Path to the config for Core and NLU.
+        train_path: Directory in which to train the model.
+        nlu_data_directory: Path to NLU training files.
+        story_directory: Path to Core training files.
+        output_path: Output path.
+        force_training: If `True` retrain model even if data has not changed.
+        fixed_model_name: Name of model to be stored.
+        kwargs: Additional training parameters.
+
+    Returns:
+        Path of the trained model archive.
+    """
     new_fingerprint = model.model_fingerprint(
         config, domain, nlu_data_directory, story_directory
     )
