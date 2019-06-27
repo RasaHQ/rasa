@@ -87,3 +87,66 @@ class EntityExtractor(Component):
             )
 
         return filtered
+
+
+    @staticmethod
+    def add_roles_to_entities(role_message: Message, message: Message) -> Message:
+       """mark all predicted roles as roles not entities"""
+       starts = {ent["start"]: ent for ent in role_message.get("entities", [])}
+
+       entities = []
+       for ent in message.get("entities", []):
+           start_idx = ent["start"]
+           if start_idx in starts:
+               ent_with_role = ent.copy()
+               ent_with_role["role"] = starts[start_idx]["entity"]
+               entities.append(ent_with_role)
+           else:
+               entities.append(ent)
+
+       data = message.data.copy()
+       data["entities"] = entities
+       return Message(
+                  text=message.text,
+                  data=data,
+                  output_properties=message.output_properties,
+                  time=message.time,
+              )
+
+
+
+    @staticmethod
+    def replace_entities_with_roles(message: Message) -> Message:
+       """replace all entities which have a role with a role"""
+
+       entities = []
+       text = message.text
+       for ent in message.get("entities", []):
+           if ent.get("role"):
+               role_ent = ent.copy()
+               role_ent["entity"] = ent["role"]
+               role_ent["value"] = ent["entity"]
+               # TODO update start and end values
+               text = message.text[:ent["start"]] + \
+                      ent["entity"] + \
+                      message.text[ent["end"]:]
+               entities.append(role_ent)
+
+       data = message.data.copy()
+       data["entities"] = entities
+       return Message(
+                  text=text,
+                  data=data,
+                  output_properties=message.output_properties,
+                  time=message.time,
+              )
+
+    @staticmethod
+    def create_role_examples(
+        entity_examples: List[Message]
+    ) -> List[Message]:
+        """Creates role examples.
+        """
+
+        return [ EntityExtractor.replace_entities_with_roles(message)
+                 for message in entity_examples ]
