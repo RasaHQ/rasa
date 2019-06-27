@@ -11,6 +11,7 @@ from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
 )
+from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +84,9 @@ def run(args: argparse.Namespace):
         # model via the API once the server is up and running
         from rasa.model import get_model
 
-        model_path = get_model(args.model)
-        if not model_path:
+        try:
+            get_model(args.model)
+        except ModelNotFound:
             print_error(
                 "No model found. Train a model before running the "
                 "server using `rasa train`."
