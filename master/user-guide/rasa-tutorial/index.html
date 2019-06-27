@@ -271,7 +271,7 @@ and send you a fun picture to cheer you up if you are sad.</p>
   <pre data-executable>rasa init --no-prompt</pre>
   <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-     new Juniper({ repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'python3', defaultLang: 'python', language: 'python', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-init'})
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-init'})
     document.addEventListener('stack-init', event => {
       if (event.detail.status == 'executing') {
         console.error("stack-init");
@@ -336,7 +336,7 @@ You will learn about all of these in this tutorial.</p>
   <pre data-executable>ls -1</pre>
   <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-     new Juniper({ repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'python3', defaultLang: 'python', language: 'python', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-ls'})
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-ls'})
     document.addEventListener('stack-ls', event => {
       if (event.detail.status == 'executing') {
         console.error("stack-ls");
@@ -369,7 +369,7 @@ the <code class="docutils literal notranslate"><span class="pre">rasa</span> <sp
   <pre data-executable>cat data/nlu.md</pre>
   <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-     new Juniper({ repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'python3', defaultLang: 'python', language: 'python', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-cat-nlu'})
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-cat-nlu'})
     document.addEventListener('stack-cat-nlu', event => {
       if (event.detail.status == 'executing') {
         console.error("stack-cat-nlu");
@@ -404,7 +404,7 @@ will use. In this example, your NLU model will use the
   <pre data-executable>cat config.yml</pre>
   <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-     new Juniper({ repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'python3', defaultLang: 'python', language: 'python', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-cat-config'})
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-cat-config'})
     document.addEventListener('stack-cat-config', event => {
       if (event.detail.status == 'executing') {
         console.error("stack-cat-config");
@@ -452,7 +452,7 @@ including calling an API and interacting with the outside world.</p>
   <pre data-executable>cat data/stories.md</pre>
   <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-     new Juniper({ repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'python3', defaultLang: 'python', language: 'python', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'core-cat-stories'})
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'core-cat-stories'})
     document.addEventListener('core-cat-stories', event => {
       if (event.detail.status == 'executing') {
         console.error("core-cat-stories");
@@ -484,7 +484,7 @@ file called <code class="docutils literal notranslate"><span class="pre">domain.
   <pre data-executable>cat domain.yml</pre>
   <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-     new Juniper({ repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'python3', defaultLang: 'python', language: 'python', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-cat-domain'})
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-cat-domain'})
     document.addEventListener('stack-cat-domain', event => {
       if (event.detail.status == 'executing') {
         console.error("stack-cat-domain");
@@ -542,7 +542,7 @@ the training results for each training epoch.</p>
 echo "Finished training."</pre>
   <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
   <script>
-     new Juniper({ repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'python3', defaultLang: 'python', language: 'python', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-train'})
+     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-train'})
     document.addEventListener('stack-train', event => {
       if (event.detail.status == 'executing') {
         console.error("stack-train");
