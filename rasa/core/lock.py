@@ -89,6 +89,7 @@ class RedisTicketLock:
 
     def has_lock_expired(self):
         """Returns True if Redis record for `conversation_id` no longer exists."""
+
         return self.red.get(self.conversation_id) is None
 
     def is_someone_waiting(self) -> bool:
@@ -100,10 +101,9 @@ class RedisTicketLock:
         return self.now_serving > self.last_issued
 
     def acquire(self):
-        """Issues a RedisTicketLock.
+        """Issues a RedisTicketLock and updates the existing record."""
 
-        Updates the existing record.
-        """
+        self.persist()
 
         return self
 
@@ -114,14 +114,15 @@ class RedisTicketLock:
         """
 
         self.last_issued += 1
-        self._persist()
+        self.persist()
 
     def _release(self) -> None:
         """Increment its `now_serving` count by one and persist the lock."""
-        self.now_serving += 1
-        self._persist()
 
-    def _persist(self) -> None:
+        self.now_serving += 1
+        self.persist()
+
+    def persist(self) -> None:
         self.red.set(self.conversation_id, self.dumps(), ex=self.record_exp)
 
     def dumps(self) -> Text:

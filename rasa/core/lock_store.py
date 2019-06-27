@@ -73,8 +73,9 @@ class RedisLockStore(LockStore):
 
         while True:
 
-            # todo: update the fetched lock record as things might have changed in
-            # the meantime - although acquire() should set now_serving to ticket
+            # fetch log again because things might have changed
+            _lock = self._get_lock(conversation_id)
+
             if not _lock.is_locked(ticket):
                 return _lock.acquire()
 
@@ -92,7 +93,7 @@ class RedisLockStore(LockStore):
 
     def _create_new_lock(self, conversation_id: Text) -> RedisTicketLock:
         _lock = self._create_lock_object(conversation_id)
-        _lock._persist()
+        _lock.persist()
         return _lock
 
     def _get_lock(self, conversation_id: Text) -> Optional[RedisTicketLock]:
