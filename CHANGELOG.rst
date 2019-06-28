@@ -31,6 +31,8 @@ Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
+- custom files, e.g. custom components and channels, load correctly when using
+  the command line interface
 
 
 [1.1.4] - 2019-06-18
