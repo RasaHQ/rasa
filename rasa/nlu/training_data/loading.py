@@ -3,7 +3,6 @@ import logging
 import requests
 import typing
 from typing import Optional, Text
-from rasa.constants import NLU_FORMAT_UNKNOWN
 
 import rasa.utils.io
 from rasa.nlu import utils
@@ -30,6 +29,7 @@ WIT = "wit"
 LUIS = "luis"
 RASA = "rasa_nlu"
 MARKDOWN = "md"
+UNK = "unk"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
 _markdown_section_markers = ["## {}:".format(s) for s in markdown.available_sections]
@@ -111,7 +111,7 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
     """Loads a single training data file from disk."""
 
     fformat = guess_format(filename)
-    if fformat == NLU_FORMAT_UNKNOWN:
+    if fformat == UNK:
         raise ValueError("Unknown data format for file {}".format(filename))
 
     logger.info("Training data format of {} is {}".format(filename, fformat))
@@ -124,8 +124,15 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
 
 
 def guess_format(filename: Text) -> Text:
-    """Applies heuristics to guess the data format of a file."""
-    guess = NLU_FORMAT_UNKNOWN
+    """Applies heuristics to guess the data format of a file.
+
+    Args:
+        filename: Text type with the file name.
+
+    Returns:
+        Text tupe with the guessed nlu format.
+    """
+    guess = UNK
     content = rasa.utils.io.read_file(filename)
     try:
         js = json.loads(content)
@@ -139,3 +146,16 @@ def guess_format(filename: Text) -> Text:
                 break
 
     return guess
+
+
+def is_nlu_file(file_path: Text) -> bool:
+    """Verifies if the nlu file is in a valid format.
+
+    Args:
+        file_path: Text type with the file name and path.
+
+    Returns:
+        Boolean type with True if the file is a valid nlu format or False if
+        it isn't.
+    """
+    return guess_format(file_path) != UNK

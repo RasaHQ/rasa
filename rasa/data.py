@@ -6,8 +6,7 @@ import uuid
 import typing
 import re
 from typing import Tuple, List, Text, Set, Union, Optional
-from rasa.nlu.training_data.loading import guess_format
-from rasa import constants
+from rasa.nlu.training_data import loading
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +108,7 @@ def get_core_nlu_files(
             continue
 
         if _is_valid_filetype(path) and skill_imports.is_imported(path):
-            if _is_nlu_file(path):
+            if loading.is_nlu_file(path):
                 nlu_data_files.add(os.path.abspath(path))
             elif _is_story_file(path):
                 story_files.add(os.path.abspath(path))
@@ -140,7 +139,7 @@ def _find_core_nlu_files_in_directory(
             if not _is_valid_filetype(full_path):
                 continue
 
-            if _is_nlu_file(full_path):
+            if loading.is_nlu_file(full_path):
                 nlu_data_files.add(full_path)
             elif _is_story_file(full_path):
                 story_files.add(full_path)
@@ -153,10 +152,6 @@ def _is_valid_filetype(path: Text) -> bool:
     is_datafile = path.endswith(".json") or path.endswith(".md")
 
     return is_file and is_datafile
-
-
-def _is_nlu_file(file_path: Text) -> bool:
-    return guess_format(file_path) != constants.NLU_FORMAT_UNKNOWN
 
 
 def _is_story_file(file_path: Text) -> bool:
