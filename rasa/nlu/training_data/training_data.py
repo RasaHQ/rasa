@@ -7,6 +7,7 @@ import os
 import random
 import warnings
 from copy import deepcopy
+from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 from rasa.nlu.training_data.message import Message
@@ -153,7 +154,7 @@ class TrainingData(object):
                 "and 'md'."
             )
 
-        return {"training_data": data_file}
+        return {"training_data": relpath(data_file, dir_name)}
 
     def sorted_entities(self) -> List[Any]:
         """Extract all entities from examples and sorts them by entity type."""

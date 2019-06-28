@@ -31,6 +31,7 @@ from rasa.model import (
     FINGERPRINT_CONFIG_CORE_KEY,
     FINGERPRINT_CONFIG_NLU_KEY,
 )
+from rasa.exceptions import ModelNotFound
 
 
 def test_get_latest_model(trained_model):
@@ -49,6 +50,19 @@ def test_get_model_from_directory(trained_model):
 
     assert os.path.exists(os.path.join(unpacked, "core"))
     assert os.path.exists(os.path.join(unpacked, "nlu"))
+
+
+def test_get_model_context_manager(trained_model):
+    with get_model(trained_model) as unpacked:
+        assert os.path.exists(unpacked)
+
+    assert not os.path.exists(unpacked)
+
+
+@pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
+def test_get_model_exception(model_path):
+    with pytest.raises(ModelNotFound):
+        get_model(model_path)
 
 
 def test_get_model_from_directory_with_subdirectories(trained_model):
