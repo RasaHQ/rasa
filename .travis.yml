@@ -52,7 +52,7 @@ jobs:
     name: "Test 3.5"
     python: "3.5"
     script:
-      - py.test tests --cov rasa -v
+      - py.test tests --cov rasa
   - <<: *run-tests
     name: "Test 3.6"
     python: '3.6'
