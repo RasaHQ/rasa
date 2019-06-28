@@ -39,8 +39,6 @@ from rasa.nlu import training_data, config
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
 
-logging.basicConfig(level="DEBUG")
-
 
 @pytest.fixture(scope="session")
 def pretrained_interpreter(component_builder, tmpdir_factory):
