@@ -655,14 +655,17 @@ async def _request_action_from_user(
 def _request_export_info() -> Tuple[Text, Text, Text]:
     """Request file path and export stories & nlu data to that path"""
 
+    def is_not_empty(path: Text) -> bool:
+        return path is not None and path != ""
+
     def validate_story_export_file(path: Text) -> bool:
-        return path and path.endswith(".md")
+        return is_not_empty(path) and path.endswith(".md")
 
     def validate_nlu_export_file(path: Text) -> bool:
-        return path and (path.endswith(".md") or path.endswith(".json"))
+        return is_not_empty(path) and (path.endswith(".md") or path.endswith(".json"))
 
     def validate_domain_export_file(path: Text) -> bool:
-        return path and (path.endswith(".yaml") or path.endswith(".yml"))
+        return is_not_empty(path) and (path.endswith(".yaml") or path.endswith(".yml"))
 
     # export training data and quit
     questions = questionary.form(
