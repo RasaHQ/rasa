@@ -7,6 +7,7 @@ import typing
 import re
 from typing import Tuple, List, Text, Set, Union, Optional
 from rasa.nlu.training_data.loading import guess_format
+from rasa import constants
 
 logger = logging.getLogger(__name__)
 
@@ -155,13 +156,7 @@ def _is_valid_filetype(path: Text) -> bool:
 
 
 def _is_nlu_file(file_path: Text) -> bool:
-    return guess_format(file_path) != 'unk'
-
-
-def _contains_nlu_pattern(text: Text) -> bool:
-    nlu_pattern = r"\s*##\s*(intent|regex||synonym|lookup):"
-
-    return re.match(nlu_pattern, text) is not None
+    return guess_format(file_path) != constants.NLU_FORMAT_UNKNOWN
 
 
 def _is_story_file(file_path: Text) -> bool:

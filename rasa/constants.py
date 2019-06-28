@@ -12,6 +12,8 @@ DEFAULT_RESULTS_PATH = "results"
 DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
+NLU_FORMAT_UNKNOWN = "unk"
+
 TEST_DATA_FILE = "test.md"
 TRAIN_DATA_FILE = "train.md"
 RESULTS_FILE = "results.json"

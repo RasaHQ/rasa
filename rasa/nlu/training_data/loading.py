@@ -3,6 +3,7 @@ import logging
 import requests
 import typing
 from typing import Optional, Text
+from rasa.constants import NLU_FORMAT_UNKNOWN
 
 import rasa.utils.io
 from rasa.nlu import utils
@@ -28,7 +29,6 @@ logger = logging.getLogger(__name__)
 WIT = "wit"
 LUIS = "luis"
 RASA = "rasa_nlu"
-UNK = "unk"
 MARKDOWN = "md"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
@@ -111,7 +111,7 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
     """Loads a single training data file from disk."""
 
     fformat = guess_format(filename)
-    if fformat == UNK:
+    if fformat == NLU_FORMAT_UNKNOWN:
         raise ValueError("Unknown data format for file {}".format(filename))
 
     logger.info("Training data format of {} is {}".format(filename, fformat))
@@ -125,7 +125,7 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
 
 def guess_format(filename: Text) -> Text:
     """Applies heuristics to guess the data format of a file."""
-    guess = UNK
+    guess = NLU_FORMAT_UNKNOWN
     content = rasa.utils.io.read_file(filename)
     try:
         js = json.loads(content)
