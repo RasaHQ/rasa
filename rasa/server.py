@@ -25,7 +25,7 @@ from rasa.constants import (
 )
 from rasa.core import broker
 from rasa.core.agent import load_agent, Agent
-from rasa.core.channels import UserMessage, CollectingOutputChannel
+from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
@@ -82,7 +82,7 @@ def ensure_loaded_agent(app: Sanic):
 def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
     """Wraps a request handler with token authentication."""
 
-    def decorator(f: Callable[[Any, Any, Any], Any]) -> Callable[[Any, Any], Any]:
+    def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
             argnames = rasa.utils.common.arguments_of(f)
 
@@ -329,6 +329,7 @@ def create_app(
 
     @app.get("/status")
     @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
     async def status(request: Request):
         """Respond with the model name and the fingerprint of that model."""
 
@@ -623,7 +624,12 @@ def create_app(
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
             )
-            return await response.file(model_path)
+
+            filename = os.path.basename(model_path) if model_path else None
+
+            return await response.file(
+                model_path, filename=filename, headers={"filename": filename}
+            )
         except InvalidDomain as e:
             raise ErrorResponse(
                 400,

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Callable, Dict, List, Text, Optional, Union
+from typing import Any, Callable, Dict, List, Text, Optional
 
 import rasa.core.utils
 import rasa.utils.io
@@ -26,7 +26,7 @@ def read_global_config() -> Dict[Text, Any]:
     """Read global Rasa configuration."""
     # noinspection PyBroadException
     try:
-        return rasa.utils.io.read_yaml_file(GLOBAL_USER_CONFIG_PATH)
+        return rasa.utils.io.read_config_file(GLOBAL_USER_CONFIG_PATH)
     except Exception:
         # if things go south we pretend there is no config
         return {}

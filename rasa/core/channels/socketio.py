@@ -5,7 +5,7 @@ from sanic.request import Request
 from socketio import AsyncServer
 from typing import Optional, Text, Any, List, Dict, Iterable
 
-from rasa.core.channels import InputChannel
+from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
@@ -32,8 +32,7 @@ class SocketIOOutput(OutputChannel):
         self.sid = sid
         self.bot_message_evt = bot_message_evt
 
-    async def _send_message(self, socket_id, response):
-        # type: (Text, Any) -> None
+    async def _send_message(self, socket_id: Text, response: Any) -> None:
         """Sends a message to the recipient using the bot event."""
 
         await self.sio.emit(self.bot_message_evt, response, room=socket_id)
@@ -80,14 +79,15 @@ class SocketIOOutput(OutputChannel):
     ) -> None:
         """Sends elements to the output."""
 
-        message = {
-            "attachment": {
-                "type": "template",
-                "payload": {"template_type": "generic", "elements": elements[0]},
+        for element in elements:
+            message = {
+                "attachment": {
+                    "type": "template",
+                    "payload": {"template_type": "generic", "elements": element},
+                }
             }
-        }
 
-        await self._send_message(self.sid, message)
+            await self._send_message(self.sid, message)
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any

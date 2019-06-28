@@ -60,7 +60,7 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.0.0rc4",
+    "rasa-sdk~=1.1.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=19.3.1",
@@ -74,8 +74,6 @@ install_requires = [
     "SQLAlchemy~=1.3.0",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
-    # temporary dependency, until https://github.com/boto/botocore/issues/1733 is fixed
-    "urllib3<1.25",
 ]
 
 extras_requires = {

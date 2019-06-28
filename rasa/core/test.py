@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.constants import RESULTS_FILE
 from rasa.core.events import ActionExecuted, UserUttered
-from rasa.cli.utils import print_success
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -377,7 +376,7 @@ def _in_training_data_fraction(action_list):
     """Given a list of action items, returns the fraction of actions
 
     that were predicted using one of the Memoization policies."""
-    from rasa.core.policies import SimplePolicyEnsemble
+    from rasa.core.policies.ensemble import SimplePolicyEnsemble
 
     in_training_data = [
         a["action"]

@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import tempfile
-from collections import defaultdict
 from typing import Text, Dict, Optional, List, Any
 import os
 
@@ -10,6 +9,7 @@ from rasa.core.interpreter import RegexInterpreter
 from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.model import get_model, get_model_subdirectories, unpack_model
 from rasa.cli.utils import minimal_kwargs, print_error, print_warning
+from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +65,9 @@ def test_core(
     if output:
         nlu_utils.create_dir(output)
 
-    unpacked_model = get_model(model)
-    if unpacked_model is None:
+    try:
+        unpacked_model = get_model(model)
+    except ModelNotFound:
         print_error(
             "Unable to test: could not find a model. Use 'rasa train' to train a "
             "Rasa model."
@@ -106,9 +107,9 @@ def test_core(
 def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict]):
     from rasa.nlu.test import run_evaluation
 
-    unpacked_model = get_model(model)
-
-    if unpacked_model is None:
+    try:
+        unpacked_model = get_model(model)
+    except ModelNotFound:
         print_error(
             "Could not find any model. Use 'rasa train nlu' to train an NLU model."
         )

@@ -4,12 +4,12 @@ from unittest.mock import patch
 
 import pytest
 import responses
-import sanic
 from aioresponses import aioresponses
 from sanic import Sanic
 
+import rasa.core.run
 from rasa.core import utils
-from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
@@ -56,7 +56,7 @@ async def test_send_response(default_channel, default_tracker):
         "image": "https://i.imgur.com/T5xVo.jpg",
     }
     custom_json_message = {
-        "text": "look at this",  # this value will be ignored
+        "text": "look at this",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
 
@@ -68,7 +68,7 @@ async def test_send_response(default_channel, default_tracker):
     await default_channel.send_response(default_tracker.sender_id, custom_json_message)
     collected = default_channel.messages
 
-    assert len(collected) == 5
+    assert len(collected) == 6
 
     # text only message
     assert collected[0] == {"recipient_id": "my-sender", "text": "hey"}
@@ -85,7 +85,8 @@ async def test_send_response(default_channel, default_tracker):
         "recipient_id": "my-sender",
         "image": "https://i.imgur.com/T5xVo.jpg",
     }
-    assert collected[4] == {
+    assert collected[4] == {"recipient_id": "my-sender", "text": "look at this"}
+    assert collected[5] == {
         "recipient_id": "my-sender",
         "custom": {"some_random_arg": "value", "another_arg": "value2"},
     }
@@ -120,15 +121,9 @@ async def test_console_input():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_facebook_channel():
     # START DOC INCLUDE
     from rasa.core.channels.facebook import FacebookInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = FacebookInput(
         fb_verify="YOUR_FB_VERIFY",
@@ -138,7 +133,7 @@ def test_facebook_channel():
         # token for the page you subscribed to
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -151,15 +146,9 @@ def test_facebook_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_webexteams_channel():
     # START DOC INCLUDE
     from rasa.core.channels.webexteams import WebexTeamsInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = WebexTeamsInput(
         access_token="YOUR_ACCESS_TOKEN",
@@ -168,7 +157,7 @@ def test_webexteams_channel():
         # the name of your channel to which the bot posts (optional)
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -182,15 +171,9 @@ def test_webexteams_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_slack_channel():
     # START DOC INCLUDE
     from rasa.core.channels.slack import SlackInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = SlackInput(
         slack_token="YOUR_SLACK_TOKEN",
@@ -199,7 +182,7 @@ def test_slack_channel():
         # the name of your channel to which the bot posts (optional)
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -211,15 +194,9 @@ def test_slack_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_mattermost_channel():
     # START DOC INCLUDE
     from rasa.core.channels.mattermost import MattermostInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = MattermostInput(
         # this is the url of the api for your mattermost instance
@@ -233,7 +210,7 @@ def test_mattermost_channel():
         # the password of your bot user that will post messages
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -247,15 +224,9 @@ def test_mattermost_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_botframework_channel():
     # START DOC INCLUDE
     from rasa.core.channels.botframework import BotFrameworkInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = BotFrameworkInput(
         # you get this from your Bot Framework account
@@ -264,7 +235,7 @@ def test_botframework_channel():
         app_password="MICROSOFT_APP_PASSWORD",
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -278,15 +249,9 @@ def test_botframework_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_rocketchat_channel():
     # START DOC INCLUDE
     from rasa.core.channels.rocketchat import RocketChatInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = RocketChatInput(
         # your bots rocket chat user name
@@ -297,7 +262,7 @@ def test_rocketchat_channel():
         server_url="https://demo.rocket.chat",
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -314,15 +279,9 @@ def test_rocketchat_channel():
 @pytest.mark.filterwarnings("ignore:unclosed file.*:ResourceWarning")
 # telegram channel will try to set a webhook, so we need to mock the api
 @patch.object(TelegramOutput, "setWebhook", noop)
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_telegram_channel():
     # START DOC INCLUDE
     from rasa.core.channels.telegram import TelegramInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = TelegramInput(
         # you get this when setting up a bot
@@ -333,7 +292,7 @@ def test_telegram_channel():
         webhook_url="YOUR_WEBHOOK_URL",
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -352,15 +311,9 @@ async def test_handling_of_integer_user_id():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_twilio_channel():
     # START DOC INCLUDE
     from rasa.core.channels.twilio import TwilioInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = TwilioInput(
         # you get this from your twilio account
@@ -371,7 +324,7 @@ def test_twilio_channel():
         twilio_number="YOUR_TWILIO_NUMBER",
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -383,22 +336,16 @@ def test_twilio_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_callback_channel():
     # START DOC INCLUDE
     from rasa.core.channels.callback import CallbackInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = CallbackInput(
         # URL Core will call to send the bot responses
         endpoint=EndpointConfig("http://localhost:5004")
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -410,15 +357,9 @@ def test_callback_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_socketio_channel():
     # START DOC INCLUDE
     from rasa.core.channels.socketio import SocketIOInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = SocketIOInput(
         # event name for messages sent from the user
@@ -429,7 +370,7 @@ def test_socketio_channel():
         namespace=None,
     )
 
-    s = agent.handle_channels([input_channel], 5004)
+    s = rasa.core.run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -755,19 +696,13 @@ async def test_slackbot_send_text():
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@patch.object(sanic.Sanic, "run", fake_sanic_run)
 def test_channel_inheritance():
-    from rasa.core.channels import RestInput
-    from rasa.core.channels import RasaChatInput
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+    from rasa.core.channels.channel import RestInput
+    from rasa.core.channels.rasa_chat import RasaChatInput
 
     rasa_input = RasaChatInput("https://example.com")
 
-    s = agent.handle_channels([RestInput(), rasa_input], 5004)
+    s = rasa.core.run.configure_app([RestInput(), rasa_input], port=5004)
 
     routes_list = utils.list_routes(s)
     assert routes_list.get("custom_webhook_RasaChatInput.health").startswith(
@@ -779,7 +714,7 @@ def test_channel_inheritance():
 
 
 def test_int_sender_id_in_user_message():
-    from rasa.core.channels import UserMessage
+    from rasa.core.channels.channel import UserMessage
 
     # noinspection PyTypeChecker
     message = UserMessage("A text", sender_id=1234567890)
@@ -788,7 +723,7 @@ def test_int_sender_id_in_user_message():
 
 
 def test_int_message_id_in_user_message():
-    from rasa.core.channels import UserMessage
+    from rasa.core.channels.channel import UserMessage
 
     # noinspection PyTypeChecker
     message = UserMessage("B text", message_id=987654321)
@@ -809,7 +744,7 @@ async def test_send_elements_without_buttons():
 
 
 def test_newsline_strip():
-    from rasa.core.channels import UserMessage
+    from rasa.core.channels.channel import UserMessage
 
     message = UserMessage("\n/restart\n")
 
@@ -818,7 +753,7 @@ def test_newsline_strip():
 
 def test_register_channel_without_route():
     """Check we properly connect the input channel blueprint if route is None"""
-    from rasa.core.channels import RestInput
+    from rasa.core.channels.channel import RestInput
     import rasa.core
 
     input_channel = RestInput()
@@ -828,3 +763,24 @@ def test_register_channel_without_route():
 
     routes_list = utils.list_routes(app)
     assert routes_list.get("custom_webhook_RestInput.receive").startswith("/webhook")
+
+
+def test_channel_registration_with_absolute_url_prefix_overwrites_route():
+    from rasa.core.channels.channel import RestInput
+    import rasa.core
+
+    input_channel = RestInput()
+    test_route = "/absolute_route"
+    input_channel.url_prefix = lambda: test_route
+
+    app = Sanic(__name__)
+    ignored_base_route = "/should_be_ignored"
+    rasa.core.channels.channel.register(
+        [input_channel], app, route="/should_be_ignored"
+    )
+
+    # Assure that an absolute url returned by `url_prefix` overwrites route parameter
+    # given in `register`.
+    routes_list = utils.list_routes(app)
+    assert routes_list.get("custom_webhook_RestInput.health").startswith(test_route)
+    assert ignored_base_route not in routes_list.get("custom_webhook_RestInput.health")

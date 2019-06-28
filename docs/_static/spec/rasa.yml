@@ -99,6 +99,8 @@ paths:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
 
 
   /conversations/{conversation_id}/tracker:
@@ -373,6 +375,11 @@ paths:
       responses:
         200:
           description: Zipped Rasa model
+          headers:
+            filename:
+              schema:
+                type: string
+              description: File name of the trained model.
           content:
             application/octet-stream:
               schema:
@@ -919,7 +926,7 @@ components:
     ParseResult:
       type: object
       properties:
-        entites:
+        entities:
           type: array
           description: Parsed entities
           items:

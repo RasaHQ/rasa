@@ -90,6 +90,11 @@ def test_status_secured(rasa_secured_app):
     assert response.status == 401
 
 
+def test_status_not_ready_agent(rasa_app_nlu):
+    _, response = rasa_app_nlu.get("/status")
+    assert response.status == 409
+
+
 @pytest.mark.parametrize(
     "response_test",
     [
@@ -210,6 +215,8 @@ def test_train_stack_success(
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
+
+    assert response.headers["filename"] is not None
 
     # save model to temporary file
     tempdir = tempfile.mkdtemp()
@@ -612,8 +619,7 @@ def test_unload_model_error(rasa_app):
     assert response.status == 204
 
     _, response = rasa_app.get("/status")
-    assert response.status == 200
-    assert "model_file" in response.json and response.json["model_file"] is None
+    assert response.status == 409
 
 
 def test_get_domain(rasa_app):

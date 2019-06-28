@@ -108,6 +108,41 @@ async def test_create_train_data_with_history(default_domain):
     ]
 
 
+async def test_create_train_data_unfeaturized_entities():
+    domain_file = "data/test_domains/default_unfeaturized_entities.yml"
+    stories_file = "data/test_stories/stories_unfeaturized_entities.md"
+    domain = Domain.load(domain_file)
+    featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
+    training_trackers = await training.load_data(
+        stories_file, domain, augmentation_factor=0
+    )
+
+    assert len(training_trackers) == 2
+    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
+
+    # decoded needs to be sorted
+    hashed = []
+    for states in decoded:
+        hashed.append(json.dumps(states, sort_keys=True))
+    hashed = sorted(hashed, reverse=True)
+
+    assert hashed == [
+        "[{}]",
+        '[{"intent_thank": 1.0, "prev_utter_default": 1.0}]',
+        '[{"intent_thank": 1.0, "prev_action_listen": 1.0}]',
+        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
+        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
+        '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
+        '[{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
+        '[{"entity_name": 1.0, "intent_greet": 1.0, "prev_utter_greet": 1.0}]',
+        '[{"entity_name": 1.0, "intent_greet": 1.0, "prev_action_listen": 1.0}]',
+        '[{"entity_name": 1.0, "entity_other": 1.0, "intent_default": 1.0, "prev_utter_default": 1.0}]',
+        '[{"entity_name": 1.0, "entity_other": 1.0, "intent_default": 1.0, "prev_action_listen": 1.0}]',
+        '[{"entity_name": 1.0, "entity_other": 1.0, "entity_unrelated_recognized_entity": 1.0, "intent_ask": 1.0, "prev_utter_default": 1.0}]',
+        '[{"entity_name": 1.0, "entity_other": 1.0, "entity_unrelated_recognized_entity": 1.0, "intent_ask": 1.0, "prev_action_listen": 1.0}]',
+    ]
+
+
 def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = Domain.load(domain_file)
@@ -252,37 +287,60 @@ templates:
 
 
 @pytest.mark.parametrize(
-    "intent_list, intent_properties",
+    "intents, intent_properties",
     [
         (
             ["greet", "goodbye"],
-            {"greet": {"use_entities": True}, "goodbye": {"use_entities": True}},
-        ),
-        (
-            [{"greet": {"use_entities": False}}, "goodbye"],
-            {"greet": {"use_entities": False}, "goodbye": {"use_entities": True}},
-        ),
-        (
-            [{"greet": {"triggers": "utter_goodbye"}}, "goodbye"],
             {
-                "greet": {"use_entities": True, "triggers": "utter_goodbye"},
-                "goodbye": {"use_entities": True},
+                "greet": {"use_entities": True, "ignore_entities": []},
+                "goodbye": {"use_entities": True, "ignore_entities": []},
+            },
+        ),
+        (
+            [{"greet": {"use_entities": []}}, "goodbye"],
+            {
+                "greet": {"use_entities": [], "ignore_entities": []},
+                "goodbye": {"use_entities": True, "ignore_entities": []},
             },
         ),
         (
             [
-                {"greet": {"triggers": "utter_goodbye", "use_entities": False}},
-                {"goodbye": {"use_entities": False}},
+                {
+                    "greet": {
+                        "triggers": "utter_goodbye",
+                        "use_entities": ["entity"],
+                        "ignore_entities": ["other"],
+                    }
+                },
+                "goodbye",
             ],
             {
-                "greet": {"use_entities": False, "triggers": "utter_goodbye"},
-                "goodbye": {"use_entities": False},
+                "greet": {
+                    "triggers": "utter_goodbye",
+                    "use_entities": ["entity"],
+                    "ignore_entities": ["other"],
+                },
+                "goodbye": {"use_entities": True, "ignore_entities": []},
+            },
+        ),
+        (
+            [
+                {"greet": {"triggers": "utter_goodbye", "use_entities": None}},
+                {"goodbye": {"use_entities": [], "ignore_entities": []}},
+            ],
+            {
+                "greet": {
+                    "use_entities": [],
+                    "ignore_entities": [],
+                    "triggers": "utter_goodbye",
+                },
+                "goodbye": {"use_entities": [], "ignore_entities": []},
             },
         ),
     ],
 )
-def test_collect_intent_properties(intent_list, intent_properties):
-    assert Domain.collect_intent_properties(intent_list) == intent_properties
+def test_collect_intent_properties(intents, intent_properties):
+    assert Domain.collect_intent_properties(intents) == intent_properties
 
 
 def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
@@ -386,7 +444,7 @@ def test_unfeaturized_slot_in_domain_warnings():
 def test_check_domain_sanity_on_invalid_domain():
     with pytest.raises(InvalidDomain):
         Domain(
-            intent_properties={},
+            intents={},
             entities=[],
             slots=[],
             templates={},
@@ -396,7 +454,7 @@ def test_check_domain_sanity_on_invalid_domain():
 
     with pytest.raises(InvalidDomain):
         Domain(
-            intent_properties={},
+            intents={},
             entities=[],
             slots=[TextSlot("random_name"), TextSlot("random_name")],
             templates={},
@@ -406,7 +464,7 @@ def test_check_domain_sanity_on_invalid_domain():
 
     with pytest.raises(InvalidDomain):
         Domain(
-            intent_properties={},
+            intents={},
             entities=["random_name", "random_name", "other_name", "other_name"],
             slots=[],
             templates={},
@@ -416,7 +474,7 @@ def test_check_domain_sanity_on_invalid_domain():
 
     with pytest.raises(InvalidDomain):
         Domain(
-            intent_properties={},
+            intents={},
             entities=[],
             slots=[],
             templates={},

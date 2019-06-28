@@ -4,6 +4,7 @@ import logging
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
+from fbmessenger.quick_replies import QuickReplies, QuickReply
 from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable
@@ -28,17 +29,17 @@ class Messenger:
 
         self.on_new_message = on_new_message
         self.client = MessengerClient(page_access_token)
-        self.last_message = {}
+        self.last_message = {}  # type: Dict[Text, Any]
 
-    def get_user_id(self):
-        return self.last_message["sender"]["id"]
+    def get_user_id(self) -> Text:
+        return self.last_message.get("sender", {}).get("id", "")
 
     @staticmethod
     def _is_audio_message(message: Dict[Text, Any]) -> bool:
-        """Check if the users message is a recorced voice message."""
+        """Check if the users message is a recorded voice message."""
         return (
-            message.get("message")
-            and message["message"].get("attachments")
+            "message" in message
+            and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "audio"
         )
 
@@ -46,9 +47,18 @@ class Messenger:
     def _is_user_message(message: Dict[Text, Any]) -> bool:
         """Check if the message is a message from the user"""
         return (
-            message.get("message")
-            and message["message"].get("text")
+            "message" in message
+            and "text" in message["message"]
             and not message["message"].get("is_echo")
+        )
+
+    @staticmethod
+    def _is_quick_reply_message(message: Dict[Text, Any]) -> bool:
+        """Check if the message is a quick reply message."""
+        return (
+            message.get("message") is not None
+            and message["message"].get("quick_reply") is not None
+            and message["message"]["quick_reply"].get("payload")
         )
 
     async def handle(self, payload):
@@ -63,7 +73,11 @@ class Messenger:
     async def message(self, message: Dict[Text, Any]) -> None:
         """Handle an incoming event from the fb webhook."""
 
-        if self._is_user_message(message):
+        # quick reply and user message both share 'text' attribute
+        # so quick reply should be checked first
+        if self._is_quick_reply_message(message):
+            text = message["message"]["quick_reply"]["payload"]
+        elif self._is_user_message(message):
             text = message["message"]["text"]
         elif self._is_audio_message(message):
             attachment = message["message"]["attachments"][0]
@@ -177,7 +191,7 @@ class MessengerBot(OutputChannel):
     ) -> None:
         """Sends quick replies to the output."""
 
-        self._add_text_info(quick_replies)
+        quick_replies = self._convert_to_quick_reply(quick_replies)
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
     async def send_elements(
@@ -206,21 +220,32 @@ class MessengerBot(OutputChannel):
         self.messenger_client.send(json_message, recipient_id, "RESPONSE")
 
     @staticmethod
-    def _add_text_info(quick_replies: List[Dict[Text, Any]]) -> None:
-        """Set quick reply type to text for all buttons without content type.
-
-        Happens in place."""
-
-        for quick_reply in quick_replies:
-            if not quick_reply.get("type"):
-                quick_reply["content_type"] = "text"
-
-    @staticmethod
     def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
         """Make sure every button has a type. Modifications happen in place."""
         for button in buttons:
             if "type" not in button:
                 button["type"] = "postback"
+
+    @staticmethod
+    def _convert_to_quick_reply(quick_replies: List[Dict[Text, Any]]) -> QuickReplies:
+        """Convert quick reply dictionary to FB QuickReplies object"""
+
+        fb_quick_replies = []
+        for quick_reply in quick_replies:
+            try:
+                fb_quick_replies.append(
+                    QuickReply(
+                        title=quick_reply["title"],
+                        payload=quick_reply["payload"],
+                        content_type=quick_reply.get("content_type"),
+                    )
+                )
+            except KeyError as e:
+                raise ValueError(
+                    'Facebook quick replies must define a "{}" field.'.format(e.args[0])
+                )
+
+        return QuickReplies(quick_replies=fb_quick_replies)
 
 
 class FacebookInput(InputChannel):
@@ -263,6 +288,7 @@ class FacebookInput(InputChannel):
 
         fb_webhook = Blueprint("fb_webhook", __name__)
 
+        # noinspection PyUnusedLocal
         @fb_webhook.route("/", methods=["GET"])
         async def health(request: Request):
             return response.json({"status": "ok"})

@@ -5,7 +5,7 @@ import logging
 import re
 
 import os
-from typing import Text, List, Dict, Any, Union, Optional
+from typing import Text, List, Dict, Any, Union, Optional, Tuple
 
 from rasa.core import constants
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
@@ -130,7 +130,9 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         return False
 
     @staticmethod
-    def extract_intent_and_entities(user_input: Text) -> object:
+    def extract_intent_and_entities(
+        user_input: Text
+    ) -> Tuple[Optional[Text], float, List[Dict[Text, Any]]]:
         """Parse the user input using regexes to extract intent & entities."""
 
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
@@ -196,7 +198,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
     async def _rasa_http_parse(self, text: Text) -> Optional[Dict[Text, Any]]:
         """Send a text message to a running rasa NLU http server.
         Return `None` on failure."""
-        from requests.compat import urljoin
+        from requests.compat import urljoin  # pytype: disable=import-error
 
         if not self.endpoint:
             logger.error(

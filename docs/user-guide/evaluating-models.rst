@@ -199,7 +199,7 @@ For each policy configuration provided, Rasa Core will be trained multiple times
 with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
 data. This is done for multiple runs to ensure consistent results.
 
-Once this script has finished, you can use the evaluate script in compare
+Once this script has finished, you can use the evaluate script in ``compare``
 mode to evaluate the models you just trained:
 
 .. code-block:: bash

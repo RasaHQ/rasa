@@ -1,13 +1,13 @@
 import copy
 import logging
-from collections import deque, defaultdict
+from collections import deque
 from enum import Enum
-from typing import Dict, Text, Any, Optional, Iterator, Type, List
+from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List
 
-from rasa.core import events
-from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.conversation import Dialogue
-from rasa.core.events import (
+from rasa.core import events  # pytype: disable=pyi-error
+from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
+from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
+from rasa.core.events import (  # pytype: disable=pyi-error
     UserUttered,
     ActionExecuted,
     Event,
@@ -18,7 +18,7 @@ from rasa.core.events import (
     BotUttered,
     Form,
 )
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -197,7 +197,7 @@ class DialogueStateTracker(object):
             # reset form rejection if it was predicted again
             self.active_form["rejected"] = False
 
-    def current_slot_values(self) -> [Dict[Text, Any]]:
+    def current_slot_values(self) -> Dict[Text, Any]:
         """Return the currently set values of the slots"""
         return {key: slot.value for key, slot in self.slots.items()}
 
@@ -229,6 +229,7 @@ class DialogueStateTracker(object):
         for e in reversed(self.events):
             if isinstance(e, UserUttered):
                 return e.input_channel
+        return None
 
     def is_paused(self) -> bool:
         """State whether the tracker is currently paused."""
@@ -249,17 +250,17 @@ class DialogueStateTracker(object):
         """Return a list of events after the most recent restart."""
         return list(self.events)[self.idx_after_latest_restart() :]
 
-    def init_copy(self):
-        # type: () -> DialogueStateTracker
+    def init_copy(self) -> "DialogueStateTracker":
         """Creates a new state tracker with the same initial values."""
-        from rasa.core.channels import UserMessage
+        from rasa.core.channels.channel import UserMessage
 
         return DialogueStateTracker(
             UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
         )
 
-    def generate_all_prior_trackers(self):
-        # type: () -> Generator[DialogueStateTracker, None, None]
+    def generate_all_prior_trackers(
+        self
+    ) -> Generator["DialogueStateTracker", None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
         The resulting array is representing

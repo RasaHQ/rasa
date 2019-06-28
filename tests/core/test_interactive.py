@@ -313,7 +313,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
 
         await interactive._write_domain_to_file(domain_path, events, mock_endpoint)
 
-    saved_domain = rasa.utils.io.read_yaml_file(domain_path)
+    saved_domain = rasa.utils.io.read_config_file(domain_path)
 
     for default_action in default_actions():
         assert default_action.name() not in saved_domain["actions"]

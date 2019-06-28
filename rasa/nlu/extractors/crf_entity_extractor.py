@@ -62,8 +62,8 @@ class CRFEntityExtractor(EntityExtractor):
     }
 
     function_dict = {
-        "low": lambda doc: doc[0].lower(),
-        "title": lambda doc: doc[0].istitle(),
+        "low": lambda doc: doc[0].lower(),  # pytype: disable=attribute-error
+        "title": lambda doc: doc[0].istitle(),  # pytype: disable=attribute-error
         "prefix5": lambda doc: doc[0][:5],
         "prefix2": lambda doc: doc[0][:2],
         "suffix5": lambda doc: doc[0][-5:],
@@ -73,8 +73,8 @@ class CRFEntityExtractor(EntityExtractor):
         "pos": lambda doc: doc[1],
         "pos2": lambda doc: doc[1][:2],
         "bias": lambda doc: "bias",
-        "upper": lambda doc: doc[0].isupper(),
-        "digit": lambda doc: doc[0].isdigit(),
+        "upper": lambda doc: doc[0].isupper(),  # pytype: disable=attribute-error
+        "digit": lambda doc: doc[0].isdigit(),  # pytype: disable=attribute-error
         "pattern": lambda doc: doc[3],
     }
 
@@ -144,7 +144,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _create_dataset(
         self, examples: List[Message]
-    ) -> List[List[Tuple[Text, Text, Text, Text]]]:
+    ) -> List[List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]]:
         dataset = []
         for example in examples:
             entity_offsets = self._convert_example(example)
@@ -390,7 +390,8 @@ class CRFEntityExtractor(EntityExtractor):
         return {"file": file_name}
 
     def _sentence_to_features(
-        self, sentence: List[Tuple[Text, Text, Text, Text]]
+        self,
+        sentence: List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]],
     ) -> List[Dict[Text, Any]]:
         """Convert a word into discrete features in self.crf_features,
         including word before and word after."""
@@ -421,9 +422,11 @@ class CRFEntityExtractor(EntityExtractor):
                         if feature == "pattern":
                             # add all regexes as a feature
                             regex_patterns = self.function_dict[feature](word)
+                            # pytype: disable=attribute-error
                             for p_name, matched in regex_patterns.items():
                                 feature_name = prefix + ":" + feature + ":" + p_name
                                 word_features[feature_name] = matched
+                            # pytype: enable=attribute-error
                         else:
                             # append each feature to a feature vector
                             value = self.function_dict[feature](word)
@@ -433,18 +436,18 @@ class CRFEntityExtractor(EntityExtractor):
 
     @staticmethod
     def _sentence_to_labels(
-        sentence: List[Tuple[Text, Text, Text, Text]]
+        sentence: List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]],
     ) -> List[Text]:
 
         return [label for _, _, label, _ in sentence]
 
     def _from_json_to_crf(
         self, message: Message, entity_offsets: List[Tuple[int, int, Text]]
-    ) -> List[Tuple[Text, Text, Text, Text]]:
+    ) -> List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]:
         """Convert json examples to format of underlying crfsuite."""
 
         if self.pos_features:
-            from spacy.gold import GoldParse
+            from spacy.gold import GoldParse  # pytype: disable=import-error
 
             doc_or_tokens = message.get("spacy_doc")
             gold = GoldParse(doc_or_tokens, entities=entity_offsets)
@@ -528,7 +531,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _from_text_to_crf(
         self, message: Message, entities: List[Text] = None
-    ) -> List[Tuple[Text, Text, Text, Text]]:
+    ) -> List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]:
         """Takes a sentence and switches it to crfsuite format."""
 
         crf_format = []
@@ -543,7 +546,12 @@ class CRFEntityExtractor(EntityExtractor):
             crf_format.append((token.text, tag, entity, pattern))
         return crf_format
 
-    def _train_model(self, df_train: List[List[Tuple[Text, Text, Text, Text]]]) -> None:
+    def _train_model(
+        self,
+        df_train: List[
+            List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]
+        ],
+    ) -> None:
         """Train the crf tagger based on the training data."""
         import sklearn_crfsuite
 

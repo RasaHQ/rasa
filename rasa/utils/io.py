@@ -1,6 +1,5 @@
 import asyncio
 import errno
-import json
 import logging
 import os
 import tarfile
@@ -10,7 +9,7 @@ import zipfile
 from asyncio import AbstractEventLoop
 from typing import Text, Any, Dict, Union, List
 import ruamel.yaml as yaml
-from io import BytesIO as IOReader, StringIO
+from io import BytesIO as IOReader
 
 import simplejson
 
@@ -137,7 +136,27 @@ def read_json_file(filename: Text) -> Any:
         )
 
 
-def read_yaml_file(filename: Text) -> Union[Dict, List]:
+def read_config_file(filename: Text) -> Dict[Text, Any]:
+    """Parses a yaml configuration file. Content needs to be a dictionary
+
+     Args:
+        filename: The path to the file which should be read.
+    """
+    content = read_yaml(read_file(filename, "utf-8"))
+
+    if content is None:
+        return {}
+    elif isinstance(content, dict):
+        return content
+    else:
+        raise ValueError(
+            "Tried to load invalid config file '{}'. "
+            "Expected a key value mapping but found {}"
+            ".".format(filename, type(content))
+        )
+
+
+def read_yaml_file(filename: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
      Args:

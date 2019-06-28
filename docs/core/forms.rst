@@ -1,5 +1,5 @@
 :desc: Follow a rule-based process of information gathering using FormActions
-       in open source bot framework Rasa Stack.
+       in open source bot framework Rasa.
 
 .. _forms:
 
@@ -70,7 +70,7 @@ happy paths.
 In this story the user intent is ``request_restaurant``, which is followed by
 the form action ``restaurant_form``. With ``form{"name": "restaurant_form"}`` the
 form is activated and with ``form{"name": null}`` the form is deactivated again.
-As shown in the section :ref:`section_unhappy` the the bot can execute any kind of
+As shown in the section :ref:`section_unhappy` the bot can execute any kind of
 actions outside the form while the form is still active. On the "happy path",
 where the user is cooperating well and the system understands the user input correctly,
 the form is filling all requested slots without interruption.
@@ -304,8 +304,7 @@ for example:
 .. code-block:: python
 
     @staticmethod
-    def required_slots(tracker):
-       # type: () -> List[Text]
+    def required_slots(tracker) -> List[Text]:
        """A list of required slots that the form has to fill"""
 
        if tracker.get_slot('cuisine') == 'greek':
