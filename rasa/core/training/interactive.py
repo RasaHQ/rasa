@@ -670,19 +670,19 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             message="Export stories to (if file exists, this "
             "will append the stories)",
             default=PATHS["stories"],
-            validate=validate_story_export_file
+            validate=validate_story_export_file,
         ),
         export_nlu=questionary.text(
             message="Export NLU data to (if file exists, this will "
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
-            validate=validate_nlu_export_file
+            validate=validate_nlu_export_file,
         ),
         export_domain=questionary.text(
             message="Export domain file to (if file exists, this "
             "will be overwritten)",
             default=PATHS["domain"],
-            validate=validate_domain_export_file
+            validate=validate_domain_export_file,
         ),
     )
 
