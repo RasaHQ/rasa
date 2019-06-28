@@ -105,19 +105,6 @@ def test_same_file_names_get_resolved(tmpdir):
     assert all([f.endswith("stories.md") for f in stories])
 
 
-@pytest.mark.parametrize(
-    "line",
-    [
-        "##intent:aintent",
-        "##synonym: synonym",
-        "##regex:a_regex",
-        " ##lookup:additional",
-    ],
-)
-def test_contains_nlu_pattern(line):
-    assert data._contains_nlu_pattern(line)
-
-
 def test_is_nlu_file_with_json():
     test = {
         "rasa_nlu_data": {
@@ -142,8 +129,3 @@ def test_is_not_nlu_file_with_json():
         f.write('{"test": "a"}')
 
     assert not data._is_nlu_file(file)
-
-
-@pytest.mark.parametrize("line", ["- example", "## story intent 1 + two##slots* entry"])
-def test_not_contains_nlu_pattern(line):
-    assert not data._contains_nlu_pattern(line)

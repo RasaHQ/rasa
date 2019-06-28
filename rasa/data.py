@@ -108,7 +108,7 @@ def get_core_nlu_files(
             continue
 
         if _is_valid_filetype(path) and skill_imports.is_imported(path):
-            if loading.is_nlu_file(path):
+            if _is_nlu_file(path):
                 nlu_data_files.add(os.path.abspath(path))
             elif _is_story_file(path):
                 story_files.add(os.path.abspath(path))
@@ -139,7 +139,7 @@ def _find_core_nlu_files_in_directory(
             if not _is_valid_filetype(full_path):
                 continue
 
-            if loading.is_nlu_file(full_path):
+            if _is_nlu_file(full_path):
                 nlu_data_files.add(full_path)
             elif _is_story_file(full_path):
                 story_files.add(full_path)
@@ -152,6 +152,11 @@ def _is_valid_filetype(path: Text) -> bool:
     is_datafile = path.endswith(".json") or path.endswith(".md")
 
     return is_file and is_datafile
+
+
+def _is_nlu_file(file_path: Text) -> bool:
+    """Checks whether a file is an NLU file."""
+    return loading.guess_format(file_path) != loading.UNK
 
 
 def _is_story_file(file_path: Text) -> bool:

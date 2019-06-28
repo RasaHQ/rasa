@@ -146,16 +146,3 @@ def guess_format(filename: Text) -> Text:
                 break
 
     return guess
-
-
-def is_nlu_file(file_path: Text) -> bool:
-    """Verifies if the nlu file is in a valid format.
-
-    Args:
-        file_path: Text type with the file name and path.
-
-    Returns:
-        Boolean type with True if the file is a valid nlu format or False if
-        it isn't.
-    """
-    return guess_format(file_path) != UNK
