@@ -118,3 +118,8 @@ def test_warning_for_base_paths_with_trailing_slash(caplog):
         assert concat_url(test_path, None) == test_path
 
     assert len(caplog.records) == 1
+
+
+def test_read_file_with_not_existing_path():
+    with pytest.raises(ValueError):
+        rasa.utils.io.read_file("some path")

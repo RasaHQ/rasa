@@ -120,8 +120,12 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
 
 def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
     """Read text from a file."""
-    with open(filename, encoding=encoding) as f:
-        return f.read()
+
+    try:
+        with open(filename, encoding=encoding) as f:
+            return f.read()
+    except FileNotFoundError:
+        raise ValueError("File '{}' does not exist.".format(filename))
 
 
 def read_json_file(filename: Text) -> Any:
