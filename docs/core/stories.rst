@@ -1,4 +1,4 @@
-:desc: Stories are used to teach Rasa Stack real conversation designs to learn
+:desc: Stories are used to teach Rasa real conversation designs to learn
        from providing the basis for a scalable machine learning dialogue management.
 
 .. _stories:

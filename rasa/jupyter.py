@@ -22,10 +22,10 @@ def chat(
     """Chat to the bot within a Jupyter notebook.
 
     Args:
-        model_path: Path to a Rasa Stack model.
-        agent: Rasa Core agent (used if no Rasa Stack model given).
+        model_path: Path to a combined Rasa model.
+        agent: Rasa Core agent (used if no Rasa model given).
         interpreter: Rasa NLU interpreter (used with Rasa Core agent if no
-                     Rasa Stack model is given).
+                     Rasa model is given).
     """
 
     if model_path:
