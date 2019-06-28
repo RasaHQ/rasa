@@ -9,6 +9,7 @@ import os
 import rasa.utils.io
 from rasa.core import training, restore
 from rasa.core import utils
+from rasa.core.slots import Slot
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -567,3 +568,13 @@ def test_last_executed_has_not_name():
     tracker = get_tracker(events)
 
     assert tracker.last_executed_action_has("another") is False
+
+
+@pytest.mark.parametrize("key", ["asfa", "htb", "2"])
+def test_tracker_without_slots(key):
+    tracker = DialogueStateTracker.from_dict("any", [])
+    assert key in tracker.slots
+    assert key not in tracker.slots.keys()
+    v = tracker.slots[key]
+    assert isinstance(v, Slot)
+    assert key in tracker.slots.keys()
