@@ -51,6 +51,13 @@ def test_get_model_from_directory(trained_model):
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
 
+def test_get_model_context_manager(trained_model):
+    with get_model(trained_model) as unpacked:
+        assert os.path.exists(unpacked)
+
+    assert not os.path.exists(unpacked)
+
+
 def test_get_model_from_directory_with_subdirectories(trained_model):
     unpacked = get_model(trained_model)
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)

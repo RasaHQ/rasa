@@ -45,7 +45,7 @@ jobs:
     name: "Type Check"
     python: 3.6
     script:
-    - pip install pytype
+    - pip install pytype==2019.5.31
     - pytype --keep-going rasa
   - &run-tests
     stage: test
