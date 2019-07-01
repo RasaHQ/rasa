@@ -375,6 +375,11 @@ paths:
       responses:
         200:
           description: Zipped Rasa model
+          headers:
+            filename:
+              schema:
+                type: string
+              description: File name of the trained model.
           content:
             application/octet-stream:
               schema:
@@ -921,7 +926,7 @@ components:
     ParseResult:
       type: object
       properties:
-        entites:
+        entities:
           type: array
           description: Parsed entities
           items:

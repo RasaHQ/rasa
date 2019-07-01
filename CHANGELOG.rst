@@ -6,25 +6,60 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.3] - `master`_
+
+[Unreleased 1.1.5] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+- debug logging now tells you which tracker store is connected
+- the response of ``/model/train`` now includes a response header for the trained model filename
+- ``Validator`` class to help developing by checking if the files have any errors
+
+Changed
+-------
+- deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
+  or ``rasa.core.run.configure_app`` instead.
+- ``Agent.load()`` also accepts ``tar.gz`` model file
+
+Removed
+-------
+- revert the stripping of trailing slashes in endpoint URLs since this can lead to
+  problems in case the trailing slash is actually wanted
+
+Fixed
+-----
+- all temporal model files are now deleted after stopping the Rasa server
+- ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
+
+
+[1.1.4] - 2019-06-18
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- unfeaturize single entities
 - added agent readiness check to the ``/status`` resource
 
 Changed
 -------
-
 - removed leading underscore from name of '_create_initial_project' function.
 
-Removed
--------
 
 Fixed
 -----
 - fixed bug where facebook quick replies were not rendering
 - take FB quick reply payload rather than text as input
+- fixed bug where `training_data` path in `metadata.json` was an absolute path
+
+
+[1.1.3] - 2019-06-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed any inconsistent type annotations in code and some bugs revealed by
+  type checker
 
 [1.1.2] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
@@ -178,12 +213,12 @@ Added
 - added tracker store persisting trackers into a SQL database
   (``SQLTrackerStore``)
 - added rasa command line interface and API
-- Rasa Stack HTTP training endpoint at ``POST /jobs``. This endpoint
+- Rasa  HTTP training endpoint at ``POST /jobs``. This endpoint
   will train a combined Rasa Core and NLU model
 - ``ReminderCancelled(action_name)`` event to cancel given action_name reminder
   for current user
-- Rasa Stack HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
-  This endpoints performs an intent evaluation of a Rasa Stack model
+- Rasa HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
+  This endpoints performs an intent evaluation of a Rasa model
 - option to create template for new utterance action in ``interactive learning``
 - you can now choose actions previously created in the same session
   in ``interactive learning``

@@ -73,13 +73,12 @@ def perform_interactive_learning(args, zipped_model):
 
     if zipped_model and os.path.exists(zipped_model):
         args.model = zipped_model
-        model_path = model.unpack_model(zipped_model)
-        args.core, args.nlu = model.get_model_subdirectories(model_path)
-        stories_directory = data.get_core_directory(args.data)
 
-        do_interactive_learning(args, stories_directory)
+        with model.unpack_model(zipped_model) as model_path:
+            args.core, args.nlu = model.get_model_subdirectories(model_path)
+            stories_directory = data.get_core_directory(args.data)
 
-        shutil.rmtree(model_path)
+            do_interactive_learning(args, stories_directory)
     else:
         print_error(
             "Interactive learning process cannot be started as no initial model was "
