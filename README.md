@@ -166,6 +166,16 @@ To check the types execute
 pytype rasa
 ```
 
+### Deploying documentation updates
+
+We use `sphinx-versioning` to build docs for tagged versions and for the master branch.
+The static site that gets built is pushed to the `docs` branch of this repo, which doesn't contain
+any code, only the site.
+
+We host the site on netlify. When there is a reason to update the docs (e.g. master has changed or we have
+tagged a new version) we trigger a webhook on netlify (see `.travis.yml`). 
+
+
 ## License
 Licensed under the Apache License, Version 2.0.
 Copyright 2019 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
