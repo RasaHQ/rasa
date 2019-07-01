@@ -660,6 +660,8 @@ class Domain(object):
                     intent.pop("use_entities")
                 if not intent.get("ignore_entities"):
                     intent.pop("ignore_entities")
+                if len(intent) == 0:
+                    domain_data["intents"][idx] = name
 
         for slot in domain_data["slots"].values():  # pytype: disable=attribute-error
             if slot["initial_value"] is None:
