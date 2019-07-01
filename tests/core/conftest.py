@@ -29,8 +29,6 @@ from rasa.train import train_async
 
 matplotlib.use("Agg")
 
-logging.basicConfig(level="DEBUG")
-
 DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
