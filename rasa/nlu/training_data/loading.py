@@ -130,7 +130,7 @@ def guess_format(filename: Text) -> Text:
         filename: Text type with the file name.
 
     Returns:
-        Text tupe with the guessed nlu format.
+        Guessed file format.
     """
     guess = UNK
     content = rasa.utils.io.read_file(filename)
