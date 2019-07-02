@@ -37,7 +37,7 @@ General
 - If you were previously importing the ``Button`` or ``Element`` classes from
   ``rasa_core.dispatcher``, these are now to be imported from ``rasa_sdk.utils``.
 
-- The NLU and Core used `separate configuration files 
+- Rasa NLU and Core previously used `separate configuration files 
   <https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1>`.
   These two files should be merged into a single file that is passed via the `--config` parameter.
 
