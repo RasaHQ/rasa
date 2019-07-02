@@ -830,7 +830,7 @@ class Agent(object):
             return store
         else:
             # return CounterLockStore()
-            return RedisLockStore()
+            return LockStore(type="redis")
 
     @staticmethod
     def _create_ensemble(
