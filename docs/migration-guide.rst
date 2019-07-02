@@ -39,7 +39,7 @@ General
 
 - Rasa NLU and Core previously used `separate configuration files 
   <https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1>`.
-  These two files should be merged into a single file that is passed via the `--config` parameter.
+  These two files should be merged into a single file either named ``config.yml``, or passed via the ``--config`` parameter.
 
 Script parameters
 ~~~~~~~~~~~~~~~~~
