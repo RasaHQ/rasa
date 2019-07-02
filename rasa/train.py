@@ -247,6 +247,13 @@ async def train_core_async(
 
     skill_imports = SkillSelector.load(config, stories)
 
+    if isinstance(domain, type(None)):
+        print_error(
+            "Core training is skipped because no domain was found. "
+            "Please specify a valid domain using '--domain' argument or check if provided domain file does exists"
+        )
+        return None
+
     if isinstance(domain, str):
         try:
             domain = Domain.load(domain, skill_imports)
