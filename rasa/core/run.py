@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import shutil
 from functools import partial
 from typing import List, Optional, Text, Union
 
@@ -160,6 +161,12 @@ def serve_application(
         "before_server_start",
     )
 
+    async def clear_model_files(app: Sanic, _loop: Text) -> None:
+        if app.agent.model_directory:
+            shutil.rmtree(app.agent.model_directory)
+
+    app.register_listener(clear_model_files, "after_server_stop")
+
     update_sanic_log_level(log_file)
 
     app.run(host="0.0.0.0", port=port)
@@ -180,10 +187,11 @@ async def load_agent_on_start(
     from rasa.core import broker
 
     try:
-        _, nlu_model = get_model_subdirectories(get_model(model_path))
-        _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+        with get_model(model_path) as unpacked_model:
+            _, nlu_model = get_model_subdirectories(unpacked_model)
+            _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
     except Exception:
-        logger.debug("Could not load interpreter from '{}'".format(model_path))
+        logger.debug("Could not load interpreter from '{}'.".format(model_path))
         _interpreter = None
 
     _broker = broker.from_endpoint_config(endpoints.event_broker)

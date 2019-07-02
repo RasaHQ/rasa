@@ -6,6 +6,7 @@ from typing import List
 
 from rasa.cli.arguments import shell as arguments
 from rasa.cli.utils import print_error
+from rasa.exceptions import ModelNotFound
 
 
 logger = logging.getLogger(__name__)
@@ -49,8 +50,10 @@ def shell_nlu(args: argparse.Namespace):
     args.connector = "cmdline"
 
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
-    model_path = get_model(model)
-    if not model_path:
+
+    try:
+        model_path = get_model(model)
+    except ModelNotFound:
         print_error(
             "No model found. Train a model before running the "
             "server using `rasa train nlu`."
@@ -77,8 +80,10 @@ def shell(args: argparse.Namespace):
     args.connector = "cmdline"
 
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
-    model_path = get_model(model)
-    if not model_path:
+
+    try:
+        model_path = get_model(model)
+    except ModelNotFound:
         print_error(
             "No model found. Train a model before running the "
             "server using `rasa train`."

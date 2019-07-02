@@ -1,5 +1,5 @@
 :desc: Follow a rule-based process of information gathering using FormActions
-       in open source bot framework Rasa Stack.
+       in open source bot framework Rasa.
 
 .. _forms:
 
