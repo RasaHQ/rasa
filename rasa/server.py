@@ -624,7 +624,12 @@ def create_app(
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
             )
-            return await response.file(model_path)
+
+            filename = os.path.basename(model_path) if model_path else None
+
+            return await response.file(
+                model_path, filename=filename, headers={"filename": filename}
+            )
         except InvalidDomain as e:
             raise ErrorResponse(
                 400,

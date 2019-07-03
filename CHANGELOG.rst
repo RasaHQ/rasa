@@ -13,6 +13,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 - debug logging now tells you which tracker store is connected
+- the response of ``/model/train`` now includes a response header for the trained model filename
+- ``Validator`` class to help developing by checking if the files have any errors
 
 Changed
 -------
@@ -210,12 +212,12 @@ Added
 - added tracker store persisting trackers into a SQL database
   (``SQLTrackerStore``)
 - added rasa command line interface and API
-- Rasa Stack HTTP training endpoint at ``POST /jobs``. This endpoint
+- Rasa  HTTP training endpoint at ``POST /jobs``. This endpoint
   will train a combined Rasa Core and NLU model
 - ``ReminderCancelled(action_name)`` event to cancel given action_name reminder
   for current user
-- Rasa Stack HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
-  This endpoints performs an intent evaluation of a Rasa Stack model
+- Rasa HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
+  This endpoints performs an intent evaluation of a Rasa model
 - option to create template for new utterance action in ``interactive learning``
 - you can now choose actions previously created in the same session
   in ``interactive learning``
