@@ -79,6 +79,7 @@ def test_serve_ticket():
     assert ticket_0 == 0
     assert lock.last_issued == ticket_0
     assert lock.now_serving == ticket_0
+    assert lock.is_someone_waiting()
 
     # issue another ticket
     ticket_1 = lock.issue_ticket(10)
@@ -86,8 +87,13 @@ def test_serve_ticket():
     # finish serving ticket_0
     lock_store.finish_serving(conversation_id, ticket_0)
     lock = lock_store.get_lock(conversation_id)
+    assert lock.last_issued == ticket_1
     assert lock.now_serving == ticket_1
-    assert lock.now_serving == ticket_1
+    assert lock.is_someone_waiting()
+
+    # serve second ticket and no one should be waiting
+    lock_store.finish_serving(conversation_id, ticket_1)
+    assert not lock.is_someone_waiting()
 
 
 def test_lock_expiration():
