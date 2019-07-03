@@ -1,11 +1,10 @@
 import asyncio
-import json
 import logging
 import pickle
 import typing
 from typing import Text, Optional, Dict
 
-from rasa.core.lock import TicketLock, RedisTicketLock
+from rasa.core.lock import TicketLock
 
 if typing.TYPE_CHECKING:
     pass
@@ -31,8 +30,8 @@ class LockStore(object):
             lock_store = RedisLockStore(host=store.url, **store.kwargs)
         else:
             raise ValueError(
-                "Cannot create lock of type '{}'. One of the following lock "
-                "types need to be specified: {}."
+                "Cannot create `LockStore` of type '{}'. One of the following "
+                "`LockStore` types need to be specified: {}."
                 "".format("lock_type", ", ".join(ACCEPTED_LOCK_STORES))
             )
 
@@ -43,7 +42,9 @@ class LockStore(object):
         return lock_store
 
     def create_lock(self, conversation_id: Text) -> TicketLock:
-        raise NotImplementedError
+        lock = TicketLock(conversation_id)
+        self.save_lock(lock)
+        return lock
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         raise NotImplementedError
@@ -51,27 +52,35 @@ class LockStore(object):
     def delete_lock(self, conversation_id: Text):
         raise NotImplementedError
 
-    async def lock(self, conversation_id: Text) -> TicketLock:
+    def save_lock(self, lock: TicketLock):
+        raise NotImplementedError
+
+    def issue_ticket(self, conversation_id: Text):
         lock = self.get_or_create_lock(conversation_id)
         ticket = lock.issue_ticket(self.lifetime)
+        self.save_lock(lock)
+        return ticket
+
+    async def lock(self, conversation_id: Text, ticket: int) -> TicketLock:
+        lock = self.get_lock(conversation_id)
 
         attempts = 60
 
         while attempts > 0:
-            # exit loop if lock does not exist anymore (expired)
-            if not lock:
-                break
-
             # acquire lock if it isn't locked
             if not lock.is_locked(ticket):
                 return lock
 
-            # sleep and update locks
+            # sleep and update lock
             await asyncio.sleep(1)
             self.update_lock(conversation_id)
 
             # fetch lock again because things might have changed
             lock = self.get_lock(conversation_id)
+
+            # exit loop if lock does not exist anymore (expired)
+            if not lock:
+                break
 
             attempts -= 1
 
@@ -104,11 +113,16 @@ class LockStore(object):
 
         return False
 
-    def cleanup(self, conversation_id: Text) -> None:
+    def finish_serving(self, conversation_id: Text, ticket_number: int):
+        lock = self.get_lock(conversation_id)
+        if lock:
+            lock.remove_ticket_for_ticket_number(ticket_number)
+            self.save_lock(lock)
+
+    def cleanup(self, conversation_id: Text, ticket_number: int) -> None:
         """Remove lock for `conversation_id` if no one is waiting."""
 
-        self.update_lock(conversation_id)
-
+        self.finish_serving(conversation_id, ticket_number)
         if not self.is_someone_waiting(conversation_id):
             self.delete_lock(conversation_id)
             logger.debug(
@@ -139,27 +153,16 @@ class RedisLockStore(LockStore):
         )
         super().__init__(lifetime)
 
-    def create_lock(self, conversation_id: Text) -> RedisTicketLock:
-        lock = RedisTicketLock(
-            conversation_id, self.host, self.port, self.db, self.password
-        )
-        lock.persist()
-        return lock
-
-    def get_lock(self, conversation_id: Text) -> Optional[RedisTicketLock]:
+    def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         serialised_lock = self.red.get(conversation_id)
         if serialised_lock:
-            lock = json.loads(serialised_lock)
-            return RedisTicketLock(
-                lock["conversation_id"],
-                lock["host"],
-                lock["port"],
-                lock["db"],
-                lock["password"],
-            )
+            return pickle.loads(serialised_lock)
 
-    def delete_lock(self, conversation_id: Text):
+    def delete_lock(self, conversation_id: Text) -> None:
         self.red.delete(conversation_id)
+
+    def save_lock(self, lock: TicketLock) -> None:
+        self.red.set(lock.conversation_id, pickle.dumps(lock))
 
 
 class InMemoryLockStore(LockStore):
@@ -169,12 +172,12 @@ class InMemoryLockStore(LockStore):
         self.conversation_locks = {}  # type: Dict[Text, TicketLock]
         super().__init__(lifetime)
 
-    def create_lock(self, conversation_id: Text) -> TicketLock:
-        return TicketLock(conversation_id)
-
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         return self.conversation_locks.get(conversation_id)
 
     def delete_lock(self, conversation_id: Text):
         if conversation_id in self.conversation_locks:
             del self.conversation_locks[conversation_id]
+
+    def save_lock(self, lock: TicketLock):
+        self.conversation_locks[lock.conversation_id] = lock

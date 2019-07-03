@@ -1,8 +1,7 @@
-import json
 import logging
 import typing
 from collections import deque
-from typing import Text, Optional, Union
+from typing import Text, Optional, Union, Deque
 
 import time
 
@@ -20,20 +19,23 @@ class Ticket:
     def has_expired(self):
         return time.time() > self.expires
 
+    def __repr__(self):
+        return "Ticket(number: {}, expires: {})".format(self.number, self.expires)
+
 
 class TicketLock(object):
-    def __init__(self, conversation_id: Text) -> None:
+    def __init__(
+        self, conversation_id: Text, tickets: Optional[Deque[Ticket]] = None
+    ) -> None:
         self.conversation_id = conversation_id
-        self.tickets = deque()  # type: deque[Ticket]
+        self.tickets = tickets or deque()
 
     async def __aenter__(self):
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
         """Remove the ticket most recently served ticket."""
-
-        self.tickets.popleft()
-        self.persist()
+        pass
 
     def is_locked(self, ticket_number: int) -> bool:
         """Return whether `ticket_number` is locked.
@@ -44,19 +46,13 @@ class TicketLock(object):
 
         return self.now_serving != ticket_number
 
-    def persist(self) -> None:
-        pass
-
     def issue_ticket(self, lifetime: Union[float, int]) -> int:
         """Issue a new ticket and return its number."""
 
         self.remove_expired_tickets()
-
         number = self.last_issued + 1
         ticket = Ticket(number, time.time() + lifetime)
         self.tickets.append(ticket)
-
-        self.persist()
 
         return number
 
@@ -68,8 +64,6 @@ class TicketLock(object):
             if ticket.has_expired():
                 self.tickets.remove(ticket)
 
-        self.persist()
-
     @property
     def last_issued(self) -> int:
         """Return number of the ticket that was last added.
@@ -77,7 +71,11 @@ class TicketLock(object):
         Return -1 if no tickets exist.
         """
 
-        return self._ticket_number_for_index(-1) or -1
+        ticket_number = self._ticket_number_for_index(-1)
+        if ticket_number is not None:
+            return ticket_number
+
+        return -1
 
     @property
     def now_serving(self) -> Optional[int]:
@@ -86,7 +84,11 @@ class TicketLock(object):
         Return 0 if no tickets exists.
         """
 
-        return self._ticket_number_for_index(0) or 0
+        ticket_number = self._ticket_number_for_index(0)
+        if ticket_number is not None:
+            return ticket_number
+
+        return 0
 
     def _ticket_number_for_index(self, idx: int) -> Optional[int]:
         """Return ticket number for `idx`.
@@ -117,6 +119,16 @@ class TicketLock(object):
 
         return len(self.tickets) > 0
 
+    def remove_ticket_for_ticket_number(self, ticket_number: int) -> None:
+        """Return whether ticket for `ticket_number` has expired.
+
+        Return True if ticket was not found.
+        """
+
+        ticket = self._ticket_for_ticket_number(ticket_number)
+        if ticket:
+            self.tickets.remove(ticket)
+
     def has_lock_expired(self, ticket_number: int) -> Optional[bool]:
         """Return whether ticket for `ticket_number` has expired.
 
@@ -128,41 +140,3 @@ class TicketLock(object):
             return ticket.has_expired()
 
         return True
-
-
-class RedisTicketLock(TicketLock):
-    """`TicketLock` with `Redis` connection for persistence."""
-
-    def __init__(
-        self,
-        conversation_id: Text,
-        host: Text = "localhost",
-        port: int = 6379,
-        db: int = 1,
-        password: Optional[Text] = None,
-    ) -> None:
-        import redis
-
-        self.host = host
-        self.port = port
-        self.db = db
-        self.password = password
-        self.red = redis.StrictRedis(
-            host=self.host, port=self.port, db=self.db, password=self.password
-        )
-        super().__init__(conversation_id)
-
-    def dumps(self):
-        return json.dumps(
-            dict(
-                conversation_id=self.conversation_id,
-                tickets=self.tickets,
-                host=self.host,
-                port=self.port,
-                db=self.db,
-                password=self.password,
-            )
-        )
-
-    def persist(self) -> None:
-        self.red.set(self.conversation_id, self.dumps())
