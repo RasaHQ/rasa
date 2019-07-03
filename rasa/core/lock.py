@@ -1,10 +1,10 @@
+import json
 import logging
 import typing
 from collections import deque
 from typing import Text, Optional, Union
 
 import time
-from redis import Redis
 
 if typing.TYPE_CHECKING:
     pass
@@ -22,11 +22,8 @@ class Ticket:
 
 
 class TicketLock(object):
-    def __init__(
-        self, conversation_id: Text, lifetime: Optional[Union[int, float]] = None
-    ) -> None:
+    def __init__(self, conversation_id: Text) -> None:
         self.conversation_id = conversation_id
-        self.lifetime = self._arg_or_number(lifetime, default=60)
         self.tickets = deque()  # type: deque[Ticket]
 
     async def __aenter__(self):
@@ -37,12 +34,6 @@ class TicketLock(object):
 
         self.tickets.popleft()
         self.persist()
-
-    @staticmethod
-    def _arg_or_number(
-        arg: Optional[int] = None, default: Union[int, float] = 0
-    ) -> int:
-        return arg if arg is not None else default
 
     def is_locked(self, ticket_number: int) -> bool:
         """Return whether `ticket_number` is locked.
@@ -56,14 +47,16 @@ class TicketLock(object):
     def persist(self) -> None:
         pass
 
-    def issue_ticket(self) -> int:
+    def issue_ticket(self, lifetime: Union[float, int]) -> int:
         """Issue a new ticket and return its number."""
 
         self.remove_expired_tickets()
 
         number = self.last_issued + 1
-        ticket = Ticket(number, time.time() + self.lifetime)
+        ticket = Ticket(number, time.time() + lifetime)
         self.tickets.append(ticket)
+
+        self.persist()
 
         return number
 
@@ -141,10 +134,35 @@ class RedisTicketLock(TicketLock):
     """`TicketLock` with `Redis` connection for persistence."""
 
     def __init__(
-        self, conversation_id: Text, lifetime: Union[int, float], red: Redis
+        self,
+        conversation_id: Text,
+        host: Text = "localhost",
+        port: int = 6379,
+        db: int = 1,
+        password: Optional[Text] = None,
     ) -> None:
-        self.red = red
-        super().__init__(conversation_id, lifetime)
+        import redis
+
+        self.host = host
+        self.port = port
+        self.db = db
+        self.password = password
+        self.red = redis.StrictRedis(
+            host=self.host, port=self.port, db=self.db, password=self.password
+        )
+        super().__init__(conversation_id)
+
+    def dumps(self):
+        return json.dumps(
+            dict(
+                conversation_id=self.conversation_id,
+                tickets=self.tickets,
+                host=self.host,
+                port=self.port,
+                db=self.db,
+                password=self.password,
+            )
+        )
 
     def persist(self) -> None:
-        self.red.set(self.conversation_id, self)
+        self.red.set(self.conversation_id, self.dumps())

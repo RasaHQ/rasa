@@ -32,6 +32,7 @@ from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
+from rasa.exceptions import ModelNotFound
 from rasa.model import (
     get_model_subdirectories,
     get_latest_model,
@@ -41,7 +42,6 @@ from rasa.model import (
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
-from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -830,7 +830,8 @@ class Agent(object):
         if store is not None:
             return store
         else:
-            return LockStore()
+            return RedisLockStore()
+            # return InMemoryLockStore()
 
     @staticmethod
     def _create_ensemble(

@@ -1,5 +1,7 @@
 import asyncio
+import json
 import logging
+import pickle
 import typing
 from typing import Text, Optional, Dict
 
@@ -24,7 +26,7 @@ class LockStore(object):
     @staticmethod
     def find_lock_store(store=None):
         if store is None or store.type is None or store.type == "in_memory":
-            lock_store = LockStore()
+            lock_store = InMemoryLockStore()
         elif store.type == "redis":
             lock_store = RedisLockStore(host=store.url, **store.kwargs)
         else:
@@ -49,17 +51,20 @@ class LockStore(object):
     def delete_lock(self, conversation_id: Text):
         raise NotImplementedError
 
-    async def lock(self, conversation_id: Text) -> "LockStore":
+    async def lock(self, conversation_id: Text) -> TicketLock:
         lock = self.get_or_create_lock(conversation_id)
-        ticket = lock.issue_ticket()
+        ticket = lock.issue_ticket(self.lifetime)
 
         attempts = 60
 
         while attempts > 0:
+            # exit loop if lock does not exist anymore (expired)
+            if not lock:
+                break
 
             # acquire lock if it isn't locked
             if not lock.is_locked(ticket):
-                return self
+                return lock
 
             # sleep and update locks
             await asyncio.sleep(1)
@@ -101,7 +106,8 @@ class LockStore(object):
 
     def cleanup(self, conversation_id: Text) -> None:
         """Remove lock for `conversation_id` if no one is waiting."""
-        # update memory
+
+        self.update_lock(conversation_id)
 
         if not self.is_someone_waiting(conversation_id):
             self.delete_lock(conversation_id)
@@ -123,16 +129,34 @@ class RedisLockStore(LockStore):
     ):
         import redis
 
-        self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
+        self.host = host
+        self.port = port
+        self.db = db
+        self.password = password
+
+        self.red = redis.StrictRedis(
+            host=self.host, port=self.port, db=self.db, password=self.password
+        )
         super().__init__(lifetime)
 
-    def create_lock(self, conversation_id: Text) -> TicketLock:
-        lock = RedisTicketLock(conversation_id, self.lifetime, self.red)
+    def create_lock(self, conversation_id: Text) -> RedisTicketLock:
+        lock = RedisTicketLock(
+            conversation_id, self.host, self.port, self.db, self.password
+        )
         lock.persist()
         return lock
 
-    def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
-        return self.red.get(conversation_id)
+    def get_lock(self, conversation_id: Text) -> Optional[RedisTicketLock]:
+        serialised_lock = self.red.get(conversation_id)
+        if serialised_lock:
+            lock = json.loads(serialised_lock)
+            return RedisTicketLock(
+                lock["conversation_id"],
+                lock["host"],
+                lock["port"],
+                lock["db"],
+                lock["password"],
+            )
 
     def delete_lock(self, conversation_id: Text):
         self.red.delete(conversation_id)
@@ -146,10 +170,11 @@ class InMemoryLockStore(LockStore):
         super().__init__(lifetime)
 
     def create_lock(self, conversation_id: Text) -> TicketLock:
-        return TicketLock(conversation_id, self.lifetime)
+        return TicketLock(conversation_id)
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         return self.conversation_locks.get(conversation_id)
 
     def delete_lock(self, conversation_id: Text):
-        self.conversation_locks.pop(conversation_id)
+        if conversation_id in self.conversation_locks:
+            del self.conversation_locks[conversation_id]
