@@ -12,7 +12,6 @@ from rasa.nlu.utils import json_to_string
 from rasa.skill import SkillSelector
 
 
-
 def test_get_core_directory(project):
     data_dir = os.path.join(project, "data")
     core_directory = data.get_core_directory([data_dir])
@@ -108,7 +107,7 @@ def test_same_file_names_get_resolved(tmpdir):
 
 
 def test_find_core_nlu_files_in_directory():
-    examples_dir = 'data/examples'
+    examples_dir = "data/examples"
     examples_dirs = os.listdir(examples_dir)
     for example in examples_dirs:
         data_dir = os.path.join(examples_dir, example)
