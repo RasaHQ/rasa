@@ -68,19 +68,26 @@ async def train_async(
     train_path = tempfile.mkdtemp()
 
     skill_imports = SkillSelector.load(config, training_files)
-    try:
-        domain = Domain.load(domain, skill_imports)
-        domain.check_missing_templates()
-    except InvalidDomain as e:
-        print_error(
-            "Could not load domain due to error: {} \nTo specify a valid domain "
-            "path, use the '--domain' argument.".format(e)
-        )
-        return None
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
         training_files, skill_imports
     )
+
+    try:
+        domain = Domain.load(domain, skill_imports)
+        domain.check_missing_templates()
+    except InvalidDomain as e:
+        print_warning(
+            "Core training is skipped because no domain was found. "
+            "Please specify a valid domain using '--domain' argument or check if provided domain file does exists"
+        )
+        return _train_nlu_with_validated_data(
+            config=config,
+            nlu_data_directory=nlu_data_directory,
+            output=output_path,
+            fixed_model_name=fixed_model_name,
+        )
+
     new_fingerprint = model.model_fingerprint(
         config, domain, nlu_data_directory, story_directory
     )
@@ -247,23 +254,15 @@ async def train_core_async(
 
     skill_imports = SkillSelector.load(config, stories)
 
-    if isinstance(domain, type(None)):
+    try:
+        domain = Domain.load(domain, skill_imports)
+        domain.check_missing_templates()
+    except InvalidDomain:
         print_error(
             "Core training is skipped because no domain was found. "
             "Please specify a valid domain using '--domain' argument or check if provided domain file does exists"
         )
         return None
-
-    if isinstance(domain, str):
-        try:
-            domain = Domain.load(domain, skill_imports)
-            domain.check_missing_templates()
-        except InvalidDomain as e:
-            print_error(
-                "Could not load domain due to: '{}'. To specify a valid domain path "
-                "use the '--domain' argument.".format(e)
-            )
-            return None
 
     story_directory = data.get_core_directory(stories, skill_imports)
 
