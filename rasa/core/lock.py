@@ -1,11 +1,9 @@
-import asyncio
-import json
 import logging
-import time
 import typing
+from collections import deque
 from typing import Text, Optional, Union
 
-from redis import Redis
+import time
 
 if typing.TYPE_CHECKING:
     pass
@@ -13,26 +11,31 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class Ticket:
+    def __init__(self, number: int, expires: float):
+        self.number = number
+        self.expires = expires
+
+    def has_expired(self):
+        return time.time() > self.expires
+
+    #
+    # def as_json(self):
+    #     return json.dumps(dict(number=self.number, expires=self.expires))
+
+
 class TicketLock(object):
-    def __init__(
-        self,
-        conversation_id: Text,
-        now_serving: Optional[int] = None,
-        last_issued: Optional[int] = None,
-        lifetime: Optional[Union[int, float]] = None,
-        timestamp: Optional[float] = None,
-    ) -> None:
-        self.conversation_id = conversation_id
-        self.now_serving = self._arg_or_number(now_serving, default=0)
-        self.last_issued = self._arg_or_number(last_issued, default=0)
+    def __init__(self, lifetime: Optional[Union[int, float]] = None) -> None:
         self.lifetime = self._arg_or_number(lifetime, default=60)
-        self.timestamp = self._arg_or_number(timestamp, default=time.time())
+        self.tickets = deque()  # type: deque[Ticket]
 
     async def __aenter__(self):
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        self._release()
+        """Remove the ticket most recently served on and persist."""
+
+        self.tickets.popleft()
 
     @staticmethod
     def _arg_or_number(
@@ -40,142 +43,92 @@ class TicketLock(object):
     ) -> int:
         return arg if arg is not None else default
 
-    def is_locked(self, ticket: int) -> bool:
-        """Return whether `ticket` is locked.
+    def persist(self, conversation_id: Optional[Text] = None):
+        raise NotImplementedError
+
+    def is_locked(self, ticket_number: int) -> bool:
+        """Return whether `ticket_number` is locked.
 
         Returns False if lock has expired.
         Otherwise returns True if `now_serving` is not equal to `ticket`.
         """
 
-        if self.has_lock_expired():
-            return False
+        return self.now_serving != ticket_number
 
-        return self.now_serving != ticket
+    def issue_ticket(self) -> int:
+        """Issue a new ticket and return its number."""
 
-    async def acquire(self) -> "TicketLock":
-        """Acquire the lock, makes sure only one coroutine can retrieve it."""
-        return self
+        self.remove_expired_tickets()
+
+        number = self.last_issued + 1
+        ticket = Ticket(number, time.time() + self.lifetime)
+        self.tickets.append(ticket)
+
+        return number
+
+    def remove_expired_tickets(self) -> None:
+        """Remove expired tickets."""
+
+        # iterate over copy of self.tickets so we can remove items
+        for ticket in list(self.tickets):
+            if ticket.has_expired():
+                self.tickets.remove(ticket)
+
+    @property
+    def last_issued(self) -> int:
+        """Return number of the ticket that was last added.
+
+        Return -1 if no tickets exist.
+        """
+
+        return self._ticket_number_for_index(-1) or -1
+
+    @property
+    def now_serving(self) -> Optional[int]:
+        """Return number of the ticket to be served next.
+
+        Return 0 if no tickets exists.
+        """
+
+        return self._ticket_number_for_index(0) or 0
+
+    def _ticket_number_for_index(self, idx: int) -> Optional[int]:
+        """Return ticket number for `idx`.
+
+        Return None if there are no tickets, or if `idx` is out of bounds of
+        `self.tickets`.
+        """
+
+        self.remove_expired_tickets()
+
+        if not self.tickets or len(self.tickets) < abs(idx):
+            return None
+
+        return self.tickets[idx].number
+
+    def _ticket_for_ticket_number(self, ticket_number: int) -> Optional[Ticket]:
+        """Return expiration time for `ticket_number`."""
+
+        self.remove_expired_tickets()
+
+        return next((t for t in self.tickets if t.number == ticket_number), None)
 
     def is_someone_waiting(self) -> bool:
-        """Return whether someone is waiting on the lock to become available.
+        """Return whether someone is waiting for the lock to become available.
 
-        Returns True if `now_serving` is greater than `last_issued`.
+        Returns True if the ticket queue has length greater than 0.
         """
 
-        return self.now_serving > self.last_issued
+        return len(self.tickets) > 0
 
-    def has_lock_expired(self) -> bool:
-        return time.time() > self.timestamp + self.lifetime
+    def has_lock_expired(self, ticket_number: int) -> Optional[bool]:
+        """Return whether ticket for `ticket_number` has expired.
 
-    def dumps(self) -> Text:
-        """Returns json dump of `RedisTicketLock`."""
-
-        return json.dumps(
-            dict(
-                conversation_id=self.conversation_id,
-                now_serving=self.now_serving,
-                last_issued=self.last_issued,
-                lifetime=self.lifetime,
-                timestamp=self.timestamp,
-            )
-        )
-
-    @classmethod
-    def create_lock(cls, *args, **kwargs) -> "TicketLock":
-        raise NotImplementedError
-
-    def issue_new_ticket(self) -> None:
-        """Issues a new ticket.
-
-        Updates the lock's `last_issued` count by 1 and persists the lock.
+        Return True if ticket was not found.
         """
 
-        self.last_issued += 1
+        ticket = self._ticket_for_ticket_number(ticket_number)
+        if ticket:
+            return ticket.has_expired()
 
-    def _release(self) -> None:
-        """Increment its `now_serving` count by one and persist the lock."""
-
-        self.now_serving += 1
-
-
-class InMemoryTicketLock(TicketLock):
-    """Decorated asyncio lock that counts how many coroutines are waiting.
-    The counter can be used to discard the lock when there is no coroutine
-    waiting for it. For this to work, there should not be any execution yield
-    between retrieving the lock and acquiring it, otherwise there might be
-    race conditions."""
-
-    @classmethod
-    def create_lock(
-        cls,
-        conversation_id: Text,
-        now_serving: Optional[int] = None,
-        last_issued: Optional[int] = None,
-        lifetime: Optional[int] = None,
-        timestamp: Optional[float] = None,
-    ) -> "InMemoryTicketLock":
-        return cls(conversation_id, now_serving, last_issued, lifetime, timestamp)
-
-
-class RedisTicketLock(TicketLock):
-    """Redis ticket lock."""
-
-    def __init__(
-        self,
-        conversation_id: Text,
-        now_serving: Optional[int] = None,
-        last_issued: Optional[int] = None,
-        lifetime: Optional[Union[int, float]] = None,
-        timestamp: Optional[float] = None,
-        red: Optional[Redis] = None,
-    ):
-        self.red = red
-        super().__init__(conversation_id, now_serving, last_issued, lifetime, timestamp)
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        self._release()
-
-    @classmethod
-    def create_lock(
-        cls,
-        conversation_id: Text,
-        now_serving: Optional[int] = None,
-        last_issued: Optional[int] = None,
-        lifetime: Optional[int] = None,
-        timestamp: Optional[float] = None,
-        red: Optional = None,
-    ) -> "RedisTicketLock":
-        return cls(conversation_id, now_serving, last_issued, lifetime, timestamp, red)
-
-    def has_lock_expired(self) -> bool:
-        """Returns True if Redis record for `conversation_id` no longer exists."""
-
-        return self.red.get(self.conversation_id) is None
-
-    def acquire(self):
-        """Issues a RedisTicketLock and updates the existing record."""
-
-        self.persist()
-
-        return self
-
-    def issue_new_ticket(self) -> None:
-        """Issues a new ticket and return its value.
-
-        Updates the lock's `last_issued` count by 1 and persists the lock.
-        """
-
-        self.last_issued += 1
-        self.persist()
-
-    def _release(self) -> None:
-        """Increment its `now_serving` count by one and persist the lock."""
-
-        self.now_serving += 1
-        self.persist()
-
-    def persist(self) -> None:
-        self.red.set(self.conversation_id, self.dumps(), ex=self.lifetime)
+        return True

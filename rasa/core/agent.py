@@ -23,7 +23,7 @@ from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.lock_store import LockStore, CounterLockStore, RedisLockStore
+from rasa.core.lock_store import LockStore, InMemoryLockStore, RedisLockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.form_policy import FormPolicy
@@ -830,7 +830,7 @@ class Agent(object):
         if store is not None:
             return store
         else:
-            # return CounterLockStore()
+            # return InMemoryLockStore()
             return LockStore(type="redis")
 
     @staticmethod
