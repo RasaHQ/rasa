@@ -16,6 +16,7 @@ import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
 from rasa.core.domain import InvalidDomain
+from rasa.core.lock_store import LockStore
 from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
@@ -238,6 +239,7 @@ async def _load_agent(
 ) -> Agent:
     try:
         tracker_store = None
+        lock_store = None
         generator = None
         action_endpoint = None
 
@@ -246,6 +248,7 @@ async def _load_agent(
             tracker_store = TrackerStore.find_tracker_store(
                 None, endpoints.tracker_store, _broker
             )
+            lock_store = LockStore.find_lock_store(endpoints.lock_store)
             generator = endpoints.nlg
             action_endpoint = endpoints.action
 
@@ -255,6 +258,7 @@ async def _load_agent(
             remote_storage,
             generator=generator,
             tracker_store=tracker_store,
+            lock_store=lock_store,
             action_endpoint=action_endpoint,
         )
     except Exception as e:

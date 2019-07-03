@@ -4,6 +4,7 @@ from collections import deque
 from typing import Text, Optional, Union
 
 import time
+from redis import Redis
 
 if typing.TYPE_CHECKING:
     pass
@@ -19,13 +20,12 @@ class Ticket:
     def has_expired(self):
         return time.time() > self.expires
 
-    #
-    # def as_json(self):
-    #     return json.dumps(dict(number=self.number, expires=self.expires))
-
 
 class TicketLock(object):
-    def __init__(self, lifetime: Optional[Union[int, float]] = None) -> None:
+    def __init__(
+        self, conversation_id: Text, lifetime: Optional[Union[int, float]] = None
+    ) -> None:
+        self.conversation_id = conversation_id
         self.lifetime = self._arg_or_number(lifetime, default=60)
         self.tickets = deque()  # type: deque[Ticket]
 
@@ -33,18 +33,16 @@ class TicketLock(object):
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        """Remove the ticket most recently served on and persist."""
+        """Remove the ticket most recently served ticket."""
 
         self.tickets.popleft()
+        self.persist()
 
     @staticmethod
     def _arg_or_number(
         arg: Optional[int] = None, default: Union[int, float] = 0
     ) -> int:
         return arg if arg is not None else default
-
-    def persist(self, conversation_id: Optional[Text] = None):
-        raise NotImplementedError
 
     def is_locked(self, ticket_number: int) -> bool:
         """Return whether `ticket_number` is locked.
@@ -54,6 +52,9 @@ class TicketLock(object):
         """
 
         return self.now_serving != ticket_number
+
+    def persist(self) -> None:
+        pass
 
     def issue_ticket(self) -> int:
         """Issue a new ticket and return its number."""
@@ -73,6 +74,8 @@ class TicketLock(object):
         for ticket in list(self.tickets):
             if ticket.has_expired():
                 self.tickets.remove(ticket)
+
+        self.persist()
 
     @property
     def last_issued(self) -> int:
@@ -132,3 +135,16 @@ class TicketLock(object):
             return ticket.has_expired()
 
         return True
+
+
+class RedisTicketLock(TicketLock):
+    """`TicketLock` with `Redis` connection for persistence."""
+
+    def __init__(
+        self, conversation_id: Text, lifetime: Union[int, float], red: Redis
+    ) -> None:
+        self.red = red
+        super().__init__(conversation_id, lifetime)
+
+    def persist(self) -> None:
+        self.red.set(self.conversation_id, self)

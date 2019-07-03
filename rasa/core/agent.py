@@ -830,8 +830,7 @@ class Agent(object):
         if store is not None:
             return store
         else:
-            # return InMemoryLockStore()
-            return LockStore(type="redis")
+            return LockStore()
 
     @staticmethod
     def _create_ensemble(
