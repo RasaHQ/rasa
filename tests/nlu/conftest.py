@@ -6,8 +6,6 @@ import pytest
 from rasa.nlu import config, train
 from rasa.nlu.components import ComponentBuilder
 
-logging.basicConfig(level="DEBUG")
-
 CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 
 NLU_DEFAULT_CONFIG_PATH = "sample_configs/config_pretrained_embeddings_mitie.yml"

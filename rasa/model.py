@@ -18,6 +18,7 @@ from rasa.constants import (
 
 from rasa.core.domain import Domain
 from rasa.core.utils import get_dict_hash
+from rasa.exceptions import ModelNotFound
 
 # Type alias for the fingerprint
 Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
@@ -54,8 +55,9 @@ class UnpackedModelPath(str):
         shutil.rmtree(self)
 
 
-def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[UnpackedModelPath]:
-    """Gets a model and unpacks it.
+def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> UnpackedModelPath:
+    """Gets a model and unpacks it. Raises a `ModelNotFound` exception if
+    no model could be found at the provided path.
 
     Args:
         model_path: Path to the zipped model. If it's a directory, the latest
@@ -66,16 +68,22 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[UnpackedModelP
 
     """
     if not model_path:
-        return None
+        raise ModelNotFound("No path specified.")
     elif not os.path.exists(model_path):
-        return None
-    elif os.path.isdir(model_path):
+        raise ModelNotFound("No file or directory at '{}'.".format(model_path))
+
+    if os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
+        if not model_path:
+            raise ModelNotFound(
+                "Could not find any Rasa model files in '{}'.".format(model_path)
+            )
+    elif not model_path.endswith(".tar.gz"):
+        raise ModelNotFound(
+            "Path '{}' does not point to a Rasa model file.".format(model_path)
+        )
 
-    if model_path:
-        return unpack_model(model_path)
-
-    return None
+    return unpack_model(model_path)
 
 
 def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
