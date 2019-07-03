@@ -9,6 +9,8 @@ import rasa.data as data
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
 from rasa.nlu.training_data import load_data
 from rasa.nlu.utils import json_to_string
+from rasa.skill import SkillSelector
+
 
 
 def test_get_core_directory(project):
@@ -103,6 +105,16 @@ def test_same_file_names_get_resolved(tmpdir):
 
     assert len(stories) == 2
     assert all([f.endswith("stories.md") for f in stories])
+
+
+def test_find_core_nlu_files_in_directory():
+    examples_dir = 'data/examples'
+    examples_dirs = os.listdir(examples_dir)
+    for example in examples_dirs:
+        data_dir = os.path.join(examples_dir, example)
+        skill_import = SkillSelector(data_dir)
+        nlu_files = data._find_core_nlu_files_in_directory(data_dir, skill_import)[1]
+        assert nlu_files
 
 
 def test_is_nlu_file_with_json():

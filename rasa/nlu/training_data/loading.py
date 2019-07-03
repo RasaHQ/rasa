@@ -127,7 +127,7 @@ def guess_format(filename: Text) -> Text:
     """Applies heuristics to guess the data format of a file.
 
     Args:
-        filename: Text type with the file name.
+        filename: file whose type should be guessed
 
     Returns:
         Guessed file format.
