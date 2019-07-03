@@ -2,7 +2,7 @@ import asyncio
 import logging
 import pickle
 import typing
-from typing import Text, Optional, Dict
+from typing import Text, Optional, Dict, Union
 
 from rasa.core.lock import TicketLock
 
@@ -23,7 +23,7 @@ class LockStore(object):
         self.lifetime = lifetime
 
     @staticmethod
-    def find_lock_store(store=None):
+    def find_lock_store(store=None) -> "LockStore":
         if store is None or store.type is None or store.type == "in_memory":
             lock_store = InMemoryLockStore()
         elif store.type == "redis":
@@ -32,7 +32,7 @@ class LockStore(object):
             raise ValueError(
                 "Cannot create `LockStore` of type '{}'. One of the following "
                 "`LockStore` types need to be specified: {}."
-                "".format("lock_type", ", ".join(ACCEPTED_LOCK_STORES))
+                "".format(store.type, ", ".join(ACCEPTED_LOCK_STORES))
             )
 
         logger.debug(
@@ -42,29 +42,48 @@ class LockStore(object):
         return lock_store
 
     def create_lock(self, conversation_id: Text) -> TicketLock:
+        """Create and save a new `TicketLock` for `conversation_id`."""
+
         lock = TicketLock(conversation_id)
         self.save_lock(lock)
         return lock
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
+        """Fetch lock for `conversation_id` from storage."""
+
         raise NotImplementedError
 
     def delete_lock(self, conversation_id: Text):
+        """Delete lock for `conversation_id` from storage."""
+
         raise NotImplementedError
 
     def save_lock(self, lock: TicketLock):
+        """Commit `lock` to storage."""
+
         raise NotImplementedError
 
     def issue_ticket(self, conversation_id: Text):
+        """Issue new ticket for lock associated with `conversation_id`.
+
+        Creates a new lock if none is found.
+        """
+
         lock = self.get_or_create_lock(conversation_id)
         ticket = lock.issue_ticket(self.lifetime)
         self.save_lock(lock)
         return ticket
 
-    async def lock(self, conversation_id: Text, ticket: int) -> TicketLock:
-        lock = self.get_lock(conversation_id)
+    async def lock(
+        self, conversation_id: Text, ticket: int, attempts: int = 60
+    ) -> TicketLock:
+        """Acquire lock for `conversation_id` with `ticket`.
 
-        attempts = 60
+        Perform `attempts` with a wait of 1 second between them before
+        raising a `LockError`.
+        """
+
+        lock = self.get_lock(conversation_id)
 
         while attempts > 0:
             # acquire lock if it isn't locked
@@ -90,13 +109,17 @@ class LockStore(object):
         )
 
     def update_lock(self, conversation_id: Text) -> None:
-        """Fetch lock from memory, remove expired tickets and save lock."""
+        """Fetch lock for `conversation_id`, remove expired tickets and save lock."""
 
         lock = self.get_lock(conversation_id)
         if lock:
             lock.remove_expired_tickets()
+            self.save_lock(lock)
 
     def get_or_create_lock(self, conversation_id: Text) -> TicketLock:
+        """Fetch existing lock for `conversation_id` or create a new one if none if
+        it doesn't exist."""
+
         existing_lock = self.get_lock(conversation_id)
 
         if existing_lock:
@@ -107,6 +130,9 @@ class LockStore(object):
         return lock
 
     def is_someone_waiting(self, conversation_id: Text) -> bool:
+        """Return whether someone is waiting for lock associated with
+        `conversation_id`."""
+
         lock = self.get_lock(conversation_id)
         if lock:
             return lock.is_someone_waiting()
@@ -114,6 +140,11 @@ class LockStore(object):
         return False
 
     def finish_serving(self, conversation_id: Text, ticket_number: int):
+        """Finish serving ticket with `ticket_number` for `conversation_id`.
+
+        Removes ticket from lock and saves lock.
+        """
+
         lock = self.get_lock(conversation_id)
         if lock:
             lock.remove_ticket_for_ticket_number(ticket_number)
