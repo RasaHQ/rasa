@@ -36,11 +36,10 @@ before_script:
 jobs:
   include:
   - stage: test
-    name: "Black Formatting"
+    name: "Code Formatting"
     python: 3.6
     script:
-    - pip install black
-    - black --check .
+    - make lint
   - stage: test
     name: "Type Check"
     python: 3.6
@@ -52,7 +51,7 @@ jobs:
     name: "Test 3.5"
     python: "3.5"
     script:
-      - py.test tests --cov rasa
+      - make test
   - <<: *run-tests
     name: "Test 3.6"
     python: '3.6'
