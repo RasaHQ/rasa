@@ -137,9 +137,9 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
     n_messages = 10
     lock_wait = 0.1
     # let's write the incoming order and the order of results temp files
-    temp_path = tmpdir_factory.mktemp("Message order")
-    results_file = temp_path / "results_file"
-    incoming_order_file = temp_path / "incoming_order_file"
+    temp_path = tmpdir_factory.mktemp("message_order")
+    results_file = temp_path / "results_file.txt"
+    incoming_order_file = temp_path / "incoming_order_file.txt"
 
     # we need to mock `Agent.handle_message()` so we can introduce an
     # artificial holdup (`wait`)
