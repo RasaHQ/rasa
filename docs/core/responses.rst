@@ -1,5 +1,5 @@
 :desc: Read more how to define assistant utterances or use a service to generate the
-       responses using Rasa Stack as an open source chatassistant platform.
+       responses using Rasa as an open source chat assistant platform.
 
 .. _responses:
 

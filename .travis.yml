@@ -45,14 +45,14 @@ jobs:
     name: "Type Check"
     python: 3.6
     script:
-    - pip install pytype==2019.05.31
+    - pip install pytype==2019.5.31
     - pytype --keep-going rasa
   - &run-tests
     stage: test
     name: "Test 3.5"
     python: "3.5"
     script:
-      - py.test tests --cov rasa -v
+      - py.test tests --cov rasa
   - <<: *run-tests
     name: "Test 3.6"
     python: '3.6'
@@ -120,27 +120,13 @@ jobs:
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
     - sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
-  - stage: trigger website rebuild
-    if: fork = false AND branch = "master" AND type != "pull_request"
+  - stage: docs-netlify
+    if: branch = master AND type != pull_request OR tag IS present
+    install: skip
     script:
-    - eval "$(ssh-agent -s)";
-      touch nlu_docs_to_website_trigger_key;
-      chmod 0600 nlu_docs_to_website_trigger_key
-    - openssl aes-256-cbc
-      -K $encrypted_1708c37fe733_key
-      -iv $encrypted_1708c37fe733_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
-    - tar xvf secrets.tar
-    - ssh-add nlu_docs_to_website_trigger_key
-    - git config --global user.email "builds@travis-ci.com"
-    - git config --global user.name "Travis CI"
-    - git clone -b master --single-branch git@github.com:RasaHQ/rasa-website.git
-    - cd rasa-website
-    - git commit --allow-empty -m "trigger rasa docs update"
-    - git push origin master
+    - curl -X POST -d "docs" https://api.netlify.com/build_hooks/${NETLIFY_HOOK_ID}
   - stage: deploy
+    if: branch = "master" AND tag IS present
     name: "Deploy to PyPI"
     python: 3.6
     install: skip
@@ -150,8 +136,5 @@ jobs:
       user: amn41
       # server: https://test.pypi.org/legacy/
       distributions: "sdist bdist_wheel"
-      on:
-        branch: master
-        tags: true
       password:
         secure: "MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA="
