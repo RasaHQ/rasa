@@ -1,14 +1,25 @@
 import asyncio
+import concurrent
+from concurrent.futures import ProcessPoolExecutor
+
+from itertools import chain
+from typing import Optional, List, Dict, Text, Any, Callable
+
+import numpy as np
 import time
 
 import pytest
 
+from unittest.mock import patch
+
 import rasa.utils.io
 from rasa.core.agent import Agent
+from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.domain import Domain
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import InMemoryLockStore
+from rasa.core.processor import MessageProcessor
 
 domain = Domain.load("data/test_domains/default.yml")
 
@@ -130,10 +141,60 @@ async def test_multiple_conversation_ids(default_agent: Agent):
     assert processed_ids == conversation_ids
 
 
-# async def test_expired_locks(default_agent: Agent):
-#     default_agent.lock_store.lifetime = 0
-#     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
-#
-#     result = await default_agent.handle_text(text, sender_id="some id")
-#
-#     assert result
+async def test_message_order(default_agent: Agent):
+    # we need to mock the `Agent.handle_message()` so we can introduce an
+    # artificial holdup (`wait`)
+    async def mocked_handle_message(
+        self,
+        message: UserMessage,
+        wait: int,
+        message_preprocessor: Optional[Callable[[Text], Text]] = None,
+        **kwargs
+    ) -> Optional[List[Dict[Text, Any]]]:
+        if not isinstance(message, UserMessage):
+            return await self.handle_text(
+                message, message_preprocessor=message_preprocessor, **kwargs
+            )
+
+        processor = self.create_processor(message_preprocessor)
+
+        ticket = self.lock_store.issue_ticket(message.sender_id)
+        print ("in wait", wait, ticket, message.text)
+        try:
+            async with await self.lock_store.lock(message.sender_id, ticket, wait=0.02):
+                await asyncio.sleep(wait)
+                return await processor.handle_message(message)
+        finally:
+            self.lock_store.cleanup(message.sender_id, ticket)
+
+    # We'll send 10 messages from the same sender_id with different blocking times
+    # after the lock has been acquired.
+    # We have to ensure that the messages are processed in the right order.
+    # Let's repeat the whole test 10 times to rule out randomly correct results.
+    with patch.object(Agent, "handle_message", mocked_handle_message):
+        wait_times = np.linspace(0.01, 0.001, 10)
+        message_tasks = [
+            default_agent.handle_message(
+                UserMessage(
+                    '/greet{{"name":"sender {sender}"}}'.format(sender=i),
+                    sender_id="some id",
+                ),
+                wait=k,
+                sender_id="some id",
+            )
+            for i, k in enumerate(wait_times)
+        ]
+        restart_tasks = [
+            default_agent.handle_message(
+                UserMessage("/restart", sender_id="some id"),
+                wait=0,
+                sender_id="some id",
+            )
+            for _ in range(len(wait_times))
+        ]
+
+        tasks = list(chain.from_iterable(zip(message_tasks, restart_tasks)))
+
+        for t in tasks:
+            r = asyncio.ensure_future(t)
+            print ("have r", r)

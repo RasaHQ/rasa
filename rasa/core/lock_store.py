@@ -75,7 +75,7 @@ class LockStore(object):
         return ticket
 
     async def lock(
-        self, conversation_id: Text, ticket: int, attempts: int = 60
+        self, conversation_id: Text, ticket: int, attempts: int = 60, wait: int = 1
     ) -> TicketLock:
         """Acquire lock for `conversation_id` with `ticket`.
 
@@ -91,7 +91,7 @@ class LockStore(object):
                 return lock
 
             # sleep and update lock
-            await asyncio.sleep(1)
+            await asyncio.sleep(wait)
             self.update_lock(conversation_id)
 
             # fetch lock again because things might have changed

@@ -34,7 +34,6 @@ class TicketLock(object):
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        """Remove the ticket most recently served ticket."""
         pass
 
     def is_locked(self, ticket_number: int) -> bool:
