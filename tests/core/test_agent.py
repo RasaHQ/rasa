@@ -77,7 +77,7 @@ async def test_agent_train(tmpdir, default_domain):
     assert [s.name for s in loaded.domain.slots] == [s.name for s in agent.domain.slots]
 
     # test policies
-    assert type(loaded.policy_ensemble) is type(agent.policy_ensemble)  # nopep8
+    assert isinstance(loaded.policy_ensemble, type(agent.policy_ensemble))
     assert [type(p) for p in loaded.policy_ensemble.policies] == [
         type(p) for p in agent.policy_ensemble.policies
     ]
