@@ -106,7 +106,44 @@ def test_same_file_names_get_resolved(tmpdir):
     assert all([f.endswith("stories.md") for f in stories])
 
 
-def test_find_core_nlu_files_in_directory():
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        (
+            "dialogflow",
+            {
+                "data/examples/dialogflow/entities/cuisine.json",
+                "data/examples/dialogflow/intents/affirm.json",
+                "data/examples/dialogflow/entities/location_entries_es.json",
+                "data/examples/dialogflow/intents/affirm_usersays_en.json",
+                "data/examples/dialogflow/intents/hi_usersays_es.json",
+                "data/examples/dialogflow/entities/cuisine_entries_es.json",
+                "data/examples/dialogflow/intents/inform_usersays_en.json",
+                "data/examples/dialogflow/intents/hi.json",
+                "data/examples/dialogflow/intents/goodbye_usersays_en.json",
+                "data/examples/dialogflow/agent.json",
+                "data/examples/dialogflow/intents/hi_usersays_en.json",
+                "data/examples/dialogflow/entities/location.json",
+                "data/examples/dialogflow/intents/affirm_usersays_es.json",
+                "data/examples/dialogflow/entities/cuisine_entries_en.json",
+                "data/examples/dialogflow/package.json",
+                "data/examples/dialogflow/intents/Default Fallback Intent.json",
+                "data/examples/dialogflow/intents/goodbye_usersays_es.json",
+                "data/examples/dialogflow/intents/goodbye.json",
+                "data/examples/dialogflow/entities/location_entries_en.json",
+                "data/examples/dialogflow/intents/inform.json",
+                "data/examples/dialogflow/intents/inform_usersays_es.json",
+            },
+        ),
+        ("luis", {"data/examples/luis/demo-restaurants.json"}),
+        (
+            "rasa",
+            {"data/examples/rasa/demo-rasa.json", "data/examples/rasa/demo-rasa.md"},
+        ),
+        ("wit", {"data/examples/wit/demo-flights.json"}),
+    ],
+)
+def test_find_nlu_files_with_different_formats(test_input, expected):
     examples_dir = "data/examples"
     examples_dirs = os.listdir(examples_dir)
     for example in examples_dirs:
