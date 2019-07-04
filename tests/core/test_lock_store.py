@@ -1,6 +1,5 @@
 import asyncio
-import os
-from typing import Optional, List, Dict, Text, Any, Union
+from typing import Union
 from unittest.mock import patch
 
 import numpy as np
@@ -49,13 +48,13 @@ def test_remove_expired_tickets():
     lock = TicketLock("random id 1")
 
     # issue one long- and one short-lived ticket
-    list(map(lock.issue_ticket, [k for k in [0.00001, 10]]))
+    _ = list(map(lock.issue_ticket, [k for k in [0.01, 10]]))
 
     # both tickets are there
     assert len(lock.tickets) == 2
 
     # sleep and only one ticket should be left
-    time.sleep(0.00002)
+    time.sleep(0.02)
     lock.remove_expired_tickets()
     assert len(lock.tickets) == 1
 
@@ -139,8 +138,8 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
     lock_wait = 0.1
     # let's write the incoming order and the order of results temp files
     temp_path = tmpdir_factory.mktemp("Message order")
-    results_file = os.path.join(temp_path, "results_file")
-    incoming_order_file = os.path.join(temp_path, "incoming_order_file")
+    results_file = temp_path / "results_file"
+    incoming_order_file = temp_path / "incoming_order_file"
 
     # we need to mock `Agent.handle_message()` so we can introduce an
     # artificial holdup (`wait`)
@@ -176,19 +175,20 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
             for i, k in enumerate(wait_times)
         ]
 
-        futures = []
-        for t in tasks:
-            futures.append(asyncio.ensure_future(t))
-
-        await asyncio.gather(*futures)
+        # execute futures
+        await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
 
         expected_order = ["sender {0}".format(i) for i in range(len(wait_times))]
+
+        # ensure order of incoming messages is as expected
         with open(incoming_order_file) as f:
             incoming_order = [l for l in f.read().split("\n") if l]
-            assert expected_order == incoming_order
+            assert incoming_order == expected_order
+
+        # ensure results are processed in expected order
         with open(results_file) as f:
             results_order = [l for l in f.read().split("\n") if l]
-            assert expected_order == results_order
+            assert results_order == expected_order
 
         # Every message after the first one will wait `lock_wait` seconds to acquire its
         # lock (`wait` kwarg in `lock_store.lock()`). Let's make sure that this is not
