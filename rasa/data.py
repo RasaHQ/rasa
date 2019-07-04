@@ -6,7 +6,6 @@ import uuid
 import typing
 import re
 from typing import Tuple, List, Text, Set, Union, Optional
-from rasa.nlu.training_data import loading
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +155,8 @@ def _is_valid_filetype(path: Text) -> bool:
 
 def _is_nlu_file(file_path: Text) -> bool:
     """Checks whether a file is an NLU file."""
+    from rasa.nlu.training_data import loading
+
     return loading.guess_format(file_path) != loading.UNK
 
 
