@@ -12,6 +12,11 @@ how you can migrate from one version to another.
 
 Rasa NLU 0.14.x and Rasa Core 0.13.x to Rasa 1.0
 ------------------------------------------------
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  It is not possible to load previously trained models. Please make sure to retrain a
+  model before trying to use it with this improved version.
 
 General
 ~~~~~~~
@@ -32,6 +37,10 @@ General
 - If you were previously importing the ``Button`` or ``Element`` classes from
   ``rasa_core.dispatcher``, these are now to be imported from ``rasa_sdk.utils``.
 
+- Rasa NLU and Core previously used `separate configuration files 
+  <https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1>`.
+  These two files should be merged into a single file either named ``config.yml``, or passed via the ``--config`` parameter.
+
 Script parameters
 ~~~~~~~~~~~~~~~~~
 - All script parameter names have been unified to follow the same schema.
@@ -50,3 +59,7 @@ Script parameters
   defined with ``--max-history``. Output paths and log files cannot be specified with ``-o`` anymore; ``--out`` and
   ``--log-file`` should be used. NLU data has been standarized to be ``--nlu`` and the name of
   any kind of data files or directory to be ``--data``.
+
+HTTP API
+~~~~~~~~
+- There are numerous HTTP API endpoint changes which can be found `here <http://rasa.com/docs/rasa/api/http-api/>`.
