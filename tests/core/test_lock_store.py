@@ -196,7 +196,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         # Every message after the first one will wait `lock_wait` seconds to acquire its
         # lock (`wait` kwarg in `lock_store.lock()`). Let's make sure that this is not
         # blocking and test that total test execution time is less than
-        # the sum of all wait times and (n_messages - 1) * `lock_wait`
+        # the sum of all wait times plus (n_messages - 1) * lock_wait
         time_limit = np.sum(wait_times[1:])
         time_limit += (n_messages - 1) * lock_wait
         assert time.time() - start_time < time_limit
