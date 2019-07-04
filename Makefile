@@ -30,7 +30,6 @@ clean:
 formatter:
 	black rasa tests
 
-# TODO: Remove '--exit-zero'
 lint:
 	flake8 rasa tests
 	black --check rasa tests
