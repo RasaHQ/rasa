@@ -147,7 +147,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
     # We'll also return the message text straight away instead
     async def mocked_handle_message(
         self, message: UserMessage, wait: Union[int, float]
-    ) -> Optional[List[Dict[Text, Any]]]:
+    ) -> None:
         ticket = self.lock_store.issue_ticket(message.sender_id)
         with open(incoming_order_file, "a+") as f:
             f.write(message.text + "\n")

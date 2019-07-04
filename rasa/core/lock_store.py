@@ -152,7 +152,6 @@ class LockStore(object):
 
     def cleanup(self, conversation_id: Text, ticket_number: int) -> None:
         """Remove lock for `conversation_id` if no one is waiting."""
-
         self.finish_serving(conversation_id, ticket_number)
         if not self.is_someone_waiting(conversation_id):
             self.delete_lock(conversation_id)
