@@ -9,7 +9,6 @@ import rasa.data as data
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
 from rasa.nlu.training_data import load_data
 from rasa.nlu.utils import json_to_string
-from rasa.skill import SkillSelector
 
 
 def test_get_core_directory(project):
@@ -145,12 +144,9 @@ def test_same_file_names_get_resolved(tmpdir):
 )
 def test_find_nlu_files_with_different_formats(test_input, expected):
     examples_dir = "data/examples"
-    examples_dirs = os.listdir(examples_dir)
-    for example in examples_dirs:
-        data_dir = os.path.join(examples_dir, example)
-        skill_import = SkillSelector(data_dir)
-        nlu_files = data._find_core_nlu_files_in_directory(data_dir, skill_import)[1]
-        assert nlu_files
+    data_dir = os.path.join(examples_dir, test_input)
+    core_files, nlu_files = data.get_core_nlu_files([data_dir])
+    assert nlu_files == expected
 
 
 def test_is_nlu_file_with_json():
