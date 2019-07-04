@@ -148,14 +148,14 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         self, message: UserMessage, wait: Union[int, float]
     ) -> None:
         ticket = self.lock_store.issue_ticket(message.sender_id)
-        with open(incoming_order_file, "a+") as f:
+        with open(str(incoming_order_file), "a+") as f:
             f.write(message.text + "\n")
         try:
             async with await self.lock_store.lock(
                 message.sender_id, ticket, wait=lock_wait
             ):
                 await asyncio.sleep(wait)
-                with open(results_file, "a+") as f:
+                with open(str(results_file), "a+") as f:
                     f.write(message.text + "\n")
                 return None
         finally:
@@ -181,12 +181,12 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         expected_order = ["sender {0}".format(i) for i in range(len(wait_times))]
 
         # ensure order of incoming messages is as expected
-        with open(incoming_order_file) as f:
+        with open(str(incoming_order_file)) as f:
             incoming_order = [l for l in f.read().split("\n") if l]
             assert incoming_order == expected_order
 
         # ensure results are processed in expected order
-        with open(results_file) as f:
+        with open(str(results_file)) as f:
             results_order = [l for l in f.read().split("\n") if l]
             assert results_order == expected_order
 
