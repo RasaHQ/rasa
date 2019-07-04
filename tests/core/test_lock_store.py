@@ -157,7 +157,10 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
             async with await self.lock_store.lock(
                 message.sender_id, ticket, wait=lock_wait
             ):
+
+                # hold up the message processing after the lock has been acquired
                 await asyncio.sleep(wait)
+
                 with open(str(results_file), "a+") as f_1:
                     f_1.write(message.text + "\n")
                 return None
