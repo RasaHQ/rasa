@@ -179,7 +179,7 @@ class TrainingDataGenerator(object):
             max_number_of_augmented_trackers=max_number_of_augmented_trackers,
             tracker_limit=tracker_limit,
             use_story_concatenation=use_story_concatenation,
-            rand=random.Random(42),
+            rand=42,  # send random seed
         )
         # hashed featurization of all finished trackers
         self.hashed_featurizations = set()

@@ -20,7 +20,6 @@ from sanic.views import CompositionView
 import rasa.utils.io as io_utils
 from rasa.utils.endpoints import read_endpoint_config
 
-
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.endpoints import concat_url
@@ -66,11 +65,14 @@ def subsample_array(
 ) -> List[Any]:
     """Shuffles the array and returns `max_values` number of elements."""
     import random
+    import numpy as np
+
+    np.random.seed(rand)
 
     if not can_modify_incoming_array:
         arr = arr[:]
     if rand is not None:
-        rand.shuffle(arr)
+        np.random.shuffle(arr)
     else:
         random.shuffle(arr)
     return arr[:max_values]

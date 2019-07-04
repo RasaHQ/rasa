@@ -64,6 +64,17 @@ async def test_agent_train(tmpdir, default_domain):
     )
 
     training_data = await agent.load_data(training_data_file)
+    # make another copy of training data
+    training_data_new = await agent.load_data(training_data_file)
+
+    # test if both datasets are identical
+    assert all(
+        [
+            str(x.as_dialogue()) == str(training_data_new[i].as_dialogue())
+            for i, x in enumerate(training_data)
+        ]
+    )
+
     agent.train(training_data)
     agent.persist(tmpdir.strpath)
 

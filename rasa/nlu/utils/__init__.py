@@ -33,6 +33,10 @@ def create_dir(dir_path: Text) -> None:
             raise
 
 
+def cmp_items(file):
+    return "_".join(file.split("_")[1:])
+
+
 def list_directory(path: Text) -> List[Text]:
     """Returns all files and folders excluding hidden files.
 
@@ -51,6 +55,7 @@ def list_directory(path: Text) -> List[Text]:
         results = []
         for base, dirs, files in os.walk(path):
             # remove hidden files
+            files = sorted(files, key=cmp_items)
             goodfiles = filter(lambda x: not x.startswith("."), files)
             results.extend(os.path.join(base, f) for f in goodfiles)
         return results
