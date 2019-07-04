@@ -1,27 +1,19 @@
 import asyncio
-import concurrent
-from concurrent.futures import ProcessPoolExecutor
-
-from itertools import chain
-from typing import Optional, List, Dict, Text, Any, Callable
+import os
+from typing import Optional, List, Dict, Text, Any, Union
+from unittest.mock import patch
 
 import numpy as np
-import time
-
 import pytest
-
-from unittest.mock import patch
+import time
+from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
 from rasa.core.agent import Agent
-from rasa.core.channels import UserMessage, CollectingOutputChannel
+from rasa.core.channels import UserMessage
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.domain import Domain
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import InMemoryLockStore
-from rasa.core.processor import MessageProcessor
-
-domain = Domain.load("data/test_domains/default.yml")
 
 
 @pytest.fixture(scope="session")
@@ -141,63 +133,68 @@ async def test_multiple_conversation_ids(default_agent: Agent):
     assert processed_ids == conversation_ids
 
 
-async def test_message_order(default_agent: Agent):
+async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agent):
+    start_time = time.time()
+    n_messages = 10
+    lock_wait = 0.1
+    # let's write the incoming order and the order of results temp files
+    temp_path = tmpdir_factory.mktemp("Message order")
+    results_file = os.path.join(temp_path, "results_file")
+    incoming_order_file = os.path.join(temp_path, "incoming_order_file")
+
     # we need to mock `Agent.handle_message()` so we can introduce an
     # artificial holdup (`wait`)
+    # We'll also return the message text straight away instead
     async def mocked_handle_message(
-        self,
-        message: UserMessage,
-        wait: int,
-        message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs
+        self, message: UserMessage, wait: Union[int, float]
     ) -> Optional[List[Dict[Text, Any]]]:
-        if not isinstance(message, UserMessage):
-            return await self.handle_text(
-                message, message_preprocessor=message_preprocessor, **kwargs
-            )
-
-        processor = self.create_processor(message_preprocessor)
-
         ticket = self.lock_store.issue_ticket(message.sender_id)
-        print ("in wait", wait, ticket, message.text)
+        with open(incoming_order_file, "a+") as f:
+            f.write(message.text + "\n")
         try:
-            async with await self.lock_store.lock(message.sender_id, ticket, wait=0.02):
+            async with await self.lock_store.lock(
+                message.sender_id, ticket, wait=lock_wait
+            ):
                 await asyncio.sleep(wait)
-                return await processor.handle_message(message)
+                with open(results_file, "a+") as f:
+                    f.write(message.text + "\n")
+                return None
         finally:
             self.lock_store.cleanup(message.sender_id, ticket)
 
-    # We'll send 10 messages from the same sender_id with different blocking times
+    # We'll send n_messages from the same sender_id with different blocking times
     # after the lock has been acquired.
     # We have to ensure that the messages are processed in the right order.
-    # Let's repeat the whole test 10 times to rule out randomly correct results.
     with patch.object(Agent, "handle_message", mocked_handle_message):
-        wait_times = np.linspace(1, 0.1, 2)
-        message_tasks = [
+        # use decreasing wait times so that every message after the first one
+        # does not acquire its lock immediately
+        wait_times = np.linspace(0.1, 0.05, n_messages)
+        tasks = [
             default_agent.handle_message(
-                UserMessage(
-                    '/greet{{"name":"sender {sender}"}}'.format(sender=i),
-                    sender_id="some id",
-                ),
-                wait=k,
-                sender_id="some id",
+                UserMessage("sender {0}".format(i), sender_id="some id"), wait=k
             )
             for i, k in enumerate(wait_times)
         ]
-        restart_tasks = [
-            asyncio.ensure_future(
-                default_agent.handle_message(
-                    UserMessage("/restart", sender_id="some id"),
-                    wait=0,
-                    sender_id="some id",
-                )
-                for _ in range(len(wait_times))
-            )
-        ]
 
-        tasks = list(chain.from_iterable(zip(message_tasks, restart_tasks)))
-
+        futures = []
         for t in tasks:
-            fut = asyncio.ensure_future(t)
-            res = await fut
-            print("have res", res)
+            futures.append(asyncio.ensure_future(t))
+
+        await asyncio.gather(*futures)
+
+        expected_order = ["sender {0}".format(i) for i in range(len(wait_times))]
+        with open(incoming_order_file) as f:
+            incoming_order = [l for l in f.read().split("\n") if l]
+            assert expected_order == incoming_order
+        with open(results_file) as f:
+            results_order = [l for l in f.read().split("\n") if l]
+            assert expected_order == results_order
+
+        # Every message after the first one will wait `lock_wait` seconds to acquire its
+        # lock (`wait` kwarg in `lock_store.lock()`). Let's make sure that this is not
+        # blocking and test that total test execution time is less than
+        # the sum of all wait times and (n_messages - 1) * `lock_wait`
+        time_limit = np.sum(wait_times[1:])
+        time_limit += (n_messages - 1) * lock_wait
+
+        assert time.time() - start_time < time_limit
