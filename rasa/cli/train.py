@@ -116,7 +116,7 @@ def train_core(
             config=config,
             stories=stories,
             output=output,
-            train_path=train_path,
+            train_path=_train_path,
             fixed_model_name=args.fixed_model_name,
             kwargs=extract_additional_arguments(args),
         )

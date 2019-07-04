@@ -2,17 +2,21 @@
 
 help:
 	@echo "    clean"
-	@echo "        Remove python artifacts and build artifacts."
+	@echo "        Remove Python/build artifacts."
 	@echo "    formatter"
 	@echo "        Apply black formatting to code."
 	@echo "    lint"
-	@echo "        Check style with flake8."
+	@echo "        Lint code with flake8, and check if black formatter should be applied."
 	@echo "    types"
 	@echo "        Check for type errors using pytype."
 	@echo "    test"
-	@echo "        Run py.test"
+	@echo "        Run pytest on tests/."
 	@echo "    check-readme"
-	@echo "        Check if the readme can be converted from md to rst for pypi"
+	@echo "        Check if the README can be converted from .md to .rst for PyPI."
+	@echo "    doctest"
+	@echo "        Run all doctests embedded in the documentation."
+	@echo "    livedocs"
+	@echo "        Build the docs locally."
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -28,7 +32,7 @@ formatter:
 
 # TODO: Remove '--exit-zero'
 lint:
-	flake8 rasa tests --exit-zero
+	flake8 rasa tests
 	black --check rasa tests
 
 types:
