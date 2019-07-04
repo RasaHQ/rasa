@@ -251,6 +251,12 @@ Rasa Core and how you can migrate from one version to another." />
 how you can migrate from one version to another.</p>
 <div class="section" id="rasa-nlu-0-14-x-and-rasa-core-0-13-x-to-rasa-1-0">
 <span id="migration-to-rasa-1-0"></span><h2>Rasa NLU 0.14.x and Rasa Core 0.13.x to Rasa 1.0<a class="headerlink" href="#rasa-nlu-0-14-x-and-rasa-core-0-13-x-to-rasa-1-0" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This is a release <strong>breaking backwards compatibility</strong>.
+It is not possible to load previously trained models. Please make sure to retrain a
+model before trying to use it with this improved version.</p>
+</div>
 <div class="section" id="general">
 <h3>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
@@ -267,6 +273,9 @@ templates in your domain file to send any extra parameters used in your
 channel’s send methods.</li>
 <li>If you were previously importing the <code class="docutils literal notranslate"><span class="pre">Button</span></code> or <code class="docutils literal notranslate"><span class="pre">Element</span></code> classes from
 <code class="docutils literal notranslate"><span class="pre">rasa_core.dispatcher</span></code>, these are now to be imported from <code class="docutils literal notranslate"><span class="pre">rasa_sdk.utils</span></code>.</li>
+<li>Rasa NLU and Core previously used <cite>separate configuration files
+&lt;https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&amp;_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1&gt;</cite>.
+These two files should be merged into a single file either named <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>, or passed via the <code class="docutils literal notranslate"><span class="pre">--config</span></code> parameter.</li>
 </ul>
 </div>
 <div class="section" id="script-parameters">
@@ -286,6 +295,12 @@ documentation</a>.</li>
 defined with <code class="docutils literal notranslate"><span class="pre">--max-history</span></code>. Output paths and log files cannot be specified with <code class="docutils literal notranslate"><span class="pre">-o</span></code> anymore; <code class="docutils literal notranslate"><span class="pre">--out</span></code> and
 <code class="docutils literal notranslate"><span class="pre">--log-file</span></code> should be used. NLU data has been standarized to be <code class="docutils literal notranslate"><span class="pre">--nlu</span></code> and the name of
 any kind of data files or directory to be <code class="docutils literal notranslate"><span class="pre">--data</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="http-api">
+<h3>HTTP API<a class="headerlink" href="#http-api" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>There are numerous HTTP API endpoint changes which can be found <cite>here &lt;http://rasa.com/docs/rasa/api/http-api/&gt;</cite>.</li>
 </ul>
 </div>
 </div>
