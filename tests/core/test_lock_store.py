@@ -151,15 +151,15 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         self, message: UserMessage, wait: Union[int, float]
     ) -> None:
         ticket = self.lock_store.issue_ticket(message.sender_id)
-        with open(str(incoming_order_file), "a+") as f:
-            f.write(message.text + "\n")
+        with open(str(incoming_order_file), "a+") as f_0:
+            f_0.write(message.text + "\n")
         try:
             async with await self.lock_store.lock(
                 message.sender_id, ticket, wait=lock_wait
             ):
                 await asyncio.sleep(wait)
-                with open(str(results_file), "a+") as f:
-                    f.write(message.text + "\n")
+                with open(str(results_file), "a+") as f_1:
+                    f_1.write(message.text + "\n")
                 return None
         finally:
             self.lock_store.cleanup(message.sender_id, ticket)
