@@ -5,6 +5,7 @@ import fakeredis
 import pytest
 import tempfile
 import os
+import logging
 
 import rasa.utils.io
 from rasa.core import training, restore
@@ -13,6 +14,7 @@ from rasa.core.slots import Slot
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
+    SlotSet,
     UserUttered,
     ActionExecuted,
     Restarted,
@@ -571,10 +573,11 @@ def test_last_executed_has_not_name():
 
 
 @pytest.mark.parametrize("key", ["asfa", "htb", "2"])
-def test_tracker_without_slots(key):
+def test_tracker_without_slots(key, caplog):
+    event = SlotSet(key)
     tracker = DialogueStateTracker.from_dict("any", [])
     assert key in tracker.slots
-    assert key not in tracker.slots.keys()
-    v = tracker.slots[key]
-    assert isinstance(v, Slot)
-    assert key in tracker.slots.keys()
+    event.apply_to(tracker)
+    with caplog.at_level(logging.INFO):
+        tracker.get_slot(key)
+    assert len(caplog.records) == 0
