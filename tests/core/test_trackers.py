@@ -572,8 +572,7 @@ def test_last_executed_has_not_name():
     assert tracker.last_executed_action_has("another") is False
 
 
-@pytest.mark.parametrize("key, value", [("asfa", 1),
-                                          ("htb", None)])
+@pytest.mark.parametrize("key, value", [("asfa", 1), ("htb", None)])
 def test_tracker_without_slots(key, value, caplog):
     event = SlotSet(key, value)
     tracker = DialogueStateTracker.from_dict("any", [])
