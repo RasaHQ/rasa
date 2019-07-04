@@ -44,7 +44,7 @@ There's a lot more background information in this
   [Read The Docs](https://rasa.com/docs/)
 
 - **I'm ready to install Rasa 🚀**
-  [Installation](https://rasa.com/docs/rasa/installation/)
+  [Installation](https://rasa.com/docs/rasa/user-guide/installation/)
 
 - **I want to learn how to use Rasa 🚀**
   [Tutorial](https://rasa.com/docs/rasa/tutorial/)
