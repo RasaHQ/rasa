@@ -101,8 +101,6 @@ def train_core(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
-    _train_path = train_path or tempfile.mkdtemp()
-
     # Policies might be a list for the compare training. Do normal training
     # if only list item was passed.
     if not isinstance(args.config, list) or len(args.config) == 1:
@@ -116,7 +114,7 @@ def train_core(
             config=config,
             stories=stories,
             output=output,
-            train_path=_train_path,
+            train_path=train_path,
             fixed_model_name=args.fixed_model_name,
             kwargs=extract_additional_arguments(args),
         )
