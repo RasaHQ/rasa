@@ -31,7 +31,8 @@ Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
-- ``x in AnySlotDicw`` is now True for any x
+- ``x in AnySlotDicw`` is now True for any x, which fixes empty slot warning in
+  interactive learning
 
 
 [1.1.4] - 2019-06-18
