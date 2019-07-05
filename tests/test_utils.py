@@ -130,13 +130,17 @@ def test_file_path_validator_with_invalid_paths(actual_path):
     from prompt_toolkit.validation import ValidationError
     from prompt_toolkit.document import Document
 
+    test_error_message = actual_path
+
     validator = rasa.utils.io.questionary_file_path_validator(
-        [".yml"], "error message"
+        [".yml"], test_error_message
     )()
 
     document = Document(actual_path)
     with pytest.raises(ValidationError) as e:
         validator.validate(document)
+
+    assert e.value.message == test_error_message
 
 
 @pytest.mark.parametrize("actual_path", ["domain.yml", "lala.yaml"])
