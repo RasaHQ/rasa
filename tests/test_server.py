@@ -216,6 +216,8 @@ def test_train_stack_success(
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
 
+    assert response.headers["filename"] is not None
+
     # save model to temporary file
     tempdir = tempfile.mkdtemp()
     model_path = os.path.join(tempdir, "model.tar.gz")

@@ -1,6 +1,6 @@
 import copy
 import logging
-from collections import deque, defaultdict
+from collections import deque
 from enum import Enum
 from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List
 

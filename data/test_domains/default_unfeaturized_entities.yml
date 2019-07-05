@@ -1,0 +1,24 @@
+intents:
+ - greet: {use_entities: [name]}
+ - default: {ignore_entities : [unrelated_recognized_entity]}
+ - goodbye: {use_entities: None}
+ - thank: {use_entities: False}
+ - ask: {use_entities: True}
+
+entities:
+ - name
+ - unrelated_recognized_entity
+ - other
+
+templates:
+  utter_greet:
+    - hey there!
+  utter_goodbye:
+    - goodbye :(
+  utter_default:
+    - default message
+
+actions:
+  - utter_default
+  - utter_greet
+  - utter_goodbye
