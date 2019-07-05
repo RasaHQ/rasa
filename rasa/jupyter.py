@@ -22,17 +22,16 @@ def chat(
     """Chat to the bot within a Jupyter notebook.
 
     Args:
-        model_path: Path to a Rasa Stack model.
-        agent: Rasa Core agent (used if no Rasa Stack model given).
+        model_path: Path to a combined Rasa model.
+        agent: Rasa Core agent (used if no Rasa model given).
         interpreter: Rasa NLU interpreter (used with Rasa Core agent if no
-                     Rasa Stack model is given).
+                     Rasa model is given).
     """
 
     if model_path:
         from rasa.run import create_agent
 
-        unpacked = model.get_model(model_path)
-        agent = create_agent(unpacked)
+        agent = create_agent(model_path)
 
     elif agent is not None and interpreter is not None:
         # HACK: this skips loading the interpreter and directly
