@@ -12,6 +12,10 @@ nbsphinx==0.3.2
 aioresponses==0.6.0
 moto==1.3.8
 
+# lint/format
+black==19.3b0; python_version>='3.6'
+flake8==3.7.7
+
 # pipeline dependencies
 spacy==2.1.4
 jieba==0.39
