@@ -27,6 +27,7 @@ Removed
 -------
 - revert the stripping of trailing slashes in endpoint URLs since this can lead to
   problems in case the trailing slash is actually wanted
+- starter packs were removed from Github and are therefore no longer tested by Travis script
 
 Fixed
 -----
