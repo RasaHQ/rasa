@@ -1,6 +1,7 @@
 import logging
 import typing
-from typing import Text, Optional, Union, List
+from collections import deque
+from typing import Text, Optional, Union, Deque
 
 import time
 
@@ -24,10 +25,10 @@ class Ticket:
 
 class TicketLock(object):
     def __init__(
-        self, conversation_id: Text, tickets: Optional[List[Ticket]] = None
+        self, conversation_id: Text, tickets: Optional[Deque[Ticket]] = None
     ) -> None:
         self.conversation_id = conversation_id
-        self.tickets = tickets or []
+        self.tickets = tickets or deque()
 
     async def __aenter__(self):
         return self
