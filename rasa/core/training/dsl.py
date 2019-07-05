@@ -188,7 +188,7 @@ class StoryFileReader(object):
             story_steps.extend(steps)
 
         # if exclusion percentage is not 100
-        if exclusion_percentage and exclusion_percentage is not 100:
+        if exclusion_percentage and exclusion_percentage != 100:
             import random
 
             idx = int(round(exclusion_percentage / 100.0 * len(story_steps)))
