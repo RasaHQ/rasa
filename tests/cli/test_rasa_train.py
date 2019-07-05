@@ -120,14 +120,13 @@ def test_train_core(run_in_default_project):
 
 def count_rasa_temp_files():
     count = 0
-    with os.scandir(tempfile.gettempdir()) as it:
-        for entry in it:
-            if not entry.is_dir():
-                continue
+    for entry in os.scandir(tempfile.gettempdir()):
+        if not entry.is_dir():
+            continue
 
-            for f in os.listdir(entry.path):
-                if f.endswith("_nlu.md") or f.endswith("_stories.md"):
-                    count += 1
+        for f in os.listdir(entry.path):
+            if f.endswith("_nlu.md") or f.endswith("_stories.md"):
+                count += 1
 
     return count
 
