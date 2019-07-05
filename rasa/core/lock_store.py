@@ -19,7 +19,7 @@ class LockError(Exception):
 
 
 class LockStore(object):
-    def __init__(self, lifetime: int = 60):
+    def __init__(self, lifetime: int = 60) -> None:
         self.lifetime = lifetime
 
     @staticmethod
@@ -98,7 +98,7 @@ class LockStore(object):
             await asyncio.sleep(wait)
             self.update_lock(conversation_id)
 
-            # fetch lock again because things might have changed
+            # fetch lock again because lock might no longer exist
             lock = self.get_lock(conversation_id)
 
             # exit loop if lock does not exist anymore (expired)
