@@ -66,7 +66,7 @@ from rasa.nlu.training_data.message import Message
 # automatically. If you change anything in here, please make sure to
 # run the interactive learning and check if your part of the "ui"
 # still works.
-from rasa.utils.io import create_path
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -654,38 +654,34 @@ async def _request_action_from_user(
 
 def _request_export_info() -> Tuple[Text, Text, Text]:
     """Request file path and export stories & nlu data to that path"""
-
-    def is_not_empty(path: Text) -> bool:
-        return path is not None and path != ""
-
-    def validate_story_export_file(path: Text) -> bool:
-        return is_not_empty(path) and path.endswith(".md")
-
-    def validate_nlu_export_file(path: Text) -> bool:
-        return is_not_empty(path) and (path.endswith(".md") or path.endswith(".json"))
-
-    def validate_domain_export_file(path: Text) -> bool:
-        return is_not_empty(path) and (path.endswith(".yaml") or path.endswith(".yml"))
-
     # export training data and quit
     questions = questionary.form(
         export_stories=questionary.text(
             message="Export stories to (if file exists, this "
             "will append the stories)",
             default=PATHS["stories"],
-            validate=validate_story_export_file,
+            validate=io_utils.questionary_file_path_validator(
+                [".md"],
+                "Please provide a valid export path for the stories, e.g. 'stories.md'.",
+            ),
         ),
         export_nlu=questionary.text(
             message="Export NLU data to (if file exists, this will "
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
-            validate=validate_nlu_export_file,
+            validate=io_utils.questionary_file_path_validator(
+                [".md"],
+                "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
+            ),
         ),
         export_domain=questionary.text(
             message="Export domain file to (if file exists, this "
             "will be overwritten)",
             default=PATHS["domain"],
-            validate=validate_domain_export_file,
+            validate=io_utils.questionary_file_path_validator(
+                [".yml", ".yaml"],
+                "Please provide a valid export path for the domain file, e.g. 'domain.yml'.",
+            ),
         ),
     )
 
@@ -767,7 +763,7 @@ async def _write_stories_to_file(
 
     sub_conversations = _split_conversation_at_restarts(events)
 
-    create_path(export_story_path)
+    io_utils.create_path(export_story_path)
 
     if os.path.exists(export_story_path):
         append_write = "a"  # append if already exists
@@ -842,7 +838,7 @@ async def _write_domain_to_file(
 ) -> None:
     """Write an updated domain file to the file path."""
 
-    create_path(domain_path)
+    io_utils.create_path(domain_path)
 
     domain = await retrieve_domain(endpoint)
     old_domain = Domain.from_dict(domain)

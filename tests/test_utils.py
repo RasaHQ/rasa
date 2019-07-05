@@ -123,3 +123,30 @@ def test_warning_for_base_paths_with_trailing_slash(caplog):
 def test_read_file_with_not_existing_path():
     with pytest.raises(ValueError):
         rasa.utils.io.read_file("some path")
+
+
+@pytest.mark.parametrize("actual_path", ["", "file.md", "file"])
+def test_file_path_validator_with_invalid_paths(actual_path):
+    from prompt_toolkit.validation import ValidationError
+    from prompt_toolkit.document import Document
+
+    validator = rasa.utils.io.questionary_file_path_validator(
+        [".yml"], "error message"
+    )()
+
+    document = Document(actual_path)
+    with pytest.raises(ValidationError) as e:
+        validator.validate(document)
+
+
+@pytest.mark.parametrize("actual_path", ["domain.yml", "lala.yaml"])
+def test_file_path_validator_with_valid_paths(actual_path):
+    from prompt_toolkit.document import Document
+
+    validator = rasa.utils.io.questionary_file_path_validator(
+        [".yml", ".yaml"], "error message"
+    )()
+
+    document = Document(actual_path)
+    # If the path is valid there shouldn't be an exception
+    assert validator.validate(document) is None

@@ -7,7 +7,7 @@ import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict, Union, List
+from typing import Text, Any, Dict, Union, List, Type
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader
 
@@ -251,3 +251,22 @@ def create_directory_for_file(file_path: Text) -> None:
         # be happy if someone already created the path
         if e.errno != errno.EEXIST:
             raise
+
+
+def questionary_file_path_validator(
+    valid_file_types: List[Text], error_message: Text
+) -> Type["Validator"]:
+
+    from prompt_toolkit.validation import Validator, ValidationError
+    from prompt_toolkit.document import Document
+
+    class ExportPathValidator(Validator):
+        def validate(self, document: Document) -> None:
+            path = document.text
+            is_valid = path is not None and any(
+                [path.endswith(file_type) for file_type in valid_file_types]
+            )
+            if not is_valid:
+                raise ValidationError(message=error_message)
+
+    return ExportPathValidator
