@@ -104,7 +104,7 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     # noinspection PyUnresolvedReferences
     try:
         return yaml_parser.load(content) or {}
-    except yaml.scanner.ScannerError as _:
+    except yaml.scanner.ScannerError:
         # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
         # unicode sequences that form surrogate pairs. Try converting the input
         # to a parsable format based on
