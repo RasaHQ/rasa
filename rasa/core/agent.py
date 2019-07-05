@@ -23,7 +23,7 @@ from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.lock_store import LockStore, InMemoryLockStore, LockError
+from rasa.core.lock_store import LockStore, InMemoryLockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.form_policy import FormPolicy
@@ -228,19 +228,7 @@ async def load_agent(
     action_endpoint: Optional[EndpointConfig] = None,
 ):
     try:
-        if model_path is not None and os.path.exists(model_path):
-            return Agent.load_local_model(
-                model_path,
-                interpreter=interpreter,
-                generator=generator,
-                tracker_store=tracker_store,
-                lock_store=lock_store,
-                action_endpoint=action_endpoint,
-                model_server=model_server,
-                remote_storage=remote_storage,
-            )
-
-        elif model_server is not None:
+        if model_server is not None:
             return await load_from_server(
                 Agent(
                     interpreter=interpreter,
@@ -263,6 +251,17 @@ async def load_agent(
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
+            )
+
+        elif model_path is not None and os.path.exists(model_path):
+            return Agent.load_local_model(
+                model_path,
+                interpreter=interpreter,
+                generator=generator,
+                tracker_store=tracker_store,
+                action_endpoint=action_endpoint,
+                model_server=model_server,
+                remote_storage=remote_storage,
             )
 
         else:

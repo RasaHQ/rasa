@@ -69,22 +69,6 @@ jobs:
     - swagger-cli validate docs/_static/spec/action-server.yml
     - swagger-cli validate docs/_static/spec/rasa.yml
   - stage: test
-    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
-    name: "NLU starter pack (NLU only)"
-    python: 3.6
-    script:
-    - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-nlu.git
-    - cd starter-pack-rasa-nlu
-    - python -m pytest tests
-  - stage: test
-    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
-    name: "Stack starter pack"
-    python: 3.6
-    script:
-    - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-stack.git
-    - cd starter-pack-rasa-stack
-    - python -m pytest tests
-  - stage: test
     name: "Test Docs"
     install:
     - pip install -r requirements-docs.txt
