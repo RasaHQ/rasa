@@ -19,7 +19,6 @@ from typing import (
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
 from rasa.model import get_model
-from rasa.train import train_nlu
 from rasa.utils.io import create_path
 from rasa.nlu import config, training_data, utils
 from rasa.nlu.utils import write_to_file
@@ -938,6 +937,8 @@ def compare_nlu(
 
     Returns: training examples per run
     """
+
+    from rasa.train import train_nlu
 
     training_examples_per_run = []
 
