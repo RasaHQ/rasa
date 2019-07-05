@@ -126,7 +126,7 @@ def count_rasa_temp_files():
                 continue
 
             for f in os.listdir(entry.path):
-                if f.endswith('_nlu.md') or f.endswith('_stories.md'):
+                if f.endswith("_nlu.md") or f.endswith("_stories.md"):
                     count += 1
 
     return count
