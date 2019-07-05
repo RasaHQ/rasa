@@ -177,7 +177,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         """Creates internal vocabularies for user intents
         and bot actions to use for featurization"""
         self.user_labels = domain.intent_states + domain.entity_states
-        self.slot_labels = domain.slot_states
+        self.slot_labels = domain.slot_states + domain.form_states
         self.bot_labels = domain.action_names
 
         if self.use_shared_vocab:
@@ -249,7 +249,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         """Create matrix with all actions from domain
             encoded in rows as bag of words."""
         encoded_all_actions = np.zeros(
-            (domain.num_actions, len(self.bot_vocab)), dtype=int
+            (domain.num_actions, len(self.bot_vocab)), dtype=np.int32
         )
         for idx, name in enumerate(domain.action_names):
             for t in name.split(self.split_symbol):
@@ -361,8 +361,10 @@ class TrackerFeaturizer(object):
 
             labels.append(story_labels)
 
+        y = np.array(labels)
         # if it is MaxHistoryFeaturizer, squeeze out time axis
-        y = np.array(labels).squeeze()
+        if y.shape[1] == 1 and isinstance(self, MaxHistoryTrackerFeaturizer):
+            y = y[:, 0, :]
 
         return y
 
@@ -410,7 +412,7 @@ class TrackerFeaturizer(object):
 
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
-        rasa.utils.io.create_directory_for_file(featurizer_file)
+        utils.create_dir_for_file(featurizer_file)
         with open(featurizer_file, "w", encoding="utf-8") as f:
             # noinspection PyTypeChecker
             f.write(str(jsonpickle.encode(self)))
@@ -566,7 +568,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
+    ) -> Tuple[List[List[Dict]], List[List[Text]]]:
 
         trackers_as_states = []
         trackers_as_actions = []
