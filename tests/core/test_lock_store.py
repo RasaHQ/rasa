@@ -234,7 +234,8 @@ async def test_lock_error(default_agent: Agent):
             self.lock_store.cleanup(message.sender_id, ticket)
 
     with patch.object(Agent, "handle_message", mocked_handle_message):
-
+        # first message should block longer (attempts * wait_between_attempts),
+        # meaning the second message will not be able to acquire a lock
         wait_times = [0.03, 0]
         tasks = [
             default_agent.handle_message(
@@ -252,7 +253,7 @@ async def test_lock_error(default_agent: Agent):
         for task in asyncio.Task.all_tasks():
             task.cancel()
 
-            # cancalling a task always raises a `CancelledError` which we can ignore
+            # cancelling a task always raises a `CancelledError` which we can ignore
             try:
                 await task
             except asyncio.CancelledError:
