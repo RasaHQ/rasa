@@ -248,7 +248,7 @@ async def test_lock_error(default_agent: Agent):
             await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
 
         # wait for lock to expire and cancel pending tasks
-        await asyncio.sleep(0.03)
+        await asyncio.sleep(0.1)
 
         for task in asyncio.Task.all_tasks():
             task.cancel()
