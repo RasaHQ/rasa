@@ -47,7 +47,8 @@ class KerasPolicy(Policy):
         "random_seed": None,
         # policy params
         "priority": 1,
-        "max_history": None
+        "max_history": None,
+    }
 
 
     @staticmethod
@@ -61,8 +62,10 @@ class KerasPolicy(Policy):
                  model: Optional[tf.keras.models.Sequential] = None,
                  graph: Optional[tf.Graph] = None,
                  session: Optional[tf.Session] = None,
+                 **kwargs,
                  ) -> None:
 
+        config.update(kwargs)
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
         super(KerasPolicy, self).__init__(config, featurizer)
@@ -73,21 +76,23 @@ class KerasPolicy(Policy):
         self.graph = graph
         self.session = session
 
-        self.current_epoch = self.config["current_epoch"]
+        self.current_epoch = self.current_epoch
 
     def _load_params(self) -> None:
         # filter out kwargs that are used explicitly
         self._tf_config = self._load_tf_config(self.config)
-        self.rnn_size = self.config.get('rnn_size')
-        self.epochs = self.config.get('epochs')
-        self.batch_size = self.config.get('batch_size')
-        self.validation_split = self.config.get('validation_split')
-        self.random_seed = self.config.get('random_seed')
+
+
         # all the variables above were previously set by popping from the
         # dictionary, since we want to keep the dict for storage the
         # _train_params might need to be adujested
-
-        self._train_params = config
+        # for now it copies the config and pops them
+        self._train_params = self.config
+        self._train_params.pop("rnn_size")
+        self._train_params.pop("epochs")
+        self._train_params.pop("batch_size")
+        self._train_params.pop("validation_split")
+        self._train_params.pop("random_seet")
 
     @property
     def max_len(self):
@@ -269,13 +274,12 @@ class KerasPolicy(Policy):
         if self.model:
             self.featurizer.persist(path)
 
-            meta = self.config
-            meta["model"] = "keras_model.h5"
+            self.config["model"] = "keras_model.h5"
 
-            meta_file = os.path.join(path, "keras_policy.json")
-            utils.dump_obj_as_json_to_file(meta_file, meta)
+            config_file = os.path.join(path, "keras_policy.json")
+            utils.dump_obj_as_json_to_file(config_file, self.config)
 
-            model_file = os.path.join(path, meta["model"])
+            model_file = os.path.join(path, self.model)
             # makes sure the model directory exists
             rasa.utils.io.create_directory_for_file(model_file)
             with self.graph.as_default(), self.session.as_default():
@@ -299,13 +303,13 @@ class KerasPolicy(Policy):
             featurizer = TrackerFeaturizer.load(path)
             meta_file = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_file):
-                meta = json.loads(rasa.utils.io.read_file(meta_file))
+                config = json.loads(rasa.utils.io.read_file(meta_file))
 
                 tf_config_file = os.path.join(path, "keras_policy.tf_config.pkl")
                 with open(tf_config_file, "rb") as f:
                     _tf_config = pickle.load(f)
 
-                model_file = os.path.join(path, meta["model"])
+                model_file = os.path.join(path, config["model"])
 
                 graph = tf.Graph()
                 with graph.as_default():
@@ -315,7 +319,7 @@ class KerasPolicy(Policy):
                             warnings.simplefilter("ignore")
                             model = load_model(model_file)
 
-                return cls(config=meta,
+                return cls(config=config,
                            featurizer=featurizer,
                            model=model,
                            graph=graph,

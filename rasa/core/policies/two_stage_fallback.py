@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import List, Text
+from typing import List, Text, Optional, Dict, Any
 
 import rasa.utils.io
 from rasa.core import utils
@@ -43,14 +43,17 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         (e.g. a hand-off to a human).
     """
 
-    def __init__(
-        self,
-        priority: int = 4,
-        nlu_threshold: float = 0.3,
-        core_threshold: float = 0.3,
-        fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
-        fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
-        deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE,
+    defaults = {
+        "priority": 4,
+        "nlu_threshold": 0.3,
+        "core_threshold": 0.3,
+        "fallback_core_action_name": ACTION_DEFAULT_FALLBACK_NAME,
+        "fallback_nlu_action_name": ACTION_DEFAULT_FALLBACK_NAME,
+        "deny_suggestion_intent_name": USER_INTENT_OUT_OF_SCOPE,
+    }
+
+    def __init__(self,
+                 config: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Create a new Two-stage Fallback policy.
 
@@ -69,12 +72,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             deny_suggestion_intent_name: The name of the intent which is used
                  to detect that the user denies the suggested intents.
         """
-        super(TwoStageFallbackPolicy, self).__init__(
-            priority, nlu_threshold, core_threshold, fallback_core_action_name
-        )
-
-        self.fallback_nlu_action_name = fallback_nlu_action_name
-        self.deny_suggestion_intent_name = deny_suggestion_intent_name
+        super(TwoStageFallbackPolicy, self).__init__(config)
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
@@ -181,16 +179,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     def persist(self, path: Text) -> None:
         """Persists the policy to storage."""
         config_file = os.path.join(path, "two_stage_fallback_policy.json")
-        meta = {
-            "priority": self.priority,
-            "nlu_threshold": self.nlu_threshold,
-            "core_threshold": self.core_threshold,
-            "fallback_core_action_name": self.fallback_action_name,
-            "fallback_nlu_action_name": self.fallback_nlu_action_name,
-            "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
-        }
         rasa.utils.io.create_directory_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, meta)
+        utils.dump_obj_as_json_to_file(config_file, self.config)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

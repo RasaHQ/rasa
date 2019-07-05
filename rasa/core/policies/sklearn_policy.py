@@ -30,16 +30,20 @@ if typing.TYPE_CHECKING:
 class SklearnPolicy(Policy):
     """Use an sklearn classifier to train a policy."""
 
+    defaults = {
+        "priority": 1,
+        "param_grid": None,
+        "cv": None,
+        "scoring": "accuracy",
+        "shuffle": True,
+    }
+
     def __init__(
         self,
+        config: Optional[Dict[Text, Any]] = None,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
-        priority: int = 1,
         model: Optional["sklearn.base.BaseEstimator"] = None,
-        param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
-        cv: Optional[int] = None,
-        scoring: Optional[Text or List or Dict or Callable] = "accuracy",
         label_encoder: LabelEncoder = LabelEncoder(),
-        shuffle: bool = True,
         **kwargs: Any
     ) -> None:
         """Create a new sklearn policy.
@@ -60,6 +64,8 @@ class SklearnPolicy(Policy):
             shuffle: Whether to shuffle training data.
         """
 
+        config.update(kwargs)
+
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
                 raise TypeError(
@@ -67,17 +73,13 @@ class SklearnPolicy(Policy):
                     "MaxHistoryTrackerFeaturizer."
                     "".format(type(featurizer).__name__)
                 )
-        super(SklearnPolicy, self).__init__(featurizer, priority)
+        super(SklearnPolicy, self).__init__(config, featurizer)
 
         self.model = model or self._default_model()
-        self.cv = cv
-        self.param_grid = param_grid
-        self.scoring = scoring
         self.label_encoder = label_encoder
-        self.shuffle = shuffle
 
         # attributes that need to be restored after loading
-        self._pickle_params = ["model", "cv", "param_grid", "scoring", "label_encoder"]
+        self._pickle_params = ["model", "label_encoder"]
         self._train_params = kwargs
 
     @staticmethod

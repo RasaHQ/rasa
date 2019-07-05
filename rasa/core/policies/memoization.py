@@ -47,6 +47,12 @@ class MemoizationPolicy(Policy):
 
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
+    defaults = {
+        "priority": 2,
+        "max_history": None,
+        "lookup": {},
+    }
+
     @staticmethod
     def _standard_featurizer(max_history=None):
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
@@ -59,19 +65,18 @@ class MemoizationPolicy(Policy):
 
     def __init__(
         self,
+        config: Optional[Dict[Text, Any]] = None,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = 2,
-        max_history: Optional[int] = None,
-        lookup: Optional[Dict] = None,
+        **kwargs,
     ) -> None:
 
+        config.update(kwargs)
         if not featurizer:
-            featurizer = self._standard_featurizer(max_history)
+            featurizer = self._standard_featurizer(config["max_history"])
 
-        super(MemoizationPolicy, self).__init__(featurizer, priority)
+        super(MemoizationPolicy, self).__init__(config, featurizer)
 
         self.max_history = self.featurizer.max_history
-        self.lookup = lookup if lookup is not None else {}
         self.is_enabled = True
 
     def toggle(self, activate: bool) -> None:
@@ -225,13 +230,8 @@ class MemoizationPolicy(Policy):
         self.featurizer.persist(path)
 
         memorized_file = os.path.join(path, "memorized_turns.json")
-        data = {
-            "priority": self.priority,
-            "max_history": self.max_history,
-            "lookup": self.lookup,
-        }
         rasa.utils.io.create_directory_for_file(memorized_file)
-        utils.dump_obj_as_json_to_file(memorized_file, data)
+        utils.dump_obj_as_json_to_file(memorized_file, self.config)
 
     @classmethod
     def load(cls, path: Text) -> "MemoizationPolicy":
@@ -241,7 +241,8 @@ class MemoizationPolicy(Policy):
         if os.path.isfile(memorized_file):
             data = json.loads(rasa.utils.io.read_file(memorized_file))
             return cls(
-                featurizer=featurizer, priority=data["priority"], lookup=data["lookup"]
+                config=data,
+                featurizer=featurizer,
             )
         else:
             logger.info(

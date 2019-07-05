@@ -21,12 +21,6 @@ logger = logging.getLogger(__name__)
 class Policy(object):
     SUPPORTS_ONLINE_TRAINING = False
 
-    @property
-    def name(cls):
-        """The name property is a function of the class - its __name__."""
-
-        return cls.__name__
-
     @staticmethod
     def _standard_featurizer():
         return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
@@ -55,11 +49,14 @@ class Policy(object):
                  ) -> None:
         if not config:
             config = {}
-        config["name"] = self.name
-        self.config = override_defaults(self.defaults, config)
+
+        super(Policy, self).__setattr__("config",
+                                        override_defaults(self.defaults, config))
         self.__featurizer = self._create_featurizer(featurizer)
 
     def __getattr__(self, name):
+        """Overrides the built-in getattr to acess the config dict like attributes."""
+
         try:
             return self.config[name]
         except KeyError:
@@ -67,6 +64,8 @@ class Policy(object):
         return super(Policy, self).__getattribute__(name)
 
     def __setattr__(self, name, value):
+        """Overrides the built-in setattr to set the config dict like attributes."""
+
         if name in self.config.keys():
             self.config[name] = value
         else:

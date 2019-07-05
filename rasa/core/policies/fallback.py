@@ -33,6 +33,7 @@ class FallbackPolicy(Policy):
 
     def __init__(self,
                  config: Optional[Dict[Text, Any]] = None,
+                 **kwargs: Any,
                  ) -> None:
 
         """Create a new Fallback policy.
@@ -47,7 +48,9 @@ class FallbackPolicy(Policy):
                 predict fallback action with confidence 1.0.
             fallback_action_name: name of the action to execute as a fallback
         """
-        super(FallbackPolicy, self).__init__(config)
+
+        config.update(kwargs)
+        super(FallbackPolicy, self).__init__(config=config)
 
     def train(
         self,
@@ -70,7 +73,7 @@ class FallbackPolicy(Policy):
         """
 
         return (
-            nlu_confidence < self.config["nlu_threshold"]
+            nlu_confidence < self.nlu_threshold
             and last_action_name == ACTION_LISTEN_NAME
         )
 
@@ -78,7 +81,7 @@ class FallbackPolicy(Policy):
         """Prediction scores used if a fallback is necessary."""
 
         result = [0.0] * domain.num_actions
-        idx = domain.index_for_action(self.config["fallback_action_name"])
+        idx = domain.index_for_action(self.fallback_action_name)
         result[idx] = fallback_score
         return result
 
@@ -98,7 +101,7 @@ class FallbackPolicy(Policy):
         # to not override standard behaviour
         nlu_confidence = nlu_data.get("intent", {}).get("confidence", 1.0)
 
-        if tracker.latest_action_name == self.config["fallback_action_name"]:
+        if tracker.latest_action_name == self.fallback_action_name:
             result = [0.0] * domain.num_actions
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
@@ -107,7 +110,7 @@ class FallbackPolicy(Policy):
             logger.debug(
                 "NLU confidence {} is lower "
                 "than NLU threshold {:.2f}. "
-                "".format(nlu_confidence, self.config["nlu_threshold"])
+                "".format(nlu_confidence, self.nlu_threshold)
             )
             result = self.fallback_scores(domain)
 

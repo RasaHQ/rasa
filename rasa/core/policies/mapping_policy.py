@@ -1,7 +1,7 @@
 import logging
 import json
 import os
-from typing import Any, List, Text
+from typing import Any, List, Text, Dict, Optional
 
 import rasa.utils.io
 
@@ -27,10 +27,16 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
-    def __init__(self, priority: int = 3) -> None:
+    defaults = {"priority": 3}
+
+    def __init__(self,
+                 config: Optional[Dict[Text, Any]] = None,
+                 **kwargs: Any,
+                 ) -> None:
         """Create a new Mapping policy."""
 
-        super(MappingPolicy, self).__init__(priority=priority)
+        config.update(kwargs)
+        super(MappingPolicy, self).__init__(config)
 
     def train(
         self,
@@ -103,9 +109,8 @@ class MappingPolicy(Policy):
         """Only persists the priority."""
 
         config_file = os.path.join(path, "mapping_policy.json")
-        meta = {"priority": self.priority}
         rasa.utils.io.create_directory_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, meta)
+        utils.dump_obj_as_json_to_file(config_file, self.config)
 
     @classmethod
     def load(cls, path: Text) -> "MappingPolicy":

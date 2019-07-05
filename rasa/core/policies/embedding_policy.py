@@ -1345,8 +1345,8 @@ class EmbeddingPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        meta_file = os.path.join(path, 'embedding_policy.json')
-        utils.dump_obj_as_json_to_file(meta_file, self.config)
+        config_file = os.path.join(path, 'embedding_policy.json')
+        utils.dump_obj_as_json_to_file(config_file, self.config)
 
         file_name = "tensorflow_embedding.ckpt"
         checkpoint = os.path.join(path, file_name)
@@ -1415,8 +1415,8 @@ class EmbeddingPolicy(Policy):
         if not os.path.exists(checkpoint + ".meta"):
             return cls(featurizer=featurizer)
 
-        meta_file = os.path.join(path, "embedding_policy.json")
-        meta = json.loads(rasa.utils.io.read_file(meta_file))
+        config_file = os.path.join(path, "embedding_policy.json")
+        config = json.loads(rasa.utils.io.read_file(config_file))
 
         tf_config_file = os.path.join(path, "{}.tf_config.pkl".format(file_name))
 
@@ -1461,7 +1461,7 @@ class EmbeddingPolicy(Policy):
         with open(encoded_actions_file, "rb") as f:
             encoded_all_actions = pickle.load(f)
 
-        return cls(config=meta,
+        return cls(config=config,
                    featurizer=featurizer,
                    encoded_all_actions=encoded_all_actions,
                    graph=graph,

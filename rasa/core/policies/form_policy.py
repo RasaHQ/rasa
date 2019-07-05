@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Dict, Text
+from typing import List, Optional, Dict, Text, Any
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
@@ -22,9 +22,11 @@ class FormPolicy(MemoizationPolicy):
 
     def __init__(self,
                  config: Optional[Dict[Text, Any]] = None,
-                 featurizer: Optional[TrackerFeaturizer] = None
+                 featurizer: Optional[TrackerFeaturizer] = None,
+                 **kwargs
                  ) -> None:
 
+        config.update(kwargs)
         # max history is set to 2 in order to capture
         # previous meaningful action before action listen
         super(FormPolicy, self).__init__(config=config,
