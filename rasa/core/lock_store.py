@@ -53,17 +53,17 @@ class LockStore(object):
 
         raise NotImplementedError
 
-    def delete_lock(self, conversation_id: Text):
+    def delete_lock(self, conversation_id: Text) -> None:
         """Delete lock for `conversation_id` from storage."""
 
         raise NotImplementedError
 
-    def save_lock(self, lock: TicketLock):
+    def save_lock(self, lock: TicketLock) -> None:
         """Commit `lock` to storage."""
 
         raise NotImplementedError
 
-    def issue_ticket(self, conversation_id: Text):
+    def issue_ticket(self, conversation_id: Text) -> int:
         """Issue new ticket for lock associated with `conversation_id`.
 
         Creates a new lock if none is found.
@@ -121,7 +121,7 @@ class LockStore(object):
             self.save_lock(lock)
 
     def get_or_create_lock(self, conversation_id: Text) -> TicketLock:
-        """Fetch existing lock for `conversation_id` or create a new one if none if
+        """Fetch existing lock for `conversation_id` or create a new one if 
         it doesn't exist."""
 
         existing_lock = self.get_lock(conversation_id)
@@ -129,9 +129,7 @@ class LockStore(object):
         if existing_lock:
             return existing_lock
 
-        lock = self.create_lock(conversation_id)
-
-        return lock
+        return self.create_lock(conversation_id)
 
     def is_someone_waiting(self, conversation_id: Text) -> bool:
         """Return whether someone is waiting for lock associated with
@@ -143,7 +141,7 @@ class LockStore(object):
 
         return False
 
-    def finish_serving(self, conversation_id: Text, ticket_number: int):
+    def finish_serving(self, conversation_id: Text, ticket_number: int) -> None:
         """Finish serving ticket with `ticket_number` for `conversation_id`.
 
         Removes ticket from lock and saves lock.
@@ -174,7 +172,7 @@ class RedisLockStore(LockStore):
         db: int = 1,
         password: Optional[Text] = None,
         lifetime: int = 60,
-    ):
+    ) -> None:
         import redis
 
         self.host = host
@@ -202,16 +200,16 @@ class RedisLockStore(LockStore):
 class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
-    def __init__(self, lifetime: int = 60):
+    def __init__(self, lifetime: int = 60) -> None:
         self.conversation_locks = {}  # type: Dict[Text, TicketLock]
         super().__init__(lifetime)
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         return self.conversation_locks.get(conversation_id)
 
-    def delete_lock(self, conversation_id: Text):
+    def delete_lock(self, conversation_id: Text) -> None:
         if conversation_id in self.conversation_locks:
             del self.conversation_locks[conversation_id]
 
-    def save_lock(self, lock: TicketLock):
+    def save_lock(self, lock: TicketLock) -> None:
         self.conversation_locks[lock.conversation_id] = lock
