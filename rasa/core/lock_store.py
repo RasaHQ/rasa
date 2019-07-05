@@ -75,11 +75,15 @@ class LockStore(object):
         return ticket
 
     async def lock(
-        self, conversation_id: Text, ticket: int, attempts: int = 60, wait: int = 1
+        self,
+        conversation_id: Text,
+        ticket: int,
+        attempts: int = 60,
+        wait: Union[int, float] = 1,
     ) -> TicketLock:
         """Acquire lock for `conversation_id` with `ticket`.
 
-        Perform `attempts` with a wait of 1 second between them before
+        Perform `attempts` with a wait of `wait` seconds between them before
         raising a `LockError`.
         """
 

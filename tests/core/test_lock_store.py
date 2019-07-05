@@ -12,7 +12,7 @@ from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.lock import TicketLock
-from rasa.core.lock_store import InMemoryLockStore
+from rasa.core.lock_store import InMemoryLockStore, LockError
 
 
 @pytest.fixture(scope="session")
@@ -208,3 +208,52 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         time_limit = np.sum(wait_times[1:])
         time_limit += (n_messages - 1) * lock_wait
         assert time.time() - start_time < time_limit
+
+
+async def test_lock_error(default_agent: Agent):
+    attempts = 10
+    wait_between_attempts = 0.001
+
+    # Mock message handler again to limit the number of attempts to acquire the lock
+    # and reduce the wait time between acquisition attempts.
+    async def mocked_handle_message(
+        self, message: UserMessage, wait: Union[int, float]
+    ) -> None:
+        ticket = self.lock_store.issue_ticket(message.sender_id)
+
+        try:
+            async with await self.lock_store.lock(
+                message.sender_id, ticket, attempts=attempts, wait=wait_between_attempts
+            ):
+
+                # hold up the message processing after the lock has been acquired
+                await asyncio.sleep(wait)
+
+                return None
+        finally:
+            self.lock_store.cleanup(message.sender_id, ticket)
+
+    with patch.object(Agent, "handle_message", mocked_handle_message):
+
+        wait_times = [0.03, 0]
+        tasks = [
+            default_agent.handle_message(
+                UserMessage("sender {0}".format(i), sender_id="some id"), wait=k
+            )
+            for i, k in enumerate(wait_times)
+        ]
+
+        with pytest.raises(LockError):
+            await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
+
+        # wait for lock to expire and cancel pending tasks
+        await asyncio.sleep(0.03)
+
+        for task in asyncio.Task.all_tasks():
+            task.cancel()
+
+            # cancalling a task always raises a `CancelledError` which we can ignore
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
