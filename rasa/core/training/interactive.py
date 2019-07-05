@@ -654,6 +654,7 @@ async def _request_action_from_user(
 
 def _request_export_info() -> Tuple[Text, Text, Text]:
     """Request file path and export stories & nlu data to that path"""
+
     # export training data and quit
     questions = questionary.form(
         export_stories=questionary.text(

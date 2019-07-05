@@ -12,8 +12,12 @@ import ruamel.yaml as yaml
 from io import BytesIO as IOReader
 
 import simplejson
+import typing
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+
+if typing.TYPE_CHECKING:
+    from prompt_toolkit.validation import Validator
 
 
 def configure_colored_logging(loglevel):
@@ -256,6 +260,9 @@ def create_directory_for_file(file_path: Text) -> None:
 def questionary_file_path_validator(
     valid_file_types: List[Text], error_message: Text
 ) -> Type["Validator"]:
+    """Creates a `Validator` class which can be used with `questionary` to validate
+       file paths.
+    """
 
     from prompt_toolkit.validation import Validator, ValidationError
     from prompt_toolkit.document import Document
