@@ -5,7 +5,7 @@ from rasa.core import constants
 
 
 def set_run_arguments(parser: argparse.ArgumentParser):
-    add_model_param(parser)
+    add_model_param(parser, default=None)
     add_server_arguments(parser)
 
 

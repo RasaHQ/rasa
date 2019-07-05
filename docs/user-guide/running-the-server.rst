@@ -66,7 +66,7 @@ You can configure the HTTP server to fetch models from another URL:
 
 .. code-block:: bash
 
-    rasa run -m models --enable-api --log-file out.log --endpoints my_endpoints.yml
+    rasa run --enable-api --log-file out.log --endpoints my_endpoints.yml
 
 The model server is specified in the endpoint configuration
 (``my_endpoints.yml``), where you specify the server URL Rasa
