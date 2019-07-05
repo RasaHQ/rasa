@@ -29,12 +29,12 @@ The different parameters are:
 
 Rasa can load your model in three different ways:
 
-1. Load the model specified via ``-m`` from your local storage system,
-2. Fetch the model from a server (see :ref:`server_fetch_from_server`), or
-3. Fetch the model from a remote storage (see :ref:`cloud-storage`).
+1. Fetch the model from a server (see :ref:`server_fetch_from_server`), or
+2. Fetch the model from a remote storage (see :ref:`cloud-storage`).
+3. Load the model specified via ``-m`` from your local storage system,
 
-Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from a server
-if it could not find the model on your local storage system.
+Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from your local
+storage system if no model server and no remote storage were configured.
 
 .. warning::
 
