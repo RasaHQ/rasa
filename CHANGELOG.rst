@@ -15,6 +15,7 @@ Added
 - debug logging now tells you which tracker store is connected
 - the response of ``/model/train`` now includes a response header for the trained model filename
 - ``Validator`` class to help developing by checking if the files have any errors
+- project's code is now linted using flake8
 
 Changed
 -------
