@@ -304,24 +304,25 @@ async def train_core_async(
             )
             return None
 
-    story_directory = data.get_core_directory(stories, skill_imports)
+    train_context = TempDirectoryPath(data.get_core_directory(stories, skill_imports))
 
-    if not os.listdir(story_directory):
-        print_error(
-            "No stories given. Please provide stories in order to "
-            "train a Rasa Core model using the '--stories' argument."
+    with train_context as story_directory:
+        if not os.listdir(story_directory):
+            print_error(
+                "No stories given. Please provide stories in order to "
+                "train a Rasa Core model using the '--stories' argument."
+            )
+            return
+
+        return await _train_core_with_validated_data(
+            domain=domain,
+            config=config,
+            story_directory=story_directory,
+            output=output,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            kwargs=kwargs,
         )
-        return
-
-    return await _train_core_with_validated_data(
-        domain=domain,
-        config=config,
-        story_directory=story_directory,
-        output=output,
-        train_path=train_path,
-        fixed_model_name=fixed_model_name,
-        kwargs=kwargs,
-    )
 
 
 async def _train_core_with_validated_data(
@@ -337,33 +338,39 @@ async def _train_core_with_validated_data(
 
     import rasa.core.train
 
-    _train_path = train_path or tempfile.mkdtemp()
+    with ExitStack() as stack:
+        if train_path:
+            # If the train path was provided, do nothing on exit.
+            _train_path = train_path
+        else:
+            # Otherwise, create a temp train path and clean it up on exit.
+            _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
-    # normal (not compare) training
-    print_color("Training Core model...", color=bcolors.OKBLUE)
-    await rasa.core.train(
-        domain_file=domain,
-        stories_file=story_directory,
-        output_path=os.path.join(_train_path, "core"),
-        policy_config=config,
-        kwargs=kwargs,
-    )
-    print_color("Core model training completed.", color=bcolors.OKBLUE)
-
-    if train_path is None:
-        # Only Core was trained.
-        new_fingerprint = model.model_fingerprint(
-            config, domain, stories=story_directory
+        # normal (not compare) training
+        print_color("Training Core model...", color=bcolors.OKBLUE)
+        await rasa.core.train(
+            domain_file=domain,
+            stories_file=story_directory,
+            output_path=os.path.join(_train_path, "core"),
+            policy_config=config,
+            kwargs=kwargs,
         )
-        return _package_model(
-            new_fingerprint=new_fingerprint,
-            output_path=output,
-            train_path=_train_path,
-            fixed_model_name=fixed_model_name,
-            model_prefix="core-",
-        )
+        print_color("Core model training completed.", color=bcolors.OKBLUE)
 
-    return _train_path
+        if train_path is None:
+            # Only Core was trained.
+            new_fingerprint = model.model_fingerprint(
+                config, domain, stories=story_directory
+            )
+            return _package_model(
+                new_fingerprint=new_fingerprint,
+                output_path=output,
+                train_path=_train_path,
+                fixed_model_name=fixed_model_name,
+                model_prefix="core-",
+            )
+
+        return _train_path
 
 
 def train_nlu(
@@ -392,22 +399,23 @@ def train_nlu(
 
     # training NLU only hence the training files still have to be selected
     skill_imports = SkillSelector.load(config, nlu_data)
-    nlu_data_directory = data.get_nlu_directory(nlu_data, skill_imports)
+    train_context = TempDirectoryPath(data.get_nlu_directory(nlu_data, skill_imports))
 
-    if not os.listdir(nlu_data_directory):
-        print_error(
-            "No NLU data given. Please provide NLU data in order to train "
-            "a Rasa NLU model using the '--nlu' argument."
+    with train_context as nlu_data_directory:
+        if not os.listdir(nlu_data_directory):
+            print_error(
+                "No NLU data given. Please provide NLU data in order to train "
+                "a Rasa NLU model using the '--nlu' argument."
+            )
+            return
+
+        return _train_nlu_with_validated_data(
+            config=config,
+            nlu_data_directory=nlu_data_directory,
+            output=output,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
         )
-        return
-
-    return _train_nlu_with_validated_data(
-        config=config,
-        nlu_data_directory=nlu_data_directory,
-        output=output,
-        train_path=train_path,
-        fixed_model_name=fixed_model_name,
-    )
 
 
 def _train_nlu_with_validated_data(
@@ -421,27 +429,35 @@ def _train_nlu_with_validated_data(
 
     import rasa.nlu.train
 
-    _train_path = train_path or tempfile.mkdtemp()
+    with ExitStack() as stack:
+        if train_path:
+            # If the train path was provided, do nothing on exit.
+            _train_path = train_path
+        else:
+            # Otherwise, create a temp train path and clean it up on exit.
+            _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
-    print_color("Training NLU model...", color=bcolors.OKBLUE)
-    _, nlu_model, _ = rasa.nlu.train(
-        config, nlu_data_directory, _train_path, fixed_model_name="nlu"
-    )
-    print_color("NLU model training completed.", color=bcolors.OKBLUE)
-
-    if train_path is None:
-        # Only NLU was trained
-        new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data_directory)
-
-        return _package_model(
-            new_fingerprint=new_fingerprint,
-            output_path=output,
-            train_path=_train_path,
-            fixed_model_name=fixed_model_name,
-            model_prefix="nlu-",
+        print_color("Training NLU model...", color=bcolors.OKBLUE)
+        _, nlu_model, _ = rasa.nlu.train(
+            config, nlu_data_directory, _train_path, fixed_model_name="nlu"
         )
+        print_color("NLU model training completed.", color=bcolors.OKBLUE)
 
-    return _train_path
+        if train_path is None:
+            # Only NLU was trained
+            new_fingerprint = model.model_fingerprint(
+                config, nlu_data=nlu_data_directory
+            )
+
+            return _package_model(
+                new_fingerprint=new_fingerprint,
+                output_path=output,
+                train_path=_train_path,
+                fixed_model_name=fixed_model_name,
+                model_prefix="nlu-",
+            )
+
+        return _train_path
 
 
 def _package_model(

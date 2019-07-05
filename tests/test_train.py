@@ -70,6 +70,8 @@ def test_train_temp_files(
         force_training=True,
     )
 
+    assert len(os.listdir(TEST_TEMP)) == 0
+
     # After training the model, try to do it again. This shouldn't try to train
     # a new model because nothing has been changed. It also shouldn't create
     # any temp files.
