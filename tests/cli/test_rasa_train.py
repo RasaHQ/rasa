@@ -37,29 +37,6 @@ def test_train(run_in_default_project):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train(run_in_default_project):
-    temp_dir = os.getcwd()
-
-    run_in_default_project(
-        "train",
-        "-c",
-        "config.yml",
-        "-d",
-        "domain.yml",
-        "--data",
-        "data",
-        "--out",
-        "train_models",
-        "--fixed-model-name",
-        "test-model",
-    )
-
-    assert os.path.exists(os.path.join(temp_dir, "train_models"))
-    files = list_files(os.path.join(temp_dir, "train_models"))
-    assert len(files) == 1
-    assert os.path.basename(files[0]) == "test-model.tar.gz"
-
-
 def test_train_no_domain_exists(run_in_default_project):
     temp_dir = os.getcwd()
 
@@ -70,14 +47,14 @@ def test_train_no_domain_exists(run_in_default_project):
         "--data",
         "data",
         "--out",
-        "train_models",
+        "train_models_no_domain",
         "--fixed-model-name",
-        "test-model",
+        "nlu-model-only",
     )
-    assert os.path.exists("train_models")
-    files = list_files("train_models")
+    assert os.path.exists("train_models_no_domain")
+    files = list_files("train_models_no_domain")
     assert len(files) == 1
-    assert os.path.basename(files[0]).startswith("nlu-")
+    
 
 
 def test_train_skip_on_model_not_changed(run_in_default_project):
@@ -162,21 +139,25 @@ def test_train_core(run_in_default_project):
 
 
 def test_train_core_no_domain_exists(run_in_default_project):
+
+    os.remove("domain.yml"); 
     run_in_default_project(
         "train",
         "core",
-        "-c",
+        "--config",
         "config.yml",
+        "--domain",
+        "domain.yml",
         "--stories",
         "data",
         "--out",
-        "train_rasa_models",
+        "train_rasa_models_no_domain",
         "--fixed-model-name",
         "rasa-model",
     )
 
-    assert not os.path.exists("train_rasa_models/rasa-model.tar.gz")
-    assert not os.path.isfile("train_rasa_models/rasa-model.tar.gz")
+    assert not os.path.exists("train_rasa_models_no_domain/rasa-model.tar.gz")
+    assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
 
 
 def test_train_nlu(run_in_default_project):
