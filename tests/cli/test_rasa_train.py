@@ -4,6 +4,8 @@ import tempfile
 
 import pytest
 
+from rasa import model
+
 from rasa.cli.train import _get_valid_config
 from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -38,8 +40,8 @@ def test_train(run_in_default_project):
 
 
 def test_train_no_domain_exists(run_in_default_project):
-    temp_dir = os.getcwd()
-
+    
+    os.remove("domain.yml")
     run_in_default_project(
         "train",
         "-c",
@@ -51,9 +53,18 @@ def test_train_no_domain_exists(run_in_default_project):
         "--fixed-model-name",
         "nlu-model-only",
     )
+
     assert os.path.exists("train_models_no_domain")
     files = list_files("train_models_no_domain")
     assert len(files) == 1
+
+    trained_model_path = "train_models_no_domain/nlu-model-only.tar.gz"
+    unpacked = model.unpack_model(trained_model_path)
+
+    metadata_path = os.path.join(unpacked, "nlu", "metadata.json")
+    assert os.path.exists(metadata_path)
+
+    
     
 
 
@@ -140,14 +151,14 @@ def test_train_core(run_in_default_project):
 
 def test_train_core_no_domain_exists(run_in_default_project):
 
-    os.remove("domain.yml"); 
+    os.remove("domain.yml");
     run_in_default_project(
         "train",
         "core",
         "--config",
         "config.yml",
         "--domain",
-        "domain.yml",
+        "domain1.yml",
         "--stories",
         "data",
         "--out",
