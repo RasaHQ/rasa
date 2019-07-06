@@ -175,13 +175,8 @@ class RedisLockStore(LockStore):
     ) -> None:
         import redis
 
-        self.host = host
-        self.port = port
-        self.db = db
-        self.password = password
-
         self.red = redis.StrictRedis(
-            host=self.host, port=self.port, db=self.db, password=self.password
+            host=host, port=int(port), db=int(db), password=password
         )
         super().__init__(lifetime)
 
