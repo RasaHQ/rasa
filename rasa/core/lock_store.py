@@ -121,7 +121,7 @@ class LockStore(object):
             self.save_lock(lock)
 
     def get_or_create_lock(self, conversation_id: Text) -> TicketLock:
-        """Fetch existing lock for `conversation_id` or create a new one if 
+        """Fetch existing lock for `conversation_id` or create a new one if
         it doesn't exist."""
 
         existing_lock = self.get_lock(conversation_id)
