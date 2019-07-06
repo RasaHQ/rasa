@@ -41,10 +41,6 @@ General
   <https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1>`.
   These two files should be merged into a single file either named ``config.yml``, or passed via the ``--config`` parameter.
 
-- While not required, it's recommended that your project filenames and directory structure follow the
-  convention created by the `rasa init` command  (see :ref:`command-line-interface <create-a-new-project>`).
-  Following this convention will make for easier use of Rasa X.
-
 Script parameters
 ~~~~~~~~~~~~~~~~~
 - All script parameter names have been unified to follow the same schema.

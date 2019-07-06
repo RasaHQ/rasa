@@ -43,7 +43,6 @@ General
 
 - While not required, it's recommended that your project filenames and directory structure follow the
   convention created by the `rasa init` command  (see :ref:`command-line-interface <create-a-new-project>`).
-  Following this convention will make for easier use of Rasa X.
 
 Script parameters
 ~~~~~~~~~~~~~~~~~
