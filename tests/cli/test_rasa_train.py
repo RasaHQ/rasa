@@ -169,6 +169,24 @@ def test_train_core_no_domain_exists(run_in_default_project):
 
     assert not os.path.exists("train_rasa_models_no_domain/rasa-model.tar.gz")
     assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
+    
+def count_rasa_temp_files():
+    count = 0
+    for entry in os.scandir(tempfile.gettempdir()):
+        if not entry.is_dir():
+            continue
+
+        for f in os.listdir(entry.path):
+            if f.endswith("_nlu.md") or f.endswith("_stories.md"):
+                count += 1
+
+    return count
+
+
+def test_train_core_temp_files(run_in_default_project):
+    count = count_rasa_temp_files()
+    run_in_default_project("train", "core")
+    assert count == count_rasa_temp_files()
 
 
 def test_train_nlu(run_in_default_project):
@@ -187,6 +205,12 @@ def test_train_nlu(run_in_default_project):
     files = list_files("train_models")
     assert len(files) == 1
     assert os.path.basename(files[0]).startswith("nlu-")
+
+
+def test_train_nlu_temp_files(run_in_default_project):
+    count = count_rasa_temp_files()
+    run_in_default_project("train", "nlu")
+    assert count == count_rasa_temp_files()
 
 
 def test_train_help(run):
