@@ -16,6 +16,7 @@ paths:
       tags:
       - Server Information
       summary: Health endpoint of Rasa Server
+      operationId: getHealth
       description: >-
         This URL can be used as an endpoint to run
         health checks against. When the server is running
@@ -35,6 +36,7 @@ paths:
     get:
       tags:
       - Server Information
+      operationId: getVersion
       summary: Version of Rasa
       description: >-
         Returns the version of Rasa.
@@ -64,6 +66,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: getStatus
       tags:
       - Server Information
       summary: Status of the currently loaded Rasa model
@@ -108,6 +111,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: getConversationTracker
       tags:
       - Tracker
       summary: Retrieve a conversations tracker
@@ -139,6 +143,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: getConversationTrackerEvents
       tags:
       - Tracker
       summary: Append events to a tracker
@@ -177,6 +182,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: replaceConversationTrackerEvents
       tags:
       - Tracker
       summary: Replace a trackers events
@@ -213,6 +219,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: getConversationStory
       tags:
       - Tracker
       summary: Retrieve an end-to-end story corresponding to a conversation
@@ -240,6 +247,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: executeConversationAction
       tags:
       - Tracker
       summary: Run an action in a conversation
@@ -287,6 +295,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: predictConversationAction
       tags:
       - Tracker
       summary: Predict the next action
@@ -322,6 +331,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: addConversationMessage
       tags:
       - Tracker
       summary: Add a message to a tracker
@@ -359,6 +369,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: trainModel
       tags:
       - Model
       summary: Train a Rasa model
@@ -398,6 +409,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: evaluateModelStories
       tags:
       - Model
       summary: Evaluate stories
@@ -435,6 +447,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: testModelIntent
       tags:
       - Model
       summary: Perform an intent evaluation
@@ -471,6 +484,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: predictModelAction
       tags:
       - Model
       summary: Predict an action on a temporary state
@@ -511,6 +525,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: parseModelMessage
       tags:
       - Model
       summary: Parse a message using the Rasa model
@@ -553,6 +568,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: replaceModel
       tags:
       - Model
       summary: Replace the currently loaded model
@@ -583,6 +599,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: unloadModel
       tags:
       - Model
       summary: Unload the trained model
@@ -601,6 +618,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
+      operationId: getDomain
       tags:
       - Domain
       summary: Retrieve the loaded domain
