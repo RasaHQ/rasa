@@ -71,7 +71,7 @@ async def train_async(
     try:
         domain = Domain.load(domain, skill_imports)
         domain.check_missing_templates()
-    except InvalidDomain as e:
+    except InvalidDomain:
         domain = None
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
