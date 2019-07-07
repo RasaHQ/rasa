@@ -40,7 +40,7 @@ def test_train(run_in_default_project):
 
 
 def test_train_no_domain_exists(run_in_default_project):
-    
+
     os.remove("domain.yml")
     run_in_default_project(
         "train",
@@ -63,9 +63,6 @@ def test_train_no_domain_exists(run_in_default_project):
 
     metadata_path = os.path.join(unpacked, "nlu", "metadata.json")
     assert os.path.exists(metadata_path)
-
-    
-    
 
 
 def test_train_skip_on_model_not_changed(run_in_default_project):
@@ -151,7 +148,7 @@ def test_train_core(run_in_default_project):
 
 def test_train_core_no_domain_exists(run_in_default_project):
 
-    os.remove("domain.yml");
+    os.remove("domain.yml")
     run_in_default_project(
         "train",
         "core",
@@ -169,7 +166,8 @@ def test_train_core_no_domain_exists(run_in_default_project):
 
     assert not os.path.exists("train_rasa_models_no_domain/rasa-model.tar.gz")
     assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
-    
+
+
 def count_rasa_temp_files():
     count = 0
     for entry in os.scandir(tempfile.gettempdir()):

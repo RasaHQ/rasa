@@ -72,8 +72,8 @@ async def train_async(
         domain = Domain.load(domain, skill_imports)
         domain.check_missing_templates()
     except InvalidDomain as e:
-        domain=None
-    
+        domain = None
+
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
         training_files, skill_imports
     )
@@ -84,7 +84,9 @@ async def train_async(
         story = stack.enter_context(TempDirectoryPath(story_directory))
 
         if domain is None:
-           return handle_domain_if_not_exists(config,nlu_data_directory,output_path,fixed_model_name)
+            return handle_domain_if_not_exists(
+                config, nlu_data_directory, output_path, fixed_model_name
+            )
 
         return await _train_async_internal(
             domain,
@@ -97,15 +99,19 @@ async def train_async(
             fixed_model_name,
             kwargs,
         )
-    
+
     if domain is None:
-       return handle_domain_if_not_exists(config,nlu_data_directory,output_path,fixed_model_name)
+        return handle_domain_if_not_exists(
+            config, nlu_data_directory, output_path, fixed_model_name
+        )
 
 
-def handle_domain_if_not_exists(config,nlu_data_directory,output_path,fixed_model_name):
+def handle_domain_if_not_exists(
+    config, nlu_data_directory, output_path, fixed_model_name
+):
     print_warning(
-    "Core training is skipped because no domain was found. "
-    "Please specify a valid domain using '--domain' argument or check if provided domain file does exists"
+        "Core training is skipped because no domain was found. "
+        "Please specify a valid domain using '--domain' argument or check if provided domain file does exists"
     )
     return _train_nlu_with_validated_data(
         config=config,
