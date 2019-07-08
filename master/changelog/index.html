@@ -277,6 +277,8 @@ problems in case the trailing slash is actually wanted</li>
 <ul class="simple">
 <li>all temporal model files are now deleted after stopping the Rasa server</li>
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span> <span class="pre">nlu</span></code> now outputs unicode characters instead of <code class="docutils literal notranslate"><span class="pre">\uxxxx</span></code> codes</li>
+<li><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">in</span> <span class="pre">AnySlotDict</span></code> is now <code class="docutils literal notranslate"><span class="pre">True</span></code> for any <code class="docutils literal notranslate"><span class="pre">x</span></code>, which fixes empty slot warnings in
+interactive learning</li>
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> now also includes NLU files in other formats than the Rasa format</li>
 </ul>
 </div>
