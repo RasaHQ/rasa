@@ -107,7 +107,7 @@ def test_remove_model_invalid(empty_model_dir):
     test_file_path = os.path.join(empty_model_dir, test_file)
     write_to_file(test_file_path, test_content)
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         remove_model(empty_model_dir)
 
     os.remove(test_file_path)

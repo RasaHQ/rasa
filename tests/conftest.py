@@ -1,4 +1,5 @@
 import pytest
+import logging
 
 from rasa import server
 from rasa.core import config
@@ -22,6 +23,14 @@ DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separatedly installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
+
+
+@pytest.fixture(autouse=True)
+def set_log_level_debug(caplog):
+    # Set the post-test log level to DEBUG for failing tests.  For all tests
+    # (failing and successful), the live log level can be additionally set in
+    # `setup.cfg`. It should be set to WARNING.
+    caplog.set_level(logging.DEBUG)
 
 
 @pytest.fixture
