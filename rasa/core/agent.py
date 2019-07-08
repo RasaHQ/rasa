@@ -227,18 +227,7 @@ async def load_agent(
     action_endpoint: Optional[EndpointConfig] = None,
 ):
     try:
-        if model_path is not None and os.path.exists(model_path):
-            return Agent.load_local_model(
-                model_path,
-                interpreter=interpreter,
-                generator=generator,
-                tracker_store=tracker_store,
-                action_endpoint=action_endpoint,
-                model_server=model_server,
-                remote_storage=remote_storage,
-            )
-
-        elif model_server is not None:
+        if model_server is not None:
             return await load_from_server(
                 Agent(
                     interpreter=interpreter,
@@ -260,6 +249,17 @@ async def load_agent(
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
+            )
+
+        elif model_path is not None and os.path.exists(model_path):
+            return Agent.load_local_model(
+                model_path,
+                interpreter=interpreter,
+                generator=generator,
+                tracker_store=tracker_store,
+                action_endpoint=action_endpoint,
+                model_server=model_server,
+                remote_storage=remote_storage,
             )
 
         else:
