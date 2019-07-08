@@ -10,7 +10,11 @@ from rasa import data, model
 
 # noinspection PyProtectedMember
 from rasa.cli.utils import get_validated_path, print_error
-from rasa.constants import DEFAULT_DATA_PATH, DEFAULT_MODELS_PATH, DEFAULT_ENDPOINTS_PATH
+from rasa.constants import (
+    DEFAULT_DATA_PATH,
+    DEFAULT_MODELS_PATH,
+    DEFAULT_ENDPOINTS_PATH,
+)
 from rasa.model import get_latest_model
 
 
