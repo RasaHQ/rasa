@@ -53,6 +53,9 @@ class AnySlotDict(dict):
         value = self[key] = Slot(key)
         return value
 
+    def __contains__(self, key):
+        return True
+
 
 class DialogueStateTracker(object):
     """Maintains the state of a conversation.
