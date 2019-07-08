@@ -27,6 +27,7 @@ Removed
 -------
 - revert the stripping of trailing slashes in endpoint URLs since this can lead to
   problems in case the trailing slash is actually wanted
+- starter packs were removed from Github and are therefore no longer tested by Travis script
 
 Fixed
 -----
@@ -34,6 +35,8 @@ Fixed
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
 - fixed PUT /model with model_server by deserializing the model_server to 
   EndpointConfig.
+- ``rasa train`` now also includes NLU files in other formats than the Rasa format
+
 
 [1.1.4] - 2019-06-18
 ^^^^^^^^^^^^^^^^^^^^
