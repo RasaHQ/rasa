@@ -143,7 +143,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
-      operationId: getConversationTrackerEvents
+      operationId: addConversationTrackerEvents
       tags:
       - Tracker
       summary: Append events to a tracker
