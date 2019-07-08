@@ -35,6 +35,8 @@ Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
+- ``x in AnySlotDict`` is now ``True`` for any ``x``, which fixes empty slot warnings in
+  interactive learning
 - ``rasa train`` now also includes NLU files in other formats than the Rasa format
 
 
