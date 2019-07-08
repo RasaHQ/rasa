@@ -20,11 +20,15 @@ class Ticket:
     def has_expired(self):
         return time.time() > self.expires
 
-    def dumps(self):
+    def dumps(self) -> Text:
+        """Return json dump of `Ticket`."""
+
         return json.dumps(dict(number=self.number, expires=self.expires))
 
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "Ticket":
+        """Creates `Ticket` from dictionary."""
+
         return cls(data.get("number"), data.get("expires"))
 
     def __repr__(self):
@@ -33,32 +37,20 @@ class Ticket:
 
 class TicketLock(object):
     def __init__(
-            self, conversation_id: Text, tickets: Optional[Deque[Ticket]] = None
+        self, conversation_id: Text, tickets: Optional[Deque[Ticket]] = None
     ) -> None:
         self.conversation_id = conversation_id
         self.tickets = tickets or deque()
 
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        pass
-
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "TicketLock":
-        """Return whether ticket for `ticket_number` has expired.
-
-        Return True if ticket was not found.
-        """
+        """Create `TicketLock` from dictionary."""
 
         tickets = [Ticket.from_dict(json.loads(d)) for d in data.get("tickets")]
         return cls(data.get("conversation_id"), deque(tickets))
 
     def dumps(self) -> Text:
-        """Return whether ticket for `ticket_number` has expired.
-
-        Return True if ticket was not found.
-        """
+        """Return json dump of `TicketLock`."""
 
         tickets = [ticket.dumps() for ticket in self.tickets]
         return json.dumps(dict(conversation_id=self.conversation_id, tickets=tickets))

@@ -150,27 +150,20 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
     async def mocked_handle_message(
         self, message: UserMessage, wait: Union[int, float]
     ) -> None:
-        ticket = self.lock_store.issue_ticket(message.sender_id)
-
         # write incoming message to file
         with open(str(incoming_order_file), "a+") as f_0:
             f_0.write(message.text + "\n")
 
-        try:
-            async with await self.lock_store.lock(
-                message.sender_id, ticket, wait=lock_wait
-            ):
+        async with self.lock_store.lock(message.sender_id, wait=lock_wait):
 
-                # hold up the message processing after the lock has been acquired
-                await asyncio.sleep(wait)
+            # hold up the message processing after the lock has been acquired
+            await asyncio.sleep(wait)
 
-                # write message to file as it's processed
-                with open(str(results_file), "a+") as f_1:
-                    f_1.write(message.text + "\n")
+            # write message to file as it's processed
+            with open(str(results_file), "a+") as f_1:
+                f_1.write(message.text + "\n")
 
-                return None
-        finally:
-            self.lock_store.cleanup(message.sender_id, ticket)
+            return None
 
     # We'll send n_messages from the same sender_id with different blocking times
     # after the lock has been acquired.
@@ -219,19 +212,15 @@ async def test_lock_error(default_agent: Agent):
     async def mocked_handle_message(
         self, message: UserMessage, wait: Union[int, float]
     ) -> None:
-        ticket = self.lock_store.issue_ticket(message.sender_id)
 
-        try:
-            async with await self.lock_store.lock(
-                message.sender_id, ticket, attempts=attempts, wait=wait_between_attempts
-            ):
+        async with self.lock_store.lock(
+            message.sender_id, attempts=attempts, wait=wait_between_attempts
+        ):
 
-                # hold up the message processing after the lock has been acquired
-                await asyncio.sleep(wait)
+            # hold up the message processing after the lock has been acquired
+            await asyncio.sleep(wait)
 
-                return None
-        finally:
-            self.lock_store.cleanup(message.sender_id, ticket)
+            return None
 
     with patch.object(Agent, "handle_message", mocked_handle_message):
         # first message should block longer (attempts * wait_between_attempts),

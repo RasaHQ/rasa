@@ -4,6 +4,8 @@ import logging
 import typing
 from typing import Text, Optional, Dict, Union
 
+from async_generator import asynccontextmanager
+
 from rasa.core.lock import TicketLock
 
 if typing.TYPE_CHECKING:
@@ -74,12 +76,9 @@ class LockStore(object):
         self.save_lock(lock)
         return ticket
 
+    @asynccontextmanager
     async def lock(
-        self,
-        conversation_id: Text,
-        ticket: int,
-        attempts: int = 60,
-        wait: Union[int, float] = 1,
+        self, conversation_id: Text, attempts: int = 60, wait: Union[int, float] = 1
     ) -> TicketLock:
         """Acquire lock for `conversation_id` with `ticket`.
 
@@ -87,8 +86,18 @@ class LockStore(object):
         raising a `LockError`.
         """
 
+        ticket = self.issue_ticket(conversation_id)
+
         lock = self.get_lock(conversation_id)
 
+        try:
+            yield await self._acquire_lock(lock, ticket, attempts, wait)
+        finally:
+            self.cleanup(conversation_id, ticket)
+
+    async def _acquire_lock(
+        self, lock: TicketLock, ticket: int, attempts: int, wait: Union[int, float]
+    ) -> TicketLock:
         while attempts > 0:
             # acquire lock if it isn't locked
             if not lock.is_locked(ticket):
@@ -96,10 +105,10 @@ class LockStore(object):
 
             # sleep and update lock
             await asyncio.sleep(wait)
-            self.update_lock(conversation_id)
+            self.update_lock(lock.conversation_id)
 
             # fetch lock again because lock might no longer exist
-            lock = self.get_lock(conversation_id)
+            lock = self.get_lock(lock.conversation_id)
 
             # exit loop if lock does not exist anymore (expired)
             if not lock:
@@ -109,7 +118,7 @@ class LockStore(object):
 
         raise LockError(
             "Could not acquire lock for conversation_id '{}'."
-            "".format(conversation_id)
+            "".format(lock.conversation_id)
         )
 
     def update_lock(self, conversation_id: Text) -> None:
