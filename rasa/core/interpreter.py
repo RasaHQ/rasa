@@ -257,7 +257,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
-        result = self.interpreter.parse(text)
+        result = self.interpreter.parse(text, message_id)
 
         return result
 
