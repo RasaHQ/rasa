@@ -2,9 +2,9 @@ import asyncio
 import json
 import logging
 import typing
-from typing import Text, Optional, Dict, Union
+from typing import Text, Optional, Dict, Union, AsyncGenerator
 
-from async_generator import asynccontextmanager
+from async_generator import asynccontextmanager, async_generator, yield_
 
 from rasa.core.lock import TicketLock
 
@@ -82,9 +82,10 @@ class LockStore(object):
         return ticket
 
     @asynccontextmanager
+    @async_generator
     async def lock(
         self, conversation_id: Text, attempts: int = 60, wait: Union[int, float] = 1
-    ) -> TicketLock:
+    ) -> None:
         """Acquire lock for `conversation_id` with `ticket`.
 
         Perform `attempts` with a wait of `wait` seconds between them before
@@ -95,13 +96,16 @@ class LockStore(object):
         lock = self.get_lock(conversation_id)
 
         try:
-            yield await self._acquire_lock(lock, ticket, attempts, wait)
+            # need async_generator.yield_() for py 3.5 compatibility
+            await yield_(self._acquire_lock(lock, ticket, attempts, wait))
         finally:
             self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
         self, lock: TicketLock, ticket: int, attempts: int, wait: Union[int, float]
     ) -> TicketLock:
+        conversation_id = lock.conversation_id
+
         while attempts > 0:
             # acquire lock if it isn't locked
             if not lock.is_locked(ticket):
@@ -109,10 +113,10 @@ class LockStore(object):
 
             # sleep and update lock
             await asyncio.sleep(wait)
-            self.update_lock(lock.conversation_id)
+            self.update_lock(conversation_id)
 
             # fetch lock again because lock might no longer exist
-            lock = self.get_lock(lock.conversation_id)
+            lock = self.get_lock(conversation_id)
 
             # exit loop if lock does not exist anymore (expired)
             if not lock:
@@ -122,7 +126,7 @@ class LockStore(object):
 
         raise LockError(
             "Could not acquire lock for conversation_id '{}'."
-            "".format(lock.conversation_id)
+            "".format(conversation_id)
         )
 
     def update_lock(self, conversation_id: Text) -> None:
