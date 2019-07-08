@@ -35,6 +35,8 @@ Fixed
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
 - fixed PUT /model with model_server by deserializing the model_server to 
   EndpointConfig.
+- ``x in AnySlotDict`` is now ``True`` for any ``x``, which fixes empty slot warnings in
+  interactive learning
 - ``rasa train`` now also includes NLU files in other formats than the Rasa format
 
 
