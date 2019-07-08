@@ -15,6 +15,7 @@ Added
 - debug logging now tells you which tracker store is connected
 - the response of ``/model/train`` now includes a response header for the trained model filename
 - ``Validator`` class to help developing by checking if the files have any errors
+- project's code is now linted using flake8
 
 Changed
 -------
@@ -26,11 +27,13 @@ Removed
 -------
 - revert the stripping of trailing slashes in endpoint URLs since this can lead to
   problems in case the trailing slash is actually wanted
+- starter packs were removed from Github and are therefore no longer tested by Travis script
 
 Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
+- ``rasa train`` now also includes NLU files in other formats than the Rasa format
 
 
 [1.1.4] - 2019-06-18
