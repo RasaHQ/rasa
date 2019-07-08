@@ -116,7 +116,7 @@ def handle_domain_if_not_exists(
         fixed_model_name=fixed_model_name,
     )
     print_warning(
-        "Core training is skipped because no domain was found. "
+        "Core training was skipped because no valid domain file was found. Only an nlu-model was created."
         "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
     )
     return nlu_model_only
@@ -320,7 +320,7 @@ async def train_core_async(
         domain.check_missing_templates()
     except InvalidDomain:
         print_error(
-            "Core training is skipped because no domain was found. "
+            "Core training was skipped because no valid domain file was found. "
             "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
         )
         return None
