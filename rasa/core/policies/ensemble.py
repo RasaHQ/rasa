@@ -254,10 +254,12 @@ class PolicyEnsemble(object):
         parsed_policies = []
 
         for policy in policies:
-            policy_name = policy.pop('name')
-            if policy.pop('featurizer'):
-                featurizer_func, featurizer_config = \
-                    cls.get_featurizer_from_dict(policy)
+
+            policy_name = policy.pop("name")
+            if policy.get("featurizer"):
+                featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
+                    policy
+                )
 
                 if featurizer_config.get("state_featurizer"):
                     state_featurizer_func, state_featurizer_config = cls.get_state_featurizer_from_dict(
@@ -274,7 +276,6 @@ class PolicyEnsemble(object):
                 featurizer = featurizer_func(**featurizer_config)
             else:
                 featurizer = None
-                policy["featurizer"] = featurizer_func(**featurizer_config)
 
             try:
                 constr_func = registry.policy_from_module_path(policy_name)

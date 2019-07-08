@@ -71,10 +71,10 @@ class MemoizationPolicy(Policy):
     ) -> None:
 
         config.update(kwargs)
-        if not featurizer:
-            featurizer = self._standard_featurizer(config["max_history"])
-
         super(MemoizationPolicy, self).__init__(config, featurizer)
+
+        if not featurizer:
+            featurizer = self._standard_featurizer(self.max_history)
 
         self.max_history = self.featurizer.max_history
         self.is_enabled = True

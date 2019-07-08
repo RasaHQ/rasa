@@ -66,9 +66,9 @@ class KerasPolicy(Policy):
                  ) -> None:
 
         config.update(kwargs)
-        if not featurizer:
-            featurizer = self._standard_featurizer(max_history)
         super(KerasPolicy, self).__init__(config, featurizer)
+        if not featurizer:
+            featurizer = self._standard_featurizer(self.max_history)
 
         self.model = model
         # by default keras uses default tf graph and global tf session
@@ -77,6 +77,8 @@ class KerasPolicy(Policy):
         self.session = session
 
         self.current_epoch = self.current_epoch
+
+        self._load_params()
 
     def _load_params(self) -> None:
         # filter out kwargs that are used explicitly
@@ -87,12 +89,12 @@ class KerasPolicy(Policy):
         # dictionary, since we want to keep the dict for storage the
         # _train_params might need to be adujested
         # for now it copies the config and pops them
-        self._train_params = self.config
+        self._train_params = copy.copy(self.config)
         self._train_params.pop("rnn_size")
         self._train_params.pop("epochs")
         self._train_params.pop("batch_size")
         self._train_params.pop("validation_split")
-        self._train_params.pop("random_seet")
+        self._train_params.pop("random_seed")
 
     @property
     def max_len(self):
@@ -274,12 +276,12 @@ class KerasPolicy(Policy):
         if self.model:
             self.featurizer.persist(path)
 
-            self.config["model"] = "keras_model.h5"
+            self.config["model_name"] = "keras_model.h5"
 
             config_file = os.path.join(path, "keras_policy.json")
             utils.dump_obj_as_json_to_file(config_file, self.config)
 
-            model_file = os.path.join(path, self.model)
+            model_file = os.path.join(path, self.model_name)
             # makes sure the model directory exists
             rasa.utils.io.create_directory_for_file(model_file)
             with self.graph.as_default(), self.session.as_default():
