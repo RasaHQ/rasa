@@ -1,6 +1,6 @@
 import asyncio
+import json
 import logging
-import pickle
 import typing
 from typing import Text, Optional, Dict, Union
 
@@ -183,13 +183,13 @@ class RedisLockStore(LockStore):
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         serialised_lock = self.red.get(conversation_id)
         if serialised_lock:
-            return pickle.loads(serialised_lock)
+            return TicketLock.from_dict(json.loads(serialised_lock))
 
     def delete_lock(self, conversation_id: Text) -> None:
         self.red.delete(conversation_id)
 
     def save_lock(self, lock: TicketLock) -> None:
-        self.red.set(lock.conversation_id, pickle.dumps(lock))
+        self.red.set(lock.conversation_id, lock.dumps())
 
 
 class InMemoryLockStore(LockStore):

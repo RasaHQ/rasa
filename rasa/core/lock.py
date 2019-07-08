@@ -1,7 +1,8 @@
+import json
 import logging
 import typing
 from collections import deque
-from typing import Text, Optional, Union, Deque
+from typing import Text, Optional, Union, Deque, Dict, Any
 
 import time
 
@@ -19,13 +20,20 @@ class Ticket:
     def has_expired(self):
         return time.time() > self.expires
 
+    def dumps(self):
+        return json.dumps(dict(number=self.number, expires=self.expires))
+
+    @classmethod
+    def from_dict(cls, data: Dict[Text, Any]) -> "Ticket":
+        return cls(data.get("number"), data.get("expires"))
+
     def __repr__(self):
         return "Ticket(number: {}, expires: {})".format(self.number, self.expires)
 
 
 class TicketLock(object):
     def __init__(
-        self, conversation_id: Text, tickets: Optional[Deque[Ticket]] = None
+            self, conversation_id: Text, tickets: Optional[Deque[Ticket]] = None
     ) -> None:
         self.conversation_id = conversation_id
         self.tickets = tickets or deque()
@@ -35,6 +43,25 @@ class TicketLock(object):
 
     async def __aexit__(self, exc_type, exc, tb):
         pass
+
+    @classmethod
+    def from_dict(cls, data: Dict[Text, Any]) -> "TicketLock":
+        """Return whether ticket for `ticket_number` has expired.
+
+        Return True if ticket was not found.
+        """
+
+        tickets = [Ticket.from_dict(json.loads(d)) for d in data.get("tickets")]
+        return cls(data.get("conversation_id"), deque(tickets))
+
+    def dumps(self) -> Text:
+        """Return whether ticket for `ticket_number` has expired.
+
+        Return True if ticket was not found.
+        """
+
+        tickets = [ticket.dumps() for ticket in self.tickets]
+        return json.dumps(dict(conversation_id=self.conversation_id, tickets=tickets))
 
     def is_locked(self, ticket_number: int) -> bool:
         """Return whether `ticket_number` is locked.
