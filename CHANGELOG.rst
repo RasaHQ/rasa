@@ -16,12 +16,14 @@ Added
 - the response of ``/model/train`` now includes a response header for the trained model filename
 - ``Validator`` class to help developing by checking if the files have any errors
 - project's code is now linted using flake8
+- ``LockStore`` class storing instances of ``TicketLock`` for every ``conversation_id``
 
 Changed
 -------
 - deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
   or ``rasa.core.run.configure_app`` instead.
 - ``Agent.load()`` also accepts ``tar.gz`` model file
+- serialise ``DialogueStateTracker`` as json instead of pickle
 
 Removed
 -------

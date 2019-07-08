@@ -1,6 +1,5 @@
 import json
 import logging
-import pickle
 import typing
 from typing import Iterator, Optional, Text, Iterable, Union
 
@@ -11,6 +10,7 @@ from time import sleep
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.broker import EventChannel
+from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.utils.common import class_from_module_path
@@ -18,7 +18,6 @@ from rasa.utils.common import class_from_module_path
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine import Engine
-
 
 logger = logging.getLogger(__name__)
 
@@ -121,10 +120,10 @@ class TrackerStore(object):
     @staticmethod
     def serialise_tracker(tracker):
         dialogue = tracker.as_dialogue()
-        return pickle.dumps(dialogue)
+        return json.dumps(dialogue.as_dict())
 
     def deserialise_tracker(self, sender_id, _json) -> Optional[DialogueStateTracker]:
-        dialogue = pickle.loads(_json)
+        dialogue = Dialogue.from_parameters(json.loads(_json))
         tracker = self.init_tracker(sender_id)
         if tracker:
             tracker.recreate_from_dialogue(dialogue)

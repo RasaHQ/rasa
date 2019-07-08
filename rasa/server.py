@@ -828,9 +828,15 @@ def create_app(
         model_server = request.json.get("model_server", None)
         remote_storage = request.json.get("remote_storage", None)
 
-        app.agent = await _load_agent(
+        new_agent = await _load_agent(
             model_path, model_server, remote_storage, endpoints
         )
+
+        # port the old agent's lock store to the new agent
+        existing_lock_store = app.agent.lock_store
+        new_agent.lock_store = existing_lock_store
+
+        app.agent = new_agent
 
         logger.debug("Successfully loaded model '{}'.".format(model_path))
         return response.json(None, status=204)
@@ -840,7 +846,7 @@ def create_app(
     async def unload_model(request: Request):
         model_file = app.agent.model_directory
 
-        app.agent = Agent()
+        app.agent = Agent(lock_store=app.agent.lock_store)
 
         logger.debug("Successfully unload model '{}'.".format(model_file))
         return response.json(None, status=204)
