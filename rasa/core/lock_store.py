@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import typing
+from multiprocessing import Manager
 from typing import Text, Optional, Dict, Union
 
 from async_generator import asynccontextmanager
@@ -87,7 +88,6 @@ class LockStore(object):
         """
 
         ticket = self.issue_ticket(conversation_id)
-
         lock = self.get_lock(conversation_id)
 
         try:
@@ -205,7 +205,7 @@ class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
     def __init__(self, lifetime: int = 60) -> None:
-        self.conversation_locks = {}  # type: Dict[Text, TicketLock]
+        self.conversation_locks = Manager().dict()  # type: Dict[Text, TicketLock]
         super().__init__(lifetime)
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
