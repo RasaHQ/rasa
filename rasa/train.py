@@ -109,16 +109,17 @@ async def train_async(
 def handle_domain_if_not_exists(
     config, nlu_data_directory, output_path, fixed_model_name
 ):
-    print_warning(
-        "Core training is skipped because no domain was found. "
-        "Please specify a valid domain using '--domain' argument or check if provided domain file does exists"
-    )
-    return _train_nlu_with_validated_data(
+    nlu_model_only = _train_nlu_with_validated_data(
         config=config,
         nlu_data_directory=nlu_data_directory,
         output=output_path,
         fixed_model_name=fixed_model_name,
     )
+    print_warning(
+        "Core training is skipped because no domain was found. "
+        "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
+    )
+    return nlu_model_only
 
 
 async def _train_async_internal(
@@ -320,7 +321,7 @@ async def train_core_async(
     except InvalidDomain:
         print_error(
             "Core training is skipped because no domain was found. "
-            "Please specify a valid domain using '--domain' argument or check if provided domain file does exists"
+            "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
         )
         return None
 
