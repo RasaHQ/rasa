@@ -56,7 +56,7 @@ Fixed
 - fixed bug where facebook quick replies were not rendering
 - take FB quick reply payload rather than text as input
 - fixed bug where `training_data` path in `metadata.json` was an absolute path
-
+- ``rasa train core`` no longer crashes without a ``--domain`` arg
 
 [1.1.3] - 2019-06-14
 ^^^^^^^^^^^^^^^^^^^^
