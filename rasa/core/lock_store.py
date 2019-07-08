@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 
 ACCEPTED_LOCK_STORES = ["in_memory", "redis"]
 
-manager = Manager()
-
 
 class LockError(Exception):
     pass
