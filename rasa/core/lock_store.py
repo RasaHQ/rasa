@@ -213,7 +213,7 @@ class InMemoryLockStore(LockStore):
     def __init__(self, lifetime: int = 60) -> None:
         from multiprocessing import Manager
 
-        self.conversation_locks = Manager().dict()  # type: Dict[Text, Text]
+        self.conversation_locks = Manager().dict()  # type: Dict[Text, TicketLock]
         super().__init__(lifetime)
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
