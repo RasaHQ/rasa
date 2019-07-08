@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import typing
-from multiprocessing import Manager
 from typing import Text, Optional, Dict, Union
 
 from async_generator import asynccontextmanager
@@ -212,6 +211,8 @@ class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
     def __init__(self, lifetime: int = 60) -> None:
+        from multiprocessing import Manager
+
         self.conversation_locks = Manager().dict()  # type: Dict[Text, Text]
         super().__init__(lifetime)
 
