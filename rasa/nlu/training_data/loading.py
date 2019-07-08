@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 WIT = "wit"
 LUIS = "luis"
 RASA = "rasa_nlu"
-UNK = "unk"
 MARKDOWN = "md"
+UNK = "unk"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
 _markdown_section_markers = ["## {}:".format(s) for s in markdown.available_sections]
@@ -110,7 +110,7 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
 def _load(filename: Text, language: Optional[Text] = "en") -> Optional["TrainingData"]:
     """Loads a single training data file from disk."""
 
-    fformat = _guess_format(filename)
+    fformat = guess_format(filename)
     if fformat == UNK:
         raise ValueError("Unknown data format for file {}".format(filename))
 
@@ -123,8 +123,15 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
         return None
 
 
-def _guess_format(filename: Text) -> Text:
-    """Applies heuristics to guess the data format of a file."""
+def guess_format(filename: Text) -> Text:
+    """Applies heuristics to guess the data format of a file.
+
+    Args:
+        filename: file whose type should be guessed
+
+    Returns:
+        Guessed file format.
+    """
     guess = UNK
     content = rasa.utils.io.read_file(filename)
     try:
