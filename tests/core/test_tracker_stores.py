@@ -138,9 +138,9 @@ def test_tracker_serialisation():
 
     serialised = store.serialise_tracker(tracker)
 
-    deserialised = store.deserialise_tracker(UserMessage.DEFAULT_SENDER_ID, serialised)
-
-    assert tracker == deserialised
+    assert tracker == store.deserialise_tracker(
+        UserMessage.DEFAULT_SENDER_ID, serialised
+    )
 
 
 @pytest.mark.parametrize(

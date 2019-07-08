@@ -74,27 +74,33 @@ def test_serve_ticket():
     lock_store = InMemoryLockStore()
     conversation_id = "my id 1"
 
-    lock = lock_store.create_lock(conversation_id)
+    _ = lock_store.create_lock(conversation_id)
 
     # issue ticket with long lifetime
-    ticket_0 = lock.issue_ticket(10)
+    ticket_0 = lock_store.issue_ticket(conversation_id, 10)
     assert ticket_0 == 0
+
+    lock = lock_store.get_lock(conversation_id)
     assert lock.last_issued == ticket_0
     assert lock.now_serving == ticket_0
     assert lock.is_someone_waiting()
 
     # issue another ticket
-    ticket_1 = lock.issue_ticket(10)
+    ticket_1 = lock_store.issue_ticket(conversation_id, 10)
 
     # finish serving ticket_0
     lock_store.finish_serving(conversation_id, ticket_0)
+
     lock = lock_store.get_lock(conversation_id)
+
     assert lock.last_issued == ticket_1
     assert lock.now_serving == ticket_1
     assert lock.is_someone_waiting()
 
     # serve second ticket and no one should be waiting
     lock_store.finish_serving(conversation_id, ticket_1)
+
+    lock = lock_store.get_lock(conversation_id)
     assert not lock.is_someone_waiting()
 
 

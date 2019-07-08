@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 ACCEPTED_LOCK_STORES = ["in_memory", "redis"]
 
+manager = Manager()
+
 
 class LockError(Exception):
     pass
@@ -66,14 +68,19 @@ class LockStore(object):
 
         raise NotImplementedError
 
-    def issue_ticket(self, conversation_id: Text) -> int:
+    def issue_ticket(
+        self, conversation_id: Text, lifetime: Union[float, int] = None
+    ) -> int:
         """Issue new ticket for lock associated with `conversation_id`.
 
         Creates a new lock if none is found.
         """
 
         lock = self.get_or_create_lock(conversation_id)
-        ticket = lock.issue_ticket(self.lifetime)
+
+        lifetime = lifetime if lifetime is not None else self.lifetime
+        ticket = lock.issue_ticket(lifetime)
+
         self.save_lock(lock)
         return ticket
 
@@ -205,7 +212,7 @@ class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
     def __init__(self, lifetime: int = 60) -> None:
-        self.conversation_locks = Manager().dict()  # type: Dict[Text, TicketLock]
+        self.conversation_locks = Manager().dict()  # type: Dict[Text, Text]
         super().__init__(lifetime)
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
