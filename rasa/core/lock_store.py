@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import typing
-from typing import Text, Optional, Dict, Union, AsyncGenerator
+from typing import Text, Optional, Dict, Union
 
 from async_generator import asynccontextmanager, async_generator, yield_
 
@@ -96,7 +96,7 @@ class LockStore(object):
         lock = self.get_lock(conversation_id)
 
         try:
-            # need async_generator.yield_() for py 3.5 compatibility
+            # have to use async_generator.yield_() for py 3.5 compatibility
             await yield_(self._acquire_lock(lock, ticket, attempts, wait))
         finally:
             self.cleanup(conversation_id, ticket)
