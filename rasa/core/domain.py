@@ -6,7 +6,6 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
 import rasa.utils.io
-from rasa import data
 from rasa.cli.utils import bcolors
 from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
@@ -131,6 +130,7 @@ class Domain(object):
         cls, path: Text, skill_imports: Optional[SkillSelector] = None
     ) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
+        from rasa import data
 
         domain = Domain.empty()
         skill_imports = skill_imports or SkillSelector.all_skills()

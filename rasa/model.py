@@ -3,8 +3,7 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import Text, Tuple, Union, Optional, List, Dict, Type
-from types import TracebackType
+from typing import Text, Tuple, Union, Optional, List, Dict
 
 import yaml.parser
 
@@ -19,6 +18,7 @@ from rasa.constants import (
 from rasa.core.domain import Domain
 from rasa.core.utils import get_dict_hash
 from rasa.exceptions import ModelNotFound
+from rasa.utils.common import TempDirectoryPath
 
 # Type alias for the fingerprint
 Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
@@ -37,25 +37,7 @@ FINGERPRINT_NLU_DATA_KEY = "messages"
 FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
 
-class UnpackedModelPath(str):
-    """Represents a path to an unpacked model on disk. When used as a context
-    manager, it erases the unpacked model files after the context is exited.
-
-    """
-
-    def __enter__(self) -> "UnpackedModelPath":
-        return self
-
-    def __exit__(
-        self,
-        _exc: Optional[Type[BaseException]],
-        _value: Optional[Exception],
-        _tb: Optional[TracebackType],
-    ) -> bool:
-        shutil.rmtree(self)
-
-
-def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> UnpackedModelPath:
+def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
     """Gets a model and unpacks it. Raises a `ModelNotFound` exception if
     no model could be found at the provided path.
 
@@ -109,7 +91,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 def unpack_model(
     model_file: Text, working_directory: Optional[Text] = None
-) -> UnpackedModelPath:
+) -> TempDirectoryPath:
     """Unpacks a zipped Rasa model.
 
     Args:
@@ -136,7 +118,7 @@ def unpack_model(
     tar.close()
     logger.debug("Extracted model to '{}'.".format(working_directory))
 
-    return UnpackedModelPath(working_directory)
+    return TempDirectoryPath(working_directory)
 
 
 def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
@@ -398,17 +380,17 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
     if old_model is None or not os.path.exists(old_model):
         return retrain_core, retrain_nlu
 
-    unpacked = unpack_model(old_model)
-    last_fingerprint = fingerprint_from_path(unpacked)
+    with unpack_model(old_model) as unpacked:
+        last_fingerprint = fingerprint_from_path(unpacked)
 
-    old_core, old_nlu = get_model_subdirectories(unpacked)
+        old_core, old_nlu = get_model_subdirectories(unpacked)
 
-    if not core_fingerprint_changed(last_fingerprint, new_fingerprint):
-        target_path = os.path.join(train_path, "core")
-        retrain_core = not merge_model(old_core, target_path)
+        if not core_fingerprint_changed(last_fingerprint, new_fingerprint):
+            target_path = os.path.join(train_path, "core")
+            retrain_core = not merge_model(old_core, target_path)
 
-    if not nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
-        target_path = os.path.join(train_path, "nlu")
-        retrain_nlu = not merge_model(old_nlu, target_path)
+        if not nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
+            target_path = os.path.join(train_path, "nlu")
+            retrain_nlu = not merge_model(old_nlu, target_path)
 
-    return retrain_core, retrain_nlu
+        return retrain_core, retrain_nlu
