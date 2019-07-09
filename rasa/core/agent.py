@@ -249,6 +249,7 @@ async def load_agent(
                 interpreter=interpreter,
                 generator=generator,
                 tracker_store=tracker_store,
+                lock_store=lock_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
             )
@@ -887,6 +888,7 @@ class Agent(object):
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional[LockStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
     ) -> Optional["Agent"]:
@@ -903,6 +905,7 @@ class Agent(object):
                 interpreter=interpreter,
                 generator=generator,
                 tracker_store=tracker_store,
+                lock_store=lock_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
                 remote_storage=remote_storage,
