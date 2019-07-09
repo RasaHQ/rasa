@@ -260,6 +260,7 @@ async def load_agent(
                 interpreter=interpreter,
                 generator=generator,
                 tracker_store=tracker_store,
+                lock_store=lock_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
                 remote_storage=remote_storage,

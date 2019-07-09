@@ -236,10 +236,10 @@ async def _load_agent(
     model_server: Optional[EndpointConfig] = None,
     remote_storage: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
+    lock_store: Optional[LockStore] = None,
 ) -> Agent:
     try:
         tracker_store = None
-        lock_store = None
         generator = None
         action_endpoint = None
 
@@ -248,9 +248,10 @@ async def _load_agent(
             tracker_store = TrackerStore.find_tracker_store(
                 None, endpoints.tracker_store, _broker
             )
-            lock_store = LockStore.find_lock_store(endpoints.lock_store)
             generator = endpoints.nlg
             action_endpoint = endpoints.action
+            if not lock_store:
+                lock_store = LockStore.find_lock_store(endpoints.lock_store)
 
         loaded_agent = await load_agent(
             model_path,
@@ -841,8 +842,9 @@ def create_app(
                     "Supplied 'model_server' is not valid. Error: {}".format(e),
                     {"parameter": "model_server", "in": "body"},
                 )
+
         app.agent = await _load_agent(
-            model_path, model_server, remote_storage, endpoints
+            model_path, model_server, remote_storage, endpoints, app.agent.lock_store
         )
 
         logger.debug("Successfully loaded model '{}'.".format(model_path))
@@ -853,7 +855,7 @@ def create_app(
     async def unload_model(request: Request):
         model_file = app.agent.model_directory
 
-        app.agent = Agent()
+        app.agent = Agent(lock_store=app.agent.lock_store)
 
         logger.debug("Successfully unload model '{}'.".format(model_file))
         return response.json(None, status=204)
