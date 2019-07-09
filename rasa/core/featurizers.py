@@ -412,7 +412,7 @@ class TrackerFeaturizer(object):
 
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
-        utils.create_dir_for_file(featurizer_file)
+        rasa.utils.io.create_directory_for_file(featurizer_file)
         with open(featurizer_file, "w", encoding="utf-8") as f:
             # noinspection PyTypeChecker
             f.write(str(jsonpickle.encode(self)))
@@ -568,7 +568,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[Dict]], List[List[Text]]]:
+    ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
 
         trackers_as_states = []
         trackers_as_actions = []
