@@ -26,15 +26,19 @@ class FallbackPolicy(Policy):
     def _standard_featurizer():
         return None
 
-    default = {"priority": 3,
-               "nlu_threshold": 0.3,
-               "core_threshold": 0.3,
-               "fallback_action_name": "action_default_fallback"}
+    defaults = {
+        "priority": 3,
+        "nlu_threshold": 0.3,
+        "core_threshold": 0.3,
+        "fallback_action_name": "action_default_fallback",
+    }
 
-    def __init__(self,
-                 config: Optional[Dict[Text, Any]] = None,
-                 **kwargs: Any,
-                 ) -> None:
+    def __init__(
+        self,
+        config: Optional[Dict[Text, Any]] = None,
+        featurizer: Optional = None,
+        **kwargs: Any
+    ) -> None:
 
         """Create a new Fallback policy.
 
@@ -49,8 +53,11 @@ class FallbackPolicy(Policy):
             fallback_action_name: name of the action to execute as a fallback
         """
 
+        if config is None:
+            config = {}
         config.update(kwargs)
-        super(FallbackPolicy, self).__init__(config=config)
+
+        super(FallbackPolicy, self).__init__(config=config, featurizer=featurizer)
 
     def train(
         self,
@@ -122,26 +129,26 @@ class FallbackPolicy(Policy):
             logger.debug(
                 "NLU confidence threshold met, confidence of "
                 "fallback action set to core threshold ({}).".format(
-                    self.pocy_config["core_threshold"]
+                    self.core_threshold
                 )
             )
-            result = self.fallback_scores(domain, self.pocy_config["core_threshold"])
+            result = self.fallback_scores(domain, self.core_threshold)
 
         return result
 
     def persist(self, path: Text) -> None:
         """Persists the policy to storage."""
 
-        config_file = os.path.join(path, 'fallback_policy.json')
-        utils.create_dir_for_file(config_file)
+        config_file = os.path.join(path, "fallback_policy.json")
+        rasa.utils.io.create_directory_for_file(config_file)
         utils.dump_obj_as_json_to_file(config_file, self.config)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":
-        meta = {}
+        config = {}
         if os.path.exists(path):
-            meta_path = os.path.join(path, "fallback_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
+            config_path = os.path.join(path, "fallback_policy.json")
+            if os.path.isfile(config_path):
+                config = json.loads(rasa.utils.io.read_file(config_path))
 
-        return cls(**meta)
+        return cls(config)

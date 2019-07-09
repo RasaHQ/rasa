@@ -47,11 +47,7 @@ class MemoizationPolicy(Policy):
 
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
-    defaults = {
-        "priority": 2,
-        "max_history": None,
-        "lookup": {},
-    }
+    defaults = {"priority": 2, "max_history": None, "lookup": {}}
 
     @staticmethod
     def _standard_featurizer(max_history=None):
@@ -67,14 +63,20 @@ class MemoizationPolicy(Policy):
         self,
         config: Optional[Dict[Text, Any]] = None,
         featurizer: Optional[TrackerFeaturizer] = None,
-        **kwargs,
+        **kwargs
     ) -> None:
 
+        if config is None:
+            config = {}
         config.update(kwargs)
-        super(MemoizationPolicy, self).__init__(config, featurizer)
 
         if not featurizer:
-            featurizer = self._standard_featurizer(self.max_history)
+            max_history = config.get("max_history")
+            if max_history is None:
+                max_history = self.defaults.get("max_history")
+            featurizer = self._standard_featurizer(max_history)
+
+        super(MemoizationPolicy, self).__init__(config, featurizer)
 
         self.max_history = self.featurizer.max_history
         self.is_enabled = True
@@ -240,10 +242,7 @@ class MemoizationPolicy(Policy):
         memorized_file = os.path.join(path, "memorized_turns.json")
         if os.path.isfile(memorized_file):
             data = json.loads(rasa.utils.io.read_file(memorized_file))
-            return cls(
-                config=data,
-                featurizer=featurizer,
-            )
+            return cls(config=data, featurizer=featurizer)
         else:
             logger.info(
                 "Couldn't load memoization for policy. "

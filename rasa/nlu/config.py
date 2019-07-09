@@ -38,9 +38,9 @@ def load(filename: Optional[Text] = None, **kwargs: Any) -> "RasaNLUModelConfig"
         return RasaNLUModelConfig(kwargs)
 
 
-def override_defaults(defaults: Optional[Dict[Text, Any]],
-                      custom: Optional[Dict[Text, Any]]
-                      ) -> Dict[Text, Any]:
+def override_defaults(
+    defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
+) -> Dict[Text, Any]:
     """Load the default config of a class and override it with custom config."""
 
     if defaults:

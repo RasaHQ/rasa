@@ -164,14 +164,21 @@ class EmbeddingPolicy(Policy):
         attn_embed: Optional[tf.Tensor] = None,
         copy_attn_debug: Optional[tf.Tensor] = None,
         all_time_masks: Optional[tf.Tensor] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> None:
+
+        if config is None:
+            config = {}
+        config.update(kwargs)
+
         if featurizer:
             if not isinstance(featurizer, FullDialogueTrackerFeaturizer):
-                raise TypeError("Passed tracker featurizer of type {}, "
-                                "should be FullDialogueTrackerFeaturizer."
-                                "".format(type(featurizer).__name__))
-        config.update(kwargs)
+                raise TypeError(
+                    "Passed tracker featurizer of type {}, "
+                    "should be FullDialogueTrackerFeaturizer."
+                    "".format(type(featurizer).__name__)
+                )
+
         super(EmbeddingPolicy, self).__init__(config, featurizer)
 
         # flag if to use the same embeddings for user and bot
@@ -184,16 +191,16 @@ class EmbeddingPolicy(Policy):
         if self.evaluate_every_num_epochs < 1:
             self.evaluate_every_num_epochs = self.epochs
 
-        if self.share_embedding and (self.hidden_layers_sizes_a != self.hidden_layers_sizes_b):
+        if self.share_embedding and (
+            self.hidden_layers_sizes_a != self.hidden_layers_sizes_b
+        ):
             raise ValueError(
                 "Due to sharing vocabulary "
                 "in the featurizer, embedding weights "
                 "are shared as well. "
                 "So hidden_layers_sizes_a={} should be "
                 "equal to hidden_layers_sizes_b={}"
-                "".format(
-                    self.hidden_layers_sizes_a, self.hidden_layers_sizes_b
-                )
+                "".format(self.hidden_layers_sizes_a, self.hidden_layers_sizes_b)
             )
 
         self._tf_config = self._load_tf_config(self.config)
@@ -388,7 +395,7 @@ class EmbeddingPolicy(Policy):
         a = self._create_tf_nn(
             a_in,
             self.hidden_layers_sizes_a,
-            self.config['droprate_a'],
+            self.config["droprate_a"],
             layer_name_suffix=layer_name_suffix,
         )
         return self._create_embed(a, layer_name_suffix=layer_name_suffix)
@@ -401,7 +408,7 @@ class EmbeddingPolicy(Policy):
         b = self._create_tf_nn(
             b_in,
             self.hidden_layers_sizes_b,
-            self.config['droprate_b'],
+            self.config["droprate_b"],
             layer_name_suffix=layer_name_suffix,
         )
         return self._create_embed(b, layer_name_suffix=layer_name_suffix)
@@ -455,9 +462,7 @@ class EmbeddingPolicy(Policy):
         else:
             embed_layer_size = None
 
-        keep_prob = 1.0 - (
-            self.droprate_rnn * tf.cast(self._is_training, tf.float32)
-        )
+        keep_prob = 1.0 - (self.droprate_rnn * tf.cast(self._is_training, tf.float32))
 
         return ChronoBiasLayerNormBasicLSTMCell(
             num_units=self.rnn_size,
@@ -740,12 +745,8 @@ class EmbeddingPolicy(Policy):
 
             # extract additional debug tensors
             num_add = TimeAttentionWrapper.additional_output_size()
-            self.rnn_embed = cell_output[
-                :, :, self.embed_dim : (2 * self.embed_dim)
-            ]
-            self.attn_embed = cell_output[
-                :, :, (2 * self.embed_dim) : -num_add
-            ]
+            self.rnn_embed = cell_output[:, :, self.embed_dim : (2 * self.embed_dim)]
+            self.attn_embed = cell_output[:, :, (2 * self.embed_dim) : -num_add]
         else:
             # add embedding layer to rnn cell output
             embed_dialogue = self._create_embed(
@@ -1345,7 +1346,7 @@ class EmbeddingPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        config_file = os.path.join(path, 'embedding_policy.json')
+        config_file = os.path.join(path, "embedding_policy.json")
         utils.dump_obj_as_json_to_file(config_file, self.config)
 
         file_name = "tensorflow_embedding.ckpt"
@@ -1387,7 +1388,7 @@ class EmbeddingPolicy(Policy):
             pickle.dump(self.encoded_all_actions, f)
 
         tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
-        with open(tf_config_file, 'wb') as f:
+        with open(tf_config_file, "wb") as f:
             pickle.dump(self._tf_config, f)
 
     @staticmethod
@@ -1461,27 +1462,28 @@ class EmbeddingPolicy(Policy):
         with open(encoded_actions_file, "rb") as f:
             encoded_all_actions = pickle.load(f)
 
-        return cls(config=config,
-                   featurizer=featurizer,
-                   encoded_all_actions=encoded_all_actions,
-                   graph=graph,
-                   session=sess,
-                   intent_placeholder=a_in,
-                   action_placeholder=b_in,
-                   slots_placeholder=c_in,
-                   prev_act_placeholder=b_prev_in,
-                   dialogue_len=dialogue_len,
-                   x_for_no_intent=x_for_no_intent,
-                   y_for_no_action=y_for_no_action,
-                   y_for_action_listen=y_for_action_listen,
-                   similarity_op=sim_op,
-                   alignment_history=alignment_history,
-                   user_embed=user_embed,
-                   bot_embed=bot_embed,
-                   slot_embed=slot_embed,
-                   dial_embed=dial_embed,
-                   rnn_embed=rnn_embed,
-                   attn_embed=attn_embed,
-                   copy_attn_debug=copy_attn_debug,
-                   all_time_masks=all_time_masks)
-
+        return cls(
+            config=config,
+            featurizer=featurizer,
+            encoded_all_actions=encoded_all_actions,
+            graph=graph,
+            session=sess,
+            intent_placeholder=a_in,
+            action_placeholder=b_in,
+            slots_placeholder=c_in,
+            prev_act_placeholder=b_prev_in,
+            dialogue_len=dialogue_len,
+            x_for_no_intent=x_for_no_intent,
+            y_for_no_action=y_for_no_action,
+            y_for_action_listen=y_for_action_listen,
+            similarity_op=sim_op,
+            alignment_history=alignment_history,
+            user_embed=user_embed,
+            bot_embed=bot_embed,
+            slot_embed=slot_embed,
+            dial_embed=dial_embed,
+            rnn_embed=rnn_embed,
+            attn_embed=attn_embed,
+            copy_attn_debug=copy_attn_debug,
+            all_time_masks=all_time_masks,
+        )

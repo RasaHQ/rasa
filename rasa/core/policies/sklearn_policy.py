@@ -64,6 +64,8 @@ class SklearnPolicy(Policy):
             shuffle: Whether to shuffle training data.
         """
 
+        if config is None:
+            config = {}
         config.update(kwargs)
 
         if featurizer:
@@ -73,6 +75,7 @@ class SklearnPolicy(Policy):
                     "MaxHistoryTrackerFeaturizer."
                     "".format(type(featurizer).__name__)
                 )
+
         super(SklearnPolicy, self).__init__(config, featurizer)
 
         self.model = model or self._default_model()

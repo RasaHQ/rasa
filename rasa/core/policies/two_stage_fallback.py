@@ -50,10 +50,14 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         "fallback_core_action_name": ACTION_DEFAULT_FALLBACK_NAME,
         "fallback_nlu_action_name": ACTION_DEFAULT_FALLBACK_NAME,
         "deny_suggestion_intent_name": USER_INTENT_OUT_OF_SCOPE,
+        "fallback_action_name": "action_default_fallback",
     }
 
-    def __init__(self,
-                 config: Optional[Dict[Text, Any]] = None,
+    def __init__(
+        self,
+        config: Optional[Dict[Text, Any]] = None,
+        featurizer: Optional = None,
+        **kwargs: Any
     ) -> None:
         """Create a new Two-stage Fallback policy.
 
@@ -72,7 +76,14 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             deny_suggestion_intent_name: The name of the intent which is used
                  to detect that the user denies the suggested intents.
         """
-        super(TwoStageFallbackPolicy, self).__init__(config)
+
+        if not config:
+            config = {}
+        config.update(kwargs)
+
+        super(TwoStageFallbackPolicy, self).__init__(
+            config=config, featurizer=featurizer
+        )
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
@@ -184,10 +195,10 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":
-        meta = {}
+        config = {}
         if os.path.exists(path):
-            meta_path = os.path.join(path, "two_stage_fallback_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(rasa.utils.io.read_file(meta_path))
+            config_path = os.path.join(path, "two_stage_fallback_policy.json")
+            if os.path.isfile(config_path):
+                config = json.loads(rasa.utils.io.read_file(config_path))
 
-        return cls(**meta)
+        return cls(config)

@@ -16,21 +16,22 @@ class FormPolicy(MemoizationPolicy):
 
     ENABLE_FEATURE_STRING_COMPRESSION = True
 
-    default = {"priority": 4,
-               "max_history": 2,
-               }
+    # max history is set to 2 in order to capture
+    # previous meaningful action before action listen
+    defaults = {"priority": 4, "max_history": 2}
 
-    def __init__(self,
-                 config: Optional[Dict[Text, Any]] = None,
-                 featurizer: Optional[TrackerFeaturizer] = None,
-                 **kwargs
-                 ) -> None:
+    def __init__(
+        self,
+        config: Optional[Dict[Text, Any]] = None,
+        featurizer: Optional[TrackerFeaturizer] = None,
+        **kwargs
+    ) -> None:
 
+        if config is None:
+            config = {}
         config.update(kwargs)
-        # max history is set to 2 in order to capture
-        # previous meaningful action before action listen
-        super(FormPolicy, self).__init__(config=config,
-                                         featurizer=featurizer)
+
+        super(FormPolicy, self).__init__(config=config, featurizer=featurizer)
 
     @staticmethod
     def _get_active_form_name(state):

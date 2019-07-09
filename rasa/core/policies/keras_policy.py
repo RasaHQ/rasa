@@ -50,25 +50,33 @@ class KerasPolicy(Policy):
         "max_history": None,
     }
 
-
     @staticmethod
     def _standard_featurizer(max_history=None):
-        return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                           max_history=max_history)
+        return MaxHistoryTrackerFeaturizer(
+            BinarySingleStateFeaturizer(), max_history=max_history
+        )
 
-    def __init__(self,
-                 config: Optional[Dict[Text, Any]] = None,
-                 featurizer: Optional[TrackerFeaturizer] = None,
-                 model: Optional[tf.keras.models.Sequential] = None,
-                 graph: Optional[tf.Graph] = None,
-                 session: Optional[tf.Session] = None,
-                 **kwargs,
-                 ) -> None:
+    def __init__(
+        self,
+        config: Optional[Dict[Text, Any]] = None,
+        featurizer: Optional[TrackerFeaturizer] = None,
+        model: Optional[tf.keras.models.Sequential] = None,
+        graph: Optional[tf.Graph] = None,
+        session: Optional[tf.Session] = None,
+        **kwargs
+    ) -> None:
 
+        if config is None:
+            config = {}
         config.update(kwargs)
-        super(KerasPolicy, self).__init__(config, featurizer)
+
         if not featurizer:
-            featurizer = self._standard_featurizer(self.max_history)
+            max_history = config.get("max_history")
+            if max_history is None:
+                max_history = self.defaults.get("max_history")
+            featurizer = self._standard_featurizer(max_history)
+
+        super(KerasPolicy, self).__init__(config, featurizer)
 
         self.model = model
         # by default keras uses default tf graph and global tf session
@@ -83,7 +91,6 @@ class KerasPolicy(Policy):
     def _load_params(self) -> None:
         # filter out kwargs that are used explicitly
         self._tf_config = self._load_tf_config(self.config)
-
 
         # all the variables above were previously set by popping from the
         # dictionary, since we want to keep the dict for storage the
@@ -303,15 +310,15 @@ class KerasPolicy(Policy):
 
         if os.path.exists(path):
             featurizer = TrackerFeaturizer.load(path)
-            meta_file = os.path.join(path, "keras_policy.json")
-            if os.path.isfile(meta_file):
-                config = json.loads(rasa.utils.io.read_file(meta_file))
+            config_file = os.path.join(path, "keras_policy.json")
+            if os.path.isfile(config_file):
+                config = json.loads(rasa.utils.io.read_file(config_file))
 
                 tf_config_file = os.path.join(path, "keras_policy.tf_config.pkl")
                 with open(tf_config_file, "rb") as f:
                     _tf_config = pickle.load(f)
 
-                model_file = os.path.join(path, config["model"])
+                model_file = os.path.join(path, config["model_name"])
 
                 graph = tf.Graph()
                 with graph.as_default():
@@ -321,11 +328,13 @@ class KerasPolicy(Policy):
                             warnings.simplefilter("ignore")
                             model = load_model(model_file)
 
-                return cls(config=config,
-                           featurizer=featurizer,
-                           model=model,
-                           graph=graph,
-                           session=session)
+                return cls(
+                    config=config,
+                    featurizer=featurizer,
+                    model=model,
+                    graph=graph,
+                    session=session,
+                )
 
             else:
                 return cls(featurizer=featurizer)

@@ -1,4 +1,4 @@
-    import asyncio
+import asyncio
 from unittest.mock import patch
 
 import numpy as np
@@ -91,7 +91,7 @@ class PolicyTestCollection(object):
 
     max_history = 3  # this is the amount of history we test on
 
-    def create_policy(self, featurizer, priority):
+    def create_policy(self, config, featurizer):
         raise NotImplementedError
 
     @pytest.fixture(scope="module")
@@ -102,13 +102,13 @@ class PolicyTestCollection(object):
         return featurizer
 
     @pytest.fixture(scope="module")
-    def priority(self):
-        return 1
+    def config(self):
+        return {"priority": 1}
 
     @pytest.fixture(scope="module")
-    async def trained_policy(self, featurizer, priority):
+    async def trained_policy(self, config, featurizer):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
-        policy = self.create_policy(featurizer, priority)
+        policy = self.create_policy(config=config, featurizer=featurizer)
         training_trackers = await train_trackers(default_domain, augmentation_factor=20)
         policy.train(training_trackers, default_domain)
         return policy
@@ -158,14 +158,14 @@ class PolicyTestCollection(object):
 
 
 class TestKerasPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = KerasPolicy(featurizer, priority)
+    def create_policy(self, config, featurizer):
+        p = KerasPolicy(config=config, featurizer=featurizer)
         return p
 
 
 class TestKerasPolicyWithTfConfig(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = KerasPolicy(featurizer, priority, **tf_defaults())
+    def create_policy(self, config, featurizer):
+        p = KerasPolicy(config=config, featurizer=featurizer, **tf_defaults())
         return p
 
     def test_tf_config(self, trained_policy, tmpdir):
@@ -178,8 +178,8 @@ class TestKerasPolicyWithTfConfig(PolicyTestCollection):
 
 
 class TestFallbackPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = FallbackPolicy(priority=priority)
+    def create_policy(self, config, featurizer):
+        p = FallbackPolicy(config=config)
         return p
 
     @pytest.mark.parametrize(
@@ -201,17 +201,17 @@ class TestFallbackPolicy(PolicyTestCollection):
 
 
 class TestMappingPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = MappingPolicy()
+    def create_policy(self, config, featurizer):
+        p = MappingPolicy(config=config)
         return p
 
 
 class TestMemoizationPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
+    def create_policy(self, config, featurizer):
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
             max_history = featurizer.max_history
-        p = MemoizationPolicy(priority=priority, max_history=max_history)
+        p = MemoizationPolicy(max_history=max_history)
         return p
 
     async def test_memorise(self, trained_policy, default_domain):
@@ -262,17 +262,17 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
 
 class TestAugmentedMemoizationPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
+    def create_policy(self, config, featurizer):
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
             max_history = featurizer.max_history
-        p = AugmentedMemoizationPolicy(priority=priority, max_history=max_history)
+        p = AugmentedMemoizationPolicy(config=config, max_history=max_history)
         return p
 
 
 class TestSklearnPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority, **kwargs):
-        p = SklearnPolicy(featurizer, priority, **kwargs)
+    def create_policy(self, config, featurizer, **kwargs):
+        p = SklearnPolicy(config=config, featurizer=featurizer, **kwargs)
         return p
 
     @pytest.yield_fixture
@@ -296,25 +296,28 @@ class TestSklearnPolicy(PolicyTestCollection):
         return await train_trackers(default_domain, augmentation_factor=20)
 
     def test_additional_train_args_do_not_raise(
-        self, mock_search, default_domain, trackers, featurizer, priority
+        self, default_domain, trackers, config, featurizer
     ):
-        policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
+        config["cv"] = None
+        policy = self.create_policy(config=config, featurizer=featurizer)
         policy.train(trackers, domain=default_domain, this_is_not_a_feature=True)
 
     def test_cv_none_does_not_trigger_search(
-        self, mock_search, default_domain, trackers, featurizer, priority
+        self, mock_search, default_domain, trackers, config, featurizer
     ):
-        policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
+        config["cv"] = None
+        policy = self.create_policy(config=config, featurizer=featurizer)
         policy.train(trackers, domain=default_domain)
 
         assert mock_search.call_count == 0
         assert policy.model != "mockmodel"
 
     def test_cv_not_none_param_grid_none_triggers_search_without_params(
-        self, mock_search, default_domain, trackers, featurizer, priority
+        self, mock_search, default_domain, trackers, config, featurizer
     ):
 
-        policy = self.create_policy(featurizer=featurizer, priority=priority, cv=3)
+        config["cv"] = 3
+        policy = self.create_policy(config=config, featurizer=featurizer)
         policy.train(trackers, domain=default_domain)
 
         assert mock_search.call_count > 0
@@ -323,26 +326,25 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert policy.model == "mockmodel"
 
     def test_cv_not_none_param_grid_none_triggers_search_with_params(
-        self, mock_search, default_domain, trackers, featurizer, priority
+        self, mock_search, default_domain, trackers, featurizer, config
     ):
-        param_grid = {"n_estimators": 50}
-        policy = self.create_policy(
-            featurizer=featurizer, priority=priority, cv=3, param_grid=param_grid
-        )
+        config["param_grid"] = {"n_estimators": 50}
+        policy = self.create_policy(config=config, featurizer=featurizer)
         policy.train(trackers, domain=default_domain)
 
         assert mock_search.call_count > 0
         assert mock_search.call_args_list[0][1]["cv"] == 3
-        assert mock_search.call_args_list[0][1]["param_grid"] == param_grid
+        assert mock_search.call_args_list[0][1]["param_grid"] == config["param_grid"]
         assert policy.model == "mockmodel"
 
     def test_missing_classes_filled_correctly(
-        self, default_domain, trackers, tracker, featurizer, priority
+        self, default_domain, trackers, tracker, featurizer, config
     ):
         # Pretend that a couple of classes are missing and check that
         # those classes are predicted as 0, while the other class
         # probabilities are predicted normally.
-        policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
+        config["cv"] = None
+        policy = self.create_policy(config=config, featurizer=featurizer)
 
         classes = [1, 3]
         new_trackers = []
@@ -375,69 +377,72 @@ class TestSklearnPolicy(PolicyTestCollection):
                 assert prob == 0.0
 
     def test_train_kwargs_are_set_on_model(
-        self, default_domain, trackers, featurizer, priority
+        self, default_domain, trackers, featurizer, config
     ):
         policy = self.create_policy(
-            featurizer=featurizer, priority=priority, cv=None, C=123
+            featurizer=featurizer, config=config, cv=None, C=123
         )
         policy.train(trackers, domain=default_domain)
-        assert policy.model.C == 123
+        assert policy.C == 123
 
     def test_train_with_shuffle_false(
-        self, default_domain, trackers, featurizer, priority
+        self, default_domain, trackers, featurizer, config
     ):
-        policy = self.create_policy(
-            featurizer=featurizer, priority=priority, shuffle=False
-        )
+        config.update({"update": False})
+        policy = self.create_policy(featurizer=featurizer, config=config)
         # does not raise
         policy.train(trackers, domain=default_domain)
 
 
 class TestEmbeddingPolicyNoAttention(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
+    def create_policy(self, featurizer, config):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(
-            priority=priority, attn_before_rnn=False, attn_after_rnn=False
-        )
+        if config is None:
+            config = {}
+        config.update({"attn_before_rnn": False, "attn_after_rnn": False})
+        p = EmbeddingPolicy(config=config)
         return p
 
 
 class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
+    def create_policy(self, featurizer, config):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(
-            priority=priority, attn_before_rnn=True, attn_after_rnn=False
-        )
+        if config is None:
+            config = {}
+        config.update({"attn_before_rnn": True, "attn_after_rnn": False})
+        p = EmbeddingPolicy(config=config)
         return p
 
 
 class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
+    def create_policy(self, featurizer, config):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(
-            priority=priority, attn_before_rnn=False, attn_after_rnn=True
-        )
+        if config is None:
+            config = {}
+        config.update({"attn_before_rnn": False, "attn_after_rnn": True})
+        p = EmbeddingPolicy(config=config)
         return p
 
 
 class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
+    def create_policy(self, featurizer, config):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(
-            priority=priority, attn_before_rnn=True, attn_after_rnn=True
-        )
+        if config is None:
+            config = {}
+        config.update({"attn_before_rnn": True, "attn_after_rnn": True})
+        p = EmbeddingPolicy(config=config)
         return p
 
 
 class TestEmbeddingPolicyWithTfConfig(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
+    def create_policy(self, featurizer, config):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(priority=priority, **tf_defaults())
+        p = EmbeddingPolicy(config=config, **tf_defaults())
         return p
 
     def test_tf_config(self, trained_policy, tmpdir):
@@ -450,8 +455,8 @@ class TestEmbeddingPolicyWithTfConfig(PolicyTestCollection):
 
 
 class TestFormPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = FormPolicy(priority=priority)
+    def create_policy(self, featurizer, config):
+        p = FormPolicy(config=config)
         return p
 
     async def test_memorise(self, trained_policy, default_domain):
@@ -514,10 +519,8 @@ class TestFormPolicy(PolicyTestCollection):
 
 
 class TestTwoStageFallbackPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = TwoStageFallbackPolicy(
-            priority=priority, deny_suggestion_intent_name="deny"
-        )
+    def create_policy(self, featurizer, config):
+        p = TwoStageFallbackPolicy(config=config, deny_suggestion_intent_name="deny")
         return p
 
     @pytest.fixture(scope="class")
@@ -592,7 +595,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_ASK_REPHRASE_NAME
 
     async def test_successful_rephrasing(
-        self, trained_policy, default_channel, default_nlg, default_domain
+        self, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -629,7 +632,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
     async def test_affirmed_rephrasing(
-        self, trained_policy, default_channel, default_nlg, default_domain
+        self, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -672,7 +675,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_FALLBACK_NAME
 
     async def test_rephrasing_instead_affirmation(
-        self, trained_policy, default_channel, default_nlg, default_domain
+        self, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),

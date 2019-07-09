@@ -40,18 +40,24 @@ class Policy(object):
         else:
             return None
 
-    #Defines the default configuration parameters of a policy.
+    # Defines the default configuration parameters of a policy.
     defaults = {"priority": 1}
 
-    def __init__(self,
-                 config: Optional[Dict[Text, Any]] = None,
-                 featurizer: Optional[TrackerFeaturizer] = None
-                 ) -> None:
-        if not config:
-            config = {}
+    def __init__(
+        self,
+        config: Optional[Dict[Text, Any]] = None,
+        featurizer: Optional[TrackerFeaturizer] = None,
+        **kwargs: Any
+    ) -> None:
 
-        super(Policy, self).__setattr__("config",
-                                        override_defaults(self.defaults, config))
+        if config is None:
+            config = {}
+        config.update(kwargs)
+
+        super(Policy, self).__setattr__(
+            "config", override_defaults(self.defaults, config)
+        )
+
         self.__featurizer = self._create_featurizer(featurizer)
 
     def __getattr__(self, name):

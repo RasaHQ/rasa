@@ -29,13 +29,18 @@ class MappingPolicy(Policy):
 
     defaults = {"priority": 3}
 
-    def __init__(self,
-                 config: Optional[Dict[Text, Any]] = None,
-                 **kwargs: Any,
-                 ) -> None:
+    def __init__(
+        self,
+        config: Optional[Dict[Text, Any]] = None,
+        featurizer: Optional = None,
+        **kwargs: Any
+    ) -> None:
         """Create a new Mapping policy."""
 
+        if config is None:
+            config = {}
         config.update(kwargs)
+
         super(MappingPolicy, self).__init__(config)
 
     def train(
