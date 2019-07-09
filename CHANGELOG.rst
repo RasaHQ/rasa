@@ -16,6 +16,7 @@ Added
 - the response of ``/model/train`` now includes a response header for the trained model filename
 - ``Validator`` class to help developing by checking if the files have any errors
 - project's code is now linted using flake8
+- validate export paths in interactive learning
 
 Changed
 -------
