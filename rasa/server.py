@@ -853,7 +853,7 @@ def create_app(
     async def unload_model(request: Request):
         model_file = app.agent.model_directory
 
-        app.agent = Agent(lock_store=app.agent.lock_store)
+        app.agent = Agent()
 
         logger.debug("Successfully unload model '{}'.".format(model_file))
         return response.json(None, status=204)
