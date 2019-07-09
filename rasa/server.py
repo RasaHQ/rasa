@@ -825,7 +825,17 @@ def create_app(
         model_path = request.json.get("model_file", None)
         model_server = request.json.get("model_server", None)
         remote_storage = request.json.get("remote_storage", None)
-
+        if model_server:
+            try:
+                model_server = EndpointConfig.from_dict(model_server)
+            except TypeError as e:
+                logger.debug(traceback.format_exc())
+                raise ErrorResponse(
+                    400,
+                    "BadRequest",
+                    "Supplied 'model_server' is not valid. Error: {}".format(e),
+                    {"parameter": "model_server", "in": "body"},
+                )
         app.agent = await _load_agent(
             model_path, model_server, remote_storage, endpoints
         )
