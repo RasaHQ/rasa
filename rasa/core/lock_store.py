@@ -97,7 +97,7 @@ class LockStore(object):
 
         try:
             # have to use async_generator.yield_() for py 3.5 compatibility
-            await yield_(self._acquire_lock(lock, ticket, attempts, wait))
+            await yield_(await self._acquire_lock(lock, ticket, attempts, wait))
         finally:
             self.cleanup(conversation_id, ticket)
 
