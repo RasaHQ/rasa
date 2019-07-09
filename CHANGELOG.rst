@@ -41,6 +41,7 @@ Fixed
 - ``rasa train`` now also includes NLU files in other formats than the Rasa format
 - ``rasa train core`` no longer crashes without a ``--domain`` arg
 - ``rasa interactive`` now looks for endpoints in ``endpoints.yml`` if no ``--endpoints`` arg is passed
+- actions, intents, and utterances created in ``rasa interactive`` can no longer be empty
 
 
 [1.1.4] - 2019-06-18
