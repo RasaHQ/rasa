@@ -7,13 +7,17 @@ import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict, Union, List
+from typing import Text, Any, Dict, Union, List, Type
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader
 
 import simplejson
+import typing
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+
+if typing.TYPE_CHECKING:
+    from prompt_toolkit.validation import Validator
 
 
 def configure_colored_logging(loglevel):
@@ -120,8 +124,12 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
 
 def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
     """Read text from a file."""
-    with open(filename, encoding=encoding) as f:
-        return f.read()
+
+    try:
+        with open(filename, encoding=encoding) as f:
+            return f.read()
+    except FileNotFoundError:
+        raise ValueError("File '{}' does not exist.".format(filename))
 
 
 def read_json_file(filename: Text) -> Any:
@@ -247,3 +255,25 @@ def create_directory_for_file(file_path: Text) -> None:
         # be happy if someone already created the path
         if e.errno != errno.EEXIST:
             raise
+
+
+def questionary_file_path_validator(
+    valid_file_types: List[Text], error_message: Text
+) -> Type["Validator"]:
+    """Creates a `Validator` class which can be used with `questionary` to validate
+       file paths.
+    """
+
+    from prompt_toolkit.validation import Validator, ValidationError
+    from prompt_toolkit.document import Document
+
+    class ExportPathValidator(Validator):
+        def validate(self, document: Document) -> None:
+            path = document.text
+            is_valid = path is not None and any(
+                [path.endswith(file_type) for file_type in valid_file_types]
+            )
+            if not is_valid:
+                raise ValidationError(message=error_message)
+
+    return ExportPathValidator
