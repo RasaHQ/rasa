@@ -93,20 +93,27 @@ class LockStore(object):
         """
 
         ticket = self.issue_ticket(conversation_id)
-        lock = self.get_lock(conversation_id)
 
         try:
             # have to use async_generator.yield_() for py 3.5 compatibility
-            await yield_(await self._acquire_lock(lock, ticket, attempts, wait))
+            await yield_(
+                await self._acquire_lock(conversation_id, ticket, attempts, wait)
+            )
         finally:
             self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
-        self, lock: TicketLock, ticket: int, attempts: int, wait: Union[int, float]
+        self, conversation_id: Text, ticket: int, attempts: int, wait: Union[int, float]
     ) -> TicketLock:
-        conversation_id = lock.conversation_id
 
         while attempts > 0:
+            # fetch lock in every iteration because lock might no longer exist
+            lock = self.get_lock(conversation_id)
+
+            # exit loop if lock does not exist anymore (expired)
+            if not lock:
+                break
+
             # acquire lock if it isn't locked
             if not lock.is_locked(ticket):
                 return lock
@@ -114,13 +121,6 @@ class LockStore(object):
             # sleep and update lock
             await asyncio.sleep(wait)
             self.update_lock(conversation_id)
-
-            # fetch lock again because lock might no longer exist
-            lock = self.get_lock(conversation_id)
-
-            # exit loop if lock does not exist anymore (expired)
-            if not lock:
-                break
 
             attempts -= 1
 

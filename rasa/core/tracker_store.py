@@ -118,11 +118,13 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     @staticmethod
-    def serialise_tracker(tracker):
+    def serialise_tracker(tracker: DialogueStateTracker):
         dialogue = tracker.as_dialogue()
         return json.dumps(dialogue.as_dict())
 
-    def deserialise_tracker(self, sender_id, _json) -> Optional[DialogueStateTracker]:
+    def deserialise_tracker(
+        self, sender_id: Text, _json: Union[Text, bytes]
+    ) -> Optional[DialogueStateTracker]:
         dialogue = Dialogue.from_parameters(json.loads(_json))
         tracker = self.init_tracker(sender_id)
         if tracker:
@@ -191,7 +193,7 @@ class RedisTrackerStore(TrackerStore):
     def retrieve(self, sender_id):
         stored = self.red.get(sender_id)
         if stored is not None:
-            return self.deserialise_tracker(sender_id, stored)
+            return self.deserialise_tracker(sender_id, str(stored))
         else:
             return None
 
