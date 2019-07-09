@@ -154,3 +154,29 @@ def test_file_path_validator_with_valid_paths(actual_path):
     document = Document(actual_path)
     # If the path is valid there shouldn't be an exception
     assert validator.validate(document) is None
+
+@pytest.mark.parametrize("input", ["", "   "])
+def test_non_empty_text_validator_with_empty_input(input):
+    from prompt_toolkit.validation import ValidationError
+    from prompt_toolkit.document import Document
+
+    test_error_message = "enter something"
+
+    validator = rasa.utils.io.questionary_not_empty_text_validator(test_error_message)()
+
+    document = Document(input)
+    with pytest.raises(ValidationError) as e:
+        validator.validate(document)
+
+    assert e.value.message == test_error_message
+
+
+@pytest.mark.parametrize("input", ["utter_greet", "greet", "Hi there!"])
+def test_non_empty_text_validator_with_valid_input(input):
+    from prompt_toolkit.document import Document
+
+    validator = rasa.utils.io.questionary_not_empty_text_validator("error message")()
+
+    document = Document(input)
+    # If there is input there shouldn't be an exception
+    assert validator.validate(document) is None
