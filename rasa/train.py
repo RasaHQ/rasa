@@ -71,12 +71,8 @@ async def train_async(
     try:
         domain = Domain.load(domain, skill_imports)
         domain.check_missing_templates()
-    except InvalidDomain as e:
-        print_error(
-            "Could not load domain due to error: {} \nTo specify a valid domain "
-            "path, use the '--domain' argument.".format(e)
-        )
-        return None
+    except InvalidDomain:
+        domain = None
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
         training_files, skill_imports
@@ -86,6 +82,11 @@ async def train_async(
         train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
         nlu_data = stack.enter_context(TempDirectoryPath(nlu_data_directory))
         story = stack.enter_context(TempDirectoryPath(story_directory))
+
+        if domain is None:
+            return handle_domain_if_not_exists(
+                config, nlu_data_directory, output_path, fixed_model_name
+            )
 
         return await _train_async_internal(
             domain,
@@ -98,6 +99,27 @@ async def train_async(
             fixed_model_name,
             kwargs,
         )
+
+    if domain is None:
+        return handle_domain_if_not_exists(
+            config, nlu_data_directory, output_path, fixed_model_name
+        )
+
+
+def handle_domain_if_not_exists(
+    config, nlu_data_directory, output_path, fixed_model_name
+):
+    nlu_model_only = _train_nlu_with_validated_data(
+        config=config,
+        nlu_data_directory=nlu_data_directory,
+        output=output_path,
+        fixed_model_name=fixed_model_name,
+    )
+    print_warning(
+        "Core training was skipped because no valid domain file was found. Only an nlu-model was created."
+        "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
+    )
+    return nlu_model_only
 
 
 async def _train_async_internal(
@@ -293,16 +315,15 @@ async def train_core_async(
 
     skill_imports = SkillSelector.load(config, stories)
 
-    if isinstance(domain, str):
-        try:
-            domain = Domain.load(domain, skill_imports)
-            domain.check_missing_templates()
-        except InvalidDomain as e:
-            print_error(
-                "Could not load domain due to: '{}'. To specify a valid domain path "
-                "use the '--domain' argument.".format(e)
-            )
-            return None
+    try:
+        domain = Domain.load(domain, skill_imports)
+        domain.check_missing_templates()
+    except InvalidDomain:
+        print_error(
+            "Core training was skipped because no valid domain file was found. "
+            "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
+        )
+        return None
 
     train_context = TempDirectoryPath(data.get_core_directory(stories, skill_imports))
 

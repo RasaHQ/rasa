@@ -15,9 +15,6 @@ import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
-from rasa.core.domain import InvalidDomain
-from rasa.core.lock_store import LockStore
-from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DEFAULT_MODELS_PATH,
@@ -27,14 +24,17 @@ from rasa.constants import (
 from rasa.core import broker
 from rasa.core.agent import load_agent, Agent
 from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
+from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
+from rasa.core.lock_store import LockStore
 from rasa.core.test import test
+from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file, AvailableEndpoints
 from rasa.model import get_model_subdirectories, fingerprint_from_path
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
-from rasa.core.tracker_store import TrackerStore
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -808,7 +808,9 @@ def create_app(
 
         try:
             data = emulator.normalise_request_json(request.json)
-            parse_data = await app.agent.interpreter.parse(data.get("text"))
+            parse_data = await app.agent.interpreter.parse(
+                data.get("text"), data.get("message_id")
+            )
             response_data = emulator.normalise_response_json(parse_data)
 
             return response.json(response_data)
@@ -828,15 +830,20 @@ def create_app(
         model_server = request.json.get("model_server", None)
         remote_storage = request.json.get("remote_storage", None)
 
-        new_agent = await _load_agent(
+        if model_server:
+            try:
+                model_server = EndpointConfig.from_dict(model_server)
+            except TypeError as e:
+                logger.debug(traceback.format_exc())
+                raise ErrorResponse(
+                    400,
+                    "BadRequest",
+                    "Supplied 'model_server' is not valid. Error: {}".format(e),
+                    {"parameter": "model_server", "in": "body"},
+                )
+        app.agent = await _load_agent(
             model_path, model_server, remote_storage, endpoints
         )
-
-        # port the old agent's lock store to the new agent
-        existing_lock_store = app.agent.lock_store
-        new_agent.lock_store = existing_lock_store
-
-        app.agent = new_agent
 
         logger.debug("Successfully loaded model '{}'.".format(model_path))
         return response.json(None, status=204)
