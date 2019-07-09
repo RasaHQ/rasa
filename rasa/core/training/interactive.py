@@ -790,7 +790,7 @@ async def _write_nlu_to_file(
     try:
         previous_examples = loading.load_data(export_nlu_path)
     except Exception as e:
-        logger.debug("An exception occurred while trying to load the NLU data.")
+        logger.debug("An exception occurred while trying to load the NLU data. {}".format(str(e))
         # No previous file exists, use empty training data as replacement.
         previous_examples = TrainingData()
 

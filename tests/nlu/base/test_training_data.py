@@ -10,7 +10,7 @@ from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
-from rasa.nlu.training_data.loading import _guess_format, UNK, load_data
+from rasa.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.nlu.training_data.util import get_file_format
 import rasa.utils.io as io_utils
 
@@ -533,7 +533,7 @@ def test_get_file_format():
 
 
 def test_guess_format_from_non_existing_file_path():
-    assert _guess_format("not existing path") == UNK
+    assert guess_format("not existing path") == UNK
 
 
 def test_load_data_from_non_existing_file():
