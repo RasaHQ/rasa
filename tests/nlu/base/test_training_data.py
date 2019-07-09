@@ -4,12 +4,13 @@ import pytest
 import tempfile
 from jsonschema import ValidationError
 
-from rasa.nlu import training_data, utils
+from rasa.nlu import training_data
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
+from rasa.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.nlu.training_data.util import get_file_format
 import rasa.utils.io as io_utils
 
@@ -529,3 +530,12 @@ def test_get_file_format():
 
     with pytest.raises(AttributeError):
         get_file_format(None)
+
+
+def test_guess_format_from_non_existing_file_path():
+    assert guess_format("not existing path") == UNK
+
+
+def test_load_data_from_non_existing_file():
+    with pytest.raises(ValueError):
+        load_data("some path")
