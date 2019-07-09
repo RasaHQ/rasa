@@ -153,3 +153,11 @@ def guess_format(filename: Text) -> Text:
                 break
 
     return guess
+
+
+def _guess_format(filename: Text) -> Text:
+    logging.warning(
+        "Using '_guess_format' is deprecated since Rasa 1.1.5. "
+        "Please us 'guess_format' instead."
+    )
+    return guess_format(filename)
