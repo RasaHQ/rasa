@@ -125,15 +125,15 @@ def update_tensorflow_log_level():
 
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # disables AVX2 FMA warnings (CPU support)
     if log_level == "DEBUG":
-        tf_log_level = tf.logging.DEBUG
+        tf_log_level = tf.compat.v1.logging.DEBUG
     elif log_level == "INFO":
-        tf_log_level = tf.logging.INFO
+        tf_log_level = tf.compat.v1.logging.INFO
     elif log_level == "WARNING":
-        tf_log_level = tf.logging.WARN
+        tf_log_level = tf.compat.v1.logging.WARN
     else:
-        tf_log_level = tf.logging.ERROR
+        tf_log_level = tf.compat.v1.logging.ERROR
 
-    tf.logging.set_verbosity(tf_log_level)
+    tf.compat.v1.logging.set_verbosity(tf_log_level)
     logging.getLogger("tensorflow").propagate = False
 
 
