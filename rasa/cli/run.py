@@ -87,7 +87,8 @@ def run(args: argparse.Namespace):
         except ModelNotFound:
             print_error(
                 "No model found. Train a model before running the "
-                "server using `rasa train`."
+                "server using `rasa train` and use '--model' to provide "
+                "the model path."
             )
             return
 

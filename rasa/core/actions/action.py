@@ -380,14 +380,16 @@ class RemoteAction(Action):
         json_body = self._action_call_format(tracker, domain)
 
         if not self.action_endpoint:
-            raise Exception(
-                "The model predicted the custom action '{}' "
+            logger.error(
+                "The model predicted the custom action '{}', "
                 "but you didn't configure an endpoint to "
                 "run this custom action. Please take a look at "
-                "the docs and set an endpoint configuration. "
+                "the docs and set an endpoint configuration via the "
+                "--endpoints flag. "
                 "{}/core/actions"
                 "".format(self.name(), DOCS_BASE_URL)
             )
+            raise Exception("Failed to execute custom action.")
 
         try:
             logger.debug(
@@ -413,7 +415,7 @@ class RemoteAction(Action):
                 exception = ActionExecutionRejection(
                     response_data["action_name"], response_data.get("error")
                 )
-                logger.debug(exception.message)
+                logger.error(exception.message)
                 raise exception
             else:
                 raise Exception("Failed to execute custom action.") from e
