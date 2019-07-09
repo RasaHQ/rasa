@@ -277,3 +277,21 @@ def questionary_file_path_validator(
                 raise ValidationError(message=error_message)
 
     return ExportPathValidator
+
+
+def questionary_not_empty_text_validator(error_message: Text) -> Type["Validator"]:
+    """Creates a `Validator` class which can be used with `questionary` to validate
+    that the user entered something other than whitespace.
+    """
+
+    from prompt_toolkit.validation import Validator, ValidationError
+    from prompt_toolkit.document import Document
+
+    class NotEmptyTextValidator(Validator):
+        def validate(self, document: Document) -> None:
+            input = document.text
+            is_valid = input is not None and input.strip() != ""
+            if not is_valid:
+                raise ValidationError(message=error_message)
+
+    return NotEmptyTextValidator
