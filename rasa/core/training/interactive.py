@@ -790,18 +790,8 @@ async def _write_nlu_to_file(
     try:
         previous_examples = loading.load_data(export_nlu_path)
     except Exception as e:
-        logger.error("An exception occurred while trying to load the NLU data.")
-        export_nlu_path = questionary.text(
-            message="Could not load existing NLU data, please "
-            "specify where to store NLU data learned in "
-            "this session (this will overwrite any "
-            "existing file). {}".format(str(e)),
-            default=PATHS["backup"],
-        ).ask()
-
-        if export_nlu_path is None:
-            return
-
+        logger.debug("An exception occurred while trying to load the NLU data.")
+        # No previous file exists, use empty training data as replacement.
         previous_examples = TrainingData()
 
     nlu_data = previous_examples.merge(TrainingData(msgs))
