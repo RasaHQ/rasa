@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+
 import requests
 import typing
 from typing import Optional, Text
@@ -51,6 +53,9 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
 
     Merges them if loaded from disk and multiple files are found."""
     from rasa.nlu.training_data import TrainingData
+
+    if not os.path.exists(resource_name):
+        raise ValueError("File '{}' does not exist.".format(resource_name))
 
     files = utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
@@ -112,9 +117,9 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
 
     fformat = guess_format(filename)
     if fformat == UNK:
-        raise ValueError("Unknown data format for file {}".format(filename))
+        raise ValueError("Unknown data format for file '{}'.".format(filename))
 
-    logger.info("Training data format of {} is {}".format(filename, fformat))
+    logger.info("Training data format of '{}' is '{}'.".format(filename, fformat))
     reader = _reader_factory(fformat)
 
     if reader:
@@ -133,8 +138,10 @@ def guess_format(filename: Text) -> Text:
         Guessed file format.
     """
     guess = UNK
-    content = rasa.utils.io.read_file(filename)
+
+    content = ""
     try:
+        content = rasa.utils.io.read_file(filename)
         js = json.loads(content)
     except ValueError:
         if any([marker in content for marker in _markdown_section_markers]):
