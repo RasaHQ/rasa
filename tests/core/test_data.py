@@ -106,16 +106,47 @@ def test_same_file_names_get_resolved(tmpdir):
 
 
 @pytest.mark.parametrize(
-    "line",
+    "test_input,expected",
     [
-        "##intent:aintent",
-        "##synonym: synonym",
-        "##regex:a_regex",
-        " ##lookup:additional",
+        (
+            "dialogflow",
+            {
+                "data/examples/dialogflow/entities/cuisine.json",
+                "data/examples/dialogflow/intents/affirm.json",
+                "data/examples/dialogflow/entities/location_entries_es.json",
+                "data/examples/dialogflow/intents/affirm_usersays_en.json",
+                "data/examples/dialogflow/intents/hi_usersays_es.json",
+                "data/examples/dialogflow/entities/cuisine_entries_es.json",
+                "data/examples/dialogflow/intents/inform_usersays_en.json",
+                "data/examples/dialogflow/intents/hi.json",
+                "data/examples/dialogflow/intents/goodbye_usersays_en.json",
+                "data/examples/dialogflow/agent.json",
+                "data/examples/dialogflow/intents/hi_usersays_en.json",
+                "data/examples/dialogflow/entities/location.json",
+                "data/examples/dialogflow/intents/affirm_usersays_es.json",
+                "data/examples/dialogflow/entities/cuisine_entries_en.json",
+                "data/examples/dialogflow/package.json",
+                "data/examples/dialogflow/intents/Default Fallback Intent.json",
+                "data/examples/dialogflow/intents/goodbye_usersays_es.json",
+                "data/examples/dialogflow/intents/goodbye.json",
+                "data/examples/dialogflow/entities/location_entries_en.json",
+                "data/examples/dialogflow/intents/inform.json",
+                "data/examples/dialogflow/intents/inform_usersays_es.json",
+            },
+        ),
+        ("luis", {"data/examples/luis/demo-restaurants.json"}),
+        (
+            "rasa",
+            {"data/examples/rasa/demo-rasa.json", "data/examples/rasa/demo-rasa.md"},
+        ),
+        ("wit", {"data/examples/wit/demo-flights.json"}),
     ],
 )
-def test_contains_nlu_pattern(line):
-    assert data._contains_nlu_pattern(line)
+def test_find_nlu_files_with_different_formats(test_input, expected):
+    examples_dir = "data/examples"
+    data_dir = os.path.join(examples_dir, test_input)
+    core_files, nlu_files = data.get_core_nlu_files([data_dir])
+    assert nlu_files == expected
 
 
 def test_is_nlu_file_with_json():
@@ -142,8 +173,3 @@ def test_is_not_nlu_file_with_json():
         f.write('{"test": "a"}')
 
     assert not data._is_nlu_file(file)
-
-
-@pytest.mark.parametrize("line", ["- example", "## story intent 1 + two##slots* entry"])
-def test_not_contains_nlu_pattern(line):
-    assert not data._contains_nlu_pattern(line)
