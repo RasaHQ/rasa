@@ -10,7 +10,11 @@ from rasa import data, model
 
 # noinspection PyProtectedMember
 from rasa.cli.utils import get_validated_path, print_error
-from rasa.constants import DEFAULT_DATA_PATH, DEFAULT_MODELS_PATH
+from rasa.constants import (
+    DEFAULT_DATA_PATH,
+    DEFAULT_MODELS_PATH,
+    DEFAULT_ENDPOINTS_PATH,
+)
 from rasa.model import get_latest_model
 
 
@@ -77,6 +81,10 @@ def perform_interactive_learning(args, zipped_model):
         with model.unpack_model(zipped_model) as model_path:
             args.core, args.nlu = model.get_model_subdirectories(model_path)
             stories_directory = data.get_core_directory(args.data)
+
+            args.endpoints = get_validated_path(
+                args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+            )
 
             do_interactive_learning(args, stories_directory)
     else:
