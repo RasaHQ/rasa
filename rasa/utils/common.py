@@ -1,6 +1,8 @@
 import logging
 import os
-from typing import Any, Callable, Dict, List, Text, Optional
+import shutil
+from typing import Any, Callable, Dict, List, Text, Optional, Type
+from types import TracebackType
 
 import rasa.core.utils
 import rasa.utils.io
@@ -13,6 +15,25 @@ from rasa.constants import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class TempDirectoryPath(str):
+    """Represents a path to an temporary directory. When used as a context
+    manager, it erases the contents of the directory on exit.
+
+    """
+
+    def __enter__(self) -> "TempDirectoryPath":
+        return self
+
+    def __exit__(
+        self,
+        _exc: Optional[Type[BaseException]],
+        _value: Optional[Exception],
+        _tb: Optional[TracebackType],
+    ) -> bool:
+        if os.path.exists(self):
+            shutil.rmtree(self)
 
 
 def arguments_of(func: Callable) -> List[Text]:
