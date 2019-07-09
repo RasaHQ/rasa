@@ -157,7 +157,7 @@ def guess_format(filename: Text) -> Text:
 
 def _guess_format(filename: Text) -> Text:
     logger.warning(
-        "Using '_guess_format' is deprecated since Rasa 1.1.5. "
+        "Using '_guess_format()' is deprecated since Rasa 1.1.5. "
         "Please use 'guess_format()' instead."
     )
     return guess_format(filename)
