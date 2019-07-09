@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import io
 import json
 import logging
 import os
 import re
 import warnings
-from typing import Optional, List, Text, Any, Dict, AnyStr, TYPE_CHECKING
+from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
@@ -23,7 +22,8 @@ from rasa.core.training.structures import (
     FORM_PREFIX,
 )
 from rasa.nlu.training_data.formats import MarkdownReader
-
+from rasa.core.domain import Domain
+from rasa.nlu.model import Interpreter
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import Message
@@ -153,7 +153,13 @@ class StoryStepBuilder(object):
 class StoryFileReader(object):
     """Helper class to read a story file."""
 
-    def __init__(self, domain, interpreter, template_vars=None, use_e2e=False):
+    def __init__(
+        self,
+        domain: Domain,
+        interpreter: Interpreter,
+        template_vars: Optional[Dict] = None,
+        use_e2e: bool = False,
+    ):
         self.story_steps = []
         self.current_step_builder = None  # type: Optional[StoryStepBuilder]
         self.domain = domain
@@ -163,13 +169,13 @@ class StoryFileReader(object):
 
     @staticmethod
     async def read_from_folder(
-        resource_name,
-        domain,
-        interpreter=RegexInterpreter(),
-        template_variables=None,
-        use_e2e=False,
-        exclusion_percentage=None,
-    ):
+        resource_name: Text,
+        domain: Domain,
+        interpreter: Interpreter = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> List[StoryStep]:
         """Given a path reads all contained story files."""
         import rasa.nlu.utils as nlu_utils
 
@@ -180,8 +186,29 @@ class StoryFileReader(object):
                 "or file.".format(os.path.abspath(resource_name))
             )
 
+        files = nlu_utils.list_files(resource_name)
+
+        return await StoryFileReader.read_from_files(
+            files,
+            domain,
+            interpreter,
+            template_variables,
+            use_e2e,
+            exclusion_percentage,
+        )
+
+    @staticmethod
+    async def read_from_files(
+        files: Iterable[Text],
+        domain: Domain,
+        interpreter: Interpreter = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> List[StoryStep]:
         story_steps = []
-        for f in nlu_utils.list_files(resource_name):
+
+        for f in files:
             steps = await StoryFileReader.read_from_file(
                 f, domain, interpreter, template_variables, use_e2e
             )
@@ -199,11 +226,11 @@ class StoryFileReader(object):
 
     @staticmethod
     async def read_from_file(
-        filename,
-        domain,
-        interpreter=RegexInterpreter(),
-        template_variables=None,
-        use_e2e=False,
+        filename: Text,
+        domain: Domain,
+        interpreter: Interpreter = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
     ):
         """Given a md file reads the contained stories."""
 
