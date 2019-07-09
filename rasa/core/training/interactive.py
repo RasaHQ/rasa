@@ -58,7 +58,7 @@ from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 # noinspection PyProtectedMember
-from rasa.nlu.training_data.loading import _guess_format, load_data
+from rasa.nlu.training_data import loading
 from rasa.nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library
@@ -66,7 +66,7 @@ from rasa.nlu.training_data.message import Message
 # automatically. If you change anything in here, please make sure to
 # run the interactive learning and check if your part of the "ui"
 # still works.
-from rasa.utils.io import create_path
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -661,16 +661,28 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             message="Export stories to (if file exists, this "
             "will append the stories)",
             default=PATHS["stories"],
+            validate=io_utils.questionary_file_path_validator(
+                [".md"],
+                "Please provide a valid export path for the stories, e.g. 'stories.md'.",
+            ),
         ),
         export_nlu=questionary.text(
             message="Export NLU data to (if file exists, this will "
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
+            validate=io_utils.questionary_file_path_validator(
+                [".md"],
+                "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
+            ),
         ),
         export_domain=questionary.text(
             message="Export domain file to (if file exists, this "
             "will be overwritten)",
             default=PATHS["domain"],
+            validate=io_utils.questionary_file_path_validator(
+                [".yml", ".yaml"],
+                "Please provide a valid export path for the domain file, e.g. 'domain.yml'.",
+            ),
         ),
     )
 
@@ -752,7 +764,7 @@ async def _write_stories_to_file(
 
     sub_conversations = _split_conversation_at_restarts(events)
 
-    create_path(export_story_path)
+    io_utils.create_path(export_story_path)
 
     if os.path.exists(export_story_path):
         append_write = "a"  # append if already exists
@@ -776,28 +788,19 @@ async def _write_nlu_to_file(
 
     # noinspection PyBroadException
     try:
-        previous_examples = load_data(export_nlu_path)
+        previous_examples = loading.load_data(export_nlu_path)
     except Exception as e:
-        logger.exception("An exception occurred while trying to load the NLU data.")
-
-        export_nlu_path = questionary.text(
-            message="Could not load existing NLU data, please "
-            "specify where to store NLU data learned in "
-            "this session (this will overwrite any "
-            "existing file). {}".format(str(e)),
-            default=PATHS["backup"],
-        ).ask()
-
-        if export_nlu_path is None:
-            return
-
+        logger.debug(
+            "An exception occurred while trying to load the NLU data. {}".format(str(e))
+        )
+        # No previous file exists, use empty training data as replacement.
         previous_examples = TrainingData()
 
     nlu_data = previous_examples.merge(TrainingData(msgs))
 
     # need to guess the format of the file before opening it to avoid a read
     # in a write
-    if _guess_format(export_nlu_path) in {"md", "unk"}:
+    if loading.guess_format(export_nlu_path) in {"md", "unk"}:
         fformat = "md"
     else:
         fformat = "json"
@@ -828,7 +831,7 @@ async def _write_domain_to_file(
 ) -> None:
     """Write an updated domain file to the file path."""
 
-    create_path(domain_path)
+    io_utils.create_path(domain_path)
 
     domain = await retrieve_domain(endpoint)
     old_domain = Domain.from_dict(domain)
