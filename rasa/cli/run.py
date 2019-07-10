@@ -10,6 +10,7 @@ from rasa.constants import (
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
+    DOCS_BASE_URL,
 )
 from rasa.exceptions import ModelNotFound
 
@@ -45,7 +46,6 @@ def add_subparser(
 
 def run_actions(args: argparse.Namespace):
     import rasa_sdk.__main__ as sdk
-    import sys
 
     args.actions = args.actions or DEFAULT_ACTIONS_PATH
 
@@ -77,26 +77,49 @@ def run(args: argparse.Namespace):
 
     args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
 
-    if not args.enable_api:
-        # if the API is enabled you can start without a model as you can train a
-        # model via the API once the server is up and running
-        from rasa.model import get_model
-
-        try:
-            get_model(args.model)
-        except ModelNotFound:
-            print_error(
-                "No model found. Train a model before running the "
-                "server using `rasa train` and use '--model' to provide "
-                "the model path."
-            )
-            return
-
     args.endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
     args.credentials = get_validated_path(
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
+
+    if not args.enable_api:
+        # if the API is not enable you cannot start without a model
+        # make sure either a model server, a remote storage, or a local model is
+        # configured
+        import sys
+        from rasa.model import get_model
+        from rasa.core.utils import AvailableEndpoints
+
+        try:
+            endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+            model_server = endpoints.model if endpoints and endpoints.model else None
+            model_server_set = model_server is not None
+        except ValueError:
+            model_server_set = False
+
+        remote_storage_set = args.remote_storage is not None
+
+        local_model_set = True
+        try:
+            get_model(args.model)
+        except ModelNotFound:
+            local_model_set = False
+
+        if not model_server_set and not remote_storage_set and not local_model_set:
+            print_error(
+                "No model found. You have three options to provide a model:\n"
+                "1. Configure a model server in the endpoint configuration and provide "
+                "the configuration via '--endpoints'.\n"
+                "2. Specify a remote storage via '--remote-storage' to load the model "
+                "from.\n"
+                "3. Train a model before running the server using `rasa train` and "
+                "use '--model' to provide the model path.\n"
+                "For more information check {}.".format(
+                    DOCS_BASE_URL + "/user-guide/running-the-server/"
+                )
+            )
+            sys.exit(1)
 
     rasa.run(**vars(args))
