@@ -400,7 +400,6 @@ class StoryGraph(object):
         self.story_steps = story_steps
         self.step_lookup = {s.id: s for s in self.story_steps}
         ordered_ids, cyclic_edges = StoryGraph.order_steps(story_steps)
-
         self.ordered_ids = ordered_ids
         self.cyclic_edge_ids = cyclic_edges
         if story_end_checkpoints:
