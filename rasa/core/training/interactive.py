@@ -748,6 +748,9 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
             msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
             msgs.append(msg)
 
+        elif event.get("event") == UserUtteranceReverted.type_name:
+            msgs.pop()  # user corrected the nlu, remove incorrect example
+
     return msgs
 
 

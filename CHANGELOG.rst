@@ -23,6 +23,7 @@ Removed
 
 Fixed
 -----
+- interactive learning bug where reverted user utterances were dumped to nlu data
 
 
 [1.1.5] - 2019-07-10
