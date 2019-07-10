@@ -24,8 +24,10 @@ from rasa.core.training.structures import (
 )
 from rasa.nlu.training_data.formats import MarkdownReader
 
+
 if TYPE_CHECKING:
     from rasa.nlu.training_data import Message
+
 
 logger = logging.getLogger(__name__)
 
@@ -187,11 +189,10 @@ class StoryFileReader(object):
 
         # if exclusion percentage is not 100
         if exclusion_percentage and exclusion_percentage != 100:
-            import numpy as np
+            import random
 
-            np.random.seed(42)
             idx = int(round(exclusion_percentage / 100.0 * len(story_steps)))
-            np.random.shuffle(story_steps)
+            random.shuffle(story_steps)
             story_steps = story_steps[:-idx]
 
         return story_steps

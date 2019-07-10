@@ -20,6 +20,7 @@ from sanic.views import CompositionView
 import rasa.utils.io as io_utils
 from rasa.utils.endpoints import read_endpoint_config
 
+
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.endpoints import concat_url
