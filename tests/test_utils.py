@@ -155,6 +155,7 @@ def test_file_path_validator_with_valid_paths(actual_path):
     # If the path is valid there shouldn't be an exception
     assert validator.validate(document) is None
 
+
 @pytest.mark.parametrize("input", ["", "   "])
 def test_non_empty_text_validator_with_empty_input(input):
     from prompt_toolkit.validation import ValidationError
