@@ -44,7 +44,7 @@ There's a lot more background information in this
   [Read The Docs](https://rasa.com/docs/)
 
 - **I'm ready to install Rasa 🚀**
-  [Installation](https://rasa.com/docs/rasa/installation/)
+  [Installation](https://rasa.com/docs/rasa/user-guide/installation/)
 
 - **I want to learn how to use Rasa 🚀**
   [Tutorial](https://rasa.com/docs/rasa/tutorial/)
@@ -165,6 +165,16 @@ To check the types execute
 ```
 pytype rasa
 ```
+
+### Deploying documentation updates
+
+We use `sphinx-versioning` to build docs for tagged versions and for the master branch.
+The static site that gets built is pushed to the `docs` branch of this repo, which doesn't contain
+any code, only the site.
+
+We host the site on netlify. When there is a reason to update the docs (e.g. master has changed or we have
+tagged a new version) we trigger a webhook on netlify (see `.travis.yml`). 
+
 
 ## License
 Licensed under the Apache License, Version 2.0.

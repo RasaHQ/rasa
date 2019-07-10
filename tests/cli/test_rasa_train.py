@@ -4,6 +4,8 @@ import tempfile
 
 import pytest
 
+from rasa import model
+
 from rasa.cli.train import _get_valid_config
 from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -35,6 +37,32 @@ def test_train(run_in_default_project):
     files = list_files(os.path.join(temp_dir, "train_models"))
     assert len(files) == 1
     assert os.path.basename(files[0]) == "test-model.tar.gz"
+
+
+def test_train_no_domain_exists(run_in_default_project):
+
+    os.remove("domain.yml")
+    run_in_default_project(
+        "train",
+        "-c",
+        "config.yml",
+        "--data",
+        "data",
+        "--out",
+        "train_models_no_domain",
+        "--fixed-model-name",
+        "nlu-model-only",
+    )
+
+    assert os.path.exists("train_models_no_domain")
+    files = list_files("train_models_no_domain")
+    assert len(files) == 1
+
+    trained_model_path = "train_models_no_domain/nlu-model-only.tar.gz"
+    unpacked = model.unpack_model(trained_model_path)
+
+    metadata_path = os.path.join(unpacked, "nlu", "metadata.json")
+    assert os.path.exists(metadata_path)
 
 
 def test_train_skip_on_model_not_changed(run_in_default_project):
@@ -118,6 +146,51 @@ def test_train_core(run_in_default_project):
     assert os.path.isfile("train_rasa_models/rasa-model.tar.gz")
 
 
+def test_train_core_no_domain_exists(run_in_default_project):
+
+    os.remove("domain.yml")
+    run_in_default_project(
+        "train",
+        "core",
+        "--config",
+        "config.yml",
+        "--domain",
+        "domain1.yml",
+        "--stories",
+        "data",
+        "--out",
+        "train_rasa_models_no_domain",
+        "--fixed-model-name",
+        "rasa-model",
+    )
+
+    assert not os.path.exists("train_rasa_models_no_domain/rasa-model.tar.gz")
+    assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
+
+
+def count_rasa_temp_files():
+    count = 0
+    for entry in os.scandir(tempfile.gettempdir()):
+        if not entry.is_dir():
+            continue
+
+        try:
+            for f in os.listdir(entry.path):
+                if f.endswith("_nlu.md") or f.endswith("_stories.md"):
+                    count += 1
+        except PermissionError:
+            # Ignore permission errors
+            pass
+
+    return count
+
+
+def test_train_core_temp_files(run_in_default_project):
+    count = count_rasa_temp_files()
+    run_in_default_project("train", "core")
+    assert count == count_rasa_temp_files()
+
+
 def test_train_nlu(run_in_default_project):
     run_in_default_project(
         "train",
@@ -134,6 +207,12 @@ def test_train_nlu(run_in_default_project):
     files = list_files("train_models")
     assert len(files) == 1
     assert os.path.basename(files[0]).startswith("nlu-")
+
+
+def test_train_nlu_temp_files(run_in_default_project):
+    count = count_rasa_temp_files()
+    run_in_default_project("train", "nlu")
+    assert count == count_rasa_temp_files()
 
 
 def test_train_help(run):
