@@ -123,7 +123,7 @@ class TrackerStore(object):
         return json.dumps(dialogue.as_dict())
 
     def deserialise_tracker(
-        self, sender_id: Text, _json: Union[Text, bytes]
+        self, sender_id: Text, _json: Text
     ) -> Optional[DialogueStateTracker]:
         dialogue = Dialogue.from_parameters(json.loads(_json))
         tracker = self.init_tracker(sender_id)
@@ -193,7 +193,9 @@ class RedisTrackerStore(TrackerStore):
     def retrieve(self, sender_id):
         stored = self.red.get(sender_id)
         if stored is not None:
-            return self.deserialise_tracker(sender_id, str(stored))
+            if isinstance(stored, bytes):
+                stored = stored.decode("utf-8")
+            return self.deserialise_tracker(sender_id, stored)
         else:
             return None
 
