@@ -65,14 +65,11 @@ def subsample_array(
 ) -> List[Any]:
     """Shuffles the array and returns `max_values` number of elements."""
     import random
-    import numpy as np
-
-    np.random.seed(rand)
 
     if not can_modify_incoming_array:
         arr = arr[:]
     if rand is not None:
-        np.random.shuffle(arr)
+        rand.shuffle(arr)
     else:
         random.shuffle(arr)
     return arr[:max_values]
