@@ -49,8 +49,6 @@ def run_actions(args: argparse.Namespace):
 
     args.actions = args.actions or DEFAULT_ACTIONS_PATH
 
-    # insert current path in syspath so module is found
-    sys.path.insert(1, os.getcwd())
     path = args.actions.replace(".", os.sep) + ".py"
     _ = get_validated_path(path, "action", DEFAULT_ACTIONS_PATH)
 
