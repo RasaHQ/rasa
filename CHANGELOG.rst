@@ -6,9 +6,28 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-
-[Unreleased 1.1.5] - `master`_
+[Unreleased 1.1.6] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+
+Changed
+-------
+
+
+Removed
+-------
+
+
+Fixed
+-----
+- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
+
+
+[1.1.5] - 2019-07-10
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -43,6 +62,8 @@ Fixed
 - ``rasa train`` now also includes NLU files in other formats than the Rasa format
 - ``rasa train core`` no longer crashes without a ``--domain`` arg
 - ``rasa interactive`` now looks for endpoints in ``endpoints.yml`` if no ``--endpoints`` arg is passed
+- custom files, e.g. custom components and channels, load correctly when using
+  the command line interface
 
 
 [1.1.4] - 2019-06-18
