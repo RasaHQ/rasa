@@ -23,6 +23,7 @@ Removed
 
 Fixed
 -----
+- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
 
 
 [1.1.5] - 2019-07-10
