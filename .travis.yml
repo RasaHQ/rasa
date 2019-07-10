@@ -111,6 +111,7 @@ jobs:
   - stage: deploy
     name: "Deploy to PyPI"
     python: 3.6
+    if: tag IS present
     install: skip
     script: skip
     deploy:
@@ -118,7 +119,6 @@ jobs:
       user: amn41
       # server: https://test.pypi.org/legacy/
       on:
-        branch: master
         tags: true
       distributions: "sdist bdist_wheel"
       password:
