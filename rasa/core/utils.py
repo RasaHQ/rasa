@@ -337,6 +337,15 @@ def file_as_bytes(path: Text) -> bytes:
         return f.read()
 
 
+def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
+    """Convert `data` to string if data is bytes-like object."""
+
+    if isinstance(data, (bytes, bytearray)):
+        return data.decode("utf-8")
+
+    return data
+
+
 def get_file_hash(path: Text) -> Text:
     """Calculate the md5 hash of a file."""
     return md5(file_as_bytes(path)).hexdigest()
