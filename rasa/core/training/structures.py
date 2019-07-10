@@ -401,21 +401,6 @@ class StoryGraph(object):
         self.step_lookup = {s.id: s for s in self.story_steps}
         ordered_ids, cyclic_edges = StoryGraph.order_steps(story_steps)
 
-        # sort ordered_ids for reproducible results
-        ordered_ids = list(ordered_ids)
-        ordered_ids.sort(key=lambda x: int(x.split("_")[0]))
-        ordered_ids = deque(ordered_ids)
-
-        # sort cyclic edges for reproducible results
-        cyclic_edges = list(cyclic_edges)
-        cyclic_edges = [
-            (x, y) if int(x.split("_")[0]) < int(y.split("_")[0]) else (y, x)
-            for x, y in cyclic_edges
-        ]
-        cyclic_edges.sort(
-            key=lambda x: int(str(x[0].split("_")[0]) + str(x[1].split("_")[0]))
-        )
-
         self.ordered_ids = ordered_ids
         self.cyclic_edge_ids = cyclic_edges
         if story_end_checkpoints:
@@ -701,7 +686,7 @@ class StoryGraph(object):
 
         def dfs(node):
             visited_nodes[node] = GRAY
-            for k in graph.get(node, set()):
+            for k in sorted(graph.get(node, set())):
                 sk = visited_nodes.get(k, None)
                 if sk == GRAY:
                     removed_edges.add((node, k))
@@ -715,6 +700,7 @@ class StoryGraph(object):
 
         while unprocessed:
             dfs(unprocessed.pop())
+        removed_edges = sorted(removed_edges)
         return ordered, removed_edges
 
     def visualize(self, output_file=None):
