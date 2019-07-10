@@ -41,6 +41,8 @@ Fixed
 - ``rasa train`` now also includes NLU files in other formats than the Rasa format
 - ``rasa train core`` no longer crashes without a ``--domain`` arg
 - ``rasa interactive`` now looks for endpoints in ``endpoints.yml`` if no ``--endpoints`` arg is passed
+- custom files, e.g. custom components and channels, load correctly when using
+  the command line interface
 
 
 [1.1.4] - 2019-06-18
