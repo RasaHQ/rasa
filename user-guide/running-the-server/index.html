@@ -21,7 +21,7 @@
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Running Rasa with Docker" href="../running-rasa-with-docker/" />
-    <link rel="prev" title="Validate Data" href="../validate-files/" />
+    <link rel="prev" title="Evaluating Models" href="../evaluating-models/" />
 
   <!-- Google Tag Manager -->
   <script type="application/javascript">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -129,7 +129,6 @@ with your backend components." />
 <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../evaluating-models/">Evaluating Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../validate-files/">Validate Data</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Running the Server</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../running-rasa-with-docker/">Running Rasa with Docker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cloud-storage/">Cloud Storage</a></li>
@@ -192,13 +191,12 @@ with your backend components." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.5
+          viewing: 1.1.4
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
-              <a href="../.././1.1.5/user-guide/running-the-server/">1.1.5</a>
               <a href="../.././1.1.4/user-guide/running-the-server/">1.1.4</a>
               <a href="../.././1.1.3/user-guide/running-the-server/">1.1.3</a>
               <a href="../.././1.1.2/user-guide/running-the-server/">1.1.2</a>
@@ -276,12 +274,12 @@ trained Rasa model with:</p>
 </ul>
 <p>Rasa can load your model in three different ways:</p>
 <ol class="arabic simple">
+<li>Load the model specified via <code class="docutils literal notranslate"><span class="pre">-m</span></code> from your local storage system,</li>
 <li>Fetch the model from a server (see <a class="reference internal" href="#server-fetch-from-server"><span class="std std-ref">Fetching Models from a Server</span></a>), or</li>
 <li>Fetch the model from a remote storage (see <a class="reference internal" href="../cloud-storage/#cloud-storage"><span class="std std-ref">Cloud Storage</span></a>).</li>
-<li>Load the model specified via <code class="docutils literal notranslate"><span class="pre">-m</span></code> from your local storage system,</li>
 </ol>
-<p>Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from your local
-storage system if no model server and no remote storage were configured.</p>
+<p>Rasa tries to load a model in the above mentioned order, i.e. it only tries to load your model from a server
+if it could not find the model on your local storage system.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">Make sure to secure your server, either by restricting access to the server (e.g. using firewalls), or
@@ -303,7 +301,7 @@ Core model is needed to process the request.</p>
 <div class="section" id="fetching-models-from-a-server">
 <span id="server-fetch-from-server"></span><h3><a class="toc-backref" href="#id3">Fetching Models from a Server</a><a class="headerlink" href="#fetching-models-from-a-server" title="Permalink to this headline">¶</a></h3>
 <p>You can configure the HTTP server to fetch models from another URL:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run --enable-api --log-file out.log --endpoints my_endpoints.yml
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --enable-api --log-file out.log --endpoints my_endpoints.yml
 </pre></div>
 </div>
 <p>The model server is specified in the endpoint configuration
