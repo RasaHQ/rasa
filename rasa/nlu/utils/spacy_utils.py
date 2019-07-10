@@ -114,7 +114,7 @@ class SpacyNLP(Component):
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
 
-    	docs = self.docs_for_training_data(training_data)
+        docs = self.docs_for_training_data(training_data)
 
         for idx, example in enumerate(training_data.training_examples):
             example.set("spacy_doc", docs[idx])
