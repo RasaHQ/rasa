@@ -1,5 +1,5 @@
 import re
-from typing import Any, List, Text
+from typing import Any, Dict, List, Text
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -11,15 +11,29 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
     provides = ["tokens"]
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
+    defaults = {
+        # text will be tokenized as case sensitive by default
+        "case_sensitive": True
+    }
 
+    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+        """Construct a new tokenizer using the WhitespaceTokenizer framework."""
+
+        super(WhitespaceTokenizer, self).__init__(component_config)
+
+    def train(
+            self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+    ) -> None:
+        case_sensitive = self.component_config["case_sensitive"]
         for example in training_data.training_examples:
+            if not case_sensitive:
+                example.text = example.text.lower()
             example.set("tokens", self.tokenize(example.text))
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
+        case_sensitive = self.component_config["case_sensitive"]
+        if not case_sensitive:
+            message.text = message.text.lower()
         message.set("tokens", self.tokenize(message.text))
 
     @staticmethod
