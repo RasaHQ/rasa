@@ -11,7 +11,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- rest channel supports setting a message's input_channel through a field
+  ``input_channel`` in the request body
 
 Changed
 -------
