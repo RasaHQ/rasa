@@ -93,6 +93,12 @@ class MappingPolicy(Policy):
 
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
                 prediction[idx] = 1
+            else:
+                logger.debug(
+                    "The mapped action, '{}', for this intent, '{}', was "
+                    "executed last, but it was predicted by another policy, '{}', so MappingPolicy is not"
+                    "predicting any action.".format(action, intent, latest_action.policy)
+                )
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "

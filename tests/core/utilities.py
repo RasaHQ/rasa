@@ -10,14 +10,14 @@ import rasa.utils.io
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
-from tests.core.conftest import DEFAULT_DOMAIN_PATH
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
     dialogue = read_dialogue_file(filename)
 
     if not domain:
-        domain = Domain.load(DEFAULT_DOMAIN_PATH)
+        domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
     tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)

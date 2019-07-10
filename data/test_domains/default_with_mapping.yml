@@ -1,8 +1,8 @@
 intents:
- - trigger:
-     triggers: utter_mapped
- - greet
- - default
+ - greet:
+     triggers: utter_greet
+ - default:
+     triggers: utter_default
  - goodbye
 
 slots:
@@ -21,11 +21,8 @@ templates:
     - text: goodbye :(
   utter_default:
     - text: default message
-  utter_mapped:
-    - text: this tests the mapping_policy
 
 actions:
   - utter_default
   - utter_greet
   - utter_goodbye
-  - utter_mapped

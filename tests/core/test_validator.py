@@ -1,7 +1,7 @@
 import pytest
 from rasa.core.validator import Validator
 from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STORIES_FILE,
     DEFAULT_NLU_DATA,
 )
@@ -12,7 +12,7 @@ from rasa.nlu.training_data import TrainingData
 @pytest.fixture
 async def validator():
     return await Validator.from_files(
-        domain_file=DEFAULT_DOMAIN_PATH,
+        domain_file=DEFAULT_DOMAIN_PATH_WITH_SLOTS,
         nlu_data=DEFAULT_NLU_DATA,
         story_data=DEFAULT_STORIES_FILE,
     )
