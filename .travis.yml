@@ -109,7 +109,7 @@ jobs:
     script:
     - curl -X POST -d "docs" https://api.netlify.com/build_hooks/${NETLIFY_HOOK_ID}
   - stage: deploy
-    if: branch = "master" AND tag IS present
+    if: tag IS present
     name: "Deploy to PyPI"
     python: 3.6
     install: skip
