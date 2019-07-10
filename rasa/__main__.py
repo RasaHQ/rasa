@@ -56,6 +56,9 @@ def print_version() -> None:
 
 def main() -> None:
     # Running as standalone python application
+    import os
+    import sys
+
     parse_last_positional_argument_as_model_path()
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
@@ -64,6 +67,9 @@ def main() -> None:
         cmdline_arguments.loglevel if hasattr(cmdline_arguments, "loglevel") else None
     )
     set_log_level(log_level)
+
+    # insert current path in syspath so custom modules are found
+    sys.path.insert(1, os.getcwd())
 
     if hasattr(cmdline_arguments, "func"):
         rasa.utils.io.configure_colored_logging(log_level)
