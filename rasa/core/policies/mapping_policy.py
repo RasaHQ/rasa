@@ -97,7 +97,9 @@ class MappingPolicy(Policy):
                 logger.debug(
                     "The mapped action, '{}', for this intent, '{}', was "
                     "executed last, but it was predicted by another policy, '{}', so MappingPolicy is not"
-                    "predicting any action.".format(action, intent, latest_action.policy)
+                    "predicting any action.".format(
+                        action, intent, latest_action.policy
+                    )
                 )
         else:
             logger.debug(
