@@ -84,42 +84,50 @@ def run(args: argparse.Namespace):
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
 
-    if not args.enable_api:
-        # if the API is not enable you cannot start without a model
-        # make sure either a model server, a remote storage, or a local model is
-        # configured
-        import sys
-        from rasa.model import get_model
-        from rasa.core.utils import AvailableEndpoints
+    if args.enable_api:
+        rasa.run(**vars(args))
 
-        try:
-            endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
-            model_server = endpoints.model if endpoints and endpoints.model else None
-            model_server_set = model_server is not None
-        except ValueError:
-            model_server_set = False
+    # if the API is not enable you cannot start without a model
+    # make sure either a model server, a remote storage, or a local model is
+    # configured
 
-        remote_storage_set = args.remote_storage is not None
+    from rasa.model import get_model
+    from rasa.core.utils import AvailableEndpoints
 
-        local_model_set = True
-        try:
-            get_model(args.model)
-        except ModelNotFound:
-            local_model_set = False
+    # start server if remote storage is configured
+    if args.remote_storage is not None:
+        rasa.run(**vars(args))
 
-        if not model_server_set and not remote_storage_set and not local_model_set:
-            print_error(
-                "No model found. You have three options to provide a model:\n"
-                "1. Configure a model server in the endpoint configuration and provide "
-                "the configuration via '--endpoints'.\n"
-                "2. Specify a remote storage via '--remote-storage' to load the model "
-                "from.\n"
-                "3. Train a model before running the server using `rasa train` and "
-                "use '--model' to provide the model path.\n"
-                "For more information check {}.".format(
-                    DOCS_BASE_URL + "/user-guide/running-the-server/"
-                )
-            )
-            sys.exit(1)
+    # start server if model server is configured
+    try:
+        endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+        model_server = endpoints.model if endpoints and endpoints.model else None
+        model_server_set = model_server is not None
+    except ValueError:
+        model_server_set = False
 
-    rasa.run(**vars(args))
+    if model_server_set:
+        rasa.run(**vars(args))
+
+    # start server if local model found
+    local_model_set = True
+    try:
+        get_model(args.model)
+    except ModelNotFound:
+        local_model_set = False
+
+    if local_model_set:
+        rasa.run(**vars(args))
+
+    print_error(
+        "No model found. You have three options to provide a model:\n"
+        "1. Configure a model server in the endpoint configuration and provide "
+        "the configuration via '--endpoints'.\n"
+        "2. Specify a remote storage via '--remote-storage' to load the model "
+        "from.\n"
+        "3. Train a model before running the server using `rasa train` and "
+        "use '--model' to provide the model path.\n"
+        "For more information check {}.".format(
+            DOCS_BASE_URL + "/user-guide/running-the-server/"
+        )
+    )
