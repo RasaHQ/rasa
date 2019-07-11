@@ -163,6 +163,18 @@ async def test_load_agent(trained_model):
     assert agent.model_directory is not None
 
 
+async def test_agent_update_model_none_domain(trained_model):
+    agent = await load_agent(model_path=trained_model)
+    agent.update_model(
+        None,
+        agent.policy_ensemble,
+        agent.fingerprint,
+        agent.interpreter,
+        agent.model_directory,
+    )
+    assert agent.domain is None
+
+
 async def test_load_agent_on_not_existing_path():
     agent = await load_agent(model_path="some-random-path")
 
