@@ -388,7 +388,7 @@ class RestInput(InputChannel):
 
         await queue.put("DONE")  # pytype: disable=bad-return-type
 
-    def _extract_sender(self, req: Request) -> Optional[Text]:
+    async def _extract_sender(self, req: Request) -> Optional[Text]:
         return req.json.get("sender", None)
 
     # noinspection PyMethodMayBeStatic
@@ -435,7 +435,7 @@ class RestInput(InputChannel):
 
         @custom_webhook.route("/webhook", methods=["POST"])
         async def receive(request: Request):
-            sender_id = self._extract_sender(request)
+            sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
             should_use_stream = rasa.utils.endpoints.bool_arg(
                 request, "stream", default=False
