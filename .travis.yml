@@ -17,10 +17,8 @@ env:
 install:
   - sudo apt-get install graphviz graphviz-dev
   - python -m pip install -U pip
-  - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r requirements-dev.txt
   - pip install -e .
-  - pip install coveralls==1.7.0
   - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > jnk
   - python -m spacy link en_core_web_md en
   - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > jnk
@@ -44,8 +42,7 @@ jobs:
     name: "Type Check"
     python: 3.6
     script:
-    - pip install pytype==2019.5.31
-    - pytype --keep-going rasa
+    - make types
   - &run-tests
     stage: test
     name: "Test 3.5"

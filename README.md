@@ -108,8 +108,21 @@ You can now change the docs locally and the web page will automatically reload
 and apply your changes.
 
 ### Running the Tests
-In order to run the tests make sure that you have the development requirements installed.
+In order to run the tests, make sure that you have the development requirements installed:
+```bash
+sudo apt-get install graphviz graphviz-dev # Only on Ubuntu/Debian
+brew install graphviz wget                 # Only on macOS
+pip install -r requirements-dev.txt
+pip install -e .
+pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz
+python -m spacy link en_core_web_md en --force
+pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz
+python -m spacy link de_core_news_sm de --force
+wget -N -P data https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 ```
+
+Then, run the tests:
+```bash
 make test
 ```
 
@@ -152,18 +165,18 @@ If you want to automatically format your code on every commit, you can use [pre-
 Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
 This will add a hook to the repository, which reformats files on every commit.
 
-If you want to set it up manually, install black via `pip install black`.
+If you want to set it up manually, install black via `pip install -r requirements-dev.txt`.
 To reformat files execute
 ```
-black .
+make formatter
 ```
 
 #### Type Checking
 
-If you want to check types on the codebase, install `pytype` using `pip install pytype`.
+If you want to check types on the codebase, install `pytype` using `pip install -r requirements-dev.txt`.
 To check the types execute
 ```
-pytype rasa
+make types
 ```
 
 ### Deploying documentation updates
