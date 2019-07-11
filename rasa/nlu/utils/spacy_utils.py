@@ -104,7 +104,9 @@ class SpacyNLP(Component):
     def docs_for_training_data(self, training_data: TrainingData) -> List[Any]:
 
         texts = [
-                    for e in training_data.intent_examples]
+            e.text if self.component_config.get("case_sensitive") else e.text.lower()
+            for e in training_data.intent_examples
+        ]
 
         docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
 
