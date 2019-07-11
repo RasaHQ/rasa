@@ -75,7 +75,7 @@ def _load_and_set_updated_model(
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    if os.path.exists(nlu_path):
+    if nlu_path:
         from rasa.core.interpreter import RasaNLUInterpreter
 
         interpreter = RasaNLUInterpreter(model_directory=nlu_path)
@@ -85,13 +85,13 @@ def _load_and_set_updated_model(
         )
 
     domain = None
-    if os.path.exists(core_path):
+    if core_path:
         domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
         domain = Domain.load(domain_path)
 
     try:
         policy_ensemble = None
-        if os.path.exists(core_path):
+        if core_path:
             policy_ensemble = PolicyEnsemble.load(core_path)
         agent.update_model(
             domain, policy_ensemble, fingerprint, interpreter, model_directory
@@ -367,13 +367,13 @@ class Agent(object):
 
         core_model, nlu_model = get_model_subdirectories(model_path)
 
-        if not interpreter and os.path.exists(nlu_model):
+        if not interpreter and nlu_model:
             interpreter = NaturalLanguageInterpreter.create(nlu_model)
 
         domain = None
         ensemble = None
 
-        if os.path.exists(core_model):
+        if core_model:
             domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
             ensemble = PolicyEnsemble.load(core_model) if core_model else None
 

@@ -69,8 +69,8 @@ def test_get_model_from_directory_with_subdirectories(trained_model):
     unpacked = get_model(trained_model)
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
 
-    assert os.path.exists(unpacked_core)
-    assert os.path.exists(unpacked_nlu)
+    assert unpacked_core
+    assert unpacked_nlu
 
 
 def _fingerprint(
