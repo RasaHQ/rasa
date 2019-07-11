@@ -280,7 +280,7 @@ class Agent(object):
 
     def __init__(
         self,
-        domain: Union[Text, Domain] = None,
+        domain: Union[Text, Domain, None] = None,
         policies: Union[PolicyEnsemble, List[Policy], None] = None,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
@@ -316,7 +316,7 @@ class Agent(object):
 
     def update_model(
         self,
-        domain: Domain,
+        domain: Optional[Domain],
         policy_ensemble: PolicyEnsemble,
         fingerprint: Optional[Text],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
@@ -333,7 +333,7 @@ class Agent(object):
         # update domain on all instances
         self.tracker_store.domain = domain
         if hasattr(self.nlg, "templates"):
-            self.nlg.templates = domain.templates or []
+            self.nlg.templates = domain.templates if domain else {}
 
         self.model_directory = model_directory
 
