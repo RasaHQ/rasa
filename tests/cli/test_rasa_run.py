@@ -1,17 +1,3 @@
-import os
-import shutil
-
-import pytest
-
-
-def test_run_without_model(run_in_default_project):
-    os.remove("endpoints.yml")
-    shutil.rmtree("models")
-
-    with pytest.raises(SystemExit):
-        run_in_default_project("run")
-
-
 def test_run_help(run):
     output = run("run", "--help")
 
