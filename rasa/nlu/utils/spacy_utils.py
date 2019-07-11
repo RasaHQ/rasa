@@ -110,7 +110,7 @@ class SpacyNLP(Component):
 
         docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
 
-        return docs 
+        return docs
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
