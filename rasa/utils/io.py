@@ -283,7 +283,9 @@ def not_empty_validator(error_message: Text) -> Type["Validator"]:
     return create_validator(is_valid, error_message)
 
 
-def create_validator(function: Callable, error_message: Text) -> Type["Validator"]:
+def create_validator(
+    function: Callable[[Text], bool], error_message: Text
+) -> Type["Validator"]:
     """Helper method to create `Validator` classes from callable functions. Should be
     removed when questionary supports `Validator` objects."""
 

@@ -25,7 +25,6 @@ Removed
 
 Fixed
 -----
-- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
 - ``rasa run`` without ``--enable-api`` does not require a local model anymore
 - actions, intents, and utterances created in ``rasa interactive`` can no longer be empty
 
