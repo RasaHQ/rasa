@@ -15,6 +15,8 @@ Added
 
 Changed
 -------
+- recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
+  has been updated from ``False`` or ``None`` to an empty list (``[]``)
 
 
 Removed
@@ -24,6 +26,7 @@ Removed
 Fixed
 -----
 - ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
+- ``rasa run`` without ``--enable-api`` does not require a local model anymore
 
 
 [1.1.5] - 2019-07-10

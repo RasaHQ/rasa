@@ -11,7 +11,6 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_NLU,
-    DEFAULT_CONFIG_PATH,
 )
 from rasa.nlu.utils import list_files
 
