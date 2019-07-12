@@ -15,6 +15,8 @@ Added
 
 Changed
 -------
+- recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
+  has been updated from ``False`` or ``None`` to an empty list (``[]``)
 
 
 Removed
@@ -24,6 +26,7 @@ Removed
 Fixed
 -----
 - ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
+- ``rasa run`` without ``--enable-api`` does not require a local model anymore
 
 
 [1.1.5] - 2019-07-10
@@ -35,6 +38,8 @@ Added
 - the response of ``/model/train`` now includes a response header for the trained model filename
 - ``Validator`` class to help developing by checking if the files have any errors
 - project's code is now linted using flake8
+- ``info`` log when credentials were provided for multiple channels and channel in
+  ``--connector`` argument was specified at the same time
 - validate export paths in interactive learning
 
 Changed

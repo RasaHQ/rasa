@@ -34,6 +34,13 @@ def create_http_input_channels(
         all_credentials = {}
 
     if channel:
+        if len(all_credentials) > 1:
+            logger.info(
+                "Connecting to channel '{}' which was specified by the "
+                "'--connector' argument. Any other channels will be ignored. "
+                "To connect to all given channels, omit the '--connector' "
+                "argument.".format(channel)
+            )
         return [_create_single_channel(channel, all_credentials.get(channel))]
     else:
         return [_create_single_channel(c, k) for c, k in all_credentials.items()]
