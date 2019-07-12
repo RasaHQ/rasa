@@ -132,9 +132,7 @@ def test_file_path_validator_with_invalid_paths(actual_path):
 
     test_error_message = actual_path
 
-    validator = rasa.utils.io.file_type_validator(
-        [".yml"], test_error_message
-    )
+    validator = rasa.utils.io.file_type_validator([".yml"], test_error_message)
 
     document = Document(actual_path)
     with pytest.raises(ValidationError) as e:
@@ -147,9 +145,7 @@ def test_file_path_validator_with_invalid_paths(actual_path):
 def test_file_path_validator_with_valid_paths(actual_path):
     from prompt_toolkit.document import Document
 
-    validator = rasa.utils.io.file_type_validator(
-        [".yml", ".yaml"], "error message"
-    )
+    validator = rasa.utils.io.file_type_validator([".yml", ".yaml"], "error message")
 
     document = Document(actual_path)
     # If the path is valid there shouldn't be an exception
@@ -181,6 +177,7 @@ def test_non_empty_text_validator_with_valid_input(input):
     document = Document(input)
     # If there is input there shouldn't be an exception
     assert validator.validate(document) is None
+
 
 def test_create_validator_from_callable():
     from prompt_toolkit.validation import Validator, ValidationError

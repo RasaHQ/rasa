@@ -336,9 +336,7 @@ def _selection_choices_from_intent_prediction(
 async def _request_free_text_intent(sender_id: Text, endpoint: EndpointConfig) -> Text:
     question = questionary.text(
         message="Please type the intent name:",
-        validate=io_utils.not_empty_validator(
-            "Please enter an intent name"
-        ),
+        validate=io_utils.not_empty_validator("Please enter an intent name"),
     )
     return await _ask_questions(question, sender_id, endpoint)
 
@@ -346,9 +344,7 @@ async def _request_free_text_intent(sender_id: Text, endpoint: EndpointConfig) -
 async def _request_free_text_action(sender_id: Text, endpoint: EndpointConfig) -> Text:
     question = questionary.text(
         message="Please type the action name:",
-        validate=io_utils.not_empty_validator(
-            "Please enter an action name"
-        ),
+        validate=io_utils.not_empty_validator("Please enter an action name"),
     )
     return await _ask_questions(question, sender_id, endpoint)
 
@@ -362,9 +358,7 @@ async def _request_free_text_utterance(
             "Please type the message for your new utterance "
             "template '{}':".format(action)
         ),
-        validate=io_utils.not_empty_validator(
-            "Please enter a template message"
-        ),
+        validate=io_utils.not_empty_validator("Please enter a template message"),
     )
     return await _ask_questions(question, sender_id, endpoint)
 
