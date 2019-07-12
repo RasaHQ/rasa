@@ -15,18 +15,12 @@ env:
   - PIP_USE_PEP517=false
 
 install:
-  - sudo apt-get install graphviz graphviz-dev
+  - sudo apt-get update -qq
+  - make prepare-tests-ubuntu
   - python -m pip install -U pip
   - pip install -r requirements-dev.txt
   - pip install -e .
-  - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > jnk
-  - python -m spacy link en_core_web_md en
-  - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > jnk
-  - python -m spacy link de_core_news_sm de
-  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then
-    travis_wait wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
-    fi
-  - mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
+  - make prepare-tests-files
   - pip list
 before_script:
   - mkdir $HOME/tmp

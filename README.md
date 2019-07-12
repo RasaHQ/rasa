@@ -110,15 +110,12 @@ and apply your changes.
 ### Running the Tests
 In order to run the tests, make sure that you have the development requirements installed:
 ```bash
-sudo apt-get install graphviz graphviz-dev # Only on Ubuntu/Debian
-brew install graphviz wget                 # Only on macOS
+export PIP_USE_PEP517=false
+make prepare-tests-ubuntu # Only on Ubuntu
+make prepare-tests-macos  # Only on macOS
 pip install -r requirements-dev.txt
 pip install -e .
-pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz
-python -m spacy link en_core_web_md en --force
-pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz
-python -m spacy link de_core_news_sm de --force
-wget -N -P data https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+make prepare-tests-files
 ```
 
 Then, run the tests:
