@@ -7,14 +7,16 @@ Rasa Tutorial
 =============
 
 This page explains the basics of building an assistant with Rasa and
-shows the structure of a Rasa project.
+shows the structure of a Rasa project. You can test it out right here without
+installing anything.
+You can also :ref:`install Rasa <installation>` and follow along in your command line.
 
 
 .. contents::
    :local:
 
 
-You will build a simple, friendly assistant which will ask how you're doing
+In this tutorial, you will build a simple, friendly assistant which will ask how you're doing
 and send you a fun picture to cheer you up if you are sad.
 
 .. image:: /_static/images/mood_bot.png
@@ -25,12 +27,15 @@ and send you a fun picture to cheer you up if you are sad.
 
 The first step is to create a new Rasa project. To do this, run:
 
+
+
 .. runnable::
-   :description: stack-init
 
    rasa init --no-prompt
 
-The ``rasa init`` command creates all the files that a Rasa project needs.
+
+The ``rasa init`` command creates all the files that a Rasa project needs and
+trains a simple bot on some sample data.
 If you leave out the ``--no-prompt`` flag you will be asked some questions about
 how you want your project to be set up.
 
@@ -62,16 +67,9 @@ This creates the following files:
 The most important files are marked with a '*'.
 You will learn about all of these in this tutorial.
 
-To check that all the files were created, run:
 
-.. runnable::
-   :description: stack-ls
-
-   ls -1
-
-
-2. Create NLU Examples
-^^^^^^^^^^^^^^^^^^^^^^
+2. View Your NLU Training Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first piece of a Rasa assistant is an NLU model.
 NLU stands for Natural Language Understanding, which means turning
@@ -82,10 +80,13 @@ user messages, and then train a model by showing it those examples.
 Run the code cell below to see the NLU training data created by
 the ``rasa init`` command:
 
+
 .. runnable::
-   :description: stack-cat-nlu
 
    cat data/nlu.md
+
+
+
 
 The lines starting with ``##`` define the names of your ``intents``, which
 are groups of messages with the same meaning. Rasa's job will be to
@@ -105,12 +106,12 @@ will use. In this example, your NLU model will use the
 Let's take a look at your model configuration file.
 
 .. runnable::
-   :description: stack-cat-config
 
    cat config.yml
 
 
-The ``pipeline`` and ``language`` keys specify how the NLU model should be built.
+
+The ``language`` and ``pipeline`` keys specify how the NLU model should be built.
 The ``policies`` key defines the :ref:`policies <policies>` that the Core model will use.
 
 
@@ -146,26 +147,29 @@ including calling an API and interacting with the outside world.
 
 Run the command below to view the example stories inside the file ``data/stories.md``:
 
+
 .. runnable::
-   :description: core-cat-stories
 
    cat data/stories.md
+
 
 
 5. Define a Domain
 ^^^^^^^^^^^^^^^^^^
 
-The next thing we need to do is define a ``Domain``.
-The domain defines the universe your assistant lives in - what user inputs it
+The next thing we need to do is define a :ref:`Domain <domains>`.
+The domain defines the universe your assistant lives in: what user inputs it
 should expect to get, what actions it should be able to predict, how to
 respond, and what information to store.
 The domain for our assistant is saved in a
 file called ``domain.yml``:
 
+
+
 .. runnable::
-   :description: stack-cat-domain
 
    cat domain.yml
+
 
 
 So what do the different parts mean?
@@ -193,18 +197,22 @@ to build actions that do more than just send a message.
 6. Train a Model
 ^^^^^^^^^^^^^^^^
 
-The next step is to train a neural network on our example stories and NLU data.
+Anytime we add new NLU or Core data, or update the domain or configuration, we
+need to re-train a neural network on our example stories and NLU data.
 To do this, run the command below. This command will call the Rasa Core and NLU train
 functions and store the trained model
-into the ``models/`` directory. The output of this command will include
-the training results for each training epoch.
+into the ``models/`` directory. The command will automatically only retrain the
+different model parts if something has changed in their data or configuration.
+
+
 
 .. runnable::
-   :description: stack-train
 
    rasa train
 
    echo "Finished training."
+
+
 
 The ``rasa train`` command will look for both NLU and Core data and will train a combined model.
 
@@ -216,7 +224,8 @@ Congratulations! 🚀 You just built an assistant
 powered entirely by machine learning.
 
 The next step is to try it out!
-Start talking to your assistant by running:
+If you're following this tutorial on your local machine, start talking to your
+assistant by running:
 
 .. code-block:: bash
 
@@ -228,4 +237,7 @@ and improve your assistant:
 
 .. button::
    :text: Try Rasa X
-   :link: ../../rasa-x/
+   :link: ../../../rasa-x/
+
+.. juniper::
+   :language: bash
