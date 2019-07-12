@@ -248,29 +248,54 @@
 <div class="section" id="jupyter-notebooks">
 <span id="id1"></span><h1>Jupyter Notebooks<a class="headerlink" href="#jupyter-notebooks" title="Permalink to this headline">¶</a></h1>
 <p>This page contains the most important methods for using Rasa in a Jupyter notebook.</p>
-<p>You need to create a project if you don’t already have one.
-To do this, run:</p>
+<p>Running asynchronous Rasa code in Jupyter Notebooks requires an extra requirement,
+since Jupyter Notebooks already run on event loops. Install this requirement in
+the command line before launching jupyter:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install nest_asyncio
+</pre></div>
+</div>
+<p>Then in the first cell of your notebook, include:</p>
 
 
-  <pre data-executable>rasa init --no-prompt</pre>
-<p>Now that you have a project, the relevant files and folders exist.
-Define some variables that contain these paths:</p>
+  <pre data-executable>import nest_asyncio
+
+nest_asyncio.apply()
+print("Event loop ready.")</pre>
+<p>First, you need to create a project if you don’t already have one.
+To do this, run this cell, which will create the <code class="docutils literal notranslate"><span class="pre">test-project</span></code> directory and make it
+your working directory:</p>
+
+
+  <pre data-executable>from rasa.cli.scaffold import create_initial_project
+import os
+
+project = "test-project"
+create_initial_project(project)
+
+# move into project directory and show files
+os.chdir(project)
+print(os.listdir("."))</pre>
+<p>To train a model, you will have to tell the <code class="docutils literal notranslate"><span class="pre">train</span></code> function
+where to find the relevant files.
+To define variables that contain these paths, run:</p>
 
 
   <pre data-executable>config = "config.yml"
 training_files = "data/"
 domain = "domain.yml"
-output = "models/"</pre>
+output = "models/"
+print(config, training_files, domain, output)</pre>
 <div class="section" id="train-a-model">
 <h2>Train a Model<a class="headerlink" href="#train-a-model" title="Permalink to this headline">¶</a></h2>
 <p>Now we can train a model by passing in the paths to the <code class="docutils literal notranslate"><span class="pre">rasa.train</span></code> function.
 Note that the training files are passed as a list.
-When training has finished, this returns the path where the trained model has been saved.</p>
+When training has finished, <code class="docutils literal notranslate"><span class="pre">rasa.train</span></code> returns the path where the trained model has been saved.</p>
 
 
   <pre data-executable>import rasa
 
-model_path = rasa.train(domain, config, [training_files], output)</pre>
+model_path = rasa.train(domain, config, [training_files], output)
+print(model_path)</pre>
 </div>
 <div class="section" id="chat-with-your-assistant">
 <h2>Chat with your assistant<a class="headerlink" href="#chat-with-your-assistant" title="Permalink to this headline">¶</a></h2>
@@ -284,26 +309,61 @@ chat(model_path)</pre>
 <div class="section" id="evaluate-your-model-against-test-data">
 <h2>Evaluate your model against test data<a class="headerlink" href="#evaluate-your-model-against-test-data" title="Permalink to this headline">¶</a></h2>
 <p>Rasa has a convenience function for getting your training data.
-Rasa’s <code class="docutils literal notranslate"><span class="pre">get_core_nlu_directories</span></code> is a convenience function which
-recursively finds all the stories and nlu data files in a directory,
-and copies them into two directories.
+Rasa’s <code class="docutils literal notranslate"><span class="pre">get_core_nlu_directories</span></code> is a function which
+recursively finds all the stories and NLU data files in a directory
+and copies them into two temporary directories.
 The return values are the paths to these newly created directories.</p>
 
 
   <pre data-executable>import rasa.data as data
-stories_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)</pre>
+stories_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
+print(stories_directory, nlu_data_directory)</pre>
 <p>To test your model, call the <code class="docutils literal notranslate"><span class="pre">test</span></code> function, passing in the path
 to your saved model and directories containing the stories and nlu data
 to evaluate on.</p>
 
 
-  <pre data-executable>rasa.test(model_path, stories_directory, nlu_data_directory)</pre>
-<p>The results of the evaluation will be written to a file called <code class="docutils literal notranslate"><span class="pre">results</span></code>.
-This contains information about the accuracy of your model and other metrics.</p>
+  <pre data-executable>rasa.test(model_path, stories_directory, nlu_data_directory)
+print("Done testing.")</pre>
+<p>The results of the core evaluation will be written to a file called <code class="docutils literal notranslate"><span class="pre">results</span></code>.
+NLU errors will be reported to <code class="docutils literal notranslate"><span class="pre">errors.json</span></code>.
+Together, they contain information about the accuracy of your model’s
+predictions and other metrics.</p>
 
 
-  <pre data-executable>ls results</pre>
-</div>
+  <pre data-executable>if os.path.isfile("errors.json"):
+    print("NLU Errors:")
+    print(open("errors.json").read())
+else:
+    print("No NLU errors.")
+
+if os.path.isdir("results"):
+      print("\n")
+      print("Core Errors:")
+      print(open("results/failed_stories.md").read())</pre>
+
+
+  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
+  <script>
+     new Juniper({ repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'python3', defaultLang: 'python', language: 'python', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
+    document.addEventListener('', event => {
+      if (event.detail.status == 'executing') {
+        console.error("");
+	console.error(JSON.stringify(event));
+        console.error(event.currentTarget)
+        gtag('event', 'execute-code-snippet', {
+          'event_category': 'code',
+          'event_label': ""
+        });
+      }
+      if (event.detail.status == 'failed') {
+        gtag('event', e.action, {
+          'event_category': 'code',
+          'event_label': e.text
+        });
+      }
+    })
+  </script></div>
 </div>
 
 
