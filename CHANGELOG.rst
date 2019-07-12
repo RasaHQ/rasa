@@ -26,6 +26,7 @@ Removed
 Fixed
 -----
 - ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
+- ``rasa run`` without ``--enable-api`` does not require a local model anymore
 
 
 [1.1.5] - 2019-07-10
