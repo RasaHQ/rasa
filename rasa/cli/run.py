@@ -75,8 +75,6 @@ def _validate_model_path(model_path: Text, parameter: Text, default: Text):
 def run(args: argparse.Namespace):
     import rasa.run
 
-    args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
-
     args.endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
@@ -85,6 +83,7 @@ def run(args: argparse.Namespace):
     )
 
     if args.enable_api:
+        args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
         rasa.run(**vars(args))
 
     # if the API is not enable you cannot start without a model
@@ -99,17 +98,13 @@ def run(args: argparse.Namespace):
         rasa.run(**vars(args))
 
     # start server if model server is configured
-    try:
-        endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
-        model_server = endpoints.model if endpoints and endpoints.model else None
-        model_server_set = model_server is not None
-    except ValueError:
-        model_server_set = False
-
-    if model_server_set:
+    endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+    model_server = endpoints.model if endpoints and endpoints.model else None
+    if model_server is not None:
         rasa.run(**vars(args))
 
     # start server if local model found
+    args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
     local_model_set = True
     try:
         get_model(args.model)
