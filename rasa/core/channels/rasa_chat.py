@@ -1,4 +1,4 @@
-from typing import Text
+from typing import Text, Optional
 
 import aiohttp
 import logging
@@ -46,7 +46,7 @@ class RasaChatInput(RestInput):
                     )
                     return None
 
-    async def _extract_sender(self, req: Request) -> Text:
+    async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API"""
 
         if req.headers.get("Authorization"):
