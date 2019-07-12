@@ -15,6 +15,8 @@ Added
 
 Changed
 -------
+- recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
+  has been updated from ``False`` or ``None`` to an empty list (``[]``)
 
 
 Removed
