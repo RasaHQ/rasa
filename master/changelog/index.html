@@ -271,8 +271,8 @@ has been updated from <code class="docutils literal notranslate"><span class="pr
 <div class="section" id="fixed">
 <h3>Fixed<a class="headerlink" href="#fixed" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> now works correctly when used as part of a PolicyEnsemble</li>
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> without <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> does not require a local model anymore</li>
+<li>actions, intents, and utterances created in <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> can no longer be empty</li>
 </ul>
 </div>
 </div>
@@ -320,6 +320,7 @@ interactive learning</li>
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> now looks for endpoints in <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> if no <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> arg is passed</li>
 <li>custom files, e.g. custom components and channels, load correctly when using
 the command line interface</li>
+<li><code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> now works correctly when used as part of a PolicyEnsemble</li>
 </ul>
 </div>
 </div>
