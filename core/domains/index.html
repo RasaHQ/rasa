@@ -195,12 +195,13 @@ AI Assistants and chatbots using open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.5
+          viewing: 1.1.6
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.1.6/core/domains/">1.1.6</a>
               <a href="../.././1.1.5/core/domains/">1.1.5</a>
               <a href="../.././1.1.4/core/domains/">1.1.4</a>
               <a href="../.././1.1.3/core/domains/">1.1.3</a>
@@ -500,11 +501,11 @@ multiple responses and Rasa will randomly pick one of them, e.g.:</p>
 <div class="section" id="ignoring-entities-for-certain-intents">
 <h2>Ignoring entities for certain intents<a class="headerlink" href="#ignoring-entities-for-certain-intents" title="Permalink to this headline">¶</a></h2>
 <p>If you want all entities to be ignored for certain intents, you can
-add the <code class="docutils literal notranslate"><span class="pre">use_entities:</span> <span class="pre">None</span></code> parameter to the intent in your domain
+add the <code class="docutils literal notranslate"><span class="pre">use_entities:</span> <span class="pre">[]</span></code> parameter to the intent in your domain
 file like this:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span>
-      <span class="l l-Scalar l-Scalar-Plain">use_entities</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
+      <span class="l l-Scalar l-Scalar-Plain">use_entities</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[]</span>
 </pre></div>
 </div>
 <p>To ignore some entities or explicitly take only certain entities
