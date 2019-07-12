@@ -7,7 +7,7 @@ import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict, Union, List, Type
+from typing import Text, Any, Dict, Union, List, Type, Callable
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader
 
@@ -257,41 +257,45 @@ def create_directory_for_file(file_path: Text) -> None:
             raise
 
 
-def questionary_file_path_validator(
+def file_type_validator(
     valid_file_types: List[Text], error_message: Text
 ) -> Type["Validator"]:
     """Creates a `Validator` class which can be used with `questionary` to validate
        file paths.
     """
 
-    from prompt_toolkit.validation import Validator, ValidationError
-    from prompt_toolkit.document import Document
+    def is_valid(path: Text) -> bool:
+        return path is not None and any(
+            [path.endswith(file_type) for file_type in valid_file_types]
+        )
 
-    class ExportPathValidator(Validator):
-        def validate(self, document: Document) -> None:
-            path = document.text
-            is_valid = path is not None and any(
-                [path.endswith(file_type) for file_type in valid_file_types]
-            )
-            if not is_valid:
-                raise ValidationError(message=error_message)
-
-    return ExportPathValidator
+    return create_validator(is_valid, error_message)
 
 
-def questionary_not_empty_text_validator(error_message: Text) -> Type["Validator"]:
+def not_empty_validator(error_message: Text) -> Type["Validator"]:
     """Creates a `Validator` class which can be used with `questionary` to validate
     that the user entered something other than whitespace.
     """
 
+    def is_valid(input: Text) -> bool:
+        return input is not None and input.strip() != ""
+
+    return create_validator(is_valid, error_message)
+
+
+def create_validator(function: Callable, error_message: Text) -> Type["Validator"]:
+    """Helper method to create `Validator` classes from callable functions. Should be 
+    removed when questionary supports _ValidatorFromCallable as a Validator class."""
+    
     from prompt_toolkit.validation import Validator, ValidationError
     from prompt_toolkit.document import Document
 
-    class NotEmptyTextValidator(Validator):
-        def validate(self, document: Document) -> None:
-            input = document.text
-            is_valid = input is not None and input.strip() != ""
+    class FunctionValidator(Validator):
+
+        def validate(document: Document) -> None:
+
+            is_valid = function(document.text)
             if not is_valid:
                 raise ValidationError(message=error_message)
 
-    return NotEmptyTextValidator
+    return FunctionValidator

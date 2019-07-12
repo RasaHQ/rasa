@@ -336,7 +336,7 @@ def _selection_choices_from_intent_prediction(
 async def _request_free_text_intent(sender_id: Text, endpoint: EndpointConfig) -> Text:
     question = questionary.text(
         message="Please type the intent name:",
-        validate=io_utils.questionary_not_empty_text_validator(
+        validate=io_utils.not_empty_validator(
             "Please enter an intent name"
         ),
     )
@@ -346,7 +346,7 @@ async def _request_free_text_intent(sender_id: Text, endpoint: EndpointConfig) -
 async def _request_free_text_action(sender_id: Text, endpoint: EndpointConfig) -> Text:
     question = questionary.text(
         message="Please type the action name:",
-        validate=io_utils.questionary_not_empty_text_validator(
+        validate=io_utils.not_empty_validator(
             "Please enter an action name"
         ),
     )
@@ -356,12 +356,13 @@ async def _request_free_text_action(sender_id: Text, endpoint: EndpointConfig) -
 async def _request_free_text_utterance(
     sender_id: Text, endpoint: EndpointConfig, action: Text
 ) -> Text:
+
     question = questionary.text(
         message=(
             "Please type the message for your new utterance "
             "template '{}':".format(action)
         ),
-        validate=io_utils.questionary_not_empty_text_validator(
+        validate=io_utils.not_empty_validator(
             "Please enter a template message"
         ),
     )
@@ -677,7 +678,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             message="Export stories to (if file exists, this "
             "will append the stories)",
             default=PATHS["stories"],
-            validate=io_utils.questionary_file_path_validator(
+            validate=io_utils.file_type_validator(
                 [".md"],
                 "Please provide a valid export path for the stories, e.g. 'stories.md'.",
             ),
@@ -686,7 +687,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             message="Export NLU data to (if file exists, this will "
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
-            validate=io_utils.questionary_file_path_validator(
+            validate=io_utils.file_type_validator(
                 [".md"],
                 "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
             ),
@@ -695,7 +696,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             message="Export domain file to (if file exists, this "
             "will be overwritten)",
             default=PATHS["domain"],
-            validate=io_utils.questionary_file_path_validator(
+            validate=io_utils.file_type_validator(
                 [".yml", ".yaml"],
                 "Please provide a valid export path for the domain file, e.g. 'domain.yml'.",
             ),
