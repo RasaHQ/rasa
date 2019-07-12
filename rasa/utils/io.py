@@ -284,7 +284,7 @@ def not_empty_validator(error_message: Text) -> Type["Validator"]:
 
 
 def create_validator(function: Callable, error_message: Text) -> Type["Validator"]:
-    """Helper method to create `Validator` classes from callable functions. Should be 
+    """Helper method to create `Validator` classes from callable functions. Should be
     removed when questionary supports _ValidatorFromCallable as a Validator class."""
 
     from prompt_toolkit.validation import Validator, ValidationError
