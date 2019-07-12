@@ -2,6 +2,8 @@ import logging
 
 import pytest
 from aioresponses import aioresponses
+from prompt_toolkit.document import Document
+from prompt_toolkit.validation import ValidationError
 
 from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
 from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
@@ -127,8 +129,6 @@ def test_read_file_with_not_existing_path():
 
 @pytest.mark.parametrize("actual_path", ["", "file.md", "file"])
 def test_file_path_validator_with_invalid_paths(actual_path):
-    from prompt_toolkit.validation import ValidationError
-    from prompt_toolkit.document import Document
 
     test_error_message = actual_path
 
@@ -143,7 +143,6 @@ def test_file_path_validator_with_invalid_paths(actual_path):
 
 @pytest.mark.parametrize("actual_path", ["domain.yml", "lala.yaml"])
 def test_file_path_validator_with_valid_paths(actual_path):
-    from prompt_toolkit.document import Document
 
     validator = rasa.utils.io.file_type_validator([".yml", ".yaml"], "error message")
 
@@ -152,41 +151,33 @@ def test_file_path_validator_with_valid_paths(actual_path):
     assert validator.validate(document) is None
 
 
-@pytest.mark.parametrize("input", ["", "   ", "\t", "\n"])
-def test_non_empty_text_validator_with_empty_input(input):
-    from prompt_toolkit.validation import ValidationError
-    from prompt_toolkit.document import Document
+@pytest.mark.parametrize("user_input", ["", "   ", "\t", "\n"])
+def test_non_empty_text_validator_with_empty_input(user_input):
 
     test_error_message = "enter something"
 
     validator = rasa.utils.io.not_empty_validator(test_error_message)
 
-    document = Document(input)
+    document = Document(user_input)
     with pytest.raises(ValidationError) as e:
         validator.validate(document)
 
     assert e.value.message == test_error_message
 
 
-@pytest.mark.parametrize("input", ["utter_greet", "greet", "Hi there!"])
-def test_non_empty_text_validator_with_valid_input(input):
-    from prompt_toolkit.document import Document
+@pytest.mark.parametrize("user_input", ["utter_greet", "greet", "Hi there!"])
+def test_non_empty_text_validator_with_valid_input(user_input):
 
     validator = rasa.utils.io.not_empty_validator("error message")
 
-    document = Document(input)
+    document = Document(user_input)
     # If there is input there shouldn't be an exception
     assert validator.validate(document) is None
 
 
 def test_create_validator_from_callable():
-    from prompt_toolkit.validation import Validator, ValidationError
-    from prompt_toolkit.document import Document
-
-    def is_valid(input) -> None:
-        if input == "this passes":
-            return True
-        return False
+    def is_valid(user_input) -> None:
+        return user_input == "this passes"
 
     error_message = "try again"
 
