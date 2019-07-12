@@ -308,33 +308,38 @@ posted the message to the channel:</p>
         <span class="n">text</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
         <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">,</span>
         <span class="n">sender_id</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">input_channel</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">collector</span> <span class="o">=</span> <span class="n">QueueOutputChannel</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span>
 
-        <span class="n">message</span> <span class="o">=</span> <span class="n">UserMessage</span><span class="p">(</span>
-            <span class="n">text</span><span class="p">,</span> <span class="n">collector</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="o">=</span><span class="n">RestInput</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
-        <span class="p">)</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">UserMessage</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">collector</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="o">=</span><span class="n">input_channel</span><span class="p">)</span>
         <span class="k">await</span> <span class="n">on_new_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
 
         <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;DONE&quot;</span><span class="p">)</span>  <span class="c1"># pytype: disable=bad-return-type</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">_extract_sender</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_extract_sender</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
         <span class="k">return</span> <span class="n">req</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sender&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="c1"># noinspection PyMethodMayBeStatic</span>
-    <span class="k">def</span> <span class="nf">_extract_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_extract_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
         <span class="k">return</span> <span class="n">req</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_extract_input_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">req</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;input_channel&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">stream_response</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">on_new_message</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UserMessage</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]],</span>
         <span class="n">text</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
         <span class="n">sender_id</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">input_channel</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]:</span>
         <span class="k">async</span> <span class="k">def</span> <span class="nf">stream</span><span class="p">(</span><span class="n">resp</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">q</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
             <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">on_message_wrapper</span><span class="p">(</span><span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">on_message_wrapper</span><span class="p">(</span>
+                    <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span>
+                <span class="p">)</span>
             <span class="p">)</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>  <span class="c1"># pytype: disable=bad-return-type</span>
@@ -364,10 +369,13 @@ posted the message to the channel:</p>
             <span class="n">should_use_stream</span> <span class="o">=</span> <span class="n">rasa</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">endpoints</span><span class="o">.</span><span class="n">bool_arg</span><span class="p">(</span>
                 <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;stream&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span>
             <span class="p">)</span>
+            <span class="n">input_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_input_channel</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">should_use_stream</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">stream_response</span><span class="p">(</span><span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">),</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">stream_response</span><span class="p">(</span>
+                        <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span>
+                    <span class="p">),</span>
                     <span class="n">content_type</span><span class="o">=</span><span class="s2">&quot;text/event-stream&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -376,7 +384,7 @@ posted the message to the channel:</p>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">await</span> <span class="n">on_new_message</span><span class="p">(</span>
                         <span class="n">UserMessage</span><span class="p">(</span>
-                            <span class="n">text</span><span class="p">,</span> <span class="n">collector</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+                            <span class="n">text</span><span class="p">,</span> <span class="n">collector</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="o">=</span><span class="n">input_channel</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
                 <span class="k">except</span> <span class="n">CancelledError</span><span class="p">:</span>
