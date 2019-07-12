@@ -79,6 +79,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
 
    api/action-server
    api/http-api
+   api/jupyter-notebooks
    api/agent
    api/custom-nlu-components
    api/events

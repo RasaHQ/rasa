@@ -91,8 +91,6 @@ exclude_patterns = [
     "core/old-core-migration-guide.rst",
     "nlu/old-nlu-change-log.rst",
     "nlu/old-nlu-migration-guide.rst",
-    # temp, bring this back once fixed
-    "api/jupyter-notebooks.rst",
 ]
 
 # The reST default role (used for this markup: `text`) to use for all
