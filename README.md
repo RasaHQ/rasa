@@ -111,11 +111,10 @@ and apply your changes.
 In order to run the tests, make sure that you have the development requirements installed:
 ```bash
 export PIP_USE_PEP517=false
-make prepare-tests-ubuntu # Only on Ubuntu
-make prepare-tests-macos  # Only on macOS
 pip install -r requirements-dev.txt
 pip install -e .
-make prepare-tests-files
+make prepare-tests-ubuntu # Only on Ubuntu
+make prepare-tests-macos  # Only on macOS
 ```
 
 Then, run the tests:

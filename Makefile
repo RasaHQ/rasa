@@ -43,10 +43,10 @@ lint:
 types:
 	pytype --keep-going rasa
 
-prepare-tests-macos:
+prepare-tests-macos: prepare-tests-files
 	brew install graphviz
 
-prepare-tests-ubuntu:
+prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get install graphviz graphviz-dev
 
 prepare-tests-files:
