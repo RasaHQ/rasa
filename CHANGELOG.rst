@@ -6,9 +6,30 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-
-[Unreleased 1.1.5] - `master`_
+[Unreleased 1.1.6] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+
+Changed
+-------
+- recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
+  has been updated from ``False`` or ``None`` to an empty list (``[]``)
+
+
+Removed
+-------
+
+
+Fixed
+-----
+- actions, intents, and utterances created in ``rasa interactive`` can no longer be empty
+
+
+[1.1.5] - 2019-07-10
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -16,6 +37,8 @@ Added
 - the response of ``/model/train`` now includes a response header for the trained model filename
 - ``Validator`` class to help developing by checking if the files have any errors
 - project's code is now linted using flake8
+- ``info`` log when credentials were provided for multiple channels and channel in
+  ``--connector`` argument was specified at the same time
 - validate export paths in interactive learning
 
 Changed
@@ -41,7 +64,9 @@ Fixed
 - ``rasa train`` now also includes NLU files in other formats than the Rasa format
 - ``rasa train core`` no longer crashes without a ``--domain`` arg
 - ``rasa interactive`` now looks for endpoints in ``endpoints.yml`` if no ``--endpoints`` arg is passed
-- actions, intents, and utterances created in ``rasa interactive`` can no longer be empty
+- custom files, e.g. custom components and channels, load correctly when using
+  the command line interface
+- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
 
 
 [1.1.4] - 2019-06-18

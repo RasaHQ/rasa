@@ -1,8 +1,8 @@
 intents:
   - request_restaurant:
-      use_entities: false
+      use_entities: []
   - chitchat:
-      use_entities: false
+      use_entities: []
   - inform
   - affirm
   - deny

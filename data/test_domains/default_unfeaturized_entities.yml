@@ -4,6 +4,7 @@ intents:
  - goodbye: {use_entities: None}
  - thank: {use_entities: False}
  - ask: {use_entities: True}
+ - why: {use_entities: []}
 
 entities:
  - name
