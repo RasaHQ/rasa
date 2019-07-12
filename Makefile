@@ -54,10 +54,7 @@ prepare-tests-files:
 	python -m spacy link en_core_web_md en --force
 	pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir -q
 	python -m spacy link de_core_news_sm de --force
-	if [ ! -f /tmp/cached/total_word_feature_extractor.dat ]; then \
-	  wget --progress=dot:giga -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat; \
-	fi
-	cp /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
+	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
 test: clean
 	py.test tests --cov rasa
