@@ -614,7 +614,7 @@ class Domain(object):
         loaded_domain_spec = self.load_specification(path)
         states = loaded_domain_spec["states"]
 
-        if states != self.input_states:
+        if set(states) != set(self.input_states):
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
             raise InvalidDomain(

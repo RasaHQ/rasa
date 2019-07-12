@@ -59,7 +59,7 @@ class MappingPolicy(Policy):
                 idx = domain.index_for_action(action)
                 if idx is None:
                     logger.warning(
-                        "MappingPolicy tried to predict unkown "
+                        "MappingPolicy tried to predict unknown "
                         "action '{}'.".format(action)
                     )
                 else:
@@ -80,8 +80,9 @@ class MappingPolicy(Policy):
         elif tracker.latest_action_name == action and action is not None:
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.action_name == action
-
-            if latest_action.policy == type(self).__name__:
+            if latest_action.policy == type(
+                self
+            ).__name__ or latest_action.policy.endswith("_" + type(self).__name__):
                 # this ensures that we only predict listen, if we predicted
                 # the mapped action
                 logger.debug(
