@@ -26,8 +26,8 @@ Removed
 
 Fixed
 -----
-- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
 - ``rasa run`` without ``--enable-api`` does not require a local model anymore
+- actions, intents, and utterances created in ``rasa interactive`` can no longer be empty
 
 
 [1.1.5] - 2019-07-10
@@ -68,6 +68,7 @@ Fixed
 - ``rasa interactive`` now looks for endpoints in ``endpoints.yml`` if no ``--endpoints`` arg is passed
 - custom files, e.g. custom components and channels, load correctly when using
   the command line interface
+- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
 
 
 [1.1.4] - 2019-06-18
