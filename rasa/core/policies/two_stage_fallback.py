@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def has_user_rephrased(tracker: DialogueStateTracker) -> bool:
-    return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_REPHRASE_NAME)
+    return tracker.last_executed_action_has(self.rephrase_action_name)
 
 
 class TwoStageFallbackPolicy(FallbackPolicy):
@@ -51,6 +51,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE,
+        affirmation_action_name: Text = ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+        rephrase_action_name: Text = ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ) -> None:
         """Create a new Two-stage Fallback policy.
 
@@ -75,6 +77,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
         self.fallback_nlu_action_name = fallback_nlu_action_name
         self.deny_suggestion_intent_name = deny_suggestion_intent_name
+        self.affirmation_action_name = affirmation_action_name
+        self.rephrase_action_name = rephrase_action_name
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
@@ -110,15 +114,13 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 "Ambiguous rephrasing of user '{}' "
                 "for intent '{}'".format(tracker.sender_id, last_intent_name)
             )
-            result = confidence_scores_for(
-                ACTION_DEFAULT_ASK_AFFIRMATION_NAME, 1.0, domain
-            )
+            result = confidence_scores_for(self.affirmation_action_name, 1.0, domain)
         elif user_rephrased:
             logger.debug("User '{}' rephrased intent".format(tracker.sender_id))
             result = confidence_scores_for(
                 ACTION_REVERT_FALLBACK_EVENTS_NAME, 1.0, domain
             )
-        elif tracker.last_executed_action_has(ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
+        elif tracker.last_executed_action_has(self.affirmation_action_name):
             if not should_nlu_fallback:
                 logger.debug(
                     "User '{}' affirmed intent '{}'"
@@ -137,9 +139,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                     tracker.sender_id, last_intent_name
                 )
             )
-            result = confidence_scores_for(
-                ACTION_DEFAULT_ASK_AFFIRMATION_NAME, 1.0, domain
-            )
+            result = confidence_scores_for(self.affirmation_action_name, 1.0, domain)
         else:
             logger.debug(
                 "NLU confidence threshold met, confidence of "
@@ -153,8 +153,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
         return tracker.latest_action_name in [
-            ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-            ACTION_DEFAULT_ASK_REPHRASE_NAME,
+            self.affirmation_action_name,
+            self.rephrase_action_name,
             self.fallback_action_name,
         ]
 
@@ -162,7 +162,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         self, last_intent: Text, tracker: DialogueStateTracker
     ) -> bool:
         return (
-            tracker.last_executed_action_has(ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
+            tracker.last_executed_action_has(self.affirmation_action_name)
             and last_intent == self.deny_suggestion_intent_name
         )
 
@@ -170,13 +170,13 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
         has_denied_before = tracker.last_executed_action_has(
-            ACTION_DEFAULT_ASK_REPHRASE_NAME, skip=1
+            self.rephrase_action_name, skip=1
         )
 
         if has_denied_before:
             return confidence_scores_for(self.fallback_nlu_action_name, 1.0, domain)
         else:
-            return confidence_scores_for(ACTION_DEFAULT_ASK_REPHRASE_NAME, 1.0, domain)
+            return confidence_scores_for(self.rephrase_action_name, 1.0, domain)
 
     def persist(self, path: Text) -> None:
         """Persists the policy to storage."""
