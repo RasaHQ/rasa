@@ -58,6 +58,9 @@ chatbot or AI assistant using open source Rasa." />
   <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
   <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
   
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css" />
 
@@ -266,28 +269,10 @@ and send you a fun picture to cheer you up if you are sad.</p>
 <p>The first step is to create a new Rasa project. To do this, run:</p>
 
 
-  <pre data-executable>rasa init --no-prompt</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-init'})
-    document.addEventListener('stack-init', event => {
-      if (event.detail.status == 'executing') {
-        console.error("stack-init");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': "stack-init"
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script><p>The <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> command creates all the files that a Rasa project needs.
+  <pre data-executable>:description: stack-init
+
+rasa init --no-prompt</pre>
+<p>The <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> command creates all the files that a Rasa project needs.
 If you leave out the <code class="docutils literal notranslate"><span class="pre">--no-prompt</span></code> flag you will be asked some questions about
 how you want your project to be set up.</p>
 <p>This creates the following files:</p>
@@ -331,28 +316,10 @@ You will learn about all of these in this tutorial.</p>
 <p>To check that all the files were created, run:</p>
 
 
-  <pre data-executable>ls -1</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-ls'})
-    document.addEventListener('stack-ls', event => {
-      if (event.detail.status == 'executing') {
-        console.error("stack-ls");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': "stack-ls"
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script></div>
+  <pre data-executable>:description: stack-ls
+
+ls -1</pre>
+</div>
 <div class="section" id="create-nlu-examples">
 <h2><a class="toc-backref" href="#id3">2. Create NLU Examples</a><a class="headerlink" href="#create-nlu-examples" title="Permalink to this headline">¶</a></h2>
 <p>The first piece of a Rasa assistant is an NLU model.
@@ -364,28 +331,10 @@ user messages, and then train a model by showing it those examples.</p>
 the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> command:</p>
 
 
-  <pre data-executable>cat data/nlu.md</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-cat-nlu'})
-    document.addEventListener('stack-cat-nlu', event => {
-      if (event.detail.status == 'executing') {
-        console.error("stack-cat-nlu");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': "stack-cat-nlu"
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script><p>The lines starting with <code class="docutils literal notranslate"><span class="pre">##</span></code> define the names of your <code class="docutils literal notranslate"><span class="pre">intents</span></code>, which
+  <pre data-executable>:description: stack-cat-nlu
+
+cat data/nlu.md</pre>
+<p>The lines starting with <code class="docutils literal notranslate"><span class="pre">##</span></code> define the names of your <code class="docutils literal notranslate"><span class="pre">intents</span></code>, which
 are groups of messages with the same meaning. Rasa’s job will be to
 predict the correct intent when your users send new, unseen messages to
 your assistant. You can find all the details of the data format in <a class="reference internal" href="../../nlu/training-data-format/#training-data-format"><span class="std std-ref">Training Data Format</span></a>.</p>
@@ -399,28 +348,10 @@ will use. In this example, your NLU model will use the
 <p>Let’s take a look at your model configuration file.</p>
 
 
-  <pre data-executable>cat config.yml</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-cat-config'})
-    document.addEventListener('stack-cat-config', event => {
-      if (event.detail.status == 'executing') {
-        console.error("stack-cat-config");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': "stack-cat-config"
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script><p>The <code class="docutils literal notranslate"><span class="pre">pipeline</span></code> and <code class="docutils literal notranslate"><span class="pre">language</span></code> keys specify how the NLU model should be built.
+  <pre data-executable>:description: stack-cat-config
+
+cat config.yml</pre>
+<p>The <code class="docutils literal notranslate"><span class="pre">pipeline</span></code> and <code class="docutils literal notranslate"><span class="pre">language</span></code> keys specify how the NLU model should be built.
 The <code class="docutils literal notranslate"><span class="pre">policies</span></code> key defines the <a class="reference internal" href="../../core/policies/#policies"><span class="std std-ref">policies</span></a> that the Core model will use.</p>
 </div>
 <div class="section" id="write-your-first-stories">
@@ -447,28 +378,10 @@ including calling an API and interacting with the outside world.</p>
 <p>Run the command below to view the example stories inside the file <code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</p>
 
 
-  <pre data-executable>cat data/stories.md</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'core-cat-stories'})
-    document.addEventListener('core-cat-stories', event => {
-      if (event.detail.status == 'executing') {
-        console.error("core-cat-stories");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': "core-cat-stories"
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script></div>
+  <pre data-executable>:description: core-cat-stories
+
+cat data/stories.md</pre>
+</div>
 <div class="section" id="define-a-domain">
 <h2><a class="toc-backref" href="#id6">5. Define a Domain</a><a class="headerlink" href="#define-a-domain" title="Permalink to this headline">¶</a></h2>
 <p>The next thing we need to do is define a <code class="docutils literal notranslate"><span class="pre">Domain</span></code>.
@@ -479,28 +392,10 @@ The domain for our assistant is saved in a
 file called <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</p>
 
 
-  <pre data-executable>cat domain.yml</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-cat-domain'})
-    document.addEventListener('stack-cat-domain', event => {
-      if (event.detail.status == 'executing') {
-        console.error("stack-cat-domain");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': "stack-cat-domain"
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script><p>So what do the different parts mean?</p>
+  <pre data-executable>:description: stack-cat-domain
+
+cat domain.yml</pre>
+<p>So what do the different parts mean?</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="20%" />
@@ -535,30 +430,12 @@ into the <code class="docutils literal notranslate"><span class="pre">models/</s
 the training results for each training epoch.</p>
 
 
-  <pre data-executable>rasa train
+  <pre data-executable>:description: stack-train
+
+rasa train
 
 echo "Finished training."</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: 'stack-train'})
-    document.addEventListener('stack-train', event => {
-      if (event.detail.status == 'executing') {
-        console.error("stack-train");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': "stack-train"
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script><p>The <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> command will look for both NLU and Core data and will train a combined model.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span></code> command will look for both NLU and Core data and will train a combined model.</p>
 </div>
 <div class="section" id="talk-to-your-assistant">
 <h2><a class="toc-backref" href="#id8">7. Talk to Your Assistant</a><a class="headerlink" href="#talk-to-your-assistant" title="Permalink to this headline">¶</a></h2>

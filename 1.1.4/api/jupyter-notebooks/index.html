@@ -54,6 +54,9 @@
   <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
   <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
   
+    <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
+    <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
+  
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css" />
 
@@ -249,27 +252,7 @@ To do this, run:</p>
 
 
   <pre data-executable>rasa init --no-prompt</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
-    document.addEventListener('', event => {
-      if (event.detail.status == 'executing') {
-        console.error("");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': ""
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script><p>Now that you have a project, the relevant files and folders exist.
+<p>Now that you have a project, the relevant files and folders exist.
 Define some variables that contain these paths:</p>
 
 
@@ -277,27 +260,7 @@ Define some variables that contain these paths:</p>
 training_files = "data/"
 domain = "domain.yml"
 output = "models/"</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
-    document.addEventListener('', event => {
-      if (event.detail.status == 'executing') {
-        console.error("");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': ""
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script><div class="section" id="train-a-model">
+<div class="section" id="train-a-model">
 <h2>Train a Model<a class="headerlink" href="#train-a-model" title="Permalink to this headline">¶</a></h2>
 <p>Now we can train a model by passing in the paths to the <code class="docutils literal notranslate"><span class="pre">rasa.train</span></code> function.
 Note that the training files are passed as a list.
@@ -307,27 +270,7 @@ When training has finished, this returns the path where the trained model has be
   <pre data-executable>import rasa
 
 model_path = rasa.train(domain, config, [training_files], output)</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
-    document.addEventListener('', event => {
-      if (event.detail.status == 'executing') {
-        console.error("");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': ""
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script></div>
+</div>
 <div class="section" id="chat-with-your-assistant">
 <h2>Chat with your assistant<a class="headerlink" href="#chat-with-your-assistant" title="Permalink to this headline">¶</a></h2>
 <p>To start chatting to an assistant, call the <code class="docutils literal notranslate"><span class="pre">chat</span></code> function, passing
@@ -336,27 +279,7 @@ in the path to your saved model:</p>
 
   <pre data-executable>from rasa.jupyter import chat
 chat(model_path)</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
-    document.addEventListener('', event => {
-      if (event.detail.status == 'executing') {
-        console.error("");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': ""
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script></div>
+</div>
 <div class="section" id="evaluate-your-model-against-test-data">
 <h2>Evaluate your model against test data<a class="headerlink" href="#evaluate-your-model-against-test-data" title="Permalink to this headline">¶</a></h2>
 <p>Rasa has a convenience function for getting your training data.
@@ -368,78 +291,18 @@ The return values are the paths to these newly created directories.</p>
 
   <pre data-executable>import rasa.data as data
 stories_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
-    document.addEventListener('', event => {
-      if (event.detail.status == 'executing') {
-        console.error("");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': ""
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script><p>To test your model, call the <code class="docutils literal notranslate"><span class="pre">test</span></code> function, passing in the path
+<p>To test your model, call the <code class="docutils literal notranslate"><span class="pre">test</span></code> function, passing in the path
 to your saved model and directories containing the stories and nlu data
 to evaluate on.</p>
 
 
   <pre data-executable>rasa.test(model_path, stories_directory, nlu_data_directory)</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
-    document.addEventListener('', event => {
-      if (event.detail.status == 'executing') {
-        console.error("");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': ""
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script><p>The results of the evaluation will be written to a file called <code class="docutils literal notranslate"><span class="pre">results</span></code>.
+<p>The results of the evaluation will be written to a file called <code class="docutils literal notranslate"><span class="pre">results</span></code>.
 This contains information about the accuracy of your model and other metrics.</p>
 
 
   <pre data-executable>ls results</pre>
-  <script src="https://storage.googleapis.com/docs-theme/juniper-master.min.js"></script>
-  <script>
-     new Juniper({ url: 'http://rasa-x-demo.rasa.com', repo: 'rasahq/docs-binder', branch: 'master', kernelType: 'bash', defaultLang: 'shell', language: 'shell', isolateCells: false , theme: 'xq-light', useStorage: true, eventName: ''})
-    document.addEventListener('', event => {
-      if (event.detail.status == 'executing') {
-        console.error("");
-	console.error(JSON.stringify(event));
-        console.error(event.currentTarget)
-        gtag('event', 'execute-code-snippet', {
-          'event_category': 'code',
-          'event_label': ""
-        });
-      }
-      if (event.detail.status == 'failed') {
-        gtag('event', e.action, {
-          'event_category': 'code',
-          'event_label': e.text
-        });
-      }
-    })
-  </script></div>
+</div>
 </div>
 
 
