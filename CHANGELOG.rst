@@ -6,8 +6,27 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.6] - `master`_
+[Unreleased 1.1.7] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+
+Changed
+-------
+
+
+Removed
+-------
+
+
+Fixed
+-----
+
+
+[1.1.6] - 2019-07-12
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -18,11 +37,6 @@ Changed
 -------
 - recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
   has been updated from ``False`` or ``None`` to an empty list (``[]``)
-
-
-Removed
--------
-
 
 Fixed
 -----
