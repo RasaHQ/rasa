@@ -158,13 +158,9 @@ def serve_application(
         log_file=log_file,
     )
 
-    if "nlu" in model_path:
-        server_type = "NLU"
-    else:
-        server_type = "Core"
     logger.info(
-        "Starting Rasa {} server on "
-        "{}".format(server_type, constants.DEFAULT_SERVER_FORMAT.format(port))
+        "Starting Rasa Core server on "
+        "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port))
     )
 
     app.register_listener(
