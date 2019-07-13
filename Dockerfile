@@ -32,6 +32,7 @@ RUN apt-get update -qq && \
 # Copy only what we really need
 COPY README.md .
 COPY setup.py .
+COPY MANIFEST.in .
 COPY requirements.txt .
 
 # Install Rasa and its dependencies
