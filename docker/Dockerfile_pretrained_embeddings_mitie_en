@@ -40,7 +40,7 @@ RUN pip install -r alt_requirements/requirements_pretrained_embeddings_mitie.txt
 
 # Install Rasa as package
 COPY rasa ./rasa
-RUN pip install -e .
+RUN pip install .
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner

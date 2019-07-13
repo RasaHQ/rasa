@@ -39,7 +39,7 @@ RUN pip install -r requirements.txt
 
 # Install Rasa as package
 COPY rasa ./rasa
-RUN pip install -e .
+RUN pip install .
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
