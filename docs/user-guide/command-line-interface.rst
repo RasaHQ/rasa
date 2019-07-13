@@ -234,8 +234,8 @@ This command will attempt to keep the proportions of intents the same in train a
 Convert Data Between Markdown and JSON
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To convert NLU data from LUIS data format, WIT data format, Dialogflow data format, json, or Markdown
-to json or Markdown, run:
+To convert NLU data from LUIS data format, WIT data format, Dialogflow data format, JSON, or Markdown
+to JSON or Markdown, run:
 
 .. code:: bash
 

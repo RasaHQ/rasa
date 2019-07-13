@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 import uuid
+from aioresponses import aioresponses
 
 import pytest
 from freezegun import freeze_time
@@ -12,6 +13,7 @@ import rasa.constants
 from rasa.core import events, utils
 from rasa.core.events import Event, UserUttered, SlotSet, BotUttered
 from rasa.model import unpack_model
+from rasa.utils.endpoints import EndpointConfig
 from tests.nlu.utilities import ResponseTest
 
 
@@ -88,6 +90,11 @@ def test_status(rasa_app):
 def test_status_secured(rasa_secured_app):
     _, response = rasa_secured_app.get("/status")
     assert response.status == 401
+
+
+def test_status_not_ready_agent(rasa_app_nlu):
+    _, response = rasa_app_nlu.get("/status")
+    assert response.status == 409
 
 
 @pytest.mark.parametrize(
@@ -210,6 +217,8 @@ def test_train_stack_success(
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
+
+    assert response.headers["filename"] is not None
 
     # save model to temporary file
     tempdir = tempfile.mkdtemp()
@@ -478,6 +487,29 @@ def test_pushing_event(rasa_app, event):
     assert Event.from_parameters(evt) == event
 
 
+def test_push_multiple_events(rasa_app):
+    cid = str(uuid.uuid1())
+    conversation = "/conversations/{}".format(cid)
+
+    events = [e.as_dict() for e in test_events]
+    data = json.dumps(events)
+    _, response = rasa_app.post(
+        "{}/tracker/events".format(conversation),
+        data=data,
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.json is not None
+    assert response.status == 200
+
+    _, tracker_response = rasa_app.get("/conversations/{}/tracker".format(cid))
+    tracker = tracker_response.json
+    assert tracker is not None
+
+    # there is also an `ACTION_LISTEN` event at the start
+    assert len(tracker.get("events")) == len(test_events) + 1
+    assert tracker.get("events")[1:] == events
+
+
 def test_put_tracker(rasa_app):
     data = json.dumps([event.as_dict() for event in test_events])
     _, response = rasa_app.put(
@@ -563,7 +595,7 @@ def test_list_routes(default_agent):
         "version",
         "status",
         "retrieve_tracker",
-        "append_event",
+        "append_events",
         "replace_events",
         "retrieve_story",
         "execute_action",
@@ -589,8 +621,7 @@ def test_unload_model_error(rasa_app):
     assert response.status == 204
 
     _, response = rasa_app.get("/status")
-    assert response.status == 200
-    assert "model_file" in response.json and response.json["model_file"] is None
+    assert response.status == 409
 
 
 def test_get_domain(rasa_app):
@@ -632,6 +663,42 @@ def test_load_model(rasa_app, trained_core_model):
     assert "fingerprint" in response.json
 
     assert old_fingerprint != response.json["fingerprint"]
+
+
+def test_load_model_from_model_server(rasa_app, trained_core_model):
+    _, response = rasa_app.get("/status")
+
+    assert response.status == 200
+    assert "fingerprint" in response.json
+
+    old_fingerprint = response.json["fingerprint"]
+
+    endpoint = EndpointConfig("https://example.com/model/trained_core_model")
+    with open(trained_core_model, "rb") as f:
+        with aioresponses(passthrough=["http://127.0.0.1"]) as mocked:
+            headers = {}
+            fs = os.fstat(f.fileno())
+            headers["Content-Length"] = str(fs[6])
+            mocked.get(
+                "https://example.com/model/trained_core_model",
+                content_type="application/x-tar",
+                body=f.read(),
+            )
+            data = {"model_server": {"url": endpoint.url}}
+            _, response = rasa_app.put("/model", json=data)
+
+            assert response.status == 204
+
+            _, response = rasa_app.get("/status")
+
+            assert response.status == 200
+            assert "fingerprint" in response.json
+
+            assert old_fingerprint != response.json["fingerprint"]
+
+    import rasa.core.jobs
+
+    rasa.core.jobs.__scheduler = None
 
 
 def test_load_model_invalid_request_body(rasa_app):

@@ -91,20 +91,15 @@ async def test_regex_interpreter_adds_intent_prefix(regex_interpreter):
 
 async def test_http_interpreter():
     with aioresponses() as mocked:
-        mocked.post("https://example.com/parse")
+        mocked.post("https://example.com/model/parse")
 
         endpoint = EndpointConfig("https://example.com")
         interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
-        await interpreter.parse(text="message_text", message_id="1134")
+        await interpreter.parse(text="message_text", message_id="message_id")
 
-        r = latest_request(mocked, "POST", "https://example.com/parse")
+        r = latest_request(mocked, "POST", "https://example.com/model/parse")
 
         query = json_of_latest_request(r)
-        response = {
-            "text": "message_text",
-            "message_id": "1134",
-            "model": None,
-            "token": None,
-        }
+        response = {"text": "message_text", "token": None, "message_id": "message_id"}
 
         assert query == response

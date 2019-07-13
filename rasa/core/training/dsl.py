@@ -98,7 +98,7 @@ class StoryStepBuilder(object):
             end_names = {e.name for s in self.current_steps for e in s.end_checkpoints}
             return [Checkpoint(name) for name in end_names]
 
-    def add_user_messages(self, messages):
+    def add_user_messages(self, messages: List[UserUttered]):
         self.ensure_current_steps()
 
         if len(messages) == 1:
@@ -188,7 +188,7 @@ class StoryFileReader(object):
             story_steps.extend(steps)
 
         # if exclusion percentage is not 100
-        if exclusion_percentage and exclusion_percentage is not 100:
+        if exclusion_percentage and exclusion_percentage != 100:
             import random
 
             idx = int(round(exclusion_percentage / 100.0 * len(story_steps)))
@@ -266,7 +266,7 @@ class StoryFileReader(object):
             )
             return "", {}
 
-    async def process_lines(self, lines: List[AnyStr]) -> List[StoryStep]:
+    async def process_lines(self, lines: List[Text]) -> List[StoryStep]:
 
         for idx, line in enumerate(lines):
             line_num = idx + 1
@@ -309,12 +309,12 @@ class StoryFileReader(object):
                     )
             except Exception as e:
                 msg = "Error in line {}: {}".format(line_num, e)
-                logger.error(msg, exc_info=1)
+                logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
                 raise ValueError(msg)
         self._add_current_stories_to_result()
         return self.story_steps
 
-    def _replace_template_variables(self, line):
+    def _replace_template_variables(self, line: Text) -> Text:
         def process_match(matchobject):
             varname = matchobject.group(1)
             if varname in self.template_variables:

@@ -5,15 +5,15 @@ from typing import Optional, Text, List
 import rasa.utils.io
 
 if typing.TYPE_CHECKING:
-    from rasa.core.policies import Policy
+    from rasa.core.policies.policy import Policy
 
 
 def load(config_file: Optional[Text]) -> List["Policy"]:
     """Load policy data stored in the specified file."""
-    from rasa.core.policies import PolicyEnsemble
+    from rasa.core.policies.ensemble import PolicyEnsemble
 
     if config_file and os.path.isfile(config_file):
-        config_data = rasa.utils.io.read_yaml_file(config_file)
+        config_data = rasa.utils.io.read_config_file(config_file)
     else:
         raise ValueError(
             "You have to provide a valid path to a config file. "

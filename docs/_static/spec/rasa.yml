@@ -99,6 +99,8 @@ paths:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
 
 
   /conversations/{conversation_id}/tracker:
@@ -139,9 +141,9 @@ paths:
       - JWT: []
       tags:
       - Tracker
-      summary: Append an event to a tracker
+      summary: Append events to a tracker
       description: >-
-        Appends a new event to the tracker state of the conversation.
+        Appends one or multiple new events to the tracker state of the conversation.
         Any existing events will be kept and the new events will be
         appended, updating the existing state.
       parameters:
@@ -152,7 +154,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Event'
+              oneOf:
+              - $ref: '#/components/schemas/Event'
+              - type: array
+                items:
+                  $ref: '#/components/schemas/Event'
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
@@ -369,6 +375,11 @@ paths:
       responses:
         200:
           description: Zipped Rasa model
+          headers:
+            filename:
+              schema:
+                type: string
+              description: File name of the trained model.
           content:
             application/octet-stream:
               schema:
@@ -521,6 +532,10 @@ paths:
                   type: string
                   description: Message to be parsed
                   example: "Hello, I am Rasa!"
+                message_id:
+                  type: string
+                  description: Optional ID for message to be parsed
+                  example: "b2831e73-1407-4ba0-a861-0f30a42a2a5a"
       responses:
         200:
           description: Success
@@ -915,7 +930,7 @@ components:
     ParseResult:
       type: object
       properties:
-        entites:
+        entities:
           type: array
           description: Parsed entities
           items:

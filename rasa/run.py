@@ -1,12 +1,9 @@
 import logging
-import os
-import shutil
 import typing
 from typing import Dict, Text
 
 from rasa.constants import DOCS_BASE_URL
-from rasa.cli.utils import minimal_kwargs, print_warning, print_error
-from rasa.model import get_model
+from rasa.cli.utils import minimal_kwargs, print_warning
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +34,6 @@ def run(
     import rasa.nlu.run
     from rasa.core.utils import AvailableEndpoints
 
-    model_path = get_model(model)
-
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     if not connector and not credentials:
@@ -59,14 +54,12 @@ def run(
         **kwargs
     )
 
-    if model_path is not None:
-        shutil.rmtree(model_path)
-
 
 def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     from rasa.core.tracker_store import TrackerStore
     from rasa.core import broker
     from rasa.core.utils import AvailableEndpoints
+    from rasa.core.agent import Agent
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 

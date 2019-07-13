@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
-    from spacy.tokens.doc import Doc
+    from spacy.tokens.doc import Doc  # pytype: disable=import-error
     from rasa.nlu.model import Metadata
 
 
@@ -101,12 +101,25 @@ class SpacyNLP(Component):
         else:
             return self.nlp(text.lower())
 
+    def docs_for_training_data(self, training_data: TrainingData) -> List[Any]:
+
+        texts = [
+            e.text if self.component_config.get("case_sensitive") else e.text.lower()
+            for e in training_data.intent_examples
+        ]
+
+        docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
+
+        return docs
+
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
 
-        for example in training_data.training_examples:
-            example.set("spacy_doc", self.doc_for_text(example.text))
+        docs = self.docs_for_training_data(training_data)
+
+        for idx, example in enumerate(training_data.training_examples):
+            example.set("spacy_doc", docs[idx])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 

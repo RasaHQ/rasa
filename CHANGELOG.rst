@@ -6,21 +6,175 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.0.8.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.1.7] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- support for specifying full database urls in the ``SQLTrackerStore`` configuration
+
 
 Changed
 -------
 
+
 Removed
 -------
 
+
 Fixed
 -----
+
+
+[1.1.6] - 2019-07-12
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- rest channel supports setting a message's input_channel through a field
+  ``input_channel`` in the request body
+
+Changed
+-------
+- recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
+  has been updated from ``False`` or ``None`` to an empty list (``[]``)
+
+Fixed
+-----
+- ``rasa run`` without ``--enable-api`` does not require a local model anymore
+- actions, intents, and utterances created in ``rasa interactive`` can no longer be empty
+
+
+[1.1.5] - 2019-07-10
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- debug logging now tells you which tracker store is connected
+- the response of ``/model/train`` now includes a response header for the trained model filename
+- ``Validator`` class to help developing by checking if the files have any errors
+- project's code is now linted using flake8
+- ``info`` log when credentials were provided for multiple channels and channel in
+  ``--connector`` argument was specified at the same time
+- validate export paths in interactive learning
+
+Changed
+-------
+- deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
+  or ``rasa.core.run.configure_app`` instead.
+- ``Agent.load()`` also accepts ``tar.gz`` model file
+
+Removed
+-------
+- revert the stripping of trailing slashes in endpoint URLs since this can lead to
+  problems in case the trailing slash is actually wanted
+- starter packs were removed from Github and are therefore no longer tested by Travis script
+
+Fixed
+-----
+- all temporal model files are now deleted after stopping the Rasa server
+- ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
+- fixed PUT /model with model_server by deserializing the model_server to 
+  EndpointConfig.
+- ``x in AnySlotDict`` is now ``True`` for any ``x``, which fixes empty slot warnings in
+  interactive learning
+- ``rasa train`` now also includes NLU files in other formats than the Rasa format
+- ``rasa train core`` no longer crashes without a ``--domain`` arg
+- ``rasa interactive`` now looks for endpoints in ``endpoints.yml`` if no ``--endpoints`` arg is passed
+- custom files, e.g. custom components and channels, load correctly when using
+  the command line interface
+- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
+
+
+[1.1.4] - 2019-06-18
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- unfeaturize single entities
+- added agent readiness check to the ``/status`` resource
+
+Changed
+-------
+- removed leading underscore from name of '_create_initial_project' function.
+
+Fixed
+-----
+- fixed bug where facebook quick replies were not rendering
+- take FB quick reply payload rather than text as input
+- fixed bug where `training_data` path in `metadata.json` was an absolute path
+
+[1.1.3] - 2019-06-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed any inconsistent type annotations in code and some bugs revealed by
+  type checker
+
+[1.1.2] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed duplicate events appearing in tracker when using a PostgreSQL tracker store
+
+[1.1.1] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed compatibility with Rasa SDK
+- bot responses can contain ``custom`` messages besides other message types
+
+[1.1.0] - 2019-06-13
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- nlu configs can now be directly compared for performance on a dataset
+  in ``rasa test nlu``
+
+Changed
+-------
+- update the tracker in interactive learning through reverting and appending events
+  instead of replacing the tracker
+- ``POST /conversations/{conversation_id}/tracker/events`` supports a list of events
+
+Fixed
+-----
+- fixed creation of ``RasaNLUHttpInterpreter``
+- form actions are included in domain warnings
+- default actions, which are overriden by custom actions and are listed in the
+  domain are excluded from domain warnings
+- SQL ``data`` column type to ``Text`` for compatibility with MySQL
+- non-featurizer training parameters don't break `SklearnPolicy` anymore
+
+[1.0.9] - 2019-06-10
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- revert PR #3739 (as this is a breaking change): set ``PikaProducer`` and
+  ``KafkaProducer`` default queues back to ``rasa_core_events``
+
+[1.0.8] - 2019-06-10
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- support for specifying full database urls in the ``SQLTrackerStore`` configuration
+- maximum number of predictions can be set via the environment variable
+  ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
+
+Changed
+-------
+- default ``PikaProducer`` and ``KafkaProducer`` queues to ``rasa_production_events``
+- exclude unfeaturized slots from domain warnings
+
+Fixed
+-----
+- loading of additional training data with the ``SkillSelector``
+- strip trailing slashes in endpoint URLs
 
 [1.0.7] - 2019-06-06
 ^^^^^^^^^^^^^^^^^^^^
@@ -109,12 +263,12 @@ Added
 - added tracker store persisting trackers into a SQL database
   (``SQLTrackerStore``)
 - added rasa command line interface and API
-- Rasa Stack HTTP training endpoint at ``POST /jobs``. This endpoint
+- Rasa  HTTP training endpoint at ``POST /jobs``. This endpoint
   will train a combined Rasa Core and NLU model
 - ``ReminderCancelled(action_name)`` event to cancel given action_name reminder
   for current user
-- Rasa Stack HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
-  This endpoints performs an intent evaluation of a Rasa Stack model
+- Rasa HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
+  This endpoints performs an intent evaluation of a Rasa model
 - option to create template for new utterance action in ``interactive learning``
 - you can now choose actions previously created in the same session
   in ``interactive learning``

@@ -7,6 +7,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa?branch=master)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/orgs/RasaHQ/projects/23)
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
@@ -43,10 +44,10 @@ There's a lot more background information in this
   [Read The Docs](https://rasa.com/docs/)
 
 - **I'm ready to install Rasa 🚀**
-  [Installation](https://rasa.com/docs/rasa/installation/)
+  [Installation](https://rasa.com/docs/rasa/user-guide/installation/)
 
 - **I want to learn how to use Rasa 🚀**
-  [Tutorial](https://rasa.com/docs/rasa/tutorial/)
+  [Tutorial](https://rasa.com/docs/rasa/user-guide/rasa-tutorial/)
 
 - **I have a question ❓**
   [Rasa Community Forum](https://forum.rasa.com/)
@@ -77,8 +78,7 @@ different ways!) [here](http://rasa.com/community/contribute).
 To contribute via pull request, follow these steps:
 
 1. Create an issue describing the feature you want to work on (or
-   have a look at issues with the label
-   [help wanted](https://github.com/RasaHQ/rasa/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
+   have a look at the [contributor board](https://github.com/orgs/RasaHQ/projects/23))
 2. Write your code, tests and documentation, and format them with ``black``
 3. Create a pull request describing your changes
 
@@ -108,8 +108,17 @@ You can now change the docs locally and the web page will automatically reload
 and apply your changes.
 
 ### Running the Tests
-In order to run the tests make sure that you have the development requirements installed.
+In order to run the tests, make sure that you have the development requirements installed:
+```bash
+export PIP_USE_PEP517=false
+pip install -r requirements-dev.txt
+pip install -e .
+make prepare-tests-ubuntu # Only on Ubuntu
+make prepare-tests-macos  # Only on macOS
 ```
+
+Then, run the tests:
+```bash
 make test
 ```
 
@@ -130,8 +139,8 @@ Releasing a new version is quite simple, as the packages are build and distribut
 2. Commit the changes and create a PR against master or the release branch (e.g. `1.2.x`)
 3. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
     ```
-    git tag -f 1.2.0 -m "Some helpful line describing the release"
-    git push origin 1.2.0
+    git tag 1.2.0 -m "Some helpful line describing the release"
+    git push origin 1.2.0 --tags
     ```
     travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa)
 5. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
@@ -143,17 +152,38 @@ Releasing a new version is quite simple, as the packages are build and distribut
 ### Code Style
 
 To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black).
-If your code is not formatted properly, travis will fail to build.
+To ensure our type annotations are correct we use the type checker [pytype](https://github.com/google/pytype). 
+If your code is not formatted properly or doesn't type check, travis will fail to build.
+
+#### Formatting
 
 If you want to automatically format your code on every commit, you can use [pre-commit](https://pre-commit.com/).
 Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
 This will add a hook to the repository, which reformats files on every commit.
 
-If you want to set it up manually, install black via `pip install black`.
+If you want to set it up manually, install black via `pip install -r requirements-dev.txt`.
 To reformat files execute
 ```
-black .
+make formatter
 ```
+
+#### Type Checking
+
+If you want to check types on the codebase, install `pytype` using `pip install -r requirements-dev.txt`.
+To check the types execute
+```
+make types
+```
+
+### Deploying documentation updates
+
+We use `sphinx-versioning` to build docs for tagged versions and for the master branch.
+The static site that gets built is pushed to the `docs` branch of this repo, which doesn't contain
+any code, only the site.
+
+We host the site on netlify. When there is a reason to update the docs (e.g. master has changed or we have
+tagged a new version) we trigger a webhook on netlify (see `.travis.yml`). 
+
 
 ## License
 Licensed under the Apache License, Version 2.0.

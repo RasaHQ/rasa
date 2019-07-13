@@ -1,5 +1,5 @@
 :desc: Get started with machine learning dialogue management to scale your bot
-       development using Rasa Stack as a conversational AI platform.
+       development using Rasa as a conversational AI platform.
 
 .. _about-rasa-core:
 
@@ -51,5 +51,5 @@ The Rasa Core Dialogue Engine
    :sender: user
 
 .. chat-bubble::
-   :text: Head over to the <a href="../user-guide/rasa-tutorial.html">Rasa Tutorial</a> for an interactive example.
+   :text: Head over to the <a href="../../user-guide/rasa-tutorial">Rasa Tutorial</a> for an interactive example.
    :sender: user

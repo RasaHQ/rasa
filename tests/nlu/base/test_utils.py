@@ -4,7 +4,6 @@ import os
 import pickle
 import pytest
 import tempfile
-
 import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.utils import (
@@ -21,8 +20,8 @@ from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io as io_utils
 
 
-@pytest.fixture
-def empty_model_dir(scope="function"):
+@pytest.fixture(scope="function")
+def empty_model_dir():
     temp_path = tempfile.mkdtemp()
     yield temp_path
     if os.path.exists(temp_path):
@@ -108,7 +107,7 @@ def test_remove_model_invalid(empty_model_dir):
     test_file_path = os.path.join(empty_model_dir, test_file)
     write_to_file(test_file_path, test_content)
 
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         remove_model(empty_model_dir)
 
     os.remove(test_file_path)

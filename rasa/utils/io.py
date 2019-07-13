@@ -1,6 +1,5 @@
 import asyncio
 import errno
-import json
 import logging
 import os
 import tarfile
@@ -8,13 +7,17 @@ import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict, Union, List
+from typing import Text, Any, Dict, Union, List, Type, Callable
 import ruamel.yaml as yaml
-from io import BytesIO as IOReader, StringIO
+from io import BytesIO as IOReader
 
 import simplejson
+import typing
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+
+if typing.TYPE_CHECKING:
+    from prompt_toolkit.validation import Validator
 
 
 def configure_colored_logging(loglevel):
@@ -105,7 +108,7 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
     # noinspection PyUnresolvedReferences
     try:
         return yaml_parser.load(content) or {}
-    except yaml.scanner.ScannerError as _:
+    except yaml.scanner.ScannerError:
         # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
         # unicode sequences that form surrogate pairs. Try converting the input
         # to a parsable format based on
@@ -121,8 +124,12 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
 
 def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
     """Read text from a file."""
-    with open(filename, encoding=encoding) as f:
-        return f.read()
+
+    try:
+        with open(filename, encoding=encoding) as f:
+            return f.read()
+    except FileNotFoundError:
+        raise ValueError("File '{}' does not exist.".format(filename))
 
 
 def read_json_file(filename: Text) -> Any:
@@ -137,7 +144,27 @@ def read_json_file(filename: Text) -> Any:
         )
 
 
-def read_yaml_file(filename: Text) -> Union[Dict, List]:
+def read_config_file(filename: Text) -> Dict[Text, Any]:
+    """Parses a yaml configuration file. Content needs to be a dictionary
+
+     Args:
+        filename: The path to the file which should be read.
+    """
+    content = read_yaml(read_file(filename, "utf-8"))
+
+    if content is None:
+        return {}
+    elif isinstance(content, dict):
+        return content
+    else:
+        raise ValueError(
+            "Tried to load invalid config file '{}'. "
+            "Expected a key value mapping but found {}"
+            ".".format(filename, type(content))
+        )
+
+
+def read_yaml_file(filename: Text) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
      Args:
@@ -228,3 +255,47 @@ def create_directory_for_file(file_path: Text) -> None:
         # be happy if someone already created the path
         if e.errno != errno.EEXIST:
             raise
+
+
+def file_type_validator(
+    valid_file_types: List[Text], error_message: Text
+) -> Type["Validator"]:
+    """Creates a `Validator` class which can be used with `questionary` to validate
+       file paths.
+    """
+
+    def is_valid(path: Text) -> bool:
+        return path is not None and any(
+            [path.endswith(file_type) for file_type in valid_file_types]
+        )
+
+    return create_validator(is_valid, error_message)
+
+
+def not_empty_validator(error_message: Text) -> Type["Validator"]:
+    """Creates a `Validator` class which can be used with `questionary` to validate
+    that the user entered something other than whitespace.
+    """
+
+    def is_valid(input: Text) -> bool:
+        return input is not None and input.strip() != ""
+
+    return create_validator(is_valid, error_message)
+
+
+def create_validator(
+    function: Callable[[Text], bool], error_message: Text
+) -> Type["Validator"]:
+    """Helper method to create `Validator` classes from callable functions. Should be
+    removed when questionary supports `Validator` objects."""
+
+    from prompt_toolkit.validation import Validator, ValidationError
+    from prompt_toolkit.document import Document
+
+    class FunctionValidator(Validator):
+        def validate(document: Document) -> None:
+            is_valid = function(document.text)
+            if not is_valid:
+                raise ValidationError(message=error_message)
+
+    return FunctionValidator

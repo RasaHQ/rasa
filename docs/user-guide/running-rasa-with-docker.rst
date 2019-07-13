@@ -75,6 +75,15 @@ To check that the command completed correctly, look at the contents of your work
 
 The initial project files should all be there, as well as a ``models`` directory that contains your trained model.
 
+
+.. note::
+
+   By default Docker runs containers as ``root`` user. Hence, all files created by
+   these containers will be owned by ``root``. See the `documentation of docker
+   <https://docs.docker.com/v17.12/edge/engine/reference/commandline/run/>`_
+   and `docker-compose <https://docs.docker.com/compose/compose-file/>`_ if you want to
+   run the containers with a different user.
+
 Talking to Your Assistant
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -310,7 +319,7 @@ To spin it up together with the Rasa instance, add a service
        command:
          - run
      action_server:
-       image: rasa/rasa_sdk:latest
+       image: rasa/rasa-sdk:latest
        volumes:
          - ./actions:/app/actions
 
@@ -340,7 +349,7 @@ image and add your custom dependencies. For example:
 .. code-block:: docker
 
     # Extend the official Rasa SDK image
-    FROM rasa/rasa_sdk:latest
+    FROM rasa/rasa-sdk:latest
 
     # Add a custom system library (e.g. git)
     RUN apt-get update && \
@@ -350,7 +359,7 @@ image and add your custom dependencies. For example:
     RUN pip install --no-cache-dir jupyter
 
 You can then build the image via the following command, and use it in your
-``docker-compose.yml`` instead of the ``rasa/rasa_sdk`` image.
+``docker-compose.yml`` instead of the ``rasa/rasa-sdk`` image.
 
 .. code-block:: bash
 

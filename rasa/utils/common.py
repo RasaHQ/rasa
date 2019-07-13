@@ -1,6 +1,8 @@
 import logging
 import os
-from typing import Any, Callable, Dict, List, Text, Optional, Union
+import shutil
+from typing import Any, Callable, Dict, List, Text, Optional, Type
+from types import TracebackType
 
 import rasa.core.utils
 import rasa.utils.io
@@ -15,6 +17,25 @@ from rasa.constants import (
 logger = logging.getLogger(__name__)
 
 
+class TempDirectoryPath(str):
+    """Represents a path to an temporary directory. When used as a context
+    manager, it erases the contents of the directory on exit.
+
+    """
+
+    def __enter__(self) -> "TempDirectoryPath":
+        return self
+
+    def __exit__(
+        self,
+        _exc: Optional[Type[BaseException]],
+        _value: Optional[Exception],
+        _tb: Optional[TracebackType],
+    ) -> bool:
+        if os.path.exists(self):
+            shutil.rmtree(self)
+
+
 def arguments_of(func: Callable) -> List[Text]:
     """Return the parameters of the function `func` as a list of names."""
     import inspect
@@ -26,7 +47,7 @@ def read_global_config() -> Dict[Text, Any]:
     """Read global Rasa configuration."""
     # noinspection PyBroadException
     try:
-        return rasa.utils.io.read_yaml_file(GLOBAL_USER_CONFIG_PATH)
+        return rasa.utils.io.read_config_file(GLOBAL_USER_CONFIG_PATH)
     except Exception:
         # if things go south we pretend there is no config
         return {}
@@ -104,15 +125,15 @@ def update_tensorflow_log_level():
 
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # disables AVX2 FMA warnings (CPU support)
     if log_level == "DEBUG":
-        tf_log_level = tf.logging.DEBUG
+        tf_log_level = tf.compat.v1.logging.DEBUG
     elif log_level == "INFO":
-        tf_log_level = tf.logging.INFO
+        tf_log_level = tf.compat.v1.logging.INFO
     elif log_level == "WARNING":
-        tf_log_level = tf.logging.WARN
+        tf_log_level = tf.compat.v1.logging.WARN
     else:
-        tf_log_level = tf.logging.ERROR
+        tf_log_level = tf.compat.v1.logging.ERROR
 
-    tf.logging.set_verbosity(tf_log_level)
+    tf.compat.v1.logging.set_verbosity(tf_log_level)
     logging.getLogger("tensorflow").propagate = False
 
 
