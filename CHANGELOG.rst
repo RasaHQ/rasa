@@ -27,8 +27,8 @@ Removed
 Fixed
 -----
 - ``rasa run`` without ``--enable-api`` does not require a local model anymore
-- using ``rasa run`` with ``--enable-api`` to run an NLU server now prints
-  "running Rasa NLU server" instead of "Core server"
+- using ``rasa run`` with ``--enable-api`` to run a server now prints
+  "running Rasa server" instead of "running Rasa Core server"
 - actions, intents, and utterances created in ``rasa interactive`` can no longer be empty
 
 
