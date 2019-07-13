@@ -12,6 +12,8 @@ ENV PATH="/build/bin:$PATH"
 # Stage to build and install everything
 FROM base as builder
 
+WORKDIR /src
+
 # Install all required build libraries
 RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
