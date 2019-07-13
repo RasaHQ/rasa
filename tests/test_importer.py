@@ -3,8 +3,7 @@ from typing import Text, Dict, Type
 
 import pytest
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
-from rasa.core.agent import Agent
-from rasa.data.importer import (
+from rasa.importers.importer import (
     SimpleFileImporter,
     CombinedFileImporter,
     TrainingFileImporter,
@@ -14,7 +13,7 @@ from rasa.data.importer import (
 from tests.core.conftest import project
 
 
-async def test_simple_file_importer(project: Text, default_agent: Agent):
+async def test_simple_file_importer(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
@@ -28,17 +27,15 @@ async def test_simple_file_importer(project: Text, default_agent: Agent):
     assert len(domain.action_names) == 13
     assert len(domain.templates) == 5
 
-    stories = await importer.get_stories(default_agent)
-    assert len(stories) == 4
+    stories = await importer.get_story_data()
+    assert len(stories.story_steps) == 4
 
     nlu_data = await importer.get_nlu_data("en")
     assert len(nlu_data.intents) == 6
     assert len(nlu_data.intent_examples) == 39
 
 
-async def test_combined_file_importer_with_single_importer(
-    project: Text, default_agent: Agent
-):
+async def test_combined_file_importer_with_single_importer(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
@@ -54,11 +51,10 @@ async def test_combined_file_importer_with_single_importer(
         await combined.get_nlu_data()
     ).as_json()
 
-    expected_stories = await importer.get_stories(default_agent)
-    actual_stories = await combined.get_stories(default_agent)
-    assert [story.as_story_string() for story in actual_stories] == [
-        story.as_story_string() for story in expected_stories
-    ]
+    expected_stories = await importer.get_story_data()
+    actual_stories = await combined.get_story_data()
+
+    assert actual_stories.as_story_string() == expected_stories.as_story_string()
 
 
 @pytest.mark.parametrize(
@@ -66,7 +62,7 @@ async def test_combined_file_importer_with_single_importer(
     [
         ({}, SimpleFileImporter),
         ({"importers": []}, SimpleFileImporter),
-        ({"importers": [{"type": "SimpleFileImporter"}]}, SimpleFileImporter),
+        ({"importers": [{"name": "SimpleFileImporter"}]}, SimpleFileImporter),
     ],
 )
 def test_load_from_dict(

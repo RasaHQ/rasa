@@ -6,10 +6,10 @@ from typing import Text, Optional, List
 import pytest
 
 import rasa
-import rasa.data as data
 import rasa.core
 import rasa.nlu
-from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa import data
+from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 from rasa.core.domain import Domain
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,

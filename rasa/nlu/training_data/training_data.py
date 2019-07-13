@@ -52,6 +52,7 @@ class TrainingData(object):
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
         lookup_tables = deepcopy(self.lookup_tables)
+        others = [other for other in others if other]
 
         for o in others:
             training_examples.extend(deepcopy(o.training_examples))
@@ -68,6 +69,16 @@ class TrainingData(object):
         return TrainingData(
             training_examples, entity_synonyms, regex_features, lookup_tables
         )
+
+    def __hash__(self) -> int:
+        import json
+        from rasa.core import utils
+
+        self_as_dict = self.as_json()
+        self_as_string = json.dumps(self_as_dict, sort_keys=True)
+        text_hash = utils.get_text_hash(self_as_string)
+
+        return int(text_hash, 16)
 
     @staticmethod
     def sanitize_examples(examples: List[Message]) -> List[Message]:

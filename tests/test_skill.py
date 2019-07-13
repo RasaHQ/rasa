@@ -8,7 +8,7 @@ from rasa.nlu.training_data.formats import RasaReader
 from rasa import model
 from rasa.core import utils
 from rasa.core.domain import Domain
-from rasa.skill import SkillSelector
+from rasa.importers.skill import SkillSelector
 from rasa.train import train_async
 
 
