@@ -1,34 +1,35 @@
 from functools import reduce
+import typing
 from typing import Text, Optional, Union, List, Dict, Any
 import logging
-from rasa.data import data
+from rasa import data
 
-from rasa.core.agent import Agent
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.interpreter import RegexInterpreter
-from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.dsl import StoryFileReader
-from rasa.core.training.structures import StoryStep
-from rasa.nlu.model import Interpreter
-from rasa.nlu.training_data import TrainingData, loading
+from rasa.core.training.structures import StoryGraph
+from rasa.importers import utils
+from rasa.nlu.training_data import TrainingData
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
 
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.model import Interpreter
 logger = logging.getLogger(__name__)
 
 
 class TrainingFileImporter:
-    async def get_domain(self) -> Domain:
+    async def get_domain(self) -> Optional[Domain]:
         pass
 
-    async def get_stories(
+    async def get_story_data(
         self,
-        agent: Agent,
-        interpreter: Interpreter = RegexInterpreter(),
+        interpreter: "Interpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
+    ) -> StoryGraph:
         pass
 
     async def get_config(self) -> Dict:
@@ -39,7 +40,9 @@ class TrainingFileImporter:
 
     @staticmethod
     def load_from_config(
-        config_path: Text, domain_path: Text, training_data_paths: List[Text]
+        config_path: Text,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingFileImporter":
         config = io_utils.read_config_file(config_path)
         return TrainingFileImporter.load_from_dict(
@@ -50,8 +53,8 @@ class TrainingFileImporter:
     def load_from_dict(
         config: Dict,
         config_path: Text,
-        domain_path: Text,
-        training_data_paths: List[Text],
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingFileImporter":
         importers = config.get("importers", [])
         importers = [
@@ -73,10 +76,10 @@ class TrainingFileImporter:
     def _importer_from_dict(
         importer_config: Dict,
         config_path: Text,
-        domain_path: Text,
-        training_data_paths: List[Text],
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
     ) -> Optional["TrainingFileImporter"]:
-        module_path = importer_config.pop("type")
+        module_path = importer_config.pop("name", None)
         if module_path == SimpleFileImporter.__name__:
             importer_class = SimpleFileImporter
         else:
@@ -86,8 +89,13 @@ class TrainingFileImporter:
                 logging.warning("Importer '{}' not found.".format(module_path))
                 return None
 
+        import rasa.cli.utils as cli_utils
+
+        constructor_arguments = cli_utils.minimal_kwargs(
+            importer_config, importer_class
+        )
         return importer_class(
-            config_path, domain_path, training_data_paths, **importer_config
+            config_path, domain_path, training_data_paths, **constructor_arguments
         )
 
 
@@ -97,29 +105,30 @@ class CombinedFileImporter(TrainingFileImporter):
 
     async def get_config(self) -> Dict:
         configs = [await importer.get_config() for importer in self._importers]
-        return reduce(lambda merged, other: {**merged, **other}, configs, {})
+        return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
 
-    async def get_domain(self) -> Domain:
+    async def get_domain(self) -> Optional[Domain]:
         domains = [await importer.get_domain() for importer in self._importers]
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
-    async def get_stories(
+    async def get_story_data(
         self,
-        agent: Agent,
-        interpreter: Interpreter = RegexInterpreter(),
+        interpreter: "Interpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
-    ) -> List[StoryStep]:
-        story_steps = [
-            await importer.get_stories(
-                agent, interpreter, template_variables, use_e2e, exclusion_percentage
+    ) -> StoryGraph:
+        story_graphs = [
+            await importer.get_story_data(
+                interpreter, template_variables, use_e2e, exclusion_percentage
             )
             for importer in self._importers
         ]
-        return reduce(lambda merged, other: merged + other, story_steps, [])
+        return reduce(
+            lambda merged, other: merged.merge(other), story_graphs, StoryGraph([])
+        )
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         nlu_datas = [
@@ -134,42 +143,58 @@ class SimpleFileImporter(TrainingFileImporter):
     def __init__(
         self,
         config_file: Text,
-        domain_path: Text,
+        domain_path: Optional[Text],
         training_data_paths: Optional[Union[List[Text], Text]],
     ):
         self.config = io_utils.read_config_file(config_file)
-        self.domain = Domain.load(domain_path)
+        self._domain_path = domain_path
 
         self._story_files, self._nlu_files = data.get_core_nlu_files(
             training_data_paths
         )
 
+        self._domain = None
+        self._training_datas = None
+        self._story_graph = None
+
     async def get_config(self, **kwargs: Optional[Dict[Text, Any]]) -> Dict:
         return self.config
 
-    async def get_stories(
+    async def get_story_data(
         self,
-        agent: Agent,
-        interpreter: Interpreter = RegexInterpreter(),
+        interpreter: "Interpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
-    ) -> List[StoryStep]:
+    ) -> StoryGraph:
 
-        return await StoryFileReader.read_from_files(
-            self._story_files,
-            await self.get_domain(),
-            interpreter,
-            template_variables,
-            use_e2e,
-            exclusion_percentage,
-        )
+        if not self._story_graph:
+            story_steps = await StoryFileReader.read_from_files(
+                self._story_files,
+                await self.get_domain(),
+                interpreter,
+                template_variables,
+                use_e2e,
+                exclusion_percentage,
+            )
+            self._story_graph = StoryGraph(story_steps)
+
+        return self._story_graph
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        training_datas = [
-            loading.load_data(nlu_file, language) for nlu_file in self._nlu_files
-        ]
-        return TrainingData().merge(*training_datas)
+        if not self._training_datas:
+            self._training_datas = utils.training_data_from_paths(
+                self._nlu_files, language
+            )
 
-    async def get_domain(self) -> Domain:
-        return self.domain
+        return self._training_datas
+
+    async def get_domain(self) -> Optional[Domain]:
+        if not self._domain:
+            try:
+                self._domain = Domain.load(self._domain_path)
+                self._domain.check_missing_templates()
+            except InvalidDomain:
+                self._domain = None
+
+        return self._domain

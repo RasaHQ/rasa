@@ -5,6 +5,7 @@ import tempfile
 import uuid
 from asyncio import CancelledError
 from sanic import Sanic
+import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
@@ -42,6 +43,9 @@ from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
 from rasa.exceptions import ModelNotFound
+
+if typing.TYPE_CHECKING:
+    from rasa.importers.importer import TrainingFileImporter
 
 logger = logging.getLogger(__name__)
 
@@ -579,7 +583,7 @@ class Agent(object):
 
     async def load_data(
         self,
-        resource_name: Text,
+        training_resource: Union[Text, "TrainingFileImporter"],
         remove_duplicates: bool = True,
         unique_last_num_states: Optional[int] = None,
         augmentation_factor: int = 20,
@@ -612,7 +616,7 @@ class Agent(object):
             )
 
         return await training.load_data(
-            resource_name,
+            training_resource,
             self.domain,
             remove_duplicates,
             unique_last_num_states,

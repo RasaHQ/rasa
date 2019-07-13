@@ -14,7 +14,6 @@ from rasa.core.actions.action import Action  # pytype: disable=pyi-error
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
-from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
@@ -49,16 +48,7 @@ class Domain(object):
         return cls([], [], [], {}, [], [])
 
     @classmethod
-    def load(
-        cls,
-        paths: Union[List[Text], Text],
-        skill_imports: Optional[SkillSelector] = None,
-    ) -> "Domain":
-        skill_imports = skill_imports or SkillSelector.all_skills()
-
-        if not skill_imports.no_skills_selected():
-            paths = skill_imports.training_paths()
-
+    def load(cls, paths: Union[List[Text], Text]) -> "Domain":
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -69,23 +59,23 @@ class Domain(object):
 
         domain = Domain.empty()
         for path in paths:
-            other = cls.from_path(path, skill_imports)
+            other = cls.from_path(path)
             domain = domain.merge(other)
 
         return domain
 
     @classmethod
-    def from_path(cls, path: Text, skill_imports: SkillSelector) -> "Domain":
+    def from_path(cls, path: Text) -> "Domain":
         path = os.path.abspath(path)
 
         # If skills were imported search the whole directory tree for domain files
-        if os.path.isfile(path) and not skill_imports.no_skills_selected():
+        if os.path.isfile(path):
             path = os.path.dirname(path)
 
         if os.path.isfile(path):
             domain = cls.from_file(path)
         elif os.path.isdir(path):
-            domain = cls.from_directory(path, skill_imports)
+            domain = cls.from_directory(path)
         else:
             raise Exception(
                 "Failed to load domain specification from '{}'. "
@@ -126,19 +116,12 @@ class Domain(object):
         )
 
     @classmethod
-    def from_directory(
-        cls, path: Text, skill_imports: Optional[SkillSelector] = None
-    ) -> "Domain":
+    def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
         from rasa import data
 
         domain = Domain.empty()
-        skill_imports = skill_imports or SkillSelector.all_skills()
-
         for root, _, files in os.walk(path):
-            if not skill_imports.is_imported(root):
-                continue
-
             for file in files:
                 full_path = os.path.join(root, file)
                 if data.is_domain_file(full_path):
@@ -147,12 +130,15 @@ class Domain(object):
 
         return domain
 
-    def merge(self, domain: "Domain", override: bool = False) -> "Domain":
+    def merge(self, domain: Optional["Domain"], override: bool = False) -> "Domain":
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
         and merged. Single attributes will be taken from ``self`` unless
         override is `True`, in which case they are taken from ``domain``."""
+
+        if not domain:
+            return self
 
         domain_dict = domain.as_dict()
         combined = self.as_dict()
