@@ -82,7 +82,7 @@ def run(args: argparse.Namespace):
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
 
-    if args.enable_api:
+    if args.enable_api and not args.remote_storage:
         args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
         rasa.run(**vars(args))
 
