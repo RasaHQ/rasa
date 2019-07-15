@@ -20,7 +20,7 @@ async def train(
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,
     dump_stories: bool = False,
-    policy_config: Text = None,
+    policy_config: Optional[Union[Text, Dict]] = None,
     exclusion_percentage: int = None,
     kwargs: Optional[Dict] = None,
 ):

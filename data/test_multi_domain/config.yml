@@ -8,5 +8,6 @@ policies:
 
 importers:
   - name: SkillSelector
-    imports:
-      - data/MoodBot
+
+imports:
+  - data/MoodBot
