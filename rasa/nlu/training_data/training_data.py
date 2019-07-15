@@ -43,8 +43,6 @@ class TrainingData(object):
         self.sort_regex_features()
         self.lookup_tables = lookup_tables if lookup_tables else []
 
-        self.print_stats()
-
     def merge(self, *others: "TrainingData") -> "TrainingData":
         """Return merged instance of this data with other training data."""
 

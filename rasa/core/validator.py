@@ -2,6 +2,7 @@ import logging
 import asyncio
 from typing import List, Text
 from rasa.core.domain import Domain
+from rasa.importers.importer import TrainingFileImporter
 from rasa.nlu.training_data import load_data, TrainingData
 from rasa.core.training.dsl import StoryFileReader, StoryStep
 from rasa.core.training.dsl import UserUttered
@@ -22,17 +23,15 @@ class Validator(object):
         self.stories = stories
 
     @classmethod
-    async def from_files(
-        cls, domain_file: Text, nlu_data: Text, story_data: Text
-    ) -> "Validator":
+    async def from_importer(cls, importer: TrainingFileImporter) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
 
-        domain = Domain.load(domain_file)
+        domain = await importer.get_domain()
         asyncio.new_event_loop()
-        stories = await StoryFileReader.read_from_folder(story_data, domain)
-        intents = load_data(nlu_data)
+        stories = await importer.get_story_data()
+        intents = await importer.get_nlu_data()
 
-        return cls(domain, intents, stories)
+        return cls(domain, intents, stories.story_steps)
 
     def verify_intents(self):
         """Compares list of intents in domain with intents in NLU training data."""
