@@ -293,6 +293,7 @@ def create_validator(
     from prompt_toolkit.document import Document
 
     class FunctionValidator(Validator):
+        @staticmethod
         def validate(document: Document) -> None:
             is_valid = function(document.text)
             if not is_valid:
