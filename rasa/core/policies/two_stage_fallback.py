@@ -188,6 +188,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             "fallback_core_action_name": self.fallback_action_name,
             "fallback_nlu_action_name": self.fallback_nlu_action_name,
             "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
+            "affirmation_action_name": self.affirmation_action_name,
+            "rephrase_action_name": self.rephrase_action_name,
         }
         rasa.utils.io.create_directory_for_file(config_file)
         utils.dump_obj_as_json_to_file(config_file, meta)
