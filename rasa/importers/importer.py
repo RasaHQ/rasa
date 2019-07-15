@@ -56,7 +56,7 @@ class TrainingFileImporter:
 
     @staticmethod
     def load_from_dict(
-        config: Dict,
+        config: Optional[Dict],
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
@@ -149,9 +149,10 @@ class CombinedFileImporter(TrainingFileImporter):
         nlu_datas = [
             await importer.get_nlu_data(language) for importer in self._importers
         ]
-        return reduce(
+        training_data = reduce(
             lambda merged, other: merged.merge(other), nlu_datas, TrainingData()
         )
+        return training_data
 
 
 class SimpleFileImporter(TrainingFileImporter):
@@ -159,20 +160,21 @@ class SimpleFileImporter(TrainingFileImporter):
 
     def __init__(
         self,
-        config_file: Text,
-        domain_path: Optional[Text],
-        training_data_paths: Optional[Union[List[Text], Text]],
+        config_file: Optional[Text] = None,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[Union[List[Text], Text]] = None,
     ):
-        self.config = io_utils.read_config_file(config_file)
+        if config_file:
+            self.config = io_utils.read_config_file(config_file)
+        else:
+            self.config = {}
+
         self._domain_path = domain_path
 
-        self._story_files, self._nlu_files = data.get_core_nlu_files(
-            training_data_paths
-        )
-
-        self._domain = None
-        self._training_datas = None
-        self._story_graph = None
+        if training_data_paths:
+            self._story_files, self._nlu_files = data.get_core_nlu_files(
+                training_data_paths
+            )
 
     async def get_config(self, **kwargs: Optional[Dict[Text, Any]]) -> Dict:
         return self.config
@@ -185,38 +187,29 @@ class SimpleFileImporter(TrainingFileImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
 
-        if not self._story_graph:
-            story_steps = await StoryFileReader.read_from_files(
-                self._story_files,
-                await self.get_domain(),
-                interpreter,
-                template_variables,
-                use_e2e,
-                exclusion_percentage,
-            )
-            self._story_graph = StoryGraph(story_steps)
-
-        return self._story_graph
+        story_steps = await StoryFileReader.read_from_files(
+            self._story_files,
+            await self.get_domain(),
+            interpreter,
+            template_variables,
+            use_e2e,
+            exclusion_percentage,
+        )
+        return StoryGraph(story_steps)
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        if not self._training_datas:
-            self._training_datas = utils.training_data_from_paths(
-                self._nlu_files, language
-            )
-
-        return self._training_datas
+        return utils.training_data_from_paths(self._nlu_files, language)
 
     async def get_domain(self) -> Domain:
-        if not self._domain:
-            try:
-                self._domain = Domain.load(self._domain_path)
-                self._domain.check_missing_templates()
-            except InvalidDomain:
-                logger.debug(
-                    "Loading domain from '{}' failed. Using empty domain.".format(
-                        self._domain_path
-                    )
+        domain = Domain.empty()
+        try:
+            domain = Domain.load(self._domain_path)
+            domain.check_missing_templates()
+        except InvalidDomain:
+            logger.debug(
+                "Loading domain from '{}' failed. Using empty domain.".format(
+                    self._domain_path
                 )
-                self._domain = Domain.empty()
+            )
 
-        return self._domain
+        return domain
