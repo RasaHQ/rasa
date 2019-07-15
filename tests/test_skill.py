@@ -1,4 +1,4 @@
-from pathlib import Path
+from typing import Dict, Text
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -39,11 +39,12 @@ def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
     subdirectory_3 = root / "Skill C"
     subdirectory_3.mkdir()
 
-    actual = SkillSelector.load(str(root / "config.yml"))
     expected = {
         os.path.join(str(skill_a_directory)),
         os.path.join(str(skill_b_directory)),
     }
+
+    actual = SkillSelector(str(root / "config.yml"))
 
     assert actual._imports == expected
 
@@ -61,14 +62,18 @@ def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
     skill_b_directory.mkdir()
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", empty_config)
 
-    actual = SkillSelector.load(str(root / "config.yml"))
+    actual = SkillSelector(str(root / "config.yml"))
 
     assert actual.is_imported(str(root / "Skill C"))
 
 
 @pytest.mark.parametrize("input_dict", [{}, {"imports": None}])
-def test_load_from_none(input_dict):
-    actual = SkillSelector._from_dict(input_dict, Path("."), SkillSelector.all_skills())
+def test_load_from_none(input_dict: Dict, tmpdir_factory: TempdirFactory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config_path = root / "config.yml"
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", input_dict)
+
+    actual = SkillSelector(str(config_path))
 
     assert actual._imports == set()
 
@@ -83,7 +88,7 @@ def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFa
     skill_a_imports = {"imports": ["Skill B"]}
     utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
 
-    actual = SkillSelector.load(str(config_path))
+    actual = SkillSelector(config_path)
 
     assert actual.is_imported(str(skill_a_directory))
 
@@ -91,30 +96,24 @@ def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFa
 @pytest.mark.parametrize(
     "input_path", ["A/A/A/B", "A/A/A", "A/B/A/A", "A/A/A/B/C/D/E.type"]
 )
-def test_in_imports(input_path):
-    importer = SkillSelector({"A/A/A", "A/B/A"})
+def test_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config_path = root / "config.yml"
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", {"imports": ["A/A/A", "A/B/A"]})
+
+    importer = SkillSelector(config_path, project_directory=os.getcwd())
 
     assert importer.is_imported(input_path)
 
 
 @pytest.mark.parametrize("input_path", ["A/C", "A/A/B", "A/B"])
-def test_not_in_imports(input_path):
-    importer = SkillSelector({"A/A/A", "A/B/A"})
+def test_not_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
+    root = tmpdir_factory.mktemp("Parent Bot")
+    config_path = root / "config.yml"
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", {"imports": ["A/A/A", "A/B/A"]})
+    importer = SkillSelector(config_path, project_directory=os.getcwd())
 
     assert not importer.is_imported(input_path)
-
-
-def test_merge():
-    selector1 = SkillSelector({"A", "B"})
-    selector2 = SkillSelector({"A/1", "B/C/D", "C"})
-
-    actual = selector1.merge(selector2)
-    assert actual._imports == {"A", "B", "C"}
-
-
-def test_training_paths():
-    selector = SkillSelector({"A", "B/C"}, "B")
-    assert selector.training_paths() == {"A", "B"}
 
 
 def test_cyclic_imports(tmpdir_factory):
@@ -132,7 +131,7 @@ def test_cyclic_imports(tmpdir_factory):
     skill_b_imports = {"imports": ["../Skill A"]}
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
 
-    actual = SkillSelector.load(str(root / "config.yml"))
+    actual = SkillSelector(str(root / "config.yml"))
 
     assert actual._imports == {str(skill_a_directory), str(skill_b_directory)}
 
@@ -152,7 +151,7 @@ def test_import_outside_project_directory(tmpdir_factory):
     skill_b_imports = {"imports": ["../Skill C"]}
     utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
 
-    actual = SkillSelector.load(str(skill_a_directory / "config.yml"))
+    actual = SkillSelector(str(skill_a_directory / "config.yml"))
 
     assert actual._imports == {str(skill_b_directory), str(root / "Skill C")}
 
@@ -163,19 +162,16 @@ def test_importing_additional_files(tmpdir_factory):
     config_path = str(root / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    additional_file = root / "directory" / "file.yml"
-    selector = SkillSelector.load(
-        config_path, [str(root / "data"), str(additional_file)]
-    )
-    # create intermediate directories and fake files
-    additional_file.write({}, ensure=True)
-    additional_directory = root / "data"
-    (additional_directory / "file.yml").write({}, ensure=True)
+    additional_file = root / "directory" / "file.md"
 
-    assert selector.is_imported(str(additional_directory))
-    assert selector.is_imported(str(additional_directory / "file.yml"))
+    # create intermediate directories and fake files
+    additional_file.write("""## story""", ensure=True)
+    selector = SkillSelector(
+        config_path, training_data_paths=[str(root / "directory"), str(additional_file)]
+    )
 
     assert selector.is_imported(str(additional_file))
+    assert str(additional_file) in selector._story_paths
 
 
 def test_not_importing_not_relevant_additional_files(tmpdir_factory):
@@ -185,8 +181,8 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
     additional_file = root / "directory" / "file.yml"
-    selector = SkillSelector.load(
-        config_path, [str(root / "data"), str(additional_file)]
+    selector = SkillSelector(
+        config_path, training_data_paths=[str(root / "data"), str(additional_file)]
     )
 
     not_relevant_file1 = root / "data" / "another directory" / "file.yml"
@@ -207,8 +203,7 @@ def test_single_additional_file(tmpdir_factory):
     additional_file = root / "directory" / "file.yml"
     additional_file.write({}, ensure=True)
 
-    selector = SkillSelector.load(config_path, str(additional_file))
-    assert isinstance(selector._additional_paths, list)
+    selector = SkillSelector(config_path, training_data_paths=str(additional_file))
 
     assert selector.is_imported(str(additional_file))
 
@@ -216,16 +211,13 @@ def test_single_additional_file(tmpdir_factory):
 async def test_multi_skill_training():
     example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
+    domain_file = os.path.join(example_directory, "domain.yml")
     files_of_root_project = os.path.join(example_directory, "data")
     trained_stack_model_path = await train_async(
-        config=config_file, domain=None, training_files=files_of_root_project
+        config=config_file, domain=domain_file, training_files=files_of_root_project
     )
 
     unpacked = model.unpack_model(trained_stack_model_path)
-    model_fingerprint = model.fingerprint_from_path(unpacked)
-
-    assert len(model_fingerprint["messages"]) == 3
-    assert len(model_fingerprint["stories"]) == 3
 
     domain_file = os.path.join(unpacked, "core", "domain.yml")
     domain = Domain.load(domain_file)
