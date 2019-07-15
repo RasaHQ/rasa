@@ -3,15 +3,11 @@ import os
 import shutil
 import tempfile
 import uuid
-import typing
 import re
 from typing import Tuple, List, Text, Set, Union, Optional
 from rasa.nlu.training_data import loading
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    from rasa.importers.skill import SkillSelector
 
 
 def get_core_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:

@@ -12,7 +12,7 @@ from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import ActionExecuted, UserUttered, Event, SlotSet
 from rasa.core.exceptions import StoryParseError
-from rasa.core.interpreter import RegexInterpreter
+from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import (
     Checkpoint,
     STORY_START,
@@ -23,11 +23,9 @@ from rasa.core.training.structures import (
 )
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.core.domain import Domain
-from rasa.nlu.model import Interpreter
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import Message
-
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +154,7 @@ class StoryFileReader(object):
     def __init__(
         self,
         domain: Domain,
-        interpreter: Interpreter,
+        interpreter: NaturalLanguageInterpreter,
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
     ):
@@ -171,7 +169,7 @@ class StoryFileReader(object):
     async def read_from_folder(
         resource_name: Text,
         domain: Domain,
-        interpreter: Interpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -201,7 +199,7 @@ class StoryFileReader(object):
     async def read_from_files(
         files: Iterable[Text],
         domain: Domain,
-        interpreter: Interpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -228,7 +226,7 @@ class StoryFileReader(object):
     async def read_from_file(
         filename: Text,
         domain: Domain,
-        interpreter: Interpreter = RegexInterpreter(),
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
     ):
@@ -382,7 +380,7 @@ class StoryFileReader(object):
 
         self.current_step_builder.add_checkpoint(name, conditions)
 
-    async def _parse_message(self, message, line_num):
+    async def _parse_message(self, message: Text, line_num: int):
         if message.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(message)
         else:

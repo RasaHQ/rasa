@@ -1,22 +1,17 @@
 import logging
 from functools import reduce
-import typing
 from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
 from rasa import data
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
-from rasa.core.interpreter import RegexInterpreter
+from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.dsl import StoryFileReader
 from rasa.importers.importer import TrainingFileImporter
 from rasa.importers import utils
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Interpreter
-
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +91,7 @@ class SkillSelector(TrainingFileImporter):
                     continue
 
                 if data.is_domain_file(full_path):
-                    self._story_paths.append(full_path)
+                    self._domain_paths.append(full_path)
                 elif data._is_nlu_file(full_path):
                     self._nlu_paths.append(full_path)
                 elif data._is_story_file(full_path):
@@ -163,7 +158,7 @@ class SkillSelector(TrainingFileImporter):
     def add_import(self, path: Text) -> None:
         self._imports.add(path)
 
-    async def get_domain(self) -> Optional[Domain]:
+    async def get_domain(self) -> Domain:
         domains = [Domain.load(path) for path in self._domain_paths]
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
@@ -171,7 +166,7 @@ class SkillSelector(TrainingFileImporter):
 
     async def get_story_data(
         self,
-        interpreter: "Interpreter" = RegexInterpreter(),
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,

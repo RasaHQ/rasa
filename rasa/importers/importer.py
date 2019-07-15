@@ -1,11 +1,10 @@
 from functools import reduce
-import typing
 from typing import Text, Optional, Union, List, Dict, Any
 import logging
 from rasa import data
 
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.interpreter import RegexInterpreter
+from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.dsl import StoryFileReader
 from rasa.core.training.structures import StoryGraph
 from rasa.importers import utils
@@ -13,30 +12,34 @@ from rasa.nlu.training_data import TrainingData
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
 
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Interpreter
 logger = logging.getLogger(__name__)
 
 
 class TrainingFileImporter:
-    async def get_domain(self) -> Optional[Domain]:
-        pass
+    """Common interface for different mechanisms to load training data."""
+
+    async def get_domain(self) -> Domain:
+        """Retrieves the domain which should be used for the training."""
+        raise NotImplementedError()
 
     async def get_story_data(
         self,
-        interpreter: "Interpreter" = RegexInterpreter(),
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        pass
+        """Retrieves the story data which should be used for the training."""
+
+        raise NotImplementedError()
 
     async def get_config(self) -> Dict:
-        pass
+        """Retrieves the configuration which should be used for the training."""
+        raise NotImplementedError()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        pass
+        """Retrieves the nlu training data which should be used for the training."""
+        raise NotImplementedError()
 
     @staticmethod
     def load_from_config(
@@ -44,6 +47,8 @@ class TrainingFileImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingFileImporter":
+        """Loads a `TrainingFileImporter` instance from a configuration file."""
+
         config = io_utils.read_config_file(config_path)
         return TrainingFileImporter.load_from_dict(
             config, config_path, domain_path, training_data_paths
@@ -56,6 +61,8 @@ class TrainingFileImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingFileImporter":
+        """Loads a `TrainingFileImporter` instance from a dictionary."""
+
         importers = config.get("importers", [])
         importers = [
             TrainingFileImporter._importer_from_dict(
@@ -104,6 +111,10 @@ class TrainingFileImporter:
 
 
 class CombinedFileImporter(TrainingFileImporter):
+    """`TrainingFileImporter` which supports using multiple `TrainingFileImporter` as
+        if it would be a single instance.
+    """
+
     def __init__(self, importers: List[TrainingFileImporter]):
         self._importers = importers
 
@@ -111,7 +122,7 @@ class CombinedFileImporter(TrainingFileImporter):
         configs = [await importer.get_config() for importer in self._importers]
         return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
 
-    async def get_domain(self) -> Optional[Domain]:
+    async def get_domain(self) -> Domain:
         domains = [await importer.get_domain() for importer in self._importers]
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
@@ -119,7 +130,7 @@ class CombinedFileImporter(TrainingFileImporter):
 
     async def get_story_data(
         self,
-        interpreter: "Interpreter" = RegexInterpreter(),
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -144,6 +155,8 @@ class CombinedFileImporter(TrainingFileImporter):
 
 
 class SimpleFileImporter(TrainingFileImporter):
+    """Default `TrainingFileImporter` implementation."""
+
     def __init__(
         self,
         config_file: Text,
@@ -166,7 +179,7 @@ class SimpleFileImporter(TrainingFileImporter):
 
     async def get_story_data(
         self,
-        interpreter: "Interpreter" = RegexInterpreter(),
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
@@ -193,12 +206,17 @@ class SimpleFileImporter(TrainingFileImporter):
 
         return self._training_datas
 
-    async def get_domain(self) -> Optional[Domain]:
+    async def get_domain(self) -> Domain:
         if not self._domain:
             try:
                 self._domain = Domain.load(self._domain_path)
                 self._domain.check_missing_templates()
             except InvalidDomain:
-                self._domain = None
+                logger.debug(
+                    "Loading domain from '{}' failed. Using empty domain.".format(
+                        self._domain_path
+                    )
+                )
+                self._domain = Domain.empty()
 
         return self._domain
