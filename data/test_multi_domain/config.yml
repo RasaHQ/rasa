@@ -6,5 +6,7 @@ policies:
   - name: MemoizationPolicy
   - name: KerasPolicy
 
-imports:
-- data/MoodBot
+importers:
+  - name: SkillSelector
+    imports:
+      - data/MoodBot

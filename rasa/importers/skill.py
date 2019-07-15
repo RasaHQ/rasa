@@ -1,87 +1,66 @@
 import logging
+from functools import reduce
+import typing
 from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
+from rasa import data
 import rasa.utils.io as io_utils
+from rasa.core.domain import Domain
+from rasa.core.interpreter import RegexInterpreter
+from rasa.core.training.dsl import StoryFileReader
+from rasa.importers.importer import TrainingFileImporter
+from rasa.importers import utils
+from rasa.nlu.training_data import TrainingData
+from rasa.core.training.structures import StoryGraph
+
+if typing.TYPE_CHECKING:
+    from rasa.nlu.model import Interpreter
+
 
 logger = logging.getLogger(__name__)
 
 
-class SkillSelector:
+class SkillSelector(TrainingFileImporter):
     def __init__(
         self,
-        imports: Set[Text],
-        project_directory: Text = os.getcwd(),
-        additional_paths: Optional[Union[Text, List[Text]]] = None,
+        config_file: Text,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[Union[List[Text], Text]] = None,
+        project_directory: Optional[Text] = None,
     ):
-        self._imports = imports
-        self._project_directory = project_directory
-        self._additional_paths = self._get_additional_training_paths(additional_paths)
+        self.config = io_utils.read_config_file(config_file)
+        if domain_path:
+            self._domain_paths = [domain_path]
+        else:
+            self._domain_paths = []
+        self._story_paths = []
+        self._nlu_paths = []
+        self._imports = set()
+        self._additional_paths = training_data_paths or []
+        self._project_directory = project_directory or os.path.dirname(config_file)
 
-    @staticmethod
-    def _get_additional_training_paths(
-        paths: Optional[Union[Text, List[Text]]]
-    ) -> List[Text]:
-        additional_training_paths = paths or []
-        if not isinstance(additional_training_paths, list):
-            additional_training_paths = [additional_training_paths]
+        self._init_from_dict(self.config, self._project_directory)
 
-        return [os.path.abspath(p) for p in additional_training_paths]
-
-    @classmethod
-    def all_skills(
-        cls,
-        project_directory: Text = os.getcwd(),
-        project_data_paths: Optional[Union[Text, List[Text]]] = None,
-    ) -> "SkillSelector":
-        """Returns a `SkillSelector` instance which does not specify any skills."""
-
-        return cls(set(), project_directory, project_data_paths)
-
-    @classmethod
-    def load(
-        cls,
-        config: Text,
-        additional_training_paths: Optional[Union[Text, List[Text]]] = None,
-    ) -> "SkillSelector":
-        """
-        Loads the specification from the config files.
-        Args:
-            config: Path to the root configuration file in the project directory.
-            additional_training_paths: Paths to additional training files.
-
-        Returns:
-            `SkillSelector` which specifies the loaded skills.
-        """
-        # All imports are by default relative to the root config file directory
-        config = os.path.abspath(config)
-
-        # Create a base selector which keeps track of the imports during the
-        # skill config loading in order to avoid cyclic imports
-        selector = cls.all_skills(os.path.dirname(config), additional_training_paths)
-
-        selector = cls._from_file(config, selector)
+        extra_story_files, extra_nlu_files = data.get_core_nlu_files(
+            training_data_paths
+        )
+        self._story_paths += list(extra_story_files)
+        self._nlu_paths += list(extra_nlu_files)
 
         logger.debug(
             "Selected skills: {}".format(
-                "".join(["\n-{}".format(i) for i in selector._imports])
+                "".join(["\n-{}".format(i) for i in self._imports])
             )
         )
 
-        return selector
-
-    @classmethod
-    def _from_path(cls, path: Text, skill_selector: "SkillSelector") -> "SkillSelector":
+    def _init_from_path(self, path: Text) -> None:
         if os.path.isfile(path):
-            return cls._from_file(path, skill_selector)
+            self._init_from_file(path)
         elif os.path.isdir(path):
-            return cls._from_directory(path, skill_selector)
-        else:
-            logger.debug("No imports found. Importing everything.")
-            return cls.all_skills()
+            self._init_from_directory(path)
 
-    @classmethod
-    def _from_file(cls, path: Text, skill_selector: "SkillSelector") -> "SkillSelector":
+    def _init_from_file(self, path: Text) -> None:
         from rasa import data  # pytype: disable=pyi-error
 
         path = os.path.abspath(path)
@@ -89,64 +68,41 @@ class SkillSelector:
             config = io_utils.read_config_file(path)
 
             parent_directory = os.path.dirname(path)
-            return cls._from_dict(config, parent_directory, skill_selector)
+            self._init_from_dict(config, parent_directory)
 
-        return cls.all_skills()
-
-    @classmethod
-    def _from_dict(
-        cls,
-        _dict: Dict[Text, Any],
-        parent_directory: Text,
-        skill_selector: "SkillSelector",
-    ) -> "SkillSelector":
+    def _init_from_dict(self, _dict: Dict[Text, Any], parent_directory: Text) -> None:
         imports = _dict.get("imports") or []
         imports = {os.path.join(parent_directory, i) for i in imports}
         # clean out relative paths
         imports = {os.path.abspath(i) for i in imports}
-        import_candidates = [
-            p for p in imports if not skill_selector._is_explicitly_imported(p)
-        ]
-        new = cls(imports, parent_directory)
-        skill_selector = skill_selector.merge(new)
+        import_candidates = [p for p in imports if not self._is_explicitly_imported(p)]
+        self._imports = self._imports.union(import_candidates)
 
         # import config files from paths which have not been processed so far
         for p in import_candidates:
-            other = cls._from_path(p, skill_selector)
-            skill_selector = skill_selector.merge(other)
-
-        return skill_selector
+            self._init_from_path(p)
 
     def _is_explicitly_imported(self, path: Text) -> bool:
         return not self.no_skills_selected() and self.is_imported(path)
 
-    @classmethod
-    def _from_directory(
-        cls, path: Text, skill_selector: "SkillSelector"
-    ) -> "SkillSelector":
+    def _init_from_directory(self, path: Text):
         from rasa import data  # pytype: disable=pyi-error
 
         for parent, _, files in os.walk(path):
             for file in files:
                 full_path = os.path.join(parent, file)
+                if not self.is_imported(full_path):
+                    # Check next file
+                    continue
 
-                if data.is_config_file(full_path) and skill_selector.is_imported(
-                    full_path
-                ):
-                    skill_selector = cls._from_file(full_path, skill_selector)
-
-        return skill_selector
-
-    def merge(self, other: "SkillSelector") -> "SkillSelector":
-        imports = self._imports.union(
-            {
-                i
-                for i in other._imports
-                if not self.is_imported(i) or self.no_skills_selected()
-            }
-        )
-
-        return SkillSelector(imports, self._project_directory, self._additional_paths)
+                if data.is_domain_file(full_path):
+                    self._story_paths.append(full_path)
+                elif data._is_nlu_file(full_path):
+                    self._nlu_paths.append(full_path)
+                elif data._is_story_file(full_path):
+                    self._story_paths.append(full_path)
+                elif data.is_config_file(full_path):
+                    self._init_from_file(full_path)
 
     def no_skills_selected(self) -> bool:
         return not self._imports
@@ -206,3 +162,32 @@ class SkillSelector:
 
     def add_import(self, path: Text) -> None:
         self._imports.add(path)
+
+    async def get_domain(self) -> Optional[Domain]:
+        domains = [Domain.load(path) for path in self._domain_paths]
+        return reduce(
+            lambda merged, other: merged.merge(other), domains, Domain.empty()
+        )
+
+    async def get_story_data(
+        self,
+        interpreter: "Interpreter" = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
+        story_steps = await StoryFileReader.read_from_files(
+            self._story_paths,
+            await self.get_domain(),
+            interpreter,
+            template_variables,
+            use_e2e,
+            exclusion_percentage,
+        )
+        return StoryGraph(story_steps)
+
+    async def get_config(self) -> Dict:
+        return self.config
+
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        return utils.training_data_from_paths(self._nlu_paths, language)

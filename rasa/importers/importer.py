@@ -79,9 +79,13 @@ class TrainingFileImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> Optional["TrainingFileImporter"]:
+        from rasa.importers.skill import SkillSelector
+
         module_path = importer_config.pop("name", None)
         if module_path == SimpleFileImporter.__name__:
             importer_class = SimpleFileImporter
+        elif module_path == SkillSelector.__name__:
+            importer_class = SkillSelector
         else:
             try:
                 importer_class = common_utils.class_from_module_path(module_path)
