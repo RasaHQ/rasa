@@ -384,7 +384,7 @@ async def _train_nlu_async(
 ):
     # training NLU only hence the training files still have to be selected
     file_importer = TrainingFileImporter.load_from_config(
-        config, training_data_paths=[nlu_data]
+        config, training_data_paths=[nlu_data], load_only_nlu_data=True
     )
 
     training_datas = await file_importer.get_nlu_data()

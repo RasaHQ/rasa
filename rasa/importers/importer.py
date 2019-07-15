@@ -46,12 +46,13 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        load_only_nlu_data: bool = False,
     ) -> "TrainingFileImporter":
         """Loads a `TrainingFileImporter` instance from a configuration file."""
 
         config = io_utils.read_config_file(config_path)
         return TrainingFileImporter.load_from_dict(
-            config, config_path, domain_path, training_data_paths
+            config, config_path, domain_path, training_data_paths, load_only_nlu_data
         )
 
     @staticmethod
@@ -60,6 +61,7 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
+        load_only_nlu_data: bool = False,
     ) -> "TrainingFileImporter":
         """Loads a `TrainingFileImporter` instance from a dictionary."""
         config = config or {}
@@ -77,7 +79,11 @@ class TrainingFileImporter:
                 SimpleFileImporter(config_path, domain_path, training_data_paths)
             ]
 
-        return CombinedFileImporter(importers)
+        importer = CombinedFileImporter(importers)
+        if load_only_nlu_data:
+            importer = NluFileImporter(importer)
+
+        return importer
 
     @staticmethod
     def _importer_from_dict(
@@ -108,6 +114,31 @@ class TrainingFileImporter:
         return importer_class(
             config_path, domain_path, training_data_paths, **constructor_arguments
         )
+
+
+class NluFileImporter(TrainingFileImporter):
+    """Importer which skips any Core related file reading"""
+
+    def __init__(self, actual_importer: TrainingFileImporter):
+        self._importer = actual_importer
+
+    async def get_domain(self) -> Domain:
+        return Domain.empty()
+
+    async def get_story_data(
+        self,
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
+        return StoryGraph([])
+
+    async def get_config(self) -> Dict:
+        return await self._importer.get_config()
+
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        return await self._importer.get_nlu_data(language)
 
 
 class CombinedFileImporter(TrainingFileImporter):
