@@ -1,3 +1,17 @@
+import os
+import shutil
+
+
+def test_run_does_not_start(run_in_default_project):
+    os.remove("domain.yml")
+    shutil.rmtree("models")
+
+    # the server should not start as no model is configured
+    output = run_in_default_project("run")
+
+    assert "No model found." in output.outlines[0]
+
+
 def test_run_help(run):
     output = run("run", "--help")
 
