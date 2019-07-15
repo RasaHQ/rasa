@@ -62,7 +62,7 @@ class TrainingFileImporter:
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingFileImporter":
         """Loads a `TrainingFileImporter` instance from a dictionary."""
-
+        config = config or {}
         importers = config.get("importers", [])
         importers = [
             TrainingFileImporter._importer_from_dict(

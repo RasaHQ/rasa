@@ -250,3 +250,14 @@ class TrainingData(object):
             )
             + "\t- found entities: {}\n".format(list_to_str(self.entities))
         )
+
+    def is_empty(self) -> bool:
+        """Checks if any training data was loaded."""
+
+        lists_to_check = [
+            self.training_examples,
+            self.entity_synonyms,
+            self.regex_features,
+            self.lookup_tables,
+        ]
+        return not any([len(l) > 0 for l in lists_to_check])
