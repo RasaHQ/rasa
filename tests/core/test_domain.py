@@ -128,6 +128,8 @@ async def test_create_train_data_unfeaturized_entities():
 
     assert hashed == [
         "[{}]",
+        '[{"intent_why": 1.0, "prev_utter_default": 1.0}]',
+        '[{"intent_why": 1.0, "prev_action_listen": 1.0}]',
         '[{"intent_thank": 1.0, "prev_utter_default": 1.0}]',
         '[{"intent_thank": 1.0, "prev_action_listen": 1.0}]',
         '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
