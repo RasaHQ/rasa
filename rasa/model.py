@@ -175,7 +175,7 @@ async def model_fingerprint(file_importer: "TrainingFileImporter") -> Fingerprin
     """Creates a model fingerprint from its used configuration and training data.
 
     Args:
-        file_importer: File importer which keeps the required model training data.
+        file_importer: File importer which provides the training data and model config.
 
     Returns:
         The fingerprint.
