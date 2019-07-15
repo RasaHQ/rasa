@@ -26,15 +26,14 @@ def load(
 
     file_config = {}
     if config is None and os.path.isfile(DEFAULT_CONFIG_PATH):
-        filename = DEFAULT_CONFIG_PATH
+        config = DEFAULT_CONFIG_PATH
 
     if config is not None:
         try:
-            file_config = rasa.utils.io.read_config_file(filename)
+            file_config = rasa.utils.io.read_config_file(config)
         except yaml.parser.ParserError as e:
             raise InvalidConfigError(
-                "Failed to read configuration file "
-                "'{}'. Error: {}".format(filename, e)
+                "Failed to read configuration file " "'{}'. Error: {}".format(config, e)
             )
 
     return _load_from_dict(file_config, **kwargs)
