@@ -119,3 +119,19 @@ async def test_http_interpreter_no_slash_at_end():
         response = {"text": "message_text", "token": None, "message_id": "message_id"}
 
         assert query == response
+
+
+async def test_http_interpreter_slash_at_end():
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/a/model/parse")
+
+        endpoint = EndpointConfig("https://example.com/a/")
+        interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
+        await interpreter.parse(text="message_text", message_id="message_id")
+
+        r = latest_request(mocked, "POST", "https://example.com/a/model/parse")
+
+        query = json_of_latest_request(r)
+        response = {"text": "message_text", "token": None, "message_id": "message_id"}
+
+        assert query == response
