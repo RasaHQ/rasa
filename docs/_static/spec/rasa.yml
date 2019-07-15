@@ -409,7 +409,7 @@ paths:
       security:
       - TokenAuth: []
       - JWT: []
-      operationId: evaluateModelStories
+      operationId: testModelStories
       tags:
       - Model
       summary: Evaluate stories
