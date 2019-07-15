@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
+from rasa.nlu.tokenizers import Token
 from rasa.nlu.training_data import Message, TrainingData
 
 try:
@@ -210,7 +211,15 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return "", 0.0
 
-    def _create_entity_dict(self, tokens, start, end, entity, confidence):
+    def _create_entity_dict(
+        self,
+        message: Message,
+        tokens: List[Token],
+        start: int,
+        end: int,
+        entity: str,
+        confidence: float,
+    ) -> Dict[Text, Any]:
         if self.pos_features:
             _start = tokens[start].idx
             _end = tokens[start : end + 1].end_char
@@ -218,7 +227,13 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             _start = tokens[start].offset
             _end = tokens[end].end
-            value = " ".join(t.text for t in tokens[start : end + 1])
+            value = tokens[start].text
+            value += "".join(
+                [
+                    message.text[tokens[i - 1].end : tokens[i].offset] + tokens[i].text
+                    for i in range(start + 1, end + 1)
+                ]
+            )
 
         return {
             "start": _start,
@@ -307,12 +322,16 @@ class CRFEntityExtractor(EntityExtractor):
             )
 
         if self.component_config["BILOU_flag"]:
-            return self._convert_bilou_tagging_to_entity_result(tokens, entities)
+            return self._convert_bilou_tagging_to_entity_result(
+                message, tokens, entities
+            )
         else:
             # not using BILOU tagging scheme, multi-word entities are split.
             return self._convert_simple_tagging_to_entity_result(tokens, entities)
 
-    def _convert_bilou_tagging_to_entity_result(self, tokens, entities):
+    def _convert_bilou_tagging_to_entity_result(
+        self, message: Message, tokens: List[Token], entities: List[Dict[Text, float]]
+    ):
         # using the BILOU tagging scheme
         json_ents = []
         word_idx = 0
@@ -323,7 +342,7 @@ class CRFEntityExtractor(EntityExtractor):
 
             if end_idx is not None:
                 ent = self._create_entity_dict(
-                    tokens, word_idx, end_idx, entity_label, confidence
+                    message, tokens, word_idx, end_idx, entity_label, confidence
                 )
                 json_ents.append(ent)
                 word_idx = end_idx + 1
