@@ -4,10 +4,9 @@ import shutil
 import tempfile
 import uuid
 import typing
-from typing import Tuple, List, Text, Set, Union, Optional
 import re
-
-import rasa.utils.io as io_utils
+from typing import Tuple, List, Text, Set, Union, Optional
+from rasa.nlu.training_data import loading
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +22,8 @@ def get_core_directory(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files should
-                       be loaded.
+        skill_imports: `SkillSelector` instance which determines which files
+                        should be loaded.
 
     Returns:
         Path to temporary directory containing all found Core training files.
@@ -41,8 +40,8 @@ def get_nlu_directory(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files should
-                       be loaded.
+        skill_imports: `SkillSelector` instance which determines which files
+                        should be loaded.
 
     Returns:
         Path to temporary directory containing all found NLU training files.
@@ -59,8 +58,8 @@ def get_core_nlu_directories(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files should
-                       be loaded.
+        skill_imports: `SkillSelector` instance which determines which files
+                        should be loaded.
 
     Returns:
         Path to directory containing the Core files and path to directory
@@ -83,8 +82,8 @@ def get_core_nlu_files(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files should
-                       be loaded.
+        skill_imports: `SkillSelector` instance which determines which files
+                        should be loaded.
 
     Returns:
         Tuple of paths to story and NLU files.
@@ -156,21 +155,8 @@ def _is_valid_filetype(path: Text) -> bool:
 
 
 def _is_nlu_file(file_path: Text) -> bool:
-    with open(file_path, encoding="utf-8") as f:
-        if file_path.endswith(".json"):
-            content = io_utils.read_json_file(file_path)
-            is_nlu_file = (
-                isinstance(content, dict) and content.get("rasa_nlu_data") is not None
-            )
-        else:
-            is_nlu_file = any(_contains_nlu_pattern(l) for l in f)
-    return is_nlu_file
-
-
-def _contains_nlu_pattern(text: Text) -> bool:
-    nlu_pattern = r"\s*##\s*(intent|regex||synonym|lookup):"
-
-    return re.match(nlu_pattern, text) is not None
+    """Checks whether a file is an NLU file."""
+    return loading.guess_format(file_path) != loading.UNK
 
 
 def _is_story_file(file_path: Text) -> bool:

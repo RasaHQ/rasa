@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import shutil
 from functools import partial
 from typing import List, Optional, Text, Union
 
@@ -33,6 +34,13 @@ def create_http_input_channels(
         all_credentials = {}
 
     if channel:
+        if len(all_credentials) > 1:
+            logger.info(
+                "Connecting to channel '{}' which was specified by the "
+                "'--connector' argument. Any other channels will be ignored. "
+                "To connect to all given channels, omit the '--connector' "
+                "argument.".format(channel)
+            )
         return [_create_single_channel(channel, all_credentials.get(channel))]
     else:
         return [_create_single_channel(c, k) for c, k in all_credentials.items()]
@@ -151,7 +159,7 @@ def serve_application(
     )
 
     logger.info(
-        "Starting Rasa Core server on "
+        "Starting Rasa server on "
         "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port))
     )
 
@@ -159,6 +167,12 @@ def serve_application(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
+
+    async def clear_model_files(app: Sanic, _loop: Text) -> None:
+        if app.agent.model_directory:
+            shutil.rmtree(app.agent.model_directory)
+
+    app.register_listener(clear_model_files, "after_server_stop")
 
     update_sanic_log_level(log_file)
 
@@ -180,10 +194,11 @@ async def load_agent_on_start(
     from rasa.core import broker
 
     try:
-        _, nlu_model = get_model_subdirectories(get_model(model_path))
-        _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+        with get_model(model_path) as unpacked_model:
+            _, nlu_model = get_model_subdirectories(unpacked_model)
+            _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
     except Exception:
-        logger.debug("Could not load interpreter from '{}'".format(model_path))
+        logger.debug("Could not load interpreter from '{}'.".format(model_path))
         _interpreter = None
 
     _broker = broker.from_endpoint_config(endpoints.event_broker)

@@ -1,5 +1,5 @@
 :desc: Define intents, entities, slots and actions in Rasa to build contextual
-       AI Assistants and chatbots using open source bot framework Rasa Stack.
+       AI Assistants and chatbots using open source bot framework Rasa.
 
 .. _domains:
 
@@ -273,14 +273,14 @@ Ignoring entities for certain intents
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you want all entities to be ignored for certain intents, you can
-add the ``use_entities: None`` parameter to the intent in your domain
+add the ``use_entities: []`` parameter to the intent in your domain
 file like this:
 
 .. code-block:: yaml
 
   intents:
     - greet:
-        use_entities: None
+        use_entities: []
 
 To ignore some entities or explicitly take only certain entities
 into account you can use this syntax:

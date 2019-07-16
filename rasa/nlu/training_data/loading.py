@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+
 import requests
 import typing
 from typing import Optional, Text
@@ -28,8 +30,8 @@ logger = logging.getLogger(__name__)
 WIT = "wit"
 LUIS = "luis"
 RASA = "rasa_nlu"
-UNK = "unk"
 MARKDOWN = "md"
+UNK = "unk"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
 _markdown_section_markers = ["## {}:".format(s) for s in markdown.available_sections]
@@ -51,6 +53,9 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
 
     Merges them if loaded from disk and multiple files are found."""
     from rasa.nlu.training_data import TrainingData
+
+    if not os.path.exists(resource_name):
+        raise ValueError("File '{}' does not exist.".format(resource_name))
 
     files = utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
@@ -110,11 +115,11 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
 def _load(filename: Text, language: Optional[Text] = "en") -> Optional["TrainingData"]:
     """Loads a single training data file from disk."""
 
-    fformat = _guess_format(filename)
+    fformat = guess_format(filename)
     if fformat == UNK:
-        raise ValueError("Unknown data format for file {}".format(filename))
+        raise ValueError("Unknown data format for file '{}'.".format(filename))
 
-    logger.info("Training data format of {} is {}".format(filename, fformat))
+    logger.info("Training data format of '{}' is '{}'.".format(filename, fformat))
     reader = _reader_factory(fformat)
 
     if reader:
@@ -123,11 +128,20 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
         return None
 
 
-def _guess_format(filename: Text) -> Text:
-    """Applies heuristics to guess the data format of a file."""
+def guess_format(filename: Text) -> Text:
+    """Applies heuristics to guess the data format of a file.
+
+    Args:
+        filename: file whose type should be guessed
+
+    Returns:
+        Guessed file format.
+    """
     guess = UNK
-    content = rasa.utils.io.read_file(filename)
+
+    content = ""
     try:
+        content = rasa.utils.io.read_file(filename)
         js = json.loads(content)
     except ValueError:
         if any([marker in content for marker in _markdown_section_markers]):
@@ -139,3 +153,11 @@ def _guess_format(filename: Text) -> Text:
                 break
 
     return guess
+
+
+def _guess_format(filename: Text) -> Text:
+    logger.warning(
+        "Using '_guess_format()' is deprecated since Rasa 1.1.5. "
+        "Please use 'guess_format()' instead."
+    )
+    return guess_format(filename)

@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 import uuid
+from aioresponses import aioresponses
 
 import pytest
 from freezegun import freeze_time
@@ -12,6 +13,7 @@ import rasa.constants
 from rasa.core import events, utils
 from rasa.core.events import Event, UserUttered, SlotSet, BotUttered
 from rasa.model import unpack_model
+from rasa.utils.endpoints import EndpointConfig
 from tests.nlu.utilities import ResponseTest
 
 
@@ -215,6 +217,8 @@ def test_train_stack_success(
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
+
+    assert response.headers["filename"] is not None
 
     # save model to temporary file
     tempdir = tempfile.mkdtemp()
@@ -659,6 +663,42 @@ def test_load_model(rasa_app, trained_core_model):
     assert "fingerprint" in response.json
 
     assert old_fingerprint != response.json["fingerprint"]
+
+
+def test_load_model_from_model_server(rasa_app, trained_core_model):
+    _, response = rasa_app.get("/status")
+
+    assert response.status == 200
+    assert "fingerprint" in response.json
+
+    old_fingerprint = response.json["fingerprint"]
+
+    endpoint = EndpointConfig("https://example.com/model/trained_core_model")
+    with open(trained_core_model, "rb") as f:
+        with aioresponses(passthrough=["http://127.0.0.1"]) as mocked:
+            headers = {}
+            fs = os.fstat(f.fileno())
+            headers["Content-Length"] = str(fs[6])
+            mocked.get(
+                "https://example.com/model/trained_core_model",
+                content_type="application/x-tar",
+                body=f.read(),
+            )
+            data = {"model_server": {"url": endpoint.url}}
+            _, response = rasa_app.put("/model", json=data)
+
+            assert response.status == 204
+
+            _, response = rasa_app.get("/status")
+
+            assert response.status == 200
+            assert "fingerprint" in response.json
+
+            assert old_fingerprint != response.json["fingerprint"]
+
+    import rasa.core.jobs
+
+    rasa.core.jobs.__scheduler = None
 
 
 def test_load_model_invalid_request_body(rasa_app):

@@ -1,4 +1,5 @@
 import os
+import pytest
 from unittest.mock import patch
 
 from moto import mock_s3
@@ -130,3 +131,14 @@ def test_list_models_method_raise_exeception_in_AzurePersistor():
         result = persistor.AzurePersistor("", "", "").list_models()
 
     assert result == []
+
+
+# noinspection PyPep8Naming
+@pytest.mark.parametrize(
+    "model, archive", [("model.tar.gz", "model.tar.gz"), ("model", "model.tar.gz")]
+)
+def test_retrieve_tar_archive(model, archive):
+    with patch.object(persistor.Persistor, "_decompress") as f:
+        with patch.object(persistor.Persistor, "_retrieve_tar") as f:
+            persistor.Persistor().retrieve(model, "dst")
+        f.assert_called_once_with(archive)

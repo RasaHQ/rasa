@@ -6,7 +6,6 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
 import rasa.utils.io
-from rasa import data
 from rasa.cli.utils import bcolors
 from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
@@ -131,6 +130,7 @@ class Domain(object):
         cls, path: Text, skill_imports: Optional[SkillSelector] = None
     ) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
+        from rasa import data
 
         domain = Domain.empty()
         skill_imports = skill_imports or SkillSelector.all_skills()
@@ -614,7 +614,7 @@ class Domain(object):
         loaded_domain_spec = self.load_specification(path)
         states = loaded_domain_spec["states"]
 
-        if states != self.input_states:
+        if set(states) != set(self.input_states):
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
             raise InvalidDomain(
@@ -657,6 +657,10 @@ class Domain(object):
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
                 if intent.get("use_entities"):
+                    intent.pop("use_entities")
+                if not intent.get("ignore_entities"):
+                    intent.pop("ignore_entities")
+                if len(intent) == 0:
                     domain_data["intents"][idx] = name
 
         for slot in domain_data["slots"].values():  # pytype: disable=attribute-error
