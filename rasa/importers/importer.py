@@ -174,20 +174,24 @@ class CombinedFileImporter(TrainingFileImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        story_graphs = [
-            await importer.get_story_data(
+        story_graphs = []
+        # Do this in a loop because Python 3.5 does not support async comprehensions
+        for importer in self._importers:
+            graph = await importer.get_story_data(
                 interpreter, template_variables, use_e2e, exclusion_percentage
             )
-            for importer in self._importers
-        ]
+            story_graphs.append(graph)
+
         return reduce(
             lambda merged, other: merged.merge(other), story_graphs, StoryGraph([])
         )
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        nlu_datas = [
-            await importer.get_nlu_data(language) for importer in self._importers
-        ]
+        nlu_datas = []
+        # Do this in a loop because Python 3.5 does not support async comprehensions
+        for importer in self._importers:
+            nlu_data = await importer.get_nlu_data(language)
+            nlu_datas.append(nlu_data)
         training_data = reduce(
             lambda merged, other: merged.merge(other), nlu_datas, TrainingData()
         )
