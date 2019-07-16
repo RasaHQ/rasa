@@ -1,19 +1,22 @@
 import argparse
 import importlib.util
 import logging
+import os
 import signal
 import sys
-import os
+import tempfile
 import traceback
-from multiprocessing import get_context
 import typing
-from typing import List, Text, Optional
+from multiprocessing import get_context
+from typing import List, Text, Optional, Tuple, Union, Dict
 
+import requests
 import ruamel.yaml as yaml
+import time
 
-from rasa.cli.utils import get_validated_path, print_warning, print_error
+import rasa.utils.io as io_utils
 from rasa.cli.arguments import x as arguments
-
+from rasa.cli.utils import get_validated_path, print_warning, print_error
 from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
@@ -23,7 +26,6 @@ from rasa.constants import (
     DEFAULT_RASA_X_PORT,
     DEFAULT_RASA_PORT,
 )
-import rasa.utils.io as io_utils
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,7 @@ def _rasa_service(
     args: argparse.Namespace,
     endpoints: "AvailableEndpoints",
     rasa_x_url: Optional[Text] = None,
+    credentials_path: Optional[Text] = None,
 ):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
@@ -67,9 +70,10 @@ def _rasa_service(
     io_utils.configure_colored_logging(args.loglevel)
     logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
-    credentials_path = _prepare_credentials_for_rasa_x(
-        args.credentials, rasa_x_url=rasa_x_url
-    )
+    if not credentials_path:
+        credentials_path = _prepare_credentials_for_rasa_x(
+            args.credentials, rasa_x_url=rasa_x_url
+        )
 
     serve_application(
         endpoints=endpoints,
@@ -291,16 +295,85 @@ def rasa_x(args: argparse.Namespace):
         run_locally(args)
 
 
+def _pull_endpoints_and_credentials_from_server(
+    config_endpoint: Optional[Text],
+    attempts: int = 30,
+    wait_time_between_pulls: Union[int, float] = 0.5,
+) -> Tuple[EndpointConfig, Text]:
+    while attempts > 0:
+        try:
+            response = requests.get(config_endpoint)
+            if response.status_code == 200:
+                rjs = response.json()
+                credentials_path = _write_credentials_to_file(rjs)
+                endpoint_config = _create_endpoint_config(rjs)
+                if endpoint_config and credentials_path:
+                    return endpoint_config, credentials_path
+
+            else:
+                logger.debug(
+                    "Failed to get a proper response from remote "
+                    "server. Status Code: {}. Response: {}"
+                    "".format(response.status_code, response.text)
+                )
+        except requests.exceptions.ConnectionError as e:
+            logger.debug("Failed to connect to server: {}".format(e))
+        time.sleep(wait_time_between_pulls)
+        attempts -= 1
+
+    print_error(
+        "Could not fetch endpoints and credentials from server at "
+        "'{}'. Exiting.".format(config_endpoint)
+    )
+    sys.exit(1)
+
+
+def _create_endpoint_config(data: Dict) -> Optional[EndpointConfig]:
+    endpoints_dict = data.get("endpoints")
+    if endpoints_dict:
+        return EndpointConfig.from_dict(endpoints_dict)
+    else:
+        print_error(
+            "Successfully fetched data from endpoint config but "
+            "failed to find key 'endpoints'."
+        )
+        return None
+
+
+def _write_credentials_to_file(data) -> Optional[Text]:
+    credentials = data.get("credentials")
+    if credentials:
+        directory = tempfile.mkdtemp()
+        credentials_path = str(directory / "credentials.yml")
+        io_utils.write_yaml_file(credentials, credentials_path)
+        return credentials_path
+    else:
+        print_error(
+            "Successfully fetched data from endpoint config but "
+            "failed to find key 'credentials'."
+        )
+        return None
+
+
 def run_in_production(args: argparse.Namespace):
     from rasa.cli.utils import print_success
     from rasa.core.utils import AvailableEndpoints
 
     print_success("Starting Rasa X in production mode... 🚀")
-    args.endpoints = get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-    endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
-    _rasa_service(args, endpoints)
+
+    config_endpoint = args.config_endpoint
+    if config_endpoint:
+        endpoints, credentials_path = _pull_endpoints_and_credentials_from_server(
+            config_endpoint
+        )
+    else:
+        args.endpoints = get_validated_path(
+            args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+        )
+        endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+        credentials_path = None
+
+    _rasa_service(args, endpoints, None, credentials_path)
 
 
 def run_locally(args: argparse.Namespace):
