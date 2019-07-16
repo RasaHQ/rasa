@@ -37,6 +37,8 @@ jobs:
     python: 3.6
     script:
     - make types
+    - pip install pytype==2019.5.31
+    - pytype --keep-going rasa
   - &run-tests
     stage: test
     name: "Test 3.5"

@@ -16,6 +16,7 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
     from rasa.nlu.training_data import Message
 
+
 class KeywordIntentClassifier(Component):
     """Intent classifier using simple keyword matching.
 

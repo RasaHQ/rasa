@@ -445,7 +445,7 @@ EmbeddingIntentClassifier
 KeywordIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Simple keyword matching intent classifier.
+:Short: Simple keyword matching intent classifier, intended for small, short-term projects.
 :Outputs: ``intent``
 :Requires: nothing
 :Output-Example:
