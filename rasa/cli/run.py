@@ -83,8 +83,10 @@ def run(args: argparse.Namespace):
     )
 
     if args.enable_api:
-        args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
+        if not args.remote_storage:
+            args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
         rasa.run(**vars(args))
+        return
 
     # if the API is not enable you cannot start without a model
     # make sure either a model server, a remote storage, or a local model is
