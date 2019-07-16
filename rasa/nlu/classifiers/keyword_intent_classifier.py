@@ -51,11 +51,10 @@ class KeywordIntentClassifier(Component):
             message.set("intent", intent, add_to_output=True)
 
     def parse(self, text: Text) -> Optional[Text]:
-        _text = text.lower()
 
         for intent, keywords in self.intent_keyword_map.items():
-            for word in keywords:
-                if re.search(r"\b" + word.lower() + r"\b", _text):
+            for string in keywords:
+                if re.search(r"\b" + string + r"\b", text):
                     return intent
 
         return None
