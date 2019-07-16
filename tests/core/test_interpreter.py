@@ -90,11 +90,12 @@ async def test_regex_interpreter_adds_intent_prefix(regex_interpreter):
 
 
 @pytest.mark.parametrize(
-    "endpoint_url,joined_url"[
+    "endpoint_url,joined_url",
+    [
         ("https://example.com", "https://example.com/model/parse"),
         ("https://example.com/a", "https://example.com/a/model/parse"),
         ("https://example.com/a/", "https://example.com/a/model/parse"),
-    ]
+    ],
 )
 async def test_http_interpreter(endpoint_url, joined_url):
     with aioresponses() as mocked:
