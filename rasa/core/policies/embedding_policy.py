@@ -60,7 +60,7 @@ SessionData = namedtuple(
 class EmbeddingPolicy(Policy):
     """Recurrent Embedding Dialogue Policy (REDP)
 
-    The policy that is used in our paper https://arxiv.org/abs/1811.11707
+    Transformer version of the policy used in our paper https://arxiv.org/abs/1811.11707
     """
 
     SUPPORTS_ONLINE_TRAINING = True
@@ -103,7 +103,8 @@ class EmbeddingPolicy(Policy):
         # maximum negative similarity for incorrect actions
         "mu_neg": -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
         # the type of the similarity
-        "similarity_type": "cosine",  # string 'cosine' or 'inner'
+        "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
+        "loss_type": 'softmax',  # string 'softmax' or 'margin'
         # the number of incorrect actions, the algorithm will minimize
         # their similarity to the user input during training
         "num_neg": 20,
@@ -164,7 +165,6 @@ class EmbeddingPolicy(Policy):
         action_placeholder: Optional['tf.Tensor'] = None,
         slots_placeholder: Optional['tf.Tensor'] = None,
         prev_act_placeholder: Optional['tf.Tensor'] = None,
-        dialogue_len: Optional['tf.Tensor'] = None,
         similarity_op: Optional['tf.Tensor'] = None,
         alignment_history: Optional['tf.Tensor'] = None,
         user_embed: Optional['tf.Tensor'] = None,
@@ -208,7 +208,6 @@ class EmbeddingPolicy(Policy):
         self.b_in = action_placeholder
         self.c_in = slots_placeholder
         self.b_prev_in = prev_act_placeholder
-        self._dialogue_len = dialogue_len
         self.sim_op = similarity_op
 
         # store attention probability distribution as
@@ -270,6 +269,13 @@ class EmbeddingPolicy(Policy):
         self.mu_pos = config["mu_pos"]
         self.mu_neg = config["mu_neg"]
         self.similarity_type = config["similarity_type"]
+        self.loss_type = config['loss_type']
+        if self.similarity_type == 'auto':
+            if self.loss_type == 'softmax':
+                self.similarity_type = 'inner'
+            elif self.loss_type == 'margin':
+                self.similarity_type = 'cosine'
+
         self.num_neg = config["num_neg"]
         self.use_max_sim_neg = config["use_max_sim_neg"]
 
@@ -414,12 +420,14 @@ class EmbeddingPolicy(Policy):
     # tf helpers:
     @staticmethod
     def _create_tf_dataset(session_data: 'SessionData',
-                           batch_size: Union['tf.Tensor', int]) -> 'tf.data.Dataset':
+                           batch_size: Union['tf.Tensor', int],
+                           shuffle: bool = True) -> 'tf.data.Dataset':
         train_dataset = tf.data.Dataset.from_tensor_slices((session_data.X,
                                                             session_data.Y,
                                                             session_data.slots,
                                                             session_data.previous_actions))
-        train_dataset = train_dataset.shuffle(buffer_size=len(session_data.X))
+        if shuffle:
+            train_dataset = train_dataset.shuffle(buffer_size=len(session_data.X))
         train_dataset = train_dataset.batch(batch_size)
         return train_dataset
 
@@ -550,77 +558,55 @@ class EmbeddingPolicy(Policy):
 
             return tf.nn.relu(x)
 
-    def _tf_sample_neg(self,
-                       pos_b,
-                       neg_bs=None,
-                       neg_ids=None,
-                       batch_size=None,
-                       first_only=False
+    @staticmethod
+    def _tf_make_flat(x):
+        return tf.reshape(x, (-1, x.shape[-1]))
+
+    @staticmethod
+    def _tf_sample_neg(batch_size,
+                       all_bs,
+                       neg_ids,
                        ) -> 'tf.Tensor':
 
-        all_b = pos_b[tf.newaxis, :, :]
-        if batch_size is None:
-            batch_size = tf.shape(pos_b)[0]
-        all_b = tf.tile(all_b, [batch_size, 1, 1])
-        if neg_bs is None and neg_ids is None:
-            return all_b
+        tiled_all_bs = tf.tile(tf.expand_dims(all_bs, 0), (batch_size, 1, 1))
 
-        def sample_neg_b():
-            if neg_bs is not None:
-                _neg_bs = neg_bs
-            elif neg_ids is not None:
-                _neg_bs = tf.batch_gather(all_b, neg_ids)
-            else:
-                raise
-            return tf.concat([pos_b[:, tf.newaxis, :], _neg_bs], 1)
+        return tf.batch_gather(tiled_all_bs, neg_ids)
 
-        if first_only:
-            out_b = pos_b[:, tf.newaxis, :]
-        else:
-            out_b = all_b
+    def _tf_calc_iou_mask(self,
+                          pos_b,
+                          all_bs,
+                          neg_ids,
+                          ) -> 'tf.Tensor':
 
-        if neg_bs is not None:
-            cond = tf.logical_and(self._is_training, tf.shape(neg_bs)[0] > 1)
-        elif neg_ids is not None:
-            cond = tf.logical_and(self._is_training, tf.shape(neg_ids)[0] > 1)
-        else:
-            raise
+        pos_b_in_flat = pos_b[:, tf.newaxis, :]
+        neg_b_in_flat = self._tf_sample_neg(tf.shape(pos_b)[0], all_bs, neg_ids)
 
-        return tf.cond(cond, sample_neg_b, lambda: out_b)
+        intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
+        union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
 
-    def _tf_calc_iou(self,
-                     b_raw,
-                     neg_bs=None,
-                     neg_ids=None
-                     ) -> 'tf.Tensor':
+        iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
+        return 1. - tf.nn.relu(tf.sign(1. - iou))
 
-        tiled_intent_raw = self._tf_sample_neg(b_raw, neg_bs=neg_bs, neg_ids=neg_ids)
-        pos_b_raw = tiled_intent_raw[:, :1, :]
-        neg_b_raw = tiled_intent_raw[:, 1:, :]
-        intersection_b_raw = tf.minimum(neg_b_raw, pos_b_raw)
-        union_b_raw = tf.maximum(neg_b_raw, pos_b_raw)
+    def _tf_get_negs(self, all_embed, all_raw, raw_pos):
 
-        return tf.reduce_sum(intersection_b_raw, -1) / tf.reduce_sum(union_b_raw, -1)
+        batch_size = tf.shape(raw_pos)[0]
+        seq_length = tf.shape(raw_pos)[1]
+        raw_flat = self._tf_make_flat(raw_pos)
 
-    def _tf_sim(
-        self,
-        embed_dialogue: 'tf.Tensor',
-        embed_action: 'tf.Tensor',
-        mask: Optional['tf.Tensor'],
-    ) -> Tuple['tf.Tensor', 'tf.Tensor', 'tf.Tensor', 'tf.Tensor']:
-        """Define similarity.
+        neg_ids = tf.random.categorical(tf.log(tf.ones((batch_size * seq_length,
+                                                        tf.shape(all_raw)[0]))),
+                                        self.num_neg)
 
-        This method has two roles:
-        - calculate similarity between
-            two embedding vectors of the same size
-            and output binary mask and similarity;
-        - calculate similarity with several embedded actions for the loss
-            and output similarities between user input and bot actions
-            and similarities between bot actions.
+        bad_negs_flat = self._tf_calc_iou_mask(raw_flat, all_raw, neg_ids)
+        bad_negs = tf.reshape(bad_negs_flat, (batch_size, seq_length, -1))
 
-        They are kept in the same helper method,
-        because it is necessary for them to be mathematically identical.
-        """
+        neg_embed_flat = self._tf_sample_neg(batch_size * seq_length, all_embed, neg_ids)
+        neg_embed = tf.reshape(neg_embed_flat,
+                               (batch_size, seq_length, -1, all_embed.shape[-1]))
+
+        return neg_embed, bad_negs
+
+    def _tf_normalize_if_cosine(self, a: 'tf.Tensor') -> 'tf.Tensor':
 
         if self.similarity_type not in {"cosine", "inner"}:
             raise ValueError(
@@ -629,62 +615,72 @@ class EmbeddingPolicy(Policy):
                 "".format(self.similarity_type)
             )
 
+        if self.similarity_type == "cosine":
+            return tf.nn.l2_normalize(a, -1)
+        else:
+            return a
+
+    @staticmethod
+    def _tf_raw_sim(
+        a: 'tf.Tensor',
+        b: 'tf.Tensor',
+        mask: 'tf.Tensor',
+    ) -> 'tf.Tensor':
+
+        return tf.reduce_sum(a * b, -1) * tf.expand_dims(mask, 2)
+
+    def _tf_sim(
+        self,
+        pos_dial_embed: 'tf.Tensor',
+        pos_bot_embed: 'tf.Tensor',
+        neg_dial_embed: 'tf.Tensor',
+        neg_bot_embed: 'tf.Tensor',
+        dial_bad_negs: 'tf.Tensor',
+        bot_bad_negs: 'tf.Tensor',
+        mask: 'tf.Tensor',
+    ) -> Tuple['tf.Tensor', 'tf.Tensor', 'tf.Tensor', 'tf.Tensor', 'tf.Tensor']:
+        """Define similarity."""
+
         # calculate similarity with several
         # embedded actions for the loss
+        neg_inf = common_attention.large_compatible_negative(pos_dial_embed.dtype)
 
-        if self.similarity_type == "cosine":
-            # normalize embedding vectors for cosine similarity
-            embed_dialogue = tf.nn.l2_normalize(embed_dialogue, -1)
-            embed_action = tf.nn.l2_normalize(embed_action, -1)
-
-        if len(embed_dialogue.shape) == 4:
-            embed_dialogue_pos = embed_dialogue[:, :, :1, :]
-        else:
-            embed_dialogue_pos = tf.expand_dims(embed_dialogue, -2)
-
-        sim = tf.reduce_sum(
-            embed_dialogue_pos * embed_action, -1
-        ) * tf.expand_dims(mask, 2)
-
-        sim_bot_emb = tf.reduce_sum(
-            embed_action[:, :, :1, :] * embed_action[:, :, 1:, :], -1
-        ) * tf.expand_dims(mask, 2)
-
-        if len(embed_dialogue.shape) == 4:
-            sim_dial_emb = tf.reduce_sum(
-                embed_dialogue[:, :, :1, :] * embed_dialogue[:, :, 1:, :], -1
-            ) * tf.expand_dims(mask, 2)
-        else:
-            sim_dial_emb = None
-
-        if len(embed_dialogue.shape) == 4:
-            sim_dial_bot_emb = tf.reduce_sum(
-                embed_dialogue[:, :, :1, :] * embed_action[:, :, 1:, :], -1
-            ) * tf.expand_dims(mask, 2)
-        else:
-            sim_dial_bot_emb = None
+        sim_pos = self._tf_raw_sim(pos_dial_embed, pos_bot_embed, mask)
+        sim_neg = self._tf_raw_sim(pos_dial_embed, neg_bot_embed,
+                                   mask) + neg_inf * bot_bad_negs
+        sim_neg_bot_bot = self._tf_raw_sim(pos_bot_embed, neg_bot_embed,
+                                       mask) + neg_inf * bot_bad_negs
+        sim_neg_dial_dial = self._tf_raw_sim(pos_dial_embed, neg_dial_embed,
+                                        mask) + neg_inf * dial_bad_negs
+        sim_neg_bot_dial = self._tf_raw_sim(pos_bot_embed, neg_dial_embed,
+                                        mask) + neg_inf * dial_bad_negs
 
         # output similarities between user input and bot actions
-        # and similarities between bot actions
-        return sim,  sim_bot_emb, sim_dial_emb, sim_dial_bot_emb
+        # and similarities between bot actions and similarities between user inputs
+        return sim_pos, sim_neg, sim_neg_bot_bot, sim_neg_dial_dial, sim_neg_bot_dial
 
-    def _tf_loss(
+    @staticmethod
+    def _tf_calc_accuracy(sim_pos, sim_neg):
+
+        max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], -1), -1)
+        return tf.reduce_mean(tf.cast(tf.math.equal(max_all_sim, sim_pos[:, :, 0]),
+                                      tf.float32))
+
+    def _tf_loss_margin(
         self,
-        sim: 'tf.Tensor',
-        sim_bot_emb: 'tf.Tensor',
-        sim_dial_emb: 'tf.Tensor',
-        sims_rnn_to_max: List['tf.Tensor'],
-        bad_negs,
+        sim_pos: 'tf.Tensor',
+        sim_neg: 'tf.Tensor',
+        sim_neg_bot_bot: 'tf.Tensor',
+        sim_neg_dial_dial: 'tf.Tensor',
+        sim_neg_bot_dial: 'tf.Tensor',
         mask: 'tf.Tensor',
-        batch_bad_negs
     ) -> 'tf.Tensor':
-        """Define loss."""
+        """Define max margin loss."""
 
         # loss for maximizing similarity with correct action
-        loss = tf.maximum(0., self.mu_pos - sim[:, :, 0])
+        loss = tf.maximum(0., self.mu_pos - sim_pos[:, :, 0])
 
         # loss for minimizing similarity with `num_neg` incorrect actions
-        sim_neg = sim[:, :, 1:] + common_attention.large_compatible_negative(bad_negs.dtype) * bad_negs
         if self.use_max_sim_neg:
             # minimize only maximum similarity over incorrect actions
             max_sim_neg = tf.reduce_max(sim_neg, -1)
@@ -694,71 +690,55 @@ class EmbeddingPolicy(Policy):
             max_margin = tf.maximum(0., self.mu_neg + sim_neg)
             loss += tf.reduce_sum(max_margin, -1)
 
-        # penalize max similarity between bot embeddings
-        sim_bot_emb += common_attention.large_compatible_negative(bad_negs.dtype) * bad_negs
-        max_sim_bot_emb = tf.maximum(0., tf.reduce_max(sim_bot_emb, -1))
-        loss += max_sim_bot_emb * self.C_emb
+        # penalize max similarity between pos bot and neg bot embeddings
+        max_sim_neg_bot = tf.maximum(0., tf.reduce_max(sim_neg_bot_bot, -1))
+        loss += max_sim_neg_bot * self.C_emb
 
-        # penalize max similarity between dial embeddings
-        if sim_dial_emb is not None:
-            sim_dial_emb += common_attention.large_compatible_negative(batch_bad_negs.dtype) * batch_bad_negs
-            max_sim_input_emb = tf.maximum(0., tf.reduce_max(sim_dial_emb, -1))
-            loss += max_sim_input_emb * self.C_emb
+        # penalize max similarity between pos dial and neg dial embeddings
+        max_sim_neg_dial = tf.maximum(0., tf.reduce_max(sim_neg_dial_dial, -1))
+        loss += max_sim_neg_dial * self.C_emb
 
-        # maximize similarity returned by time attention wrapper
-        for sim_to_add in sims_rnn_to_max:
-            loss += tf.maximum(0.0, 1.0 - sim_to_add)
+        # penalize max similarity between pos bot and neg dial embeddings
+        max_sim_neg_dial = tf.maximum(0., tf.reduce_max(sim_neg_bot_dial, -1))
+        loss += max_sim_neg_dial * self.C_emb
 
         # mask loss for different length sequences
         loss *= mask
         # average the loss over sequence length
         loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, 1)
-
         # average the loss over the batch
-        loss = (
-            tf.reduce_mean(loss)
-            # add regularization losses
-            + self._regularization_loss()
-            + tf.losses.get_regularization_loss()
-        )
+        loss = tf.reduce_mean(loss)
+
+        # add regularization losses
+        loss += tf.losses.get_regularization_loss()
+
         return loss
 
-    def _tf_loss_2(
-        self,
-        sim: 'tf.Tensor',
-        sim_bot_emb: 'tf.Tensor',
-        sim_dial_emb: 'tf.Tensor',
-        sim_dial_bot_emb,
-        sims_rnn_to_max: List['tf.Tensor'],
-        bad_negs,
+    @staticmethod
+    def _tf_loss_softmax(
+        sim_pos: 'tf.Tensor',
+        sim_neg: 'tf.Tensor',
+        sim_neg_bot_bot: 'tf.Tensor',
+        sim_neg_dial_dial: 'tf.Tensor',
+        sim_neg_bot_dial: 'tf.Tensor',
         mask: 'tf.Tensor',
-        batch_bad_negs=None,
     ) -> 'tf.Tensor':
-        """Define loss."""
+        """Define softmax loss."""
 
-        all_sim = [sim[:, :, :1],
-                   sim[:, :, 1:] + common_attention.large_compatible_negative(bad_negs.dtype) * bad_negs,
-                   sim_bot_emb + common_attention.large_compatible_negative(bad_negs.dtype) * bad_negs,
-                   ]
-        if sim_dial_emb is not None:
-            all_sim.append(sim_dial_emb + common_attention.large_compatible_negative(batch_bad_negs.dtype) * batch_bad_negs)
+        logits = tf.concat([sim_pos,
+                            sim_neg,
+                            sim_neg_bot_bot,
+                            sim_neg_dial_dial,
+                            sim_neg_bot_dial
+                            ], -1)
 
-        if sim_dial_bot_emb is not None:
-            all_sim.append(sim_dial_bot_emb + common_attention.large_compatible_negative(bad_negs.dtype) * bad_negs)
-
-        logits = tf.concat(all_sim, -1)
+        # create labels for softmax
         pos_labels = tf.ones_like(logits[:, :, :1])
         neg_labels = tf.zeros_like(logits[:, :, 1:])
         labels = tf.concat([pos_labels, neg_labels], -1)
 
+        # mask loss by prediction confidence
         pred = tf.nn.softmax(logits)
-        # fake_logits = tf.concat([logits[:, :, :1] - common_attention.large_compatible_negative(logits.dtype),
-        #                          logits[:, :, 1:] + common_attention.large_compatible_negative(logits.dtype)], -1)
-
-        # ones = tf.ones_like(pred[:, :, 0])
-        # zeros = tf.zeros_like(pred[:, :, 0])
-
-        # already_learned = tf.where(pred[:, :, 0] > 0.8, zeros, ones)
         already_learned = tf.pow((1 - pred[:, :, 0]) / 0.5, 4)
 
         loss = tf.losses.softmax_cross_entropy(labels,
@@ -767,22 +747,34 @@ class EmbeddingPolicy(Policy):
         # add regularization losses
         loss += tf.losses.get_regularization_loss()
 
-        # maximize similarity returned by time attention wrapper
-        add_loss = []
-        for sim_to_add in sims_rnn_to_max:
-            add_loss.append(tf.maximum(0.0, 1.0 - sim_to_add))
-
-        if add_loss:
-            # mask loss for different length sequences
-            add_loss = sum(add_loss) * mask
-            # average the loss over sequence length
-            add_loss = tf.reduce_sum(add_loss, -1) / tf.reduce_sum(mask, 1)
-            # average the loss over the batch
-            add_loss = tf.reduce_mean(add_loss)
-
-            loss += add_loss
-
         return loss
+
+    def _choose_loss(self,
+                     sim_pos: 'tf.Tensor',
+                     sim_neg: 'tf.Tensor',
+                     sim_neg_bot_bot: 'tf.Tensor',
+                     sim_neg_dial_dial: 'tf.Tensor',
+                     sim_neg_bot_dial: 'tf.Tensor',
+                     mask: 'tf.Tensor') -> 'tf.Tensor':
+
+        if self.loss_type == 'margin':
+            return self._tf_loss_margin(sim_pos, sim_neg,
+                                        sim_neg_bot_bot,
+                                        sim_neg_dial_dial,
+                                        sim_neg_bot_dial,
+                                        mask)
+        elif self.loss_type == 'softmax':
+            return self._tf_loss_softmax(sim_pos, sim_neg,
+                                         sim_neg_bot_bot,
+                                         sim_neg_dial_dial,
+                                         sim_neg_bot_dial,
+                                         mask)
+        else:
+            raise ValueError(
+                "Wrong loss type {}, "
+                "should be 'margin' or 'softmax'"
+                "".format(self.loss_type)
+            )
 
     # training methods
     def train(
@@ -830,7 +822,7 @@ class EmbeddingPolicy(Policy):
 
             if self.evaluate_on_num_examples:
                 eval_session_data = self._sample_session_data(session_data, self.evaluate_on_num_examples)
-                eval_train_dataset = self._create_tf_dataset(eval_session_data, self.evaluate_on_num_examples)
+                eval_train_dataset = self._create_tf_dataset(eval_session_data, self.evaluate_on_num_examples, shuffle=False)
             else:
                 eval_train_dataset = None
 
@@ -850,9 +842,6 @@ class EmbeddingPolicy(Policy):
 
             # dynamic variables
             self._is_training = tf.placeholder_with_default(False, shape=())
-            self._dialogue_len = tf.placeholder(
-                dtype=tf.int32, shape=(), name="dialogue_len"
-            )
 
             # mask different length sequences
             # if there is at least one `-1` it should be masked
@@ -862,7 +851,6 @@ class EmbeddingPolicy(Policy):
             transformer_out = self._create_transformer_encoder(
                 self.a_in, self.c_in, self.b_prev_in, mask, self.attention_weights)
             self.dial_embed = self._create_embed(transformer_out, layer_name_suffix="out")
-            sims_rnn_to_max = []
 
             self.bot_embed = self._create_tf_bot_embed(self.b_in)
             all_actions_embed = self._create_tf_bot_embed(all_actions)
@@ -875,55 +863,46 @@ class EmbeddingPolicy(Policy):
                 self.dial_embed = self.dial_embed[:, -1:, :]
                 mask = mask[:, -1:]
 
-            b_raw = tf.reshape(self.b_in, (-1, self.b_in.shape[-1]))
+            pos_dial_embed = self.dial_embed[:, :, tf.newaxis, :]
+            neg_dial_embed, dial_bad_negs = self._tf_get_negs(
+                self._tf_make_flat(self.dial_embed),
+                self._tf_make_flat(self.b_in),
+                self.b_in
+            )
+            pos_bot_embed = self.bot_embed[:, :, tf.newaxis, :]
+            neg_bot_embed, bot_bad_negs = self._tf_get_negs(
+                all_actions_embed,
+                all_actions,
+                self.b_in
+            )
 
-            _, i, c = gen_array_ops.unique_with_counts_v2(b_raw, axis=[0])
-            counts = tf.expand_dims(tf.reshape(tf.gather(tf.cast(c, tf.float32), i), (tf.shape(b_raw)[0],)), 0)
-            batch_neg_ids = tf.random.categorical(tf.log((1. - tf.eye(tf.shape(b_raw)[0])/counts)), self.num_neg)
+            # normalize embedding vectors for cosine similarity
+            pos_dial_embed = self._tf_normalize_if_cosine(pos_dial_embed)
+            pos_bot_embed = self._tf_normalize_if_cosine(pos_bot_embed)
+            neg_dial_embed = self._tf_normalize_if_cosine(neg_dial_embed)
+            neg_bot_embed = self._tf_normalize_if_cosine(neg_bot_embed)
 
-            batch_iou_bot = self._tf_calc_iou(b_raw, neg_ids=batch_neg_ids)
-            batch_bad_negs = 1. - tf.nn.relu(tf.sign(1. - batch_iou_bot))
-            batch_bad_negs = tf.reshape(batch_bad_negs, (tf.shape(self.dial_embed)[0],
-                                                         tf.shape(self.dial_embed)[1],
-                                                         -1))
+            (sim_pos,
+             sim_neg,
+             sim_neg_bot_bot,
+             sim_neg_dial_dial,
+             sim_neg_bot_dial) = self._tf_sim(pos_dial_embed,
+                                              pos_bot_embed,
+                                              neg_dial_embed,
+                                              neg_bot_embed,
+                                              dial_bad_negs,
+                                              bot_bad_negs,
+                                              mask)
 
-            neg_ids = tf.random.categorical(tf.log(tf.ones((tf.shape(b_raw)[0], tf.shape(all_actions)[0]))), self.num_neg)
+            acc = self._tf_calc_accuracy(sim_pos, sim_neg)
 
-            tiled_all_actions = tf.tile(tf.expand_dims(all_actions, 0), (tf.shape(b_raw)[0], 1, 1))
-            neg_bs = tf.batch_gather(tiled_all_actions, neg_ids)
-            iou_bot = self._tf_calc_iou(b_raw, neg_bs)
-            bad_negs = 1. - tf.nn.relu(tf.sign(1. - iou_bot))
-            bad_negs = tf.reshape(bad_negs, (tf.shape(self.bot_embed)[0],
-                                             tf.shape(self.bot_embed)[1],
-                                             -1))
-
-            dial_embed_flat = tf.reshape(self.dial_embed, (-1, self.dial_embed.shape[-1]))
-
-            tiled_dial_embed = self._tf_sample_neg(dial_embed_flat, neg_ids=batch_neg_ids, first_only=True)
-            tiled_dial_embed = tf.reshape(tiled_dial_embed, (tf.shape(self.dial_embed)[0],
-                                                             tf.shape(self.dial_embed)[1],
-                                                             -1,
-                                                             self.dial_embed.shape[-1]))
-
-            bot_embed_flat = tf.reshape(self.bot_embed, (-1, self.bot_embed.shape[-1]))
-            tiled_all_actions_embed = tf.tile(tf.expand_dims(all_actions_embed, 0), (tf.shape(b_raw)[0], 1, 1))
-            neg_embs = tf.batch_gather(tiled_all_actions_embed, neg_ids)
-            tiled_bot_embed = self._tf_sample_neg(bot_embed_flat, neg_bs=neg_embs)
-            tiled_bot_embed = tf.reshape(tiled_bot_embed, (tf.shape(self.bot_embed)[0],
-                                                           tf.shape(self.bot_embed)[1],
-                                                           -1,
-                                                           self.bot_embed.shape[-1]))
-
-            # self.sim_op, sim_bot_emb, sim_dial_emb = self._tf_sim(self.dial_embed, tiled_bot_embed, mask)
-            self.sim_op, sim_bot_emb, sim_dial_emb, sim_dial_bot_emb = self._tf_sim(tiled_dial_embed, tiled_bot_embed, mask)
-
-            # loss = self._tf_loss_2(self.sim_op, sim_bot_emb, sim_dial_emb, sims_rnn_to_max, bad_negs, mask)
-            loss = self._tf_loss_2(self.sim_op, sim_bot_emb, sim_dial_emb, sim_dial_bot_emb, sims_rnn_to_max, bad_negs, mask, batch_bad_negs)
-
+            loss = self._choose_loss(sim_pos, sim_neg,
+                                     sim_neg_bot_bot,
+                                     sim_neg_dial_dial,
+                                     sim_neg_bot_dial,
+                                     mask)
             # define which optimizer to use
-            self._train_op = tf.train.AdamOptimizer(
-                # learning_rate=0.001, epsilon=1e-16
-            ).minimize(loss)
+            self._train_op = tf.train.AdamOptimizer().minimize(loss)
 
             train_init_op = iterator.make_initializer(train_dataset)
             if self.evaluate_on_num_examples:
@@ -934,8 +913,8 @@ class EmbeddingPolicy(Policy):
             # train tensorflow graph
             self.session = tf.Session(config=self._tf_config)
 
-            # self._train_tf(session_data, loss, mask)
-            self._train_tf_dataset(train_init_op, eval_init_op, batch_size_in, loss, mask, session_data.X.shape[1])
+            self._train_tf_dataset(train_init_op, eval_init_op, batch_size_in,
+                                   loss, acc)
 
             dialogue_len = None  # use dynamic time for rnn
             # create placeholders
@@ -974,7 +953,10 @@ class EmbeddingPolicy(Policy):
             if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
                 self.dial_embed = self.dial_embed[:, -1:, :]
 
-            self.sim_op, _, _, _ = self._tf_sim(self.dial_embed, self.bot_embed, mask)
+            self.dial_embed = self._tf_normalize_if_cosine(self.dial_embed)
+            self.bot_embed = self._tf_normalize_if_cosine(self.bot_embed)
+            self.sim_op = self._tf_raw_sim(self.dial_embed[:, :, tf.newaxis, :],
+                                           self.bot_embed, mask)
 
             # if self.attention_weights.items():
             #     self.attention_weights = tf.concat([tf.expand_dims(t, 0)
@@ -1004,8 +986,7 @@ class EmbeddingPolicy(Policy):
                           eval_init_op,
                           batch_size_in,
                           loss: 'tf.Tensor',
-                          mask,
-                          dialogue_len,
+                          acc,
                           ) -> None:
         """Train tf graph"""
 
@@ -1026,36 +1007,42 @@ class EmbeddingPolicy(Policy):
 
             self.session.run(train_init_op, feed_dict={batch_size_in: batch_size})
 
-            ep_loss = 0
+            ep_train_loss = 0
+            ep_train_acc = 0
             batches_per_epoch = 0
             while True:
                 try:
-                    _, batch_loss = self.session.run((self._train_op, loss),
-                                                     feed_dict={self._is_training: True,
-                                                                self._dialogue_len: dialogue_len})
+                    _, batch_train_loss, batch_train_acc = self.session.run(
+                        [self._train_op, loss, acc],
+                        feed_dict={self._is_training: True}
+                    )
 
                 except tf.errors.OutOfRangeError:
                     break
 
                 batches_per_epoch += 1
-                ep_loss += batch_loss
+                ep_train_loss += batch_train_loss
+                ep_train_acc += batch_train_acc
 
-            ep_loss /= batches_per_epoch
+            ep_train_loss /= batches_per_epoch
+            ep_train_acc /= batches_per_epoch
 
             if self.evaluate_on_num_examples and eval_init_op is not None:
                 if (ep == 0 or
                         (ep + 1) % self.evaluate_every_num_epochs == 0 or
                         (ep + 1) == self.epochs):
-                    train_acc = self._output_training_stat_dataset(eval_init_op, mask, dialogue_len)
-                    last_loss = ep_loss
+                    train_acc = self._output_training_stat_dataset(eval_init_op, acc)
+                    last_loss = ep_train_loss
 
                 pbar.set_postfix({
-                    "loss": "{:.3f}".format(ep_loss),
-                    "acc": "{:.3f}".format(train_acc)
+                    "train_loss": "{:.3f}".format(ep_train_loss),
+                    "train_acc": "{:.3f}".format(ep_train_acc),
+                    "acc": "{:.3f}".format(train_acc),
                 })
             else:
                 pbar.set_postfix({
-                    "loss": "{:.3f}".format(ep_loss)
+                    "train_loss": "{:.3f}".format(ep_train_loss),
+                    "train_acc": "{:.3f}".format(ep_train_acc)
                 })
 
         if self.evaluate_on_num_examples:
@@ -1063,20 +1050,12 @@ class EmbeddingPolicy(Policy):
                         "loss={:.3f}, train accuracy={:.3f}"
                         "".format(last_loss, train_acc))
 
-    def _output_training_stat_dataset(self, eval_init_op, mask, dialogue_len) -> np.ndarray:
+    def _output_training_stat_dataset(self, eval_init_op, acc) -> np.ndarray:
         """Output training statistics"""
 
         self.session.run(eval_init_op)
 
-        sim_, mask_ = self.session.run([self.sim_op, mask],
-                                       feed_dict={self._is_training: False,
-                                                  self._dialogue_len: dialogue_len})
-        sim_ = sim_.reshape((-1, sim_.shape[-1]))
-        mask_ = mask_.reshape((-1,))
-
-        train_acc = np.sum((np.max(sim_, -1) == sim_.diagonal()) * mask_) / np.sum(mask_)
-
-        return train_acc
+        return self.session.run(acc, feed_dict={self._is_training: False})
 
     def continue_training(
         self,
@@ -1106,7 +1085,6 @@ class EmbeddingPolicy(Policy):
                     self.b_in: b,
                     self.c_in: session_data.slots,
                     self.b_prev_in: session_data.previous_actions,
-                    self._dialogue_len: session_data.X.shape[1],
                     self._is_training: True,
                 },
             )
@@ -1124,8 +1102,7 @@ class EmbeddingPolicy(Policy):
         return {self.a_in: session_data.X,
                 self.b_in: all_Y_d_x,
                 self.c_in: session_data.slots,
-                self.b_prev_in: session_data.previous_actions,
-                self._dialogue_len: session_data.X.shape[1]}
+                self.b_prev_in: session_data.previous_actions}
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
@@ -1160,7 +1137,6 @@ class EmbeddingPolicy(Policy):
                 self.b_in: all_Y_d_x,
                 self.c_in: session_data.slots,
                 self.b_prev_in: session_data.previous_actions,
-                self._dialogue_len: session_data.X.shape[1],
             },
         )
 
@@ -1212,7 +1188,6 @@ class EmbeddingPolicy(Policy):
             self._persist_tensor("action_placeholder", self.b_in)
             self._persist_tensor("slots_placeholder", self.c_in)
             self._persist_tensor("prev_act_placeholder", self.b_prev_in)
-            self._persist_tensor("dialogue_len", self._dialogue_len)
 
             self._persist_tensor("similarity_op", self.sim_op)
 
@@ -1288,7 +1263,6 @@ class EmbeddingPolicy(Policy):
             b_in = cls.load_tensor("action_placeholder")
             c_in = cls.load_tensor("slots_placeholder")
             b_prev_in = cls.load_tensor("prev_act_placeholder")
-            dialogue_len = cls.load_tensor("dialogue_len")
 
             sim_op = cls.load_tensor("similarity_op")
 
@@ -1324,7 +1298,6 @@ class EmbeddingPolicy(Policy):
             action_placeholder=b_in,
             slots_placeholder=c_in,
             prev_act_placeholder=b_prev_in,
-            dialogue_len=dialogue_len,
             similarity_op=sim_op,
             alignment_history=alignment_history,
             user_embed=user_embed,
