@@ -212,7 +212,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         params = {"token": self.endpoint.token, "text": text, "message_id": message_id}
 
         if self.endpoint.url.endswith("/"):
-            url = urljoin(self.endpoint.url, "model/parse")
+            url = self.endpoint.url + "model/parse"
         else:
             url = self.endpoint.url + "/model/parse"
 
