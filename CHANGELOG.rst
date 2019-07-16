@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- WhiteSpaceTokenizer option added with an option for case_sensitive to be true or false, true being default.
 
 Changed
 -------
@@ -58,7 +58,6 @@ Added
 - ``info`` log when credentials were provided for multiple channels and channel in
   ``--connector`` argument was specified at the same time
 - validate export paths in interactive learning
-- WhiteSpaceTokenizer option added with an option for case_sensitive to be true or false, true being default
 
 Changed
 -------
