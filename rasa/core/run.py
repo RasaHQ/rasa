@@ -159,7 +159,7 @@ def serve_application(
     )
 
     logger.info(
-        "Starting Rasa Core server on "
+        "Starting Rasa server on "
         "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port))
     )
 

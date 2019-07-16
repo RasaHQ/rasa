@@ -83,8 +83,10 @@ def run(args: argparse.Namespace):
     )
 
     if args.enable_api:
-        args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
+        if not args.remote_storage:
+            args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
         rasa.run(**vars(args))
+        return
 
     # if the API is not enable you cannot start without a model
     # make sure either a model server, a remote storage, or a local model is
@@ -96,12 +98,14 @@ def run(args: argparse.Namespace):
     # start server if remote storage is configured
     if args.remote_storage is not None:
         rasa.run(**vars(args))
+        return
 
     # start server if model server is configured
     endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
     model_server = endpoints.model if endpoints and endpoints.model else None
     if model_server is not None:
         rasa.run(**vars(args))
+        return
 
     # start server if local model found
     args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
@@ -113,6 +117,7 @@ def run(args: argparse.Namespace):
 
     if local_model_set:
         rasa.run(**vars(args))
+        return
 
     print_error(
         "No model found. You have three options to provide a model:\n"

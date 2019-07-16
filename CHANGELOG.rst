@@ -24,7 +24,7 @@ Removed
 
 Fixed
 -----
-
+- validation no longer throws an error during interactive learning
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^
@@ -42,6 +42,8 @@ Changed
 Fixed
 -----
 - ``rasa run`` without ``--enable-api`` does not require a local model anymore
+- using ``rasa run`` with ``--enable-api`` to run a server now prints
+  "running Rasa server" instead of "running Rasa Core server"
 - actions, intents, and utterances created in ``rasa interactive`` can no longer be empty
 
 
