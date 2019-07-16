@@ -375,6 +375,11 @@ paths:
       responses:
         200:
           description: Zipped Rasa model
+          headers:
+            filename:
+              schema:
+                type: string
+              description: File name of the trained model.
           content:
             application/octet-stream:
               schema:
@@ -527,6 +532,10 @@ paths:
                   type: string
                   description: Message to be parsed
                   example: "Hello, I am Rasa!"
+                message_id:
+                  type: string
+                  description: Optional ID for message to be parsed
+                  example: "b2831e73-1407-4ba0-a861-0f30a42a2a5a"
       responses:
         200:
           description: Success

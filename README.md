@@ -44,10 +44,10 @@ There's a lot more background information in this
   [Read The Docs](https://rasa.com/docs/)
 
 - **I'm ready to install Rasa 🚀**
-  [Installation](https://rasa.com/docs/rasa/installation/)
+  [Installation](https://rasa.com/docs/rasa/user-guide/installation/)
 
 - **I want to learn how to use Rasa 🚀**
-  [Tutorial](https://rasa.com/docs/rasa/tutorial/)
+  [Tutorial](https://rasa.com/docs/rasa/user-guide/rasa-tutorial/)
 
 - **I have a question ❓**
   [Rasa Community Forum](https://forum.rasa.com/)
@@ -108,8 +108,17 @@ You can now change the docs locally and the web page will automatically reload
 and apply your changes.
 
 ### Running the Tests
-In order to run the tests make sure that you have the development requirements installed.
+In order to run the tests, make sure that you have the development requirements installed:
+```bash
+export PIP_USE_PEP517=false
+pip install -r requirements-dev.txt
+pip install -e .
+make prepare-tests-ubuntu # Only on Ubuntu
+make prepare-tests-macos  # Only on macOS
 ```
+
+Then, run the tests:
+```bash
 make test
 ```
 
@@ -152,19 +161,29 @@ If you want to automatically format your code on every commit, you can use [pre-
 Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
 This will add a hook to the repository, which reformats files on every commit.
 
-If you want to set it up manually, install black via `pip install black`.
+If you want to set it up manually, install black via `pip install -r requirements-dev.txt`.
 To reformat files execute
 ```
-black .
+make formatter
 ```
 
 #### Type Checking
 
-If you want to check types on the codebase, install `pytype` using `pip install pytype`.
+If you want to check types on the codebase, install `pytype` using `pip install -r requirements-dev.txt`.
 To check the types execute
 ```
-pytype rasa
+make types
 ```
+
+### Deploying documentation updates
+
+We use `sphinx-versioning` to build docs for tagged versions and for the master branch.
+The static site that gets built is pushed to the `docs` branch of this repo, which doesn't contain
+any code, only the site.
+
+We host the site on netlify. When there is a reason to update the docs (e.g. master has changed or we have
+tagged a new version) we trigger a webhook on netlify (see `.travis.yml`). 
+
 
 ## License
 Licensed under the Apache License, Version 2.0.

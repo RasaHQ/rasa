@@ -1,9 +1,12 @@
+from typing import Text, Optional
+
 import aiohttp
 import logging
 from sanic.exceptions import abort
 
 from rasa.core.channels.channel import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from sanic.request import Request
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +46,7 @@ class RasaChatInput(RestInput):
                     )
                     return None
 
-    async def _extract_sender(self, req):
+    async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API"""
 
         if req.headers.get("Authorization"):

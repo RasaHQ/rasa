@@ -41,6 +41,7 @@ from rasa.model import (
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
+from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -226,18 +227,7 @@ async def load_agent(
     action_endpoint: Optional[EndpointConfig] = None,
 ):
     try:
-        if model_path is not None and os.path.exists(model_path):
-            return Agent.load_local_model(
-                model_path,
-                interpreter=interpreter,
-                generator=generator,
-                tracker_store=tracker_store,
-                action_endpoint=action_endpoint,
-                model_server=model_server,
-                remote_storage=remote_storage,
-            )
-
-        elif model_server is not None:
+        if model_server is not None:
             return await load_from_server(
                 Agent(
                     interpreter=interpreter,
@@ -259,6 +249,17 @@ async def load_agent(
                 tracker_store=tracker_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
+            )
+
+        elif model_path is not None and os.path.exists(model_path):
+            return Agent.load_local_model(
+                model_path,
+                interpreter=interpreter,
+                generator=generator,
+                tracker_store=tracker_store,
+                action_endpoint=action_endpoint,
+                model_server=model_server,
+                remote_storage=remote_storage,
             )
 
         else:
@@ -348,14 +349,14 @@ class Agent(object):
         remote_storage: Optional[Text] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
-        if model_path is not None and model_path.endswith("tar.gz"):
-            model_path = get_model(model_path)
-
-        if (
-            model_path is None
-            or not os.path.exists(model_path)
-            or not os.path.isdir(model_path)
-        ):
+        try:
+            if not model_path:
+                raise ModelNotFound("No path specified.")
+            elif not os.path.exists(model_path):
+                raise ModelNotFound("No file or directory at '{}'.".format(model_path))
+            elif os.path.isfile(model_path):
+                model_path = get_model(model_path)
+        except ModelNotFound:
             raise ValueError(
                 "You are trying to load a MODEL from '{}', which is not possible. \n"
                 "The model path should be a 'tar.gz' file or a directory "
