@@ -774,3 +774,8 @@ class StoryGraph(object):
             visualization.persist_graph(graph, output_file)
 
         return graph
+
+    def is_empty(self) -> bool:
+        """Checks if `StoryGraph` is empty."""
+
+        return not self.story_steps
