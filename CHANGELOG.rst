@@ -23,7 +23,7 @@ Removed
 
 Fixed
 -----
-
+- validation no longer throws an error during interactive learning
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^
