@@ -219,7 +219,7 @@ class SimpleFileImporter(TrainingFileImporter):
                 training_data_paths
             )
 
-    async def get_config(self, **kwargs: Optional[Dict[Text, Any]]) -> Dict:
+    async def get_config(self) -> Dict:
         return self.config
 
     async def get_story_data(
