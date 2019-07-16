@@ -151,11 +151,18 @@ class CombinedFileImporter(TrainingFileImporter):
         self._importers = importers
 
     async def get_config(self) -> Dict:
-        configs = [await importer.get_config() for importer in self._importers]
+        configs = []
+        # Do this in a loop because Python 3.5 does not support async comprehensions
+        for importer in self._importers:
+            configs.append(await importer.get_config())
+
         return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
 
     async def get_domain(self) -> Domain:
-        domains = [await importer.get_domain() for importer in self._importers]
+        domains = []
+        for importer in self._importers:
+            domains.append(await importer.get_domain())
+
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
