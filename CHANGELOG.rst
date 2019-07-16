@@ -17,6 +17,7 @@ Added
 - ``Validator`` class to help developing by checking if the files have any errors
 - project's code is now linted using flake8
 - validate export paths in interactive learning
+- WhiteSpaceTokenizer option added with an option for case_sensitive to be true or false, true being default
 
 Changed
 -------
