@@ -1,6 +1,6 @@
 import json
 import logging
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 import responses
@@ -784,3 +784,22 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     routes_list = utils.list_routes(app)
     assert routes_list.get("custom_webhook_RestInput.health").startswith(test_route)
     assert ignored_base_route not in routes_list.get("custom_webhook_RestInput.health")
+
+
+@pytest.mark.parametrize(
+    "test_input, expected",
+    [
+        ({}, "rest"),
+        ({"input_channel": None}, "rest"),
+        ({"input_channel": "custom"}, "custom"),
+    ],
+)
+def test_extract_input_channel(test_input, expected):
+    from rasa.core.channels.channel import RestInput
+
+    input_channel = RestInput()
+
+    fake_request = MagicMock()
+    fake_request.json = test_input
+
+    assert input_channel._extract_input_channel(fake_request) == expected
