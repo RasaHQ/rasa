@@ -74,7 +74,8 @@ async def train_async(
     with ExitStack() as stack:
         train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
 
-        if await file_importer.get_domain() is None:
+        domain = await file_importer.get_domain()
+        if domain.is_empty():
             return await handle_domain_if_not_exists(
                 file_importer, output_path, fixed_model_name
             )
@@ -275,8 +276,8 @@ async def train_core_async(
     """
 
     file_importer = TrainingFileImporter.load_from_config(config, domain, [stories])
-
-    if not await file_importer.get_domain():
+    domain = await file_importer.get_domain()
+    if domain.is_empty():
         print_error(
             "Core training was skipped because no valid domain file was found. "
             "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
