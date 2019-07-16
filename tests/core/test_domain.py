@@ -3,7 +3,6 @@ import json
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
-import rasa.utils.io
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -148,6 +147,8 @@ async def test_create_train_data_unfeaturized_entities():
 def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = Domain.load(domain_file)
+
+    assert not domain.is_empty()
     assert len(domain.intents) == 10
     assert len(domain.action_names) == 11
 
@@ -501,3 +502,7 @@ def test_load_on_invalid_domain():
     # Currently just deprecated
     # with pytest.raises(InvalidDomain):
     #     Domain.load("data/test_domains/missing_text_for_templates.yml")
+
+
+def test_is_empty():
+    assert Domain.empty().is_empty()

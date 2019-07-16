@@ -1,3 +1,4 @@
+import os
 from functools import reduce
 from typing import Text, Optional, Union, List, Dict, Any
 import logging
@@ -195,7 +196,7 @@ class SimpleFileImporter(TrainingFileImporter):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
     ):
-        if config_file:
+        if config_file and os.path.exists(config_file):
             self.config = io_utils.read_config_file(config_file)
         else:
             self.config = {}
@@ -236,7 +237,7 @@ class SimpleFileImporter(TrainingFileImporter):
         try:
             domain = Domain.load(self._domain_path)
             domain.check_missing_templates()
-        except InvalidDomain:
+        except Exception:
             logger.debug(
                 "Loading domain from '{}' failed. Using empty domain.".format(
                     self._domain_path

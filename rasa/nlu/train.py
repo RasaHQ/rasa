@@ -67,7 +67,7 @@ async def train(
     trainer = Trainer(nlu_config, component_builder)
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
-        training_data = load_data_from_endpoint(
+        training_data = await load_data_from_endpoint(
             training_data_endpoint, nlu_config.language
         )
     elif isinstance(data, TrainingFileImporter):

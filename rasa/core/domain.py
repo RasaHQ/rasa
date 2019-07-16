@@ -873,6 +873,11 @@ class Domain(object):
                     "check your domain.".format(template)
                 )
 
+    def is_empty(self) -> bool:
+        """Checks whether the domain is empty."""
+
+        return self.as_dict() == Domain.empty().as_dict()
+
 
 class TemplateDomain(Domain):
     pass
