@@ -402,7 +402,7 @@ class Agent(object):
 
     async def prepare_message_text(self, message_data: Text):
         message = UserMessage(message_data)
-        processor = self.create_processor(message)
+        processor = self.create_processor(None)
         try:
             response_data = await processor._parse_message(message)
             return response_data

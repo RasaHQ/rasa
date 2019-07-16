@@ -83,6 +83,17 @@ async def test_agent_train(tmpdir, default_domain):
     ]
 
 
+async def test_agent_prepare_message_text(default_agent):
+    text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
+    result = await default_agent.prepare_message_text(text)
+    assert result == {
+        "text": '/greet{"name":"Rasa"}',
+        "intent": {"name": "greet", "confidence": 1.0},
+        "intent_ranking": [{"name": "greet", "confidence": 1.0}],
+        "entities": [{"entity": "name", "start": 6, "end": 21, "value": "Rasa"}],
+    }
+
+
 async def test_agent_handle_text(default_agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     result = await default_agent.handle_text(text, sender_id="test_agent_handle_text")
