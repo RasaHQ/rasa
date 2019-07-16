@@ -78,7 +78,6 @@ def test_whitespace():
 
 
 def test_whitespace_with_case():
-    print ("hello")
     from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
     component_config = {"case_sensitive": False}
