@@ -793,7 +793,6 @@ def create_app(
 
     @app.post("/model/parse")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
     async def parse(request: Request):
         validate_request_body(
             request,
@@ -805,7 +804,8 @@ def create_app(
 
         try:
             data = emulator.normalise_request_json(request.json)
-            response_data = await app.agent.prepare_message_text(data.get("text"))
+            parsed_data = await app.agent.parse_message_from_text(data.get("text"))
+            response_data = emulator.normalise_response_json(parsed_data)
 
             return response.json(response_data)
 

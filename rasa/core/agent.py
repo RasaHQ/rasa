@@ -400,14 +400,30 @@ class Agent(object):
             and self.interpreter is not None
         )
 
-    async def prepare_message_text(self, message_data: Text):
-        message = UserMessage(message_data)
-        processor = self.create_processor(None)
+    async def parse_message_from_text(self, message_data: Text):
+        """Handles message text and intent payload input messages.
+
+        The return value of this function is parsed_data.
+
+        Example:
+
+            parsed_data = { \
+                "text": '/greet{"name":"Rasa"}', \
+                "intent": {"name": "greet", "confidence": 1.0}, \
+                "intent_ranking": [{"name": "greet", "confidence": 1.0}], \
+                "entities": [{"entity": "name", "start": 6, "end": 21, "value": "Rasa"}],\
+            }
+
+
+        """
+
         try:
-            response_data = await processor._parse_message(message)
-            return response_data
+            processor = self.create_processor()
+            message = UserMessage(message_data)
+            parsed_data = await processor._parse_message(message)
+            return parsed_data
         except Exception:
-            logger.exception("Failed to parse message data")
+            logger.exception("Failed to parse message data from text.")
 
     async def handle_message(
         self,
