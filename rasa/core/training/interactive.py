@@ -788,7 +788,17 @@ async def _write_stories_to_file(
     with open(export_story_path, append_write, encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = rasa.core.events.deserialise_events(conversation)
-            s = Story.from_events(parsed_events)
+            applied_events = []
+
+            for i, event in enumerate(parsed_events):
+                if event.type_name == UserUtteranceReverted.type_name:
+                    # user corrected their intent, so we have to remove
+                    # the incorrect intent, rewind action and action_listen
+                    applied_events = applied_events[:-2]
+                else:
+                    applied_events.append(event)
+
+            s = Story.from_events(applied_events)
             f.write("\n" + s.as_story_string(flat=True))
 
 
