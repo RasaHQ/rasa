@@ -400,6 +400,15 @@ class Agent(object):
             and self.interpreter is not None
         )
 
+    async def prepare_message_text(self, message_data: Text):
+        message = UserMessage(message_data)
+        processor = self.create_processor(message)
+        try:
+            response_data = await processor._parse_message(message)
+            return response_data
+        except Exception:
+            logger.exception("Failed to parse message data")
+
     async def handle_message(
         self,
         message: UserMessage,
