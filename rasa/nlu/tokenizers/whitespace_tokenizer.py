@@ -22,7 +22,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
         super(WhitespaceTokenizer, self).__init__(component_config)
 
     def train(
-            self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
         case_sensitive = self.component_config["case_sensitive"]
         for example in training_data.training_examples:

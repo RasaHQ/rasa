@@ -5,6 +5,7 @@ from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
 import copy
 
+
 def test_whitespace():
     from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
@@ -45,39 +46,39 @@ def test_whitespace():
     ]
 
     assert [
-               t.offset for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")
-           ] == [0, 8, 16, 27, 31, 34]
+        t.offset for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")
+    ] == [0, 8, 16, 27, 31, 34]
 
     # urls are single token
     assert [
-               t.text
-               for t in tk.tokenize(
+        t.text
+        for t in tk.tokenize(
             "https://www.google.com/search?client="
             "safari&rls=en&q="
             "i+like+rasa&ie=UTF-8&oe=UTF-8 "
             "https://rasa.com/docs/nlu/"
             "components/#tokenizer-whitespace"
         )
-           ] == [
-               "https://www.google.com/search?"
-               "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
-               "https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
-           ]
+    ] == [
+        "https://www.google.com/search?"
+        "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
+        "https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
+    ]
 
     assert [
-               t.offset
-               for t in tk.tokenize(
+        t.offset
+        for t in tk.tokenize(
             "https://www.google.com/search?client="
             "safari&rls=en&q="
             "i+like+rasa&ie=UTF-8&oe=UTF-8 "
             "https://rasa.com/docs/nlu/"
             "components/#tokenizer-whitespace"
         )
-           ] == [0, 83]
+    ] == [0, 83]
 
 
 def test_whitespace_with_case():
-    print("hello")
+    print ("hello")
     from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
     component_config = {"case_sensitive": False}
@@ -228,10 +229,9 @@ def test_jieba_load_dictionary(tmpdir_factory):
     component_config = {"dictionary_path": dictionary_path}
 
     with patch.object(
-            JiebaTokenizer, "load_custom_dictionary", return_value=None
+        JiebaTokenizer, "load_custom_dictionary", return_value=None
     ) as mock_method:
         tk = JiebaTokenizer(component_config)
         tk.tokenize("")
 
     mock_method.assert_called_once_with(dictionary_path)
-
