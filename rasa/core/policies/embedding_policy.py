@@ -434,6 +434,20 @@ class EmbeddingPolicy(Policy):
             x = tf.layers.dropout(x, rate=droprate, training=self._is_training)
         return x
 
+    def _tf_normalize_if_cosine(self, a: 'tf.Tensor') -> 'tf.Tensor':
+
+        if self.similarity_type not in {"cosine", "inner"}:
+            raise ValueError(
+                "Wrong similarity type {}, "
+                "should be 'cosine' or 'inner'"
+                "".format(self.similarity_type)
+            )
+
+        if self.similarity_type == "cosine":
+            return tf.nn.l2_normalize(a, -1)
+        else:
+            return a
+
     def _create_tf_embed(self, x: 'tf.Tensor', layer_name_suffix: Text) -> 'tf.Tensor':
         """Create dense embedding layer with a name."""
 
@@ -446,7 +460,8 @@ class EmbeddingPolicy(Policy):
             name="embed_layer_{}".format(layer_name_suffix),
             reuse=tf.AUTO_REUSE,
         )
-        return embed_x
+        # normalize embedding vectors for cosine similarity
+        return self._tf_normalize_if_cosine(embed_x)
 
     def _create_tf_bot_embed(self, b_in: 'tf.Tensor') -> 'tf.Tensor':
         """Create embedding bot vector."""
@@ -621,20 +636,6 @@ class EmbeddingPolicy(Policy):
         )
         return (pos_dial_embed, pos_bot_embed, neg_dial_embed, neg_bot_embed,
                 dial_bad_negs, bot_bad_negs)
-
-    def _tf_normalize_if_cosine(self, a: 'tf.Tensor') -> 'tf.Tensor':
-
-        if self.similarity_type not in {"cosine", "inner"}:
-            raise ValueError(
-                "Wrong similarity type {}, "
-                "should be 'cosine' or 'inner'"
-                "".format(self.similarity_type)
-            )
-
-        if self.similarity_type == "cosine":
-            return tf.nn.l2_normalize(a, -1)
-        else:
-            return a
 
     @staticmethod
     def _tf_raw_sim(
@@ -821,12 +822,6 @@ class EmbeddingPolicy(Policy):
          dial_bad_negs,
          bot_bad_negs) = self._sample_negatives(all_actions)
 
-        # normalize embedding vectors for cosine similarity
-        pos_dial_embed = self._tf_normalize_if_cosine(pos_dial_embed)
-        pos_bot_embed = self._tf_normalize_if_cosine(pos_bot_embed)
-        neg_dial_embed = self._tf_normalize_if_cosine(neg_dial_embed)
-        neg_bot_embed = self._tf_normalize_if_cosine(neg_bot_embed)
-
         # calculate similarities
         (sim_pos,
          sim_neg,
@@ -874,7 +869,6 @@ class EmbeddingPolicy(Policy):
 
     def _build_tf_pred_graph(self):
         self.dial_embed, mask = self._create_tf_dial()
-        self.dial_embed = self._tf_normalize_if_cosine(self.dial_embed)
 
         self.sim_all = self._tf_raw_sim(
             self.dial_embed[:, :, tf.newaxis, :],
@@ -890,7 +884,6 @@ class EmbeddingPolicy(Policy):
             confidence = tf.nn.softmax(self.sim_all)
 
         self.bot_embed = self._create_tf_bot_embed(self.b_in)
-        self.bot_embed = self._tf_normalize_if_cosine(self.bot_embed)
 
         self.sim = self._tf_raw_sim(
             self.dial_embed[:, :, tf.newaxis, :],
