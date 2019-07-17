@@ -376,11 +376,6 @@ def remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]:
     return {k: v for k, v in obj.items() if v is not None}
 
 
-def pad_list_to_size(_list, size, padding_value=None):
-    """Pads _list with padding_value up to size"""
-    return _list + [padding_value] * (size - len(_list))
-
-
 class AvailableEndpoints(object):
     """Collection of configured endpoints."""
 
