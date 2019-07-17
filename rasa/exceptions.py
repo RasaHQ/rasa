@@ -7,4 +7,4 @@ class ModelNotFound(RasaException):
 
 
 class NoModelData(RasaException):
-    """Raised if an unpacked model doesn't contain any nlu or core data."""
+    """Raised if an unpacked model doesn't contain any NLU or Core data."""

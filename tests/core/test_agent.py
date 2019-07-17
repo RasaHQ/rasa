@@ -166,13 +166,16 @@ async def test_load_agent(trained_model):
 async def test_agent_update_model_none_domain(trained_model):
     agent = await load_agent(model_path=trained_model)
     agent.update_model(
-        None,
-        agent.policy_ensemble,
-        agent.fingerprint,
-        agent.interpreter,
-        agent.model_directory,
+        None, None, agent.fingerprint, agent.interpreter, agent.model_directory
     )
-    assert agent.domain is None
+
+    sender_id = "test_sender_id"
+    message = UserMessage("hello", sender_id=sender_id)
+    await agent.handle_message(message)
+    tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+
+    # UserUttered event was added to tracker, with correct intent data
+    assert tracker.events[1].intent["name"] == "greet"
 
 
 async def test_load_agent_on_not_existing_path():
