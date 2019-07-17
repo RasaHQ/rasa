@@ -804,9 +804,17 @@ def create_app(
 
         try:
             data = emulator.normalise_request_json(request.json)
-            parsed_data = await app.agent.parse_message_using_nlu_interpreter(
-                data.get("text")
-            )
+            try:
+                parsed_data = await app.agent.parse_message_using_nlu_interpreter(
+                    data.get("text")
+                )
+            except Exception as e:
+                logger.debug("Error while handling message data")
+                raise ErrorResponse(
+                    400,
+                    "ParsingError",
+                    "An unexpected error occurred. Error: {}".format(e),
+                )
             response_data = emulator.normalise_response_json(parsed_data)
 
             return response.json(response_data)

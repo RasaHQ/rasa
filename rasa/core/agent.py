@@ -424,12 +424,9 @@ class Agent(object):
 
         """
 
-        try:
-            processor = self.create_processor()
-            message = UserMessage(message_data)
-            return await processor._parse_message(message)
-        except Exception:
-            logger.exception("Failed to parse message data from text.")
+        processor = self.create_processor()
+        message = UserMessage(message_data)
+        return await processor._parse_message(message)
 
     async def handle_message(
         self,
