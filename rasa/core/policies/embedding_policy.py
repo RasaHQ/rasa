@@ -163,7 +163,9 @@ class EmbeddingPolicy(Policy):
         action_placeholder: Optional['tf.Tensor'] = None,
         slots_placeholder: Optional['tf.Tensor'] = None,
         prev_act_placeholder: Optional['tf.Tensor'] = None,
-        similarity_op: Optional['tf.Tensor'] = None,
+        similarity_all: Optional['tf.Tensor'] = None,
+        pred_confidence: Optional['tf.Tensor'] = None,
+        similarity: Optional['tf.Tensor'] = None,
         dial_embed: Optional['tf.Tensor'] = None,
         bot_embed: Optional['tf.Tensor'] = None,
         all_bot_embed: Optional['tf.Tensor'] = None,
@@ -200,7 +202,9 @@ class EmbeddingPolicy(Policy):
         self.b_in = action_placeholder
         self.c_in = slots_placeholder
         self.b_prev_in = prev_act_placeholder
-        self.sim_op = similarity_op
+        self.sim_all = similarity_all
+        self.pred_confidence = pred_confidence
+        self.sim = similarity
 
         # persisted embeddings
         self.dial_embed = dial_embed
@@ -541,8 +545,8 @@ class EmbeddingPolicy(Policy):
 
         self.attention_weights = {}
         a = self._create_tf_transformer_encoder(
-            self.a_in, self.c_in, self.b_prev_in, mask, self.attention_weights)
-
+            self.a_in, self.c_in, self.b_prev_in, mask, self.attention_weights
+        )
         dial_embed = self._create_tf_embed(a, layer_name_suffix="out")
 
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
@@ -661,11 +665,11 @@ class EmbeddingPolicy(Policy):
         sim_neg = self._tf_raw_sim(pos_dial_embed, neg_bot_embed,
                                    mask) + neg_inf * bot_bad_negs
         sim_neg_bot_bot = self._tf_raw_sim(pos_bot_embed, neg_bot_embed,
-                                       mask) + neg_inf * bot_bad_negs
+                                           mask) + neg_inf * bot_bad_negs
         sim_neg_dial_dial = self._tf_raw_sim(pos_dial_embed, neg_dial_embed,
-                                        mask) + neg_inf * dial_bad_negs
+                                             mask) + neg_inf * dial_bad_negs
         sim_neg_bot_dial = self._tf_raw_sim(pos_bot_embed, neg_dial_embed,
-                                        mask) + neg_inf * dial_bad_negs
+                                            mask) + neg_inf * dial_bad_negs
 
         # output similarities between user input and bot actions
         # and similarities between bot actions and similarities between user inputs
@@ -870,16 +874,31 @@ class EmbeddingPolicy(Policy):
 
     def _build_tf_pred_graph(self):
         self.dial_embed, mask = self._create_tf_dial()
-        self.bot_embed = self._create_tf_bot_embed(self.b_in)
-
         self.dial_embed = self._tf_normalize_if_cosine(self.dial_embed)
-        self.bot_embed = self._tf_normalize_if_cosine(self.bot_embed)
 
-        self.sim_op = self._tf_raw_sim(
+        self.sim_all = self._tf_raw_sim(
             self.dial_embed[:, :, tf.newaxis, :],
             self.all_bot_embed[tf.newaxis, tf.newaxis, :, :],
             mask
         )
+
+        if self.similarity_type == "cosine":
+            # clip negative values to zero
+            confidence = tf.nn.relu(self.sim_all)
+        else:
+            # normalize result to [0, 1] with softmax
+            confidence = tf.nn.softmax(self.sim_all)
+
+        self.bot_embed = self._create_tf_bot_embed(self.b_in)
+        self.bot_embed = self._tf_normalize_if_cosine(self.bot_embed)
+
+        self.sim = self._tf_raw_sim(
+            self.dial_embed[:, :, tf.newaxis, :],
+            self.bot_embed,
+            mask
+        )
+
+        return confidence
 
     # training methods
     def train(
@@ -949,7 +968,8 @@ class EmbeddingPolicy(Policy):
 
             # rebuild the graph for prediction
             self._create_tf_placeholders(session_data)
-            self._build_tf_pred_graph()
+            self.pred_confidence = self._build_tf_pred_graph()
+
             # if self.attention_weights.items():
             #     self.attention_weights = tf.concat([tf.expand_dims(t, 0)
             #                                         for name, t in self.attention_weights.items()
@@ -1106,23 +1126,9 @@ class EmbeddingPolicy(Policy):
 
         tf_feed_dict = self.tf_feed_dict_for_prediction(tracker, domain)
 
-        sim_ = self.session.run(self.sim_op, feed_dict=tf_feed_dict)
+        sim_ = self.session.run(self.sim_all, feed_dict=tf_feed_dict)
 
-        # TODO assume we used inner:
-        self.similarity_type = "inner"
-
-        result = sim_[0, -1, :]
-        if self.similarity_type == "cosine":
-            # clip negative values to zero
-            result[result < 0] = 0
-        elif self.similarity_type == "inner":
-            # normalize result to [0, 1] with softmax but only over 3*num_neg+1 values
-            low_ids = result.argsort()[::-1][4*self.num_neg+1:]
-            result[low_ids] += -np.inf
-            result = np.exp(result)
-            result /= np.sum(result)
-
-        return result.tolist()
+        return sim_[0, -1, :].tolist()
 
     def _persist_tensor(self, name: Text, tensor: 'tf.Tensor') -> None:
         if tensor is not None:
@@ -1157,7 +1163,9 @@ class EmbeddingPolicy(Policy):
             self._persist_tensor("slots_placeholder", self.c_in)
             self._persist_tensor("prev_act_placeholder", self.b_prev_in)
 
-            self._persist_tensor("similarity_op", self.sim_op)
+            self._persist_tensor("similarity_all", self.sim_all)
+            self._persist_tensor("pred_confidence", self.pred_confidence)
+            self._persist_tensor("similarity", self.sim)
 
             self._persist_tensor("dial_embed", self.dial_embed)
             self._persist_tensor("bot_embed", self.bot_embed)
@@ -1223,7 +1231,9 @@ class EmbeddingPolicy(Policy):
             c_in = cls.load_tensor("slots_placeholder")
             b_prev_in = cls.load_tensor("prev_act_placeholder")
 
-            sim_op = cls.load_tensor("similarity_op")
+            sim_all = cls.load_tensor("similarity_all")
+            pred_confidence = cls.load_tensor("pred_confidence")
+            sim = cls.load_tensor("similarity")
 
             dial_embed = cls.load_tensor("dial_embed")
             bot_embed = cls.load_tensor("bot_embed")
@@ -1248,9 +1258,11 @@ class EmbeddingPolicy(Policy):
             action_placeholder=b_in,
             slots_placeholder=c_in,
             prev_act_placeholder=b_prev_in,
-            similarity_op=sim_op,
+            similarity_all=sim_all,
+            pred_confidence=pred_confidence,
+            similarity=sim,
             dial_embed=dial_embed,
             bot_embed=bot_embed,
             all_bot_embed=all_bot_embed,
-            attention_weights=attention_weights
+            attention_weights=attention_weights,
         )
