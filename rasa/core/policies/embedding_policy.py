@@ -24,7 +24,6 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import is_logging_disabled
 
 import tensorflow as tf
-from tensorflow.python.ops import gen_array_ops
 
 try:
     from tensor2tensor.layers import common_attention
@@ -52,7 +51,6 @@ SessionData = namedtuple(
         "slots",
         "previous_actions",
         "actions_for_Y",
-        "all_Y_d",
     ),
 )
 
@@ -166,15 +164,9 @@ class EmbeddingPolicy(Policy):
         slots_placeholder: Optional['tf.Tensor'] = None,
         prev_act_placeholder: Optional['tf.Tensor'] = None,
         similarity_op: Optional['tf.Tensor'] = None,
-        alignment_history: Optional['tf.Tensor'] = None,
-        user_embed: Optional['tf.Tensor'] = None,
-        bot_embed: Optional['tf.Tensor'] = None,
-        slot_embed: Optional['tf.Tensor'] = None,
         dial_embed: Optional['tf.Tensor'] = None,
-        rnn_embed: Optional['tf.Tensor'] = None,
-        attn_embed: Optional['tf.Tensor'] = None,
-        copy_attn_debug: Optional['tf.Tensor'] = None,
-        all_time_masks: Optional['tf.Tensor'] = None,
+        bot_embed: Optional['tf.Tensor'] = None,
+        all_bot_embed: Optional['tf.Tensor'] = None,
         attention_weights=None,
         max_history: Optional[int] = None,
         **kwargs: Any
@@ -210,21 +202,11 @@ class EmbeddingPolicy(Policy):
         self.b_prev_in = prev_act_placeholder
         self.sim_op = similarity_op
 
-        # store attention probability distribution as
-        # concatenated tensor of each attention types
-        self.alignment_history = alignment_history
-
         # persisted embeddings
-        self.user_embed = user_embed
-        self.bot_embed = bot_embed
-        self.slot_embed = slot_embed
         self.dial_embed = dial_embed
+        self.bot_embed = bot_embed
+        self.all_bot_embed = all_bot_embed
 
-        self.rnn_embed = rnn_embed
-        self.attn_embed = attn_embed
-        self.copy_attn_debug = copy_attn_debug
-
-        self.all_time_masks = all_time_masks
         self.attention_weights = attention_weights
         # internal tf instances
         self._train_op = None
@@ -362,16 +344,6 @@ class EmbeddingPolicy(Policy):
             )
 
     # noinspection PyPep8Naming
-    def _create_all_Y_d(self, dialogue_len: int) -> np.ndarray:
-        """Stack encoded_all_intents on top of each other
-
-        to create candidates for training examples and
-        to calculate training accuracy.
-        """
-
-        return np.stack([self.encoded_all_actions] * dialogue_len)
-
-    # noinspection PyPep8Naming
     def _create_session_data(
         self, data_X: np.ndarray, data_Y: Optional[np.ndarray] = None
     ) -> SessionData:
@@ -393,7 +365,6 @@ class EmbeddingPolicy(Policy):
             dial_len = X.shape[1]
         else:
             dial_len = 1
-        all_Y_d = self._create_all_Y_d(dial_len)
 
         return SessionData(
             X=X,
@@ -401,7 +372,6 @@ class EmbeddingPolicy(Policy):
             slots=slots,
             previous_actions=previous_actions,
             actions_for_Y=actions_for_Y,
-            all_Y_d=all_Y_d,
         )
 
     @staticmethod
@@ -414,7 +384,6 @@ class EmbeddingPolicy(Policy):
             slots=session_data.slots[ids],
             previous_actions=session_data.previous_actions[ids],
             actions_for_Y=session_data.actions_for_Y[ids],
-            all_Y_d=session_data.all_Y_d,
         )
 
     # tf helpers:
@@ -422,14 +391,21 @@ class EmbeddingPolicy(Policy):
     def _create_tf_dataset(session_data: 'SessionData',
                            batch_size: Union['tf.Tensor', int],
                            shuffle: bool = True) -> 'tf.data.Dataset':
-        train_dataset = tf.data.Dataset.from_tensor_slices((session_data.X,
-                                                            session_data.Y,
-                                                            session_data.slots,
-                                                            session_data.previous_actions))
+        train_dataset = tf.data.Dataset.from_tensor_slices(
+            (session_data.X, session_data.Y,
+             session_data.slots, session_data.previous_actions)
+        )
         if shuffle:
             train_dataset = train_dataset.shuffle(buffer_size=len(session_data.X))
         train_dataset = train_dataset.batch(batch_size)
+
         return train_dataset
+
+    @staticmethod
+    def _create_tf_iterator(dataset):
+        return tf.data.Iterator.from_structure(dataset.output_types,
+                                               dataset.output_shapes,
+                                               output_classes=dataset.output_classes)
 
     def _create_tf_nn(
         self,
@@ -454,7 +430,7 @@ class EmbeddingPolicy(Policy):
             x = tf.layers.dropout(x, rate=droprate, training=self._is_training)
         return x
 
-    def _create_embed(self, x: 'tf.Tensor', layer_name_suffix: Text) -> 'tf.Tensor':
+    def _create_tf_embed(self, x: 'tf.Tensor', layer_name_suffix: Text) -> 'tf.Tensor':
         """Create dense embedding layer with a name."""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
@@ -479,7 +455,7 @@ class EmbeddingPolicy(Policy):
             self.droprate["b"],
             layer_name_suffix=layer_name_suffix,
         )
-        return self._create_embed(b, layer_name_suffix=layer_name_suffix)
+        return self._create_tf_embed(b, layer_name_suffix=layer_name_suffix)
 
     def _create_hparams(self):
         hparams = transformer_base()
@@ -501,7 +477,7 @@ class EmbeddingPolicy(Policy):
         hparams.add_relative_to_values = True
         return hparams
 
-    def _create_transformer_encoder(self, a_in, c_in, b_prev_in, mask, attention_weights):
+    def _create_tf_transformer_encoder(self, a_in, c_in, b_prev_in, mask, attention_weights):
         hparams = self._create_hparams()
 
         x_in = tf.concat([a_in, b_prev_in, c_in], -1)
@@ -558,6 +534,24 @@ class EmbeddingPolicy(Policy):
 
             return tf.nn.relu(x)
 
+    def _create_tf_dial(self) -> Tuple['tf.Tensor', 'tf.Tensor']:
+        # mask different length sequences
+        # if there is at least one `-1` it should be masked
+        mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
+
+        self.attention_weights = {}
+        a = self._create_tf_transformer_encoder(
+            self.a_in, self.c_in, self.b_prev_in, mask, self.attention_weights)
+
+        dial_embed = self._create_tf_embed(a, layer_name_suffix="out")
+
+        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
+            # pick last action if max history featurizer is used
+            dial_embed = dial_embed[:, -1:, :]
+            mask = mask[:, -1:]
+
+        return dial_embed, mask
+
     @staticmethod
     def _tf_make_flat(x):
         return tf.reshape(x, (-1, x.shape[-1]))
@@ -605,6 +599,24 @@ class EmbeddingPolicy(Policy):
                                (batch_size, seq_length, -1, all_embed.shape[-1]))
 
         return neg_embed, bad_negs
+
+    def _sample_negatives(self, all_actions):
+
+        # sample negatives
+        pos_dial_embed = self.dial_embed[:, :, tf.newaxis, :]
+        neg_dial_embed, dial_bad_negs = self._tf_get_negs(
+            self._tf_make_flat(self.dial_embed),
+            self._tf_make_flat(self.b_in),
+            self.b_in
+        )
+        pos_bot_embed = self.bot_embed[:, :, tf.newaxis, :]
+        neg_bot_embed, bot_bad_negs = self._tf_get_negs(
+            self.all_bot_embed,
+            all_actions,
+            self.b_in
+        )
+        return (pos_dial_embed, pos_bot_embed, neg_dial_embed, neg_bot_embed,
+                dial_bad_negs, bot_bad_negs)
 
     def _tf_normalize_if_cosine(self, a: 'tf.Tensor') -> 'tf.Tensor':
 
@@ -776,6 +788,99 @@ class EmbeddingPolicy(Policy):
                 "".format(self.loss_type)
             )
 
+    def _build_tf_train_graph(self, iterator):
+
+        # session data are int counts but we need a float tensors
+        (self.a_in,
+         self.b_in,
+         self.c_in,
+         self.b_prev_in) = (tf.cast(x_in, tf.float32) for x_in in iterator.get_next())
+
+        all_actions = tf.constant(self.encoded_all_actions,
+                                  dtype=tf.float32,
+                                  name="all_actions")
+
+        self.dial_embed, mask = self._create_tf_dial()
+
+        self.bot_embed = self._create_tf_bot_embed(self.b_in)
+        self.all_bot_embed = self._create_tf_bot_embed(all_actions)
+
+        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
+            # add time dimension if max history featurizer is used
+            self.b_in = self.b_in[:, tf.newaxis, :]
+            self.bot_embed = self.bot_embed[:, tf.newaxis, :]
+
+        (pos_dial_embed,
+         pos_bot_embed,
+         neg_dial_embed,
+         neg_bot_embed,
+         dial_bad_negs,
+         bot_bad_negs) = self._sample_negatives(all_actions)
+
+        # normalize embedding vectors for cosine similarity
+        pos_dial_embed = self._tf_normalize_if_cosine(pos_dial_embed)
+        pos_bot_embed = self._tf_normalize_if_cosine(pos_bot_embed)
+        neg_dial_embed = self._tf_normalize_if_cosine(neg_dial_embed)
+        neg_bot_embed = self._tf_normalize_if_cosine(neg_bot_embed)
+
+        # calculate similarities
+        (sim_pos,
+         sim_neg,
+         sim_neg_bot_bot,
+         sim_neg_dial_dial,
+         sim_neg_bot_dial) = self._tf_sim(pos_dial_embed,
+                                          pos_bot_embed,
+                                          neg_dial_embed,
+                                          neg_bot_embed,
+                                          dial_bad_negs,
+                                          bot_bad_negs,
+                                          mask)
+
+        acc = self._tf_calc_accuracy(sim_pos, sim_neg)
+
+        loss = self._choose_loss(sim_pos, sim_neg,
+                                 sim_neg_bot_bot,
+                                 sim_neg_dial_dial,
+                                 sim_neg_bot_dial,
+                                 mask)
+        return loss, acc
+
+    def _create_tf_placeholders(self, session_data):
+        dialogue_len = None  # use dynamic time for rnn
+        self.a_in = tf.placeholder(
+            dtype=tf.float32,
+            shape=(None, dialogue_len, session_data.X.shape[-1]),
+            name="a",
+        )
+        self.b_in = tf.placeholder(
+            dtype=tf.float32,
+            shape=(None, dialogue_len, None, session_data.Y.shape[-1]),
+            name="b",
+        )
+        self.c_in = tf.placeholder(
+            dtype=tf.float32,
+            shape=(None, dialogue_len, session_data.slots.shape[-1]),
+            name="slt",
+        )
+        self.b_prev_in = tf.placeholder(
+            dtype=tf.float32,
+            shape=(None, dialogue_len, session_data.Y.shape[-1]),
+            name="b_prev",
+        )
+
+    def _build_tf_pred_graph(self):
+        self.dial_embed, mask = self._create_tf_dial()
+        self.bot_embed = self._create_tf_bot_embed(self.b_in)
+
+        self.dial_embed = self._tf_normalize_if_cosine(self.dial_embed)
+        self.bot_embed = self._tf_normalize_if_cosine(self.bot_embed)
+
+        self.sim_op = self._tf_raw_sim(
+            self.dial_embed[:, :, tf.newaxis, :],
+            self.all_bot_embed[tf.newaxis, tf.newaxis, :, :],
+            mask
+        )
+
     # training methods
     def train(
         self,
@@ -820,144 +925,31 @@ class EmbeddingPolicy(Policy):
             batch_size_in = tf.placeholder(tf.int64)
             train_dataset = self._create_tf_dataset(session_data, batch_size_in)
 
+            iterator = self._create_tf_iterator(train_dataset)
+
+            train_init_op = iterator.make_initializer(train_dataset)
+
             if self.evaluate_on_num_examples:
                 eval_session_data = self._sample_session_data(session_data, self.evaluate_on_num_examples)
                 eval_train_dataset = self._create_tf_dataset(eval_session_data, self.evaluate_on_num_examples, shuffle=False)
-            else:
-                eval_train_dataset = None
-
-            iterator = tf.data.Iterator.from_structure(train_dataset.output_types,
-                                                       train_dataset.output_shapes,
-                                                       output_classes=train_dataset.output_classes)
-
-            # session data are int counts but we need a float tensors
-            (self.a_in,
-             self.b_in,
-             self.c_in,
-             self.b_prev_in) = (tf.cast(x_in, tf.float32) for x_in in iterator.get_next())
-
-            all_actions = tf.constant(self.encoded_all_actions,
-                                      dtype=tf.float32,
-                                      name="all_actions")
-
-            # dynamic variables
-            self._is_training = tf.placeholder_with_default(False, shape=())
-
-            # mask different length sequences
-            # if there is at least one `-1` it should be masked
-            mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
-
-            self.attention_weights = {}
-            transformer_out = self._create_transformer_encoder(
-                self.a_in, self.c_in, self.b_prev_in, mask, self.attention_weights)
-            self.dial_embed = self._create_embed(transformer_out, layer_name_suffix="out")
-
-            self.bot_embed = self._create_tf_bot_embed(self.b_in)
-            all_actions_embed = self._create_tf_bot_embed(all_actions)
-
-            # calculate similarities
-            if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
-                # pick last action if max history is used
-                self.b_in = self.b_in[:, tf.newaxis, :]
-                self.bot_embed = self.bot_embed[:, tf.newaxis, :]
-                self.dial_embed = self.dial_embed[:, -1:, :]
-                mask = mask[:, -1:]
-
-            pos_dial_embed = self.dial_embed[:, :, tf.newaxis, :]
-            neg_dial_embed, dial_bad_negs = self._tf_get_negs(
-                self._tf_make_flat(self.dial_embed),
-                self._tf_make_flat(self.b_in),
-                self.b_in
-            )
-            pos_bot_embed = self.bot_embed[:, :, tf.newaxis, :]
-            neg_bot_embed, bot_bad_negs = self._tf_get_negs(
-                all_actions_embed,
-                all_actions,
-                self.b_in
-            )
-
-            # normalize embedding vectors for cosine similarity
-            pos_dial_embed = self._tf_normalize_if_cosine(pos_dial_embed)
-            pos_bot_embed = self._tf_normalize_if_cosine(pos_bot_embed)
-            neg_dial_embed = self._tf_normalize_if_cosine(neg_dial_embed)
-            neg_bot_embed = self._tf_normalize_if_cosine(neg_bot_embed)
-
-            (sim_pos,
-             sim_neg,
-             sim_neg_bot_bot,
-             sim_neg_dial_dial,
-             sim_neg_bot_dial) = self._tf_sim(pos_dial_embed,
-                                              pos_bot_embed,
-                                              neg_dial_embed,
-                                              neg_bot_embed,
-                                              dial_bad_negs,
-                                              bot_bad_negs,
-                                              mask)
-
-            acc = self._tf_calc_accuracy(sim_pos, sim_neg)
-
-            loss = self._choose_loss(sim_pos, sim_neg,
-                                     sim_neg_bot_bot,
-                                     sim_neg_dial_dial,
-                                     sim_neg_bot_dial,
-                                     mask)
-            # define which optimizer to use
-            self._train_op = tf.train.AdamOptimizer().minimize(loss)
-
-            train_init_op = iterator.make_initializer(train_dataset)
-            if self.evaluate_on_num_examples:
                 eval_init_op = iterator.make_initializer(eval_train_dataset)
             else:
                 eval_init_op = None
 
+            self._is_training = tf.placeholder_with_default(False, shape=())
+            loss, acc = self._build_tf_train_graph(iterator)
+
+            # define which optimizer to use
+            self._train_op = tf.train.AdamOptimizer().minimize(loss)
+
             # train tensorflow graph
             self.session = tf.Session(config=self._tf_config)
-
             self._train_tf_dataset(train_init_op, eval_init_op, batch_size_in,
                                    loss, acc)
 
-            dialogue_len = None  # use dynamic time for rnn
-            # create placeholders
-            self.a_in = tf.placeholder(
-                dtype=tf.float32,
-                shape=(None, dialogue_len, session_data.X.shape[-1]),
-                name="a",
-            )
-            self.b_in = tf.placeholder(
-                dtype=tf.float32,
-                shape=(None, dialogue_len, None, session_data.Y.shape[-1]),
-                name="b",
-            )
-            self.c_in = tf.placeholder(
-                dtype=tf.float32,
-                shape=(None, dialogue_len, session_data.slots.shape[-1]),
-                name="slt",
-            )
-            self.b_prev_in = tf.placeholder(
-                dtype=tf.float32,
-                shape=(None, dialogue_len, session_data.Y.shape[-1]),
-                name="b_prev",
-            )
-
-            # mask different length sequences
-            # if there is at least one `-1` it should be masked
-            mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
-
-            self.attention_weights = {}
-            transformer_out = self._create_transformer_encoder(
-                self.a_in, self.c_in, self.b_prev_in, mask, self.attention_weights)
-            self.dial_embed = self._create_embed(transformer_out, layer_name_suffix="out")
-
-            self.bot_embed = self._create_tf_bot_embed(self.b_in)
-
-            if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
-                self.dial_embed = self.dial_embed[:, -1:, :]
-
-            self.dial_embed = self._tf_normalize_if_cosine(self.dial_embed)
-            self.bot_embed = self._tf_normalize_if_cosine(self.bot_embed)
-            self.sim_op = self._tf_raw_sim(self.dial_embed[:, :, tf.newaxis, :],
-                                           self.bot_embed, mask)
-
+            # rebuild the graph for prediction
+            self._create_tf_placeholders(session_data)
+            self._build_tf_pred_graph()
             # if self.attention_weights.items():
             #     self.attention_weights = tf.concat([tf.expand_dims(t, 0)
             #                                         for name, t in self.attention_weights.items()
@@ -999,8 +991,8 @@ class EmbeddingPolicy(Policy):
             )
         pbar = tqdm(range(self.epochs), desc="Epochs", disable=is_logging_disabled())
 
-        train_acc = 0
-        last_loss = 0
+        eval_acc = 0
+        eval_loss = 0
         for ep in pbar:
 
             batch_size = self._linearly_increasing_batch_size(ep)
@@ -1016,46 +1008,42 @@ class EmbeddingPolicy(Policy):
                         [self._train_op, loss, acc],
                         feed_dict={self._is_training: True}
                     )
+                    batches_per_epoch += 1
+                    ep_train_loss += batch_train_loss
+                    ep_train_acc += batch_train_acc
 
                 except tf.errors.OutOfRangeError:
                     break
 
-                batches_per_epoch += 1
-                ep_train_loss += batch_train_loss
-                ep_train_acc += batch_train_acc
-
             ep_train_loss /= batches_per_epoch
             ep_train_acc /= batches_per_epoch
+
+            pbar.set_postfix({
+                "loss": "{:.3f}".format(ep_train_loss),
+                "acc": "{:.3f}".format(ep_train_acc)
+            })
 
             if self.evaluate_on_num_examples and eval_init_op is not None:
                 if (ep == 0 or
                         (ep + 1) % self.evaluate_every_num_epochs == 0 or
                         (ep + 1) == self.epochs):
-                    train_acc = self._output_training_stat_dataset(eval_init_op, acc)
-                    last_loss = ep_train_loss
-
-                pbar.set_postfix({
-                    "train_loss": "{:.3f}".format(ep_train_loss),
-                    "train_acc": "{:.3f}".format(ep_train_acc),
-                    "acc": "{:.3f}".format(train_acc),
-                })
-            else:
-                pbar.set_postfix({
-                    "train_loss": "{:.3f}".format(ep_train_loss),
-                    "train_acc": "{:.3f}".format(ep_train_acc)
-                })
+                    eval_loss, eval_acc = self._output_training_stat_dataset(
+                        eval_init_op, loss, acc
+                    )
+                    logger.info("Evaluation results: loss: {:.3f}, acc: {:.3f}"
+                                "".format(eval_loss, eval_acc))
 
         if self.evaluate_on_num_examples:
             logger.info("Finished training embedding classifier, "
-                        "loss={:.3f}, train accuracy={:.3f}"
-                        "".format(last_loss, train_acc))
+                        "loss={:.3f}, accuracy={:.3f}"
+                        "".format(eval_loss, eval_acc))
 
-    def _output_training_stat_dataset(self, eval_init_op, acc) -> np.ndarray:
+    def _output_training_stat_dataset(self, eval_init_op, loss, acc) -> Tuple[float, float]:
         """Output training statistics"""
 
         self.session.run(eval_init_op)
 
-        return self.session.run(acc, feed_dict={self._is_training: False})
+        return self.session.run([loss, acc], feed_dict={self._is_training: False})
 
     def continue_training(
         self,
@@ -1095,12 +1083,8 @@ class EmbeddingPolicy(Policy):
         # noinspection PyPep8Naming
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
-        # noinspection PyPep8Naming
-        all_Y_d_x = np.stack([session_data.all_Y_d
-                              for _ in range(session_data.X.shape[0])])
 
         return {self.a_in: session_data.X,
-                self.b_in: all_Y_d_x,
                 self.c_in: session_data.slots,
                 self.b_prev_in: session_data.previous_actions}
 
@@ -1120,30 +1104,14 @@ class EmbeddingPolicy(Policy):
             )
             return [0.0] * domain.num_actions
 
-        # noinspection PyPep8Naming
-        data_X = self.featurizer.create_X([tracker], domain)
-        session_data = self._create_session_data(data_X)
-        # noinspection PyPep8Naming
-        all_Y_d_x = np.stack(
-            [session_data.all_Y_d for _ in range(session_data.X.shape[0])]
-        )
-        # self.similarity_type = 'cosine'
-        # mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
-        # self.sim_op, _, _ = self._tf_sim(self.dial_embed, self.bot_embed, mask)
-        _sim = self.session.run(
-            self.sim_op,
-            feed_dict={
-                self.a_in: session_data.X,
-                self.b_in: all_Y_d_x,
-                self.c_in: session_data.slots,
-                self.b_prev_in: session_data.previous_actions,
-            },
-        )
+        tf_feed_dict = self.tf_feed_dict_for_prediction(tracker, domain)
+
+        sim_ = self.session.run(self.sim_op, feed_dict=tf_feed_dict)
 
         # TODO assume we used inner:
         self.similarity_type = "inner"
 
-        result = _sim[0, -1, :]
+        result = sim_[0, -1, :]
         if self.similarity_type == "cosine":
             # clip negative values to zero
             result[result < 0] = 0
@@ -1191,18 +1159,9 @@ class EmbeddingPolicy(Policy):
 
             self._persist_tensor("similarity_op", self.sim_op)
 
-            self._persist_tensor("alignment_history", self.alignment_history)
-
-            self._persist_tensor("user_embed", self.user_embed)
-            self._persist_tensor("bot_embed", self.bot_embed)
-            self._persist_tensor("slot_embed", self.slot_embed)
             self._persist_tensor("dial_embed", self.dial_embed)
-
-            self._persist_tensor("rnn_embed", self.rnn_embed)
-            self._persist_tensor("attn_embed", self.attn_embed)
-            self._persist_tensor("copy_attn_debug", self.copy_attn_debug)
-
-            self._persist_tensor("all_time_masks", self.all_time_masks)
+            self._persist_tensor("bot_embed", self.bot_embed)
+            self._persist_tensor("all_bot_embed", self.all_bot_embed)
 
             self._persist_tensor("attention_weights", self.attention_weights)
 
@@ -1266,18 +1225,9 @@ class EmbeddingPolicy(Policy):
 
             sim_op = cls.load_tensor("similarity_op")
 
-            alignment_history = cls.load_tensor("alignment_history")
-
-            user_embed = cls.load_tensor("user_embed")
-            bot_embed = cls.load_tensor("bot_embed")
-            slot_embed = cls.load_tensor("slot_embed")
             dial_embed = cls.load_tensor("dial_embed")
-
-            rnn_embed = cls.load_tensor("rnn_embed")
-            attn_embed = cls.load_tensor("attn_embed")
-            copy_attn_debug = cls.load_tensor("copy_attn_debug")
-
-            all_time_masks = cls.load_tensor("all_time_masks")
+            bot_embed = cls.load_tensor("bot_embed")
+            all_bot_embed = cls.load_tensor("all_bot_embed")
 
             attention_weights = cls.load_tensor("attention_weights")
 
@@ -1299,14 +1249,8 @@ class EmbeddingPolicy(Policy):
             slots_placeholder=c_in,
             prev_act_placeholder=b_prev_in,
             similarity_op=sim_op,
-            alignment_history=alignment_history,
-            user_embed=user_embed,
-            bot_embed=bot_embed,
-            slot_embed=slot_embed,
             dial_embed=dial_embed,
-            rnn_embed=rnn_embed,
-            attn_embed=attn_embed,
-            copy_attn_debug=copy_attn_debug,
-            all_time_masks=all_time_masks,
+            bot_embed=bot_embed,
+            all_bot_embed=all_bot_embed,
             attention_weights=attention_weights
         )
