@@ -412,7 +412,7 @@ class Agent(object):
         Returns:
             The parsed message.
 
-            Ex::
+            Example:
 
                 {\
                     "text": '/greet{"name":"Rasa"}',\
