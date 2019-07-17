@@ -1,6 +1,5 @@
 import argparse
 import os
-import shutil
 from typing import List, Text
 
 import rasa.cli.train as train

@@ -1,5 +1,7 @@
-# install requirements
--r requirements.txt
+# base and pipeline dependencies
+# requirements_full.txt includes requirements.txt, so no need to
+# include it here.
+-r alt_requirements/requirements_full.txt
 
 # test
 pytest==4.5.0
@@ -12,14 +14,13 @@ nbsphinx==0.3.2
 aioresponses==0.6.0
 moto==1.3.8
 
-# lint/format
+# lint/format/types
 black==19.3b0; python_version>='3.6'
 flake8==3.7.7
-
-# pipeline dependencies
-spacy==2.1.4
-jieba==0.39
+pytype==2019.5.31
 
 # other
 google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
+coveralls==1.7.0
+
