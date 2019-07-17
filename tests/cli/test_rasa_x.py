@@ -1,9 +1,7 @@
 import pytest
-import requests
 
 import rasa.utils.io as io_utils
 from rasa.cli import x
-from rasa.cli.x import _pull_runtime_config_from_server
 from rasa.utils.endpoints import EndpointConfig
 import responses
 
@@ -79,7 +77,7 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs):
 
 
 @responses.activate
-def test_pull_endpoints_and_credentials_from_server():
+def test_pull_runtime_config_from_server():
     config_url = "http://rasa-x.com/api/config?token=token"
     credentials = {"rasa": "http://rasa-x.com:5002/api"}
     endpoints = {
@@ -97,7 +95,7 @@ def test_pull_endpoints_and_credentials_from_server():
         json={"credentials": credentials, "endpoints": endpoints},
     )
 
-    endpoints_path, credentials_path = _pull_runtime_config_from_server(
+    endpoints_path, credentials_path = x._pull_runtime_config_from_server(
         config_url, 1, 0
     )
 

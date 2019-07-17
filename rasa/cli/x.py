@@ -168,9 +168,7 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
 
     config_endpoint = args.config_endpoint
     if config_endpoint:
-        endpoints, credentials_path = _pull_endpoints_and_credentials_from_server(
-            config_endpoint
-        )
+        endpoints, credentials_path = _pull_runtime_config_from_server(config_endpoint)
 
     vars(args).update(
         dict(
