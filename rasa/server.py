@@ -804,7 +804,9 @@ def create_app(
 
         try:
             data = emulator.normalise_request_json(request.json)
-            parsed_data = await app.agent.parse_message_from_text(data.get("text"))
+            parsed_data = await app.agent.parse_message_using_nlu_interpreter(
+                data.get("text")
+            )
             response_data = emulator.normalise_response_json(parsed_data)
 
             return response.json(response_data)

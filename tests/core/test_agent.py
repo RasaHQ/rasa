@@ -83,9 +83,9 @@ async def test_agent_train(tmpdir, default_domain):
     ]
 
 
-async def test_agent_parse_message_from_text(default_agent):
+async def test_agent_parse_message_using_nlu_interpreter(default_agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
-    result = await default_agent.parse_message_from_text(text)
+    result = await default_agent.parse_message_using_nlu_interpreter(text)
     assert result == {
         "text": '/greet{"name":"Rasa"}',
         "intent": {"name": "greet", "confidence": 1.0},

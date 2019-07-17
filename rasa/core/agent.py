@@ -400,20 +400,27 @@ class Agent(object):
             and self.interpreter is not None
         )
 
-    async def parse_message_from_text(self, message_data: Text):
+    async def parse_message_using_nlu_interpreter(self, message_data: Text):
         """Handles message text and intent payload input messages.
 
         The return value of this function is parsed_data.
 
-        Example:
+        Args:
+            message_data (Text): Contain the received message in text or\
+            intent payload format.
 
-            parsed_data = { \
-                "text": '/greet{"name":"Rasa"}', \
-                "intent": {"name": "greet", "confidence": 1.0}, \
-                "intent_ranking": [{"name": "greet", "confidence": 1.0}], \
-                "entities": [{"entity": "name", "start": 6, "end": 21, "value": "Rasa"}],\
-            }
+        Returns:
+            The parsed message.
 
+            Ex::
+
+                {\
+                    "text": '/greet{"name":"Rasa"}',\
+                    "intent": {"name": "greet", "confidence": 1.0},\
+                    "intent_ranking": [{"name": "greet", "confidence": 1.0}],\
+                    "entities": [{"entity": "name", "start": 6,\
+                                  "end": 21, "value": "Rasa"}],\
+                }
 
         """
 
