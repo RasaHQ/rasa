@@ -60,9 +60,9 @@ SessionData = namedtuple(
 
 
 class EmbeddingPolicy(Policy):
-    """Recurrent Embedding Dialogue Policy (REDP)
+    """Transformer Embedding Dialogue Policy (TEDP)
 
-    Transformer version of the policy used in our paper https://arxiv.org/abs/1811.11707
+    Transformer version of the REDP used in our paper https://arxiv.org/abs/1811.11707
     """
 
     SUPPORTS_ONLINE_TRAINING = True
@@ -259,10 +259,9 @@ class EmbeddingPolicy(Policy):
     def _create_X_slots_previous_actions(
         self, data_X: 'np.ndarray'
     ) -> Tuple['np.ndarray', 'np.ndarray', 'np.ndarray']:
-        """Extract feature vectors
+        """Extract feature vectors from training data.
 
-        for user input (X), slots and
-        previously executed actions from training data.
+        For user input (X), slots and previously executed actions.
         """
 
         featurizer = self.featurizer.state_featurizer
@@ -279,6 +278,7 @@ class EmbeddingPolicy(Policy):
     @staticmethod
     def _actions_for_Y(data_Y: 'np.ndarray') -> 'np.ndarray':
         """Prepare Y data for training: extract actions indices."""
+
         return data_Y.argmax(axis=-1)
 
     # noinspection PyPep8Naming
@@ -329,6 +329,8 @@ class EmbeddingPolicy(Policy):
     @staticmethod
     def _sample_session_data(session_data: 'SessionData',
                              num_samples: int) -> 'SessionData':
+        """Sample session data."""
+
         ids = np.random.permutation(len(session_data.X))[:num_samples]
         return SessionData(
             X=session_data.X[ids],
@@ -343,6 +345,8 @@ class EmbeddingPolicy(Policy):
     def _create_tf_dataset(session_data: 'SessionData',
                            batch_size: Union['tf.Tensor', int],
                            shuffle: bool = True) -> 'tf.data.Dataset':
+        """Create tf dataset."""
+
         train_dataset = tf.data.Dataset.from_tensor_slices(
             (session_data.X, session_data.Y,
              session_data.slots, session_data.previous_actions)
@@ -355,6 +359,8 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def _create_tf_iterator(dataset: 'tf.data.Dataset') -> 'tf.data.Iterator':
+        """Create tf iterator."""
+
         return tf.data.Iterator.from_structure(dataset.output_types,
                                                dataset.output_shapes,
                                                output_classes=dataset.output_classes)
@@ -382,19 +388,19 @@ class EmbeddingPolicy(Policy):
             x = tf.layers.dropout(x, rate=droprate, training=self._is_training)
         return x
 
-    def _tf_normalize_if_cosine(self, a: 'tf.Tensor') -> 'tf.Tensor':
+    def _tf_normalize_if_cosine(self, x: 'tf.Tensor') -> 'tf.Tensor':
+        """Normalize embedding if similarity type is cosine."""
 
-        if self.similarity_type not in {"cosine", "inner"}:
+        if self.similarity_type == "cosine":
+            return tf.nn.l2_normalize(x, -1)
+        elif self.similarity_type == "inner":
+            return x
+        else:
             raise ValueError(
                 "Wrong similarity type {}, "
                 "should be 'cosine' or 'inner'"
                 "".format(self.similarity_type)
             )
-
-        if self.similarity_type == "cosine":
-            return tf.nn.l2_normalize(a, -1)
-        else:
-            return a
 
     def _create_tf_embed(self, x: 'tf.Tensor', layer_name_suffix: Text) -> 'tf.Tensor':
         """Create dense embedding layer with a name."""
@@ -422,7 +428,9 @@ class EmbeddingPolicy(Policy):
         )
         return self._create_tf_embed(b, layer_name_suffix="bot")
 
-    def _create_hparams(self) -> 'HParams':
+    def _create_t2t_hparams(self) -> 'HParams':
+        """Create parameters for t2t transformer."""
+        
         hparams = transformer_base()
 
         hparams.num_hidden_layers = self.num_transformer_layers
@@ -444,12 +452,14 @@ class EmbeddingPolicy(Policy):
         return hparams
 
     # noinspection PyUnresolvedReferences
-    def _create_tf_transformer_encoder(self,
-                                       x_in: 'tf.Tensor',
-                                       mask: 'tf.Tensor',
-                                       attention_weights: Dict[Text, 'tf.Tensor'],
-                                       ) -> 'tf.Tensor':
-        hparams = self._create_hparams()
+    def _create_t2t_transformer_encoder(self,
+                                        x_in: 'tf.Tensor',
+                                        mask: 'tf.Tensor',
+                                        attention_weights: Dict[Text, 'tf.Tensor'],
+                                        ) -> 'tf.Tensor':
+        """Create t2t transformer encoder."""
+        
+        hparams = self._create_t2t_hparams()
 
         # When not in training mode, set all forms of dropout to zero.
         for key, value in hparams.values().items():
@@ -508,6 +518,8 @@ class EmbeddingPolicy(Policy):
             return tf.nn.relu(x)
 
     def _create_tf_dial(self) -> Tuple['tf.Tensor', 'tf.Tensor']:
+        """Create dialogue level embedding and mask."""
+        
         # mask different length sequences
         # if there is at least one `-1` it should be masked
         mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
@@ -515,7 +527,7 @@ class EmbeddingPolicy(Policy):
         x_in = tf.concat([self.a_in, self.b_prev_in, self.c_in], -1)
 
         self.attention_weights = {}
-        x = self._create_tf_transformer_encoder(x_in, mask, self.attention_weights)
+        x = self._create_t2t_transformer_encoder(x_in, mask, self.attention_weights)
 
         dial_embed = self._create_tf_embed(x, layer_name_suffix="dial")
 
@@ -528,12 +540,15 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def _tf_make_flat(x: 'tf.Tensor') -> 'tf.Tensor':
+        """Make tensor 2D."""
+
         return tf.reshape(x, (-1, x.shape[-1]))
 
     @staticmethod
     def _tf_sample_neg(batch_size: 'tf.Tensor',
                        all_bs: 'tf.Tensor',
                        neg_ids: 'tf.Tensor') -> 'tf.Tensor':
+        """Sample negative examples for given indices"""
 
         tiled_all_bs = tf.tile(tf.expand_dims(all_bs, 0), (batch_size, 1, 1))
 
@@ -543,6 +558,7 @@ class EmbeddingPolicy(Policy):
                           pos_b: 'tf.Tensor',
                           all_bs: 'tf.Tensor',
                           neg_ids: 'tf.Tensor') -> 'tf.Tensor':
+        """Calculate IOU mask for given indices"""
 
         pos_b_in_flat = pos_b[:, tf.newaxis, :]
         neg_b_in_flat = self._tf_sample_neg(tf.shape(pos_b)[0], all_bs, neg_ids)
@@ -557,6 +573,7 @@ class EmbeddingPolicy(Policy):
                      all_embed: 'tf.Tensor',
                      all_raw: 'tf.Tensor',
                      raw_pos: 'tf.Tensor') -> Tuple['tf.Tensor', 'tf.Tensor']:
+        """Get negative examples from given tensor."""
 
         batch_size = tf.shape(raw_pos)[0]
         seq_length = tf.shape(raw_pos)[1]
@@ -581,8 +598,8 @@ class EmbeddingPolicy(Policy):
                                                                    'tf.Tensor',
                                                                    'tf.Tensor',
                                                                    'tf.Tensor']:
+        """Sample negative examples."""
 
-        # sample negatives
         pos_dial_embed = self.dial_embed[:, :, tf.newaxis, :]
         neg_dial_embed, dial_bad_negs = self._tf_get_negs(
             self._tf_make_flat(self.dial_embed),
@@ -600,6 +617,7 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def _tf_raw_sim(a: 'tf.Tensor', b: 'tf.Tensor', mask: 'tf.Tensor') -> 'tf.Tensor':
+        """Calculate similarity between given tensors."""
 
         return tf.reduce_sum(a * b, -1) * tf.expand_dims(mask, 2)
 
@@ -635,6 +653,7 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def _tf_calc_accuracy(sim_pos: 'tf.Tensor', sim_neg: 'tf.Tensor') -> 'tf.Tensor':
+        """Calculate accuracy"""
 
         max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], -1), -1)
         return tf.reduce_mean(tf.cast(tf.math.equal(max_all_sim, sim_pos[:, :, 0]),
@@ -730,6 +749,7 @@ class EmbeddingPolicy(Policy):
                      sim_neg_dial_dial: 'tf.Tensor',
                      sim_neg_bot_dial: 'tf.Tensor',
                      mask: 'tf.Tensor') -> 'tf.Tensor':
+        """Use loss depending on given option."""
 
         if self.loss_type == 'margin':
             return self._tf_loss_margin(sim_pos, sim_neg,
@@ -751,6 +771,7 @@ class EmbeddingPolicy(Policy):
             )
 
     def _build_tf_train_graph(self) -> Tuple['tf.Tensor', 'tf.Tensor']:
+        """Bulid train graph using iterator."""
 
         # session data are int counts but we need a float tensors
         (self.a_in,
@@ -802,6 +823,8 @@ class EmbeddingPolicy(Policy):
         return loss, acc
 
     def _create_tf_placeholders(self, session_data: 'SessionData') -> None:
+        """Create placeholders for prediction."""
+        
         dialogue_len = None  # use dynamic time
         self.a_in = tf.placeholder(
             dtype=tf.float32,
@@ -824,7 +847,11 @@ class EmbeddingPolicy(Policy):
             name="b_prev",
         )
 
-    def _build_tf_pred_graph(self) -> 'tf.Tensor':
+    def _build_tf_pred_graph(self, session_data: 'SessionData') -> 'tf.Tensor':
+        """Rebuild tf graph for prediction."""
+        
+        self._create_tf_placeholders(session_data)
+        
         self.dial_embed, mask = self._create_tf_dial()
 
         self.sim_all = self._tf_raw_sim(
@@ -851,6 +878,8 @@ class EmbeddingPolicy(Policy):
         return confidence
 
     def _extract_attention(self) -> Optional['tf.Tensor']:
+        """Extract attention probabilities from t2t dict"""
+        
         attention = [tf.expand_dims(t, 0)
                      for name, t in self.attention_weights.items()
                      if name.endswith('multihead_attention/dot_product_attention')]
@@ -928,8 +957,7 @@ class EmbeddingPolicy(Policy):
                                    loss, acc)
 
             # rebuild the graph for prediction
-            self._create_tf_placeholders(session_data)
-            self.pred_confidence = self._build_tf_pred_graph()
+            self.pred_confidence = self._build_tf_pred_graph(session_data)
 
             self.attention_weights = self._extract_attention()
 
@@ -1060,6 +1088,8 @@ class EmbeddingPolicy(Policy):
                                     tracker: 'DialogueStateTracker',
                                     domain: 'Domain'
                                     ) -> Dict['tf.Tensor', 'np.ndarray']:
+        """Create feed dictionary for tf session."""
+        
         # noinspection PyPep8Naming
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
@@ -1091,6 +1121,8 @@ class EmbeddingPolicy(Policy):
         return confidence[0, -1, :].tolist()
 
     def _persist_tensor(self, name: Text, tensor: 'tf.Tensor') -> None:
+        """Add tensor to collection if it is not None"""
+        
         if tensor is not None:
             self.graph.clear_collection(name)
             self.graph.add_to_collection(name, tensor)
@@ -1148,6 +1180,8 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def load_tensor(name: Text) -> Optional['tf.Tensor']:
+        """Load tensor or set it to None"""
+
         tensor_list = tf.get_collection(name)
         return tensor_list[0] if tensor_list else None
 
@@ -1155,7 +1189,8 @@ class EmbeddingPolicy(Policy):
     def load(cls, path: Text) -> "EmbeddingPolicy":
         """Loads a policy from the storage.
 
-            **Needs to load its featurizer**"""
+        **Needs to load its featurizer**
+        """
 
         if not os.path.exists(path):
             raise Exception(
