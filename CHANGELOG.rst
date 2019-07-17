@@ -24,6 +24,7 @@ Removed
 Fixed
 -----
 - validation no longer throws an error during interactive learning
+- fixed wrong cleaning of ``use_entities`` in case it was a list and not ``True``
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^
