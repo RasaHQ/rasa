@@ -162,6 +162,7 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     )
 
     endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+    credentials_path = None
 
     rasa_x_url = "http://localhost:{}/api".format(args.rasa_x_port)
     _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url)
