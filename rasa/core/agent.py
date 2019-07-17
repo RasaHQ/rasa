@@ -392,9 +392,21 @@ class Agent(object):
             remote_storage=remote_storage,
         )
 
-    def is_ready(self) -> bool:
-        """Check if all necessary components are instantiated to use agent."""
-        return bool(self.tracker_store and self.interpreter)
+    def is_ready(self, allow_nlu_only: bool = False):
+        """Check if all necessary components are instantiated to use agent.
+
+        Args:
+            allow_nlu_only: If `True`, consider the agent ready event if no policy
+                ensemble is present.
+
+        """
+        return all(
+            [
+                self.tracker_store,
+                self.interpreter,
+                self.policy_ensemble or allow_nlu_only,
+            ]
+        )
 
     async def handle_message(
         self,
@@ -418,7 +430,7 @@ class Agent(object):
             logger.info("Ignoring message as there is no agent to handle it.")
             return None
 
-        if not self.is_ready():
+        if not self.is_ready(allow_nlu_only=True):
             return noop(message)
 
         processor = self.create_processor(message_preprocessor)
@@ -782,26 +794,18 @@ class Agent(object):
             fontsize,
         )
 
-    def _ensure_agent_is_ready(self) -> None:
-        """Checks that an interpreter and a tracker store are set.
-
-        Necessary before a processor can be instantiated from this agent.
-        Raises an exception if any argument is missing."""
-
-        if not self.is_ready():
-            raise AgentNotReady(
-                "Agent needs to be prepared before usage. "
-                "You need to set an interpreter, a policy "
-                "ensemble as well as a tracker store."
-            )
-
     def create_processor(
         self, preprocessor: Optional[Callable[[Text], Text]] = None
     ) -> MessageProcessor:
         """Instantiates a processor based on the set state of the agent."""
         # Checks that the interpreter and tracker store are set and
         # creates a processor
-        self._ensure_agent_is_ready()
+        if not self.is_ready(allow_nlu_only=True):
+            raise AgentNotReady(
+                "Agent needs to be prepared before usage. You need to set an "
+                "interpreter and a tracker store as well."
+            )
+
         return MessageProcessor(
             self.interpreter,
             self.policy_ensemble,
