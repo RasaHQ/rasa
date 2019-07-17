@@ -162,6 +162,12 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     rasa_x_url = "http://localhost:{}/api".format(args.rasa_x_port)
     _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url)
 
+    config_endpoint = args.config_endpoint
+    if config_endpoint:
+        endpoints, credentials_path = _pull_endpoints_and_credentials_from_server(
+            config_endpoint
+        )
+
     vars(args).update(
         dict(
             nlu_model=None,
@@ -173,7 +179,9 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     )
 
     ctx = get_context("spawn")
-    p = ctx.Process(target=_rasa_service, args=(args, endpoints, rasa_x_url))
+    p = ctx.Process(
+        target=_rasa_service, args=(args, endpoints, rasa_x_url, credentials_path)
+    )
     p.daemon = True
     p.start()
     return p
@@ -194,9 +202,8 @@ def generate_rasa_x_token(length: int = 16):
     A new token is generated on every `rasa x` command.
     """
 
-    from secrets import token_hex
-
-    return token_hex(length)
+    return "token"
+    # return token_hex(length)
 
 
 def _configure_logging(args: argparse.Namespace):
@@ -295,21 +302,23 @@ def rasa_x(args: argparse.Namespace):
         run_locally(args)
 
 
-def _pull_endpoints_and_credentials_from_server(
+def _pull_runtime_config_from_server(
     config_endpoint: Optional[Text],
     attempts: int = 30,
     wait_time_between_pulls: Union[int, float] = 0.5,
-) -> Tuple[EndpointConfig, Text]:
+    keys: Tuple[Text, ...] = ("endpoints", "credentials"),
+) -> Tuple[Text, ...]:
+    """Pull runtime config from `config_endpoint`.
+
+    Returns a path to yaml dumps, each containing the contents of one of `keys`.
+    """
+
     while attempts > 0:
         try:
             response = requests.get(config_endpoint)
             if response.status_code == 200:
                 rjs = response.json()
-                credentials_path = _write_credentials_to_file(rjs)
-                endpoint_config = _create_endpoint_config(rjs)
-                if endpoint_config and credentials_path:
-                    return endpoint_config, credentials_path
-
+                return tuple(_dump_dict_to_yaml(rjs, k) for k in keys)
             else:
                 logger.debug(
                     "Failed to get a proper response from remote "
@@ -317,7 +326,7 @@ def _pull_endpoints_and_credentials_from_server(
                     "".format(response.status_code, response.text)
                 )
         except requests.exceptions.ConnectionError as e:
-            logger.debug("Failed to connect to server: {}".format(e))
+            logger.debug("Failed to connect to server. Retrying. {}".format(e))
         time.sleep(wait_time_between_pulls)
         attempts -= 1
 
@@ -328,49 +337,41 @@ def _pull_endpoints_and_credentials_from_server(
     sys.exit(1)
 
 
-def _create_endpoint_config(data: Dict) -> Optional[EndpointConfig]:
-    endpoints_dict = data.get("endpoints")
-    if endpoints_dict:
-        return EndpointConfig.from_dict(endpoints_dict)
+def _dump_dict_to_yaml(data: Dict, key: Text) -> Optional[Text]:
+    content = data.get(key)
+    if content:
+        temp_file = tempfile.NamedTemporaryFile(delete=False).name
+        io_utils.write_yaml_file(content, temp_file)
+        return temp_file
     else:
         print_error(
             "Successfully fetched data from endpoint config but "
-            "failed to find key 'endpoints'."
+            "failed to find key '{}'.".format(key)
         )
         return None
 
 
-def _write_credentials_to_file(data) -> Optional[Text]:
-    credentials = data.get("credentials")
-    if credentials:
-        directory = tempfile.mkdtemp()
-        credentials_path = str(directory / "credentials.yml")
-        io_utils.write_yaml_file(credentials, credentials_path)
-        return credentials_path
-    else:
-        print_error(
-            "Successfully fetched data from endpoint config but "
-            "failed to find key 'credentials'."
-        )
-        return None
+def _get_endpoint_config_from_file(args: argparse.Namespace) -> "AvailableEndpoints":
+
+    args.endpoints = get_validated_path(
+        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+    )
+    return AvailableEndpoints.read_endpoints(args.endpoints)
 
 
 def run_in_production(args: argparse.Namespace):
     from rasa.cli.utils import print_success
-    from rasa.core.utils import AvailableEndpoints
 
     print_success("Starting Rasa X in production mode... 🚀")
 
     config_endpoint = args.config_endpoint
     if config_endpoint:
-        endpoints, credentials_path = _pull_endpoints_and_credentials_from_server(
+        endpoints_config_path, credentials_path = _pull_runtime_config_from_server(
             config_endpoint
         )
+        endpoints = AvailableEndpoints.read_endpoints(endpoints_config_path)
     else:
-        args.endpoints = get_validated_path(
-            args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-        )
-        endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+        endpoints = _get_endpoint_config_from_file(config_endpoint)
         credentials_path = None
 
     _rasa_service(args, endpoints, None, credentials_path)
