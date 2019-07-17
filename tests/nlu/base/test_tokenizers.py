@@ -146,8 +146,6 @@ def test_whitespace_with_case():
     assert examples[1].data.get("tokens")[2].text == "tacos"
 
 
-
-
 def test_spacy(spacy_nlp):
     from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 
@@ -222,4 +220,3 @@ def test_jieba_load_dictionary(tmpdir_factory):
         tk.tokenize("")
 
     mock_method.assert_called_once_with(dictionary_path)
-
