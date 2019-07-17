@@ -155,21 +155,21 @@ def _is_correct_tracker_store(tracker_endpoint: EndpointConfig) -> bool:
 def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     """Starts the Rasa X API with Rasa as a background process."""
 
-    from rasa.core.utils import AvailableEndpoints
-
-    args.endpoints = get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-
-    endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
-    credentials_path = None
-
-    rasa_x_url = "http://localhost:{}/api".format(args.rasa_x_port)
-    _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url)
-
     config_endpoint = args.config_endpoint
     if config_endpoint:
         endpoints, credentials_path = _pull_runtime_config_from_server(config_endpoint)
+    else:
+        from rasa.core.utils import AvailableEndpoints
+
+        args.endpoints = get_validated_path(
+            args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+        )
+
+        endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+        credentials_path = None
+
+    rasa_x_url = "http://localhost:{}/api".format(args.rasa_x_port)
+    _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url)
 
     vars(args).update(
         dict(
