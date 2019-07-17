@@ -1,6 +1,7 @@
 import os
 import tempfile
 import time
+import shutil
 from typing import Text, Optional, List
 
 import pytest
@@ -75,6 +76,15 @@ def test_get_model_from_directory_with_subdirectories(trained_model):
     with tempfile.TemporaryDirectory() as directory:
         with pytest.raises(NoModelData):
             get_model_subdirectories(directory)
+
+
+def test_get_model_from_directory_nlu_only(trained_model):
+    unpacked = get_model(trained_model)
+    shutil.rmtree(os.path.join(unpacked, "core"))
+    unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
+
+    assert not unpacked_core
+    assert unpacked_nlu
 
 
 def _fingerprint(
