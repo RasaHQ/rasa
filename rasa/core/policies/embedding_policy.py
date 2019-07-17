@@ -365,12 +365,6 @@ class EmbeddingPolicy(Policy):
             actions_for_Y = None
             Y = None
 
-        # is needed to calculate train accuracy
-        if isinstance(self.featurizer, FullDialogueTrackerFeaturizer):
-            dial_len = X.shape[1]
-        else:
-            dial_len = 1
-
         return SessionData(
             X=X,
             Y=Y,
@@ -898,6 +892,16 @@ class EmbeddingPolicy(Policy):
 
         return confidence
 
+    def _extract_attention(self):
+        attention = [tf.expand_dims(t, 0)
+                     for name, t in self.attention_weights.items()
+                     if name.endswith('multihead_attention/dot_product_attention')]
+
+        if attention:
+            return tf.concat(attention, 0)
+        else:
+            return
+
     # training methods
     def train(
         self,
@@ -968,10 +972,7 @@ class EmbeddingPolicy(Policy):
             self._create_tf_placeholders(session_data)
             self.pred_confidence = self._build_tf_pred_graph()
 
-            # if self.attention_weights.items():
-            #     self.attention_weights = tf.concat([tf.expand_dims(t, 0)
-            #                                         for name, t in self.attention_weights.items()
-            #                                         if name.endswith('multihead_attention/dot_product_attention')], 0)
+            self.attention_weights = self._extract_attention()
 
     # training helpers
     def _linearly_increasing_batch_size(self, epoch: int) -> int:
