@@ -39,7 +39,11 @@ try:
 except ImportError:
     import pickle
 
+if typing.TYPE_CHECKING:
+    from tensor2tensor.utils.hparam import HParams
 
+# avoid warning println on contrib import - remove for tf 2
+tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
 # namedtuple for all tf session related data
@@ -66,12 +70,9 @@ class EmbeddingPolicy(Policy):
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
-        # a list of hidden layers sizes before user embed layer
-        # number of hidden layers is equal to the length of this list
-        "hidden_layers_sizes_a": [],
         # a list of hidden layers sizes before bot embed layer
         # number of hidden layers is equal to the length of this list
-        "hidden_layers_sizes_b": [],
+        "hidden_layers_sizes_bot": [],
 
         "pos_encoding": "timing",  # {"timing", "emb", "custom_timing"}
         # introduce phase shift in time encodings between transformers
@@ -79,12 +80,10 @@ class EmbeddingPolicy(Policy):
         "pos_max_timescale": 1.0e1,
         "max_seq_length": 256,
         "num_heads": 4,
-        # number of units in rnn cell
-        "rnn_size": 128,
-        "num_rnn_layers": 1,
+        # number of units in transformer
+        "transformer_size": 128,
+        "num_transformer_layers": 1,
         # training parameters
-        # flag if to turn on layer normalization for lstm cell
-        "layer_norm": True,
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
         "batch_size": [8, 32],
@@ -114,23 +113,10 @@ class EmbeddingPolicy(Policy):
         # the scale of how important is to minimize the maximum similarity
         # between embeddings of different actions
         "C_emb": 0.8,
-        # dropout rate for user nn
-        "droprate_a": 0.0,
         # dropout rate for bot nn
-        "droprate_b": 0.0,
-        # dropout rate for rnn
-        "droprate_rnn": 0.1,
-        # attention parameters
-        # flag to use attention over user input
-        # as an input to rnn
-        "attn_before_rnn": True,
-        # flag to use attention over prev bot actions
-        # and copy it to output bypassing rnn
-        "attn_after_rnn": True,
-        # flag to use `sparsemax` instead of `softmax` for attention
-        "sparse_attention": False,  # flag to use sparsemax for probs
-        # the range of allowed location-based attention shifts
-        "attn_shift_range": None,  # if None, set to mean dialogue length / 2
+        "droprate_bot": 0.0,
+        # dropout rate for dial nn
+        "droprate_dial": 0.1,
         # visualization of accuracy
         # how often calculate train accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
@@ -141,20 +127,20 @@ class EmbeddingPolicy(Policy):
     # end default properties (DOC MARKER - don't remove)
 
     @staticmethod
-    def _standard_featurizer(max_history=None):
+    def _standard_featurizer(max_history: Optional[int] = None) -> 'TrackerFeaturizer':
         if max_history is None:
             return FullDialogueTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer())
         else:
             return MaxHistoryTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer(), max_history=max_history)
 
     @staticmethod
-    def _check_t2t():
+    def _check_t2t() -> None:
         if common_attention is None:
             raise ImportError("Please install tensor2tensor")
 
     def __init__(
         self,
-        featurizer: Optional['FullDialogueTrackerFeaturizer'] = None,
+        featurizer: Optional['TrackerFeaturizer'] = None,
         priority: int = 1,
         encoded_all_actions: Optional['np.ndarray'] = None,
         graph: Optional['tf.Graph'] = None,
@@ -179,12 +165,6 @@ class EmbeddingPolicy(Policy):
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
         super(EmbeddingPolicy, self).__init__(featurizer, priority)
-
-        # flag if to use the same embeddings for user and bot
-        try:
-            self.share_embedding = self.featurizer.state_featurizer.use_shared_vocab
-        except AttributeError:
-            self.share_embedding = False
 
         self._load_params(**kwargs)
 
@@ -219,31 +199,15 @@ class EmbeddingPolicy(Policy):
 
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
-        self.hidden_layer_sizes = {
-            "a": config["hidden_layers_sizes_a"],
-            "b": config["hidden_layers_sizes_b"],
-        }
+        self.hidden_layer_sizes_bot = config["hidden_layers_sizes_bot"]
 
-        if self.share_embedding:
-            if self.hidden_layer_sizes["a"] != self.hidden_layer_sizes["b"]:
-                raise ValueError(
-                    "Due to sharing vocabulary "
-                    "in the featurizer, embedding weights "
-                    "are shared as well. "
-                    "So hidden_layers_sizes_a={} should be "
-                    "equal to hidden_layers_sizes_b={}"
-                    "".format(
-                        self.hidden_layer_sizes["a"], self.hidden_layer_sizes["b"]
-                    )
-                )
         self.pos_encoding = config['pos_encoding']
         self.pos_max_timescale = config['pos_max_timescale']
         self.max_seq_length = config['max_seq_length']
         self.num_heads = config['num_heads']
 
-        self.rnn_size = config["rnn_size"]
-        self.num_rnn_layers = config["num_rnn_layers"]
-        self.layer_norm = config["layer_norm"]
+        self.transformer_size = config["transformer_size"]
+        self.num_transformer_layers = config["num_transformer_layers"]
 
         self.batch_size = config["batch_size"]
 
@@ -270,19 +234,9 @@ class EmbeddingPolicy(Policy):
         self.C2 = config["C2"]
         self.C_emb = config["C_emb"]
         self.droprate = {
-            "a": config["droprate_a"],
-            "b": config["droprate_b"],
-            "rnn": config["droprate_rnn"],
+            "bot": config["droprate_bot"],
+            "dial": config["droprate_dial"],
         }
-
-    def _load_attn_params(self, config: Dict[Text, Any]) -> None:
-        self.sparse_attention = config["sparse_attention"]
-        self.attn_shift_range = config["attn_shift_range"]
-        self.attn_after_rnn = config["attn_after_rnn"]
-        self.attn_before_rnn = config["attn_before_rnn"]
-
-    def is_using_attention(self):
-        return self.attn_after_rnn or self.attn_before_rnn
 
     def _load_visual_params(self, config: Dict[Text, Any]) -> None:
         self.evaluate_every_num_epochs = config["evaluate_every_num_epochs"]
@@ -298,14 +252,13 @@ class EmbeddingPolicy(Policy):
         self._load_nn_architecture_params(config)
         self._load_embedding_params(config)
         self._load_regularization_params(config)
-        self._load_attn_params(config)
         self._load_visual_params(config)
 
     # data helpers
     # noinspection PyPep8Naming
     def _create_X_slots_previous_actions(
-        self, data_X: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        self, data_X: 'np.ndarray'
+    ) -> Tuple['np.ndarray', 'np.ndarray', 'np.ndarray']:
         """Extract feature vectors
 
         for user input (X), slots and
@@ -324,12 +277,12 @@ class EmbeddingPolicy(Policy):
 
     # noinspection PyPep8Naming
     @staticmethod
-    def _actions_for_Y(data_Y: np.ndarray) -> np.ndarray:
+    def _actions_for_Y(data_Y: 'np.ndarray') -> 'np.ndarray':
         """Prepare Y data for training: extract actions indices."""
         return data_Y.argmax(axis=-1)
 
     # noinspection PyPep8Naming
-    def _action_features_for_Y(self, actions_for_Y: np.ndarray) -> np.ndarray:
+    def _action_features_for_Y(self, actions_for_Y: 'np.ndarray') -> 'np.ndarray':
         """Prepare Y data for training: features for action labels."""
 
         if len(actions_for_Y.shape) == 2:
@@ -350,8 +303,8 @@ class EmbeddingPolicy(Policy):
 
     # noinspection PyPep8Naming
     def _create_session_data(
-        self, data_X: np.ndarray, data_Y: Optional[np.ndarray] = None
-    ) -> SessionData:
+        self, data_X: 'np.ndarray', data_Y: Optional['np.ndarray'] = None
+    ) -> 'SessionData':
         """Combine all tf session related data into a named tuple"""
 
         X, slots, previous_actions = self._create_X_slots_previous_actions(data_X)
@@ -401,7 +354,7 @@ class EmbeddingPolicy(Policy):
         return train_dataset
 
     @staticmethod
-    def _create_tf_iterator(dataset):
+    def _create_tf_iterator(dataset: 'tf.data.Dataset') -> 'tf.data.Iterator':
         return tf.data.Iterator.from_structure(dataset.output_types,
                                                dataset.output_shapes,
                                                output_classes=dataset.output_classes)
@@ -409,7 +362,7 @@ class EmbeddingPolicy(Policy):
     def _create_tf_nn(
         self,
         x_in: 'tf.Tensor',
-        layer_sizes: List,
+        layer_sizes: List[int],
         droprate: float,
         layer_name_suffix: Text,
     ) -> 'tf.Tensor':
@@ -461,25 +414,23 @@ class EmbeddingPolicy(Policy):
     def _create_tf_bot_embed(self, b_in: 'tf.Tensor') -> 'tf.Tensor':
         """Create embedding bot vector."""
 
-        layer_name_suffix = "a_and_b" if self.share_embedding else "b"
-
         b = self._create_tf_nn(
             b_in,
-            self.hidden_layer_sizes["b"],
-            self.droprate["b"],
-            layer_name_suffix=layer_name_suffix,
+            self.hidden_layer_sizes_bot,
+            self.droprate["bot"],
+            layer_name_suffix="bot",
         )
-        return self._create_tf_embed(b, layer_name_suffix=layer_name_suffix)
+        return self._create_tf_embed(b, layer_name_suffix="bot")
 
-    def _create_hparams(self):
+    def _create_hparams(self) -> 'HParams':
         hparams = transformer_base()
 
-        hparams.num_hidden_layers = self.num_rnn_layers
-        hparams.hidden_size = self.rnn_size
+        hparams.num_hidden_layers = self.num_transformer_layers
+        hparams.hidden_size = self.transformer_size
         # it seems to be factor of 4 for transformer architectures in t2t
         hparams.filter_size = hparams.hidden_size * 4
         hparams.num_heads = self.num_heads
-        hparams.relu_dropout = self.droprate["rnn"]
+        hparams.relu_dropout = self.droprate["dial"]
         hparams.pos = self.pos_encoding
 
         hparams.max_length = self.max_seq_length
@@ -489,12 +440,16 @@ class EmbeddingPolicy(Policy):
         hparams.self_attention_type = "dot_product_relative_v2"
         hparams.max_relative_position = 5
         hparams.add_relative_to_values = True
+
         return hparams
 
-    def _create_tf_transformer_encoder(self, a_in, c_in, b_prev_in, mask, attention_weights):
+    # noinspection PyUnresolvedReferences
+    def _create_tf_transformer_encoder(self,
+                                       x_in: 'tf.Tensor',
+                                       mask: 'tf.Tensor',
+                                       attention_weights: Dict[Text, 'tf.Tensor'],
+                                       ) -> 'tf.Tensor':
         hparams = self._create_hparams()
-
-        x_in = tf.concat([a_in, b_prev_in, c_in], -1)
 
         # When not in training mode, set all forms of dropout to zero.
         for key, value in hparams.values().items():
@@ -557,11 +512,12 @@ class EmbeddingPolicy(Policy):
         # if there is at least one `-1` it should be masked
         mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
 
+        x_in = tf.concat([self.a_in, self.b_prev_in, self.c_in], -1)
+
         self.attention_weights = {}
-        a = self._create_tf_transformer_encoder(
-            self.a_in, self.c_in, self.b_prev_in, mask, self.attention_weights
-        )
-        dial_embed = self._create_tf_embed(a, layer_name_suffix="out")
+        x = self._create_tf_transformer_encoder(x_in, mask, self.attention_weights)
+
+        dial_embed = self._create_tf_embed(x, layer_name_suffix="dial")
 
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
             # pick last action if max history featurizer is used
@@ -571,24 +527,22 @@ class EmbeddingPolicy(Policy):
         return dial_embed, mask
 
     @staticmethod
-    def _tf_make_flat(x):
+    def _tf_make_flat(x: 'tf.Tensor') -> 'tf.Tensor':
         return tf.reshape(x, (-1, x.shape[-1]))
 
     @staticmethod
-    def _tf_sample_neg(batch_size,
-                       all_bs,
-                       neg_ids,
-                       ) -> 'tf.Tensor':
+    def _tf_sample_neg(batch_size: 'tf.Tensor',
+                       all_bs: 'tf.Tensor',
+                       neg_ids: 'tf.Tensor') -> 'tf.Tensor':
 
         tiled_all_bs = tf.tile(tf.expand_dims(all_bs, 0), (batch_size, 1, 1))
 
         return tf.batch_gather(tiled_all_bs, neg_ids)
 
     def _tf_calc_iou_mask(self,
-                          pos_b,
-                          all_bs,
-                          neg_ids,
-                          ) -> 'tf.Tensor':
+                          pos_b: 'tf.Tensor',
+                          all_bs: 'tf.Tensor',
+                          neg_ids: 'tf.Tensor') -> 'tf.Tensor':
 
         pos_b_in_flat = pos_b[:, tf.newaxis, :]
         neg_b_in_flat = self._tf_sample_neg(tf.shape(pos_b)[0], all_bs, neg_ids)
@@ -599,7 +553,10 @@ class EmbeddingPolicy(Policy):
         iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
         return 1. - tf.nn.relu(tf.sign(1. - iou))
 
-    def _tf_get_negs(self, all_embed, all_raw, raw_pos):
+    def _tf_get_negs(self,
+                     all_embed: 'tf.Tensor',
+                     all_raw: 'tf.Tensor',
+                     raw_pos: 'tf.Tensor') -> Tuple['tf.Tensor', 'tf.Tensor']:
 
         batch_size = tf.shape(raw_pos)[0]
         seq_length = tf.shape(raw_pos)[1]
@@ -618,7 +575,12 @@ class EmbeddingPolicy(Policy):
 
         return neg_embed, bad_negs
 
-    def _sample_negatives(self, all_actions):
+    def _sample_negatives(self, all_actions: 'tf.Tensor') -> Tuple['tf.Tensor',
+                                                                   'tf.Tensor',
+                                                                   'tf.Tensor',
+                                                                   'tf.Tensor',
+                                                                   'tf.Tensor',
+                                                                   'tf.Tensor']:
 
         # sample negatives
         pos_dial_embed = self.dial_embed[:, :, tf.newaxis, :]
@@ -637,11 +599,7 @@ class EmbeddingPolicy(Policy):
                 dial_bad_negs, bot_bad_negs)
 
     @staticmethod
-    def _tf_raw_sim(
-        a: 'tf.Tensor',
-        b: 'tf.Tensor',
-        mask: 'tf.Tensor',
-    ) -> 'tf.Tensor':
+    def _tf_raw_sim(a: 'tf.Tensor', b: 'tf.Tensor', mask: 'tf.Tensor') -> 'tf.Tensor':
 
         return tf.reduce_sum(a * b, -1) * tf.expand_dims(mask, 2)
 
@@ -676,7 +634,7 @@ class EmbeddingPolicy(Policy):
         return sim_pos, sim_neg, sim_neg_bot_bot, sim_neg_dial_dial, sim_neg_bot_dial
 
     @staticmethod
-    def _tf_calc_accuracy(sim_pos, sim_neg):
+    def _tf_calc_accuracy(sim_pos: 'tf.Tensor', sim_neg: 'tf.Tensor') -> 'tf.Tensor':
 
         max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], -1), -1)
         return tf.reduce_mean(tf.cast(tf.math.equal(max_all_sim, sim_pos[:, :, 0]),
@@ -792,7 +750,7 @@ class EmbeddingPolicy(Policy):
                 "".format(self.loss_type)
             )
 
-    def _build_tf_train_graph(self):
+    def _build_tf_train_graph(self) -> Tuple['tf.Tensor', 'tf.Tensor']:
 
         # session data are int counts but we need a float tensors
         (self.a_in,
@@ -843,8 +801,8 @@ class EmbeddingPolicy(Policy):
                                  mask)
         return loss, acc
 
-    def _create_tf_placeholders(self, session_data):
-        dialogue_len = None  # use dynamic time for rnn
+    def _create_tf_placeholders(self, session_data: 'SessionData') -> None:
+        dialogue_len = None  # use dynamic time
         self.a_in = tf.placeholder(
             dtype=tf.float32,
             shape=(None, dialogue_len, session_data.X.shape[-1]),
@@ -866,7 +824,7 @@ class EmbeddingPolicy(Policy):
             name="b_prev",
         )
 
-    def _build_tf_pred_graph(self):
+    def _build_tf_pred_graph(self) -> 'tf.Tensor':
         self.dial_embed, mask = self._create_tf_dial()
 
         self.sim_all = self._tf_raw_sim(
@@ -892,7 +850,7 @@ class EmbeddingPolicy(Policy):
 
         return confidence
 
-    def _extract_attention(self):
+    def _extract_attention(self) -> Optional['tf.Tensor']:
         attention = [tf.expand_dims(t, 0)
                      for name, t in self.attention_weights.items()
                      if name.endswith('multihead_attention/dot_product_attention')]
@@ -931,6 +889,7 @@ class EmbeddingPolicy(Policy):
             "else set num_neg to the number of actions - 1"
             "".format(self.num_neg, domain.num_actions)
         )
+        # noinspection PyAttributeOutsideInit
         self.num_neg = min(self.num_neg, domain.num_actions - 1)
 
         # extract actual training data to feed to tf session
@@ -993,9 +952,9 @@ class EmbeddingPolicy(Policy):
             return int(self.batch_size[0])
 
     def _train_tf_dataset(self,
-                          train_init_op,
-                          eval_init_op,
-                          batch_size_in,
+                          train_init_op: 'tf.Operation',
+                          eval_init_op: 'tf.Operation',
+                          batch_size_in: 'tf.Tensor',
                           loss: 'tf.Tensor',
                           acc,
                           ) -> None:
@@ -1057,7 +1016,10 @@ class EmbeddingPolicy(Policy):
                         "loss={:.3f}, accuracy={:.3f}"
                         "".format(eval_loss, eval_acc))
 
-    def _output_training_stat_dataset(self, eval_init_op, loss, acc) -> Tuple[float, float]:
+    def _output_training_stat_dataset(self,
+                                      eval_init_op: 'tf.Operation',
+                                      loss: 'tf.Tensor',
+                                      acc: 'tf.Tensor') -> Tuple[float, float]:
         """Output training statistics"""
 
         self.session.run(eval_init_op)
@@ -1066,8 +1028,8 @@ class EmbeddingPolicy(Policy):
 
     def continue_training(
         self,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
+        training_trackers: List['DialogueStateTracker'],
+        domain: 'Domain',
         **kwargs: Any
     ) -> None:
         """Continue training an already trained policy."""
@@ -1095,8 +1057,9 @@ class EmbeddingPolicy(Policy):
                     break
 
     def tf_feed_dict_for_prediction(self,
-                                    tracker: DialogueStateTracker,
-                                    domain: Domain) -> Dict:
+                                    tracker: 'DialogueStateTracker',
+                                    domain: 'Domain'
+                                    ) -> Dict['tf.Tensor', 'np.ndarray']:
         # noinspection PyPep8Naming
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
@@ -1106,7 +1069,7 @@ class EmbeddingPolicy(Policy):
                 self.b_prev_in: session_data.previous_actions}
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self, tracker: 'DialogueStateTracker', domain: 'Domain'
     ) -> List[float]:
         """Predict the next action the bot should take.
 
@@ -1218,10 +1181,10 @@ class EmbeddingPolicy(Policy):
 
         graph = tf.Graph()
         with graph.as_default():
-            sess = tf.Session(config=_tf_config)
+            session = tf.Session(config=_tf_config)
             saver = tf.train.import_meta_graph(checkpoint + ".meta")
 
-            saver.restore(sess, checkpoint)
+            saver.restore(session, checkpoint)
 
             a_in = cls.load_tensor("intent_placeholder")
             b_in = cls.load_tensor("action_placeholder")
@@ -1250,7 +1213,7 @@ class EmbeddingPolicy(Policy):
             priority=meta["priority"],
             encoded_all_actions=encoded_all_actions,
             graph=graph,
-            session=sess,
+            session=session,
             intent_placeholder=a_in,
             action_placeholder=b_in,
             slots_placeholder=c_in,
