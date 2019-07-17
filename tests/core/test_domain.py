@@ -3,7 +3,6 @@ import json
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
-import rasa.utils.io
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
