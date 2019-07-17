@@ -12,7 +12,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
     provides = ["tokens"]
 
     defaults = {
-        # text will be tokenized as case sensitive by default
+        # text will be tokenized with case sensitive as default
         "case_sensitive": True
     }
 
@@ -24,20 +24,16 @@ class WhitespaceTokenizer(Tokenizer, Component):
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
-        case_sensitive = self.component_config["case_sensitive"]
         for example in training_data.training_examples:
-            if not case_sensitive:
-                example.text = example.text.lower()
             example.set("tokens", self.tokenize(example.text))
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        case_sensitive = self.component_config["case_sensitive"]
-        if not case_sensitive:
-            message.text = message.text.lower()
         message.set("tokens", self.tokenize(message.text))
 
-    @staticmethod
-    def tokenize(text: Text) -> List[Token]:
+    def tokenize(self, text: Text) -> List[Token]:
+        case_sensitive = self.component_config["case_sensitive"]
+        if not case_sensitive:
+            text = text.lower()
         # remove 'not a word character' if
         words = re.sub(
             # there is a space or an end of a string after it
