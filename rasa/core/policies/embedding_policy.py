@@ -213,6 +213,7 @@ class EmbeddingPolicy(Policy):
 
         self.attention_weights = attention_weights
         # internal tf instances
+        self._iterator = None
         self._train_op = None
         self._is_training = None
 
@@ -507,15 +508,19 @@ class EmbeddingPolicy(Policy):
                 setattr(hparams, key, value * tf.cast(self._is_training, tf.float32))
         reg = tf.contrib.layers.l2_regularizer(self.C2)
 
-        x = tf.layers.dense(inputs=x_in,
-                            units=hparams.hidden_size,
-                            use_bias=False,
-                            kernel_initializer=tf.random_normal_initializer(0.0, hparams.hidden_size ** -0.5),
-                            kernel_regularizer=reg,
-                            name='transformer_embed_layer',
-                            reuse=tf.AUTO_REUSE)
-
-        x = tf.layers.dropout(x, rate=hparams.layer_prepostprocess_dropout, training=self._is_training)
+        x = tf.nn.relu(x_in)
+        x = tf.layers.dense(
+            inputs=x,
+            units=hparams.hidden_size,
+            use_bias=False,
+            kernel_initializer=tf.random_normal_initializer(
+                0.0, hparams.hidden_size ** -0.5),
+            kernel_regularizer=reg,
+            name='transformer_embed_layer',
+            reuse=tf.AUTO_REUSE
+        )
+        x = tf.layers.dropout(x, rate=hparams.layer_prepostprocess_dropout,
+                              training=self._is_training)
 
         if hparams.multiply_embedding_mode == "sqrt_depth":
             x *= hparams.hidden_size ** 0.5
@@ -793,13 +798,13 @@ class EmbeddingPolicy(Policy):
                 "".format(self.loss_type)
             )
 
-    def _build_tf_train_graph(self, iterator):
+    def _build_tf_train_graph(self):
 
         # session data are int counts but we need a float tensors
         (self.a_in,
          self.b_in,
          self.c_in,
-         self.b_prev_in) = (tf.cast(x_in, tf.float32) for x_in in iterator.get_next())
+         self.b_prev_in) = (tf.cast(x_in, tf.float32) for x_in in self._iterator.get_next())
 
         all_actions = tf.constant(self.encoded_all_actions,
                                   dtype=tf.float32,
@@ -937,19 +942,19 @@ class EmbeddingPolicy(Policy):
             batch_size_in = tf.placeholder(tf.int64)
             train_dataset = self._create_tf_dataset(session_data, batch_size_in)
 
-            iterator = self._create_tf_iterator(train_dataset)
+            self._iterator = self._create_tf_iterator(train_dataset)
 
-            train_init_op = iterator.make_initializer(train_dataset)
+            train_init_op = self._iterator.make_initializer(train_dataset)
 
             if self.evaluate_on_num_examples:
                 eval_session_data = self._sample_session_data(session_data, self.evaluate_on_num_examples)
                 eval_train_dataset = self._create_tf_dataset(eval_session_data, self.evaluate_on_num_examples, shuffle=False)
-                eval_init_op = iterator.make_initializer(eval_train_dataset)
+                eval_init_op = self._iterator.make_initializer(eval_train_dataset)
             else:
                 eval_init_op = None
 
             self._is_training = tf.placeholder_with_default(False, shape=())
-            loss, acc = self._build_tf_train_graph(iterator)
+            loss, acc = self._build_tf_train_graph()
 
             # define which optimizer to use
             self._train_op = tf.train.AdamOptimizer().minimize(loss)
@@ -1075,20 +1080,18 @@ class EmbeddingPolicy(Policy):
             )
 
             session_data = self._create_session_data(training_data.X, training_data.y)
-
-            b = self._create_batch_b(session_data.Y, session_data.actions_for_Y)
+            train_dataset = self._create_tf_dataset(session_data, batch_size)
+            train_init_op = self._iterator.make_initializer(train_dataset)
+            self.session.run(train_init_op)
 
             # fit to one extra example using updated trackers
-            self.session.run(
-                self._train_op,
-                feed_dict={
-                    self.a_in: session_data.X,
-                    self.b_in: b,
-                    self.c_in: session_data.slots,
-                    self.b_prev_in: session_data.previous_actions,
-                    self._is_training: True,
-                },
-            )
+            while True:
+                try:
+                    self.session.run(self._train_op,
+                                     feed_dict={self._is_training: True})
+
+                except tf.errors.OutOfRangeError:
+                    break
 
     def tf_feed_dict_for_prediction(self,
                                     tracker: DialogueStateTracker,
