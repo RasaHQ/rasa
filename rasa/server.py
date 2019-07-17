@@ -809,7 +809,7 @@ def create_app(
                     data.get("text")
                 )
             except Exception as e:
-                logger.debug("Error while handling message data")
+                logger.debug(traceback.format_exc())
                 raise ErrorResponse(
                     400,
                     "ParsingError",

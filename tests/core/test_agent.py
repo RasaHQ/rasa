@@ -112,7 +112,6 @@ async def test_agent_parse_message_using_nlu_interpreter(
     default_agent, text_message_data, expected
 ):
     result = await default_agent.parse_message_using_nlu_interpreter(text_message_data)
-    print ("RESULT:", result)
     assert result == expected
 
 
