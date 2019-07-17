@@ -3,7 +3,6 @@ import importlib.util
 import logging
 import os
 import signal
-import sys
 import tempfile
 import traceback
 import typing
@@ -16,7 +15,12 @@ import time
 
 import rasa.utils.io as io_utils
 from rasa.cli.arguments import x as arguments
-from rasa.cli.utils import get_validated_path, print_warning, print_error
+from rasa.cli.utils import (
+    get_validated_path,
+    print_warning,
+    print_error,
+    print_error_and_exit,
+)
 from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
@@ -243,16 +247,15 @@ def is_rasa_project_setup(project_path: Text):
 
 def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
     if not is_rasa_x_installed():
-        print_error(
+        print_error_and_exit(
             "Rasa X is not installed. The `rasa x` "
             "command requires an installation of Rasa X. "
             "Instructions on how to install Rasa X can be found here: "
             "https://rasa.com/docs/rasa-x/installation-and-setup/."
         )
-        sys.exit(1)
 
     if args.port == args.rasa_x_port:
-        print_error(
+        print_error_and_exit(
             "The port for Rasa X '{}' and the port of the Rasa server '{}' are the "
             "same. We need two different ports, one to run Rasa X (e.g. delivering the "
             "UI) and another one to run a normal Rasa server.\nPlease specify two "
@@ -260,15 +263,14 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
                 args.rasa_x_port, args.port
             )
         )
-        sys.exit(1)
 
     if not is_rasa_project_setup(project_path):
-        print_error(
+        print_error_and_exit(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
-            "directory (see http://rasa.com/docs/rasa/user-guide/rasa-tutorial/#create-a-new-project)."
+            "directory (see http://rasa.com/docs/rasa/user-guide/"
+            "rasa-tutorial/#create-a-new-project)."
         )
-        sys.exit(1)
 
     _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
 
@@ -285,8 +287,9 @@ def _validate_domain(domain_path: Text):
     try:
         Domain.load(domain_path)
     except InvalidDomain as e:
-        print_error("The provided domain file could not be loaded. Error: {}".format(e))
-        sys.exit(1)
+        print_error_and_exit(
+            "The provided domain file could not be loaded. " "Error: {}".format(e)
+        )
 
 
 def rasa_x(args: argparse.Namespace):
@@ -330,29 +333,26 @@ def _pull_runtime_config_from_server(
         time.sleep(wait_time_between_pulls)
         attempts -= 1
 
-    print_error(
-        "Could not fetch endpoints and credentials from server at "
-        "'{}'. Exiting.".format(config_endpoint)
+    print_error_and_exit(
+        "Could not fetch runtime config from server at '{}'. "
+        "Exiting.".format(config_endpoint)
     )
-    sys.exit(1)
 
 
 def _dump_dict_to_yaml(data: Dict, key: Text) -> Optional[Text]:
     content = data.get(key)
-    if content:
-        temp_file = tempfile.NamedTemporaryFile(delete=False).name
-        io_utils.write_yaml_file(content, temp_file)
-        return temp_file
-    else:
-        print_error(
-            "Successfully fetched data from endpoint config but "
-            "failed to find key '{}'.".format(key)
+    if not content:
+        print_error_and_exit(
+            "Failed to find key '{}' in runtime config "
+            "dictionary. Exiting.".format(key)
         )
-        return None
+
+    temp_file = tempfile.NamedTemporaryFile(delete=False).name
+    io_utils.write_yaml_file(content, temp_file)
+    return temp_file
 
 
-def _get_endpoint_config_from_file(args: argparse.Namespace) -> "AvailableEndpoints":
-
+def _get_available_endpoints(args: argparse.Namespace) -> "AvailableEndpoints":
     args.endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
@@ -371,7 +371,7 @@ def run_in_production(args: argparse.Namespace):
         )
         endpoints = AvailableEndpoints.read_endpoints(endpoints_config_path)
     else:
-        endpoints = _get_endpoint_config_from_file(config_endpoint)
+        endpoints = _get_available_endpoints(config_endpoint)
         credentials_path = None
 
     _rasa_service(args, endpoints, None, credentials_path)
