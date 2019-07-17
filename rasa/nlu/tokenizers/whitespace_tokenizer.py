@@ -21,6 +21,8 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
         super(WhitespaceTokenizer, self).__init__(component_config)
 
+        self.case_sensitive = self.component_config["case_sensitive"]
+
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
@@ -31,8 +33,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
         message.set("tokens", self.tokenize(message.text))
 
     def tokenize(self, text: Text) -> List[Token]:
-        case_sensitive = self.component_config["case_sensitive"]
-        if not case_sensitive:
+        if not self.case_sensitive:
             text = text.lower()
         # remove 'not a word character' if
         words = re.sub(
