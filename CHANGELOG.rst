@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- WhiteSpaceTokenizer option added with an option for case_sensitive to be true or false, true being default.
+- ``case_sensitive`` option added to ``WhiteSpaceTokenizer`` with ``true`` as default.
 
 Changed
 -------
