@@ -400,7 +400,9 @@ class Agent(object):
             and self.interpreter is not None
         )
 
-    async def parse_message_using_nlu_interpreter(self, message_data: Text) -> Dict[Text, Any]:
+    async def parse_message_using_nlu_interpreter(
+        self, message_data: Text
+    ) -> Dict[Text, Any]:
         """Handles message text and intent payload input messages.
 
         The return value of this function is parsed_data.
