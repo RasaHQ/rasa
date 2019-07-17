@@ -25,6 +25,7 @@ Removed
 Fixed
 -----
 - validation no longer throws an error during interactive learning
+- messages with multiple entities are now handled properly with e2e evaluation
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^
