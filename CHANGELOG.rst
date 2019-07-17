@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
+- added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
 
 
 Changed
