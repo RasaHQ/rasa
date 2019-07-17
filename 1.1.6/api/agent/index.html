@@ -388,27 +388,6 @@ the bot wants to respond.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="rasa.core.agent.Agent.parse_message_using_nlu_interpreter">
-<code class="descname">parse_message_using_nlu_interpreter</code><span class="sig-paren">(</span><em>message_data</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.parse_message_using_nlu_interpreter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handles message text and intent payload input messages.</p>
-<p>The return value of this function is parsed_data.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>message_data</strong> (<em>Text</em>) – Contain the received message in text or            intent payload format.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The parsed message.<p>Ex:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>                    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s1">&#39;/greet{&quot;name&quot;:&quot;Rasa&quot;}&#39;</span><span class="p">,</span>                    <span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>                    <span class="s2">&quot;intent_ranking&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}],</span>                    <span class="s2">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>                                  <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="mi">21</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;Rasa&quot;</span><span class="p">}],</span>                <span class="p">}</span>
-</pre></div>
-</div>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="rasa.core.agent.Agent.persist">
 <code class="descname">persist</code><span class="sig-paren">(</span><em>model_path</em>, <em>dump_flattened_stories=False</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.persist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Persists this agent into a directory for later loading and usage.</p>
