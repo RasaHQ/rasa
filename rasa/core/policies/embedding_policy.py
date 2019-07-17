@@ -1126,9 +1126,9 @@ class EmbeddingPolicy(Policy):
 
         tf_feed_dict = self.tf_feed_dict_for_prediction(tracker, domain)
 
-        sim_ = self.session.run(self.sim_all, feed_dict=tf_feed_dict)
+        confidence = self.session.run(self.pred_confidence, feed_dict=tf_feed_dict)
 
-        return sim_[0, -1, :].tolist()
+        return confidence[0, -1, :].tolist()
 
     def _persist_tensor(self, name: Text, tensor: 'tf.Tensor') -> None:
         if tensor is not None:
