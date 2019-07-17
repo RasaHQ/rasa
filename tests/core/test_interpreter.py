@@ -89,15 +89,23 @@ async def test_regex_interpreter_adds_intent_prefix(regex_interpreter):
     assert r.get("text") == '/mood_greet{"name": "rasa"}'
 
 
-async def test_http_interpreter():
+@pytest.mark.parametrize(
+    "endpoint_url,joined_url",
+    [
+        ("https://example.com", "https://example.com/model/parse"),
+        ("https://example.com/a", "https://example.com/a/model/parse"),
+        ("https://example.com/a/", "https://example.com/a/model/parse"),
+    ],
+)
+async def test_http_interpreter(endpoint_url, joined_url):
     with aioresponses() as mocked:
-        mocked.post("https://example.com/model/parse")
+        mocked.post(joined_url)
 
-        endpoint = EndpointConfig("https://example.com")
+        endpoint = EndpointConfig(endpoint_url)
         interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
         await interpreter.parse(text="message_text", message_id="message_id")
 
-        r = latest_request(mocked, "POST", "https://example.com/model/parse")
+        r = latest_request(mocked, "POST", joined_url)
 
         query = json_of_latest_request(r)
         response = {"text": "message_text", "token": None, "message_id": "message_id"}

@@ -7,7 +7,7 @@ attrs==19.1.0
 jsonpickle==1.1
 redis==3.2.1
 fakeredis==1.0.3
-pymongo==3.8.0
+pymongo[tls,srv]==3.8.0
 numpy==1.16.3
 scipy==1.2.1
 tensorflow==1.13.1
