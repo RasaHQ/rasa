@@ -125,7 +125,7 @@ def unpack_model(
 def get_model_subdirectories(
     unpacked_model_path: Text
 ) -> Tuple[Optional[Text], Optional[Text]]:
-    """Returns paths for core and nlu model directories, if they exist.
+    """Returns paths for Core and NLU model directories, if they exist.
     If neither directories exist, a `NoModelData` exception is raised.
 
     Args:
@@ -134,6 +134,7 @@ def get_model_subdirectories(
     Returns:
         Tuple (path to Core subdirectory if it exists or `None` otherwise,
                path to NLU subdirectory if it exists or `None` otherwise).
+
     """
     core_path = os.path.join(unpacked_model_path, "core")
     nlu_path = os.path.join(unpacked_model_path, "nlu")

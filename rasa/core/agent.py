@@ -321,7 +321,7 @@ class Agent(object):
     def update_model(
         self,
         domain: Optional[Domain],
-        policy_ensemble: PolicyEnsemble,
+        policy_ensemble: Optional[PolicyEnsemble],
         fingerprint: Optional[Text],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         model_directory: Optional[Text] = None,
@@ -396,13 +396,9 @@ class Agent(object):
             remote_storage=remote_storage,
         )
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         """Check if all necessary components are instantiated to use agent."""
-        return (
-            self.tracker_store is not None
-            and self.policy_ensemble is not None
-            and self.interpreter is not None
-        )
+        return bool(self.tracker_store and self.interpreter)
 
     async def parse_message_using_nlu_interpreter(
         self, message_data: Text
