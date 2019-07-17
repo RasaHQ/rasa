@@ -390,6 +390,27 @@ the bot wants to respond.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="rasa.core.agent.Agent.parse_message_using_nlu_interpreter">
+<code class="descname">parse_message_using_nlu_interpreter</code><span class="sig-paren">(</span><em>message_data</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.parse_message_using_nlu_interpreter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles message text and intent payload input messages.</p>
+<p>The return value of this function is parsed_data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>message_data</strong> (<em>Text</em>) – Contain the received message in text or            intent payload format.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The parsed message.<p class="rubric">Example</p>
+<p>{                    “text”: ‘/greet{“name”:”Rasa”}’,                    “intent”: {“name”: “greet”, “confidence”: 1.0},                    “intent_ranking”: [{“name”: “greet”, “confidence”: 1.0}],                    “entities”: [{“entity”: “name”, “start”: 6,                                  “end”: 21, “value”: “Rasa”}],                }</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="rasa.core.agent.Agent.persist">
 <code class="descname">persist</code><span class="sig-paren">(</span><em>model_path</em>, <em>dump_flattened_stories=False</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.persist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Persists this agent into a directory for later loading and usage.</p>
