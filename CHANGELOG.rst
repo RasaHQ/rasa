@@ -25,6 +25,7 @@ Removed
 Fixed
 -----
 - validation no longer throws an error during interactive learning
+- updated the server endpoint ``/model/parse`` to handle also messages with the intent prefix
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^
