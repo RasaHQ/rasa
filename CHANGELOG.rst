@@ -6,17 +6,16 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.6] - `master`_
+[Unreleased 1.1.7] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+- added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
 
 
 Changed
 -------
-- recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
-  has been updated from ``False`` or ``None`` to an empty list (``[]``)
 
 
 Removed
@@ -25,8 +24,27 @@ Removed
 
 Fixed
 -----
-- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
+- validation no longer throws an error during interactive learning
+
+[1.1.6] - 2019-07-12
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- rest channel supports setting a message's input_channel through a field
+  ``input_channel`` in the request body
+
+Changed
+-------
+- recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
+  has been updated from ``False`` or ``None`` to an empty list (``[]``)
+
+Fixed
+-----
 - ``rasa run`` without ``--enable-api`` does not require a local model anymore
+- using ``rasa run`` with ``--enable-api`` to run a server now prints
+  "running Rasa server" instead of "running Rasa Core server"
+- actions, intents, and utterances created in ``rasa interactive`` can no longer be empty
 
 
 [1.1.5] - 2019-07-10
@@ -67,6 +85,7 @@ Fixed
 - ``rasa interactive`` now looks for endpoints in ``endpoints.yml`` if no ``--endpoints`` arg is passed
 - custom files, e.g. custom components and channels, load correctly when using
   the command line interface
+- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
 
 
 [1.1.4] - 2019-06-18

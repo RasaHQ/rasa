@@ -379,33 +379,38 @@ class RestInput(InputChannel):
         text: Text,
         queue: Queue,
         sender_id: Text,
+        input_channel,
     ) -> None:
         collector = QueueOutputChannel(queue)
 
-        message = UserMessage(
-            text, collector, sender_id, input_channel=RestInput.name()
-        )
+        message = UserMessage(text, collector, sender_id, input_channel=input_channel)
         await on_new_message(message)
 
         await queue.put("DONE")  # pytype: disable=bad-return-type
 
-    async def _extract_sender(self, req) -> Optional[Text]:
+    async def _extract_sender(self, req: Request) -> Optional[Text]:
         return req.json.get("sender", None)
 
     # noinspection PyMethodMayBeStatic
-    def _extract_message(self, req):
+    def _extract_message(self, req: Request) -> Optional[Text]:
         return req.json.get("message", None)
+
+    def _extract_input_channel(self, req: Request) -> Text:
+        return req.json.get("input_channel") or self.name()
 
     def stream_response(
         self,
         on_new_message: Callable[[UserMessage], Awaitable[None]],
         text: Text,
         sender_id: Text,
+        input_channel: Text,
     ) -> Callable[[Any], Awaitable[None]]:
         async def stream(resp: Any) -> None:
             q = Queue()
             task = asyncio.ensure_future(
-                self.on_message_wrapper(on_new_message, text, q, sender_id)
+                self.on_message_wrapper(
+                    on_new_message, text, q, sender_id, input_channel
+                )
             )
             while True:
                 result = await q.get()  # pytype: disable=bad-return-type
@@ -435,10 +440,13 @@ class RestInput(InputChannel):
             should_use_stream = rasa.utils.endpoints.bool_arg(
                 request, "stream", default=False
             )
+            input_channel = self._extract_input_channel(request)
 
             if should_use_stream:
                 return response.stream(
-                    self.stream_response(on_new_message, text, sender_id),
+                    self.stream_response(
+                        on_new_message, text, sender_id, input_channel
+                    ),
                     content_type="text/event-stream",
                 )
             else:
@@ -447,7 +455,7 @@ class RestInput(InputChannel):
                 try:
                     await on_new_message(
                         UserMessage(
-                            text, collector, sender_id, input_channel=self.name()
+                            text, collector, sender_id, input_channel=input_channel
                         )
                     )
                 except CancelledError:
