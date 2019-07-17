@@ -27,7 +27,9 @@ import tensorflow as tf
 
 try:
     from tensor2tensor.layers import common_attention
-    from tensor2tensor.models.transformer import transformer_base, transformer_prepare_encoder, transformer_encoder
+    from tensor2tensor.models.transformer import (transformer_base,
+                                                  transformer_prepare_encoder,
+                                                  transformer_encoder)
 except ImportError:
     common_attention = None
     transformer_base = None
@@ -131,7 +133,8 @@ class EmbeddingPolicy(Policy):
         if max_history is None:
             return FullDialogueTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer())
         else:
-            return MaxHistoryTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer(), max_history=max_history)
+            return MaxHistoryTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer(),
+                                               max_history=max_history)
 
     @staticmethod
     def _check_t2t() -> None:
@@ -289,7 +292,8 @@ class EmbeddingPolicy(Policy):
             return np.stack(
                 [
                     np.stack(
-                        [self.encoded_all_actions[action_idx] for action_idx in action_ids]
+                        [self.encoded_all_actions[action_idx]
+                         for action_idx in action_ids]
                     )
                     for action_ids in actions_for_Y
                 ]
@@ -493,7 +497,8 @@ class EmbeddingPolicy(Policy):
              ) = transformer_prepare_encoder(x, None, hparams)
 
             if hparams.pos == 'custom_timing':
-                x = common_attention.add_timing_signal_1d(x, max_timescale=self.pos_max_timescale)
+                x = common_attention.add_timing_signal_1d(
+                    x, max_timescale=self.pos_max_timescale)
 
             x *= tf.expand_dims(mask, -1)
 
@@ -566,7 +571,8 @@ class EmbeddingPolicy(Policy):
         intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
         union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
 
-        iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
+        iou = (tf.reduce_sum(intersection_b_in_flat, -1)
+               / tf.reduce_sum(union_b_in_flat, -1))
         return 1. - tf.nn.relu(tf.sign(1. - iou))
 
     def _tf_get_negs(self,
@@ -586,7 +592,8 @@ class EmbeddingPolicy(Policy):
         bad_negs_flat = self._tf_calc_iou_mask(raw_flat, all_raw, neg_ids)
         bad_negs = tf.reshape(bad_negs_flat, (batch_size, seq_length, -1))
 
-        neg_embed_flat = self._tf_sample_neg(batch_size * seq_length, all_embed, neg_ids)
+        neg_embed_flat = self._tf_sample_neg(batch_size * seq_length,
+                                             all_embed, neg_ids)
         neg_embed = tf.reshape(neg_embed_flat,
                                (batch_size, seq_length, -1, all_embed.shape[-1]))
 
@@ -777,7 +784,8 @@ class EmbeddingPolicy(Policy):
         (self.a_in,
          self.b_in,
          self.c_in,
-         self.b_prev_in) = (tf.cast(x_in, tf.float32) for x_in in self._iterator.get_next())
+         self.b_prev_in) = (tf.cast(x_in, tf.float32)
+                            for x_in in self._iterator.get_next())
 
         all_actions = tf.constant(self.encoded_all_actions,
                                   dtype=tf.float32,
@@ -907,9 +915,8 @@ class EmbeddingPolicy(Policy):
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
         # encode all actions with policies' featurizer
-        self.encoded_all_actions = self.featurizer.state_featurizer.create_encoded_all_actions(
-            domain
-        )
+        self.encoded_all_actions = \
+            self.featurizer.state_featurizer.create_encoded_all_actions(domain)
 
         # check if number of negatives is less than number of actions
         logger.debug(
@@ -939,8 +946,10 @@ class EmbeddingPolicy(Policy):
             train_init_op = self._iterator.make_initializer(train_dataset)
 
             if self.evaluate_on_num_examples:
-                eval_session_data = self._sample_session_data(session_data, self.evaluate_on_num_examples)
-                eval_train_dataset = self._create_tf_dataset(eval_session_data, self.evaluate_on_num_examples, shuffle=False)
+                eval_session_data = self._sample_session_data(
+                    session_data, self.evaluate_on_num_examples)
+                eval_train_dataset = self._create_tf_dataset(
+                    eval_session_data, self.evaluate_on_num_examples, shuffle=False)
                 eval_init_op = self._iterator.make_initializer(eval_train_dataset)
             else:
                 eval_init_op = None
@@ -1030,12 +1039,13 @@ class EmbeddingPolicy(Policy):
             })
 
             if self.evaluate_on_num_examples and eval_init_op is not None:
-                if (ep == 0 or
-                        (ep + 1) % self.evaluate_every_num_epochs == 0 or
-                        (ep + 1) == self.epochs):
+                if ((ep + 1) % self.evaluate_every_num_epochs == 0
+                        or (ep + 1) == self.epochs):
                     eval_loss, eval_acc = self._output_training_stat_dataset(
                         eval_init_op, loss, acc
                     )
+                if ((ep + 1) % self.evaluate_every_num_epochs == 0
+                        and (ep + 1) != self.epochs):
                     logger.info("Evaluation results: loss: {:.3f}, acc: {:.3f}"
                                 "".format(eval_loss, eval_acc))
 
