@@ -1,4 +1,5 @@
 import os
+import typing
 from typing import Optional, Text, Union, List, Dict
 
 from rasa import data
@@ -10,6 +11,10 @@ from rasa.importers import utils
 from rasa.importers.importer import TrainingFileImporter, logger
 from rasa.nlu.training_data import TrainingData
 from rasa.utils import io as io_utils
+
+
+if typing.TYPE_CHECKING:
+    from rasa.core.interpreter import NaturalLanguageInterpreter
 
 
 class SimpleFileImporter(TrainingFileImporter):

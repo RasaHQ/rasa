@@ -237,7 +237,6 @@ def minimal_kwargs(
         Subset of kwargs which are accepted by `func`.
 
     """
-    from rasa.utils.common import arguments_of
 
     excluded_keys = excluded_keys or []
 

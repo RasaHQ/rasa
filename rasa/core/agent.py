@@ -44,8 +44,7 @@ from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
 from rasa.exceptions import ModelNotFound
 
-if typing.TYPE_CHECKING:
-    from rasa.importers.importer import TrainingFileImporter
+from rasa.importers.importer import TrainingFileImporter
 
 logger = logging.getLogger(__name__)
 
@@ -613,7 +612,7 @@ class Agent(object):
 
     async def load_data(
         self,
-        training_resource: Union[Text, "TrainingFileImporter"],
+        training_resource: Union[Text, TrainingFileImporter],
         remove_duplicates: bool = True,
         unique_last_num_states: Optional[int] = None,
         augmentation_factor: int = 20,
