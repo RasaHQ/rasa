@@ -70,6 +70,7 @@ class KeywordIntentClassifier(Component):
 
         Return the metadata necessary to load the model again.
         """
+
         file_name = file_name + ".json"
         keyword_file = os.path.join(model_dir, file_name)
         utils.write_json_to_file(keyword_file, self.intent_keyword_map)
