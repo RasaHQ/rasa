@@ -15,7 +15,8 @@ Added
 
 Changed
 -------
-
+- ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
+  or a policy ensemble
 
 Removed
 -------
