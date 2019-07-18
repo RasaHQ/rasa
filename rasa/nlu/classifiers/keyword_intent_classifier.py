@@ -28,7 +28,7 @@ class KeywordIntentClassifier(Component):
 
     provides = ["intent"]
 
-    defaults = {"case_sensitive": False}
+    defaults = {"case_sensitive": True}
 
     def __init__(self,
                  component_config: Dict[Text, Any] = None,
@@ -102,4 +102,4 @@ class KeywordIntentClassifier(Component):
                     "Failed to load IntentKeywordClassifier, maybe "
                     "{} does not exist.".format(keyword_file)
                 )
-        return cls(intent_keyword_map)
+        return cls(meta, intent_keyword_map)
