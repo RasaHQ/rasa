@@ -76,7 +76,7 @@ def test_get_model_from_directory_with_subdirectories(
     assert unpacked_core
     assert unpacked_nlu
 
-    directory = tmpdir_factory.mktemp("empty_model_dir")
+    directory = tmpdir_factory.mktemp("empty_model_dir").strpath
     with pytest.raises(ModelNotFound):
         get_model_subdirectories(directory)
 
