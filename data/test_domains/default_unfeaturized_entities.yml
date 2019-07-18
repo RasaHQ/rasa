@@ -5,6 +5,7 @@ intents:
  - thank: {use_entities: False}
  - ask: {use_entities: True}
  - why: {use_entities: []}
+ - pure_intent
 
 entities:
  - name

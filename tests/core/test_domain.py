@@ -514,6 +514,7 @@ def test_clean_domain():
             {"thank": {"use_entities": []}},
             "ask",
             {"why": {"use_entities": []}},
+            "pure_intent",
         ],
         "entities": ["name", "other", "unrelated_recognized_entity"],
         "templates": {
@@ -524,4 +525,7 @@ def test_clean_domain():
         "actions": ["utter_default", "utter_goodbye", "utter_greet"],
     }
 
-    assert cleaned == expected
+    expected = Domain.from_dict(expected)
+    actual = Domain.from_dict(cleaned)
+
+    assert hash(actual) == hash(expected)
