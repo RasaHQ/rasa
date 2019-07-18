@@ -35,6 +35,7 @@ class UserMessage(object):
         parse_data: Dict[Text, Any] = None,
         input_channel: Text = None,
         message_id: Text = None,
+        message_type: Text = None,
     ) -> None:
         self.text = text.strip() if text else text
 
@@ -52,6 +53,8 @@ class UserMessage(object):
             self.sender_id = str(sender_id)
         else:
             self.sender_id = self.DEFAULT_SENDER_ID
+
+        self.message_type = message_type
 
         self.input_channel = input_channel
 

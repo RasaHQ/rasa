@@ -72,16 +72,20 @@ class Messenger:
 
     async def message(self, message: Dict[Text, Any]) -> None:
         """Handle an incoming event from the fb webhook."""
+        message_type = None
 
         # quick reply and user message both share 'text' attribute
         # so quick reply should be checked first
         if self._is_quick_reply_message(message):
             text = message["message"]["quick_reply"]["payload"]
+            message_type = "text"
         elif self._is_user_message(message):
             text = message["message"]["text"]
+            message_type = "text"
         elif self._is_audio_message(message):
             attachment = message["message"]["attachments"][0]
             text = attachment["payload"]["url"]
+            message_type = "audio"
         else:
             logger.warning(
                 "Received a message from facebook that we can not "
@@ -89,19 +93,20 @@ class Messenger:
             )
             return
 
-        await self._handle_user_message(text, self.get_user_id())
+        await self._handle_user_message(text, self.get_user_id(), message_type)
 
     async def postback(self, message: Dict[Text, Any]) -> None:
         """Handle a postback (e.g. quick reply button)."""
 
         text = message["postback"]["payload"]
-        await self._handle_user_message(text, self.get_user_id())
+        message_type = "postback"
+        await self._handle_user_message(text, self.get_user_id(), message_type)
 
-    async def _handle_user_message(self, text: Text, sender_id: Text) -> None:
+    async def _handle_user_message(self, text: Text, sender_id: Text, message_type: Text) -> None:
         """Pass on the text to the dialogue engine for processing."""
 
         out_channel = MessengerBot(self.client)
-        user_msg = UserMessage(text, out_channel, sender_id, input_channel=self.name())
+        user_msg = UserMessage(text, out_channel, sender_id, input_channel=self.name(), message_type=message_type)
 
         # noinspection PyBroadException
         try:
