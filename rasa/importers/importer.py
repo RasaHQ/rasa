@@ -1,12 +1,11 @@
 from functools import reduce
-from typing import Text, Optional, List, Dict, Union
+from typing import Text, Optional, List, Dict
 import logging
 
 import rasa.utils.common
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
-from rasa.importers.simple import SimpleFileImporter
 from rasa.nlu.training_data import TrainingData
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
@@ -63,6 +62,8 @@ class TrainingFileImporter:
         load_only_nlu_data: bool = False,
     ) -> "TrainingFileImporter":
         """Loads a `TrainingFileImporter` instance from a dictionary."""
+        from rasa.importers.simple import SimpleFileImporter
+
         config = config or {}
         importers = config.get("importers", [])
         importers = [
@@ -92,6 +93,7 @@ class TrainingFileImporter:
         training_data_paths: Optional[List[Text]] = None,
     ) -> Optional["TrainingFileImporter"]:
         from rasa.importers.skill import SkillSelector
+        from rasa.importers.simple import SimpleFileImporter
 
         module_path = importer_config.pop("name", None)
         if module_path == SimpleFileImporter.__name__:

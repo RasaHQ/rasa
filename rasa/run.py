@@ -4,7 +4,6 @@ from typing import Dict, Text
 
 from rasa.constants import DOCS_BASE_URL
 from rasa.cli.utils import print_warning
-import rasa.utils.common as utils
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +33,7 @@ def run(
     import rasa.core.run
     import rasa.nlu.run
     from rasa.core.utils import AvailableEndpoints
+    import rasa.utils.common as utils
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 

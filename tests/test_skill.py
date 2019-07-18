@@ -80,7 +80,7 @@ def test_load_from_none(input_dict: Dict, tmpdir_factory: TempdirFactory):
 
 def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFactory):
     root = tmpdir_factory.mktemp("Parent Bot")
-    config_path = root / "config.yml"
+    config_path = str(root / "config.yml")
     utils.dump_obj_as_yaml_to_file(root / "config.yml", {})
 
     skill_a_directory = root / "Skill A"
@@ -98,7 +98,7 @@ def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFa
 )
 def test_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
     root = tmpdir_factory.mktemp("Parent Bot")
-    config_path = root / "config.yml"
+    config_path = str(root / "config.yml")
     utils.dump_obj_as_yaml_to_file(root / "config.yml", {"imports": ["A/A/A", "A/B/A"]})
 
     importer = SkillSelector(config_path, project_directory=os.getcwd())
@@ -109,7 +109,7 @@ def test_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
 @pytest.mark.parametrize("input_path", ["A/C", "A/A/B", "A/B"])
 def test_not_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
     root = tmpdir_factory.mktemp("Parent Bot")
-    config_path = root / "config.yml"
+    config_path = str(root / "config.yml")
     utils.dump_obj_as_yaml_to_file(root / "config.yml", {"imports": ["A/A/A", "A/B/A"]})
     importer = SkillSelector(config_path, project_directory=os.getcwd())
 

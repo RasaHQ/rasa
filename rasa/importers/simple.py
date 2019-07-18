@@ -4,7 +4,7 @@ from typing import Optional, Text, Union, List, Dict
 from rasa import data
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.interpreter import RegexInterpreter
-from rasa.core.training import StoryGraph
+from rasa.core.training.structures import StoryGraph
 from rasa.core.training.dsl import StoryFileReader
 from rasa.importers import utils
 from rasa.importers.importer import TrainingFileImporter, logger

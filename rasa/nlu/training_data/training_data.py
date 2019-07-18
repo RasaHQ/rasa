@@ -69,12 +69,11 @@ class TrainingData(object):
         )
 
     def __hash__(self) -> int:
-        import json
-        from rasa.core import utils
+        from rasa.core import utils as core_utils
 
-        self_as_dict = self.as_json()
-        self_as_string = json.dumps(self_as_dict, sort_keys=True)
-        text_hash = utils.get_text_hash(self_as_string)
+        # Sort keys to ensure dictionary order in Python 3.5
+        stringified = self.as_json(sort_keys=True)
+        text_hash = core_utils.get_text_hash(stringified)
 
         return int(text_hash, 16)
 
@@ -132,7 +131,7 @@ class TrainingData(object):
             RasaWriter,
         )
 
-        return RasaWriter().dumps(self)
+        return RasaWriter().dumps(self, **kwargs)
 
     def as_markdown(self) -> Text:
         """Generates the markdown representation of the TrainingData."""
