@@ -458,7 +458,7 @@ KeywordIntentClassifier
 
 :Description:
     This classifier works by searching a message for keywords.
-    The matching is case insensitive and search only for exact matches of the keyword-string.
+    The matching is case sensitive and search only for exact matches of the keyword-string.
     The keywords for an intent are the examples of that intent in the NLU training data.
     .. note:: This means the entire example is the keyword, not the individual words in the example.
 

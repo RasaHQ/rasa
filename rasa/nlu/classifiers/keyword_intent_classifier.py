@@ -28,7 +28,12 @@ class KeywordIntentClassifier(Component):
 
     provides = ["intent"]
 
-    intent_keyword_map = {}
+    def __init__(self, intent_keyword_map: Optional[Dict] = None):
+
+        if intent_keyword_map is None:
+            self.intent_keyword_map = {}
+        else:
+            self.intent_keyword_map = intent_keyword_map
 
     def train(
         self,
@@ -45,12 +50,12 @@ class KeywordIntentClassifier(Component):
             ]
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        intent_name = self.parse(message.text)
+        intent_name = self.map_keyword_to_intent(message.text)
         if intent_name is not None:
             intent = {"name": intent_name, "confidence": 1.0}
             message.set("intent", intent, add_to_output=True)
 
-    def parse(self, text: Text) -> Optional[Text]:
+    def map_keyword_to_intent(self, text: Text) -> Optional[Text]:
 
         for intent, keywords in self.intent_keyword_map.items():
             for string in keywords:
@@ -60,6 +65,7 @@ class KeywordIntentClassifier(Component):
         return None
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
@@ -72,7 +78,7 @@ class KeywordIntentClassifier(Component):
 
     @classmethod
     def load(
-        self,
+        cls,
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
         model_metadata: "Metadata" = None,
@@ -84,10 +90,10 @@ class KeywordIntentClassifier(Component):
             file_name = meta.get("file")
             keyword_file = os.path.join(model_dir, file_name)
             if os.path.exists(keyword_file):
-                self.intent_keyword_map = utils.read_json_file(keyword_file)
+                intent_keyword_map = utils.read_json_file(keyword_file)
             else:
                 logger.warning(
                     "Failed to load IntentKeywordClassifier, maybe "
                     "{} does not exist.".format(keyword_file)
                 )
-        return self()
+        return cls(intent_keyword_map)

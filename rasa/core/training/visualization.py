@@ -261,7 +261,7 @@ async def _replace_edge_labels_with_nodes(
     for s, e, k, d in edges:
         if k != EDGE_NONE_LABEL:
             if message_generator and d.get("label", k) is not None:
-                parsed_info = await interpreter.parse(d.get("label", k))
+                parsed_info = await interpreter.map_keyword_to_intent(d.get("label", k))
                 label = message_generator.message_for_data(parsed_info)
             else:
                 label = d.get("label", k)
