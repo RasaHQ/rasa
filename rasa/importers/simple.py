@@ -33,10 +33,9 @@ class SimpleFileImporter(TrainingFileImporter):
 
         self._domain_path = domain_path
 
-        if training_data_paths:
-            self._story_files, self._nlu_files = data.get_core_nlu_files(
-                training_data_paths
-            )
+        self._story_files, self._nlu_files = data.get_core_nlu_files(
+            training_data_paths
+        )
 
     async def get_config(self) -> Dict:
         return self.config

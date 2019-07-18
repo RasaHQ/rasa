@@ -73,14 +73,45 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        load_only_nlu_data: bool = False,
     ) -> "TrainingFileImporter":
         """Loads a `TrainingFileImporter` instance from a configuration file."""
 
         config = io_utils.read_config_file(config_path)
         return TrainingFileImporter.load_from_dict(
-            config, config_path, domain_path, training_data_paths, load_only_nlu_data
+            config, config_path, domain_path, training_data_paths
         )
+
+    @staticmethod
+    def load_core_importer_from_config(
+        config_path: Text,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
+    ) -> "TrainingFileImporter":
+        """Loads a `TrainingFileImporter` instance from a configuration file which
+           only reads Core training data.
+        """
+
+        importer = TrainingFileImporter.load_from_config(
+            config_path, domain_path, training_data_paths
+        )
+
+        return CoreFileImporter(importer)
+
+    @staticmethod
+    def load_nlu_importer_from_config(
+        config_path: Text,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
+    ) -> "TrainingFileImporter":
+        """Loads a `TrainingFileImporter` instance from a configuration file which
+           only reads NLU training data.
+        """
+
+        importer = TrainingFileImporter.load_from_config(
+            config_path, domain_path, training_data_paths
+        )
+
+        return NluFileImporter(importer)
 
     @staticmethod
     def load_from_dict(
@@ -88,7 +119,6 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        load_only_nlu_data: bool = False,
     ) -> "TrainingFileImporter":
         """Loads a `TrainingFileImporter` instance from a dictionary."""
         from rasa.importers.simple import SimpleFileImporter
@@ -108,11 +138,7 @@ class TrainingFileImporter:
                 SimpleFileImporter(config_path, domain_path, training_data_paths)
             ]
 
-        importer = CombinedFileImporter(importers)
-        if load_only_nlu_data:
-            importer = NluFileImporter(importer)
-
-        return importer
+        return CombinedFileImporter(importers)
 
     @staticmethod
     def _importer_from_dict(
@@ -145,7 +171,7 @@ class TrainingFileImporter:
 
 
 class NluFileImporter(TrainingFileImporter):
-    """Importer which skips any Core related file reading"""
+    """Importer which skips any Core related file reading."""
 
     def __init__(self, actual_importer: TrainingFileImporter):
         self._importer = actual_importer
@@ -167,6 +193,33 @@ class NluFileImporter(TrainingFileImporter):
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         return await self._importer.get_nlu_data(language)
+
+
+class CoreFileImporter(TrainingFileImporter):
+    """Importer which skips any NLU related file reading."""
+
+    def __init__(self, actual_importer: TrainingFileImporter):
+        self._importer = actual_importer
+
+    async def get_domain(self) -> Domain:
+        return await self._importer.get_domain()
+
+    async def get_stories(
+        self,
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
+        return await self._importer.get_stories(
+            interpreter, template_variables, use_e2e, exclusion_percentage
+        )
+
+    async def get_config(self) -> Dict:
+        return await self._importer.get_config()
+
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        return TrainingData()
 
 
 class CombinedFileImporter(TrainingFileImporter):
