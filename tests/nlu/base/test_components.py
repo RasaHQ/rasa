@@ -89,5 +89,5 @@ def test_example_component(component_builder, tmpdir_factory):
         config=conf,
     )
 
-    r = interpreter.map_keyword_to_intent("test")
+    r = interpreter.parse("test")
     assert r is not None

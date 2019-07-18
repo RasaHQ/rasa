@@ -359,7 +359,7 @@ class StoryFileReader(object):
         if message.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(message)
         else:
-            parse_data = await self.interpreter.map_keyword_to_intent(message)
+            parse_data = await self.interpreter.parse(message)
         utterance = UserUttered(
             message, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )

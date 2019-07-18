@@ -31,7 +31,7 @@ def test_interpreter(pipeline_template, component_builder, tmpdir):
     texts = ["good bye", "i am looking for an indian spot"]
 
     for text in texts:
-        result = interpreter.map_keyword_to_intent(text, time=None)
+        result = interpreter.parse(text, time=None)
         assert result["text"] == text
         assert not result["intent"]["name"] or result["intent"]["name"] in td.intents
         assert result["intent"]["confidence"] >= 0

@@ -17,7 +17,7 @@ def regex_interpreter():
 
 async def test_regex_interpreter_intent(regex_interpreter):
     text = INTENT_MESSAGE_PREFIX + "my_intent"
-    result = await regex_interpreter.map_keyword_to_intent(text)
+    result = await regex_interpreter.parse(text)
     assert result["text"] == text
     assert len(result["intent_ranking"]) == 1
     assert (
@@ -33,7 +33,7 @@ async def test_regex_interpreter_intent(regex_interpreter):
 
 async def test_regex_interpreter_entities(regex_interpreter):
     text = INTENT_MESSAGE_PREFIX + 'my_intent{"foo":"bar"}'
-    result = await regex_interpreter.map_keyword_to_intent(text)
+    result = await regex_interpreter.parse(text)
     assert result["text"] == text
     assert len(result["intent_ranking"]) == 1
     assert (
@@ -51,7 +51,7 @@ async def test_regex_interpreter_entities(regex_interpreter):
 
 async def test_regex_interpreter_confidence(regex_interpreter):
     text = INTENT_MESSAGE_PREFIX + "my_intent@0.5"
-    result = await regex_interpreter.map_keyword_to_intent(text)
+    result = await regex_interpreter.parse(text)
     assert result["text"] == text
     assert len(result["intent_ranking"]) == 1
     assert (
@@ -67,7 +67,7 @@ async def test_regex_interpreter_confidence(regex_interpreter):
 
 async def test_regex_interpreter_confidence_and_entities(regex_interpreter):
     text = INTENT_MESSAGE_PREFIX + 'my_intent@0.5{"foo":"bar"}'
-    result = await regex_interpreter.map_keyword_to_intent(text)
+    result = await regex_interpreter.parse(text)
     assert result["text"] == text
     assert len(result["intent_ranking"]) == 1
     assert (
@@ -84,7 +84,7 @@ async def test_regex_interpreter_confidence_and_entities(regex_interpreter):
 
 
 async def test_regex_interpreter_adds_intent_prefix(regex_interpreter):
-    r = await regex_interpreter.map_keyword_to_intent('mood_greet{"name": "rasa"}')
+    r = await regex_interpreter.parse('mood_greet{"name": "rasa"}')
 
     assert r.get("text") == '/mood_greet{"name": "rasa"}'
 
