@@ -102,11 +102,19 @@ class Messenger:
         message_type = "postback"
         await self._handle_user_message(text, self.get_user_id(), message_type)
 
-    async def _handle_user_message(self, text: Text, sender_id: Text, message_type: Text) -> None:
+    async def _handle_user_message(
+        self, text: Text, sender_id: Text, message_type: Text
+    ) -> None:
         """Pass on the text to the dialogue engine for processing."""
 
         out_channel = MessengerBot(self.client)
-        user_msg = UserMessage(text, out_channel, sender_id, input_channel=self.name(), message_type=message_type)
+        user_msg = UserMessage(
+            text,
+            out_channel,
+            sender_id,
+            input_channel=self.name(),
+            message_type=message_type,
+        )
 
         # noinspection PyBroadException
         try:
