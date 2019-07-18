@@ -18,7 +18,7 @@ async def test_use_of_interface():
 
     functions_to_test = [
         lambda: importer.get_config(),
-        lambda: importer.get_story_data(),
+        lambda: importer.get_stories(),
         lambda: importer.get_nlu_data(),
         lambda: importer.get_domain(),
     ]
@@ -41,7 +41,7 @@ async def test_simple_file_importer(project: Text):
     assert len(domain.action_names) == 13
     assert len(domain.templates) == 5
 
-    stories = await importer.get_story_data()
+    stories = await importer.get_stories()
     assert len(stories.story_steps) == 4
 
     nlu_data = await importer.get_nlu_data("en")
@@ -74,8 +74,8 @@ async def test_combined_file_importer_with_single_importer(project: Text):
         await combined.get_nlu_data()
     ).as_json()
 
-    expected_stories = await importer.get_story_data()
-    actual_stories = await combined.get_story_data()
+    expected_stories = await importer.get_stories()
+    actual_stories = await combined.get_stories()
 
     assert actual_stories.as_story_string() == expected_stories.as_story_string()
 
