@@ -36,6 +36,7 @@ Added
 Fixed
 -----
 - validation no longer throws an error during interactive learning
+- fixed wrong cleaning of ``use_entities`` in case it was a list and not ``True``
 - updated the server endpoint ``/model/parse`` to handle also messages with the intent prefix
 - fixed bug where "No model found" message appeared after successfully running the bot
 - debug logs now print to ``rasa_core.log`` when running ``rasa x -vv`` or ``rasa run -vv``
