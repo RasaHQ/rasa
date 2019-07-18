@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 - added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
-
+- ``case_sensitive`` option added to ``WhiteSpaceTokenizer`` with ``true`` as default.
 
 Changed
 -------
@@ -25,6 +25,7 @@ Removed
 Fixed
 -----
 - validation no longer throws an error during interactive learning
+- updated the server endpoint ``/model/parse`` to handle also messages with the intent prefix
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^
