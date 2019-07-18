@@ -37,7 +37,7 @@ async def test_end_to_end_evaluation_script(tmpdir, restaurantbot):
         completed_trackers, restaurantbot, use_e2e=True
     )
 
-    serialised_actions = [
+    serialised_store = [
         "utter_ask_howcanhelp",
         "action_listen",
         "utter_ask_howcanhelp",
@@ -79,7 +79,7 @@ async def test_end_to_end_evaluation_script(tmpdir, restaurantbot):
         '{"start": 18, "end": 28, "entity": "price", "value": "moderate"}',
     ]
 
-    assert story_evaluation.evaluation_store.serialise()[0] == serialised_actions
+    assert story_evaluation.evaluation_store.serialise()[0] == serialised_store
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
     assert len(story_evaluation.failed_stories) == 0
     assert num_stories == 3

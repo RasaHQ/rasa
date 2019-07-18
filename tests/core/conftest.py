@@ -7,10 +7,8 @@ import matplotlib
 import pytest
 
 import rasa.utils.io
-from rasa.core import train
 from rasa.core.agent import Agent
-from rasa.core.channels import channel
-from rasa.core.channels.channel import CollectingOutputChannel, RestInput
+from rasa.core.channels.channel import CollectingOutputChannel
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -24,7 +22,6 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.io import zip_folder
 from rasa.train import train_async
 
 matplotlib.use("Agg")
