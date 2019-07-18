@@ -3,7 +3,8 @@ import typing
 from typing import Dict, Text
 
 from rasa.constants import DOCS_BASE_URL
-from rasa.cli.utils import minimal_kwargs, print_warning
+from rasa.cli.utils import print_warning
+import rasa.utils.common as utils
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ def run(
             "messaging-and-voice-channels".format(DOCS_BASE_URL)
         )
 
-    kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)
+    kwargs = utils.minimal_kwargs(kwargs, rasa.core.run.serve_application)
     rasa.core.run.serve_application(
         model,
         channel=connector,
