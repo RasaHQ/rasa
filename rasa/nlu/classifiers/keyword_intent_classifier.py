@@ -56,12 +56,12 @@ class KeywordIntentClassifier(Component):
             ]
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        intent_name = self.map_keyword_to_intent(message.text)
+        intent_name = self._map_keyword_to_intent(message.text)
         if intent_name is not None:
             intent = {"name": intent_name, "confidence": 1.0}
             message.set("intent", intent, add_to_output=True)
 
-    def map_keyword_to_intent(self, text: Text) -> Optional[Text]:
+    def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
 
         for intent, keywords in self.intent_keyword_map.items():
             for string in keywords:
@@ -75,6 +75,7 @@ class KeywordIntentClassifier(Component):
 
         Return the metadata necessary to load the model again.
         """
+
         file_name = file_name + ".json"
         keyword_file = os.path.join(model_dir, file_name)
         utils.write_json_to_file(keyword_file, self.intent_keyword_map)

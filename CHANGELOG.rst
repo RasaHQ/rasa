@@ -13,7 +13,7 @@ Added
 -----
 - added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
 - ``case_sensitive`` option added to ``WhiteSpaceTokenizer`` with ``true`` as default.
-- a new ``keyword_intent_classifier``, can be used to classify messages based on keywords
+- added new ``KeywordIntentClassifier``, can be used to classify messages based on keywords
 
 Changed
 -------
