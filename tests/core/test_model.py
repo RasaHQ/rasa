@@ -4,6 +4,7 @@ import time
 from typing import Text, Optional
 
 import pytest
+from _pytest.tmpdir import TempdirFactory
 
 import rasa
 import rasa.core
@@ -31,7 +32,7 @@ from rasa.model import (
     FINGERPRINT_CONFIG_CORE_KEY,
     FINGERPRINT_CONFIG_NLU_KEY,
 )
-from rasa.exceptions import ModelNotFound, NoModelData
+from rasa.exceptions import ModelNotFound
 
 
 def test_get_latest_model(trained_model):
@@ -65,16 +66,18 @@ def test_get_model_exception(model_path):
         get_model(model_path)
 
 
-def test_get_model_from_directory_with_subdirectories(trained_model):
+def test_get_model_from_directory_with_subdirectories(
+    trained_model, tmpdir_factory: TempdirFactory
+):
     unpacked = get_model(trained_model)
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
 
     assert os.path.exists(unpacked_core)
     assert os.path.exists(unpacked_nlu)
 
-    with tempfile.TemporaryDirectory() as directory:
-        with pytest.raises(NoModelData):
-            get_model_subdirectories(directory)
+    directory = tmpdir_factory.mktemp("empty_model_dir")
+    with pytest.raises(ModelNotFound):
+        get_model_subdirectories(directory)
 
 
 def _fingerprint(
