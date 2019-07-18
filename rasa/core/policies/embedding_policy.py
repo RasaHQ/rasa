@@ -351,15 +351,15 @@ class EmbeddingPolicy(Policy):
                            shuffle: bool = True) -> 'tf.data.Dataset':
         """Create tf dataset."""
 
-        train_dataset = tf.data.Dataset.from_tensor_slices(
+        dataset = tf.data.Dataset.from_tensor_slices(
             (session_data.X, session_data.Y,
              session_data.slots, session_data.previous_actions)
         )
         if shuffle:
-            train_dataset = train_dataset.shuffle(buffer_size=len(session_data.X))
-        train_dataset = train_dataset.batch(batch_size)
+            dataset = dataset.shuffle(buffer_size=len(session_data.X))
+        dataset = dataset.batch(batch_size)
 
-        return train_dataset
+        return dataset
 
     @staticmethod
     def _create_tf_iterator(dataset: 'tf.data.Dataset') -> 'tf.data.Iterator':
@@ -565,7 +565,7 @@ class EmbeddingPolicy(Policy):
                           neg_ids: 'tf.Tensor') -> 'tf.Tensor':
         """Calculate IOU mask for given indices"""
 
-        pos_b_in_flat = pos_b[:, tf.newaxis, :]
+        pos_b_in_flat = tf.expand_dims(pos_b, -2)
         neg_b_in_flat = self._tf_sample_neg(tf.shape(pos_b)[0], all_bs, neg_ids)
 
         intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
@@ -607,13 +607,13 @@ class EmbeddingPolicy(Policy):
                                                                    'tf.Tensor']:
         """Sample negative examples."""
 
-        pos_dial_embed = self.dial_embed[:, :, tf.newaxis, :]
+        pos_dial_embed = tf.expand_dims(self.dial_embed, -2)
         neg_dial_embed, dial_bad_negs = self._tf_get_negs(
             self._tf_make_flat(self.dial_embed),
             self._tf_make_flat(self.b_in),
             self.b_in
         )
-        pos_bot_embed = self.bot_embed[:, :, tf.newaxis, :]
+        pos_bot_embed = tf.expand_dims(self.bot_embed, -2)
         neg_bot_embed, bot_bad_negs = self._tf_get_negs(
             self.all_bot_embed,
             all_actions,
