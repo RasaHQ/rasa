@@ -7,7 +7,7 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.constants import RESULTS_FILE
-from rasa.core.events import ActionExecuted, UserUttered, Event
+from rasa.core.events import ActionExecuted, UserUttered
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent

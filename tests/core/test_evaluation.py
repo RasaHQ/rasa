@@ -28,31 +28,61 @@ async def test_evaluation_image_creation(tmpdir, default_agent):
     assert os.path.isfile(stories_path)
 
 
-async def test_action_evaluation_script(tmpdir, default_agent):
+async def test_end_to_end_evaluation_script(tmpdir, restaurantbot):
     completed_trackers = await _generate_trackers(
-        DEFAULT_STORIES_FILE, default_agent, use_e2e=False
-    )
-    story_evaluation, num_stories = collect_story_predictions(
-        completed_trackers, default_agent, use_e2e=False
+        END_TO_END_STORY_FILE, restaurantbot, use_e2e=True
     )
 
+    story_evaluation, num_stories = collect_story_predictions(
+        completed_trackers, restaurantbot, use_e2e=True
+    )
+
+    serialised_actions = [
+        "utter_ask_howcanhelp",
+        "action_listen",
+        "utter_ask_howcanhelp",
+        "action_listen",
+        "utter_on_it",
+        "utter_ask_cuisine",
+        "action_listen",
+        "utter_ask_numpeople",
+        "action_listen",
+        "utter_ask_howcanhelp",
+        "action_listen",
+        "utter_on_it",
+        "utter_ask_numpeople",
+        "action_listen",
+        "utter_ask_moreupdates",
+        "action_listen",
+        "utter_ask_moreupdates",
+        "action_listen",
+        "utter_ack_dosearch",
+        "action_search_restaurants",
+        "action_suggest",
+        "action_listen",
+        "greet",
+        "greet",
+        "inform",
+        "inform",
+        "greet",
+        "inform",
+        "inform",
+        "inform",
+        "deny",
+        '{"start": 17, "end": 27, "entity": "price", "value": "moderate"}',
+        '{"start": 53, "end": 57, "entity": "location", "value": "east"}',
+        '{"start": 0, "end": 6, "entity": "cuisine", "value": "french"}',
+        '{"start": 17, "end": 22, "entity": "price", "value": "lo"}',
+        '{"start": 44, "end": 50, "entity": "cuisine", "value": "french"}',
+        '{"start": 74, "end": 80, "entity": "location", "value": "bombay"}',
+        '{"start": 4, "end": 7, "entity": "people", "value": "6"}',
+        '{"start": 18, "end": 28, "entity": "price", "value": "moderate"}',
+    ]
+
+    assert story_evaluation.evaluation_store.serialise()[0] == serialised_actions
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
     assert len(story_evaluation.failed_stories) == 0
     assert num_stories == 3
-
-
-async def test_end_to_end_evaluation_script(tmpdir, default_agent):
-    completed_trackers = await _generate_trackers(
-        END_TO_END_STORY_FILE, default_agent, use_e2e=True
-    )
-
-    story_evaluation, num_stories = collect_story_predictions(
-        completed_trackers, default_agent, use_e2e=True
-    )
-
-    assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
-    assert len(story_evaluation.failed_stories) == 0
-    assert num_stories == 2
 
 
 async def test_end_to_end_evaluation_script_unknown_entity(tmpdir, default_agent):
