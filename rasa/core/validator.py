@@ -27,7 +27,7 @@ class Validator(object):
         """Create an instance from the domain, nlu and story files."""
 
         domain = await importer.get_domain()
-        stories = await importer.get_story_data()
+        stories = await importer.get_stories()
         intents = await importer.get_nlu_data()
 
         return cls(domain, intents, stories.story_steps)

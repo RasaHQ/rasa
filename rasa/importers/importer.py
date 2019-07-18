@@ -1,5 +1,5 @@
 from functools import reduce
-from typing import Text, Optional, List, Dict
+from typing import Text, Optional, List, Dict, Union
 import logging
 
 import rasa.utils.common
@@ -21,14 +21,14 @@ class TrainingFileImporter:
         """Retrieves the domain which should be used for the training."""
         raise NotImplementedError()
 
-    async def get_story_data(
+    async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        """Retrieves the story data which should be used for the training."""
+        """Retrieves the stories which should be used for the training."""
 
         raise NotImplementedError()
 
@@ -105,8 +105,6 @@ class TrainingFileImporter:
                 logging.warning("Importer '{}' not found.".format(module_path))
                 return None
 
-        import rasa.cli.utils as cli_utils
-
         constructor_arguments = rasa.utils.common.minimal_kwargs(
             importer_config, importer_class
         )
@@ -124,7 +122,7 @@ class NluFileImporter(TrainingFileImporter):
     async def get_domain(self) -> Domain:
         return Domain.empty()
 
-    async def get_story_data(
+    async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
@@ -165,7 +163,7 @@ class CombinedFileImporter(TrainingFileImporter):
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
-    async def get_story_data(
+    async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
@@ -175,7 +173,7 @@ class CombinedFileImporter(TrainingFileImporter):
         story_graphs = []
         # Do this in a loop because Python 3.5 does not support async comprehensions
         for importer in self._importers:
-            graph = await importer.get_story_data(
+            graph = await importer.get_stories(
                 interpreter, template_variables, use_e2e, exclusion_percentage
             )
             story_graphs.append(graph)

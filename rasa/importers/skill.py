@@ -64,6 +64,10 @@ class SkillSelector(TrainingFileImporter):
 
             parent_directory = os.path.dirname(path)
             self._init_from_dict(config, parent_directory)
+        else:
+            logger.warning(
+                "'{}' does not exist or is not a valid config file.".format(path)
+            )
 
     def _init_from_dict(self, _dict: Dict[Text, Any], parent_directory: Text) -> None:
         imports = _dict.get("imports") or []
@@ -92,9 +96,9 @@ class SkillSelector(TrainingFileImporter):
 
                 if data.is_domain_file(full_path):
                     self._domain_paths.append(full_path)
-                elif data._is_nlu_file(full_path):
+                elif data.is_nlu_file(full_path):
                     self._nlu_paths.append(full_path)
-                elif data._is_story_file(full_path):
+                elif data.is_story_file(full_path):
                     self._story_paths.append(full_path)
                 elif data.is_config_file(full_path):
                     self._init_from_file(full_path)
@@ -164,7 +168,7 @@ class SkillSelector(TrainingFileImporter):
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
-    async def get_story_data(
+    async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,

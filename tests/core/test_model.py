@@ -9,7 +9,6 @@ import rasa
 import rasa.core
 import rasa.nlu
 from rasa.importers.simple import SimpleFileImporter
-from rasa import data
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 from rasa.core.domain import Domain
 from rasa.model import (

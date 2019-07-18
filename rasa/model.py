@@ -186,7 +186,7 @@ async def model_fingerprint(file_importer: "TrainingFileImporter") -> Fingerprin
 
     config = await file_importer.get_config()
     domain = await file_importer.get_domain()
-    stories = await file_importer.get_story_data()
+    stories = await file_importer.get_stories()
     nlu_data = await file_importer.get_nlu_data()
 
     return {
@@ -205,20 +205,6 @@ async def model_fingerprint(file_importer: "TrainingFileImporter") -> Fingerprin
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
     }
-
-
-def _get_hashes_for_paths(path: Text) -> List[Text]:
-    from rasa.core.utils import get_file_hash
-
-    files = []
-    if path and os.path.isdir(path):
-        files = [
-            os.path.join(path, f) for f in os.listdir(path) if not f.startswith(".")
-        ]
-    elif path and os.path.isfile(path):
-        files = [path]
-
-    return sorted([get_file_hash(f) for f in files])
 
 
 def _get_hash_of_config(
