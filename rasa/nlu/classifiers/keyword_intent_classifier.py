@@ -55,7 +55,7 @@ class KeywordIntentClassifier(Component):
             intent = {"name": intent_name, "confidence": 1.0}
             message.set("intent", intent, add_to_output=True)
 
-    def map_keyword_to_intent(self, text: Text) -> Optional[Text]:
+    def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
 
         for intent, keywords in self.intent_keyword_map.items():
             for string in keywords:
