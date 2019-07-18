@@ -47,7 +47,7 @@ class KeywordIntentClassifier(Component):
         cfg: Optional["RasaNLUModelConfig"] = None,
         **kwargs: Any
     ) -> None:
-        self.intent_keyword_map = {}
+
         for intent in training_data.intents:
             self.intent_keyword_map[intent] = [
                 ex.text
@@ -62,10 +62,10 @@ class KeywordIntentClassifier(Component):
             message.set("intent", intent, add_to_output=True)
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
-
+        re_flags = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
         for intent, keywords in self.intent_keyword_map.items():
             for string in keywords:
-                if re.search(r"\b" + string + r"\b", text):
+                if re.search(r"\b" + string + r"\b", text, flags=re_flags):
                     return intent
 
         return None
