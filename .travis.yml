@@ -4,7 +4,6 @@ dist: xenial
 cache:
   directories:
   - $HOME/.cache/pip
-  - /tmp/cached/
   - .pytype
 python: '3.6'
 env:
@@ -15,20 +14,13 @@ env:
   - PIP_USE_PEP517=false
 
 install:
-  - sudo apt-get install graphviz graphviz-dev
+  # The instructions listed here should be equivalent to the ones
+  # listed in README.md!
+  - sudo apt-get update -qq
   - python -m pip install -U pip
-  - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r requirements-dev.txt
   - pip install -e .
-  - pip install coveralls==1.7.0
-  - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > jnk
-  - python -m spacy link en_core_web_md en
-  - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > jnk
-  - python -m spacy link de_core_news_sm de
-  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then
-    travis_wait wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
-    fi
-  - mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
+  - make prepare-tests-ubuntu
   - pip list
 before_script:
   - mkdir $HOME/tmp
@@ -44,8 +36,7 @@ jobs:
     name: "Type Check"
     python: 3.6
     script:
-    - pip install pytype==2019.5.31
-    - pytype --keep-going rasa
+    - make types
   - &run-tests
     stage: test
     name: "Test 3.5"
@@ -81,7 +72,7 @@ jobs:
   - stage: docs
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
-    - RASABASTER=rasabaster-0.7.20.tar.gz
+    - RASABASTER=rasabaster-0.7.22.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
     - pip install $RASABASTER
     - pip install --no-cache-dir -r requirements-docs.txt
@@ -109,15 +100,17 @@ jobs:
     script:
     - curl -X POST -d "docs" https://api.netlify.com/build_hooks/${NETLIFY_HOOK_ID}
   - stage: deploy
-    if: tag IS present
     name: "Deploy to PyPI"
     python: 3.6
+    if: tag IS present
     install: skip
     script: skip
     deploy:
       provider: pypi
       user: amn41
       # server: https://test.pypi.org/legacy/
+      on:
+        tags: true
       distributions: "sdist bdist_wheel"
       password:
         secure: "MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA="

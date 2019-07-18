@@ -83,6 +83,38 @@ async def test_agent_train(tmpdir, default_domain):
     ]
 
 
+@pytest.mark.parametrize(
+    "text_message_data, expected",
+    [
+        (
+            '/greet{"name":"Rasa"}',
+            {
+                "text": '/greet{"name":"Rasa"}',
+                "intent": {"name": "greet", "confidence": 1.0},
+                "intent_ranking": [{"name": "greet", "confidence": 1.0}],
+                "entities": [
+                    {"entity": "name", "start": 6, "end": 21, "value": "Rasa"}
+                ],
+            },
+        ),
+        (
+            "text",
+            {
+                "text": "/text",
+                "intent": {"name": "text", "confidence": 1.0},
+                "intent_ranking": [{"name": "text", "confidence": 1.0}],
+                "entities": [],
+            },
+        ),
+    ],
+)
+async def test_agent_parse_message_using_nlu_interpreter(
+    default_agent, text_message_data, expected
+):
+    result = await default_agent.parse_message_using_nlu_interpreter(text_message_data)
+    assert result == expected
+
+
 async def test_agent_handle_text(default_agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     result = await default_agent.handle_text(text, sender_id="test_agent_handle_text")
