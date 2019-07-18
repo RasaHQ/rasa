@@ -73,7 +73,7 @@ class Domain(object):
         elif os.path.isdir(path):
             domain = cls.from_directory(path)
         else:
-            raise Exception(
+            raise InvalidDomain(
                 "Failed to load domain specification from '{}'. "
                 "File not found!".format(os.path.abspath(path))
             )

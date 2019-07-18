@@ -84,9 +84,9 @@ def get_core_nlu_files(
             continue
 
         if _is_valid_filetype(path):
-            if _is_nlu_file(path):
+            if is_nlu_file(path):
                 nlu_data_files.add(os.path.abspath(path))
-            elif _is_story_file(path):
+            elif is_story_file(path):
                 story_files.add(os.path.abspath(path))
         else:
             new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
@@ -110,9 +110,9 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
             if not _is_valid_filetype(full_path):
                 continue
 
-            if _is_nlu_file(full_path):
+            if is_nlu_file(full_path):
                 nlu_data_files.add(full_path)
-            elif _is_story_file(full_path):
+            elif is_story_file(full_path):
                 story_files.add(full_path)
 
     return story_files, nlu_data_files
@@ -125,19 +125,34 @@ def _is_valid_filetype(path: Text) -> bool:
     return is_file and is_datafile
 
 
-def _is_nlu_file(file_path: Text) -> bool:
-    """Checks whether a file is an NLU file."""
+def is_nlu_file(file_path: Text) -> bool:
+    """Checks if a file is a Rasa compatible nlu file.
+
+    Args:
+        file_path: Path of the file which should be checked.
+
+    Returns:
+        `True` if it's a nlu file, otherwise `False`.
+    """
     return loading.guess_format(file_path) != loading.UNK
 
 
-def _is_story_file(file_path: Text) -> bool:
-    is_story_file = False
+def is_story_file(file_path: Text) -> bool:
+    """Checks if a file is a Rasa story file.
+
+    Args:
+        file_path: Path of the file which should be checked.
+
+    Returns:
+        `True` if it's a story file, otherwise `False`.
+    """
+    _is_story_file = False
 
     if file_path.endswith(".md"):
         with open(file_path, encoding="utf-8") as f:
-            is_story_file = any(_contains_story_pattern(l) for l in f)
+            _is_story_file = any(_contains_story_pattern(l) for l in f)
 
-    return is_story_file
+    return _is_story_file
 
 
 def _contains_story_pattern(text: Text) -> bool:
@@ -147,7 +162,14 @@ def _contains_story_pattern(text: Text) -> bool:
 
 
 def is_domain_file(file_path: Text) -> bool:
-    """Checks whether the given file path is a Rasa domain file."""
+    """Checks whether the given file path is a Rasa domain file.
+
+    Args:
+        file_path: Path of the file which should be checked.
+
+    Returns:
+        `True` if it's a domain file, otherwise `False`.
+    """
 
     file_name = os.path.basename(file_path)
 
@@ -155,7 +177,14 @@ def is_domain_file(file_path: Text) -> bool:
 
 
 def is_config_file(file_path: Text) -> bool:
-    """Checks whether the given file path is a Rasa config file."""
+    """Checks whether the given file path is a Rasa config file.
+
+       Args:
+           file_path: Path of the file which should be checked.
+
+       Returns:
+           `True` if it's a Rasa config file, otherwise `False`.
+       """
 
     file_name = os.path.basename(file_path)
 

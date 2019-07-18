@@ -2,7 +2,7 @@ import os
 from typing import Optional, Text, Union, List, Dict
 
 from rasa import data
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training import StoryGraph
 from rasa.core.training.dsl import StoryFileReader
@@ -36,7 +36,7 @@ class SimpleFileImporter(TrainingFileImporter):
     async def get_config(self) -> Dict:
         return self.config
 
-    async def get_story_data(
+    async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
@@ -62,7 +62,7 @@ class SimpleFileImporter(TrainingFileImporter):
         try:
             domain = Domain.load(self._domain_path)
             domain.check_missing_templates()
-        except Exception:
+        except InvalidDomain:
             logger.debug(
                 "Loading domain from '{}' failed. Using empty domain.".format(
                     self._domain_path

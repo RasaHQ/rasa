@@ -1,16 +1,14 @@
 import os
 import tempfile
 import time
-import shutil
 from typing import Text, Optional
 
 import pytest
-from _pytest.tmpdir import TempdirFactory
 
 import rasa
 import rasa.core
 import rasa.nlu
-from rasa.importers.importer import SimpleFileImporter
+from rasa.importers.simple import SimpleFileImporter
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 from rasa.core.domain import Domain
 from rasa.model import (
@@ -67,27 +65,12 @@ def test_get_model_exception(model_path):
         get_model(model_path)
 
 
-def test_get_model_from_directory_with_subdirectories(
-    trained_model, tmpdir_factory: TempdirFactory
-):
+def test_get_model_from_directory_with_subdirectories(trained_model):
     unpacked = get_model(trained_model)
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
 
-    assert unpacked_core
-    assert unpacked_nlu
-
-    directory = tmpdir_factory.mktemp("empty_model_dir").strpath
-    with pytest.raises(ModelNotFound):
-        get_model_subdirectories(directory)
-
-
-def test_get_model_from_directory_nlu_only(trained_model):
-    unpacked = get_model(trained_model)
-    shutil.rmtree(os.path.join(unpacked, "core"))
-    unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
-
-    assert not unpacked_core
-    assert unpacked_nlu
+    assert os.path.exists(unpacked_core)
+    assert os.path.exists(unpacked_nlu)
 
 
 def _fingerprint(

@@ -129,20 +129,18 @@ async def _train_async_internal(
     """
     new_fingerprint = await model.model_fingerprint(file_importer)
 
-    dialogue_data = await file_importer.get_story_data()
+    stories = await file_importer.get_stories()
     nlu_data = await file_importer.get_nlu_data()
 
-    if dialogue_data.is_empty() and nlu_data.is_empty():
+    if stories.is_empty() and nlu_data.is_empty():
         print_error(
             "No training data given. Please provide stories and NLU data in "
             "order to train a Rasa model using the '--data' argument."
         )
         return
 
-    if dialogue_data.is_empty():
-        print_warning(
-            "No dialogue data present. Just a Rasa NLU model will be trained."
-        )
+    if stories.is_empty():
+        print_warning("No stories present. Just a Rasa NLU model will be trained.")
         return await _train_nlu_with_validated_data(
             file_importer, output=output_path, fixed_model_name=fixed_model_name
         )
@@ -284,7 +282,7 @@ async def train_core_async(
         )
         return None
 
-    if not await file_importer.get_story_data():
+    if not await file_importer.get_stories():
         print_error(
             "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."
