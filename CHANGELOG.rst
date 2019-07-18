@@ -11,7 +11,9 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
+- ``case_sensitive`` option added to ``WhiteSpaceTokenizer`` with ``true`` as default.
+- added new ``KeywordIntentClassifier``, can be used to classify messages based on keywords
 
 Changed
 -------
@@ -24,6 +26,7 @@ Removed
 Fixed
 -----
 - validation no longer throws an error during interactive learning
+- updated the server endpoint ``/model/parse`` to handle also messages with the intent prefix
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^
@@ -286,7 +289,6 @@ Added
 - log level can be set via environment variable ``LOG_LEVEL``
 - add ``--store-uncompressed`` to train command to not compress Rasa model
 - log level of libraries, such as tensorflow, can be set via environment variable ``LOG_LEVEL_LIBRARIES``
-- a new keyword_intent_classifier, can be used to classify messages based on keywords
 - if no spaCy model is linked upon building a spaCy pipeline, an appropriate error message
   is now raised with instructions for linking one
 

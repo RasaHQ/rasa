@@ -28,7 +28,18 @@ class KeywordIntentClassifier(Component):
 
     provides = ["intent"]
 
-    intent_keyword_map = {}
+    defaults = {"case_sensitive": True}
+
+    def __init__(self,
+                 component_config: Dict[Text, Any] = None,
+                 intent_keyword_map: Optional[Dict] = None):
+
+        super(KeywordIntentClassifier, self).__init__(component_config)
+
+        if intent_keyword_map is None:
+            self.intent_keyword_map = {}
+        else:
+            self.intent_keyword_map = intent_keyword_map
 
     def train(
         self,
@@ -36,7 +47,7 @@ class KeywordIntentClassifier(Component):
         cfg: Optional["RasaNLUModelConfig"] = None,
         **kwargs: Any
     ) -> None:
-        self.intent_keyword_map = {}
+
         for intent in training_data.intents:
             self.intent_keyword_map[intent] = [
                 ex.text
@@ -45,16 +56,16 @@ class KeywordIntentClassifier(Component):
             ]
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        intent_name = self.parse(message.text)
+        intent_name = self._map_keyword_to_intent(message.text)
         if intent_name is not None:
             intent = {"name": intent_name, "confidence": 1.0}
             message.set("intent", intent, add_to_output=True)
 
-    def parse(self, text: Text) -> Optional[Text]:
-
+    def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
+        re_flags = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
         for intent, keywords in self.intent_keyword_map.items():
             for string in keywords:
-                if re.search(r"\b" + string + r"\b", text):
+                if re.search(r"\b" + string + r"\b", text, flags=re_flags):
                     return intent
 
         return None
@@ -64,6 +75,7 @@ class KeywordIntentClassifier(Component):
 
         Return the metadata necessary to load the model again.
         """
+
         file_name = file_name + ".json"
         keyword_file = os.path.join(model_dir, file_name)
         utils.write_json_to_file(keyword_file, self.intent_keyword_map)
@@ -72,7 +84,7 @@ class KeywordIntentClassifier(Component):
 
     @classmethod
     def load(
-        self,
+        cls,
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
         model_metadata: "Metadata" = None,
@@ -84,10 +96,10 @@ class KeywordIntentClassifier(Component):
             file_name = meta.get("file")
             keyword_file = os.path.join(model_dir, file_name)
             if os.path.exists(keyword_file):
-                self.intent_keyword_map = utils.read_json_file(keyword_file)
+                intent_keyword_map = utils.read_json_file(keyword_file)
             else:
                 logger.warning(
                     "Failed to load IntentKeywordClassifier, maybe "
                     "{} does not exist.".format(keyword_file)
                 )
-        return self()
+        return cls(meta, intent_keyword_map)
