@@ -408,6 +408,36 @@ class Agent(object):
             ]
         )
 
+    async def parse_message_using_nlu_interpreter(
+        self, message_data: Text
+    ) -> Dict[Text, Any]:
+        """Handles message text and intent payload input messages.
+
+        The return value of this function is parsed_data.
+
+        Args:
+            message_data (Text): Contain the received message in text or\
+            intent payload format.
+
+        Returns:
+            The parsed message.
+
+            Example:
+
+                {\
+                    "text": '/greet{"name":"Rasa"}',\
+                    "intent": {"name": "greet", "confidence": 1.0},\
+                    "intent_ranking": [{"name": "greet", "confidence": 1.0}],\
+                    "entities": [{"entity": "name", "start": 6,\
+                                  "end": 21, "value": "Rasa"}],\
+                }
+
+        """
+
+        processor = self.create_processor()
+        message = UserMessage(message_data)
+        return await processor._parse_message(message)
+
     async def handle_message(
         self,
         message: UserMessage,
