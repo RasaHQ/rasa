@@ -803,7 +803,7 @@ class Agent(object):
         if not self.is_ready(allow_nlu_only=True):
             raise AgentNotReady(
                 "Agent needs to be prepared before usage. You need to set an "
-                "interpreter and a tracker store as well."
+                "interpreter and a tracker store."
             )
 
         return MessageProcessor(
