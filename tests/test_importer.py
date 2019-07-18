@@ -9,6 +9,7 @@ from rasa.importers.importer import (
     CombinedFileImporter,
     TrainingFileImporter,
     NluFileImporter,
+    CoreFileImporter,
 )
 from rasa.importers.simple import SimpleFileImporter
 
@@ -141,10 +142,9 @@ def test_load_from_config(tmpdir: Path):
 
 async def test_nlu_only(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
-    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    actual = TrainingFileImporter.load_from_dict(
-        {}, config_path, domain_path, [default_data_path], load_only_nlu_data=True
+    actual = TrainingFileImporter.load_nlu_importer_from_config(
+        config_path, training_data_paths=[default_data_path]
     )
 
     assert isinstance(actual, NluFileImporter)
@@ -160,3 +160,26 @@ async def test_nlu_only(project: Text):
 
     nlu_data = await actual.get_nlu_data()
     assert not nlu_data.is_empty()
+
+
+async def test_core_only(project: Text):
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
+    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
+    actual = TrainingFileImporter.load_core_importer_from_config(
+        config_path, domain_path, training_data_paths=[default_data_path]
+    )
+
+    assert isinstance(actual, CoreFileImporter)
+
+    stories = await actual.get_stories()
+    assert not stories.is_empty()
+
+    domain = await actual.get_domain()
+    assert not domain.is_empty()
+
+    config = await actual.get_config()
+    assert config
+
+    nlu_data = await actual.get_nlu_data()
+    assert nlu_data.is_empty()

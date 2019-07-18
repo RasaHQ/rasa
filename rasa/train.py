@@ -273,7 +273,9 @@ async def train_core_async(
 
     """
 
-    file_importer = TrainingFileImporter.load_from_config(config, domain, [stories])
+    file_importer = TrainingFileImporter.load_core_importer_from_config(
+        config, domain, [stories]
+    )
     domain = await file_importer.get_domain()
     if domain.is_empty():
         print_error(
@@ -382,8 +384,8 @@ async def _train_nlu_async(
     fixed_model_name: Optional[Text] = None,
 ):
     # training NLU only hence the training files still have to be selected
-    file_importer = TrainingFileImporter.load_from_config(
-        config, training_data_paths=[nlu_data], load_only_nlu_data=True
+    file_importer = TrainingFileImporter.load_nlu_importer_from_config(
+        config, training_data_paths=[nlu_data]
     )
 
     training_datas = await file_importer.get_nlu_data()
