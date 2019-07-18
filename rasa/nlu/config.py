@@ -33,7 +33,7 @@ def load(
             file_config = rasa.utils.io.read_config_file(config)
         except yaml.parser.ParserError as e:
             raise InvalidConfigError(
-                "Failed to read configuration file " "'{}'. Error: {}".format(config, e)
+                "Failed to read configuration file '{}'. Error: {}".format(config, e)
             )
 
     return _load_from_dict(file_config, **kwargs)
