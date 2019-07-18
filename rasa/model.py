@@ -15,7 +15,7 @@ from rasa.constants import (
 )
 
 from rasa.core.utils import get_dict_hash
-from rasa.exceptions import ModelNotFound, NoModelData
+from rasa.exceptions import ModelNotFound
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
@@ -126,7 +126,7 @@ def get_model_subdirectories(
     unpacked_model_path: Text
 ) -> Tuple[Optional[Text], Optional[Text]]:
     """Returns paths for Core and NLU model directories, if they exist.
-    If neither directories exist, a `NoModelData` exception is raised.
+    If neither directories exist, a `ModelNotFound` exception is raised.
 
     Args:
         unpacked_model_path: Path to unpacked Rasa model.
@@ -146,7 +146,7 @@ def get_model_subdirectories(
         nlu_path = None
 
     if not core_path and not nlu_path:
-        raise NoModelData(
+        raise ModelNotFound(
             "No NLU or Core data for unpacked model at: '{}'.".format(
                 unpacked_model_path
             )
