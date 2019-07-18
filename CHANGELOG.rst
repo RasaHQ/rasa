@@ -6,8 +6,27 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.7] - `master`_
+[Unreleased 1.1.8] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+
+Changed
+-------
+
+
+Removed
+-------
+
+
+Fixed
+-----
+
+
+[1.1.7] - 2019-07-18
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -26,6 +45,7 @@ Fixed
 -----
 - validation no longer throws an error during interactive learning
 - updated the server endpoint ``/model/parse`` to handle also messages with the intent prefix
+- fixed bug where "No model found" message appeared after successfully running the bot
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^
