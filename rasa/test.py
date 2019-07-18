@@ -8,7 +8,8 @@ from rasa.core.interpreter import RegexInterpreter
 
 from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.model import get_model, get_model_subdirectories, unpack_model
-from rasa.cli.utils import minimal_kwargs, print_error, print_warning
+from rasa.cli.utils import print_error, print_warning
+import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ def test_core(
 
     _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
-    kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
+    kwargs = utils.minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
@@ -118,7 +119,7 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
-        kwargs = minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
+        kwargs = utils.minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
         run_evaluation(nlu_data, nlu_model, **kwargs)
     else:
         print_error(
@@ -186,7 +187,7 @@ def perform_nlu_cross_validation(
     nlu_config = rasa.nlu.config.load(config)
     data = rasa.nlu.training_data.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
-    kwargs = minimal_kwargs(kwargs, cross_validate)
+    kwargs = utils.minimal_kwargs(kwargs, cross_validate)
     results, entity_results = cross_validate(data, folds, nlu_config, **kwargs)
     logger.info("CV evaluation (n={})".format(folds))
 

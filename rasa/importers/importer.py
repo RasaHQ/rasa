@@ -2,6 +2,7 @@ from functools import reduce
 from typing import Text, Optional, List, Dict
 import logging
 
+import rasa.utils.common
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
@@ -106,7 +107,7 @@ class TrainingFileImporter:
 
         import rasa.cli.utils as cli_utils
 
-        constructor_arguments = cli_utils.minimal_kwargs(
+        constructor_arguments = rasa.utils.common.minimal_kwargs(
             importer_config, importer_class
         )
         return importer_class(
