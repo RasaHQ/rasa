@@ -1,6 +1,5 @@
 import os
 import logging
-import re
 import typing
 from typing import Any, Dict, Optional, Text
 
@@ -62,12 +61,14 @@ class KeywordIntentClassifier(Component):
             message.set("intent", intent, add_to_output=True)
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
-        re_flags = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
-        for intent, keywords in self.intent_keyword_map.items():
-            for string in keywords:
-                if re.search(r"\b" + string + r"\b", text, flags=re_flags):
-                    return intent
-
+        for intent, examples in self.intent_keyword_map.items():
+            for example in examples:
+                if self.component_config["case_sensitive"]:
+                    if example == text:
+                        return intent
+                else:
+                    if example.lower() == text.lower():
+                        return intent
         return None
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
