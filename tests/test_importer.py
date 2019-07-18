@@ -5,11 +5,17 @@ from typing import Text, Dict, Type, List
 import pytest
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
 from rasa.core.domain import Domain
-from rasa.importers.importer import CombinedFileImporter, TrainingFileImporter
+from rasa.importers.importer import (
+    CombinedFileImporter,
+    TrainingFileImporter,
+    NluFileImporter,
+)
 from rasa.importers.simple import SimpleFileImporter
 
 # noinspection PyUnresolvedReferences
 from rasa.importers.skill import SkillSelector
+
+# noinspection PyUnresolvedReferences
 from tests.core.conftest import project
 
 
@@ -49,6 +55,13 @@ async def test_simple_file_importer(project: Text):
     assert len(nlu_data.intent_examples) == 39
 
 
+async def test_simple_file_importer_with_invalid_config():
+    importer = SimpleFileImporter(config_file="invalid path")
+    actual = await importer.get_config()
+
+    assert actual == {}
+
+
 async def test_simple_file_importer_with_invalid_domain(tmp_path: Path):
     config_file = tmp_path / "config.yml"
     config_file.write_text("")
@@ -86,6 +99,11 @@ async def test_combined_file_importer_with_single_importer(project: Text):
         ({}, [SimpleFileImporter]),
         ({"importers": []}, [SimpleFileImporter]),
         ({"importers": [{"name": "SimpleFileImporter"}]}, [SimpleFileImporter]),
+        ({"importers": [{"name": "NotExistingModule"}]}, [SimpleFileImporter]),
+        (
+            {"importers": [{"name": "rasa.importers.skill.SkillSelector"}]},
+            [SkillSelector],
+        ),
         ({"importers": [{"name": "SkillSelector"}]}, [SkillSelector]),
         (
             {"importers": [{"name": "SimpleFileImporter"}, {"name": "SkillSelector"}]},
@@ -107,3 +125,38 @@ def test_load_from_dict(
 
     actual_importers = [i.__class__ for i in actual._importers]
     assert actual_importers == expected
+
+
+def test_load_from_config(tmpdir: Path):
+    import rasa.utils.io as io_utils
+
+    config_path = str(tmpdir / "config.yml")
+
+    io_utils.write_yaml_file({"importers": [{"name": "SkillSelector"}]}, config_path)
+
+    importer = TrainingFileImporter.load_from_config(config_path)
+    assert isinstance(importer, CombinedFileImporter)
+    assert isinstance(importer._importers[0], SkillSelector)
+
+
+async def test_nlu_only(project: Text):
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
+    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
+    actual = TrainingFileImporter.load_from_dict(
+        {}, config_path, domain_path, [default_data_path], load_only_nlu_data=True
+    )
+
+    assert isinstance(actual, NluFileImporter)
+
+    stories = await actual.get_stories()
+    assert stories.is_empty()
+
+    domain = await actual.get_domain()
+    assert domain.is_empty()
+
+    config = await actual.get_config()
+    assert config
+
+    nlu_data = await actual.get_nlu_data()
+    assert not nlu_data.is_empty()

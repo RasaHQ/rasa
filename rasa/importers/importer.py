@@ -17,7 +17,11 @@ class TrainingFileImporter:
     """Common interface for different mechanisms to load training data."""
 
     async def get_domain(self) -> Domain:
-        """Retrieves the domain which should be used for the training."""
+        """Retrieves the domain of the bot.
+
+        Returns:
+            Loaded `Domain`.
+        """
         raise NotImplementedError()
 
     async def get_stories(
@@ -27,16 +31,41 @@ class TrainingFileImporter:
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        """Retrieves the stories which should be used for the training."""
+        """Retrieves the stories which should be used for the training.
+
+        Args:
+            interpreter: Interpreter which should be used to parse end to
+                         end learning annotations.
+            template_variables: Values of templates which should be replaced while
+                                reading the story files.
+            use_e2e: Specifies whether to parse end to end learning annotations.
+            exclusion_percentage: Amount of training data which should be excluded.
+
+        Returns:
+            `StoryGraph` containing all loaded stories.
+        """
 
         raise NotImplementedError()
 
     async def get_config(self) -> Dict:
-        """Retrieves the configuration which should be used for the training."""
+        """"Retrieves the configuration which should be used for the training.
+
+        Returns:
+            the configuration as dictionary.
+        """
+
         raise NotImplementedError()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        """Retrieves the nlu training data which should be used for the training."""
+        """Retrieves the nlu training data which should be used for the training.
+
+        Args:
+            language: Can be used to only training data for a certain language.
+
+        Returns:
+            Loaded NLU `TrainingData`.
+        """
+
         raise NotImplementedError()
 
     @staticmethod
