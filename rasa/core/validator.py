@@ -1,10 +1,10 @@
 import logging
 import asyncio
-from typing import List, Text
+from typing import List
 from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingFileImporter
-from rasa.nlu.training_data import load_data, TrainingData
-from rasa.core.training.dsl import StoryFileReader, StoryStep
+from rasa.nlu.training_data import TrainingData
+from rasa.core.training.dsl import StoryStep
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
 from rasa.core.actions.action import UTTER_PREFIX
@@ -27,7 +27,6 @@ class Validator(object):
         """Create an instance from the domain, nlu and story files."""
 
         domain = await importer.get_domain()
-        asyncio.new_event_loop()
         stories = await importer.get_story_data()
         intents = await importer.get_nlu_data()
 
