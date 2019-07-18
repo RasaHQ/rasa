@@ -5,11 +5,8 @@ from typing import Text, Dict, Type, List
 import pytest
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
 from rasa.core.domain import Domain
-from rasa.importers.importer import (
-    SimpleFileImporter,
-    CombinedFileImporter,
-    TrainingFileImporter,
-)
+from rasa.importers.importer import CombinedFileImporter, TrainingFileImporter
+from rasa.importers.simple import SimpleFileImporter
 
 # noinspection PyUnresolvedReferences
 from rasa.importers.skill import SkillSelector
