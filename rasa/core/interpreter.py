@@ -211,7 +211,10 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
 
         params = {"token": self.endpoint.token, "text": text, "message_id": message_id}
 
-        url = urljoin(self.endpoint.url, "/model/parse")
+        if self.endpoint.url.endswith("/"):
+            url = self.endpoint.url + "model/parse"
+        else:
+            url = self.endpoint.url + "/model/parse"
 
         # noinspection PyBroadException
         try:
