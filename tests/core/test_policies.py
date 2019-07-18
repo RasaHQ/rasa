@@ -256,10 +256,15 @@ class TestMappingPolicy(PolicyTestCollection):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered(intent_mapping[0], 1),
-            ActionExecuted(intent_mapping[1], policy="MappingPolicy"),
+            ActionExecuted(intent_mapping[1], policy="policy_0_MappingPolicy"),
         ]
-        action_planned = self._get_next_action(policy, events, domain_with_mapping)
+        tracker = get_tracker(events)
+        scores = policy.predict_action_probabilities(tracker, domain_with_mapping)
+        index = scores.index(max(scores))
+        action_planned = domain_with_mapping.action_names[index]
         assert action_planned == ACTION_LISTEN_NAME
+        assert scores != [0] * domain_with_mapping.num_actions
+
 
     def test_do_not_follow_other_policy(
         self, priority, domain_with_mapping, intent_mapping
