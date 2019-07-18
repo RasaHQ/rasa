@@ -28,7 +28,13 @@ class KeywordIntentClassifier(Component):
 
     provides = ["intent"]
 
-    def __init__(self, intent_keyword_map: Optional[Dict] = None):
+    defaults = {"case_sensitive": False}
+
+    def __init__(self,
+                 component_config: Dict[Text, Any] = None,
+                 intent_keyword_map: Optional[Dict] = None):
+
+        super(KeywordIntentClassifier, self).__init__(component_config)
 
         if intent_keyword_map is None:
             self.intent_keyword_map = {}
@@ -65,7 +71,6 @@ class KeywordIntentClassifier(Component):
         return None
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
-
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
