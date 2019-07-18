@@ -91,7 +91,7 @@ def split_nlu_data(args):
 
 def validate_files(args):
     from rasa.core.validator import Validator
-    from rasa.importers.importer import SimpleFileImporter
+    from rasa.importers.simple import SimpleFileImporter
 
     loop = asyncio.get_event_loop()
     file_importer = SimpleFileImporter(

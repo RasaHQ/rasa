@@ -1,6 +1,6 @@
 import pytest
 from rasa.core.validator import Validator
-from rasa.importers.importer import SimpleFileImporter
+from rasa.importers.simple import SimpleFileImporter
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_STORIES_FILE,
