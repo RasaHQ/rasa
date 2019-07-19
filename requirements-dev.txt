@@ -17,7 +17,7 @@ moto==1.3.8
 # lint/format/types
 black==19.3b0; python_version>='3.6'
 flake8==3.7.7
-pytype==2019.5.31
+pytype==2019.7.11
 
 # other
 google-cloud-storage==1.7.0
