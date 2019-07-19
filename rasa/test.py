@@ -6,7 +6,7 @@ import os
 
 from rasa.core.interpreter import RegexInterpreter
 
-from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
+from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE, NUM_STORIES_FILE
 from rasa.model import get_model, get_model_subdirectories, unpack_model
 from rasa.cli.utils import minimal_kwargs, print_error, print_warning
 from rasa.exceptions import ModelNotFound
@@ -23,7 +23,9 @@ def test_compare_core(models: List[Text], stories: Text, output: Text):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(compare(model_directory, stories, output))
 
-    story_n_path = os.path.join(model_directory, "num_stories.json")
+    story_n_path = os.path.join(
+        os.path.dirname(os.path.dirname(models[0])), NUM_STORIES_FILE
+    )
     number_of_stories = rasa.utils.io.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
 

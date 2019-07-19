@@ -595,30 +595,22 @@ async def compare(models: Text, stories_file: Text, output: Text) -> None:
 
     num_correct = defaultdict(list)
 
-    for run in nlu_utils.list_subdirectories(models):
-        num_correct_run = defaultdict(list)
+    for model in nlu_utils.list_subdirectories(models):
+        logger.info("Evaluating model {}".format(model))
 
-        for model in sorted(nlu_utils.list_subdirectories(run)):
-            logger.info("Evaluating model {}".format(model))
+        agent = Agent.load(model)
 
-            agent = Agent.load(model)
+        completed_trackers = await _generate_trackers(stories_file, agent)
 
-            completed_trackers = await _generate_trackers(stories_file, agent)
+        story_eval_store, no_of_stories = collect_story_predictions(
+            completed_trackers, agent
+        )
 
-            story_eval_store, no_of_stories = collect_story_predictions(
-                completed_trackers, agent
-            )
+        failed_stories = story_eval_store.failed_stories
 
-            failed_stories = story_eval_store.failed_stories
-            policy_name = "".join(
-                [i for i in os.path.basename(model) if not i.isdigit()]
-            )
-            num_correct_run[policy_name].append(no_of_stories - len(failed_stories))
+        num_correct[os.path.basename(model)].append(no_of_stories - len(failed_stories))
 
-        for k, v in num_correct_run.items():
-            num_correct[k].append(v)
-
-    utils.dump_obj_as_json_to_file(os.path.join(output, "results.json"), num_correct)
+    utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), num_correct)
 
 
 def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
