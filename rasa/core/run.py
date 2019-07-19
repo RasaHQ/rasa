@@ -34,6 +34,13 @@ def create_http_input_channels(
         all_credentials = {}
 
     if channel:
+        if len(all_credentials) > 1:
+            logger.info(
+                "Connecting to channel '{}' which was specified by the "
+                "'--connector' argument. Any other channels will be ignored. "
+                "To connect to all given channels, omit the '--connector' "
+                "argument.".format(channel)
+            )
         return [_create_single_channel(channel, all_credentials.get(channel))]
     else:
         return [_create_single_channel(c, k) for c, k in all_credentials.items()]
@@ -74,6 +81,8 @@ def configure_app(
     """Run the agent."""
     from rasa import server
 
+    configure_file_logging(logger, log_file)
+
     if enable_api:
         app = server.create_app(
             cors_origins=cors,
@@ -85,8 +94,6 @@ def configure_app(
     else:
         app = Sanic(__name__, configure_logging=False)
         CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
-
-    configure_file_logging(log_file)
 
     if input_channels:
         rasa.core.channels.channel.register(input_channels, app, route=route)
@@ -152,7 +159,7 @@ def serve_application(
     )
 
     logger.info(
-        "Starting Rasa Core server on "
+        "Starting Rasa server on "
         "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port))
     )
 
