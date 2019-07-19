@@ -1,3 +1,4 @@
+import asyncio
 from functools import reduce
 from typing import Text, Optional, List, Dict
 import logging
@@ -231,17 +232,14 @@ class CombinedFileImporter(TrainingFileImporter):
         self._importers = importers
 
     async def get_config(self) -> Dict:
-        configs = []
-        # Do this in a loop because Python 3.5 does not support async comprehensions
-        for importer in self._importers:
-            configs.append(await importer.get_config())
+        configs = [importer.get_config() for importer in self._importers]
+        configs = await asyncio.gather(*configs)
 
         return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
 
     async def get_domain(self) -> Domain:
-        domains = []
-        for importer in self._importers:
-            domains.append(await importer.get_domain())
+        domains = [importer.get_domain() for importer in self._importers]
+        domains = await asyncio.gather(*domains)
 
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
@@ -254,25 +252,22 @@ class CombinedFileImporter(TrainingFileImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        story_graphs = []
-        # Do this in a loop because Python 3.5 does not support async comprehensions
-        for importer in self._importers:
-            graph = await importer.get_stories(
+        stories = [
+            importer.get_stories(
                 interpreter, template_variables, use_e2e, exclusion_percentage
             )
-            story_graphs.append(graph)
+            for importer in self._importers
+        ]
+        stories = await asyncio.gather(*stories)
 
         return reduce(
-            lambda merged, other: merged.merge(other), story_graphs, StoryGraph([])
+            lambda merged, other: merged.merge(other), stories, StoryGraph([])
         )
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        nlu_datas = []
-        # Do this in a loop because Python 3.5 does not support async comprehensions
-        for importer in self._importers:
-            nlu_data = await importer.get_nlu_data(language)
-            nlu_datas.append(nlu_data)
-        training_data = reduce(
+        nlu_datas = [importer.get_nlu_data(language) for importer in self._importers]
+        nlu_datas = await asyncio.gather(*nlu_datas)
+
+        return reduce(
             lambda merged, other: merged.merge(other), nlu_datas, TrainingData()
         )
-        return training_data
