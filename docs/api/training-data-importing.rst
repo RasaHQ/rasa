@@ -20,7 +20,7 @@ You can instruct Rasa to load and use your custom importer by adding the section
 ``importers`` to the Rasa configuration file and specifying the importer with its
 full class path:
 
-.. code-block:: yml
+.. code-block:: yaml
 
    importers:
    - name: "module.CustomImporter"
