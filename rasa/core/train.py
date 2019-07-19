@@ -6,7 +6,7 @@ import typing
 from contextlib import ExitStack
 from typing import Dict, Optional, Text, Union, List
 
-from constants import NUM_STORIES_FILE
+from rasa.constants import NUM_STORIES_FILE
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
 

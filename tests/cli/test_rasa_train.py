@@ -13,7 +13,7 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS_NLU,
 )
 from rasa.nlu.utils import list_files, list_subdirectories
-from utils.io import write_yaml_file
+from rasa.utils.io import write_yaml_file
 
 
 def test_train(run_in_default_project):
