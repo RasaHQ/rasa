@@ -81,12 +81,13 @@ async def test_combined_file_importer_with_single_importer(project: Text):
     combined = CombinedDataImporter([importer])
 
     assert await importer.get_config() == await combined.get_config()
-    assert (await importer.get_domain()).as_dict() == (
-        await combined.get_domain()
-    ).as_dict()
-    assert (await importer.get_nlu_data()).as_json() == (
-        await combined.get_nlu_data()
-    ).as_json()
+    actual_domain = await combined.get_domain()
+    expected_domain = await importer.get_domain()
+    assert hash(actual_domain) == hash(expected_domain)
+
+    actual_training_data = await combined.get_nlu_data()
+    expected_training_data = await importer.get_nlu_data()
+    assert hash(actual_training_data) == hash(expected_training_data)
 
     expected_stories = await importer.get_stories()
     actual_stories = await combined.get_stories()

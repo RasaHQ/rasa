@@ -159,8 +159,7 @@ async def test_agent_with_model_server_in_thread(
     await asyncio.sleep(3)
 
     assert agent.fingerprint == "somehash"
-
-    assert agent.domain.as_dict() == moodbot_domain.as_dict()
+    assert hash(agent.domain) == hash(moodbot_domain)
 
     agent_policies = {
         utils.module_path_from_instance(p) for p in agent.policy_ensemble.policies
