@@ -1,0 +1,124 @@
+:desc: Change the way Rasa imports training data by replacing the default importer or
+       write your own importer.
+
+.. _training-data-importers:
+
+Training Data Importers
+=======================
+
+By default you can use command line arguments to specify where Rasa should look
+for training data on your disk. Rasa then loads any potential training files and uses
+them to train your assistant.
+
+If needed, you can also customize how Rasa imports training data.
+Use cases for this might be:
+
+- using a custom parser to load training data in other formats
+- using different approaches to collect training data (e.g. loading them from different resources)
+
+You can instruct Rasa to load and use your custom importer by adding the section
+``importers`` to the Rasa configuration file and specifying the importer with its
+full class path:
+
+.. code-block:: yml
+
+   importers:
+   - name: "module.CustomImporter"
+   - name: "module.AnotherCustomImporter"
+
+.. note::
+
+   You can specify multiple importers. Rasa will automatically merge their results.
+
+
+Default Importer
+~~~~~~~~~~~~~~~~
+
+By default Rasa use the importer ``SimpleFileImporter``. If you want to use it on its
+own, you don't have to specify anything in your configuration file.
+If you want to use it together with other importers, add this to your
+configuration file:
+
+.. code-block:: yaml
+
+   importers:
+   - name: "SimpleFileImporter"
+
+
+Writing a Custom Importer
+~~~~~~~~~~~~~~~~~~~~~~~~~
+If you are writing a custom importer, this importer has to implement the interface of
+:ref:`training-data-importers-trainingFileImporter`:
+
+.. code-block:: python
+
+    from typing import Optional, Text, Dict, List, Union
+
+    from rasa.core.domain import Domain
+    from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
+    from rasa.core.training.structures import StoryGraph
+    from rasa.importers.importer import TrainingFileImporter
+    from rasa.nlu.training_data import TrainingData
+
+
+    class MyImporter(TrainingFileImporter):
+        """Example for a custom importer component."""
+
+        def __init__(
+                self,
+                config_file: Optional[Text] = None,
+                domain_path: Optional[Text] = None,
+                training_data_paths: Optional[Union[List[Text], Text]] = None,
+                **kwargs: Dict
+        ):
+            """Constructor of your custom file importer.
+
+            Args:
+                config_file: Path to configuration file from command line arguments.
+                domain_path: Path to domain file from command line arguments.
+                training_data_paths: Path to training files from command line arguments.
+                **kwargs: Parameters passed through configuration in configuration file.
+            """
+
+            pass
+
+        async def get_domain(self) -> Domain:
+            path_to_domain_file = self._custum_get_domain_file()
+            return Domain.load(path_to_domain_file)
+
+        async def get_stories(self,
+                              interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
+                              template_variables: Optional[Dict] = None,
+                              use_e2e: bool = False,
+                              exclusion_percentage: Optional[int] = None) -> StoryGraph:
+            from rasa.core.training.dsl import StoryFileReader
+
+            path_to_stories = self._custom_get_story_file()
+            return await StoryFileReader.read_from_file(path_to_stories, await self.get_domain())
+
+        async def get_config(self) -> Dict:
+            return self._get_custom_config()
+
+        async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+            from rasa.nlu.training_data import loading
+
+            path_to_nlu_file = self._custum_get_domain_file()
+            return loading.load_data(path_to_nlu_file)
+
+
+
+.. _training-data-importers-trainingFileImporter:
+
+TrainingFileImporter
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: rasa.importers.importer.TrainingFileImporter
+
+   .. automethod:: get_domain
+
+   .. automethod:: get_config
+
+   .. automethod:: get_nlu_data
+
+   .. automethod:: get_stories
