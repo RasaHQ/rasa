@@ -169,7 +169,7 @@ async def _train_async_internal(
             kwargs=kwargs,
         )
 
-        return _package_model(
+        return package_model(
             new_fingerprint=new_fingerprint,
             output_path=output_path,
             train_path=train_path,
@@ -335,7 +335,7 @@ async def _train_core_with_validated_data(
         if train_path is None:
             # Only Core was trained.
             new_fingerprint = await model.model_fingerprint(file_importer)
-            return _package_model(
+            return package_model(
                 new_fingerprint=new_fingerprint,
                 output_path=output,
                 train_path=_train_path,
@@ -432,7 +432,7 @@ async def _train_nlu_with_validated_data(
             # Only NLU was trained
             new_fingerprint = await model.model_fingerprint(file_importer)
 
-            return _package_model(
+            return package_model(
                 new_fingerprint=new_fingerprint,
                 output_path=output,
                 train_path=_train_path,
@@ -443,7 +443,7 @@ async def _train_nlu_with_validated_data(
         return _train_path
 
 
-def _package_model(
+def package_model(
     new_fingerprint: Fingerprint,
     output_path: Text,
     train_path: Text,
