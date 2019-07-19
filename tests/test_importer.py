@@ -11,7 +11,7 @@ from rasa.importers.importer import (
     NluDataImporter,
     CoreDataImporter,
 )
-from rasa.importers.simple import SimpleDataImporter
+from rasa.importers.basic import RasaFileImporter
 
 # noinspection PyUnresolvedReferences
 from rasa.importers.skill import SkillSelector
@@ -39,7 +39,7 @@ async def test_simple_file_importer(project: Text):
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
 
-    importer = SimpleDataImporter(config_path, domain_path, [default_data_path])
+    importer = RasaFileImporter(config_path, domain_path, [default_data_path])
 
     domain = await importer.get_domain()
     assert len(domain.intents) == 6
@@ -57,7 +57,7 @@ async def test_simple_file_importer(project: Text):
 
 
 async def test_simple_file_importer_with_invalid_config():
-    importer = SimpleDataImporter(config_file="invalid path")
+    importer = RasaFileImporter(config_file="invalid path")
     actual = await importer.get_config()
 
     assert actual == {}
@@ -77,7 +77,7 @@ async def test_combined_file_importer_with_single_importer(project: Text):
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
 
-    importer = SimpleDataImporter(config_path, domain_path, [default_data_path])
+    importer = RasaFileImporter(config_path, domain_path, [default_data_path])
     combined = CombinedDataImporter([importer])
 
     assert await importer.get_config() == await combined.get_config()
@@ -97,18 +97,18 @@ async def test_combined_file_importer_with_single_importer(project: Text):
 @pytest.mark.parametrize(
     "config, expected",
     [
-        ({}, [SimpleDataImporter]),
-        ({"importers": []}, [SimpleDataImporter]),
-        ({"importers": [{"name": "SimpleDataImporter"}]}, [SimpleDataImporter]),
-        ({"importers": [{"name": "NotExistingModule"}]}, [SimpleDataImporter]),
+        ({}, [RasaFileImporter]),
+        ({"importers": []}, [RasaFileImporter]),
+        ({"importers": [{"name": "RasaFileImporter"}]}, [RasaFileImporter]),
+        ({"importers": [{"name": "NotExistingModule"}]}, [RasaFileImporter]),
         (
             {"importers": [{"name": "rasa.importers.skill.SkillSelector"}]},
             [SkillSelector],
         ),
         ({"importers": [{"name": "SkillSelector"}]}, [SkillSelector]),
         (
-            {"importers": [{"name": "SimpleDataImporter"}, {"name": "SkillSelector"}]},
-            [SimpleDataImporter, SkillSelector],
+            {"importers": [{"name": "RasaFileImporter"}, {"name": "SkillSelector"}]},
+            [RasaFileImporter, SkillSelector],
         ),
     ],
 )

@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
 
 
-class SimpleDataImporter(TrainingDataImporter):
+class RasaFileImporter(TrainingDataImporter):
     """Default `TrainingFileImporter` implementation."""
 
     def __init__(

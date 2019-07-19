@@ -31,8 +31,8 @@ full class path:
    You can specify multiple importers. Rasa will automatically merge their results.
 
 
-Default Importer
-~~~~~~~~~~~~~~~~
+RasaFileImporter (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default Rasa uses the importer ``SimpleFileImporter``. If you want to use it on its
 own, you don't have to specify anything in your configuration file.
@@ -42,7 +42,7 @@ configuration file:
 .. code-block:: yaml
 
    importers:
-   - name: "SimpleFileImporter"
+   - name: "RasaFileImporter"
 
 
 Writing a Custom Importer
