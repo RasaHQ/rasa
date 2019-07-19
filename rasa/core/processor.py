@@ -451,8 +451,8 @@ class MessageProcessor(object):
             logger.error(
                 "Encountered an exception while running action '{}'. "
                 "Bot will continue, but the actions events are lost. "
-                "Make sure to fix the exception in your custom "
-                "code.".format(action.name())
+                "Please check the logs of your action server for "
+                "more information.".format(action.name())
             )
             logger.debug(e, exc_info=True)
             events = []
