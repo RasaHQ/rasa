@@ -791,9 +791,11 @@ async def _write_stories_to_file(
     with open(export_story_path, append_write, encoding="utf-8") as f:
         for i, conversation in enumerate(sub_conversations):
             parsed_events = rasa.core.events.deserialise_events(conversation)
-            tracker = DialogueStateTracker.from_events("interactive_story_{}".format(i+1),
-                                                       evts=parsed_events,
-                                                       slots=domain.slots)
+            tracker = DialogueStateTracker.from_events(
+                "interactive_story_{}".format(i + 1),
+                evts=parsed_events,
+                slots=domain.slots,
+            )
 
             f.write("\n" + tracker.export_stories())
 
