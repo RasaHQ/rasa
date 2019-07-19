@@ -1,9 +1,12 @@
 import logging
 import os
+import tempfile
 import typing
+from contextlib import ExitStack
 from typing import Dict, Optional, Text, Union
 
 from rasa.core.domain import Domain
+from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -75,6 +78,8 @@ async def train_comparison_models(
 ):
     """Train multiple models for comparison of policies"""
     from rasa.core import config
+    from rasa import model
+    from rasa.train import package_model
 
     exclusion_percentages = exclusion_percentages or []
     policy_configs = policy_configs or []
@@ -94,9 +99,8 @@ async def train_comparison_models(
                     )
 
                 policy_name = type(policies[0]).__name__
-                output = os.path.join(
-                    output_path, "run_" + str(r + 1), policy_name + str(current_round)
-                )
+                output_dir = os.path.join(output_path, "run_" + str(r + 1))
+                model_name = policy_name + str(current_round)
 
                 logging.info(
                     "Starting to train {} round {}/{}"
@@ -104,15 +108,31 @@ async def train_comparison_models(
                     "".format(policy_name, current_round, len(exclusion_percentages), i)
                 )
 
-                await train(
-                    domain,
-                    stories,
-                    output,
-                    policy_config=policy_config,
-                    exclusion_percentage=i,
-                    kwargs=kwargs,
-                    dump_stories=dump_stories,
-                )
+                with ExitStack() as stack:
+                    train_path = stack.enter_context(
+                        TempDirectoryPath(tempfile.mkdtemp())
+                    )
+
+                    await train(
+                        domain,
+                        stories,
+                        train_path,
+                        policy_config=policy_config,
+                        exclusion_percentage=i,
+                        kwargs=kwargs,
+                        dump_stories=dump_stories,
+                    )
+
+                    new_fingerprint = model.model_fingerprint(
+                        policy_config, domain, stories=stories
+                    )
+
+                    package_model(
+                        new_fingerprint=new_fingerprint,
+                        output_path=output_dir,
+                        train_path=train_path,
+                        fixed_model_name=model_name,
+                    )
 
 
 async def get_no_of_stories(story_file, domain):

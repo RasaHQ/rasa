@@ -203,7 +203,7 @@ async def _train_async_internal(
             kwargs=kwargs,
         )
 
-        return _package_model(
+        return package_model(
             new_fingerprint=new_fingerprint,
             output_path=output_path,
             train_path=train_path,
@@ -383,7 +383,7 @@ async def _train_core_with_validated_data(
             new_fingerprint = model.model_fingerprint(
                 config, domain, stories=story_directory
             )
-            return _package_model(
+            return package_model(
                 new_fingerprint=new_fingerprint,
                 output_path=output,
                 train_path=_train_path,
@@ -470,7 +470,7 @@ def _train_nlu_with_validated_data(
                 config, nlu_data=nlu_data_directory
             )
 
-            return _package_model(
+            return package_model(
                 new_fingerprint=new_fingerprint,
                 output_path=output,
                 train_path=_train_path,
@@ -481,7 +481,7 @@ def _train_nlu_with_validated_data(
         return _train_path
 
 
-def _package_model(
+def package_model(
     new_fingerprint: Fingerprint,
     output_path: Text,
     train_path: Text,

@@ -6,7 +6,7 @@ import pytest
 
 from rasa.model import unpack_model
 
-from rasa.train import _package_model, train
+from rasa.train import package_model, train
 from tests.core.test_model import _fingerprint
 
 TEST_TEMP = "test_tmp"
@@ -24,7 +24,7 @@ def test_package_model(trained_rasa_model, parameters):
     output_path = tempfile.mkdtemp()
     train_path = unpack_model(trained_rasa_model)
 
-    model_path = _package_model(
+    model_path = package_model(
         _fingerprint(),
         output_path,
         train_path,

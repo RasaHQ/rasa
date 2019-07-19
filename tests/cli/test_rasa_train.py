@@ -71,20 +71,19 @@ def test_train_core_compare(run_in_default_project):
         "--out",
         "core_comparison_results",
         "--runs",
-        "1",
-        "--runs",
-        "1",
+        "2",
         "--percentages",
-        "50",
+        "25",
+        "75",
         "--augmentation",
         "5",
     )
 
     assert os.path.exists(os.path.join(temp_dir, "core_comparison_results"))
     sub_dirs = list_subdirectories(os.path.join(temp_dir, "core_comparison_results"))
-    assert len(sub_dirs) == 1
+    assert len(sub_dirs) == 2
     files = list_files(os.path.join(temp_dir, "core_comparison_results", sub_dirs[0]))
-    assert len(files) == 1
+    assert len(files) == 4
     assert files[0].endswith("tar.gz")
 
 
