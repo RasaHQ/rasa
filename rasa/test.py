@@ -77,7 +77,7 @@ def test_core(
 
     core_path, nlu_path = get_model_subdirectories(unpacked_model)
 
-    if not os.path.exists(core_path):
+    if not core_path:
         print_error(
             "Unable to test: could not find a Core model. Use 'rasa train' to "
             "train a model."
@@ -87,7 +87,7 @@ def test_core(
 
     _interpreter = RegexInterpreter()
     if use_e2e:
-        if os.path.exists(nlu_path):
+        if nlu_path:
             _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
         else:
             print_warning(

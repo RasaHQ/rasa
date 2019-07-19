@@ -122,17 +122,35 @@ def unpack_model(
     return TempDirectoryPath(working_directory)
 
 
-def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
-    """Returns paths for core and nlu model directories.
+def get_model_subdirectories(
+    unpacked_model_path: Text
+) -> Tuple[Optional[Text], Optional[Text]]:
+    """Returns paths for Core and NLU model directories, if they exist.
+    If neither directories exist, a `ModelNotFound` exception is raised.
 
     Args:
         unpacked_model_path: Path to unpacked Rasa model.
 
     Returns:
-        Tuple (path to Core subdirectory, path to NLU subdirectory).
+        Tuple (path to Core subdirectory if it exists or `None` otherwise,
+               path to NLU subdirectory if it exists or `None` otherwise).
+
     """
     core_path = os.path.join(unpacked_model_path, "core")
     nlu_path = os.path.join(unpacked_model_path, "nlu")
+
+    if not os.path.isdir(core_path):
+        core_path = None
+
+    if not os.path.isdir(nlu_path):
+        nlu_path = None
+
+    if not core_path and not nlu_path:
+        raise ModelNotFound(
+            "No NLU or Core data for unpacked model at: '{}'.".format(
+                unpacked_model_path
+            )
+        )
 
     return core_path, nlu_path
 
