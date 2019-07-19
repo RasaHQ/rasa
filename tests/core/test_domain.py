@@ -3,7 +3,6 @@ import json
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
-import rasa.utils.io
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -501,3 +500,32 @@ def test_load_on_invalid_domain():
     # Currently just deprecated
     # with pytest.raises(InvalidDomain):
     #     Domain.load("data/test_domains/missing_text_for_templates.yml")
+
+
+def test_clean_domain():
+    domain_path = "data/test_domains/default_unfeaturized_entities.yml"
+    cleaned = Domain.load(domain_path).cleaned_domain()
+
+    expected = {
+        "intents": [
+            {"greet": {"use_entities": ["name"]}},
+            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
+            {"goodbye": {"use_entities": []}},
+            {"thank": {"use_entities": []}},
+            "ask",
+            {"why": {"use_entities": []}},
+            "pure_intent",
+        ],
+        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "templates": {
+            "utter_greet": [{"text": "hey there!"}],
+            "utter_goodbye": [{"text": "goodbye :("}],
+            "utter_default": [{"text": "default message"}],
+        },
+        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+    }
+
+    expected = Domain.from_dict(expected)
+    actual = Domain.from_dict(cleaned)
+
+    assert hash(actual) == hash(expected)
