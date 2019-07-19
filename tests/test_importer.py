@@ -11,7 +11,7 @@ from rasa.importers.importer import (
     NluDataImporter,
     CoreDataImporter,
 )
-from rasa.importers.basic import RasaFileImporter
+from rasa.importers.rasa import RasaFileImporter
 
 # noinspection PyUnresolvedReferences
 from rasa.importers.skill import SkillSelector

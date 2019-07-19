@@ -8,7 +8,7 @@ import pytest
 import rasa
 import rasa.core
 import rasa.nlu
-from rasa.importers.basic import RasaFileImporter
+from rasa.importers.rasa import RasaFileImporter
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 from rasa.core.domain import Domain
 from rasa.model import (

@@ -1,20 +1,18 @@
+import logging
 import os
-import typing
 from typing import Optional, Text, Union, List, Dict
 
 from rasa import data
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.interpreter import RegexInterpreter
+from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
 from rasa.core.training.dsl import StoryFileReader
 from rasa.importers import utils
-from rasa.importers.importer import TrainingDataImporter, logger
+from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
 from rasa.utils import io as io_utils
 
-
-if typing.TYPE_CHECKING:
-    from rasa.core.interpreter import NaturalLanguageInterpreter
+logger = logging.getLogger(__name__)
 
 
 class RasaFileImporter(TrainingDataImporter):
