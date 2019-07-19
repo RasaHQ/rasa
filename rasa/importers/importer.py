@@ -1,6 +1,6 @@
 import asyncio
 from functools import reduce
-from typing import Text, Optional, List, Dict, Any
+from typing import Text, Optional, List, Dict
 import logging
 
 import rasa.utils.common
@@ -48,7 +48,7 @@ class TrainingFileImporter:
 
         raise NotImplementedError()
 
-    async def get_config(self) -> Dict[Text, Any]:
+    async def get_config(self) -> Dict:
         """Retrieves the configuration that should be used for the training.
 
         Returns:
@@ -189,7 +189,7 @@ class NluFileImporter(TrainingFileImporter):
     ) -> StoryGraph:
         return StoryGraph([])
 
-    async def get_config(self) -> Dict[Text, Any]:
+    async def get_config(self) -> Dict:
         return await self._importer.get_config()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
