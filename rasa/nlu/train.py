@@ -12,7 +12,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 
 if typing.TYPE_CHECKING:
-    from rasa.importers.importer import TrainingFileImporter
+    from rasa.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def create_persistor(persistor: Optional[Text]):
 
 async def train(
     nlu_config: Union[Text, Dict, RasaNLUModelConfig],
-    data: Union[Text, "TrainingFileImporter"],
+    data: Union[Text, "TrainingDataImporter"],
     path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     storage: Optional[Text] = None,
@@ -56,7 +56,7 @@ async def train(
     **kwargs: Any
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
-    from rasa.importers.importer import TrainingFileImporter
+    from rasa.importers.importer import TrainingDataImporter
 
     if not isinstance(nlu_config, RasaNLUModelConfig):
         nlu_config = config.load(nlu_config)
@@ -70,7 +70,7 @@ async def train(
         training_data = await load_data_from_endpoint(
             training_data_endpoint, nlu_config.language
         )
-    elif isinstance(data, TrainingFileImporter):
+    elif isinstance(data, TrainingDataImporter):
         training_data = await data.get_nlu_data(nlu_config.data)
     else:
         training_data = load_data(data, nlu_config.language)

@@ -14,7 +14,7 @@ import rasa.utils.common as common_utils
 logger = logging.getLogger(__name__)
 
 
-class TrainingFileImporter:
+class TrainingDataImporter:
     """Common interface for different mechanisms to load training data."""
 
     async def get_domain(self) -> Domain:
@@ -74,11 +74,11 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-    ) -> "TrainingFileImporter":
-        """Loads a ``TrainingFileImporter`` instance from a configuration file."""
+    ) -> "TrainingDataImporter":
+        """Loads a ``TrainingDataImporter`` instance from a configuration file."""
 
         config = io_utils.read_config_file(config_path)
-        return TrainingFileImporter.load_from_dict(
+        return TrainingDataImporter.load_from_dict(
             config, config_path, domain_path, training_data_paths
         )
 
@@ -87,32 +87,32 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-    ) -> "TrainingFileImporter":
-        """Loads a ``TrainingFileImporter`` instance from a configuration file that
+    ) -> "TrainingDataImporter":
+        """Loads a ``TrainingDataImporter`` instance from a configuration file that
            only reads Core training data.
         """
 
-        importer = TrainingFileImporter.load_from_config(
+        importer = TrainingDataImporter.load_from_config(
             config_path, domain_path, training_data_paths
         )
 
-        return CoreFileImporter(importer)
+        return CoreDataImporter(importer)
 
     @staticmethod
     def load_nlu_importer_from_config(
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-    ) -> "TrainingFileImporter":
-        """Loads a ``TrainingFileImporter`` instance from a configuration file that
+    ) -> "TrainingDataImporter":
+        """Loads a ``TrainingDataImporter`` instance from a configuration file that
            only reads NLU training data.
         """
 
-        importer = TrainingFileImporter.load_from_config(
+        importer = TrainingDataImporter.load_from_config(
             config_path, domain_path, training_data_paths
         )
 
-        return NluFileImporter(importer)
+        return NluDataImporter(importer)
 
     @staticmethod
     def load_from_dict(
@@ -120,14 +120,14 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-    ) -> "TrainingFileImporter":
-        """Loads a ``TrainingFileImporter`` instance from a dictionary."""
-        from rasa.importers.simple import SimpleFileImporter
+    ) -> "TrainingDataImporter":
+        """Loads a ``TrainingDataImporter`` instance from a dictionary."""
+        from rasa.importers.simple import SimpleDataImporter
 
         config = config or {}
         importers = config.get("importers", [])
         importers = [
-            TrainingFileImporter._importer_from_dict(
+            TrainingDataImporter._importer_from_dict(
                 importer, config_path, domain_path, training_data_paths
             )
             for importer in importers
@@ -136,10 +136,10 @@ class TrainingFileImporter:
 
         if not importers:
             importers = [
-                SimpleFileImporter(config_path, domain_path, training_data_paths)
+                SimpleDataImporter(config_path, domain_path, training_data_paths)
             ]
 
-        return CombinedFileImporter(importers)
+        return CombinedDataImporter(importers)
 
     @staticmethod
     def _importer_from_dict(
@@ -147,13 +147,13 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-    ) -> Optional["TrainingFileImporter"]:
+    ) -> Optional["TrainingDataImporter"]:
         from rasa.importers.skill import SkillSelector
-        from rasa.importers.simple import SimpleFileImporter
+        from rasa.importers.simple import SimpleDataImporter
 
         module_path = importer_config.pop("name", None)
-        if module_path == SimpleFileImporter.__name__:
-            importer_class = SimpleFileImporter
+        if module_path == SimpleDataImporter.__name__:
+            importer_class = SimpleDataImporter
         elif module_path == SkillSelector.__name__:
             importer_class = SkillSelector
         else:
@@ -171,10 +171,10 @@ class TrainingFileImporter:
         )
 
 
-class NluFileImporter(TrainingFileImporter):
+class NluDataImporter(TrainingDataImporter):
     """Importer that skips any Core-related file reading."""
 
-    def __init__(self, actual_importer: TrainingFileImporter):
+    def __init__(self, actual_importer: TrainingDataImporter):
         self._importer = actual_importer
 
     async def get_domain(self) -> Domain:
@@ -196,10 +196,10 @@ class NluFileImporter(TrainingFileImporter):
         return await self._importer.get_nlu_data(language)
 
 
-class CoreFileImporter(TrainingFileImporter):
+class CoreDataImporter(TrainingDataImporter):
     """Importer that skips any NLU related file reading."""
 
-    def __init__(self, actual_importer: TrainingFileImporter):
+    def __init__(self, actual_importer: TrainingDataImporter):
         self._importer = actual_importer
 
     async def get_domain(self) -> Domain:
@@ -223,12 +223,12 @@ class CoreFileImporter(TrainingFileImporter):
         return TrainingData()
 
 
-class CombinedFileImporter(TrainingFileImporter):
-    """A ``TrainingFileImporter`` that supports using multiple ``TrainingFileImporter``s as
+class CombinedDataImporter(TrainingDataImporter):
+    """A ``TrainingDataImporter`` that supports using multiple ``TrainingDataImporter``s as
         if they were a single instance.
     """
 
-    def __init__(self, importers: List[TrainingFileImporter]):
+    def __init__(self, importers: List[TrainingDataImporter]):
         self._importers = importers
 
     async def get_config(self) -> Dict:

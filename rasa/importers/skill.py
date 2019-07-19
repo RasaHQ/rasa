@@ -8,7 +8,7 @@ import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.dsl import StoryFileReader
-from rasa.importers.importer import TrainingFileImporter
+from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
@@ -16,7 +16,7 @@ from rasa.core.training.structures import StoryGraph
 logger = logging.getLogger(__name__)
 
 
-class SkillSelector(TrainingFileImporter):
+class SkillSelector(TrainingDataImporter):
     def __init__(
         self,
         config_file: Text,

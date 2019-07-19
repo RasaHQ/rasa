@@ -8,7 +8,7 @@ import pytest
 import rasa
 import rasa.core
 import rasa.nlu
-from rasa.importers.simple import SimpleFileImporter
+from rasa.importers.simple import SimpleDataImporter
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 from rasa.core.domain import Domain
 from rasa.model import (
@@ -153,7 +153,7 @@ def _project_files(
     paths = {k: v if v is None else os.path.join(project, v) for k, v in paths.items()}
     paths["training_data_paths"] = [paths["training_data_paths"]]
 
-    return SimpleFileImporter(**paths)
+    return SimpleDataImporter(**paths)
 
 
 async def test_create_fingerprint_from_paths(project):

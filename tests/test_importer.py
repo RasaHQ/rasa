@@ -6,12 +6,12 @@ import pytest
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
 from rasa.core.domain import Domain
 from rasa.importers.importer import (
-    CombinedFileImporter,
-    TrainingFileImporter,
-    NluFileImporter,
-    CoreFileImporter,
+    CombinedDataImporter,
+    TrainingDataImporter,
+    NluDataImporter,
+    CoreDataImporter,
 )
-from rasa.importers.simple import SimpleFileImporter
+from rasa.importers.simple import SimpleDataImporter
 
 # noinspection PyUnresolvedReferences
 from rasa.importers.skill import SkillSelector
@@ -21,7 +21,7 @@ from tests.core.conftest import project
 
 
 async def test_use_of_interface():
-    importer = TrainingFileImporter()
+    importer = TrainingDataImporter()
 
     functions_to_test = [
         lambda: importer.get_config(),
@@ -39,7 +39,7 @@ async def test_simple_file_importer(project: Text):
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
 
-    importer = SimpleFileImporter(config_path, domain_path, [default_data_path])
+    importer = SimpleDataImporter(config_path, domain_path, [default_data_path])
 
     domain = await importer.get_domain()
     assert len(domain.intents) == 6
@@ -57,7 +57,7 @@ async def test_simple_file_importer(project: Text):
 
 
 async def test_simple_file_importer_with_invalid_config():
-    importer = SimpleFileImporter(config_file="invalid path")
+    importer = SimpleDataImporter(config_file="invalid path")
     actual = await importer.get_config()
 
     assert actual == {}
@@ -66,7 +66,7 @@ async def test_simple_file_importer_with_invalid_config():
 async def test_simple_file_importer_with_invalid_domain(tmp_path: Path):
     config_file = tmp_path / "config.yml"
     config_file.write_text("")
-    importer = TrainingFileImporter.load_from_dict({}, str(config_file), None, [])
+    importer = TrainingDataImporter.load_from_dict({}, str(config_file), None, [])
 
     actual = await importer.get_domain()
     assert actual.as_dict() == Domain.empty().as_dict()
@@ -77,8 +77,8 @@ async def test_combined_file_importer_with_single_importer(project: Text):
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
 
-    importer = SimpleFileImporter(config_path, domain_path, [default_data_path])
-    combined = CombinedFileImporter([importer])
+    importer = SimpleDataImporter(config_path, domain_path, [default_data_path])
+    combined = CombinedDataImporter([importer])
 
     assert await importer.get_config() == await combined.get_config()
     assert (await importer.get_domain()).as_dict() == (
@@ -97,32 +97,32 @@ async def test_combined_file_importer_with_single_importer(project: Text):
 @pytest.mark.parametrize(
     "config, expected",
     [
-        ({}, [SimpleFileImporter]),
-        ({"importers": []}, [SimpleFileImporter]),
-        ({"importers": [{"name": "SimpleFileImporter"}]}, [SimpleFileImporter]),
-        ({"importers": [{"name": "NotExistingModule"}]}, [SimpleFileImporter]),
+        ({}, [SimpleDataImporter]),
+        ({"importers": []}, [SimpleDataImporter]),
+        ({"importers": [{"name": "SimpleDataImporter"}]}, [SimpleDataImporter]),
+        ({"importers": [{"name": "NotExistingModule"}]}, [SimpleDataImporter]),
         (
             {"importers": [{"name": "rasa.importers.skill.SkillSelector"}]},
             [SkillSelector],
         ),
         ({"importers": [{"name": "SkillSelector"}]}, [SkillSelector]),
         (
-            {"importers": [{"name": "SimpleFileImporter"}, {"name": "SkillSelector"}]},
-            [SimpleFileImporter, SkillSelector],
+            {"importers": [{"name": "SimpleDataImporter"}, {"name": "SkillSelector"}]},
+            [SimpleDataImporter, SkillSelector],
         ),
     ],
 )
 def test_load_from_dict(
-    config: Dict, expected: List[Type["TrainingFileImporter"]], project: Text
+    config: Dict, expected: List[Type["TrainingDataImporter"]], project: Text
 ):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    actual = TrainingFileImporter.load_from_dict(
+    actual = TrainingDataImporter.load_from_dict(
         config, config_path, domain_path, [default_data_path]
     )
 
-    assert isinstance(actual, CombinedFileImporter)
+    assert isinstance(actual, CombinedDataImporter)
 
     actual_importers = [i.__class__ for i in actual._importers]
     assert actual_importers == expected
@@ -135,19 +135,19 @@ def test_load_from_config(tmpdir: Path):
 
     io_utils.write_yaml_file({"importers": [{"name": "SkillSelector"}]}, config_path)
 
-    importer = TrainingFileImporter.load_from_config(config_path)
-    assert isinstance(importer, CombinedFileImporter)
+    importer = TrainingDataImporter.load_from_config(config_path)
+    assert isinstance(importer, CombinedDataImporter)
     assert isinstance(importer._importers[0], SkillSelector)
 
 
 async def test_nlu_only(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    actual = TrainingFileImporter.load_nlu_importer_from_config(
+    actual = TrainingDataImporter.load_nlu_importer_from_config(
         config_path, training_data_paths=[default_data_path]
     )
 
-    assert isinstance(actual, NluFileImporter)
+    assert isinstance(actual, NluDataImporter)
 
     stories = await actual.get_stories()
     assert stories.is_empty()
@@ -166,11 +166,11 @@ async def test_core_only(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    actual = TrainingFileImporter.load_core_importer_from_config(
+    actual = TrainingDataImporter.load_core_importer_from_config(
         config_path, domain_path, training_data_paths=[default_data_path]
     )
 
-    assert isinstance(actual, CoreFileImporter)
+    assert isinstance(actual, CoreDataImporter)
 
     stories = await actual.get_stories()
     assert not stories.is_empty()
