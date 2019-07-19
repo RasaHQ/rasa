@@ -250,7 +250,7 @@ class MessageProcessor(object):
         # parse_data is a dict of intent & entities
         if message.text.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(
-                message.text, message.message_id
+                message.text, message.message_id, tracker
             )
         else:
             parse_data = await self.interpreter.parse(

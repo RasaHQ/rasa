@@ -61,7 +61,7 @@ async def test_parsing(default_processor):
     assert parsed["entities"][0]["entity"] == "name"
 
 
-async def test_http_parsing():
+async def test_http_parsing():  
     message = UserMessage("lunch?")
 
     endpoint = EndpointConfig("https://interpreter.com")
@@ -229,7 +229,7 @@ async def test_reminder_cancelled(default_processor):
     # cancel reminder for the first user
     trackers[0].update(ReminderCancelled("utter_greet"))
 
-    for _, t in enumerate(trackers):
+    for t in trackers:
         default_processor.tracker_store.save(t)
         d = Dispatcher(sender_id, out, default_processor.nlg)
         await default_processor._schedule_reminders(t.events, t, d)
