@@ -122,7 +122,7 @@ class TrainingDataImporter:
         training_data_paths: Optional[List[Text]] = None,
     ) -> "TrainingDataImporter":
         """Loads a ``TrainingDataImporter`` instance from a dictionary."""
-        from rasa.importers.simple import SimpleDataImporter
+        from rasa.importers.basic import RasaFileImporter
 
         config = config or {}
         importers = config.get("importers", [])
@@ -136,7 +136,7 @@ class TrainingDataImporter:
 
         if not importers:
             importers = [
-                SimpleDataImporter(config_path, domain_path, training_data_paths)
+                RasaFileImporter(config_path, domain_path, training_data_paths)
             ]
 
         return CombinedDataImporter(importers)
@@ -149,11 +149,11 @@ class TrainingDataImporter:
         training_data_paths: Optional[List[Text]] = None,
     ) -> Optional["TrainingDataImporter"]:
         from rasa.importers.skill import SkillSelector
-        from rasa.importers.simple import SimpleDataImporter
+        from rasa.importers.basic import RasaFileImporter
 
         module_path = importer_config.pop("name", None)
-        if module_path == SimpleDataImporter.__name__:
-            importer_class = SimpleDataImporter
+        if module_path == RasaFileImporter.__name__:
+            importer_class = RasaFileImporter
         elif module_path == SkillSelector.__name__:
             importer_class = SkillSelector
         else:

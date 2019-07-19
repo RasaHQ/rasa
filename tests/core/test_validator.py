@@ -1,6 +1,6 @@
 import pytest
 from rasa.core.validator import Validator
-from rasa.importers.simple import SimpleDataImporter
+from rasa.importers.basic import RasaFileImporter
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_STORIES_FILE,
@@ -12,7 +12,7 @@ from rasa.nlu.training_data import TrainingData
 
 @pytest.fixture
 async def validator():
-    importer = SimpleDataImporter(
+    importer = RasaFileImporter(
         domain_path=DEFAULT_DOMAIN_PATH,
         training_data_paths=[DEFAULT_NLU_DATA, DEFAULT_STORIES_FILE],
     )

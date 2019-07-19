@@ -91,10 +91,10 @@ def split_nlu_data(args):
 
 def validate_files(args):
     from rasa.core.validator import Validator
-    from rasa.importers.simple import SimpleDataImporter
+    from rasa.importers.basic import RasaFileImporter
 
     loop = asyncio.get_event_loop()
-    file_importer = SimpleDataImporter(
+    file_importer = RasaFileImporter(
         domain_path=args.domain, training_data_paths=args.data
     )
 
