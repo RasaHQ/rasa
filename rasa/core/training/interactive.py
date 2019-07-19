@@ -572,9 +572,12 @@ async def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
     tracker = await retrieve_tracker(endpoint, sender_id)
     events = tracker.get("events", [])
 
-    await _write_stories_to_file(story_path, events)
+    serialised_domain = await retrieve_domain(endpoint)
+    domain = Domain.from_dict(serialised_domain)
+
+    await _write_stories_to_file(story_path, events, domain)
     await _write_nlu_to_file(nlu_path, events)
-    await _write_domain_to_file(domain_path, events, endpoint)
+    await _write_domain_to_file(domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -772,7 +775,7 @@ def _collect_actions(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
 
 
 async def _write_stories_to_file(
-    export_story_path: Text, events: List[Dict[Text, Any]]
+    export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the sender_id to the file paths."""
 
@@ -786,20 +789,13 @@ async def _write_stories_to_file(
         append_write = "w"  # make a new file if not
 
     with open(export_story_path, append_write, encoding="utf-8") as f:
-        for conversation in sub_conversations:
+        for i, conversation in enumerate(sub_conversations):
             parsed_events = rasa.core.events.deserialise_events(conversation)
-            applied_events = []
+            tracker = DialogueStateTracker.from_events("interactive_story_{}".format(i+1),
+                                                       evts=parsed_events,
+                                                       slots=domain.slots)
 
-            for i, event in enumerate(parsed_events):
-                if event.type_name == UserUtteranceReverted.type_name:
-                    # user corrected their intent, so we have to remove
-                    # the incorrect intent, rewind action and action_listen
-                    applied_events = applied_events[:-2]
-                else:
-                    applied_events.append(event)
-
-            s = Story.from_events(applied_events)
-            f.write("\n" + s.as_story_string(flat=True))
+            f.write("\n" + tracker.export_stories())
 
 
 async def _write_nlu_to_file(
@@ -851,14 +847,11 @@ def _intents_from_messages(messages):
 
 
 async def _write_domain_to_file(
-    domain_path: Text, events: List[Dict[Text, Any]], endpoint: EndpointConfig
+    domain_path: Text, events: List[Dict[Text, Any]], old_domain: Domain
 ) -> None:
     """Write an updated domain file to the file path."""
 
     io_utils.create_path(domain_path)
-
-    domain = await retrieve_domain(endpoint)
-    old_domain = Domain.from_dict(domain)
 
     messages = _collect_messages(events)
     actions = _collect_actions(events)

@@ -23,8 +23,7 @@ Removed
 
 Fixed
 -----
-- interactive learning bug where reverted user utterances were dumped to nlu data
-- ``MappingPolicy`` now works correctly when used as part of a PolicyEnsemble
+- interactive learning bug where reverted user utterances were dumped to training data
 - validation no longer throws an error during interactive learning
 
 [1.1.6] - 2019-07-12
