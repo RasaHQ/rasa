@@ -19,7 +19,7 @@ from rasa.exceptions import ModelNotFound
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
-    from rasa.importers.importer import TrainingFileImporter
+    from rasa.importers.importer import TrainingDataImporter
 
 # Type alias for the fingerprint
 Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
@@ -189,7 +189,7 @@ def create_package_rasa(
     return output_filename
 
 
-async def model_fingerprint(file_importer: "TrainingFileImporter") -> Fingerprint:
+async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
     """Creates a model fingerprint from its used configuration and training data.
 
     Args:

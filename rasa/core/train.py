@@ -8,14 +8,14 @@ from rasa.core.domain import Domain
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
-    from rasa.importers.importer import TrainingFileImporter
+    from rasa.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
 
 async def train(
     domain_file: Union[Domain, Text],
-    training_resource: Union[Text, "TrainingFileImporter"],
+    training_resource: Union[Text, "TrainingDataImporter"],
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,

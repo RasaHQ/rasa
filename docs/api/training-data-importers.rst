@@ -61,7 +61,7 @@ If you are writing a custom importer, this importer has to implement the interfa
     from rasa.nlu.training_data import TrainingData
 
 
-    class MyImporter(TrainingFileImporter):
+    class MyImporter(TrainingDataImporter):
         """Example implementation of a custom importer component."""
 
         def __init__(
@@ -111,11 +111,11 @@ If you are writing a custom importer, this importer has to implement the interfa
 
 .. _training-data-importers-trainingFileImporter:
 
-TrainingFileImporter
+TrainingDataImporter
 ~~~~~~~~~~~~~~~~~~~~
 
 
-.. autoclass:: rasa.importers.importer.TrainingFileImporter
+.. autoclass:: rasa.importers.importer.TrainingDataImporter
 
    .. automethod:: get_domain
 

@@ -8,7 +8,7 @@ from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.structures import StoryGraph
 from rasa.core.training.dsl import StoryFileReader
 from rasa.importers import utils
-from rasa.importers.importer import TrainingFileImporter, logger
+from rasa.importers.importer import TrainingDataImporter, logger
 from rasa.nlu.training_data import TrainingData
 from rasa.utils import io as io_utils
 
@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
 
 
-class SimpleFileImporter(TrainingFileImporter):
+class SimpleDataImporter(TrainingDataImporter):
     """Default `TrainingFileImporter` implementation."""
 
     def __init__(

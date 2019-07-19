@@ -6,7 +6,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.trackers import DialogueStateTracker
     from rasa.core.training.structures import StoryGraph
-    from rasa.importers.importer import TrainingFileImporter
+    from rasa.importers.importer import TrainingDataImporter
 
 
 async def extract_story_graph(
@@ -33,7 +33,7 @@ async def extract_story_graph(
 
 
 async def load_data(
-    resource_name: Union[Text, "TrainingFileImporter"],
+    resource_name: Union[Text, "TrainingDataImporter"],
     domain: "Domain",
     remove_duplicates: bool = True,
     unique_last_num_states: Optional[int] = None,
@@ -44,10 +44,10 @@ async def load_data(
     exclusion_percentage: int = None,
 ) -> List["DialogueStateTracker"]:
     from rasa.core.training.generator import TrainingDataGenerator
-    from rasa.importers.importer import TrainingFileImporter
+    from rasa.importers.importer import TrainingDataImporter
 
     if resource_name:
-        if isinstance(resource_name, TrainingFileImporter):
+        if isinstance(resource_name, TrainingDataImporter):
             graph = await resource_name.get_stories(
                 exclusion_percentage=exclusion_percentage
             )

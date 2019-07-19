@@ -2,7 +2,7 @@ import logging
 import asyncio
 from typing import List
 from rasa.core.domain import Domain
-from rasa.importers.importer import TrainingFileImporter
+from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.dsl import StoryStep
 from rasa.core.training.dsl import UserUttered
@@ -23,7 +23,7 @@ class Validator(object):
         self.stories = stories
 
     @classmethod
-    async def from_importer(cls, importer: TrainingFileImporter) -> "Validator":
+    async def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
 
         domain = await importer.get_domain()

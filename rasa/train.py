@@ -6,7 +6,7 @@ from typing import Text, Optional, List, Union, Dict
 
 from rasa import model
 from rasa.core.domain import Domain
-from rasa.importers.importer import TrainingFileImporter
+from rasa.importers.importer import TrainingDataImporter
 from rasa.model import Fingerprint, should_retrain
 from rasa.utils.common import TempDirectoryPath
 
@@ -68,7 +68,7 @@ async def train_async(
         Path of the trained model archive.
     """
 
-    file_importer = TrainingFileImporter.load_from_config(
+    file_importer = TrainingDataImporter.load_from_config(
         config, domain, training_files
     )
     with ExitStack() as stack:
@@ -91,7 +91,7 @@ async def train_async(
 
 
 async def handle_domain_if_not_exists(
-    file_importer: TrainingFileImporter, output_path, fixed_model_name
+    file_importer: TrainingDataImporter, output_path, fixed_model_name
 ):
     nlu_model_only = await _train_nlu_with_validated_data(
         file_importer, output=output_path, fixed_model_name=fixed_model_name
@@ -104,7 +104,7 @@ async def handle_domain_if_not_exists(
 
 
 async def _train_async_internal(
-    file_importer: TrainingFileImporter,
+    file_importer: TrainingDataImporter,
     train_path: Text,
     output_path: Text,
     force_training: bool,
@@ -184,7 +184,7 @@ async def _train_async_internal(
 
 
 async def _do_training(
-    file_importer: TrainingFileImporter,
+    file_importer: TrainingDataImporter,
     output_path: Text,
     train_path: Text,
     force_training: bool = False,
@@ -273,7 +273,7 @@ async def train_core_async(
 
     """
 
-    file_importer = TrainingFileImporter.load_core_importer_from_config(
+    file_importer = TrainingDataImporter.load_core_importer_from_config(
         config, domain, [stories]
     )
     domain = await file_importer.get_domain()
@@ -301,7 +301,7 @@ async def train_core_async(
 
 
 async def _train_core_with_validated_data(
-    file_importer: TrainingFileImporter,
+    file_importer: TrainingDataImporter,
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
@@ -384,7 +384,7 @@ async def _train_nlu_async(
     fixed_model_name: Optional[Text] = None,
 ):
     # training NLU only hence the training files still have to be selected
-    file_importer = TrainingFileImporter.load_nlu_importer_from_config(
+    file_importer = TrainingDataImporter.load_nlu_importer_from_config(
         config, training_data_paths=[nlu_data]
     )
 
@@ -405,7 +405,7 @@ async def _train_nlu_async(
 
 
 async def _train_nlu_with_validated_data(
-    file_importer: TrainingFileImporter,
+    file_importer: TrainingDataImporter,
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
