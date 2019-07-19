@@ -24,6 +24,7 @@ Removed
 
 Fixed
 -----
+- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
 
 
 [1.1.7] - 2019-07-18
