@@ -15,6 +15,7 @@ DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 TEST_DATA_FILE = "test.md"
 TRAIN_DATA_FILE = "train.md"
 RESULTS_FILE = "results.json"
+NUM_STORIES_FILE = "num_stories.json"
 
 PACKAGE_NAME = "rasa"
 

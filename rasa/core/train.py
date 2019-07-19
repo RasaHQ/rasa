@@ -1,10 +1,12 @@
+import argparse
 import logging
 import os
 import tempfile
 import typing
 from contextlib import ExitStack
-from typing import Dict, Optional, Text, Union
+from typing import Dict, Optional, Text, Union, List
 
+from constants import NUM_STORIES_FILE
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
 
@@ -67,14 +69,14 @@ async def train(
 
 
 async def train_comparison_models(
-    stories,
-    domain,
-    output_path="",
-    exclusion_percentages=None,
-    policy_configs=None,
-    runs=1,
-    dump_stories=False,
-    kwargs=None,
+    story_file: Text,
+    domain: Text,
+    output_path: Text = "",
+    exclusion_percentages: Optional[List] = None,
+    policy_configs: Optional[List] = None,
+    runs: int = 1,
+    dump_stories: bool = False,
+    kwargs: Optional[dict] = None,
 ):
     """Train multiple models for comparison of policies"""
     from rasa.core import config
@@ -99,9 +101,6 @@ async def train_comparison_models(
                     )
 
                 policy_name = type(policies[0]).__name__
-                output_dir = os.path.join(output_path, "run_" + str(r + 1))
-                model_name = policy_name + str(current_round)
-
                 logging.info(
                     "Starting to train {} round {}/{}"
                     " with {}% exclusion"
@@ -115,7 +114,7 @@ async def train_comparison_models(
 
                     await train(
                         domain,
-                        stories,
+                        story_file,
                         train_path,
                         policy_config=policy_config,
                         exclusion_percentage=i,
@@ -124,9 +123,11 @@ async def train_comparison_models(
                     )
 
                     new_fingerprint = model.model_fingerprint(
-                        policy_config, domain, stories=stories
+                        policy_config, domain, stories=story_file
                     )
 
+                    output_dir = os.path.join(output_path, "run_" + str(r + 1))
+                    model_name = policy_name + str(current_round)
                     package_model(
                         new_fingerprint=new_fingerprint,
                         output_path=output_dir,
@@ -146,29 +147,33 @@ async def get_no_of_stories(story_file, domain):
     return len(stories)
 
 
-async def do_compare_training(cmdline_args, stories, additional_arguments):
+async def do_compare_training(
+    args: argparse.Namespace,
+    story_file: Text,
+    additional_arguments: Optional[dict] = None,
+):
     from rasa.core import utils
 
     await train_comparison_models(
-        stories,
-        cmdline_args.domain,
-        cmdline_args.out,
-        cmdline_args.percentages,
-        cmdline_args.config,
-        cmdline_args.runs,
-        cmdline_args.dump_stories,
+        story_file,
+        args.domain,
+        args.out,
+        args.percentages,
+        args.config,
+        args.runs,
+        args.dump_stories,
         additional_arguments,
     )
 
-    no_stories = await get_no_of_stories(cmdline_args.stories, cmdline_args.domain)
+    no_stories = await get_no_of_stories(args.stories, args.domain)
 
     # store the list of the number of stories present at each exclusion
     # percentage
     story_range = [
-        no_stories - round((x / 100.0) * no_stories) for x in cmdline_args.percentages
+        no_stories - round((x / 100.0) * no_stories) for x in args.percentages
     ]
 
-    story_n_path = os.path.join(cmdline_args.out, "num_stories.json")
+    story_n_path = os.path.join(args.out, NUM_STORIES_FILE)
     utils.dump_obj_as_json_to_file(story_n_path, story_range)
 
 
