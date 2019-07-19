@@ -407,7 +407,7 @@ class StoryGraph(object):
         else:
             self.story_end_checkpoints = {}
 
-    def ordered_steps(self) -> List[StoryStep]:
+    def ordered_stories(self) -> List[StoryStep]:
         """Returns the story steps ordered by topological order of the DAG."""
 
         return [self.get(step_id) for step_id in self.ordered_ids]

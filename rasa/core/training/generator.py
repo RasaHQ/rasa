@@ -247,7 +247,7 @@ class TrainingDataGenerator(object):
             unused_checkpoints = set()  # type: Set[Text]
 
             pbar = tqdm(
-                self.story_graph.ordered_steps(),
+                self.story_graph.ordered_stories(),
                 desc="Processed Story Blocks",
                 disable=is_logging_disabled(),
             )
