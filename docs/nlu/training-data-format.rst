@@ -112,53 +112,21 @@ restaurants"``, then ``text[8:15] == 'chinese'``. Entities can span multiple wor
 fact the ``value`` field does not have to correspond exactly to the substring in your example.
 That way you can map synonyms, or misspellings, to the same ``value``.
 
-.. code-block:: json
+.. code-block:: md
 
-    {
-      "text": "show me chinese restaurants",
-      "intent": "restaurant_search",
-      "entities": [
-        {
-          "start": 8,
-          "end": 15,
-          "value": "chinese",
-          "entity": "cuisine"
-        }
-      ]
-    }
+    ## intent:restaurant_search
+    - show me [chinese](cuisine) restaurants
 
 Entity Synonyms
 ---------------
 If you define entities as having the same value they will be treated as synonyms. Here is an example of that:
 
-.. code-block:: json
+.. code-block:: md
 
-    [
-      {
-        "text": "in the center of NYC",
-        "intent": "search",
-        "entities": [
-          {
-            "start": 17,
-            "end": 20,
-            "value": "New York City",
-            "entity": "city"
-          }
-        ]
-      },
-      {
-        "text": "in the centre of New York City",
-        "intent": "search",
-        "entities": [
-          {
-            "start": 17,
-            "end": 30,
-            "value": "New York City",
-            "entity": "city"
-          }
-        ]
-      }
-    ]
+    ## intent:search
+    - in the center of [NYC](city:New York City)
+    - in the centre of [New York City](city)
+
 
 As you can see, the entity ``city`` has the value ``New York City`` in both examples, even though the text in the first
 example states ``NYC``. By defining the value attribute to be different from the value found in the text between start
@@ -170,18 +138,12 @@ component (see :ref:`components`).
 
 Alternatively, you can add an "entity_synonyms" array to define several synonyms to one entity value. Here is an example of that:
 
-.. code-block:: json
+.. code-block:: md
 
-  {
-    "rasa_nlu_data": {
-      "entity_synonyms": [
-        {
-          "value": "New York City",
-          "synonyms": ["NYC", "nyc", "the big apple"]
-        }
-      ]
-    }
-  }
+    ## synonym:New York City
+    - NYC
+    - nyc
+    - the big apple
 
 .. note::
     Please note that adding synonyms using the above format does not improve the model's classification of those entities.
@@ -194,22 +156,13 @@ Regular expressions can be used to support the intent classification and entity 
 has a certain structure as in a zipcode, you can use a regular expression to ease detection of that entity. For
 the zipcode example it might look like this:
 
-.. code-block:: json
+.. code-block:: md
 
-    {
-        "rasa_nlu_data": {
-            "regex_features": [
-                {
-                    "name": "zipcode",
-                    "pattern": "[0-9]{5}"
-                },
-                {
-                    "name": "greet",
-                    "pattern": "hey[^\\s]*"
-                },
-            ]
-        }
-    }
+    ## regex:zipcode
+    - [0-9]{5}
+
+    ## regex:greet
+    - hey[^\\s]*
 
 The name doesn't define the entity nor the intent, it is just a human readable description for you to remember what
 this regex is used for and is the title of the corresponding pattern feature. As you can see in the above example, you can also use the regex features to improve the intent
@@ -239,33 +192,20 @@ For example, ``data/test/lookup_tables/plates.txt`` may contain:
 
 And can be loaded as:
 
-.. code-block:: json
+.. code-block:: md
 
-    {
-        "rasa_nlu_data": {
-            "lookup_tables": [
-                {
-                    "name": "plates",
-                    "elements": "data/test/lookup_tables/plates.txt"
-                }
-            ]
-        }
-    }
+    ## lookup:plates
+    data/test/lookup_tables/plates.txt
 
 Alternatively, lookup elements may be directly included as a list
 
-.. code-block:: json
+.. code-block:: md
 
-    {
-        "rasa_nlu_data": {
-            "lookup_tables": [
-                {
-                    "name": "plates",
-                    "elements": ["beans", "rice", "tacos", "cheese"]
-                }
-            ]
-        }
-    }
+    ## lookup:plates
+    - beans
+    - rice
+    - tacos
+    - cheese
 
 When lookup tables are supplied in training data, the contents are combined
 into a large, case-insensitive regex pattern that looks for exact matches in
