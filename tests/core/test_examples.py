@@ -11,7 +11,6 @@ from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
-from tests.core.conftest import RESTAURANTBOT_MODEL_PATH
 
 
 @pytest.fixture(scope="session")
@@ -90,8 +89,20 @@ async def test_formbot_example():
         assert responses[0]["text"] == "chitchat"
 
 
-async def test_restaurantbot_example(tmpdir):
-    restaurantbot = Agent.load_local_model(RESTAURANTBOT_MODEL_PATH)
+async def test_restaurantbot_example():
+    sys.path.append("examples/restaurantbot/")
+    from run import train_core, train_nlu, parse
 
-    responses = await restaurantbot.handle_text("Hello")
+    p = "examples/restaurantbot/"
+    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
+    nlu_data = os.path.join(p, "data", "nlu.md")
+    await train_core(
+        os.path.join(p, "domain.yml"), os.path.join(p, "models"), "current", stories
+    )
+    train_nlu(
+        os.path.join(p, "config.yml"), os.path.join(p, "models"), "current", nlu_data
+    )
+
+    responses = await parse("hello", os.path.join(p, "models", "current"))
+
     assert responses[0]["text"] == "how can I help you?"
