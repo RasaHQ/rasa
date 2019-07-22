@@ -1,3 +1,5 @@
+:desc: Learn how to use the Rasa command line interface
+
 .. _command-line-interface:
 
 Command Line Interface

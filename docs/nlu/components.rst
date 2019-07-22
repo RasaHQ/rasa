@@ -1,5 +1,5 @@
-:desc: Configure the custom components of your ML model to optimise the
-       processes performed on the user input of your contextual assistant.
+:desc: Customize the components and parameters of Rasa's ML-based NLU pipeline
+       to suit the needs of your contextual AI assistant.
 
 .. _components:
 

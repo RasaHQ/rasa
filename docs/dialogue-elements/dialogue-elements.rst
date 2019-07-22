@@ -1,3 +1,5 @@
+:desc: Dialogue elements are an abstraction layer for your conversational AI platform 
+
 .. _dialogue-elements:
 
 Dialogue Elements

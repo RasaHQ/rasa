@@ -1,5 +1,5 @@
 :desc: Set up a pipeline of pre-trained word vectors form GloVe or fastText
-       or fit them specifically on your dataset using the tensorflow pipeline
+       or fit them specifically on your dataset using the TensorFlow pipeline
        for open source NLU.
 
 .. _choosing-a-pipeline:

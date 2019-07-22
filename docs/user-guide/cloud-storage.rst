@@ -1,5 +1,5 @@
 :desc: Handle Rasa models on premise or in your private cloud for
-       gdpr compliant intent recognition and entity extraction.
+       GDPR compliant intent recognition and entity extraction.
 
 .. _cloud-storage:
 
