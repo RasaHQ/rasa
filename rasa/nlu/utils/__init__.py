@@ -19,19 +19,6 @@ def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
         return None
 
 
-def create_dir(dir_path: Text) -> None:
-    """Creates a directory and its super paths.
-
-    Succeeds even if the path already exists."""
-
-    try:
-        os.makedirs(dir_path)
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
-
-
 def lazyproperty(fn: Callable) -> Any:
     """Allows to avoid recomputing a property over and over.
 

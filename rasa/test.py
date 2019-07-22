@@ -1,13 +1,10 @@
 import asyncio
 import logging
-import tempfile
-from typing import Text, Dict, Optional, List, Any
 import os
+from typing import Text, Dict, Optional, List, Any
 
-from rasa.core.interpreter import RegexInterpreter
-
+import rasa.utils.io as io_utils
 from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE, NUM_STORIES_FILE
-from rasa.model import get_model, get_model_subdirectories
 from rasa.cli.utils import minimal_kwargs, print_error, print_warning
 from rasa.exceptions import ModelNotFound
 
@@ -16,13 +13,12 @@ logger = logging.getLogger(__name__)
 
 def test_core_models_in_dir(model_directory: Text, stories: Text, output: Text):
     from rasa.core.test import compare_models_in_dir, plot_core_results
-    import rasa.utils.io
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
 
     story_n_path = os.path.join(model_directory, NUM_STORIES_FILE)
-    number_of_stories = rasa.utils.io.read_json_file(story_n_path)
+    number_of_stories = io_utils.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
 
 
@@ -57,9 +53,8 @@ def test_core(
 ):
     import rasa.core.test
     import rasa.core.utils as core_utils
-    from rasa.nlu import utils as nlu_utils
-    from rasa.model import get_model
-    from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.model import get_model, get_model_subdirectories
+    from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
     from rasa.core.agent import Agent
 
     _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
@@ -68,7 +63,7 @@ def test_core(
         kwargs = {}
 
     if output:
-        nlu_utils.create_dir(output)
+        io_utils.create_dir(output)
 
     try:
         unpacked_model = get_model(model)
@@ -111,6 +106,7 @@ def test_core(
 
 def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict]):
     from rasa.nlu.test import run_evaluation
+    from rasa.model import get_model
 
     try:
         unpacked_model = get_model(model)

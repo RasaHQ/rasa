@@ -6,7 +6,6 @@ import pytest
 import tempfile
 import rasa.utils.io
 from rasa.nlu.utils import (
-    create_dir,
     is_model_dir,
     is_url,
     ordered,
@@ -56,7 +55,7 @@ def test_list_files_ignores_hidden_files(tmpdir):
 
 def test_creation_of_existing_dir(tmpdir):
     # makes sure there is no exception
-    assert create_dir(tmpdir.strpath) is None
+    assert rasa.utils.io.create_dir(tmpdir.strpath) is None
 
 
 def test_ordered():

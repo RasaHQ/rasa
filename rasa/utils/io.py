@@ -344,3 +344,16 @@ def list_directory(path: Text) -> List[Text]:
         raise ValueError(
             "Could not locate the resource '{}'.".format(os.path.abspath(path))
         )
+
+
+def create_dir(dir_path: Text) -> None:
+    """Creates a directory and its super paths.
+
+    Succeeds even if the path already exists."""
+
+    try:
+        os.makedirs(dir_path)
+    except OSError as e:
+        # be happy if someone already created the path
+        if e.errno != errno.EEXIST:
+            raise

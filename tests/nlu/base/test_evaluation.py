@@ -264,7 +264,7 @@ def test_intent_evaluation_report(tmpdir_factory):
     report_folder = os.path.join(path, "reports")
     report_filename = os.path.join(report_folder, "intent_report.json")
 
-    utils.create_dir(report_folder)
+    rasa.utils.io.create_dir(report_folder)
 
     intent_results = [
         IntentEvaluationResult("", "restaurant_search", "I am hungry", 0.12345),
@@ -319,7 +319,7 @@ def test_entity_evaluation_report(tmpdir_factory):
     report_filename_a = os.path.join(report_folder, "EntityExtractorA_report.json")
     report_filename_b = os.path.join(report_folder, "EntityExtractorB_report.json")
 
-    utils.create_dir(report_folder)
+    rasa.utils.io.create_dir(report_folder)
     mock_interpreter = Interpreter(
         [
             EntityExtractorA({"provides": ["entities"]}),

@@ -3,7 +3,6 @@ import logging
 import os
 from typing import List
 
-from rasa import data
 from rasa.cli.arguments import test as arguments
 from rasa.cli.utils import get_validated_path
 from rasa.constants import (
@@ -59,6 +58,7 @@ def add_subparser(
 
 
 def test_core(args: argparse.Namespace) -> None:
+    from rasa import data
     from rasa.test import test_core
 
     endpoints = get_validated_path(
@@ -93,6 +93,7 @@ def test_core(args: argparse.Namespace) -> None:
 
 
 def test_nlu(args: argparse.Namespace) -> None:
+    from rasa import data
     from rasa.test import test_nlu, perform_nlu_cross_validation
     import rasa.utils.io
 

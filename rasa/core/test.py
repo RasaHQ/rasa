@@ -590,7 +590,7 @@ def plot_story_evaluation(
 async def compare_models_in_dir(
     model_dir: Text, stories_file: Text, output: Text
 ) -> None:
-    """Evaluates multiple trained models on a test set."""
+    """Evaluates multiple trained models in a directory on a test set."""
     from rasa.core import utils
     import rasa.utils.io as io_utils
 
@@ -603,7 +603,7 @@ async def compare_models_in_dir(
             model_name = "".join(
                 [i for i in os.path.basename(model) if not i.isdigit()]
             )
-            correct_stories = await _compare(model, stories_file)
+            correct_stories = await _get_no_correct_stories(model, stories_file)
             num_correct_run[model_name].append(correct_stories)
 
         for k, v in num_correct_run.items():
@@ -613,19 +613,19 @@ async def compare_models_in_dir(
 
 
 async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
-    """Evaluates multiple trained models on a test set."""
+    """Evaluates provided trained models on a test set."""
     from rasa.core import utils
 
     num_correct = defaultdict(list)
 
     for model in models:
-        correct_stories = await _compare(model, stories_file)
+        correct_stories = await _get_no_correct_stories(model, stories_file)
         num_correct[os.path.basename(model)].append(correct_stories)
 
     utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), num_correct)
 
 
-async def _compare(model: Text, stories_file: Text) -> int:
+async def _get_no_correct_stories(model: Text, stories_file: Text) -> int:
     from rasa.core.agent import Agent
 
     logger.info("Evaluating model {}".format(model))
