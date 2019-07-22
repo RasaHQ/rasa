@@ -1,7 +1,7 @@
 import argparse
 from typing import Union
 
-from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CONFIG_PATH
+from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_RESULTS_PATH
 
 from rasa.cli.arguments.default_arguments import (
     add_stories_param,
@@ -42,7 +42,7 @@ def add_test_core_argument_group(
     )
     add_out_param(
         parser,
-        default="results",
+        default=DEFAULT_RESULTS_PATH,
         help_text="Output path for any files created during the evaluation.",
     )
     parser.add_argument(
@@ -69,6 +69,15 @@ def add_test_core_argument_group(
         help="If supplied, downloads a story file from a URL and "
         "trains on it. Fetches the data by sending a GET request "
         "to the supplied URL.",
+    )
+    parser.add_argument(
+        "--evaluate-models-in-dir",
+        default=False,
+        action="store_true",
+        help="Should be set to evaluate models trained via "
+        "`rasa train core --config <config-1> <config-2>`. "
+        "All models in the provided model folder are evaluated "
+        "and compared against each other.",
     )
 
 
@@ -164,6 +173,6 @@ def add_test_core_model_param(parser: argparse.ArgumentParser):
         default=[default_path],
         help="Path to a pre-trained model. If it is a 'tar.gz' file that model file "
         "will be used. If it is a directory, the latest model in that directory "
-        "will be used. If multiple 'tar.gz' files are provided, all those models "
-        "will be compared.",
+        "will be used (exception: '--evaluate-models-in-dir' flag is set). If multiple "
+        "'tar.gz' files are provided, all those models will be compared.",
     )

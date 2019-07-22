@@ -59,9 +59,9 @@ def test_test_help(run):
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                  [--max-stories MAX_STORIES] [--out OUT] [--e2e]
                  [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
-                 [--url URL] [-u NLU] [--report [REPORT]]
-                 [--successes [SUCCESSES]] [--errors ERRORS]
-                 [--histogram HISTOGRAM] [--confmat CONFMAT]
+                 [--url URL] [--evaluate-models-in-dir] [-u NLU]
+                 [--report [REPORT]] [--successes [SUCCESSES]]
+                 [--errors ERRORS] [--histogram HISTOGRAM] [--confmat CONFMAT]
                  [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
                  [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  {core,nlu} ..."""
@@ -94,7 +94,8 @@ def test_test_core_help(run):
     help_text = """usage: rasa test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
-                      [--fail-on-prediction-errors] [--url URL]"""
+                      [--fail-on-prediction-errors] [--url URL]
+                      [--evaluate-models-in-dir]"""
 
     lines = help_text.split("\n")
 
