@@ -4,14 +4,12 @@ import tempfile
 from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
 
+from rasa.importers.importer import TrainingDataImporter
 from rasa import model
 from rasa.core.domain import Domain
-from rasa.importers.importer import TrainingDataImporter
-from rasa.model import Fingerprint, should_retrain
 from rasa.utils.common import TempDirectoryPath
 
 from rasa.cli.utils import (
-    create_output_path,
     print_success,
     print_warning,
     print_error,
@@ -155,7 +153,9 @@ async def _train_async_internal(
         )
 
     old_model = model.get_latest_model(output_path)
-    retrain_core, retrain_nlu = should_retrain(new_fingerprint, old_model, train_path)
+    retrain_core, retrain_nlu = model.should_retrain(
+        new_fingerprint, old_model, train_path
+    )
 
     if force_training or retrain_core or retrain_nlu:
         await _do_training(
@@ -169,7 +169,7 @@ async def _train_async_internal(
             kwargs=kwargs,
         )
 
-        return package_model(
+        return model.package_model(
             new_fingerprint=new_fingerprint,
             output_path=output_path,
             train_path=train_path,
@@ -335,7 +335,7 @@ async def _train_core_with_validated_data(
         if train_path is None:
             # Only Core was trained.
             new_fingerprint = await model.model_fingerprint(file_importer)
-            return package_model(
+            return model.package_model(
                 new_fingerprint=new_fingerprint,
                 output_path=output,
                 train_path=_train_path,
@@ -432,7 +432,7 @@ async def _train_nlu_with_validated_data(
             # Only NLU was trained
             new_fingerprint = await model.model_fingerprint(file_importer)
 
-            return package_model(
+            return model.package_model(
                 new_fingerprint=new_fingerprint,
                 output_path=output,
                 train_path=_train_path,
@@ -441,24 +441,3 @@ async def _train_nlu_with_validated_data(
             )
 
         return _train_path
-
-
-def package_model(
-    new_fingerprint: Fingerprint,
-    output_path: Text,
-    train_path: Text,
-    fixed_model_name: Optional[Text] = None,
-    model_prefix: Text = "",
-):
-    output_path = create_output_path(
-        output_path, prefix=model_prefix, fixed_name=fixed_model_name
-    )
-    model.create_package_rasa(train_path, output_path, new_fingerprint)
-
-    print_success(
-        "Your Rasa model is trained and saved at '{}'.".format(
-            os.path.abspath(output_path)
-        )
-    )
-
-    return output_path

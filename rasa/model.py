@@ -7,6 +7,7 @@ import typing
 from typing import Text, Tuple, Union, Optional, List, Dict
 
 import rasa.utils.io
+from cli.utils import print_success, create_output_path
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
     CONFIG_MANDATORY_KEYS_CORE,
@@ -381,3 +382,24 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
             retrain_nlu = not merge_model(old_nlu, target_path)
 
         return retrain_core, retrain_nlu
+
+
+def package_model(
+    new_fingerprint: Fingerprint,
+    output_path: Text,
+    train_path: Text,
+    fixed_model_name: Optional[Text] = None,
+    model_prefix: Text = "",
+):
+    output_path = create_output_path(
+        output_path, prefix=model_prefix, fixed_name=fixed_model_name
+    )
+    create_package_rasa(train_path, output_path, new_fingerprint)
+
+    print_success(
+        "Your Rasa model is trained and saved at '{}'.".format(
+            os.path.abspath(output_path)
+        )
+    )
+
+    return output_path

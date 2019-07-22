@@ -80,11 +80,15 @@ def test_train_core_compare(run_in_default_project):
     )
 
     assert os.path.exists(os.path.join(temp_dir, "core_comparison_results"))
-    sub_dirs = list_subdirectories(os.path.join(temp_dir, "core_comparison_results"))
-    assert len(sub_dirs) == 2
-    files = list_files(os.path.join(temp_dir, "core_comparison_results", sub_dirs[0]))
-    assert len(files) == 4
-    assert files[0].endswith("tar.gz")
+    run_directories = list_subdirectories(
+        os.path.join(temp_dir, "core_comparison_results")
+    )
+    assert len(run_directories) == 2
+    model_files = list_files(
+        os.path.join(temp_dir, "core_comparison_results", run_directories[0])
+    )
+    assert len(model_files) == 4
+    assert model_files[0].endswith("tar.gz")
 
 
 def test_train_no_domain_exists(run_in_default_project):

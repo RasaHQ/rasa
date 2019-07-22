@@ -6,7 +6,7 @@ import typing
 from contextlib import ExitStack
 from typing import Dict, Optional, Text, Union, List
 
-from rasa.constants import NUM_STORIES_FILE
+from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
 
@@ -77,12 +77,11 @@ async def train_comparison_models(
     policy_configs: Optional[List] = None,
     runs: int = 1,
     dump_stories: bool = False,
-    kwargs: Optional[dict] = None,
+    kwargs: Optional[Dict] = None,
 ):
     """Train multiple models for comparison of policies"""
     from rasa.core import config
     from rasa import model
-    from rasa.train import package_model
 
     exclusion_percentages = exclusion_percentages or []
     policy_configs = policy_configs or []
@@ -90,8 +89,8 @@ async def train_comparison_models(
     for r in range(runs):
         logging.info("Starting run {}/{}".format(r + 1, runs))
 
-        for i in exclusion_percentages:
-            current_round = exclusion_percentages.index(i) + 1
+        for i, percentage in enumerate(exclusion_percentages):
+            current_round = percentage + 1
 
             for policy_config in policy_configs:
                 policies = config.load(policy_config)
@@ -129,7 +128,7 @@ async def train_comparison_models(
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
                     model_name = policy_name + str(current_round)
-                    package_model(
+                    model.package_model(
                         new_fingerprint=new_fingerprint,
                         output_path=output_dir,
                         train_path=train_path,
@@ -137,7 +136,7 @@ async def train_comparison_models(
                     )
 
 
-async def get_no_of_stories(story_file, domain):
+async def get_no_of_stories(story_file: Text, domain: Text) -> int:
     """Get number of stories in a file."""
     from rasa.core.domain import TemplateDomain
     from rasa.core.training.dsl import StoryFileReader
@@ -151,7 +150,7 @@ async def get_no_of_stories(story_file, domain):
 async def do_compare_training(
     args: argparse.Namespace,
     story_file: Text,
-    additional_arguments: Optional[dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ):
     from rasa.core import utils
 
@@ -174,11 +173,17 @@ async def do_compare_training(
         no_stories - round((x / 100.0) * no_stories) for x in args.percentages
     ]
 
-    story_n_path = os.path.join(args.out, NUM_STORIES_FILE)
-    utils.dump_obj_as_json_to_file(story_n_path, story_range)
+    training_stories_per_model_file = os.path.join(
+        args.out, NUMBER_OF_TRAINING_STORIES_FILE
+    )
+    utils.dump_obj_as_json_to_file(training_stories_per_model_file, story_range)
 
 
-def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
+def do_interactive_learning(
+    cmdline_args: argparse.Namespace,
+    stories: Optional[Text] = None,
+    additional_arguments: Dict[Text, typing.Any] = None,
+):
     from rasa.core.training import interactive
 
     interactive.run_interactive_learning(
