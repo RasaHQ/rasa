@@ -97,6 +97,6 @@ async def test_graph_persistence(default_domain, tmpdir):
     with open(out_file, "r") as graph_file:
         content = graph_file.read()
 
-    assert r'label="/average_weather\{\"season\":\ \"winter\"\}"' in str(generated_graph)
+    assert r'label="/change_bank_details\{\"address\":\ \"123 Fake Street\"}"' in generated_graph
     assert "isClient = true" in content
     assert "graph = `{}`".format(generated_graph) in content

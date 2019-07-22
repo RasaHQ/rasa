@@ -37,6 +37,5 @@
     - utter_default            <!-- allows to end without checkpoints -->
 
 ## slot in intent
-* average_weather{"season": "winter"}
-    - utter_greet
-    - utter_winter_weather
+* greet{"cuisine": "italian"}
+    - utter_default
