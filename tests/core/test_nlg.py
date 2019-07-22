@@ -114,12 +114,10 @@ def test_nlg_fill_template_text(slot_name, slot_value):
     )
     assert result == {"text": str(slot_value)}
 
+
 @pytest.mark.parametrize(
     "img_slot_name, img_slot_value",
-    [
-        ("url", "https://www.exampleimg.com"),
-        ("img1", "https://www.appleimg.com"),
-    ],
+    [("url", "https://www.exampleimg.com"), ("img1", "https://www.appleimg.com")],
 )
 def test_nlg_fill_template_image(img_slot_name, img_slot_value):
     template = {"image": "{" + img_slot_name + "}"}
@@ -129,6 +127,7 @@ def test_nlg_fill_template_image(img_slot_name, img_slot_value):
     )
     assert result == {"image": str(img_slot_value)}
 
+
 @pytest.mark.parametrize("slot_name, slot_value", [("tag_w_\n", "a")])
 def test_nlg_fill_template_text_w_bad_slot_name2(slot_name, slot_value):
     template_text = "{" + slot_name + "}"
@@ -137,4 +136,3 @@ def test_nlg_fill_template_text_w_bad_slot_name2(slot_name, slot_value):
         template={"text": template_text}, filled_slots={slot_name: slot_value}
     )
     assert result["text"] == template_text
-
