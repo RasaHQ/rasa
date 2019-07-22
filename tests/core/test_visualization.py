@@ -90,12 +90,13 @@ async def test_graph_persistence(default_domain, tmpdir):
         should_merge_nodes=False,
     )
 
-    generated_graph = nx_pydot.to_pydot(generated_graph)
+    generated_graph = str(nx_pydot.to_pydot(generated_graph))
 
     assert isfile(out_file)
 
     with open(out_file, "r") as graph_file:
         content = graph_file.read()
 
+    assert r'label="/average_weather\{\"season\":\ \"winter\"\}"' in str(generated_graph)
     assert "isClient = true" in content
-    assert "graph = `{}`".format(generated_graph.to_string()) in content
+    assert "graph = `{}`".format(generated_graph) in content
