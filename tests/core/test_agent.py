@@ -83,6 +83,38 @@ async def test_agent_train(tmpdir, default_domain):
     ]
 
 
+@pytest.mark.parametrize(
+    "text_message_data, expected",
+    [
+        (
+            '/greet{"name":"Rasa"}',
+            {
+                "text": '/greet{"name":"Rasa"}',
+                "intent": {"name": "greet", "confidence": 1.0},
+                "intent_ranking": [{"name": "greet", "confidence": 1.0}],
+                "entities": [
+                    {"entity": "name", "start": 6, "end": 21, "value": "Rasa"}
+                ],
+            },
+        ),
+        (
+            "text",
+            {
+                "text": "/text",
+                "intent": {"name": "text", "confidence": 1.0},
+                "intent_ranking": [{"name": "text", "confidence": 1.0}],
+                "entities": [],
+            },
+        ),
+    ],
+)
+async def test_agent_parse_message_using_nlu_interpreter(
+    default_agent, text_message_data, expected
+):
+    result = await default_agent.parse_message_using_nlu_interpreter(text_message_data)
+    assert result == expected
+
+
 async def test_agent_handle_text(default_agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     result = await default_agent.handle_text(text, sender_id="test_agent_handle_text")
@@ -161,6 +193,21 @@ async def test_load_agent(trained_model):
     assert agent.tracker_store is not None
     assert agent.interpreter is not None
     assert agent.model_directory is not None
+
+
+async def test_agent_update_model_none_domain(trained_model):
+    agent = await load_agent(model_path=trained_model)
+    agent.update_model(
+        None, None, agent.fingerprint, agent.interpreter, agent.model_directory
+    )
+
+    sender_id = "test_sender_id"
+    message = UserMessage("hello", sender_id=sender_id)
+    await agent.handle_message(message)
+    tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+
+    # UserUttered event was added to tracker, with correct intent data
+    assert tracker.events[1].intent["name"] == "greet"
 
 
 async def test_load_agent_on_not_existing_path():
