@@ -31,12 +31,15 @@ if TYPE_CHECKING:
     from random import Random
 
 
-def configure_file_logging(log_file: Optional[Text]):
-    if log_file is not None:
-        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text]):
+    if not log_file:
+        return
+
+    formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logger_obj.level)
+    file_handler.setFormatter(formatter)
+    logger_obj.addHandler(file_handler)
 
 
 def module_path_from_instance(inst: Any) -> Text:

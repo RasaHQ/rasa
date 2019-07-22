@@ -19,6 +19,7 @@ Changed
   or a policy ensemble
 - ``end_to_end_story.md`` was re-written in the restaurantbot domain
 
+
 Removed
 -------
 
@@ -26,6 +27,8 @@ Removed
 Fixed
 -----
 - messages with multiple entities are now handled properly with e2e evaluation
+- added timeout to terminal input channel to avoid freezing input in case of server
+  errors
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^

@@ -47,7 +47,7 @@ configuration file. For example:
   policies:
     - name: "FormPolicy"
 
-see ``examples/formbot/domain.yml`` for an example.
+see ``examples/formbot/config.yml`` for an example.
 
 Form Basics
 -----------
