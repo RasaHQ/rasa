@@ -3,7 +3,6 @@ from functools import reduce
 from typing import Text, Optional, List, Dict
 import logging
 
-import rasa.utils.common
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
@@ -164,7 +163,7 @@ class TrainingDataImporter:
                 logging.warning("Importer '{}' not found.".format(module_path))
                 return None
 
-        constructor_arguments = rasa.utils.common.minimal_kwargs(
+        constructor_arguments = common_utils.minimal_kwargs(
             importer_config, importer_class
         )
         return importer_class(

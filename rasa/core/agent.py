@@ -5,7 +5,6 @@ import tempfile
 import uuid
 from asyncio import CancelledError
 from sanic import Sanic
-import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp

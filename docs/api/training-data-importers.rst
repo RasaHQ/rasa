@@ -24,7 +24,12 @@ full class path:
 
    importers:
    - name: "module.CustomImporter"
+     parameter1: "value"
+     parameter2: "value2"
    - name: "module.AnotherCustomImporter"
+
+The ``name`` key is used to determine which importer should be loaded. Any extra
+parameters are passed as constructor arguments to the loaded importer.
 
 .. note::
 
@@ -34,7 +39,7 @@ full class path:
 RasaFileImporter (default)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default Rasa uses the importer ``SimpleFileImporter``. If you want to use it on its
+By default Rasa uses the importer ``RasaFileImporter``. If you want to use it on its
 own, you don't have to specify anything in your configuration file.
 If you want to use it together with other importers, add it to your
 configuration file:
@@ -43,7 +48,6 @@ configuration file:
 
    importers:
    - name: "RasaFileImporter"
-
 
 Writing a Custom Importer
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,10 +58,11 @@ If you are writing a custom importer, this importer has to implement the interfa
 
     from typing import Optional, Text, Dict, List, Union
 
+    import rasa
     from rasa.core.domain import Domain
     from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
     from rasa.core.training.structures import StoryGraph
-    from rasa.importers.importer import TrainingFileImporter
+    from rasa.importers.importer import TrainingDataImporter
     from rasa.nlu.training_data import TrainingData
 
 
@@ -86,6 +91,9 @@ If you are writing a custom importer, this importer has to implement the interfa
             path_to_domain_file = self._custom_get_domain_file()
             return Domain.load(path_to_domain_file)
 
+        def _custom_get_domain_file(self) -> Text:
+            pass
+
         async def get_stories(
             self,
             interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
@@ -98,14 +106,24 @@ If you are writing a custom importer, this importer has to implement the interfa
             path_to_stories = self._custom_get_story_file()
             return await StoryFileReader.read_from_file(path_to_stories, await self.get_domain())
 
+        def _custom_get_story_file(self) -> Text:
+            pass
+
         async def get_config(self) -> Dict:
-            return self._custom_get_config()
+            path_to_config = self._custom_get_config_file()
+            return rasa.utils.io.read_config_file(path_to_config)
+
+        def _custom_get_config_file(self) -> Text:
+            pass
 
         async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
             from rasa.nlu.training_data import loading
 
             path_to_nlu_file = self._custom_get_nlu_file()
             return loading.load_data(path_to_nlu_file)
+
+        def _custom_get_nlu_file(self) -> Text:
+            pass
 
 
 

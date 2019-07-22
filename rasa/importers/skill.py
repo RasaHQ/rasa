@@ -56,8 +56,6 @@ class SkillSelector(TrainingDataImporter):
             self._init_from_directory(path)
 
     def _init_from_file(self, path: Text) -> None:
-        from rasa import data  # pytype: disable=pyi-error
-
         path = os.path.abspath(path)
         if os.path.exists(path) and data.is_config_file(path):
             config = io_utils.read_config_file(path)
@@ -85,8 +83,6 @@ class SkillSelector(TrainingDataImporter):
         return not self.no_skills_selected() and self.is_imported(path)
 
     def _init_from_directory(self, path: Text):
-        from rasa import data  # pytype: disable=pyi-error
-
         for parent, _, files in os.walk(path):
             for file in files:
                 full_path = os.path.join(parent, file)

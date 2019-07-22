@@ -34,7 +34,7 @@ async def test_use_of_interface():
             await f()
 
 
-async def test_simple_file_importer(project: Text):
+async def test_rasa_file_importer(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
@@ -56,14 +56,14 @@ async def test_simple_file_importer(project: Text):
     assert len(nlu_data.intent_examples) == 39
 
 
-async def test_simple_file_importer_with_invalid_config():
+async def test_rasa_file_importer_with_invalid_config():
     importer = RasaFileImporter(config_file="invalid path")
     actual = await importer.get_config()
 
     assert actual == {}
 
 
-async def test_simple_file_importer_with_invalid_domain(tmp_path: Path):
+async def test_rasa_file_importer_with_invalid_domain(tmp_path: Path):
     config_file = tmp_path / "config.yml"
     config_file.write_text("")
     importer = TrainingDataImporter.load_from_dict({}, str(config_file), None, [])
