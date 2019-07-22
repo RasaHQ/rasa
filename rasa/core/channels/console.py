@@ -18,6 +18,8 @@ from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
+
 
 def print_bot_output(
     message, color=rasa.cli.utils.bcolors.OKBLUE
@@ -92,7 +94,7 @@ async def send_message_receive_stream(server_url, auth_token, sender_id, message
     url = "{}/webhooks/rest/webhook?stream=true&token={}".format(server_url, auth_token)
 
     # Define timeout to not keep reading in case the server crashed in between
-    timeout = ClientTimeout(10)
+    timeout = ClientTimeout(DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS)
     # TODO: check if this properly receives UTF-8 data
     async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(url, json=payload, raise_for_status=True) as resp:
