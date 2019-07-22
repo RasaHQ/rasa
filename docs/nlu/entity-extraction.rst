@@ -145,4 +145,4 @@ we are telling the model to pay attention to words ending this way, and will qui
 associate that with a location entity.
 
 If you just want to match regular expressions exactly, you can do this in your code,
-as a postprocessing step after receiving the response form Rasa NLU.
+as a postprocessing step after receiving the response from Rasa NLU.
