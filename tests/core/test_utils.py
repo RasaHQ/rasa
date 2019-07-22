@@ -157,6 +157,6 @@ def test_pad_lists_to_size():
     list_y = ["a", "b"]
     list_z = [None, None, None]
 
-    assert utils.pad_lists_to_size(list_x, list_y) == (list_x,  ["a", "b", None])
+    assert utils.pad_lists_to_size(list_x, list_y) == (list_x, ["a", "b", None])
     assert utils.pad_lists_to_size(list_y, list_x, "c") == (["a", "b", "c"], list_x)
     assert utils.pad_lists_to_size(list_z, list_x) == (list_z, list_x)

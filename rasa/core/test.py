@@ -193,7 +193,9 @@ def _clean_entity_results(entity_results):
 
 
 def _collect_user_uttered_predictions(
-    event: UserUttered, partial_tracker: DialogueStateTracker, fail_on_prediction_errors: bool
+    event: UserUttered,
+    partial_tracker: DialogueStateTracker,
+    fail_on_prediction_errors: bool,
 ) -> EvaluationStore:
     user_uttered_eval_store = EvaluationStore()
 

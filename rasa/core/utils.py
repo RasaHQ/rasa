@@ -376,7 +376,9 @@ def remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]:
     return {k: v for k, v in obj.items() if v is not None}
 
 
-def pad_lists_to_size(list_x: List, list_y: List, padding_value: Optional[Any]=None) -> Tuple[List, List]:
+def pad_lists_to_size(
+    list_x: List, list_y: List, padding_value: Optional[Any] = None
+) -> Tuple[List, List]:
     """Compares list sizes and pads them to equal length."""
 
     difference = len(list_x) - len(list_y)
