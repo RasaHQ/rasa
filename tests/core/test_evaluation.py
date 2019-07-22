@@ -5,6 +5,7 @@ from rasa.core.test import _generate_trackers, collect_story_predictions, test
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
 from rasa.nlu.test import run_evaluation
+from rasa.core.agent import Agent
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
     E2E_STORY_FILE_UNKNOWN_ENTITY,
@@ -29,6 +30,7 @@ async def test_evaluation_image_creation(tmpdir, default_agent):
 
 
 async def test_end_to_end_evaluation_script(tmpdir, restaurantbot):
+    restaurantbot = Agent.load(restaurantbot)
     completed_trackers = await _generate_trackers(
         END_TO_END_STORY_FILE, restaurantbot, use_e2e=True
     )

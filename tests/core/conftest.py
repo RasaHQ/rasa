@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 from typing import Text
 
@@ -40,7 +39,7 @@ E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
-RESTAURANTBOT_MODEL_PATH = "examples/restaurantbot/models/"
+RESTAURANTBOT_PATH = "examples/restaurantbot/"
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
@@ -237,5 +236,16 @@ def trained_model(project) -> Text:
 
 
 @pytest.fixture
-def restaurantbot() -> Agent:
-    return Agent.load_local_model(RESTAURANTBOT_MODEL_PATH)
+async def restaurantbot(tmpdir_factory) -> Text:
+    model_path = tmpdir_factory.mktemp("model").strpath
+    restaurant_domain = os.path.join(RESTAURANTBOT_PATH, 'domain.yml')
+    restaurant_config = os.path.join(RESTAURANTBOT_PATH, 'config.yml')
+    restaurant_data = os.path.join(RESTAURANTBOT_PATH, 'data/')
+
+    agent = await train_async(
+        restaurant_domain,
+        restaurant_config,
+        restaurant_data,
+        model_path
+    )
+    return agent
