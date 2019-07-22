@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- add ``--evaluate-models-in-dir`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
 
 Changed
 -------
@@ -25,6 +25,7 @@ Removed
 Fixed
 -----
 - ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
+- ``rasa test core`` can handle compressed model files
 
 
 [1.1.7] - 2019-07-18

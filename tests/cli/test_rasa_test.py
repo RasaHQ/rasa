@@ -93,15 +93,17 @@ def test_test_core_comparison_after_train(run_in_default_project):
         "train",
         "core",
         "-c",
-        "config.yml",
-        "config-2.yml",
+        "config_1.yml",
+        "config_2.yml",
         "--stories",
-        "data/stories",
-        "--run",
+        "data/stories.md",
+        "--runs",
         "2",
         "--percentages",
         "25",
         "75",
+        "--augmentation",
+        "5",
         "--out",
         "comparison_models",
     )
@@ -122,7 +124,7 @@ def test_test_core_comparison_after_train(run_in_default_project):
 
     assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
     assert os.path.exists(
-        os.path.join(DEFAULT_RESULTS_PATH, "comparison_models_graph.pdf")
+        os.path.join(DEFAULT_RESULTS_PATH, "core_model_comparison_graph.pdf")
     )
 
 
