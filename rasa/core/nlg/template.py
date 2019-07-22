@@ -104,7 +104,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         template_vars = self._template_variables(filled_slots, kwargs)
 
         # Filling the template variables in the template text
-        if template_vars and (text in template or image in template):
+        if template_vars and ("text" in template or "image" in template):
             try:
                 # transforming template tags from
                 # "{tag_name}" to "{0[tag_name]}"
