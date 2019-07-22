@@ -1,4 +1,7 @@
 import os
+from shutil import copyfile
+from constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
+from rasa.utils.io import list_files, write_yaml_file
 
 
 def test_test_core(run_in_default_project):
@@ -34,8 +37,6 @@ def test_test_nlu_cross_validation(run_in_default_project):
 
 
 def test_test_nlu_comparison(run_in_default_project):
-    from shutil import copyfile
-
     copyfile("config.yml", "nlu-config.yml")
 
     run_in_default_project(
@@ -51,6 +52,78 @@ def test_test_nlu_comparison(run_in_default_project):
     )
 
     assert os.path.exists("nlu-report")
+
+
+def test_test_core_comparison(run_in_default_project):
+    files = list_files("models")
+    copyfile(files[0], "models/copy-model.tar.gz")
+
+    run_in_default_project(
+        "test",
+        "core",
+        "-m",
+        files[0],
+        "models/copy-model.tar.gz",
+        "--stories",
+        "data/stories.md",
+    )
+
+    assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
+
+
+def test_test_core_comparison_after_train(run_in_default_project):
+    write_yaml_file(
+        {
+            "language": "en",
+            "pipeline": "supervised_embeddings",
+            "policies": [{"name": "KerasPolicy"}],
+        },
+        "config_1.yml",
+    )
+
+    write_yaml_file(
+        {
+            "language": "en",
+            "pipeline": "supervised_embeddings",
+            "policies": [{"name": "MemoizationPolicy"}],
+        },
+        "config_2.yml",
+    )
+    run_in_default_project(
+        "train",
+        "core",
+        "-c",
+        "config.yml",
+        "config-2.yml",
+        "--stories",
+        "data/stories",
+        "--run",
+        "2",
+        "--percentages",
+        "25",
+        "75",
+        "--out",
+        "comparison_models",
+    )
+
+    assert os.path.exists("comparison_models")
+    assert os.path.exists("comparison_models/run_1")
+    assert os.path.exists("comparison_models/run_2")
+
+    run_in_default_project(
+        "test",
+        "core",
+        "-m",
+        "comparison_models",
+        "--stories",
+        "data/stories",
+        "--evaluate-models-in-dir",
+    )
+
+    assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
+    assert os.path.exists(
+        os.path.join(DEFAULT_RESULTS_PATH, "comparison_models_graph.pdf")
+    )
 
 
 def test_test_help(run):
