@@ -16,8 +16,7 @@ Added
 
 Changed
 -------
-- restaurantbot model was replaced with a stacked model
-- ``end_to_end_story.md`` was re-written in the restaurantbot domain
+
 
 Removed
 -------

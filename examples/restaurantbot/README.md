@@ -1,5 +1,10 @@
 # Restaurant Bot
 
+This example includes a file called `run.py`, which contains an example
+of how to use Rasa directly from your python code.
+
+## What’s inside this example?
+
 This example contains some training data and the main files needed to build an 
 assistant on your local machine. The `restaurantbot` consists of the following files:
 
@@ -10,6 +15,7 @@ assistant on your local machine. The `restaurantbot` consists of the following f
 - **domain.yml** contains the domain of the assistant  
 - **endpoints.yml** contains the webhook configuration for the custom action  
 - **policy.py** contains a custom policy
+- **run.py** contains code to train a Rasa model and use it to parse some text
 
 ## How to use this example?
 
