@@ -85,6 +85,7 @@ class EntitySynonymMapper(EntityExtractor):
             # need to wrap in `str` to handle e.g. entity values of type int
             entity_value = str(entity["value"])
             if entity_value.lower() in self.synonyms:
+                entity["synonymValue"] = entity_value.lower()
                 entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
 
