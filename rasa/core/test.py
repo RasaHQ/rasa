@@ -1,17 +1,16 @@
 import json
 import logging
 import os
-import typing
 import warnings
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.constants import RESULTS_FILE
 from rasa.core.events import ActionExecuted, UserUttered
+from rasa.core.utils import pad_lists_to_size
 
-if typing.TYPE_CHECKING:
-    from rasa.core.agent import Agent
-    from rasa.core.trackers import DialogueStateTracker
+from rasa.core.agent import Agent
+from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ class EvaluationStore(object):
             or self.action_predictions != self.action_targets
         )
 
-    def serialise(self):
+    def serialise(self) -> Tuple[List, List]:
         """Turn targets and predictions to lists of equal size for sklearn"""
 
         targets = (
@@ -91,10 +90,7 @@ class EvaluationStore(object):
         )
 
         # sklearn does not cope with lists of unequal size, nor None values
-        padding = len(targets) - len(predictions)
-        predictions += ["None"] * padding
-
-        return targets, predictions
+        return pad_lists_to_size(targets, predictions, padding_value="None")
 
 
 class WronglyPredictedAction(ActionExecuted):
@@ -139,7 +135,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     def __init__(self, event: UserUttered, eval_store: EvaluationStore):
 
-        if eval_store.intent_predictions == list():
+        if not eval_store.intent_predictions:
             self.predicted_intent = None
         else:
             self.predicted_intent = eval_store.intent_predictions[0]
@@ -197,14 +193,14 @@ def _clean_entity_results(entity_results):
 
 
 def _collect_user_uttered_predictions(
-    event, partial_tracker, fail_on_prediction_errors
-):
+    event: UserUttered, partial_tracker: DialogueStateTracker, fail_on_prediction_errors: bool
+) -> EvaluationStore:
     user_uttered_eval_store = EvaluationStore()
 
     intent_gold = event.parse_data.get("true_intent")
     predicted_intent = event.parse_data.get("intent").get("name")
 
-    if predicted_intent == list():
+    if not predicted_intent:
         predicted_intent = [None]
 
     user_uttered_eval_store.add_to_store(
