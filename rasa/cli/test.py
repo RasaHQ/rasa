@@ -15,7 +15,7 @@ from rasa.constants import (
     DEFAULT_NLU_RESULTS_PATH,
     CONFIG_SCHEMA_FILE,
 )
-from rasa.test import test_compare_core, compare_nlu_models, test_core_models_in_dir
+from rasa.test import test_core_models, compare_nlu_models, test_core_models_in_dir
 from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ def test_core(args: argparse.Namespace) -> None:
     if isinstance(args.model, str):
         model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
-        if args.evaluate_in_dir:
+        if args.evaluate_models_in_dir:
             test_core_models_in_dir(args.model, stories, output)
         else:
             test_core(
@@ -89,7 +89,7 @@ def test_core(args: argparse.Namespace) -> None:
             )
 
     else:
-        test_compare_core(args.model, stories, output)
+        test_core_models(args.model, stories, output)
 
 
 def test_nlu(args: argparse.Namespace) -> None:

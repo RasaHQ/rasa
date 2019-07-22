@@ -587,30 +587,56 @@ def plot_story_evaluation(
     fig.savefig(os.path.join(out_directory, "story_confmat.pdf"), bbox_inches="tight")
 
 
-async def compare(models: Text, stories_file: Text, output: Text) -> None:
+async def compare_models_in_dir(
+    model_dir: Text, stories_file: Text, output: Text
+) -> None:
     """Evaluates multiple trained models on a test set."""
-    from rasa.core.agent import Agent
-    import rasa.nlu.utils as nlu_utils
+    from rasa.core import utils
+    import rasa.utils.io as io_utils
+
+    num_correct = defaultdict(list)
+
+    for run in io_utils.list_subdirectories(model_dir):
+        num_correct_run = defaultdict(list)
+
+        for model in sorted(io_utils.list_files(run)):
+            model_name = "".join(
+                [i for i in os.path.basename(model) if not i.isdigit()]
+            )
+            correct_stories = await _compare(model, stories_file)
+            num_correct_run[model_name].append(correct_stories)
+
+        for k, v in num_correct_run.items():
+            num_correct[k].append(v)
+
+    utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), num_correct)
+
+
+async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
+    """Evaluates multiple trained models on a test set."""
     from rasa.core import utils
 
     num_correct = defaultdict(list)
 
-    for model in nlu_utils.list_subdirectories(models):
-        logger.info("Evaluating model {}".format(model))
-
-        agent = Agent.load(model)
-
-        completed_trackers = await _generate_trackers(stories_file, agent)
-
-        story_eval_store, no_of_stories = collect_story_predictions(
-            completed_trackers, agent
-        )
-
-        failed_stories = story_eval_store.failed_stories
-
-        num_correct[os.path.basename(model)].append(no_of_stories - len(failed_stories))
+    for model in models:
+        correct_stories = await _compare(model, stories_file)
+        num_correct[os.path.basename(model)].append(correct_stories)
 
     utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), num_correct)
+
+
+async def _compare(model: Text, stories_file: Text) -> int:
+    from rasa.core.agent import Agent
+
+    logger.info("Evaluating model {}".format(model))
+
+    agent = Agent.load(model)
+    completed_trackers = await _generate_trackers(stories_file, agent)
+    story_eval_store, no_of_stories = collect_story_predictions(
+        completed_trackers, agent
+    )
+    failed_stories = story_eval_store.failed_stories
+    return no_of_stories - len(failed_stories)
 
 
 def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:

@@ -171,7 +171,7 @@ class StoryFileReader(object):
         exclusion_percentage=None,
     ):
         """Given a path reads all contained story files."""
-        import rasa.nlu.utils as nlu_utils
+        import rasa.utils.io as io_utils
 
         if not os.path.exists(resource_name):
             raise ValueError(
@@ -181,7 +181,7 @@ class StoryFileReader(object):
             )
 
         story_steps = []
-        for f in nlu_utils.list_files(resource_name):
+        for f in io_utils.list_files(resource_name):
             steps = await StoryFileReader.read_from_file(
                 f, domain, interpreter, template_variables, use_e2e
             )
