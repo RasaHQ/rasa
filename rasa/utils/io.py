@@ -303,7 +303,10 @@ def create_validator(
 
 
 def dump_dict_to_temporary_yaml_file(data: Dict) -> Text:
-    """Dump `data` as yaml to temporary file."""
+    """Dumps `data` as yaml to temporary file.
+
+    Returns path to temporary file.
+    """
 
     temp_file = tempfile.NamedTemporaryFile(delete=False).name
     write_yaml_file(data, temp_file)
