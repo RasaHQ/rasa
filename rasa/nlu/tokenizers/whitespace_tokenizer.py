@@ -1,5 +1,5 @@
 import re
-from typing import Any, List, Text
+from typing import Any, Dict, List, Text
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -11,19 +11,30 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
     provides = ["tokens"]
 
+    defaults = {
+        # text will be tokenized with case sensitive as default
+        "case_sensitive": True
+    }
+
+    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+        """Construct a new tokenizer using the WhitespaceTokenizer framework."""
+
+        super(WhitespaceTokenizer, self).__init__(component_config)
+
+        self.case_sensitive = self.component_config["case_sensitive"]
+
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
-
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
         message.set("tokens", self.tokenize(message.text))
 
-    @staticmethod
-    def tokenize(text: Text) -> List[Token]:
+    def tokenize(self, text: Text) -> List[Token]:
+        if not self.case_sensitive:
+            text = text.lower()
         # remove 'not a word character' if
         words = re.sub(
             # there is a space or an end of a string after it

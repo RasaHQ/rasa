@@ -82,6 +82,8 @@ def configure_app(
     """Run the agent."""
     from rasa import server
 
+    configure_file_logging(logger, log_file)
+
     if enable_api:
         app = server.create_app(
             cors_origins=cors,
@@ -93,8 +95,6 @@ def configure_app(
     else:
         app = Sanic(__name__, configure_logging=False)
         CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
-
-    configure_file_logging(log_file)
 
     if input_channels:
         rasa.core.channels.channel.register(input_channels, app, route=route)
