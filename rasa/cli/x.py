@@ -294,7 +294,7 @@ async def _pull_runtime_config_from_server(
     attempts: int = 30,
     wait_time_between_pulls: Union[int, float] = 0.5,
     keys: Iterable[Text] = ("endpoints", "credentials"),
-) -> List[Text]:
+) -> Optional[List[Text]]:
     """Pull runtime config from `config_endpoint`.
 
     Returns a path to yaml dumps, each containing the contents of one of `keys`.
