@@ -5,6 +5,7 @@ import logging
 import os
 import warnings
 
+import pandas as pd
 import numpy as np
 import typing
 from tqdm import tqdm
@@ -54,9 +55,7 @@ SessionData = namedtuple(
     (
         "X",
         "Y",
-        "slots",
-        "previous_actions",
-        "actions_for_Y",
+        "labels_for_Y",
     ),
 )
 
@@ -259,49 +258,30 @@ class EmbeddingPolicy(Policy):
 
     # data helpers
     # noinspection PyPep8Naming
-    def _create_X_slots_previous_actions(
-        self, data_X: 'np.ndarray'
-    ) -> Tuple['np.ndarray', 'np.ndarray', 'np.ndarray']:
-        """Extract feature vectors from training data.
-
-        For user input (X), slots and previously executed actions.
-        """
-
-        featurizer = self.featurizer.state_featurizer
-        slot_start = featurizer.user_feature_len
-        previous_start = slot_start + featurizer.slot_feature_len
-
-        X = data_X[:, :, :slot_start]
-        slots = data_X[:, :, slot_start:previous_start]
-        previous_actions = data_X[:, :, previous_start:]
-
-        return X, slots, previous_actions
-
-    # noinspection PyPep8Naming
     @staticmethod
-    def _actions_for_Y(data_Y: 'np.ndarray') -> 'np.ndarray':
+    def _labels_for_Y(data_Y: 'np.ndarray') -> 'np.ndarray':
         """Prepare Y data for training: extract actions indices."""
 
         return data_Y.argmax(axis=-1)
 
     # noinspection PyPep8Naming
-    def _action_features_for_Y(self, actions_for_Y: 'np.ndarray') -> 'np.ndarray':
+    def _action_features_for_Y(self, labels_for_Y: 'np.ndarray') -> 'np.ndarray':
         """Prepare Y data for training: features for action labels."""
 
-        if len(actions_for_Y.shape) == 2:
+        if len(labels_for_Y.shape) == 2:
             return np.stack(
                 [
                     np.stack(
                         [self.encoded_all_actions[action_idx]
                          for action_idx in action_ids]
                     )
-                    for action_ids in actions_for_Y
+                    for action_ids in labels_for_Y
                 ]
             )
         else:
             return np.stack(
                 [
-                    self.encoded_all_actions[action_idx] for action_idx in actions_for_Y
+                    self.encoded_all_actions[action_idx] for action_idx in labels_for_Y
                 ]
             )
 
@@ -311,23 +291,19 @@ class EmbeddingPolicy(Policy):
     ) -> 'SessionData':
         """Combine all tf session related data into a named tuple"""
 
-        X, slots, previous_actions = self._create_X_slots_previous_actions(data_X)
-
         if data_Y is not None:
             # training time
-            actions_for_Y = self._actions_for_Y(data_Y)
-            Y = self._action_features_for_Y(actions_for_Y)
+            labels_for_Y = self._labels_for_Y(data_Y)
+            Y = self._action_features_for_Y(labels_for_Y)
         else:
             # prediction time
-            actions_for_Y = None
+            labels_for_Y = None
             Y = None
 
         return SessionData(
-            X=X,
+            X=data_X,
             Y=Y,
-            slots=slots,
-            previous_actions=previous_actions,
-            actions_for_Y=actions_for_Y,
+            labels_for_Y=labels_for_Y,
         )
 
     @staticmethod
@@ -339,25 +315,121 @@ class EmbeddingPolicy(Policy):
         return SessionData(
             X=session_data.X[ids],
             Y=session_data.Y[ids],
-            slots=session_data.slots[ids],
-            previous_actions=session_data.previous_actions[ids],
-            actions_for_Y=session_data.actions_for_Y[ids],
+            labels_for_Y=session_data.labels_for_Y[ids],
         )
 
     # tf helpers:
+    # noinspection PyPep8Naming
     @staticmethod
-    def _create_tf_dataset(session_data: 'SessionData',
+    def gen_stratified_batch(session_data, batch_size):
+
+        num_examples = len(session_data.X)
+        ids = np.random.permutation(num_examples)
+        X = session_data.X[ids]
+        Y = session_data.Y[ids]
+        labels_for_Y = session_data.labels_for_Y[ids]
+
+        labels = list(set(labels_for_Y))
+        np.random.shuffle(labels)
+
+        class_data = []
+        for label in labels:
+            label_X = X[labels_for_Y == label]
+            label_Y = Y[labels_for_Y == label]
+            label_labels_for_Y = labels_for_Y[labels_for_Y == label]
+            session_data_label = SessionData(
+                X=label_X,
+                Y=label_Y,
+                labels_for_Y=label_labels_for_Y,
+            )
+
+            class_data.append(session_data_label)
+
+        num_classes = len(class_data)
+
+        data_idx = [0] * num_classes
+        num_data_cycles = [0] * num_classes
+        print(batch_size)
+        print(X.shape[0] // batch_size + int(X.shape[0] % batch_size > 0))
+        # print([len(class_i.X) / num_examples for class_i in class_data])
+        class_idx = 0
+        bbb = 0
+        while min(num_data_cycles) == 0:
+            batch_x = []
+            batch_y = []
+            batch_len = 0
+            while batch_len < batch_size:
+
+                class_i = class_data[class_idx]
+
+                num_i = int(len(class_i.X) / num_examples * batch_size) + 1
+
+                if batch_len + num_i > batch_size:
+                    num_i = batch_size - batch_len
+
+                if data_idx[class_idx] + num_i > len(class_i.X):
+                    num_i = len(class_i.X) - data_idx[class_idx]
+
+                batch_x.append(class_i.X[data_idx[class_idx]:data_idx[class_idx]+num_i])
+                batch_y.append(class_i.Y[data_idx[class_idx]:data_idx[class_idx]+num_i])
+                batch_len += num_i
+
+                data_idx[class_idx] += num_i
+                if data_idx[class_idx] >= len(class_i.X):
+                    num_data_cycles[class_idx] += 1
+                    data_idx[class_idx] = 0
+
+                class_idx += 1
+                if class_idx >= num_classes:
+                    class_idx = 0
+                if max(num_data_cycles) > 0 and max(num_data_cycles) == num_data_cycles[class_idx]:
+                    class_idx += 1
+                if class_idx >= num_classes:
+                    class_idx = 0
+            bbb+=1
+            if min(num_data_cycles) > 0:
+                print(num_data_cycles)
+                print(bbb)
+            yield np.concatenate(batch_x), np.concatenate(batch_y)
+
+    # noinspection PyPep8Naming
+    @staticmethod
+    def gen_sequence_batch(session_data, batch_size):
+
+        ids = np.random.permutation(len(session_data.X))
+        X = session_data.X[ids]
+        Y = session_data.Y[ids]
+
+        num_batches = X.shape[0] // batch_size + int(X.shape[0] % batch_size > 0)
+
+        for batch_num in range(num_batches):
+            batch_x = X[batch_num * batch_size: (batch_num + 1) * batch_size]
+            batch_y = Y[batch_num * batch_size: (batch_num + 1) * batch_size]
+
+            yield batch_x, batch_y
+
+    # @staticmethod
+    def _create_tf_dataset(self, session_data: 'SessionData',
                            batch_size: Union['tf.Tensor', int],
                            shuffle: bool = True) -> 'tf.data.Dataset':
         """Create tf dataset."""
 
-        dataset = tf.data.Dataset.from_tensor_slices(
-            (session_data.X, session_data.Y,
-             session_data.slots, session_data.previous_actions)
-        )
-        if shuffle:
-            dataset = dataset.shuffle(buffer_size=len(session_data.X))
-        dataset = dataset.batch(batch_size)
+        def train_gen_func(batch_size_):
+            return self.gen_stratified_batch(session_data, batch_size_)
+            # return self.gen_sequence_batch(session_data, batch_size_)
+
+        dpt_types = (tf.float32, tf.float32)
+        dpt_shapes = ([None] + list(session_data.X[0].shape),
+                      [None] + list(session_data.Y[0].shape))
+
+        dataset = tf.data.Dataset.from_generator(train_gen_func, dpt_types, dpt_shapes, args=([batch_size]))
+        # dataset = tf.data.Dataset.from_tensor_slices(
+        #     (session_data.X, session_data.Y,
+        #      session_data.slots, session_data.previous_actions)
+        # )
+        # if shuffle:
+        #     dataset = dataset.shuffle(buffer_size=len(session_data.X))
+        # dataset = dataset.batch(batch_size)
 
         return dataset
 
@@ -520,7 +592,8 @@ class EmbeddingPolicy(Policy):
 
             x *= tf.expand_dims(mask, -1)
 
-            return tf.nn.relu(x)
+            return tf.nn.dropout(tf.nn.relu(x),
+                                 1.0 - hparams.layer_prepostprocess_dropout)
 
     def _create_tf_dial(self) -> Tuple['tf.Tensor', 'tf.Tensor']:
         """Create dialogue level embedding and mask."""
@@ -529,12 +602,12 @@ class EmbeddingPolicy(Policy):
         # if there is at least one `-1` it should be masked
         mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
 
-        x_in = tf.concat([self.a_in, self.b_prev_in, self.c_in], -1)
-
         self.attention_weights = {}
-        x = self._create_t2t_transformer_encoder(x_in, mask, self.attention_weights)
+        a = self._create_t2t_transformer_encoder(self.a_in,
+                                                 mask,
+                                                 self.attention_weights)
 
-        dial_embed = self._create_tf_embed(x, layer_name_suffix="dial")
+        dial_embed = self._create_tf_embed(a, layer_name_suffix="dial")
 
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
             # pick last action if max history featurizer is used
@@ -781,11 +854,7 @@ class EmbeddingPolicy(Policy):
         """Bulid train graph using iterator."""
 
         # session data are int counts but we need a float tensors
-        (self.a_in,
-         self.b_in,
-         self.c_in,
-         self.b_prev_in) = (tf.cast(x_in, tf.float32)
-                            for x_in in self._iterator.get_next())
+        self.a_in, self.b_in = self._iterator.get_next()
 
         all_actions = tf.constant(self.encoded_all_actions,
                                   dtype=tf.float32,
@@ -843,16 +912,6 @@ class EmbeddingPolicy(Policy):
             dtype=tf.float32,
             shape=(None, dialogue_len, None, session_data.Y.shape[-1]),
             name="b",
-        )
-        self.c_in = tf.placeholder(
-            dtype=tf.float32,
-            shape=(None, dialogue_len, session_data.slots.shape[-1]),
-            name="slt",
-        )
-        self.b_prev_in = tf.placeholder(
-            dtype=tf.float32,
-            shape=(None, dialogue_len, session_data.Y.shape[-1]),
-            name="b_prev",
         )
 
     def _build_tf_pred_graph(self, session_data: 'SessionData') -> 'tf.Tensor':
@@ -1104,9 +1163,7 @@ class EmbeddingPolicy(Policy):
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
 
-        return {self.a_in: session_data.X,
-                self.c_in: session_data.slots,
-                self.b_prev_in: session_data.previous_actions}
+        return {self.a_in: session_data.X}
 
     def predict_action_probabilities(
         self, tracker: 'DialogueStateTracker', domain: 'Domain'

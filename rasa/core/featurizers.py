@@ -26,11 +26,6 @@ class SingleStateFeaturizer(object):
     the conversation state to a format which a classifier can read:
     feature vector."""
 
-    def __init__(self):
-        """Declares instant variables."""
-        self.user_feature_len = None
-        self.slot_feature_len = None
-
     def prepare_from_domain(self, domain: Domain) -> None:
         """Helper method to init based on domain"""
         pass
@@ -72,9 +67,6 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     def prepare_from_domain(self, domain: Domain) -> None:
         self.num_features = domain.num_states
         self.input_state_map = domain.input_state_map
-
-        self.user_feature_len = len(domain.intent_states) + len(domain.entity_states)
-        self.slot_feature_len = len(domain.slot_states)
 
     def encode(self, state: Dict[Text, float]) -> np.ndarray:
         """Returns a binary vector indicating which features are active.
