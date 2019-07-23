@@ -77,12 +77,11 @@ class TrackerStore(object):
         return tracker
 
     def init_tracker(self, sender_id):
-        if self.domain:
-            return DialogueStateTracker(
-                sender_id, self.domain.slots, max_event_history=self.max_event_history
-            )
-        else:
-            return None
+        return DialogueStateTracker(
+            sender_id,
+            self.domain.slots if self.domain else None,
+            max_event_history=self.max_event_history,
+        )
 
     def create_tracker(self, sender_id, append_action_listen=True):
         """Creates a new tracker for the sender_id.
