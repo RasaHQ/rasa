@@ -148,14 +148,9 @@ def test_nlg_fill_template_text_w_bad_slot_name2(slot_name, slot_value):
 def test_nlg_fill_template_image_and_text(
     text_slot_name, text_slot_value, img_slot_name, img_slot_value
 ):
-    img_template = {"image": "{" + img_slot_name + "}"}
-    text_template = {"text": "{" + text_slot_name + "}"}
+    template = {"text": "{" + text_slot_name + "}","image": "{" + img_slot_name + "}"}
     t = TemplatedNaturalLanguageGenerator(templates=dict())
-    img_result = t._fill_template_text(
-        template=img_template, filled_slots={img_slot_name: img_slot_value}
+    result = t._fill_template_text(
+        template=template, filled_slots={text_slot_name:text_slot_value,img_slot_name: img_slot_value}
     )
-    text_result = t._fill_template_text(
-        template=text_template, filled_slots={text_slot_name: text_slot_value}
-    )
-    assert img_result == {"image": str(img_slot_value)}
-    assert text_result == {"text": str(text_slot_value)}
+    assert result == {"text": str(text_slot_value),"image": str(img_slot_value)}
