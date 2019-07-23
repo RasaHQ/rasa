@@ -9,7 +9,7 @@ import warnings
 import zipfile
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
-from typing import Text, Any, Dict, Union, List, Type, Callable, Optional
+from typing import Text, Any, Dict, Union, List, Type, Callable
 
 import ruamel.yaml as yaml
 import simplejson
@@ -302,7 +302,7 @@ def create_validator(
     return FunctionValidator
 
 
-def dump_dict_to_temporary_yaml_file(data: Dict) -> Optional[Text]:
+def dump_dict_to_temporary_yaml_file(data: Dict) -> Text:
     """Dump `data` as yaml to temporary file."""
 
     temp_file = tempfile.NamedTemporaryFile(delete=False).name
