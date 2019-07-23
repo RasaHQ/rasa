@@ -3,9 +3,8 @@ import logging
 import os
 import shutil
 import tempfile
+import typing
 from typing import Text, Tuple, Union, Optional, List, Dict
-
-import yaml.parser
 
 import rasa.utils.io
 from rasa.constants import (
@@ -15,10 +14,12 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS,
 )
 
-from rasa.core.domain import Domain
 from rasa.core.utils import get_dict_hash
 from rasa.exceptions import ModelNotFound
 from rasa.utils.common import TempDirectoryPath
+
+if typing.TYPE_CHECKING:
+    from rasa.importers.importer import TrainingDataImporter
 
 # Type alias for the fingerprint
 Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
@@ -188,20 +189,11 @@ def create_package_rasa(
     return output_filename
 
 
-def model_fingerprint(
-    config_file: Text,
-    domain: Optional[Union[Domain, Text]] = None,
-    nlu_data: Optional[Text] = None,
-    stories: Optional[Text] = None,
-) -> Fingerprint:
-    """Creates a model fingerprint from its used configuration and training
-    data.
+async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
+    """Creates a model fingerprint from its used configuration and training data.
 
     Args:
-        config_file: Path to the configuration file.
-        domain: Path to the models domain file.
-        nlu_data: Path to the used NLU training data.
-        stories: Path to the used story training data.
+        file_importer: File importer which provides the training data and model config.
 
     Returns:
         The fingerprint.
@@ -210,65 +202,42 @@ def model_fingerprint(
     import rasa
     import time
 
-    if isinstance(domain, Domain):
-        domain_hash = hash(domain)
-    else:
-        domain_hash = _get_hashes_for_paths(domain)
+    config = await file_importer.get_config()
+    domain = await file_importer.get_domain()
+    stories = await file_importer.get_stories()
+    nlu_data = await file_importer.get_nlu_data()
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_hash_of_config(
-            config_file, exclude_keys=CONFIG_MANDATORY_KEYS
+            config, exclude_keys=CONFIG_MANDATORY_KEYS
         ),
         FINGERPRINT_CONFIG_CORE_KEY: _get_hash_of_config(
-            config_file, include_keys=CONFIG_MANDATORY_KEYS_CORE
+            config, include_keys=CONFIG_MANDATORY_KEYS_CORE
         ),
         FINGERPRINT_CONFIG_NLU_KEY: _get_hash_of_config(
-            config_file, include_keys=CONFIG_MANDATORY_KEYS_NLU
+            config, include_keys=CONFIG_MANDATORY_KEYS_NLU
         ),
-        FINGERPRINT_DOMAIN_KEY: domain_hash,
-        FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
-        FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
+        FINGERPRINT_DOMAIN_KEY: hash(domain),
+        FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
+        FINGERPRINT_STORIES_KEY: hash(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
     }
 
 
-def _get_hashes_for_paths(path: Text) -> List[Text]:
-    from rasa.core.utils import get_file_hash
-
-    files = []
-    if path and os.path.isdir(path):
-        files = [
-            os.path.join(path, f) for f in os.listdir(path) if not f.startswith(".")
-        ]
-    elif path and os.path.isfile(path):
-        files = [path]
-
-    return sorted([get_file_hash(f) for f in files])
-
-
 def _get_hash_of_config(
-    config_path: Text,
+    config: Optional[Dict],
     include_keys: Optional[List[Text]] = None,
     exclude_keys: Optional[List[Text]] = None,
 ) -> Text:
-    if not config_path or not os.path.exists(config_path):
+    if not config:
         return ""
 
-    try:
-        config_dict = rasa.utils.io.read_config_file(config_path)
-        keys = include_keys or list(
-            filter(lambda k: k not in exclude_keys, config_dict.keys())
-        )
+    keys = include_keys or list(filter(lambda k: k not in exclude_keys, config.keys()))
 
-        sub_config = dict((k, config_dict[k]) for k in keys if k in config_dict)
+    sub_config = dict((k, config[k]) for k in keys if k in config)
 
-        return get_dict_hash(sub_config)
-    except yaml.parser.ParserError as e:
-        logger.debug(
-            "Failed to read config file '{}'. Error: {}".format(config_path, e)
-        )
-        return ""
+    return get_dict_hash(sub_config)
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:

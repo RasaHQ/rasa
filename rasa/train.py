@@ -4,10 +4,10 @@ import tempfile
 from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
 
-from rasa import model, data
-from rasa.core.domain import Domain, InvalidDomain
+from rasa import model
+from rasa.core.domain import Domain
+from rasa.importers.importer import TrainingDataImporter
 from rasa.model import Fingerprint, should_retrain
-from rasa.skill import SkillSelector
 from rasa.utils.common import TempDirectoryPath
 
 from rasa.cli.utils import (
@@ -67,53 +67,34 @@ async def train_async(
     Returns:
         Path of the trained model archive.
     """
-    skill_imports = SkillSelector.load(config, training_files)
-    try:
-        domain = Domain.load(domain, skill_imports)
-        domain.check_missing_templates()
-    except InvalidDomain:
-        domain = None
 
-    story_directory, nlu_data_directory = data.get_core_nlu_directories(
-        training_files, skill_imports
+    file_importer = TrainingDataImporter.load_from_config(
+        config, domain, training_files
     )
-
     with ExitStack() as stack:
         train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
-        nlu_data = stack.enter_context(TempDirectoryPath(nlu_data_directory))
-        story = stack.enter_context(TempDirectoryPath(story_directory))
 
-        if domain is None:
-            return handle_domain_if_not_exists(
-                config, nlu_data_directory, output_path, fixed_model_name
+        domain = await file_importer.get_domain()
+        if domain.is_empty():
+            return await handle_domain_if_not_exists(
+                file_importer, output_path, fixed_model_name
             )
 
         return await _train_async_internal(
-            domain,
-            config,
+            file_importer,
             train_path,
-            nlu_data,
-            story,
             output_path,
             force_training,
             fixed_model_name,
             kwargs,
         )
 
-    if domain is None:
-        return handle_domain_if_not_exists(
-            config, nlu_data_directory, output_path, fixed_model_name
-        )
 
-
-def handle_domain_if_not_exists(
-    config, nlu_data_directory, output_path, fixed_model_name
+async def handle_domain_if_not_exists(
+    file_importer: TrainingDataImporter, output_path, fixed_model_name
 ):
-    nlu_model_only = _train_nlu_with_validated_data(
-        config=config,
-        nlu_data_directory=nlu_data_directory,
-        output=output_path,
-        fixed_model_name=fixed_model_name,
+    nlu_model_only = await _train_nlu_with_validated_data(
+        file_importer, output=output_path, fixed_model_name=fixed_model_name
     )
     print_warning(
         "Core training was skipped because no valid domain file was found. Only an nlu-model was created."
@@ -123,11 +104,8 @@ def handle_domain_if_not_exists(
 
 
 async def _train_async_internal(
-    domain: Union[Domain, Text],
-    config: Text,
+    file_importer: TrainingDataImporter,
     train_path: Text,
-    nlu_data_directory: Text,
-    story_directory: Text,
     output_path: Text,
     force_training: bool,
     fixed_model_name: Optional[Text],
@@ -149,37 +127,28 @@ async def _train_async_internal(
     Returns:
         Path of the trained model archive.
     """
-    new_fingerprint = model.model_fingerprint(
-        config, domain, nlu_data_directory, story_directory
-    )
+    new_fingerprint = await model.model_fingerprint(file_importer)
 
-    dialogue_data_not_present = not os.listdir(story_directory)
-    nlu_data_not_present = not os.listdir(nlu_data_directory)
+    stories = await file_importer.get_stories()
+    nlu_data = await file_importer.get_nlu_data()
 
-    if dialogue_data_not_present and nlu_data_not_present:
+    if stories.is_empty() and nlu_data.is_empty():
         print_error(
             "No training data given. Please provide stories and NLU data in "
             "order to train a Rasa model using the '--data' argument."
         )
         return
 
-    if dialogue_data_not_present:
-        print_warning(
-            "No dialogue data present. Just a Rasa NLU model will be trained."
-        )
-        return _train_nlu_with_validated_data(
-            config=config,
-            nlu_data_directory=nlu_data_directory,
-            output=output_path,
-            fixed_model_name=fixed_model_name,
+    if stories.is_empty():
+        print_warning("No stories present. Just a Rasa NLU model will be trained.")
+        return await _train_nlu_with_validated_data(
+            file_importer, output=output_path, fixed_model_name=fixed_model_name
         )
 
-    if nlu_data_not_present:
+    if nlu_data.is_empty():
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
         return await _train_core_with_validated_data(
-            domain=domain,
-            config=config,
-            story_directory=story_directory,
+            file_importer,
             output=output_path,
             fixed_model_name=fixed_model_name,
             kwargs=kwargs,
@@ -190,12 +159,9 @@ async def _train_async_internal(
 
     if force_training or retrain_core or retrain_nlu:
         await _do_training(
-            domain=domain,
-            config=config,
+            file_importer,
             output_path=output_path,
             train_path=train_path,
-            nlu_data_directory=nlu_data_directory,
-            story_directory=story_directory,
             force_training=force_training,
             retrain_core=retrain_core,
             retrain_nlu=retrain_nlu,
@@ -218,10 +184,7 @@ async def _train_async_internal(
 
 
 async def _do_training(
-    domain: Union[Domain, Text],
-    config: Text,
-    nlu_data_directory: Optional[Text],
-    story_directory: Optional[Text],
+    file_importer: TrainingDataImporter,
     output_path: Text,
     train_path: Text,
     force_training: bool = False,
@@ -233,9 +196,7 @@ async def _do_training(
 
     if force_training or retrain_core:
         await _train_core_with_validated_data(
-            domain=domain,
-            config=config,
-            story_directory=story_directory,
+            file_importer,
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
@@ -248,9 +209,8 @@ async def _do_training(
         )
 
     if force_training or retrain_nlu:
-        _train_nlu_with_validated_data(
-            config=config,
-            nlu_data_directory=nlu_data_directory,
+        await _train_nlu_with_validated_data(
+            file_importer,
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
@@ -313,43 +273,35 @@ async def train_core_async(
 
     """
 
-    skill_imports = SkillSelector.load(config, stories)
-
-    try:
-        domain = Domain.load(domain, skill_imports)
-        domain.check_missing_templates()
-    except InvalidDomain:
+    file_importer = TrainingDataImporter.load_core_importer_from_config(
+        config, domain, [stories]
+    )
+    domain = await file_importer.get_domain()
+    if domain.is_empty():
         print_error(
             "Core training was skipped because no valid domain file was found. "
             "Please specify a valid domain using '--domain' argument or check if the provided domain file exists."
         )
         return None
 
-    train_context = TempDirectoryPath(data.get_core_directory(stories, skill_imports))
-
-    with train_context as story_directory:
-        if not os.listdir(story_directory):
-            print_error(
-                "No stories given. Please provide stories in order to "
-                "train a Rasa Core model using the '--stories' argument."
-            )
-            return
-
-        return await _train_core_with_validated_data(
-            domain=domain,
-            config=config,
-            story_directory=story_directory,
-            output=output,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            kwargs=kwargs,
+    if not await file_importer.get_stories():
+        print_error(
+            "No stories given. Please provide stories in order to "
+            "train a Rasa Core model using the '--stories' argument."
         )
+        return
+
+    return await _train_core_with_validated_data(
+        file_importer,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+        kwargs=kwargs,
+    )
 
 
 async def _train_core_with_validated_data(
-    domain: Domain,
-    config: Text,
-    story_directory: Text,
+    file_importer: TrainingDataImporter,
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
@@ -369,9 +321,11 @@ async def _train_core_with_validated_data(
 
         # normal (not compare) training
         print_color("Training Core model...", color=bcolors.OKBLUE)
+        domain = await file_importer.get_domain()
+        config = await file_importer.get_config()
         await rasa.core.train(
             domain_file=domain,
-            stories_file=story_directory,
+            training_resource=file_importer,
             output_path=os.path.join(_train_path, "core"),
             policy_config=config,
             kwargs=kwargs,
@@ -380,9 +334,7 @@ async def _train_core_with_validated_data(
 
         if train_path is None:
             # Only Core was trained.
-            new_fingerprint = model.model_fingerprint(
-                config, domain, stories=story_directory
-            )
+            new_fingerprint = await model.model_fingerprint(file_importer)
             return _package_model(
                 new_fingerprint=new_fingerprint,
                 output_path=output,
@@ -418,30 +370,42 @@ def train_nlu(
 
     """
 
-    # training NLU only hence the training files still have to be selected
-    skill_imports = SkillSelector.load(config, nlu_data)
-    train_context = TempDirectoryPath(data.get_nlu_directory(nlu_data, skill_imports))
-
-    with train_context as nlu_data_directory:
-        if not os.listdir(nlu_data_directory):
-            print_error(
-                "No NLU data given. Please provide NLU data in order to train "
-                "a Rasa NLU model using the '--nlu' argument."
-            )
-            return
-
-        return _train_nlu_with_validated_data(
-            config=config,
-            nlu_data_directory=nlu_data_directory,
-            output=output,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-        )
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(
+        _train_nlu_async(config, nlu_data, output, train_path, fixed_model_name)
+    )
 
 
-def _train_nlu_with_validated_data(
+async def _train_nlu_async(
     config: Text,
-    nlu_data_directory: Text,
+    nlu_data: Text,
+    output: Text,
+    train_path: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+):
+    # training NLU only hence the training files still have to be selected
+    file_importer = TrainingDataImporter.load_nlu_importer_from_config(
+        config, training_data_paths=[nlu_data]
+    )
+
+    training_datas = await file_importer.get_nlu_data()
+    if training_datas.is_empty():
+        print_error(
+            "No NLU data given. Please provide NLU data in order to train "
+            "a Rasa NLU model using the '--nlu' argument."
+        )
+        return
+
+    return await _train_nlu_with_validated_data(
+        file_importer,
+        output=output,
+        train_path=train_path,
+        fixed_model_name=fixed_model_name,
+    )
+
+
+async def _train_nlu_with_validated_data(
+    file_importer: TrainingDataImporter,
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
@@ -457,18 +421,16 @@ def _train_nlu_with_validated_data(
         else:
             # Otherwise, create a temp train path and clean it up on exit.
             _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
-
+        config = await file_importer.get_config()
         print_color("Training NLU model...", color=bcolors.OKBLUE)
-        _, nlu_model, _ = rasa.nlu.train(
-            config, nlu_data_directory, _train_path, fixed_model_name="nlu"
+        _, nlu_model, _ = await rasa.nlu.train(
+            config, file_importer, _train_path, fixed_model_name="nlu"
         )
         print_color("NLU model training completed.", color=bcolors.OKBLUE)
 
         if train_path is None:
             # Only NLU was trained
-            new_fingerprint = model.model_fingerprint(
-                config, nlu_data=nlu_data_directory
-            )
+            new_fingerprint = await model.model_fingerprint(file_importer)
 
             return _package_model(
                 new_fingerprint=new_fingerprint,
