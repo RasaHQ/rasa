@@ -27,6 +27,7 @@ Fixed
 -----
 - added timeout to terminal input channel to avoid freezing input in case of server
   errors
+- Fill slots in other parts of utterance templates than text
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^
