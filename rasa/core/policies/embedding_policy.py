@@ -5,7 +5,6 @@ import logging
 import os
 import warnings
 
-import pandas as pd
 import numpy as np
 import typing
 from tqdm import tqdm
@@ -55,7 +54,7 @@ SessionData = namedtuple(
     (
         "X",
         "Y",
-        "labels_for_Y",
+        "labels",
     ),
 )
 
@@ -265,23 +264,23 @@ class EmbeddingPolicy(Policy):
         return data_Y.argmax(axis=-1)
 
     # noinspection PyPep8Naming
-    def _action_features_for_Y(self, labels_for_Y: 'np.ndarray') -> 'np.ndarray':
+    def _action_features_for_Y(self, labels: 'np.ndarray') -> 'np.ndarray':
         """Prepare Y data for training: features for action labels."""
 
-        if len(labels_for_Y.shape) == 2:
+        if len(labels.shape) == 2:
             return np.stack(
                 [
                     np.stack(
                         [self.encoded_all_actions[action_idx]
                          for action_idx in action_ids]
                     )
-                    for action_ids in labels_for_Y
+                    for action_ids in labels
                 ]
             )
         else:
             return np.stack(
                 [
-                    self.encoded_all_actions[action_idx] for action_idx in labels_for_Y
+                    self.encoded_all_actions[action_idx] for action_idx in labels
                 ]
             )
 
@@ -293,17 +292,17 @@ class EmbeddingPolicy(Policy):
 
         if data_Y is not None:
             # training time
-            labels_for_Y = self._labels_for_Y(data_Y)
-            Y = self._action_features_for_Y(labels_for_Y)
+            labels = self._labels_for_Y(data_Y)
+            Y = self._action_features_for_Y(labels)
         else:
             # prediction time
-            labels_for_Y = None
+            labels = None
             Y = None
 
         return SessionData(
             X=data_X,
             Y=Y,
-            labels_for_Y=labels_for_Y,
+            labels=labels,
         )
 
     @staticmethod
@@ -315,7 +314,7 @@ class EmbeddingPolicy(Policy):
         return SessionData(
             X=session_data.X[ids],
             Y=session_data.Y[ids],
-            labels_for_Y=session_data.labels_for_Y[ids],
+            labels=session_data.labels[ids],
         )
 
     # tf helpers:
@@ -327,70 +326,60 @@ class EmbeddingPolicy(Policy):
         ids = np.random.permutation(num_examples)
         X = session_data.X[ids]
         Y = session_data.Y[ids]
-        labels_for_Y = session_data.labels_for_Y[ids]
+        labels = session_data.labels[ids]
 
-        labels = list(set(labels_for_Y))
-        np.random.shuffle(labels)
+        unique_labels, counts_labels = np.unique(labels, return_counts=True)
+        num_labels = len(unique_labels)
+        ids = np.random.permutation(num_labels)
+        unique_labels = unique_labels[ids]
+        counts_labels = counts_labels[ids]
 
-        class_data = []
-        for label in labels:
-            label_X = X[labels_for_Y == label]
-            label_Y = Y[labels_for_Y == label]
-            label_labels_for_Y = labels_for_Y[labels_for_Y == label]
-            session_data_label = SessionData(
-                X=label_X,
-                Y=label_Y,
-                labels_for_Y=label_labels_for_Y,
-            )
+        label_data = []
+        for label in unique_labels:
+            label_data.append(SessionData(X=X[labels == label],
+                                          Y=Y[labels == label],
+                                          labels=labels[labels == label]))
 
-            class_data.append(session_data_label)
-
-        num_classes = len(class_data)
-
-        data_idx = [0] * num_classes
-        num_data_cycles = [0] * num_classes
-        print(batch_size)
-        print(X.shape[0] // batch_size + int(X.shape[0] % batch_size > 0))
-        # print([len(class_i.X) / num_examples for class_i in class_data])
-        class_idx = 0
-        bbb = 0
+        data_idx = [0] * num_labels
+        num_data_cycles = [0] * num_labels
+        skipped = [False] * num_labels
+        new_X = []
+        new_Y = []
         while min(num_data_cycles) == 0:
-            batch_x = []
-            batch_y = []
-            batch_len = 0
-            while batch_len < batch_size:
+            for i in range(num_labels):
+                if num_data_cycles[i] > 0 and not skipped[i]:
+                    skipped[i] = True
+                    continue
+                else:
+                    skipped[i] = False
 
-                class_i = class_data[class_idx]
+                num_i = int(counts_labels[i] / num_examples * batch_size) + 1
 
-                num_i = int(len(class_i.X) / num_examples * batch_size) + 1
+                new_X.append(label_data[i].X[data_idx[i]:data_idx[i]+num_i])
+                new_Y.append(label_data[i].Y[data_idx[i]:data_idx[i]+num_i])
 
-                if batch_len + num_i > batch_size:
-                    num_i = batch_size - batch_len
+                data_idx[i] += num_i
+                if data_idx[i] >= counts_labels[i]:
+                    num_data_cycles[i] += 1
+                    data_idx[i] = 0
 
-                if data_idx[class_idx] + num_i > len(class_i.X):
-                    num_i = len(class_i.X) - data_idx[class_idx]
+                if min(num_data_cycles) > 0:
+                    break
 
-                batch_x.append(class_i.X[data_idx[class_idx]:data_idx[class_idx]+num_i])
-                batch_y.append(class_i.Y[data_idx[class_idx]:data_idx[class_idx]+num_i])
-                batch_len += num_i
+        print(num_data_cycles)
+        num_batches = X.shape[0] // batch_size + int(X.shape[0] % batch_size > 0)
+        print(num_batches)
 
-                data_idx[class_idx] += num_i
-                if data_idx[class_idx] >= len(class_i.X):
-                    num_data_cycles[class_idx] += 1
-                    data_idx[class_idx] = 0
+        X = np.concatenate(new_X)
+        Y = np.concatenate(new_Y)
 
-                class_idx += 1
-                if class_idx >= num_classes:
-                    class_idx = 0
-                if max(num_data_cycles) > 0 and max(num_data_cycles) == num_data_cycles[class_idx]:
-                    class_idx += 1
-                if class_idx >= num_classes:
-                    class_idx = 0
-            bbb+=1
-            if min(num_data_cycles) > 0:
-                print(num_data_cycles)
-                print(bbb)
-            yield np.concatenate(batch_x), np.concatenate(batch_y)
+        num_batches = X.shape[0] // batch_size + int(X.shape[0] % batch_size > 0)
+        print(num_batches)
+        for batch_num in range(num_batches):
+            batch_x = X[batch_num * batch_size: (batch_num + 1) * batch_size]
+            batch_y = Y[batch_num * batch_size: (batch_num + 1) * batch_size]
+
+            yield batch_x, batch_y
 
     # noinspection PyPep8Naming
     @staticmethod
@@ -658,9 +647,11 @@ class EmbeddingPolicy(Policy):
         seq_length = tf.shape(raw_pos)[1]
         raw_flat = self._tf_make_flat(raw_pos)
 
-        neg_ids = tf.random.categorical(tf.log(tf.ones((batch_size * seq_length,
-                                                        tf.shape(all_raw)[0]))),
-                                        self.num_neg)
+        total_cands = tf.shape(all_embed)[0]
+
+        all_indices = tf.tile(tf.expand_dims(tf.range(0, total_cands, 1), 0), (batch_size * seq_length, 1))
+        shuffled_indices = tf.transpose(tf.random.shuffle(tf.transpose(all_indices, (1, 0))), (1, 0))
+        neg_ids = shuffled_indices[:, :self.num_neg]
 
         bad_negs_flat = self._tf_calc_iou_mask(raw_flat, all_raw, neg_ids)
         bad_negs = tf.reshape(bad_negs_flat, (batch_size, seq_length, -1))
