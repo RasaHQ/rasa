@@ -1,9 +1,9 @@
 import pytest
 
-from constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
+from rasa.constants import DOMAIN_SCHEMA_FILE, CONFIG_SCHEMA_FILE
 
-import rasa.utils.validation
-import rasa.utils.io
+import rasa.utils.validation as validation_utils
+import rasa.utils.io as io_utils
 
 
 @pytest.mark.parametrize(
@@ -17,7 +17,7 @@ import rasa.utils.io
 )
 def test_validate_yaml_schema(file, schema):
     # should raise no exception
-    rasa.utils.validation.validate_yaml_schema(rasa.utils.io.read_file(file), schema)
+    validation_utils.validate_yaml_schema(io_utils.read_file(file), schema)
 
 
 @pytest.mark.parametrize(
@@ -29,7 +29,5 @@ def test_validate_yaml_schema(file, schema):
     ],
 )
 def test_validate_yaml_schema_raise_exception(file, schema):
-    with pytest.raises(rasa.utils.validation.InvalidYamlFileError):
-        rasa.utils.validation.validate_yaml_schema(
-            rasa.utils.io.read_file(file), schema
-        )
+    with pytest.raises(validation_utils.InvalidYamlFileError):
+        validation_utils.validate_yaml_schema(io_utils.read_file(file), schema)

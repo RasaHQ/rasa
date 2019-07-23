@@ -4,7 +4,7 @@ import pytest
 from aioresponses import aioresponses
 
 from tests.utilities import latest_request, json_of_latest_request
-from utils.endpoints import concat_url, EndpointConfig
+import rasa.utils.endpoints as endpoint_utils
 
 
 @pytest.mark.parametrize(
@@ -18,21 +18,21 @@ from utils.endpoints import concat_url, EndpointConfig
     ],
 )
 def test_concat_url(base, subpath, expected_result):
-    assert concat_url(base, subpath) == expected_result
+    assert endpoint_utils.concat_url(base, subpath) == expected_result
 
 
 def test_warning_for_base_paths_with_trailing_slash(caplog):
     test_path = "base/"
 
     with caplog.at_level(logging.DEBUG, logger="rasa.utils.endpoints"):
-        assert concat_url(test_path, None) == test_path
+        assert endpoint_utils.concat_url(test_path, None) == test_path
 
     assert len(caplog.records) == 1
 
 
 async def test_endpoint_config():
     with aioresponses() as mocked:
-        endpoint = EndpointConfig(
+        endpoint = endpoint_utils.EndpointConfig(
             "https://example.com/",
             params={"A": "B"},
             headers={"X-Powered-By": "Rasa"},
@@ -83,7 +83,7 @@ async def test_endpoint_config():
 def test_endpoint_config_default_token_name():
     test_data = {"url": "http://test", "token": "token"}
 
-    actual = EndpointConfig.from_dict(test_data)
+    actual = endpoint_utils.EndpointConfig.from_dict(test_data)
 
     assert actual.token_name == "token"
 
@@ -91,6 +91,6 @@ def test_endpoint_config_default_token_name():
 def test_endpoint_config_custom_token_name():
     test_data = {"url": "http://test", "token": "token", "token_name": "test_token"}
 
-    actual = EndpointConfig.from_dict(test_data)
+    actual = endpoint_utils.EndpointConfig.from_dict(test_data)
 
     assert actual.token_name == "test_token"
