@@ -238,14 +238,11 @@ def trained_model(project) -> Text:
 @pytest.fixture
 async def restaurantbot(tmpdir_factory) -> Text:
     model_path = tmpdir_factory.mktemp("model").strpath
-    restaurant_domain = os.path.join(RESTAURANTBOT_PATH, 'domain.yml')
-    restaurant_config = os.path.join(RESTAURANTBOT_PATH, 'config.yml')
-    restaurant_data = os.path.join(RESTAURANTBOT_PATH, 'data/')
+    restaurant_domain = os.path.join(RESTAURANTBOT_PATH, "domain.yml")
+    restaurant_config = os.path.join(RESTAURANTBOT_PATH, "config.yml")
+    restaurant_data = os.path.join(RESTAURANTBOT_PATH, "data/")
 
     agent = await train_async(
-        restaurant_domain,
-        restaurant_config,
-        restaurant_data,
-        model_path
+        restaurant_domain, restaurant_config, restaurant_data, model_path
     )
     return agent

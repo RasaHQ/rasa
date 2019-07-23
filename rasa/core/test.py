@@ -80,15 +80,9 @@ class EvaluationStore(object):
     def serialise(self) -> Tuple[List, List]:
         """Turn targets and predictions to lists of equal size for sklearn"""
 
-        targets = (
-            self.action_targets
-            + self.intent_targets
-            + [json.dumps(t) for t in self.entity_targets]
-        )
+        targets = self.action_targets + self.intent_targets + self.entity_targets
         predictions = (
-            self.action_predictions
-            + self.intent_predictions
-            + [json.dumps(p) for p in self.entity_predictions]
+            self.action_predictions + self.intent_predictions + self.entity_predictions
         )
 
         # sklearn does not cope with lists of unequal size, nor None values
