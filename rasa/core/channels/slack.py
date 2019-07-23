@@ -121,10 +121,12 @@ class SlackInput(InputChannel):
     def from_credentials(cls, credentials):
         if not credentials:
             cls.raise_missing_credentials_exception()
-        return cls(credentials.get("slack_token"),
-                   credentials.get("slack_channel"),
-                   credentials.get("slack_retry_reason_header", "x-slack-retry-reason"),
-                   credentials.get("slack_retry_number_header", "x-slack-retry-num"))
+        return cls(
+            credentials.get("slack_token"),
+            credentials.get("slack_channel"),
+            credentials.get("slack_retry_reason_header", "x-slack-retry-reason"),
+            credentials.get("slack_retry_number_header", "x-slack-retry-num"),
+        )
 
     def __init__(
         self,
