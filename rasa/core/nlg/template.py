@@ -106,31 +106,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Filling the template variables in the template text
         if template_vars:
             if "text" in template:
-                try:
-                    template["text"] = interpolate_text(template["text"], template_vars)
-                except KeyError as e:
-                    logger.exception(
-                        "Failed to fill utterance template '{}'. "
-                        "Tried to replace '{}' but could not find "
-                        "a value for it. There is no slot with this "
-                        "name nor did you pass the value explicitly "
-                        "when calling the template. Return template "
-                        "without filling the template. "
-                        "".format(template, e.args[0])
-                    )
+                template["text"] = interpolate(template["text"], template_vars)
             elif "custom" in template:
-                try:
-                    template["custom"] = interpolate(template["custom"], template_vars)
-                except KeyError as e:
-                    logger.exception(
-                        "Failed to fill utterance template '{}'. "
-                        "Tried to replace '{}' but could not find "
-                        "a value for it. There is no slot with this "
-                        "name nor did you pass the value explicitly "
-                        "when calling the template. Return template "
-                        "without filling the template. "
-                        "".format(template, e.args[0])
-                    )
+                template["custom"] = interpolate(template["custom"], template_vars)
         return template
 
     @staticmethod
