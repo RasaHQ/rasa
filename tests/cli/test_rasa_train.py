@@ -72,7 +72,6 @@ def test_train_skip_on_model_not_changed(run_in_default_project):
     assert len(files) == 1
 
     file_name = files[0]
-
     run_in_default_project("train")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))

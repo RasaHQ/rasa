@@ -77,9 +77,9 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 @pytest.mark.parametrize(
     "pipeline_template", list(registry.registered_pipeline_templates.keys())
 )
-def test_train_model(pipeline_template, component_builder, tmpdir):
+async def test_train_model(pipeline_template, component_builder, tmpdir):
     _config = utilities.base_test_conf(pipeline_template)
-    (trained, _, persisted_path) = train(
+    (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
         data=DEFAULT_DATA_PATH,
@@ -93,21 +93,21 @@ def test_train_model(pipeline_template, component_builder, tmpdir):
 
 
 @utilities.slowtest
-def test_random_seed(component_builder, tmpdir):
+async def test_random_seed(component_builder, tmpdir):
     """test if train result is the same for two runs of tf embedding"""
 
     _config = utilities.base_test_conf("supervised_embeddings")
     # set fixed random seed to 1
     _config.set_component_attr(5, random_seed=1)
     # first run
-    (trained_a, _, persisted_path_a) = train(
+    (trained_a, _, persisted_path_a) = await train(
         _config,
         path=tmpdir.strpath + "_a",
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,
     )
     # second run
-    (trained_b, _, persisted_path_b) = train(
+    (trained_b, _, persisted_path_b) = await train(
         _config,
         path=tmpdir.strpath + "_b",
         data=DEFAULT_DATA_PATH,
@@ -122,9 +122,11 @@ def test_random_seed(component_builder, tmpdir):
 
 @utilities.slowtest
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-def test_train_model_on_test_pipelines(language, pipeline, component_builder, tmpdir):
+async def test_train_model_on_test_pipelines(
+    language, pipeline, component_builder, tmpdir
+):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
-    (trained, _, persisted_path) = train(
+    (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
         data=DEFAULT_DATA_PATH,
@@ -139,9 +141,9 @@ def test_train_model_on_test_pipelines(language, pipeline, component_builder, tm
 
 @utilities.slowtest
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-def test_train_model_noents(language, pipeline, component_builder, tmpdir):
+async def test_train_model_no_events(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
-    (trained, _, persisted_path) = train(
+    (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
         data="./data/test/demo-rasa-noents.json",
@@ -154,16 +156,18 @@ def test_train_model_noents(language, pipeline, component_builder, tmpdir):
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-def test_train_model_empty_pipeline(component_builder):
+async def test_train_model_empty_pipeline(component_builder):
     # Should return an empty pipeline
     _config = utilities.base_test_conf(pipeline_template=None)
     with pytest.raises(ValueError):
-        train(_config, data=DEFAULT_DATA_PATH, component_builder=component_builder)
+        await train(
+            _config, data=DEFAULT_DATA_PATH, component_builder=component_builder
+        )
 
 
-def test_train_named_model(component_builder, tmpdir):
+async def test_train_named_model(component_builder, tmpdir):
     _config = utilities.base_test_conf("keyword")
-    (trained, _, persisted_path) = train(
+    (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
         data=DEFAULT_DATA_PATH,
@@ -175,11 +179,13 @@ def test_train_named_model(component_builder, tmpdir):
     assert normalized_path == tmpdir.strpath
 
 
-def test_handles_pipeline_with_non_existing_component(component_builder):
+async def test_handles_pipeline_with_non_existing_component(component_builder):
     _config = utilities.base_test_conf("pretrained_embeddings_spacy")
     _config.pipeline.append({"name": "my_made_up_component"})
     with pytest.raises(Exception) as execinfo:
-        train(_config, data=DEFAULT_DATA_PATH, component_builder=component_builder)
+        await train(
+            _config, data=DEFAULT_DATA_PATH, component_builder=component_builder
+        )
     assert "Failed to find component" in str(execinfo.value)
 
 
