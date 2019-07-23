@@ -109,9 +109,7 @@ def test_nlg_schema_validation_empty_image():
 def test_nlg_fill_template_text(slot_name, slot_value):
     template = {"text": "{" + slot_name + "}"}
     t = TemplatedNaturalLanguageGenerator(templates=dict())
-    result = t._fill_template(
-        template=template, filled_slots={slot_name: slot_value}
-    )
+    result = t._fill_template(template=template, filled_slots={slot_name: slot_value})
     assert result == {"text": str(slot_value)}
 
 
@@ -137,21 +135,15 @@ def test_nlg_fill_template_custom(slot_name, slot_value):
     template = {
         "custom": {
             "field": "{" + slot_name + "}",
-            "properties": {
-                "field_prefixed": "prefix_{" + slot_name + "}",
-            }
+            "properties": {"field_prefixed": "prefix_{" + slot_name + "}"},
         }
     }
     t = TemplatedNaturalLanguageGenerator(templates=dict())
-    result = t._fill_template(
-        template=template, filled_slots={slot_name: slot_value}
-    )
+    result = t._fill_template(template=template, filled_slots={slot_name: slot_value})
     assert result == {
         "custom": {
             "field": str(slot_value),
-            "properties": {
-                "field_prefixed": "prefix_" + str(slot_value),
-            }
+            "properties": {"field_prefixed": "prefix_" + str(slot_value)},
         }
     }
 
