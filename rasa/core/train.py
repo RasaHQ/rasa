@@ -105,11 +105,7 @@ async def train_comparison_models(
                     "".format(policy_name, i, len(exclusion_percentages), percentage)
                 )
 
-                with ExitStack() as stack:
-                    train_path = stack.enter_context(
-                        TempDirectoryPath(tempfile.mkdtemp())
-                    )
-
+                with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
                     await train(
                         domain,
                         story_file,
