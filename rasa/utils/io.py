@@ -4,16 +4,15 @@ import logging
 import os
 import tarfile
 import tempfile
+import typing
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict, Union, List, Type, Callable, Optional
-import ruamel.yaml as yaml
 from io import BytesIO as IOReader
-import rasa.cli.utils as cli_utils
+from typing import Text, Any, Dict, Union, List, Type, Callable
 
+import ruamel.yaml as yaml
 import simplejson
-import typing
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 
@@ -301,6 +300,3 @@ def create_validator(
                 raise ValidationError(message=error_message)
 
     return FunctionValidator
-
-
-

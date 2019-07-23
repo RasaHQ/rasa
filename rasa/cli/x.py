@@ -328,10 +328,10 @@ async def _pull_runtime_config_from_server(
 
 
 def _dump_dict_to_temporary_yaml_file(data: Dict, key: Text) -> Optional[Text]:
-    content = data.get("key")
+    content = data.get(key)
     if not content:
         cli_utils.print_error_and_exit(
-            "Failed to find key '{}' in " "dictionary. Exiting.".format(key)
+            "Failed to find key '{}' in runtime config. Exiting.".format(key)
         )
 
     temp_file = tempfile.NamedTemporaryFile(delete=False).name

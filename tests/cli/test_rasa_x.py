@@ -1,9 +1,18 @@
 import pytest
+from aioresponses import aioresponses
 
 import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
-import responses
+
+ENDPOINT_CONFIG = {
+    "event_broker": {
+        "url": "http://event-broker.com",
+        "username": "some_username",
+        "password": "PASSWORRD",
+        "queue": "broker_queue",
+    }
+}
 
 
 def test_x_help(run):
@@ -76,31 +85,41 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs):
     assert not x._is_correct_tracker_store(config)
 
 
-@responses.activate
-def test_pull_runtime_config_from_server():
+async def test_pull_runtime_config_from_server():
     config_url = "http://rasa-x.com/api/config?token=token"
     credentials = {"rasa": "http://rasa-x.com:5002/api"}
-    endpoints = {
-        "event_broker": {
-            "url": "http://event-broker.com",
-            "username": "some_username",
-            "password": "PASSWORRD",
-            "queue": "broker_queue",
-        }
-    }
 
-    responses.add(
-        responses.GET,
-        config_url,
-        json={"credentials": credentials, "endpoints": endpoints},
-    )
+    with aioresponses() as mocked:
+        mocked.get(
+            config_url,
+            payload={"credentials": credentials, "endpoints": ENDPOINT_CONFIG},
+        )
 
-    endpoints_path, credentials_path = x._pull_runtime_config_from_server(
-        config_url, 1, 0
-    )
+        endpoints_path, credentials_path = await x._pull_runtime_config_from_server(
+            config_url, 1, 0
+        )
+        assert endpoints_path
+        assert credentials_path
 
-    assert endpoints_path
-    assert credentials_path
+        assert io_utils.read_yaml_file(endpoints_path) == ENDPOINT_CONFIG
+        assert io_utils.read_yaml_file(credentials_path) == credentials
 
-    assert io_utils.read_yaml_file(endpoints_path) == endpoints
-    assert io_utils.read_yaml_file(credentials_path) == credentials
+
+def test_dump_runtime_config_to_yaml():
+    endpoints_key = "endpoints"
+    data = {endpoints_key: ENDPOINT_CONFIG}
+
+    path = x._dump_dict_to_temporary_yaml_file(data, endpoints_key)
+
+    assert data["endpoints"] == io_utils.read_yaml_file(path)
+
+
+def test_dump_runtime_config_to_yaml_error():
+    endpoints_key = "endpoints"
+
+    data = {endpoints_key: ENDPOINT_CONFIG}
+
+    non_existing_key = "SOME_RANDOM_KEY"
+    
+    with pytest.raises(SystemExit):
+        _ = x._dump_dict_to_temporary_yaml_file(data, non_existing_key)
