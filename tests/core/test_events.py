@@ -135,6 +135,7 @@ def test_json_parse_user():
             },
             "entities": []
           },
+          "metadata": {},
         }
     # DOCS END
     # fmt: on
@@ -143,6 +144,7 @@ def test_json_parse_user():
         intent={"name": "greet", "confidence": 0.9},
         entities=[],
         parse_data={"intent": {"name": "greet", "confidence": 0.9}, "entities": []},
+        metadata={},
     )
 
 

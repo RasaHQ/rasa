@@ -187,12 +187,14 @@ class UserUttered(Event):
         timestamp=None,
         input_channel=None,
         message_id=None,
+        metadata=None,
     ):
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
         self.input_channel = input_channel
         self.message_id = message_id
+        self.metadata = metadata
 
         if parse_data:
             self.parse_data = parse_data
@@ -254,6 +256,7 @@ class UserUttered(Event):
                 "text": self.text,
                 "parse_data": self.parse_data,
                 "input_channel": input_channel,
+                "metadata": self.metadata,
             }
         )
         return d

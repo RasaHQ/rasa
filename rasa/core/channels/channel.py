@@ -35,6 +35,7 @@ class UserMessage(object):
         parse_data: Dict[Text, Any] = None,
         input_channel: Text = None,
         message_id: Text = None,
+        metadata: Optional[Dict] = None,
     ) -> None:
         self.text = text.strip() if text else text
 
@@ -56,6 +57,8 @@ class UserMessage(object):
         self.input_channel = input_channel
 
         self.parse_data = parse_data
+
+        self.metadata = metadata
 
 
 def register(
