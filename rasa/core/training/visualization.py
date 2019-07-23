@@ -372,11 +372,8 @@ def escape(pattern: Text):
 
     if sys.version_info >= (3, 7):
         return re.escape(pattern)
-    elif isinstance(pattern, str):
-        return pattern.translate(_special_chars_map)
     else:
-        pattern = str(pattern, "latin1")
-        return pattern.translate(_special_chars_map).encode("latin1")
+        return pattern.translate(_special_chars_map)
 
 
 def sanitize(s: Text):
