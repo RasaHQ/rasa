@@ -8,18 +8,19 @@ from rasa.core.domain import Domain
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
+    from rasa.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
 
 async def train(
     domain_file: Union[Domain, Text],
-    stories_file: Text,
+    training_resource: Union[Text, "TrainingDataImporter"],
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,
     dump_stories: bool = False,
-    policy_config: Text = None,
+    policy_config: Optional[Union[Text, Dict]] = None,
     exclusion_percentage: int = None,
     kwargs: Optional[Dict] = None,
 ):
@@ -55,7 +56,7 @@ async def train(
     )
 
     training_data = await agent.load_data(
-        stories_file, exclusion_percentage=exclusion_percentage, **data_load_args
+        training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
     agent.train(training_data, **kwargs)
     agent.persist(output_path, dump_stories)

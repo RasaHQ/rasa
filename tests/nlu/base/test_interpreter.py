@@ -19,12 +19,12 @@ from tests.nlu import utilities
 @pytest.mark.parametrize(
     "pipeline_template", list(registry.registered_pipeline_templates.keys())
 )
-def test_interpreter(pipeline_template, component_builder, tmpdir):
+async def test_interpreter(pipeline_template, component_builder, tmpdir):
     test_data = "data/examples/rasa/demo-rasa.json"
     _conf = utilities.base_test_conf(pipeline_template)
     _conf["data"] = test_data
     td = training_data.load_data(test_data)
-    interpreter = utilities.interpreter_for(
+    interpreter = await utilities.interpreter_for(
         component_builder, "data/examples/rasa/demo-rasa.json", tmpdir.strpath, _conf
     )
 
