@@ -366,15 +366,11 @@ class EmbeddingPolicy(Policy):
                 if min(num_data_cycles) > 0:
                     break
 
-        print(num_data_cycles)
-        num_batches = X.shape[0] // batch_size + int(X.shape[0] % batch_size > 0)
-        print(num_batches)
-
         X = np.concatenate(new_X)
         Y = np.concatenate(new_Y)
 
         num_batches = X.shape[0] // batch_size + int(X.shape[0] % batch_size > 0)
-        print(num_batches)
+
         for batch_num in range(num_batches):
             batch_x = X[batch_num * batch_size: (batch_num + 1) * batch_size]
             batch_y = Y[batch_num * batch_size: (batch_num + 1) * batch_size]
