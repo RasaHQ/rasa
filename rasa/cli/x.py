@@ -206,7 +206,7 @@ def generate_rasa_x_token(length: int = 16):
     """
 
     return "token"
-    # return token_hex(length)
+    return token_hex(length)
 
 
 def _configure_logging(args: argparse.Namespace):
