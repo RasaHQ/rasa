@@ -1,3 +1,5 @@
+from secrets import token_hex
+
 import aiohttp
 import argparse
 import importlib.util
@@ -192,8 +194,7 @@ def generate_rasa_x_token(length: int = 16):
     A new token is generated on every `rasa x` command.
     """
 
-    return "token"
-    # return token_hex(length)
+    return token_hex(length)
 
 
 def _configure_logging(args: argparse.Namespace):
@@ -312,7 +313,7 @@ async def _pull_runtime_config_from_server(
                     else:
                         logger.debug(
                             "Failed to get a proper response from remote "
-                            "server. Status Code: {}. Response: {}"
+                            "server. Status Code: {}. Response: '{}'"
                             "".format(resp.status, await resp.text())
                         )
         except aiohttp.ClientError as e:
