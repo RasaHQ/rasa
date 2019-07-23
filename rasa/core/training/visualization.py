@@ -359,9 +359,29 @@ def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
     return graph
 
 
-def sanitize(s):
+def escape(pattern: Text):
+    """Escape special characters in a string.
+   
+    Used to fix different behavior in re.escape() for python
+    versions < 3.7 compared to >= 3.7.
+    """
+    import sys
+    import re
+
+    _special_chars_map = {i: "\\" + chr(i) for i in b"()[]{}?*+-|^$\\.&~# \t\n\r\v\f"}
+
+    if sys.version_info >= (3, 7):
+        return re.escape(pattern)
+    elif isinstance(pattern, str):
+        return pattern.translate(_special_chars_map)
+    else:
+        pattern = str(pattern, "latin1")
+        return pattern.translate(_special_chars_map).encode("latin1")
+
+
+def sanitize(s: Text):
     if s:
-        return re.escape(s)
+        return escape(s)
     else:
         return s
 
