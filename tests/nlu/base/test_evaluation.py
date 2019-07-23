@@ -1,5 +1,5 @@
 # coding=utf-8
-
+import asyncio
 import logging
 
 import pytest
@@ -41,7 +41,16 @@ from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
 
 
 @pytest.fixture(scope="session")
-def pretrained_interpreter(component_builder, tmpdir_factory):
+def loop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="session")
+async def pretrained_interpreter(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -51,7 +60,7 @@ def pretrained_interpreter(component_builder, tmpdir_factory):
             ]
         }
     )
-    return utilities.interpreter_for(
+    return await utilities.interpreter_for(
         component_builder,
         data="./data/examples/rasa/demo-rasa.json",
         path=tmpdir_factory.mktemp("projects").strpath,

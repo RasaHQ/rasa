@@ -8,7 +8,7 @@ from rasa.core.channels.channel import RestInput
 from rasa.core.channels import channel
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.model import get_model
-from rasa.train import train_async, train
+from rasa.train import train_async
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
     DEFAULT_DOMAIN_PATH,
