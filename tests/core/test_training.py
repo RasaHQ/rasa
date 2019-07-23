@@ -23,9 +23,9 @@ async def test_story_visualization(default_domain, tmpdir):
         should_merge_nodes=False,
     )
 
-    assert len(generated_graph.nodes()) == 51
+    assert len(generated_graph.nodes()) == 54
 
-    assert len(generated_graph.edges()) == 56
+    assert len(generated_graph.edges()) == 60
 
 
 async def test_story_visualization_with_merging(default_domain):

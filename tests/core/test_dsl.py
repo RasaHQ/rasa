@@ -23,11 +23,13 @@ async def test_can_read_test_story(default_domain):
         tracker_limit=1000,
         remove_duplicates=False,
     )
-    assert len(trackers) == 7
+    assert len(trackers) == 8
     # this should be the story simple_story_with_only_end -> show_it_all
     # the generated stories are in a non stable order - therefore we need to
     # do some trickery to find the one we want to test
-    tracker = [t for t in trackers if len(t.events) == 5][0]
+    trackers = [t for t in trackers if len(t.events) == 5]
+    assert len(trackers) == 1
+    tracker = trackers[0]
     assert tracker.events[0] == ActionExecuted("action_listen")
     assert tracker.events[1] == UserUttered(
         "simple",

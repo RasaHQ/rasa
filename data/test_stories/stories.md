@@ -36,6 +36,8 @@
 * change_bank_details
     - utter_default            <!-- allows to end without checkpoints -->
 
-## slot in intent
+## entities and slots
 * greet{"cuisine": "italian"}
+    - slot{"cuisine": "italian"}
     - utter_default
+    - utter_default <!-- just so length is different from the checkpoint story -->
