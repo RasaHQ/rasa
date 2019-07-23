@@ -15,7 +15,8 @@ Added
 
 Changed
 -------
-
+- ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
+  or a policy ensemble
 
 Removed
 -------
@@ -23,7 +24,8 @@ Removed
 
 Fixed
 -----
-
+- added timeout to terminal input channel to avoid freezing input in case of server
+  errors
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^
