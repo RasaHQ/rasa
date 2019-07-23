@@ -109,17 +109,58 @@ def test_nlg_schema_validation_empty_image():
 def test_nlg_fill_template_text(slot_name, slot_value):
     template = {"text": "{" + slot_name + "}"}
     t = TemplatedNaturalLanguageGenerator(templates=dict())
-    result = t._fill_template_text(
+    result = t._fill_template(
         template=template, filled_slots={slot_name: slot_value}
     )
     assert result == {"text": str(slot_value)}
 
 
+@pytest.mark.parametrize(
+    "slot_name, slot_value",
+    [
+        ("tag_w_underscore", "a"),
+        ("tag with space", "bacon"),
+        ("tag.with.dot", "chocolate"),
+        ("tag-w-dash", "apple pie"),
+        ("tag-w-$", "banana"),
+        ("tag-w-@", "one"),
+        ("tagCamelCase", "two"),
+        ("tag-w-*", "three"),
+        ("tag_w_underscore", "a"),
+        ("tag.with.float.val", 1.3),
+        ("tag-w-$", "banana"),
+        ("tagCamelCase", "two"),
+    ],
+)
+def test_nlg_fill_template_custom(slot_name, slot_value):
+    template = {"text": "{" + slot_name + "}"}
+    template = {
+        "custom": {
+            "field": "{" + slot_name + "}",
+            "properties": {
+                "field_prefixed": "prefix_{" + slot_name + "}",
+            }
+        }
+    }
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template, filled_slots={slot_name: slot_value}
+    )
+    assert result == {
+        "custom": {
+            "field": str(slot_value),
+            "properties": {
+                "field_prefixed": "prefix_" + str(slot_value),
+            }
+        }
+    }
+
+
 @pytest.mark.parametrize("slot_name, slot_value", [("tag_w_\n", "a")])
-def test_nlg_fill_template_text_w_bad_slot_name2(slot_name, slot_value):
+def test_nlg_fill_template_w_bad_slot_name2(slot_name, slot_value):
     template_text = "{" + slot_name + "}"
     t = TemplatedNaturalLanguageGenerator(templates=dict())
-    result = t._fill_template_text(
+    result = t._fill_template(
         template={"text": template_text}, filled_slots={slot_name: slot_value}
     )
     assert result["text"] == template_text
