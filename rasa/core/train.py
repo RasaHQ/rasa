@@ -3,7 +3,6 @@ import logging
 import os
 import tempfile
 import typing
-from contextlib import ExitStack
 from typing import Dict, Optional, Text, Union, List
 
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
@@ -14,6 +13,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
     from rasa.importers.importer import TrainingDataImporter
+
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +82,7 @@ async def train_comparison_models(
     """Train multiple models for comparison of policies"""
     from rasa.core import config
     from rasa import model
+    from rasa.importers.importer import TrainingDataImporter
 
     exclusion_percentages = exclusion_percentages or []
     policy_configs = policy_configs or []
@@ -89,7 +90,7 @@ async def train_comparison_models(
     for r in range(runs):
         logging.info("Starting run {}/{}".format(r + 1, runs))
 
-        for i, percentage in enumerate(exclusion_percentages, 1):
+        for current_run, percentage in enumerate(exclusion_percentages, 1):
             for policy_config in policy_configs:
                 policies = config.load(policy_config)
 
@@ -98,30 +99,34 @@ async def train_comparison_models(
                         "You can only specify one policy per model for comparison"
                     )
 
+                file_importer = TrainingDataImporter.load_core_importer_from_config(
+                    policy_config, domain, [story_file]
+                )
+
                 policy_name = type(policies[0]).__name__
                 logging.info(
                     "Starting to train {} round {}/{}"
                     " with {}% exclusion"
-                    "".format(policy_name, i, len(exclusion_percentages), percentage)
+                    "".format(
+                        policy_name, current_run, len(exclusion_percentages), percentage
+                    )
                 )
 
                 with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
                     await train(
                         domain,
-                        story_file,
+                        file_importer,
                         train_path,
                         policy_config=policy_config,
-                        exclusion_percentage=i,
+                        exclusion_percentage=current_run,
                         kwargs=kwargs,
                         dump_stories=dump_stories,
                     )
 
-                    new_fingerprint = model.model_fingerprint(
-                        policy_config, domain, stories=story_file
-                    )
+                    new_fingerprint = await model.model_fingerprint(file_importer)
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
-                    model_name = policy_name + str(i)
+                    model_name = policy_name + str(current_run)
                     model.package_model(
                         new_fingerprint=new_fingerprint,
                         output_path=output_dir,
@@ -174,7 +179,7 @@ async def do_compare_training(
 
 
 def do_interactive_learning(
-    cmdline_args: argparse.Namespace,
+    args: argparse.Namespace,
     stories: Optional[Text] = None,
     additional_arguments: Dict[Text, typing.Any] = None,
 ):
@@ -182,8 +187,8 @@ def do_interactive_learning(
 
     interactive.run_interactive_learning(
         stories,
-        skip_visualization=cmdline_args.skip_visualization,
-        server_args=cmdline_args.__dict__,
+        skip_visualization=args.skip_visualization,
+        server_args=args.__dict__,
         additional_arguments=additional_arguments,
     )
 
