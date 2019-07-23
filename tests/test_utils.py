@@ -191,3 +191,9 @@ def test_create_validator_from_callable():
         validator.validate(document)
 
     assert e.value.message == error_message
+
+
+def test_dump_dict_to_temporary_yaml():
+    data = {"some": {"random": {"dictionary", 12300}}}
+    path = rasa.utils.io.dump_dict_to_temporary_yaml_file(data)
+    assert rasa.utils.io.read_yaml_file(path) == data

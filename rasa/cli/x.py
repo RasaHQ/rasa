@@ -1,20 +1,16 @@
-from secrets import token_hex
-
-import aiohttp
 import argparse
+import asyncio
 import importlib.util
 import logging
 import os
 import signal
-import tempfile
-import time
 import traceback
 import typing
 from multiprocessing import get_context
-from typing import List, Text, Optional, Tuple, Union, Dict
-import asyncio
+from secrets import token_hex
+from typing import List, Text, Optional, Tuple, Union, Iterable
 
-import requests
+import aiohttp
 import ruamel.yaml as yaml
 
 import rasa.cli.utils as cli_utils
@@ -296,7 +292,7 @@ async def _pull_runtime_config_from_server(
     config_endpoint: Optional[Text],
     attempts: int = 30,
     wait_time_between_pulls: Union[int, float] = 0.5,
-    keys: List[Text] = ("endpoints", "credentials"),
+    keys: Iterable[Text] = ("endpoints", "credentials"),
 ) -> List[Text]:
     """Pull runtime config from `config_endpoint`.
 
@@ -309,7 +305,16 @@ async def _pull_runtime_config_from_server(
                 async with session.get(config_endpoint) as resp:
                     if resp.status == 200:
                         rjs = await resp.json()
-                        return [_dump_dict_to_temporary_yaml_file(rjs, k) for k in keys]
+                        try:
+                            return [
+                                io_utils.dump_dict_to_temporary_yaml_file(rjs[k])
+                                for k in keys
+                            ]
+                        except KeyError as e:
+                            cli_utils.print_error_and_exit(
+                                "Failed to find key '{}' in runtime config. "
+                                "Exiting.".format(e)
+                            )
                     else:
                         logger.debug(
                             "Failed to get a proper response from remote "
@@ -318,6 +323,7 @@ async def _pull_runtime_config_from_server(
                         )
         except aiohttp.ClientError as e:
             logger.debug("Failed to connect to server. Retrying. {}".format(e))
+
         await asyncio.sleep(wait_time_between_pulls)
         attempts -= 1
 
@@ -325,18 +331,6 @@ async def _pull_runtime_config_from_server(
         "Could not fetch runtime config from server at '{}'. "
         "Exiting.".format(config_endpoint)
     )
-
-
-def _dump_dict_to_temporary_yaml_file(data: Dict, key: Text) -> Optional[Text]:
-    content = data.get(key)
-    if not content:
-        cli_utils.print_error_and_exit(
-            "Failed to find key '{}' in runtime config. Exiting.".format(key)
-        )
-
-    temp_file = tempfile.NamedTemporaryFile(delete=False).name
-    io_utils.write_yaml_file(content, temp_file)
-    return temp_file
 
 
 def run_in_production(args: argparse.Namespace):

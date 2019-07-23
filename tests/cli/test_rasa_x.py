@@ -103,18 +103,3 @@ async def test_pull_runtime_config_from_server():
 
         assert io_utils.read_yaml_file(endpoints_path) == ENDPOINT_CONFIG
         assert io_utils.read_yaml_file(credentials_path) == credentials
-
-
-def test_dump_runtime_config_to_yaml():
-    endpoints_key = "endpoints"
-    data = {endpoints_key: ENDPOINT_CONFIG}
-    path = x._dump_dict_to_temporary_yaml_file(data, endpoints_key)
-    assert data["endpoints"] == io_utils.read_yaml_file(path)
-
-
-def test_dump_runtime_config_to_yaml_error():
-    endpoints_key = "endpoints"
-    data = {endpoints_key: ENDPOINT_CONFIG}
-    non_existing_key = "SOME_RANDOM_KEY"
-    with pytest.raises(SystemExit):
-        _ = x._dump_dict_to_temporary_yaml_file(data, non_existing_key)
