@@ -7,7 +7,6 @@ import signal
 import traceback
 import typing
 from multiprocessing import get_context
-from secrets import token_hex
 from typing import List, Text, Optional, Tuple, Union, Iterable
 
 import aiohttp
@@ -189,6 +188,8 @@ def generate_rasa_x_token(length: int = 16):
 
     A new token is generated on every `rasa x` command.
     """
+
+    from secrets import token_hex
 
     return token_hex(length)
 
