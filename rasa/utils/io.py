@@ -7,9 +7,10 @@ import tempfile
 import warnings
 import zipfile
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict, Union, List, Type, Callable
+from typing import Text, Any, Dict, Union, List, Type, Callable, Optional
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader
+import rasa.cli.utils as cli_utils
 
 import simplejson
 import typing
@@ -300,3 +301,6 @@ def create_validator(
                 raise ValidationError(message=error_message)
 
     return FunctionValidator
+
+
+
