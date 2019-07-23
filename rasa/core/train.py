@@ -89,9 +89,7 @@ async def train_comparison_models(
     for r in range(runs):
         logging.info("Starting run {}/{}".format(r + 1, runs))
 
-        for i, percentage in enumerate(exclusion_percentages):
-            current_round = percentage + 1
-
+        for i, percentage in enumerate(exclusion_percentages, 1):
             for policy_config in policy_configs:
                 policies = config.load(policy_config)
 
@@ -104,7 +102,7 @@ async def train_comparison_models(
                 logging.info(
                     "Starting to train {} round {}/{}"
                     " with {}% exclusion"
-                    "".format(policy_name, current_round, len(exclusion_percentages), i)
+                    "".format(policy_name, i, len(exclusion_percentages), percentage)
                 )
 
                 with ExitStack() as stack:
@@ -127,7 +125,7 @@ async def train_comparison_models(
                     )
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
-                    model_name = policy_name + str(current_round)
+                    model_name = policy_name + str(i)
                     model.package_model(
                         new_fingerprint=new_fingerprint,
                         output_path=output_dir,

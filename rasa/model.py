@@ -7,7 +7,7 @@ import typing
 from typing import Text, Tuple, Union, Optional, List, Dict
 
 import rasa.utils.io
-from cli.utils import print_success, create_output_path
+from rasa.cli.utils import print_success, create_output_path
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
     CONFIG_MANDATORY_KEYS_CORE,
