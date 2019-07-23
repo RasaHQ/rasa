@@ -344,8 +344,9 @@ posted the message to the channel:</p>
                     <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span>
                 <span class="p">)</span>
             <span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># declare variable up front to avoid pytype error</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>  <span class="c1"># pytype: disable=bad-return-type</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="s2">&quot;DONE&quot;</span><span class="p">:</span>
                     <span class="k">break</span>
                 <span class="k">else</span><span class="p">:</span>
