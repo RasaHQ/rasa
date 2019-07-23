@@ -136,3 +136,26 @@ def test_nlg_fill_template_text_w_bad_slot_name2(slot_name, slot_value):
         template={"text": template_text}, filled_slots={slot_name: slot_value}
     )
     assert result["text"] == template_text
+
+
+@pytest.mark.parametrize(
+    "text_slot_name, text_slot_value, img_slot_name, img_slot_value",
+    [
+        ("tag_w_underscore", "a", "url", "https://www.exampleimg.com"),
+        ("tag with space", "bacon", "img1", "https://www.appleimg.com"),
+    ],
+)
+def test_nlg_fill_template_image_and_text(
+    text_slot_name, text_slot_value, img_slot_name, img_slot_value
+):
+    img_template = {"image": "{" + img_slot_name + "}"}
+    text_template = {"text": "{" + text_slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    img_result = t._fill_template_text(
+        template=img_template, filled_slots={img_slot_name: img_slot_value}
+    )
+    text_result = t._fill_template_text(
+        template=text_template, filled_slots={text_slot_name: text_slot_value}
+    )
+    assert img_result == {"image": str(img_slot_value)}
+    assert text_result == {"text": str(text_slot_value)}
