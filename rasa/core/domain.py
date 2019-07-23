@@ -656,10 +656,10 @@ class Domain(object):
         domain_data = self.as_dict()
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
-                if intent.get("use_entities"):
+                if intent.get("use_entities") is True:
                     intent.pop("use_entities")
                 if not intent.get("ignore_entities"):
-                    intent.pop("ignore_entities")
+                    intent.pop("ignore_entities", None)
                 if len(intent) == 0:
                     domain_data["intents"][idx] = name
 

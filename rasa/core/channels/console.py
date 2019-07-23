@@ -4,6 +4,8 @@ import json
 import logging
 import questionary
 from typing import Text, Optional
+
+from aiohttp import ClientTimeout
 from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
@@ -15,6 +17,8 @@ from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
 
 def print_bot_output(
@@ -89,8 +93,10 @@ async def send_message_receive_stream(server_url, auth_token, sender_id, message
 
     url = "{}/webhooks/rest/webhook?stream=true&token={}".format(server_url, auth_token)
 
+    # Define timeout to not keep reading in case the server crashed in between
+    timeout = ClientTimeout(DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS)
     # TODO: check if this properly receives UTF-8 data
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(url, json=payload, raise_for_status=True) as resp:
 
             async for line in resp.content:
