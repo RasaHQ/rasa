@@ -324,7 +324,7 @@ def _pull_runtime_config_from_server(
             else:
                 logger.debug(
                     "Failed to get a proper response from remote "
-                    "server. Status Code: {}. Response: {}"
+                    "server. Status Code: {}. Response:'{}'"
                     "".format(response.status_code, response.text)
                 )
         except requests.exceptions.ConnectionError as e:
