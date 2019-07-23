@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 import tempfile
@@ -163,7 +162,7 @@ def test_is_nlu_file_with_json():
     with open(file, "w", encoding="utf-8") as f:
         f.write(json_to_string(test))
 
-    assert data._is_nlu_file(file)
+    assert data.is_nlu_file(file)
 
 
 def test_is_not_nlu_file_with_json():
@@ -172,4 +171,4 @@ def test_is_not_nlu_file_with_json():
     with open(file, "w", encoding="utf-8") as f:
         f.write('{"test": "a"}')
 
-    assert not data._is_nlu_file(file)
+    assert not data.is_nlu_file(file)
