@@ -345,7 +345,7 @@ def run_in_production(args: argparse.Namespace):
     _rasa_service(args, endpoints, None, credentials_path)
 
 
-def _get_credentials_and_endpoints_paths(args) -> Tuple[Text, Text]:
+def _get_credentials_and_endpoints_paths(args) -> Tuple[Optional[Text], Text]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
         loop = asyncio.get_event_loop()
