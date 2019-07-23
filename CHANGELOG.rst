@@ -11,7 +11,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- ``TrainingFileImporter`` interface to support customizing the process of loading
+  training data
 
 Changed
 -------
