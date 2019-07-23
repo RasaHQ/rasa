@@ -71,14 +71,14 @@ async def test_end_to_end_evaluation_script(tmpdir, restaurantbot):
         "inform",
         "inform",
         "deny",
-        {"start": 17, "end": 27, "entity": "price", "value": "moderate"},
-        {"start": 53, "end": 57, "entity": "location", "value": "east"},
-        {"start": 0, "end": 6, "entity": "cuisine", "value": "french"},
-        {"start": 17, "end": 22, "entity": "price", "value": "lo"},
-        {"start": 44, "end": 50, "entity": "cuisine", "value": "french"},
-        {"start": 74, "end": 80, "entity": "location", "value": "bombay"},
-        {"start": 4, "end": 7, "entity": "people", "value": "6"},
-        {"start": 18, "end": 28, "entity": "price", "value": "moderate"},
+        '{"start": 17, "end": 27, "entity": "price", "value": "moderate"}',
+        '{"start": 53, "end": 57, "entity": "location", "value": "east"}',
+        '{"start": 0, "end": 6, "entity": "cuisine", "value": "french"}',
+        '{"start": 17, "end": 22, "entity": "price", "value": "lo"}',
+        '{"start": 44, "end": 50, "entity": "cuisine", "value": "french"}',
+        '{"start": 74, "end": 80, "entity": "location", "value": "bombay"}',
+        '{"start": 4, "end": 7, "entity": "people", "value": "6"}',
+        '{"start": 18, "end": 28, "entity": "price", "value": "moderate"}',
     ]
 
     assert story_evaluation.evaluation_store.serialise()[0] == serialised_store
