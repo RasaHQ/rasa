@@ -11,12 +11,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- ``TrainingFileImporter`` interface to support customizing the process of loading
+  training data
 
 Changed
 -------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
+- Update pytype to ``2019.7.11``
 
 Removed
 -------
