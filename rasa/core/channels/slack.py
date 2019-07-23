@@ -151,6 +151,8 @@ class SlackInput(InputChannel):
                 the bot posts, or channel name (e.g. '#bot-test')
                 If not set, messages will be sent back
                 to the "App" DM channel of your bot's name.
+            slack_retry_reason_header: Slack HTTP header name indicating reason that slack send retry request.
+            slack_retry_number_header: Slack HTTP header name indicating the attempt number
             errors_ignore_retry: Any error codes given by Slack
                 included in this list will be ignored.
                 Error codes are listed
