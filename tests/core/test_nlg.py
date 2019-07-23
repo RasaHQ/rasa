@@ -104,6 +104,8 @@ def test_nlg_schema_validation_empty_image():
         ("tag.with.float.val", 1.3),
         ("tag-w-$", "banana"),
         ("tagCamelCase", "two"),
+        ("empty_string", ""),
+        ("null", None),
     ],
 )
 def test_nlg_fill_template_text(slot_name, slot_value):
@@ -128,6 +130,8 @@ def test_nlg_fill_template_text(slot_name, slot_value):
         ("tag.with.float.val", 1.3),
         ("tag-w-$", "banana"),
         ("tagCamelCase", "two"),
+        ("empty_string", ""),
+        ("null", None),
     ],
 )
 def test_nlg_fill_template_custom(slot_name, slot_value):
