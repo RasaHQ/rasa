@@ -158,8 +158,8 @@ final context dictionary is used to persist the model's metadata.
 
 
 
-Reading an "entity" object
---------------------------
+The "entity" object explained
+-----------------------------
 After parsing, the entity is returned as a dictionary.  There are two fields that show information
 about how the pipeline impacted the entities returned: the ``extractor`` field
 of an entity tells you which entity extractor found this particular entity, and
