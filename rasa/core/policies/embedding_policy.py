@@ -130,10 +130,8 @@ class EmbeddingPolicy(Policy):
         encoded_all_actions: Optional["np.ndarray"] = None,
         graph: Optional["tf.Graph"] = None,
         session: Optional["tf.Session"] = None,
-        intent_placeholder: Optional["tf.Tensor"] = None,
-        action_placeholder: Optional["tf.Tensor"] = None,
-        slots_placeholder: Optional["tf.Tensor"] = None,
-        prev_act_placeholder: Optional["tf.Tensor"] = None,
+        user_placeholder: Optional["tf.Tensor"] = None,
+        bot_placeholder: Optional["tf.Tensor"] = None,
         similarity_all: Optional["tf.Tensor"] = None,
         pred_confidence: Optional["tf.Tensor"] = None,
         similarity: Optional["tf.Tensor"] = None,
@@ -162,10 +160,8 @@ class EmbeddingPolicy(Policy):
         # tf related instances
         self.graph = graph
         self.session = session
-        self.a_in = intent_placeholder
-        self.b_in = action_placeholder
-        self.c_in = slots_placeholder
-        self.b_prev_in = prev_act_placeholder
+        self.a_in = user_placeholder
+        self.b_in = bot_placeholder
         self.sim_all = similarity_all
         self.pred_confidence = pred_confidence
         self.sim = similarity
@@ -1288,10 +1284,8 @@ class EmbeddingPolicy(Policy):
         rasa.utils.io.create_directory_for_file(checkpoint)
 
         with self.graph.as_default():
-            self._persist_tensor("intent_placeholder", self.a_in)
-            self._persist_tensor("action_placeholder", self.b_in)
-            self._persist_tensor("slots_placeholder", self.c_in)
-            self._persist_tensor("prev_act_placeholder", self.b_prev_in)
+            self._persist_tensor("user_placeholder", self.a_in)
+            self._persist_tensor("bot_placeholder", self.b_in)
 
             self._persist_tensor("similarity_all", self.sim_all)
             self._persist_tensor("pred_confidence", self.pred_confidence)
@@ -1359,10 +1353,8 @@ class EmbeddingPolicy(Policy):
 
             saver.restore(session, checkpoint)
 
-            a_in = cls.load_tensor("intent_placeholder")
-            b_in = cls.load_tensor("action_placeholder")
-            c_in = cls.load_tensor("slots_placeholder")
-            b_prev_in = cls.load_tensor("prev_act_placeholder")
+            a_in = cls.load_tensor("user_placeholder")
+            b_in = cls.load_tensor("bot_placeholder")
 
             sim_all = cls.load_tensor("similarity_all")
             pred_confidence = cls.load_tensor("pred_confidence")
@@ -1387,10 +1379,8 @@ class EmbeddingPolicy(Policy):
             encoded_all_actions=encoded_all_actions,
             graph=graph,
             session=session,
-            intent_placeholder=a_in,
-            action_placeholder=b_in,
-            slots_placeholder=c_in,
-            prev_act_placeholder=b_prev_in,
+            user_placeholder=a_in,
+            bot_placeholder=b_in,
             similarity_all=sim_all,
             pred_confidence=pred_confidence,
             similarity=sim,
