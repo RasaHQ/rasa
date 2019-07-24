@@ -165,8 +165,10 @@ set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
 Embedding Policy
 ^^^^^^^^^^^^^^^^
 
-The Recurrent Embedding Dialogue Policy (REDP)
-described in our paper: `<https://arxiv.org/abs/1811.11707>`_
+Transformer Embedding Dialogue Policy (TEDP)
+
+Transformer version of the Recurrent Embedding Dialogue Policy (REDP)
+used in our paper: `<https://arxiv.org/abs/1811.11707>`_
 
 This policy has a pre-defined architecture, which comprises the
 following steps:
@@ -201,11 +203,6 @@ following steps:
       This step is based on the
       `StarSpace <https://arxiv.org/abs/1709.03856>`_ idea.
 
-.. note::
-
-    This policy only works with
-    ``FullDialogueTrackerFeaturizer(state_featurizer)``.
-
 It is recommended to use
 ``state_featurizer=LabelTokenizerSingleStateFeaturizer(...)``
 (see :ref:`featurization` for details).
@@ -219,40 +216,14 @@ It is recommended to use
 
         Pass an appropriate number of ``epochs`` to the ``EmbeddingPolicy``,
         otherwise the policy will be trained only for ``1``
-        epoch. Since this is an embedding based policy, it requires a large
-        number of epochs, which depends on the complexity of the
-        training data and whether attention is used or not.
+        epoch.
 
-    The main feature of this policy is an **attention** mechanism over
-    previous user input and system actions.
-    **Attention is turned on by default**; in order to turn it off,
-    configure the following parameters:
-
-        - ``attn_before_rnn`` if ``true`` the algorithm will use
-          attention mechanism over previous user input, default ``true``;
-        - ``attn_after_rnn`` if ``true`` the algorithm will use
-          attention mechanism over previous system actions and will be
-          able to copy previously executed action together with LSTM's
-          hidden state from its history, default ``true``;
-        - ``sparse_attention`` if ``true`` ``sparsemax`` will be used
-          instead of ``softmax`` for attention probabilities, default
-          ``false``;
-        - ``attn_shift_range`` the range of allowed location-based
-          attention shifts for system memory (``attn_after_rnn``), see
-          `<https://arxiv.org/abs/1410.5401>`_ for details;
-
-    .. note::
-
-        Attention requires larger values of ``epochs`` and takes longer
-        to train. But it can learn more complicated and nonlinear behaviour.
+    The main feature of this policy is **transformer**.
 
     The algorithm also has hyper-parameters to control:
 
         - neural network's architecture:
 
-            - ``hidden_layers_sizes_a`` sets a list of hidden layers
-              sizes before embedding layer for user inputs, the number
-              of hidden layers is equal to the length of the list;
             - ``hidden_layers_sizes_b`` sets a list of hidden layers
               sizes before embedding layer for system actions, the number
               of hidden layers is equal to the length of the list;

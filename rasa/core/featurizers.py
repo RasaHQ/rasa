@@ -355,7 +355,7 @@ class TrackerFeaturizer(object):
 
         y = np.array(labels)
         # if it is MaxHistoryFeaturizer, squeeze out time axis
-        if y.shape[1] == 1 and isinstance(self, MaxHistoryTrackerFeaturizer):
+        if y.ndim == 3 and isinstance(self, MaxHistoryTrackerFeaturizer):
             y = y[:, 0, :]
 
         return y
