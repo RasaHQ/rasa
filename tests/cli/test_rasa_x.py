@@ -1,15 +1,26 @@
 import pytest
+from aioresponses import aioresponses
 
 import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
+
+ENDPOINT_CONFIG = {
+    "event_broker": {
+        "url": "http://event-broker.com",
+        "username": "some_username",
+        "password": "PASSWORRD",
+        "queue": "broker_queue",
+    }
+}
 
 
 def test_x_help(run):
     output = run("x", "--help")
 
     help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
-              [--production] [--rasa-x-port RASA_X_PORT] [--log-file LOG_FILE]
+              [--production] [--rasa-x-port RASA_X_PORT]
+              [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
               [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
@@ -72,3 +83,23 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs):
     config = EndpointConfig(**kwargs)
 
     assert not x._is_correct_tracker_store(config)
+
+
+async def test_pull_runtime_config_from_server():
+    config_url = "http://rasa-x.com/api/config?token=token"
+    credentials = {"rasa": "http://rasa-x.com:5002/api"}
+
+    with aioresponses() as mocked:
+        mocked.get(
+            config_url,
+            payload={"credentials": credentials, "endpoints": ENDPOINT_CONFIG},
+        )
+
+        endpoints_path, credentials_path = await x._pull_runtime_config_from_server(
+            config_url, 1, 0
+        )
+        assert endpoints_path
+        assert credentials_path
+
+        assert io_utils.read_yaml_file(endpoints_path) == ENDPOINT_CONFIG
+        assert io_utils.read_yaml_file(credentials_path) == credentials

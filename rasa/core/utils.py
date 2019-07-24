@@ -276,7 +276,7 @@ def list_routes(app: Sanic):
 def cap_length(s, char_limit=20, append_ellipsis=True):
     """Makes sure the string doesn't exceed the passed char limit.
 
-    Appends an ellipsis if the string is to long."""
+    Appends an ellipsis if the string is too long."""
 
     if len(s) > char_limit:
         if append_ellipsis:
