@@ -126,6 +126,7 @@ class SlackInput(InputChannel):
             credentials.get("slack_channel"),
             credentials.get("slack_retry_reason_header", "x-slack-retry-reason"),
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
+            credentials.get("errors_ignore_retry", None),
         )
 
     def __init__(
