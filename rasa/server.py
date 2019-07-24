@@ -2,10 +2,11 @@ import logging
 import os
 import tempfile
 import traceback
-from functools import wraps
+from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
 
+from rasa.core.channels import InputChannel
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic_cors import CORS
@@ -25,7 +26,11 @@ from rasa.constants import (
 )
 from rasa.core import broker
 from rasa.core.agent import load_agent, Agent
-from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
+from rasa.core.channels.channel import (
+    UserMessage,
+    CollectingOutputChannel,
+    OutputChannel,
+)
 from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
@@ -36,6 +41,10 @@ from rasa.nlu.test import run_evaluation
 from rasa.core.tracker_store import TrackerStore
 
 logger = logging.getLogger(__name__)
+
+
+OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
+USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
 
 
 class ErrorResponse(Exception):
@@ -502,13 +511,13 @@ def create_app(
 
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
-
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            out = CollectingOutputChannel()
+            tracker = obtain_tracker_store(app.agent, conversation_id)
+            output_channel = _get_output_channel(request, tracker)
             await app.agent.execute_action(
-                conversation_id, action_to_execute, out, policy, confidence
+                conversation_id, action_to_execute, output_channel, policy, confidence
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -520,7 +529,13 @@ def create_app(
 
         tracker = obtain_tracker_store(app.agent, conversation_id)
         state = tracker.current_state(verbosity)
-        return response.json({"tracker": state, "messages": out.messages})
+
+        response_body = {"tracker": state}
+
+        if isinstance(output_channel, CollectingOutputChannel):
+            response_body["messages"] = output_channel.messages
+
+        return response.json(response_body)
 
     @app.post("/conversations/<conversation_id>/predict")
     @requires_auth(app, auth_token)
@@ -889,3 +904,32 @@ def create_app(
             )
 
     return app
+
+
+def _get_output_channel(
+    request: Request, tracker: Optional[DialogueStateTracker]
+) -> OutputChannel:
+    requested_output_channel = request.args.get(OUTPUT_CHANNEL_QUERY_KEY)
+
+    if (
+        requested_output_channel == USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL
+        and tracker
+    ):
+        requested_output_channel = tracker.get_latest_input_channel()
+
+    registered_input_channels = request.app.input_channels or []
+    matching_channels = [
+        channel
+        for channel in registered_input_channels
+        if channel.name() == requested_output_channel
+    ]
+
+    output_channel = reduce(
+        lambda output_channel_created_so_far, input_channel: (
+            output_channel_created_so_far or input_channel.get_output_channel()
+        ),
+        matching_channels,
+        None,
+    )
+
+    return output_channel or CollectingOutputChannel()

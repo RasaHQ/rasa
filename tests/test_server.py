@@ -3,15 +3,21 @@ import json
 import os
 import tempfile
 import uuid
+from typing import List, Text, Type
+
 from aioresponses import aioresponses
 
 import pytest
 from freezegun import freeze_time
+from mock import MagicMock
 
 import rasa
 import rasa.constants
 from rasa.core import events, utils
+from rasa.core.channels import CollectingOutputChannel, RestInput, SlackInput
+from rasa.core.channels.slack import SlackBot
 from rasa.core.events import Event, UserUttered, SlotSet, BotUttered
+from rasa.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.utils.endpoints import EndpointConfig
 from tests.nlu.utilities import ResponseTest
@@ -712,3 +718,50 @@ def test_load_model_invalid_configuration(rasa_app):
     _, response = rasa_app.put("/model", json=data)
 
     assert response.status == 400
+
+
+@pytest.mark.parametrize(
+    "input_channels, output_channel_to_use, expected_channel",
+    [
+        (None, "slack", CollectingOutputChannel),
+        ([], None, CollectingOutputChannel),
+        ([RestInput()], "slack", CollectingOutputChannel),
+        ([RestInput(), SlackInput("test")], "slack", SlackBot),
+    ],
+)
+def test_get_output_channel(
+    input_channels: List[Text], output_channel_to_use, expected_channel: Type
+):
+    request = MagicMock()
+    app = MagicMock()
+    app.input_channels = input_channels
+    request.app = app
+    request.args = {"output_channel": output_channel_to_use}
+
+    actual = rasa.server._get_output_channel(request, None)
+
+    assert isinstance(actual, expected_channel)
+
+
+@pytest.mark.parametrize(
+    "input_channels, expected_channel",
+    [
+        ([], CollectingOutputChannel),
+        ([RestInput()], CollectingOutputChannel),
+        ([RestInput(), SlackInput("test")], SlackBot),
+    ],
+)
+def test_get_latest_output_channel(input_channels: List[Text], expected_channel: Type):
+    request = MagicMock()
+    app = MagicMock()
+    app.input_channels = input_channels
+    request.app = app
+    request.args = {"output_channel": "latest"}
+
+    tracker = DialogueStateTracker.from_events(
+        "default", [UserUttered("text", input_channel="slack")]
+    )
+
+    actual = rasa.server._get_output_channel(request, tracker)
+
+    assert isinstance(actual, expected_channel)

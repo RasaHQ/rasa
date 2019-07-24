@@ -251,6 +251,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
+      - $ref: '#/components/parameters/output_channel'
       requestBody:
         required: true
         content:
@@ -736,6 +737,16 @@ components:
         type: number
         default: None
       required: false
+    output_channel:
+      in: query
+      name: output_channel
+      description: >-
+        The bot's utterances will be forwarded to this channel. In case the channel does
+        not support this, the utterances will be returned in the response body. Use
+        `latest` to try to send the messages to the latest channel the user used.
+      example: "slack"
+      schema:
+        type: string
 
   responses:
 
