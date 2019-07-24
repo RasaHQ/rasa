@@ -103,26 +103,11 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Getting the slot values in the template variables
         template_vars = self._template_variables(filled_slots, kwargs)
 
-        for key in ["text", "image", "custom"]:
-            # Filling the template variables in the template
-            if template_vars and (key in template):
-                try:
-                    # transforming template tags from
-                    # "{tag_name}" to "{0[tag_name]}"
-                    # as described here:
-                    # https://stackoverflow.com/questions/7934620/python-dots-in-the-name-of-variable-in-a-format-string#comment9695339_7934969
-                    # assuming that slot_name do not contain newline character here
+        keys_to_interpolate = ["text", "image", "custom"]
+        if template_vars:
+            for key in keys_to_interpolate:
+                if key in template:
                     template[key] = interpolate(template[key], template_vars)
-                except KeyError as e:
-                    logger.exception(
-                        "Failed to fill utterance template '{}'. "
-                        "Tried to replace '{}' but could not find "
-                        "a value for it. There is no slot with this "
-                        "name nor did you pass the value explicitly "
-                        "when calling the template. Return template "
-                        "without filling the template. "
-                        "".format(template, e.args[0])
-                    )
         return template
 
     @staticmethod
