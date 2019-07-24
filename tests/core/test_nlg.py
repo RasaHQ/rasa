@@ -223,3 +223,42 @@ def test_nlg_fill_template_text_and_custom(
             "properties": {"field_prefixed": "prefix_" + str(cust_slot_value)},
         },
     }
+
+
+@pytest.mark.parametrize(
+    "attach_slot_name, attach_slot_value", [("attach_file", "https://attach.pdf")]
+)
+def test_nlg_fill_template_attachment(attach_slot_name, attach_slot_value):
+    template = {"attachment": "{" + attach_slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template, filled_slots={attach_slot_name: attach_slot_value}
+    )
+    assert result == {"attachment": str(attach_slot_value)}
+
+
+@pytest.mark.parametrize(
+    "attach_slot_name, attach_slot_value", [("button_1", "button1")]
+)
+def test_nlg_fill_template_button(button_slot_name, button_slot_value):
+    template = {"button": "{" + button_slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template, filled_slots={button_slot_name: button_slot_value}
+    )
+    assert result == {"button": str(button_slot_value)}
+
+
+@pytest.mark.parametrize(
+    "quick_replies_slot_name, quick_replies_slot_value", [("qreply", "reply 1")]
+)
+def test_nlg_fill_template_quick_replies(
+    quick_replies_slot_name, quick_replies_slot_value
+):
+    template = {"quick_replies": "{" + quick_replies_slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template,
+        filled_slots={quick_replies_slot_name: quick_replies_slot_value},
+    )
+    assert result == {"quick_replies": str(quick_replies_slot_value)}
