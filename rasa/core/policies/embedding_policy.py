@@ -25,20 +25,12 @@ from rasa.utils.common import is_logging_disabled
 
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
-
-try:
-    from tensor2tensor.models.transformer import (
-        transformer_base,
-        transformer_prepare_encoder,
-        transformer_encoder,
-    )
-    from tensor2tensor.layers.common_attention import large_compatible_negative
-
-except ImportError:
-    transformer_base = None
-    transformer_prepare_encoder = None
-    transformer_encoder = None
-    large_compatible_negative = None
+from tensor2tensor.models.transformer import (
+    transformer_base,
+    transformer_prepare_encoder,
+    transformer_encoder,
+)
+from tensor2tensor.layers.common_attention import large_compatible_negative
 
 try:
     import cPickle as pickle
@@ -135,11 +127,6 @@ class EmbeddingPolicy(Policy):
                 LabelTokenizerSingleStateFeaturizer(), max_history=max_history
             )
 
-    @staticmethod
-    def _check_t2t() -> None:
-        if transformer_base is None:
-            raise ImportError("Please install tensor2tensor")
-
     def __init__(
         self,
         featurizer: Optional["TrackerFeaturizer"] = None,
@@ -161,8 +148,6 @@ class EmbeddingPolicy(Policy):
         max_history: Optional[int] = None,
         **kwargs: Any
     ) -> None:
-        # check if t2t is installed
-        self._check_t2t()
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
