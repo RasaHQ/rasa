@@ -38,6 +38,7 @@ install_requires = [
     "numpy~=1.16",
     "scipy~=1.2",
     "tensorflow~=1.14.0",
+    "tensorflow-probability~=0.7.0",
     "tensor2tensor~=1.13.4",
     "apscheduler~=3.0",
     "tqdm~=4.0",
@@ -75,6 +76,7 @@ install_requires = [
     "SQLAlchemy~=1.3.0",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
+    "setuptools~=41.0.1"
 ]
 
 extras_requires = {

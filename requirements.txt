@@ -49,3 +49,4 @@ SQLAlchemy~=1.3.3
 kafka-python==1.4.6
 sklearn-crfsuite==0.3.6
 psycopg2-binary==2.8.2
+setuptools==41.0.1
