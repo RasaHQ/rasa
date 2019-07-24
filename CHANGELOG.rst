@@ -14,6 +14,8 @@ Added
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
 - Fill slots for custom templates
+- option to send messages to the user by calling
+  ``POST /conversations/{conversation_id}/execute``
 
 Changed
 -------
