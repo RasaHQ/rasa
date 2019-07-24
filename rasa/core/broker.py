@@ -17,6 +17,8 @@ def from_endpoint_config(
         return None
     elif broker_config.type == "pika" or broker_config.type is None:
         return PikaProducer.from_endpoint_config(broker_config)
+    elif broker_config.type == "sql":
+        return SQLProducer.from_endpoint_config(broker_config)
     elif broker_config.type == "file":
         return FileProducer.from_endpoint_config(broker_config)
     elif broker_config.type == "kafka":
@@ -223,3 +225,52 @@ class KafkaProducer(EventChannel):
 
     def _close(self):
         self.producer.close()
+
+
+class SQLProducer(EventChannel):
+    from sqlalchemy.ext.declarative import declarative_base
+
+    Base = declarative_base()
+
+    class SQLEvent(Base):
+        from sqlalchemy import Column, Integer, String, Float, Text
+
+        __tablename__ = "events"
+        id = Column(Integer, primary_key=True)
+        sender_id = Column(String(255))
+        data = Column(Text)
+
+    def __init__(
+        self,
+        dialect: Text = "sqlite",
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
+        db: Text = "events.db",
+        username: Text = None,
+        password: Text = None,
+        login_db: Optional[Text] = None,
+    ):
+        from rasa.core.tracker_store import SQLTrackerStore
+        from sqlalchemy.orm import sessionmaker
+        from sqlalchemy import create_engine
+
+        engine_url = SQLTrackerStore.get_db_url(
+            dialect, host, port, db, username, password, login_db
+        )
+
+        logger.debug("SQLProducer: Connecting to database: {}".format(engine_url))
+
+        self.engine = create_engine(engine_url)
+        self.Base.metadata.create_all(self.engine)
+        self.session = sessionmaker(bind=self.engine)()
+
+    @classmethod
+    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventChannel":
+        return cls(host=broker_config.url, **broker_config.kwargs)
+
+    def publish(self, event: Dict[Text, Any]) -> None:
+        """Publishes a json-formatted Rasa Core event into an event queue."""
+        self.session.add(
+            self.SQLEvent(sender_id=event.get("sender_id"), data=json.dumps(event))
+        )
+        self.session.commit()

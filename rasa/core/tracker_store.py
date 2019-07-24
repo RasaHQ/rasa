@@ -312,7 +312,7 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy import create_engine
 
-        engine_url = self._get_db_url(
+        engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db
         )
         logger.debug(
@@ -355,7 +355,7 @@ class SQLTrackerStore(TrackerStore):
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
     @staticmethod
-    def _get_db_url(
+    def get_db_url(
         dialect: Text = "sqlite",
         host: Optional[Text] = None,
         port: Optional[int] = None,

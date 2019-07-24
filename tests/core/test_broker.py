@@ -1,7 +1,7 @@
 import json
 
 from rasa.core import broker
-from rasa.core.broker import FileProducer, PikaProducer, KafkaProducer
+from rasa.core.broker import FileProducer, PikaProducer, KafkaProducer, SQLProducer
 from rasa.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
@@ -31,6 +31,33 @@ def test_no_broker_in_config():
     actual = broker.from_endpoint_config(cfg)
 
     assert actual is None
+
+
+def test_sql_broker_from_config():
+    cfg = read_endpoint_config(
+        "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
+    )
+    actual = broker.from_endpoint_config(cfg)
+
+    assert isinstance(actual, SQLProducer)
+    assert actual.engine.name == "sqlite"
+
+
+def test_sql_broker_logs_to_sql_db():
+    cfg = read_endpoint_config(
+        "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
+    )
+    actual = broker.from_endpoint_config(cfg)
+
+    for e in TEST_EVENTS:
+        actual.publish(e.as_dict())
+
+    events_types = [
+        json.loads(event.data)["event"]
+        for event in actual.session.query(actual.SQLEvent).all()
+    ]
+
+    assert events_types == ["user", "slot", "restart"]
 
 
 def test_file_broker_from_config():
