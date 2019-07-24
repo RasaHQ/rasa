@@ -77,12 +77,12 @@ def test_builder_load_unknown(component_builder):
     assert "Unknown component name" in str(excinfo.value)
 
 
-def test_example_component(component_builder, tmpdir_factory):
+async def test_example_component(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
     )
 
-    interpreter = utilities.interpreter_for(
+    interpreter = await utilities.interpreter_for(
         component_builder,
         data="./data/examples/rasa/demo-rasa.json",
         path=tmpdir_factory.mktemp("projects").strpath,

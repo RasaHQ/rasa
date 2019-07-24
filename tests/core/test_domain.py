@@ -147,6 +147,8 @@ async def test_create_train_data_unfeaturized_entities():
 def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
     domain = Domain.load(domain_file)
+
+    assert not domain.is_empty()
     assert len(domain.intents) == 10
     assert len(domain.action_names) == 11
 
@@ -500,6 +502,10 @@ def test_load_on_invalid_domain():
     # Currently just deprecated
     # with pytest.raises(InvalidDomain):
     #     Domain.load("data/test_domains/missing_text_for_templates.yml")
+
+
+def test_is_empty():
+    assert Domain.empty().is_empty()
 
 
 def test_clean_domain():

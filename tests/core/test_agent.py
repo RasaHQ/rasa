@@ -159,8 +159,7 @@ async def test_agent_with_model_server_in_thread(
     await asyncio.sleep(3)
 
     assert agent.fingerprint == "somehash"
-
-    assert agent.domain.as_dict() == moodbot_domain.as_dict()
+    assert hash(agent.domain) == hash(moodbot_domain)
 
     agent_policies = {
         utils.module_path_from_instance(p) for p in agent.policy_ensemble.policies
@@ -193,6 +192,21 @@ async def test_load_agent(trained_model):
     assert agent.tracker_store is not None
     assert agent.interpreter is not None
     assert agent.model_directory is not None
+
+
+async def test_agent_update_model_none_domain(trained_model):
+    agent = await load_agent(model_path=trained_model)
+    agent.update_model(
+        None, None, agent.fingerprint, agent.interpreter, agent.model_directory
+    )
+
+    sender_id = "test_sender_id"
+    message = UserMessage("hello", sender_id=sender_id)
+    await agent.handle_message(message)
+    tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+
+    # UserUttered event was added to tracker, with correct intent data
+    assert tracker.events[1].intent["name"] == "greet"
 
 
 async def test_load_agent_on_not_existing_path():
