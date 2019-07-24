@@ -238,7 +238,7 @@ def test_nlg_fill_template_attachment(attach_slot_name, attach_slot_value):
 
 
 @pytest.mark.parametrize(
-    "attach_slot_name, attach_slot_value", [("button_1", "button1")]
+    "button_slot_name, button_slot_value", [("button_1", "button1")]
 )
 def test_nlg_fill_template_button(button_slot_name, button_slot_value):
     template = {"button": "{" + button_slot_name + "}"}
