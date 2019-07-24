@@ -180,14 +180,14 @@ class UserUttered(Event):
 
     def __init__(
         self,
-        text,
+        text: Optional[Text] = None,
         intent=None,
         entities=None,
-        parse_data=None,
-        timestamp=None,
-        input_channel=None,
-        message_id=None,
-        metadata=None,
+        parse_data: Dict[Text, Any] = None,
+        timestamp: Optional[int] = None,
+        input_channel: Text = None,
+        message_id: Text = None,
+        metadata: Optional[Dict] = None,
     ):
         self.text = text
         self.intent = intent if intent else {}
@@ -247,20 +247,23 @@ class UserUttered(Event):
         return UserUttered(None)
 
     def as_dict(self):
-        d = super(UserUttered, self).as_dict()
-        input_channel = None  # for backwards compatibility (persisted evemts)
+        useruttered_dict = super(UserUttered, self).as_dict()
+        input_channel = None  # for backwards compatibility (persisted events)
+        metadata = None  # for backwards compatibility (persisted events)
         if hasattr(self, "input_channel"):
             input_channel = self.input_channel
-        d.update(
+        if hasattr(self, "metadata"):
+            metadata = self.metadata
+        useruttered_dict.update(
             {
                 "text": self.text,
                 "parse_data": self.parse_data,
                 "input_channel": input_channel,
                 "message_id": self.message_id,
-                "metadata": self.metadata,
+                "metadata": metadata,
             }
         )
-        return d
+        return useruttered_dict
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
