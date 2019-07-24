@@ -789,15 +789,17 @@ async def _write_stories_to_file(
         append_write = "w"  # make a new file if not
 
     with open(export_story_path, append_write, encoding="utf-8") as f:
-        for i, conversation in enumerate(sub_conversations):
+        i = 1
+        for conversation in sub_conversations:
             parsed_events = rasa.core.events.deserialise_events(conversation)
             tracker = DialogueStateTracker.from_events(
-                "interactive_story_{}".format(i + 1),
+                "interactive_story_{}".format(i),
                 evts=parsed_events,
                 slots=domain.slots,
             )
-
-            f.write("\n" + tracker.export_stories())
+            if len(tracker.applied_events()) > 0:
+                i +=1
+                f.write("\n" + tracker.export_stories())
 
 
 async def _write_nlu_to_file(
