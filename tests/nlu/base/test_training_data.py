@@ -8,6 +8,7 @@ from rasa.nlu import training_data
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
 from rasa.nlu.training_data.loading import guess_format, UNK, load_data
@@ -50,6 +51,8 @@ def test_validation_is_throwing_exceptions(invalid_data):
 
 def test_luis_data():
     td = training_data.load_data("data/examples/luis/demo-restaurants.json")
+
+    assert not td.is_empty()
     assert len(td.entity_examples) == 8
     assert len(td.intent_examples) == 28
     assert len(td.training_examples) == 28
@@ -60,6 +63,7 @@ def test_luis_data():
 
 def test_wit_data():
     td = training_data.load_data("data/examples/wit/demo-flights.json")
+    assert not td.is_empty()
     assert len(td.entity_examples) == 4
     assert len(td.intent_examples) == 1
     assert len(td.training_examples) == 4
@@ -70,6 +74,7 @@ def test_wit_data():
 
 def test_dialogflow_data():
     td = training_data.load_data("data/examples/dialogflow/")
+    assert not td.is_empty()
     assert len(td.entity_examples) == 5
     assert len(td.intent_examples) == 24
     assert len(td.training_examples) == 24
@@ -96,6 +101,7 @@ def test_dialogflow_data():
 def test_lookup_table_json():
     lookup_fname = "data/test/lookup_tables/plates.txt"
     td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.json")
+    assert not td_lookup.is_empty()
     assert td_lookup.lookup_tables[0]["name"] == "plates"
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
     assert td_lookup.lookup_tables[1]["name"] == "drinks"
@@ -111,6 +117,7 @@ def test_lookup_table_json():
 def test_lookup_table_md():
     lookup_fname = "data/test/lookup_tables/plates.txt"
     td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.md")
+    assert not td_lookup.is_empty()
     assert td_lookup.lookup_tables[0]["name"] == "plates"
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
     assert td_lookup.lookup_tables[1]["name"] == "drinks"
@@ -539,3 +546,7 @@ def test_guess_format_from_non_existing_file_path():
 def test_load_data_from_non_existing_file():
     with pytest.raises(ValueError):
         load_data("some path")
+
+
+def test_is_empty():
+    assert TrainingData().is_empty()
