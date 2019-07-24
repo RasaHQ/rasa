@@ -3,7 +3,6 @@ import logging
 import os
 import tempfile
 import typing
-from contextlib import ExitStack
 from typing import Dict, Optional, Text, Union, List
 
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE

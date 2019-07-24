@@ -28,10 +28,10 @@ Removed
 
 Fixed
 -----
-- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
-- ``rasa test core`` can handle compressed model files
 - added timeout to terminal input channel to avoid freezing input in case of server
   errors
+- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
+- ``rasa test core`` can handle compressed model files
 
 
 [1.1.7] - 2019-07-18

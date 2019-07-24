@@ -17,9 +17,10 @@ from typing import (
     Any,
 )
 
+import rasa.utils.io as io_utils
+
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
 from rasa.model import get_model
-from rasa.utils.io import create_path, create_dir
 from rasa.nlu import config, training_data, utils
 from rasa.nlu.utils import write_to_file
 from rasa.nlu.components import ComponentBuilder
@@ -713,7 +714,7 @@ def run_evaluation(
     }  # type: Dict[Text, Optional[Dict]]
 
     if report:
-        create_dir(report)
+        io_utils.create_dir(report)
 
     intent_results, entity_results = get_eval_data(interpreter, test_data)
 
@@ -830,7 +831,7 @@ def cross_validate(
         nlu_config = config.load(nlu_config)
 
     if report:
-        create_dir(report)
+        io_utils.create_dir(report)
 
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
@@ -947,10 +948,10 @@ def compare_nlu(
         logger.info("Beginning comparison run {}/{}".format(run + 1, runs))
 
         run_path = os.path.join(output, "run_{}".format(run + 1))
-        create_path(run_path)
+        io_utils.create_path(run_path)
 
         test_path = os.path.join(run_path, TEST_DATA_FILE)
-        create_path(test_path)
+        io_utils.create_path(test_path)
 
         train, test = data.train_test_split()
         write_to_file(test_path, test.as_markdown())
@@ -965,7 +966,7 @@ def compare_nlu(
 
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, TRAIN_DATA_FILE)
-            create_path(train_split_path)
+            io_utils.create_path(train_split_path)
             write_to_file(train_split_path, train.as_markdown())
 
             for nlu_config, model_name in zip(configs, model_names):

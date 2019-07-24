@@ -603,8 +603,8 @@ async def compare_models_in_dir(
             model_name = "".join(
                 [i for i in os.path.basename(model) if not i.isdigit()]
             )
-            correct_stories = await _get_no_correct_stories(model, stories_file)
-            num_correct_run[model_name].append(correct_stories)
+            no_of_correct_stories = await _evaluate_core_model(model, stories_file)
+            num_correct_run[model_name].append(no_of_correct_stories)
 
         for k, v in num_correct_run.items():
             num_correct[k].append(v)
@@ -619,13 +619,13 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
     num_correct = defaultdict(list)
 
     for model in models:
-        correct_stories = await _get_no_correct_stories(model, stories_file)
-        num_correct[os.path.basename(model)].append(correct_stories)
+        no_of_correct_stories = await _evaluate_core_model(model, stories_file)
+        num_correct[os.path.basename(model)].append(no_of_correct_stories)
 
     utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), num_correct)
 
 
-async def _get_no_correct_stories(model: Text, stories_file: Text) -> int:
+async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
     from rasa.core.agent import Agent
 
     logger.info("Evaluating model {}".format(model))

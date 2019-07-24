@@ -75,8 +75,8 @@ def add_test_core_argument_group(
         default=False,
         action="store_true",
         help="Should be set to evaluate models trained via "
-        "`rasa train core --config <config-1> <config-2>`. "
-        "All models in the provided model folder are evaluated "
+        "'rasa train core --config <config-1> <config-2>'. "
+        "All models in the provided directory are evaluated "
         "and compared against each other.",
     )
 
