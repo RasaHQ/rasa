@@ -385,21 +385,33 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
 
 
 def package_model(
-    new_fingerprint: Fingerprint,
-    output_path: Text,
+    fingerprint: Fingerprint,
+    output_directory: Text,
     train_path: Text,
     fixed_model_name: Optional[Text] = None,
     model_prefix: Text = "",
 ):
-    output_path = create_output_path(
-        output_path, prefix=model_prefix, fixed_name=fixed_model_name
+    """
+    Compresses a trained model.
+
+    Args:
+        fingerprint: fingerprint of the model
+        output_directory: path to the directory in which the model should be stored
+        train_path: path to uncompressed model
+        fixed_model_name: name of the compressed model file
+        model_prefix: prefix of the compressed model file
+
+    Returns: path to 'tar.gz' model file
+    """
+    output_directory = create_output_path(
+        output_directory, prefix=model_prefix, fixed_name=fixed_model_name
     )
-    create_package_rasa(train_path, output_path, new_fingerprint)
+    create_package_rasa(train_path, output_directory, fingerprint)
 
     print_success(
         "Your Rasa model is trained and saved at '{}'.".format(
-            os.path.abspath(output_path)
+            os.path.abspath(output_directory)
         )
     )
 
-    return output_path
+    return output_directory

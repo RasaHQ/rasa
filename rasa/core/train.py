@@ -128,8 +128,8 @@ async def train_comparison_models(
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
                     model_name = policy_name + str(current_run)
                     model.package_model(
-                        new_fingerprint=new_fingerprint,
-                        output_path=output_dir,
+                        fingerprint=new_fingerprint,
+                        output_directory=output_dir,
                         train_path=train_path,
                         fixed_model_name=model_name,
                     )
