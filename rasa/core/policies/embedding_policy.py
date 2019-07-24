@@ -3,6 +3,7 @@ import copy
 import json
 import logging
 import os
+import pickle
 import warnings
 
 import numpy as np
@@ -31,11 +32,6 @@ from tensor2tensor.models.transformer import (
     transformer_encoder,
 )
 from tensor2tensor.layers.common_attention import large_compatible_negative
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
@@ -148,6 +144,7 @@ class EmbeddingPolicy(Policy):
         max_history: Optional[int] = None,
         **kwargs: Any
     ) -> None:
+        """Declare instant variables with default values"""
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)

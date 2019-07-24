@@ -11,6 +11,11 @@ from rasa.nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils.common import is_logging_disabled
 
+import tensorflow as tf
+
+# avoid warning println on contrib import - remove for tf 2
+tf.contrib._warning = None
+
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
@@ -19,14 +24,6 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
     from rasa.nlu.model import Metadata
     from rasa.nlu.training_data import Message
-
-try:
-    import tensorflow as tf
-
-    # avoid warning println on contrib import - remove for tf 2
-    tf.contrib._warning = None
-except ImportError:
-    tf = None
 
 
 class EmbeddingIntentClassifier(Component):
@@ -120,7 +117,6 @@ class EmbeddingIntentClassifier(Component):
     ) -> None:
         """Declare instant variables with default values"""
 
-        self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
         self._load_params()
@@ -194,15 +190,6 @@ class EmbeddingIntentClassifier(Component):
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["tensorflow"]
-
-    @staticmethod
-    def _check_tensorflow():
-        if tf is None:
-            raise ImportError(
-                "Failed to import `tensorflow`. "
-                "Please install `tensorflow`. "
-                "For example with `pip install tensorflow`."
-            )
 
     # training data helpers:
     @staticmethod
