@@ -144,6 +144,43 @@ There is an example of a ``SlotSet`` event
 :ref:`above <custom_action_example>`, and a full list of possible
 events in :ref:`Events <events>`.
 
+Execute Actions in Other Code
+-----------------------------
+
+Rasa will send an HTTP ``POST`` request to your server containing
+information on which action to run. Furthermore, this request will contain all
+information about the conversation. :ref:`action-server` shows the detailed API spec.
+
+As a response to the action call from Rasa, you can modify the tracker,
+e.g. by setting slots and send responses back to the user.
+All of the modifications are done using events.
+There is a list of all possible event types in :ref:`events`.
+
+
+Proactively Reaching out to the User Using Actions
+--------------------------------------------------
+
+You might want to proactively reach out to the user,
+e.g. to display the output of a long running background operation
+or if an external event should be communicated to the user.
+
+To do so you can use this
+`endpoint <../../api/http-api.html#tag/Tracker/paths/~1conversations~1{conversation_id}~1execute/post>`_ .
+Specify the action which should be run for a specific user and which output
+channel should be used to communicate the assistant's responses back to the user.
+
+Proactively reaching out to the user is dependent on the abilities of a channel and
+hence not supported by every channel. If your channel does not support it, consider
+using the :ref:`callbackInput` channel to send messages to a webhook.
+
+
+.. note::
+
+   Running an action in a conversation changes the conversation history and affects the
+   assistant's next predictions. If you don't want this, make sure that your action
+   reverts itself by appending a ``ActionReverted`` event to the conversation tracker.
+
+
 Default Actions
 ---------------
 
@@ -195,15 +232,3 @@ to the list of actions in your domain:
 
 Rasa will then call your action endpoint and treat it as every other
 custom action.
-
-Execute Actions in Other Code
------------------------------
-
-Rasa will send an HTTP ``POST`` request to your server containing
-information on which action to run. Furthermore, this request will contain all
-information about the conversation.
-
-As a response to the action call from Rasa, you can modify the tracker,
-e.g. by setting slots and send responses back to the user.
-All of the modifications are done using events.
-There is a list of all possible event types in :ref:`events`.

@@ -741,9 +741,12 @@ components:
       in: query
       name: output_channel
       description: >-
-        The bot's utterances will be forwarded to this channel. In case the channel does
+        The bot's utterances will be forwarded to this channel. It uses the credentials
+        of the input channel to connect. In case the channel does
         not support this, the utterances will be returned in the response body. Use
         `latest` to try to send the messages to the latest channel the user used.
+        Currently supported channels are RocketChat, Facebook Messenger, Slack,
+        Telegram, Twilio, Cisco Webex Teams and the CallbackInput channel.
       example: "slack"
       schema:
         type: string
