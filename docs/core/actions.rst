@@ -9,7 +9,7 @@ Actions
 .. contents::
 
 Actions are the things your bot runs in response to user input.
-There are three kinds of actions in Rasa Core:
+There are three kinds of actions in Rasa:
 
  1. **Default actions**: e.g. ``action_listen``, ``action_restart``,
     ``action_default_fallback``
@@ -47,7 +47,7 @@ An action can run any code you want. Custom actions can turn on the lights,
 add an event to a calendar, check a user's bank balance, or anything
 else you can imagine.
 
-Core will call an endpoint you can specify, when a custom action is
+Rasa will call an endpoint you can specify, when a custom action is
 predicted. This endpoint should be a webserver that reacts to this
 call, runs the code and optionally returns information to modify
 the dialogue state.
@@ -193,17 +193,17 @@ to the list of actions in your domain:
   actions:
   - action_default_ask_affirmation
 
-Rasa Core will then call your action endpoint and treat it as every other
+Rasa will then call your action endpoint and treat it as every other
 custom action.
 
 Execute Actions in Other Code
 -----------------------------
 
-Rasa Core will send an HTTP ``POST`` request to your server containing
+Rasa will send an HTTP ``POST`` request to your server containing
 information on which action to run. Furthermore, this request will contain all
 information about the conversation.
 
-As a response to the action call from Core, you can modify the tracker,
+As a response to the action call from Rasa, you can modify the tracker,
 e.g. by setting slots and send responses back to the user.
 All of the modifications are done using events.
 There is a list of all possible event types in :ref:`events`.
