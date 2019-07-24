@@ -10,6 +10,7 @@ from rasa.constants import RESULTS_FILE
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.trackers import DialogueStateTracker
+from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -51,7 +52,7 @@ class EvaluationStore(object):
         entity_targets: Optional[List[Dict[Text, Any]]] = None,
     ) -> None:
         """Add items or lists of items to the store"""
-        for k, v in sorted(locals().items()):
+        for k, v in locals().items():
             if k != "self" and v:
                 attr = getattr(self, k)
                 if isinstance(v, list):
@@ -78,17 +79,23 @@ class EvaluationStore(object):
         )
 
     def serialise(self) -> Tuple[List[Text], List[Text]]:
-        """Turn targets and predictions to lists of equal size for sklearn"""
+        """Turn targets and predictions to lists of equal size for sklearn."""
 
         targets = (
             self.action_targets
             + self.intent_targets
-            + [json.dumps(t) for t in self.entity_targets]
+            + [
+                MarkdownWriter._generate_entity_md(gold.get("text"), gold)
+                for gold in self.entity_targets
+            ]
         )
         predictions = (
             self.action_predictions
             + self.intent_predictions
-            + [json.dumps(p) for p in self.entity_predictions]
+            + [
+                MarkdownWriter._generate_entity_md(predicted.get("text"), predicted)
+                for predicted in self.entity_predictions
+            ]
         )
 
         # sklearn does not cope with lists of unequal size, nor None values
@@ -188,13 +195,13 @@ async def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=Fal
 
 
 def _clean_entity_results(
-    entity_results: List[Dict[Text, Any]]
+    text: Text, entity_results: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Any]]:
     """Extract only the token variables from an entity dict."""
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity = {}
+        cleaned_entity = {"text": text}
         for k in ("start", "end", "entity", "value"):
             if k in set(r):
                 cleaned_entity.update({k: r[k]})
@@ -225,8 +232,8 @@ def _collect_user_uttered_predictions(
 
     if entity_gold or predicted_entities:
         user_uttered_eval_store.add_to_store(
-            entity_targets=_clean_entity_results(entity_gold),
-            entity_predictions=_clean_entity_results(predicted_entities),
+            entity_targets=_clean_entity_results(event.text, entity_gold),
+            entity_predictions=_clean_entity_results(event.text, predicted_entities),
         )
 
     if user_uttered_eval_store.has_prediction_target_mismatch():
