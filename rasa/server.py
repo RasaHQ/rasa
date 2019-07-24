@@ -6,7 +6,6 @@ from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
 
-from rasa.core.channels import InputChannel
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic_cors import CORS
