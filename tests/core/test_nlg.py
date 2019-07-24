@@ -192,3 +192,34 @@ def test_nlg_fill_template_image_and_text(
         filled_slots={text_slot_name: text_slot_value, img_slot_name: img_slot_value},
     )
     assert result == {"text": str(text_slot_value), "image": str(img_slot_value)}
+
+
+@pytest.mark.parametrize(
+    "text_slot_name, text_slot_value, cust_slot_name, cust_slot_value",
+    [
+        ("tag_w_underscore", "a", "tag.with.dot", "chocolate"),
+        ("tag with space", "bacon", "tag-w-dash", "apple pie"),
+    ],
+)
+def test_nlg_fill_template_text_and_custom(
+    text_slot_name, text_slot_value, cust_slot_name, cust_slot_value
+):
+    template = {
+        "text": "{" + text_slot_name + "}",
+        "custom": {
+            "field": "{" + cust_slot_name + "}",
+            "properties": {"field_prefixed": "prefix_{" + cust_slot_name + "}"},
+        },
+    }
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template,
+        filled_slots={text_slot_name: text_slot_value, cust_slot_name: cust_slot_value},
+    )
+    assert result == {
+        "text": str(text_slot_value),
+        "custom": {
+            "field": str(cust_slot_value),
+            "properties": {"field_prefixed": "prefix_" + str(cust_slot_value)},
+        },
+    }
