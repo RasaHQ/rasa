@@ -256,6 +256,7 @@ class UserUttered(Event):
                 "text": self.text,
                 "parse_data": self.parse_data,
                 "input_channel": input_channel,
+                "message_id": self.message_id,
                 "metadata": self.metadata,
             }
         )
