@@ -13,6 +13,7 @@ Added
 -----
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
+- Fill slots for custom templates
 
 Changed
 -------
