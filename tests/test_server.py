@@ -439,7 +439,7 @@ def test_predict(rasa_app):
     assert "policy" in content
 
 
-def test_retrieve_tacker_not_ready_agent(rasa_app_nlu):
+def test_retrieve_tracker_not_ready_agent(rasa_app_nlu):
     _, response = rasa_app_nlu.get("/conversations/test/tracker")
     assert response.status == 409
 

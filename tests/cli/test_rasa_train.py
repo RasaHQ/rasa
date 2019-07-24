@@ -12,7 +12,8 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_NLU,
 )
-from rasa.nlu.utils import list_files
+from rasa.nlu.utils import list_files, list_subdirectories
+from rasa.utils.io import write_yaml_file
 
 
 def test_train(run_in_default_project):
@@ -36,6 +37,58 @@ def test_train(run_in_default_project):
     files = list_files(os.path.join(temp_dir, "train_models"))
     assert len(files) == 1
     assert os.path.basename(files[0]) == "test-model.tar.gz"
+
+
+def test_train_core_compare(run_in_default_project):
+    temp_dir = os.getcwd()
+
+    write_yaml_file(
+        {
+            "language": "en",
+            "pipeline": "supervised_embeddings",
+            "policies": [{"name": "KerasPolicy"}],
+        },
+        "config_1.yml",
+    )
+
+    write_yaml_file(
+        {
+            "language": "en",
+            "pipeline": "supervised_embeddings",
+            "policies": [{"name": "MemoizationPolicy"}],
+        },
+        "config_2.yml",
+    )
+
+    run_in_default_project(
+        "train",
+        "core",
+        "-c",
+        "config_1.yml",
+        "config_2.yml",
+        "--stories",
+        "data/stories.md",
+        "--out",
+        "core_comparison_results",
+        "--runs",
+        "2",
+        "--percentages",
+        "25",
+        "75",
+        "--augmentation",
+        "5",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "core_comparison_results"))
+    run_directories = list_subdirectories(
+        os.path.join(temp_dir, "core_comparison_results")
+    )
+    assert len(run_directories) == 2
+    model_files = list_files(
+        os.path.join(temp_dir, "core_comparison_results", run_directories[0])
+    )
+    assert len(model_files) == 4
+    assert model_files[0].endswith("tar.gz")
 
 
 def test_train_no_domain_exists(run_in_default_project):
@@ -72,7 +125,6 @@ def test_train_skip_on_model_not_changed(run_in_default_project):
     assert len(files) == 1
 
     file_name = files[0]
-
     run_in_default_project("train")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
