@@ -8,7 +8,7 @@ import warnings
 import numpy as np
 import typing
 from tqdm import tqdm
-from typing import Any, List, Optional, Text, Dict, Tuple, Union
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, Generator
 
 import rasa.utils.io
 from rasa.core import utils
@@ -23,18 +23,20 @@ from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import is_logging_disabled
 
+from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
 try:
-    from tensor2tensor.layers import common_attention
     from tensor2tensor.models.transformer import (transformer_base,
                                                   transformer_prepare_encoder,
                                                   transformer_encoder)
+    from tensor2tensor.layers.common_attention import large_compatible_negative
+
 except ImportError:
-    common_attention = None
     transformer_base = None
     transformer_prepare_encoder = None
     transformer_encoder = None
+    large_compatible_negative = None
 
 try:
     import cPickle as pickle
@@ -73,20 +75,21 @@ class EmbeddingPolicy(Policy):
         # a list of hidden layers sizes before bot embed layer
         # number of hidden layers is equal to the length of this list
         "hidden_layers_sizes_bot": [],
-
-        "pos_encoding": "timing",  # {"timing", "emb", "custom_timing"}
-        # introduce phase shift in time encodings between transformers
-        # 0.5 - 0.8 works on small dataset
-        "pos_max_timescale": 1.0e1,
+        # type of positional encoding in transformer
+        "pos_encoding": "timing",  # {"timing", "emb"}
+        # max sequence length if pos_encoding='emb'
         "max_seq_length": 256,
+        # number of attention heads in transformer
         "num_heads": 4,
         # number of units in transformer
         "transformer_size": 128,
+        # number of transformer layers
         "num_transformer_layers": 1,
         # training parameters
-        # initial and final batch sizes - batch size will be
-        # linearly increased for each epoch
+        # initial and final batch sizes:
+        # batch size will be linearly increased for each epoch
         "batch_size": [8, 32],
+        # how to create batches
         "batch_strategy": 'sequence',  # string 'sequence' or 'balanced'
         # number of epochs
         "epochs": 1,
@@ -102,6 +105,7 @@ class EmbeddingPolicy(Policy):
         "mu_neg": -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
         # the type of the similarity
         "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
+        # the type of the loss function
         "loss_type": 'softmax',  # string 'softmax' or 'margin'
         # the number of incorrect actions, the algorithm will minimize
         # their similarity to the user input during training
@@ -119,10 +123,10 @@ class EmbeddingPolicy(Policy):
         # dropout rate for dial nn
         "droprate_dial": 0.1,
         # visualization of accuracy
-        # how often calculate train accuracy
+        # how often calculate validation accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
-        # how many examples to use for calculation of train accuracy
-        "evaluate_on_num_examples": 100,  # large values may hurt performance
+        # how many examples to use for hold out validation set
+        "evaluate_on_num_examples": 0,  # large values may hurt performance
     }
 
     # end default properties (DOC MARKER - don't remove)
@@ -137,7 +141,7 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def _check_t2t() -> None:
-        if common_attention is None:
+        if transformer_base is None:
             raise ImportError("Please install tensor2tensor")
 
     def __init__(
@@ -204,7 +208,6 @@ class EmbeddingPolicy(Policy):
         self.hidden_layer_sizes_bot = config["hidden_layers_sizes_bot"]
 
         self.pos_encoding = config['pos_encoding']
-        self.pos_max_timescale = config['pos_max_timescale']
         self.max_seq_length = config['max_seq_length']
         self.num_heads = config['num_heads']
 
@@ -296,6 +299,12 @@ class EmbeddingPolicy(Policy):
             # training time
             labels = self._labels_for_Y(data_Y)
             Y = self._action_features_for_Y(labels)
+
+            # idea taken from sklearn's stratify split
+            if labels.ndim == 2:
+                # for multi-label y, map each distinct row to a string repr
+                # using join because str(row) uses an ellipsis if len(row) > 1000
+                labels = np.array([' '.join(row.astype('str')) for row in labels])
         else:
             # prediction time
             labels = None
@@ -307,12 +316,43 @@ class EmbeddingPolicy(Policy):
             labels=labels,
         )
 
-    @staticmethod
-    def _sample_session_data(session_data: 'SessionData',
-                             num_samples: int) -> 'SessionData':
-        """Sample session data."""
+    # noinspection PyPep8Naming
+    def _train_val_split(self, session_data: 'SessionData'
+                         ) -> Tuple['SessionData', 'SessionData']:
+        """Create random hold out validation set using stratified split."""
 
-        ids = np.random.permutation(len(session_data.X))[:num_samples]
+        label_counts = dict(zip(*np.unique(session_data.labels,
+                                           return_counts=True, axis=0)))
+        counts = np.array([label_counts[label] for label in session_data.labels])
+
+        multi_X = session_data.X[counts > 1]
+        multi_Y = session_data.Y[counts > 1]
+        multi_labels = session_data.labels[counts > 1]
+
+        solo_X = session_data.X[counts == 1]
+        solo_Y = session_data.Y[counts == 1]
+        solo_labels = session_data.labels[counts == 1]
+
+        (X_train, X_val,
+         Y_train, Y_val,
+         labels_train, labels_val) = train_test_split(
+            multi_X, multi_Y, multi_labels,
+            test_size=self.evaluate_on_num_examples,
+            random_state=self.random_seed,
+            stratify=multi_labels
+        )
+        X_train = np.concatenate([X_train, solo_X])
+        Y_train = np.concatenate([Y_train, solo_Y])
+        labels_train = np.concatenate([labels_train, solo_labels])
+
+        return (SessionData(X=X_train, Y=Y_train, labels=labels_train),
+                SessionData(X=X_val, Y=Y_val, labels=labels_val))
+
+    @staticmethod
+    def _shuffle_session_data(session_data: 'SessionData') -> 'SessionData':
+        """Shuffle session data."""
+
+        ids = np.random.permutation(len(session_data.X))
         return SessionData(
             X=session_data.X[ids],
             Y=session_data.Y[ids],
@@ -321,102 +361,94 @@ class EmbeddingPolicy(Policy):
 
     # tf helpers:
     # noinspection PyPep8Naming
-    @staticmethod
-    def gen_balanced_batch(session_data, batch_size):
+    def _gen_batch(self,
+                   session_data: 'SessionData',
+                   batch_size: int,
+                   batch_strategy: Text = 'sequence',
+                   shuffle: bool = False
+                   ) -> Generator[Tuple["np.ndarray", "np.ndarray"], None, None]:
+        """Generate batches."""
 
-        num_examples = len(session_data.X)
-        ids = np.random.permutation(num_examples)
-        X = session_data.X[ids]
-        Y = session_data.Y[ids]
-        labels = session_data.labels[ids]
+        if shuffle:
+            session_data = self._shuffle_session_data(session_data)
 
-        unique_labels, counts_labels = np.unique(labels, return_counts=True)
-        num_labels = len(unique_labels)
+        if batch_strategy == 'balanced':
+            num_examples = len(session_data.X)
+            unique_labels, counts_labels = np.unique(session_data.labels,
+                                                     return_counts=True,
+                                                     axis=0)
+            num_labels = len(unique_labels)
 
-        label_data = []
-        for label in unique_labels:
-            label_data.append(SessionData(X=X[labels == label],
-                                          Y=Y[labels == label],
-                                          labels=labels[labels == label]))
+            label_data = []
+            for label in unique_labels:
+                label_data.append(SessionData(
+                    X=session_data.X[session_data.labels == label],
+                    Y=session_data.Y[session_data.labels == label],
+                    labels=None  # ignore new labels
+                ))
 
-        data_idx = [0] * num_labels
-        num_data_cycles = [0] * num_labels
-        skipped = [False] * num_labels
-        new_X = []
-        new_Y = []
-        while min(num_data_cycles) == 0:
-            ids = np.random.permutation(num_labels)
-            for i in ids:
-                if num_data_cycles[i] > 0 and not skipped[i]:
-                    skipped[i] = True
-                    continue
+            data_idx = [0] * num_labels
+            num_data_cycles = [0] * num_labels
+            skipped = [False] * num_labels
+            new_X = []
+            new_Y = []
+            while min(num_data_cycles) == 0:
+                if shuffle:
+                    ids = np.random.permutation(num_labels)
                 else:
-                    skipped[i] = False
+                    ids = range(num_labels)
 
-                num_i = int(counts_labels[i] / num_examples * batch_size) + 1
+                for i in ids:
+                    if num_data_cycles[i] > 0 and not skipped[i]:
+                        skipped[i] = True
+                        continue
+                    else:
+                        skipped[i] = False
 
-                new_X.append(label_data[i].X[data_idx[i]:data_idx[i]+num_i])
-                new_Y.append(label_data[i].Y[data_idx[i]:data_idx[i]+num_i])
+                    num_i = int(counts_labels[i] / num_examples * batch_size) + 1
 
-                data_idx[i] += num_i
-                if data_idx[i] >= counts_labels[i]:
-                    num_data_cycles[i] += 1
-                    data_idx[i] = 0
+                    new_X.append(label_data[i].X[data_idx[i]:data_idx[i]+num_i])
+                    new_Y.append(label_data[i].Y[data_idx[i]:data_idx[i]+num_i])
 
-                if min(num_data_cycles) > 0:
-                    break
+                    data_idx[i] += num_i
+                    if data_idx[i] >= counts_labels[i]:
+                        num_data_cycles[i] += 1
+                        data_idx[i] = 0
 
-        X = np.concatenate(new_X)
-        Y = np.concatenate(new_Y)
+                    if min(num_data_cycles) > 0:
+                        break
 
-        num_batches = X.shape[0] // batch_size + int(X.shape[0] % batch_size > 0)
+            session_data = SessionData(X=np.concatenate(new_X),
+                                       Y=np.concatenate(new_Y),
+                                       labels=None)  # ignore new labels
 
-        for batch_num in range(num_batches):
-            batch_x = X[batch_num * batch_size: (batch_num + 1) * batch_size]
-            batch_y = Y[batch_num * batch_size: (batch_num + 1) * batch_size]
-
-            yield batch_x, batch_y
-
-    # noinspection PyPep8Naming
-    @staticmethod
-    def gen_sequence_batch(session_data, batch_size):
-
-        ids = np.random.permutation(len(session_data.X))
-        X = session_data.X[ids]
-        Y = session_data.Y[ids]
-
-        num_batches = X.shape[0] // batch_size + int(X.shape[0] % batch_size > 0)
+        num_batches = (session_data.X.shape[0] // batch_size
+                       + int(session_data.X.shape[0] % batch_size > 0))
 
         for batch_num in range(num_batches):
-            batch_x = X[batch_num * batch_size: (batch_num + 1) * batch_size]
-            batch_y = Y[batch_num * batch_size: (batch_num + 1) * batch_size]
+            batch_x = session_data.X[
+                      batch_num * batch_size: (batch_num + 1) * batch_size]
+            batch_y = session_data.Y[
+                      batch_num * batch_size: (batch_num + 1) * batch_size]
 
             yield batch_x, batch_y
-
-    def train_gen_func(self, session_data, batch_size):
-        if self.batch_strategy == 'sequence':
-            return self.gen_sequence_batch(session_data, batch_size)
-        elif self.batch_strategy == 'balanced':
-            return self.gen_balanced_batch(session_data, batch_size)
-        else:
-            raise ValueError(
-                "Wrong batch strategy '{}', "
-                "should be 'sequence' or 'balanced'"
-                "".format(self.batch_strategy)
-            )
 
     def _create_tf_dataset(self, session_data: 'SessionData',
                            batch_size: Union['tf.Tensor', int],
-                           shuffle: bool = True) -> 'tf.data.Dataset':
+                           batch_strategy: Text = 'sequence',
+                           shuffle: bool = False) -> 'tf.data.Dataset':
         """Create tf dataset."""
 
-        dpt_types = (tf.float32, tf.float32)
-        dpt_shapes = ([None] + list(session_data.X[0].shape),
-                      [None] + list(session_data.Y[0].shape))
-
-        dataset = tf.data.Dataset.from_generator(lambda x: self.train_gen_func(session_data, x), dpt_types, dpt_shapes, args=([batch_size]))
-
-        return dataset
+        return tf.data.Dataset.from_generator(
+            lambda batch_size_: self._gen_batch(session_data,
+                                                batch_size_,
+                                                batch_strategy,
+                                                shuffle),
+            output_types=(tf.float32, tf.float32),
+            output_shapes=([None] + list(session_data.X[0].shape),  # set batch to None
+                           [None] + list(session_data.Y[0].shape)),  # set batch to None
+            args=([batch_size])
+        )
 
     @staticmethod
     def _create_tf_iterator(dataset: 'tf.data.Dataset') -> 'tf.data.Iterator':
@@ -553,10 +585,6 @@ class EmbeddingPolicy(Policy):
              encoder_decoder_attention_bias
              ) = transformer_prepare_encoder(x, None, hparams)
 
-            if hparams.pos == 'custom_timing':
-                x = common_attention.add_timing_signal_1d(
-                    x, max_timescale=self.pos_max_timescale)
-
             x *= tf.expand_dims(mask, -1)
 
             x = tf.nn.dropout(x, 1.0 - hparams.layer_prepostprocess_dropout)
@@ -643,10 +671,13 @@ class EmbeddingPolicy(Policy):
         seq_length = tf.shape(raw_pos)[1]
         raw_flat = self._tf_make_flat(raw_pos)
 
-        total_cands = tf.shape(all_embed)[0]
+        total_candidates = tf.shape(all_embed)[0]
 
-        all_indices = tf.tile(tf.expand_dims(tf.range(0, total_cands, 1), 0), (batch_size * seq_length, 1))
-        shuffled_indices = tf.transpose(tf.random.shuffle(tf.transpose(all_indices, (1, 0))), (1, 0))
+        all_indices = tf.tile(tf.expand_dims(tf.range(0, total_candidates, 1), 0),
+                              (batch_size * seq_length, 1))
+        shuffled_indices = tf.transpose(
+            tf.random.shuffle(tf.transpose(all_indices, (1, 0))), (1, 0)
+        )
         neg_ids = shuffled_indices[:, :self.num_neg]
 
         bad_negs_flat = self._tf_calc_iou_mask(raw_flat, all_raw, neg_ids)
@@ -702,7 +733,7 @@ class EmbeddingPolicy(Policy):
 
         # calculate similarity with several
         # embedded actions for the loss
-        neg_inf = common_attention.large_compatible_negative(pos_dial_embed.dtype)
+        neg_inf = large_compatible_negative(pos_dial_embed.dtype)
 
         sim_pos = self._tf_raw_sim(pos_dial_embed, pos_bot_embed, mask)
         sim_neg = self._tf_raw_sim(pos_dial_embed, neg_bot_embed,
@@ -886,6 +917,119 @@ class EmbeddingPolicy(Policy):
                                  mask)
         return loss, acc
 
+    # training helpers
+    def _linearly_increasing_batch_size(self, epoch: int) -> int:
+        """Linearly increase batch size with every epoch.
+
+        The idea comes from https://arxiv.org/abs/1711.00489.
+        """
+
+        if not isinstance(self.batch_size, list):
+            return int(self.batch_size)
+
+        if self.epochs > 1:
+            return int(
+                self.batch_size[0]
+                + epoch * (self.batch_size[1] - self.batch_size[0]) / (self.epochs - 1)
+            )
+        else:
+            return int(self.batch_size[0])
+
+    def _train_tf_dataset(self,
+                          train_init_op: 'tf.Operation',
+                          eval_init_op: 'tf.Operation',
+                          batch_size_in: 'tf.Tensor',
+                          loss: 'tf.Tensor',
+                          acc,
+                          ) -> None:
+        """Train tf graph"""
+
+        self.session.run(tf.global_variables_initializer())
+
+        if self.evaluate_on_num_examples:
+            logger.info(
+                "Validation accuracy is calculated every {} epochs"
+                "".format(self.evaluate_every_num_epochs)
+            )
+        pbar = tqdm(range(self.epochs), desc="Epochs", disable=is_logging_disabled())
+
+        train_loss = 0
+        train_acc = 0
+        eval_loss = 0
+        eval_acc = 0
+        for ep in pbar:
+
+            batch_size = self._linearly_increasing_batch_size(ep)
+
+            self.session.run(train_init_op, feed_dict={batch_size_in: batch_size})
+
+            ep_train_loss = 0
+            ep_train_acc = 0
+            batches_per_epoch = 0
+            while True:
+                try:
+                    _, batch_train_loss, batch_train_acc = self.session.run(
+                        [self._train_op, loss, acc], feed_dict={self._is_training: True}
+                    )
+                    batches_per_epoch += 1
+                    ep_train_loss += batch_train_loss
+                    ep_train_acc += batch_train_acc
+
+                except tf.errors.OutOfRangeError:
+                    break
+
+            train_loss = ep_train_loss / batches_per_epoch
+            train_acc = ep_train_acc / batches_per_epoch
+
+            pbar.set_postfix({
+                "loss": "{:.3f}".format(train_loss),
+                "acc": "{:.3f}".format(train_acc)
+            })
+
+            if eval_init_op is not None:
+                if ((ep + 1) % self.evaluate_every_num_epochs == 0
+                        or (ep + 1) == self.epochs):
+                    eval_loss, eval_acc = self._output_training_stat_dataset(
+                        eval_init_op, loss, acc
+                    )
+                    if (ep + 1) != self.epochs:
+                        logger.info("Evaluation results: "
+                                    "validation loss: {:.3f}, "
+                                    "validation accuracy: {:.3f}"
+                                    "".format(eval_loss, eval_acc))
+
+        final_message = ("Finished training embedding policy, "
+                         "train loss={:.3f}, train accuracy={:.3f}"
+                         "".format(train_loss, train_acc))
+        if eval_init_op is not None:
+            final_message += (", validation loss={:.3f}, validation accuracy={:.3f}"
+                              "".format(eval_loss, eval_acc))
+        logger.info(final_message)
+
+    def _output_training_stat_dataset(self,
+                                      eval_init_op: 'tf.Operation',
+                                      loss: 'tf.Tensor',
+                                      acc: 'tf.Tensor') -> Tuple[float, float]:
+        """Output training statistics"""
+
+        self.session.run(eval_init_op)
+        ep_val_loss = 0
+        ep_val_acc = 0
+        batches_per_epoch = 0
+        while True:
+            try:
+                batch_val_loss, batch_val_acc = self.session.run(
+                    [loss, acc], feed_dict={self._is_training: False}
+                )
+                batches_per_epoch += 1
+                ep_val_loss += batch_val_loss
+                ep_val_acc += batch_val_acc
+            except tf.errors.OutOfRangeError:
+                break
+
+        return ep_val_loss / batches_per_epoch, ep_val_acc / batches_per_epoch
+
+    # prepare for prediction
     def _create_tf_placeholders(self, session_data: 'SessionData') -> None:
         """Create placeholders for prediction."""
         
@@ -977,6 +1121,11 @@ class EmbeddingPolicy(Policy):
         # extract actual training data to feed to tf session
         session_data = self._create_session_data(training_data.X, training_data.y)
 
+        if self.evaluate_on_num_examples:
+            session_data, eval_session_data = self._train_val_split(session_data)
+        else:
+            eval_session_data = None
+
         self.graph = tf.Graph()
 
         with self.graph.as_default():
@@ -985,18 +1134,22 @@ class EmbeddingPolicy(Policy):
 
             # allows increasing batch size
             batch_size_in = tf.placeholder(tf.int64)
-            train_dataset = self._create_tf_dataset(session_data, batch_size_in)
+            train_dataset = self._create_tf_dataset(session_data,
+                                                    batch_size_in,
+                                                    batch_strategy=self.batch_strategy,
+                                                    shuffle=True)
 
             self._iterator = self._create_tf_iterator(train_dataset)
 
             train_init_op = self._iterator.make_initializer(train_dataset)
 
-            if self.evaluate_on_num_examples:
-                eval_session_data = self._sample_session_data(
-                    session_data, self.evaluate_on_num_examples)
-                eval_train_dataset = self._create_tf_dataset(
-                    eval_session_data, self.evaluate_on_num_examples, shuffle=False)
-                eval_init_op = self._iterator.make_initializer(eval_train_dataset)
+            if eval_session_data is not None:
+                eval_init_op = self._iterator.make_initializer(
+                    self._create_tf_dataset(
+                        eval_session_data,
+                        # pick maximum batch_size for eval
+                        self._linearly_increasing_batch_size(self.epochs))
+                )
             else:
                 eval_init_op = None
 
@@ -1015,100 +1168,6 @@ class EmbeddingPolicy(Policy):
             self.pred_confidence = self._build_tf_pred_graph(session_data)
 
             self.attention_weights = self._extract_attention()
-
-    # training helpers
-    def _linearly_increasing_batch_size(self, epoch: int) -> int:
-        """Linearly increase batch size with every epoch.
-
-        The idea comes from https://arxiv.org/abs/1711.00489.
-        """
-
-        if not isinstance(self.batch_size, list):
-            return int(self.batch_size)
-
-        if self.epochs > 1:
-            return int(
-                self.batch_size[0]
-                + epoch * (self.batch_size[1] - self.batch_size[0]) / (self.epochs - 1)
-            )
-        else:
-            return int(self.batch_size[0])
-
-    def _train_tf_dataset(self,
-                          train_init_op: 'tf.Operation',
-                          eval_init_op: 'tf.Operation',
-                          batch_size_in: 'tf.Tensor',
-                          loss: 'tf.Tensor',
-                          acc,
-                          ) -> None:
-        """Train tf graph"""
-
-        self.session.run(tf.global_variables_initializer())
-
-        if self.evaluate_on_num_examples:
-            logger.info(
-                "Accuracy is updated every {} epochs"
-                "".format(self.evaluate_every_num_epochs)
-            )
-        pbar = tqdm(range(self.epochs), desc="Epochs", disable=is_logging_disabled())
-
-        eval_acc = 0
-        eval_loss = 0
-        for ep in pbar:
-
-            batch_size = self._linearly_increasing_batch_size(ep)
-
-            self.session.run(train_init_op, feed_dict={batch_size_in: batch_size})
-
-            ep_train_loss = 0
-            ep_train_acc = 0
-            batches_per_epoch = 0
-            while True:
-                try:
-                    _, batch_train_loss, batch_train_acc = self.session.run(
-                        [self._train_op, loss, acc],
-                        feed_dict={self._is_training: True}
-                    )
-                    batches_per_epoch += 1
-                    ep_train_loss += batch_train_loss
-                    ep_train_acc += batch_train_acc
-
-                except tf.errors.OutOfRangeError:
-                    break
-
-            ep_train_loss /= batches_per_epoch
-            ep_train_acc /= batches_per_epoch
-
-            pbar.set_postfix({
-                "loss": "{:.3f}".format(ep_train_loss),
-                "acc": "{:.3f}".format(ep_train_acc)
-            })
-
-            if self.evaluate_on_num_examples and eval_init_op is not None:
-                if ((ep + 1) % self.evaluate_every_num_epochs == 0
-                        or (ep + 1) == self.epochs):
-                    eval_loss, eval_acc = self._output_training_stat_dataset(
-                        eval_init_op, loss, acc
-                    )
-                if ((ep + 1) % self.evaluate_every_num_epochs == 0
-                        and (ep + 1) != self.epochs):
-                    logger.info("Evaluation results: loss: {:.3f}, acc: {:.3f}"
-                                "".format(eval_loss, eval_acc))
-
-        if self.evaluate_on_num_examples:
-            logger.info("Finished training embedding classifier, "
-                        "loss={:.3f}, accuracy={:.3f}"
-                        "".format(eval_loss, eval_acc))
-
-    def _output_training_stat_dataset(self,
-                                      eval_init_op: 'tf.Operation',
-                                      loss: 'tf.Tensor',
-                                      acc: 'tf.Tensor') -> Tuple[float, float]:
-        """Output training statistics"""
-
-        self.session.run(eval_init_op)
-
-        return self.session.run([loss, acc], feed_dict={self._is_training: False})
 
     def continue_training(
         self,
