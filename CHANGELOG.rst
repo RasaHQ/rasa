@@ -13,6 +13,7 @@ Added
 -----
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
+- Fill slots for custom templates
 
 Changed
 -------
@@ -28,7 +29,9 @@ Fixed
 -----
 - added timeout to terminal input channel to avoid freezing input in case of server
   errors
-- Fill slots for image template other than text
+- fill slots for image templates
+- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
+
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^

@@ -1,12 +1,12 @@
 import copy
 import logging
-import re
 from collections import defaultdict
 
 from rasa.core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
 
 from rasa.core.nlg.generator import NaturalLanguageGenerator
+from rasa.core.nlg.interpolator import interpolate_text, interpolate
 
 logger = logging.getLogger(__name__)
 
@@ -88,11 +88,11 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         r = copy.deepcopy(self._random_template_for(template_name, output_channel))
         # Filling the slots in the template and returning the template
         if r is not None:
-            return self._fill_template_text(r, filled_slots, **kwargs)
+            return self._fill_template(r, filled_slots, **kwargs)
         else:
             return None
 
-    def _fill_template_text(
+    def _fill_template(
         self,
         template: Dict[Text, Any],
         filled_slots: Optional[Dict[Text, Any]] = None,
@@ -103,7 +103,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Getting the slot values in the template variables
         template_vars = self._template_variables(filled_slots, kwargs)
 
-        for key in ["text", "image"]:
+        for key in ["text", "image","custom"]:
             # Filling the template variables in the template
             if template_vars and (key in template):
                 try:
@@ -112,8 +112,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
                     # as described here:
                     # https://stackoverflow.com/questions/7934620/python-dots-in-the-name-of-variable-in-a-format-string#comment9695339_7934969
                     # assuming that slot_name do not contain newline character here
-                    template_key = re.sub(r"{([^\n]+?)}", r"{0[\1]}", template[key])
-                    template[key] = template_key.format(template_vars)
+                    template[key] = interpolate(template[key], template_vars)
                 except KeyError as e:
                     logger.exception(
                         "Failed to fill utterance template '{}'. "
