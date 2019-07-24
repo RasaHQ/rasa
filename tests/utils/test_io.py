@@ -15,8 +15,8 @@ def test_read_yaml_string():
     user: user
     password: pass
     """
-    r = io_utils.read_yaml(config_without_env_var)
-    assert r["user"] == "user" and r["password"] == "pass"
+    content = io_utils.read_yaml(config_without_env_var)
+    assert content["user"] == "user" and content["password"] == "pass"
 
 
 def test_read_yaml_string_with_env_var():
@@ -24,8 +24,8 @@ def test_read_yaml_string_with_env_var():
     user: ${USER_NAME}
     password: ${PASS}
     """
-    r = io_utils.read_yaml(config_with_env_var)
-    assert r["user"] == "user" and r["password"] == "pass"
+    content = io_utils.read_yaml(config_with_env_var)
+    assert content["user"] == "user" and content["password"] == "pass"
 
 
 def test_read_yaml_string_with_multiple_env_vars_per_line():
@@ -33,8 +33,8 @@ def test_read_yaml_string_with_multiple_env_vars_per_line():
     user: ${USER_NAME} ${PASS}
     password: ${PASS}
     """
-    r = io_utils.read_yaml(config_with_env_var)
-    assert r["user"] == "user pass" and r["password"] == "pass"
+    content = io_utils.read_yaml(config_with_env_var)
+    assert content["user"] == "user pass" and content["password"] == "pass"
 
 
 def test_read_yaml_string_with_env_var_prefix():
@@ -42,8 +42,8 @@ def test_read_yaml_string_with_env_var_prefix():
     user: db_${USER_NAME}
     password: db_${PASS}
     """
-    r = io_utils.read_yaml(config_with_env_var_prefix)
-    assert r["user"] == "db_user" and r["password"] == "db_pass"
+    content = io_utils.read_yaml(config_with_env_var_prefix)
+    assert content["user"] == "db_user" and content["password"] == "db_pass"
 
 
 def test_read_yaml_string_with_env_var_postfix():
@@ -51,8 +51,8 @@ def test_read_yaml_string_with_env_var_postfix():
     user: ${USER_NAME}_admin
     password: ${PASS}_admin
     """
-    r = io_utils.read_yaml(config_with_env_var_postfix)
-    assert r["user"] == "user_admin" and r["password"] == "pass_admin"
+    content = io_utils.read_yaml(config_with_env_var_postfix)
+    assert content["user"] == "user_admin" and content["password"] == "pass_admin"
 
 
 def test_read_yaml_string_with_env_var_infix():
@@ -60,8 +60,8 @@ def test_read_yaml_string_with_env_var_infix():
     user: db_${USER_NAME}_admin
     password: db_${PASS}_admin
     """
-    r = io_utils.read_yaml(config_with_env_var_infix)
-    assert r["user"] == "db_user_admin" and r["password"] == "db_pass_admin"
+    content = io_utils.read_yaml(config_with_env_var_infix)
+    assert content["user"] == "db_user_admin" and content["password"] == "db_pass_admin"
 
 
 def test_read_yaml_string_with_env_var_not_exist():
@@ -83,45 +83,45 @@ def test_environment_variable_dict_without_prefix_and_postfix():
     os.environ["variable"] = "test"
     content = "model: \n  test: ${variable}"
 
-    result = io_utils.read_yaml(content)
+    content = io_utils.read_yaml(content)
 
-    assert result["model"]["test"] == "test"
+    assert content["model"]["test"] == "test"
 
 
 def test_environment_variable_in_list():
     os.environ["variable"] = "test"
     content = "model: \n  - value\n  - ${variable}"
 
-    result = io_utils.read_yaml(content)
+    content = io_utils.read_yaml(content)
 
-    assert result["model"][1] == "test"
+    assert content["model"][1] == "test"
 
 
 def test_environment_variable_dict_with_prefix():
     os.environ["variable"] = "test"
     content = "model: \n  test: dir/${variable}"
 
-    result = io_utils.read_yaml(content)
+    content = io_utils.read_yaml(content)
 
-    assert result["model"]["test"] == "dir/test"
+    assert content["model"]["test"] == "dir/test"
 
 
 def test_environment_variable_dict_with_postfix():
     os.environ["variable"] = "test"
     content = "model: \n  test: ${variable}/dir"
 
-    result = io_utils.read_yaml(content)
+    content = io_utils.read_yaml(content)
 
-    assert result["model"]["test"] == "test/dir"
+    assert content["model"]["test"] == "test/dir"
 
 
 def test_environment_variable_dict_with_prefix_and_with_postfix():
     os.environ["variable"] = "test"
     content = "model: \n  test: dir/${variable}/dir"
 
-    result = io_utils.read_yaml(content)
+    content = io_utils.read_yaml(content)
 
-    assert result["model"]["test"] == "dir/test/dir"
+    assert content["model"]["test"] == "dir/test/dir"
 
 
 def test_emojis_in_yaml():
@@ -130,10 +130,10 @@ def test_emojis_in_yaml():
         - one 😁💯 👩🏿‍💻👨🏿‍💻
         - two £ (?u)\\b\\w+\\b f\u00fcr
     """
-    actual = io_utils.read_yaml(test_data)
+    content = io_utils.read_yaml(test_data)
 
-    assert actual["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
-    assert actual["data"][1] == "two £ (?u)\\b\\w+\\b für"
+    assert content["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
+    assert content["data"][1] == "two £ (?u)\\b\\w+\\b für"
 
 
 def test_emojis_in_tmp_file():
@@ -145,10 +145,10 @@ def test_emojis_in_tmp_file():
     test_file = io_utils.create_temporary_file(test_data)
     with io.open(test_file, mode="r", encoding="utf-8") as f:
         content = f.read()
-    actual = io_utils.read_yaml(content)
+    content = io_utils.read_yaml(content)
 
-    assert actual["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
-    assert actual["data"][1] == "two £ (?u)\\b\\w+\\b für"
+    assert content["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
+    assert content["data"][1] == "two £ (?u)\\b\\w+\\b für"
 
 
 def test_read_emojis_from_json():
@@ -157,10 +157,10 @@ def test_read_emojis_from_json():
     d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} f\u00fcr"}
     json_string = json.dumps(d, indent=2)
 
-    s = io_utils.read_yaml(json_string)
+    content = io_utils.read_yaml(json_string)
 
     expected = "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} für"
-    assert s.get("text") == expected
+    assert content.get("text") == expected
 
 
 def test_bool_str():
@@ -170,11 +170,11 @@ def test_bool_str():
     three: "True"
     """
 
-    actual = io_utils.read_yaml(test_data)
+    content = io_utils.read_yaml(test_data)
 
-    assert actual["one"] == "yes"
-    assert actual["two"] == "true"
-    assert actual["three"] == "True"
+    assert content["one"] == "yes"
+    assert content["two"] == "true"
+    assert content["three"] == "True"
 
 
 def test_read_file_with_not_existing_path():
