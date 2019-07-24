@@ -5,7 +5,6 @@ import logging
 import os
 import signal
 import traceback
-import typing
 from multiprocessing import get_context
 from typing import List, Text, Optional, Tuple, Union, Iterable
 
@@ -24,14 +23,12 @@ from rasa.constants import (
     DEFAULT_RASA_X_PORT,
     DEFAULT_RASA_PORT,
 )
+from rasa.core.utils import AvailableEndpoints
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_TRACKER_DB = "tracker.db"
-
-if typing.TYPE_CHECKING:
-    from rasa.core.utils import AvailableEndpoints
 
 
 # noinspection PyProtectedMember
@@ -56,7 +53,7 @@ def add_subparser(
 
 def _rasa_service(
     args: argparse.Namespace,
-    endpoints: "AvailableEndpoints",
+    endpoints: AvailableEndpoints,
     rasa_x_url: Optional[Text] = None,
     credentials_path: Optional[Text] = None,
 ):
@@ -106,7 +103,7 @@ def _prepare_credentials_for_rasa_x(
 
 
 def _overwrite_endpoints_for_local_x(
-    endpoints: "AvailableEndpoints", rasa_x_token: Text, rasa_x_url: Text
+    endpoints: AvailableEndpoints, rasa_x_token: Text, rasa_x_url: Text
 ):
     from rasa.utils.endpoints import EndpointConfig
     import questionary
