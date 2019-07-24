@@ -1,20 +1,13 @@
 import argparse
 import os
-import tempfile
 from typing import List, Optional, Text, Dict
 import rasa.cli.arguments as arguments
 
-from rasa.cli.utils import (
-    get_validated_path,
-    missing_config_keys,
-    print_error,
-    print_warning,
-)
+from rasa.cli.utils import get_validated_path, missing_config_keys, print_error
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATH,
-    FALLBACK_CONFIG_PATH,
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS,
@@ -121,8 +114,7 @@ def train_core(
     else:
         from rasa.core.train import do_compare_training
 
-        loop.run_until_complete(do_compare_training(args, stories, None))
-        return None
+        loop.run_until_complete(do_compare_training(args, stories))
 
 
 def train_nlu(

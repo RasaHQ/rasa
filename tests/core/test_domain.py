@@ -3,7 +3,6 @@ import json
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
-import rasa.utils.io
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -128,6 +127,8 @@ async def test_create_train_data_unfeaturized_entities():
 
     assert hashed == [
         "[{}]",
+        '[{"intent_why": 1.0, "prev_utter_default": 1.0}]',
+        '[{"intent_why": 1.0, "prev_action_listen": 1.0}]',
         '[{"intent_thank": 1.0, "prev_utter_default": 1.0}]',
         '[{"intent_thank": 1.0, "prev_action_listen": 1.0}]',
         '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
@@ -146,6 +147,8 @@ async def test_create_train_data_unfeaturized_entities():
 def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = Domain.load(domain_file)
+
+    assert not domain.is_empty()
     assert len(domain.intents) == 10
     assert len(domain.action_names) == 11
 
@@ -499,3 +502,36 @@ def test_load_on_invalid_domain():
     # Currently just deprecated
     # with pytest.raises(InvalidDomain):
     #     Domain.load("data/test_domains/missing_text_for_templates.yml")
+
+
+def test_is_empty():
+    assert Domain.empty().is_empty()
+
+
+def test_clean_domain():
+    domain_path = "data/test_domains/default_unfeaturized_entities.yml"
+    cleaned = Domain.load(domain_path).cleaned_domain()
+
+    expected = {
+        "intents": [
+            {"greet": {"use_entities": ["name"]}},
+            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
+            {"goodbye": {"use_entities": []}},
+            {"thank": {"use_entities": []}},
+            "ask",
+            {"why": {"use_entities": []}},
+            "pure_intent",
+        ],
+        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "templates": {
+            "utter_greet": [{"text": "hey there!"}],
+            "utter_goodbye": [{"text": "goodbye :("}],
+            "utter_default": [{"text": "default message"}],
+        },
+        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+    }
+
+    expected = Domain.from_dict(expected)
+    actual = Domain.from_dict(cleaned)
+
+    assert hash(actual) == hash(expected)

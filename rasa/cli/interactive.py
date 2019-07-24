@@ -1,6 +1,5 @@
 import argparse
 import os
-import shutil
 from typing import List, Text
 
 import rasa.cli.train as train
@@ -108,8 +107,8 @@ def check_training_data(args):
         get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
         for f in args.data
     ]
-    story_directory, nlu_data_directory = data.get_core_nlu_directories(training_files)
-    if not os.listdir(story_directory) or not os.listdir(nlu_data_directory):
+    story_files, nlu_files = data.get_core_nlu_files(training_files)
+    if not story_files or not nlu_files:
         print_error(
             "Cannot train initial Rasa model. Please provide NLU and Core data "
             "using the '--data' argument."
