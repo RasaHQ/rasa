@@ -393,43 +393,27 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy.train(trackers, domain=default_domain)
 
 
-class TestEmbeddingPolicyNoAttention(PolicyTestCollection):
+class TestEmbeddingPolicyWithFeaturizer(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
-        # use standard featurizer from EmbeddingPolicy,
-        # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(
-            priority=priority, attn_before_rnn=False, attn_after_rnn=False
-        )
+        p = EmbeddingPolicy(featurizer=featurizer, priority=priority)
         return p
 
 
-class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
+class TestEmbeddingPolicyWithFullDialogue(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(
-            priority=priority, attn_before_rnn=True, attn_after_rnn=False
-        )
+        # if max_history is not specified
+        p = EmbeddingPolicy(priority=priority)
         return p
 
 
-class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
+class TestEmbeddingPolicyWithMaxHistory(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
-        # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(
-            priority=priority, attn_before_rnn=False, attn_after_rnn=True
-        )
-        return p
-
-
-class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        # use standard featurizer from EmbeddingPolicy,
-        # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(
-            priority=priority, attn_before_rnn=True, attn_after_rnn=True
-        )
+        # since it is using MaxHistoryTrackerFeaturizer
+        # if max_history is specified
+        p = EmbeddingPolicy(priority=priority, max_history=self.max_history)
         return p
 
 
@@ -437,6 +421,7 @@ class TestEmbeddingPolicyWithTfConfig(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
+        # if max_history is not specified
         p = EmbeddingPolicy(priority=priority, **tf_defaults())
         return p
 
