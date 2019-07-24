@@ -126,7 +126,8 @@ def test_nlg_fill_template_image(img_slot_name, img_slot_value):
         template=template, filled_slots={img_slot_name: img_slot_value}
     )
     assert result == {"image": str(img_slot_value)}
-    
+
+
 @pytest.mark.parametrize(
     "slot_name, slot_value",
     [
@@ -164,7 +165,6 @@ def test_nlg_fill_template_custom(slot_name, slot_value):
     }
 
 
-
 @pytest.mark.parametrize("slot_name, slot_value", [("tag_w_\n", "a")])
 def test_nlg_fill_template_w_bad_slot_name2(slot_name, slot_value):
     template_text = "{" + slot_name + "}"
@@ -187,7 +187,7 @@ def test_nlg_fill_template_image_and_text(
 ):
     template = {"text": "{" + text_slot_name + "}", "image": "{" + img_slot_name + "}"}
     t = TemplatedNaturalLanguageGenerator(templates=dict())
-    result = t._fill_template_text(
+    result = t._fill_template(
         template=template,
         filled_slots={text_slot_name: text_slot_value, img_slot_name: img_slot_value},
     )

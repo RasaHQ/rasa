@@ -103,7 +103,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Getting the slot values in the template variables
         template_vars = self._template_variables(filled_slots, kwargs)
 
-        for key in ["text", "image","custom"]:
+        for key in ["text", "image", "custom"]:
             # Filling the template variables in the template
             if template_vars and (key in template):
                 try:
