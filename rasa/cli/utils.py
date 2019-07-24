@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, Callable, Dict, Optional, Text, List
+from typing import Any, Optional, Text, List
 import logging
 from questionary import Question
 
@@ -122,34 +122,6 @@ def create_output_path(
             name = "{}{}".format(prefix, name)
         file_name = "{}.tar.gz".format(name)
         return os.path.join(output_path, file_name)
-
-
-def minimal_kwargs(
-    kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
-) -> Dict[Text, Any]:
-    """Returns only the kwargs which are required by a function. Keys, contained in
-    the exception list, are not included.
-
-    Args:
-        kwargs: All available kwargs.
-        func: The function which should be called.
-        excluded_keys: Keys to exclude from the result.
-
-    Returns:
-        Subset of kwargs which are accepted by `func`.
-
-    """
-    from rasa.utils.common import arguments_of
-
-    excluded_keys = excluded_keys or []
-
-    possible_arguments = arguments_of(func)
-
-    return {
-        k: v
-        for k, v in kwargs.items()
-        if k in possible_arguments and k not in excluded_keys
-    }
 
 
 class bcolors(object):

@@ -4,8 +4,13 @@ import os
 from typing import Text, Dict, Optional, List, Any
 
 import rasa.utils.io as io_utils
-from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE, NUM_STORIES_FILE
-from rasa.cli.utils import minimal_kwargs, print_error, print_warning
+from rasa.constants import (
+    DEFAULT_RESULTS_PATH,
+    RESULTS_FILE,
+    NUMBER_OF_TRAINING_STORIES_FILE,
+)
+from rasa.cli.utils import print_error, print_warning
+import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
@@ -17,7 +22,7 @@ def test_core_models_in_dir(model_directory: Text, stories: Text, output: Text):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
 
-    story_n_path = os.path.join(model_directory, NUM_STORIES_FILE)
+    story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
     number_of_stories = io_utils.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
 
@@ -96,7 +101,7 @@ def test_core(
 
     _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
-    kwargs = minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
+    kwargs = utils.minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
@@ -120,7 +125,7 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
-        kwargs = minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
+        kwargs = utils.minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
         run_evaluation(nlu_data, nlu_model, **kwargs)
     else:
         print_error(
@@ -189,7 +194,7 @@ def perform_nlu_cross_validation(
     nlu_config = rasa.nlu.config.load(config)
     data = rasa.nlu.training_data.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
-    kwargs = minimal_kwargs(kwargs, cross_validate)
+    kwargs = utils.minimal_kwargs(kwargs, cross_validate)
     results, entity_results = cross_validate(data, folds, nlu_config, **kwargs)
     logger.info("CV evaluation (n={})".format(folds))
 

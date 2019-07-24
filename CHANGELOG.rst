@@ -12,11 +12,15 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 - add ``--evaluate-models-in-dir`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
+- ``TrainingFileImporter`` interface to support customizing the process of loading
+  training data
+- Fill slots for custom templates
 
 Changed
 -------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
+- Update pytype to ``2019.7.11``
 
 Removed
 -------
@@ -26,6 +30,8 @@ Fixed
 -----
 - ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
 - ``rasa test core`` can handle compressed model files
+- added timeout to terminal input channel to avoid freezing input in case of server
+  errors
 
 
 [1.1.7] - 2019-07-18

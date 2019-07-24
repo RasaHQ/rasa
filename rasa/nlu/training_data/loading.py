@@ -118,7 +118,7 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
     if fformat == UNK:
         raise ValueError("Unknown data format for file '{}'.".format(filename))
 
-    logger.info("Training data format of '{}' is '{}'.".format(filename, fformat))
+    logger.debug("Training data format of '{}' is '{}'.".format(filename, fformat))
     reader = _reader_factory(fformat)
 
     if reader:
