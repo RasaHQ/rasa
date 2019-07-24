@@ -473,17 +473,15 @@ incorrect action was predicted instead.</p>
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
-                      [--evaluate-models-in-dir]
 
 optional arguments:
   -h, --help            show this help message and exit
   -m MODEL [MODEL ...], --model MODEL [MODEL ...]
                         Path to a pre-trained model. If it is a &#39;tar.gz&#39; file
                         that model file will be used. If it is a directory,
-                        the latest model in that directory will be used
-                        (exception: &#39;--evaluate-models-in-dir&#39; flag is set).
-                        If multiple &#39;tar.gz&#39; files are provided, all those
-                        models will be compared. (default: [None])
+                        the latest model in that directory will be used. If
+                        multiple &#39;tar.gz&#39; files are provided, all those models
+                        will be compared. (default: [None])
   -s STORIES, --stories STORIES
                         File or folder containing your test stories. (default:
                         data)
@@ -504,11 +502,6 @@ optional arguments:
   --url URL             If supplied, downloads a story file from a URL and
                         trains on it. Fetches the data by sending a GET
                         request to the supplied URL. (default: None)
-  --evaluate-models-in-dir
-                        Should be set to evaluate models trained via &#39;rasa
-                        train core --config &lt;config-1&gt; &lt;config-2&gt;&#39;. All models
-                        in the provided directory are evaluated and compared
-                        against each other. (default: False)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
