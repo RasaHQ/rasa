@@ -1,6 +1,6 @@
 import os
 from shutil import copyfile
-from constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
+from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.utils.io import list_files, write_yaml_file
 
 
