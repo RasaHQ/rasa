@@ -122,7 +122,7 @@ def test_nlg_fill_template_text(slot_name, slot_value):
 def test_nlg_fill_template_image(img_slot_name, img_slot_value):
     template = {"image": "{" + img_slot_name + "}"}
     t = TemplatedNaturalLanguageGenerator(templates=dict())
-    result = t._fill_template_text(
+    result = t._fill_template(
         template=template, filled_slots={img_slot_name: img_slot_value}
     )
     assert result == {"image": str(img_slot_value)}
