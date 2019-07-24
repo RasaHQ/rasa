@@ -20,6 +20,8 @@ Changed
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
 - Update pytype to ``2019.7.11``
+- Substitute LSTM with Transformer in ``EmbeddingPolicy``
+- ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
 
 Removed
 -------
