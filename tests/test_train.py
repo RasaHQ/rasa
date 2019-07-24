@@ -4,9 +4,9 @@ import shutil
 
 import pytest
 
-from rasa.model import unpack_model
+import rasa.model
 
-from rasa.train import _package_model, train
+from rasa.train import train
 from tests.core.test_model import _fingerprint
 
 TEST_TEMP = "test_tmp"
@@ -22,9 +22,9 @@ TEST_TEMP = "test_tmp"
 )
 def test_package_model(trained_rasa_model, parameters):
     output_path = tempfile.mkdtemp()
-    train_path = unpack_model(trained_rasa_model)
+    train_path = rasa.model.unpack_model(trained_rasa_model)
 
-    model_path = _package_model(
+    model_path = rasa.model.package_model(
         _fingerprint(),
         output_path,
         train_path,
