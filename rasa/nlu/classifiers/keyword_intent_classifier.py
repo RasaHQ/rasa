@@ -29,9 +29,11 @@ class KeywordIntentClassifier(Component):
 
     defaults = {"case_sensitive": True}
 
-    def __init__(self,
-                 component_config: Dict[Text, Any] = None,
-                 intent_keyword_map: Optional[Dict] = None):
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        intent_keyword_map: Optional[Dict] = None,
+    ):
 
         super(KeywordIntentClassifier, self).__init__(component_config)
 
@@ -61,15 +63,26 @@ class KeywordIntentClassifier(Component):
             message.set("intent", intent, add_to_output=True)
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
+        found_intents = []
         for intent, examples in self.intent_keyword_map.items():
             for example in examples:
                 if self.component_config["case_sensitive"]:
-                    if example == text:
-                        return intent
+                    if example in text:
+                        found_intents.append(intent)
                 else:
-                    if example.lower() == text.lower():
-                        return intent
-        return None
+                    if example.lower() in text.lower():
+                        found_intents.append(intent)
+        if len(found_intents) == 0:
+            return None
+        elif len(found_intents) == 1:
+            return found_intents[0]
+        else:
+            logger.debug(
+                "KeywordClassifier found keywords for intents '{}',"
+                "will classify message as having intent '{}'."
+                "".format(found_intents, found_intents[0])
+            )
+            return found_intents[0]
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.

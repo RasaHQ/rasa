@@ -81,6 +81,12 @@ class MessageProcessor(object):
         if not tracker:
             return None
 
+        if not self.policy_ensemble or not self.domain:
+            logger.warning(
+                "No policy ensemble or domain set. Skipping action prediction and execution."
+            )
+            return None
+
         await self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -445,8 +451,8 @@ class MessageProcessor(object):
             logger.error(
                 "Encountered an exception while running action '{}'. "
                 "Bot will continue, but the actions events are lost. "
-                "Make sure to fix the exception in your custom "
-                "code.".format(action.name())
+                "Please check the logs of your action server for "
+                "more information.".format(action.name())
             )
             logger.debug(e, exc_info=True)
             events = []

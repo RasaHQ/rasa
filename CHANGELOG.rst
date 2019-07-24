@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.7] - `master`_
+[Unreleased 1.1.8] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -14,10 +14,15 @@ Added
 - added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
 - ``case_sensitive`` option added to ``WhiteSpaceTokenizer`` with ``true`` as default.
 - added new ``KeywordIntentClassifier``, can be used to classify messages based on keywords
+- ``TrainingFileImporter`` interface to support customizing the process of loading
+  training data
+- Fill slots for custom templates
 
 Changed
 -------
-
+- ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
+  or a policy ensemble
+- Update pytype to ``2019.7.11``
 
 Removed
 -------
@@ -25,8 +30,26 @@ Removed
 
 Fixed
 -----
+- added timeout to terminal input channel to avoid freezing input in case of server
+  errors
+- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
+
+
+[1.1.7] - 2019-07-18
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
+- ``case_sensitive`` option added to ``WhiteSpaceTokenizer`` with ``true`` as default.
+
+Fixed
+-----
 - validation no longer throws an error during interactive learning
+- fixed wrong cleaning of ``use_entities`` in case it was a list and not ``True``
 - updated the server endpoint ``/model/parse`` to handle also messages with the intent prefix
+- fixed bug where "No model found" message appeared after successfully running the bot
+- debug logs now print to ``rasa_core.log`` when running ``rasa x -vv`` or ``rasa run -vv``
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^

@@ -458,9 +458,12 @@ KeywordIntentClassifier
 
 :Description:
     This classifier works by searching a message for keywords.
-    The matching is case sensitive and search only for exact matches of the keyword-string.
+    The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user message.
     The keywords for an intent are the examples of that intent in the NLU training data.
-    .. note:: This means the entire example is the keyword, not the individual words in the example.
+    This means the entire example is the keyword, not the individual words in the example.
+    In the case of multiple keywords being found the message will classified as having the intent specified
+    first in the domain file.
+    .. note:: This classifier is intended only for small projects or to get started.
 
 :Configuration:
 
@@ -468,6 +471,7 @@ KeywordIntentClassifier
 
         pipeline:
         - name: "KeywordIntentClassifier"
+          case_sensitive: True
 
 Tokenizers
 ----------
