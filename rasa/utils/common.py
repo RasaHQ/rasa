@@ -53,41 +53,6 @@ def read_global_config() -> Dict[Text, Any]:
         return {}
 
 
-def write_global_config_value(name: Text, value: Any) -> None:
-    """Read global Rasa configuration."""
-
-    try:
-        os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
-
-        c = read_global_config()
-        c[name] = value
-        rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
-    except Exception as e:
-        logger.warning(
-            "Failed to write global config. Error: {}. Skipping." "".format(e)
-        )
-
-
-def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
-    """Read a value from the global Rasa configuration."""
-
-    def not_found():
-        if unavailable_ok:
-            return None
-        else:
-            raise ValueError("Configuration '{}' key not found.".format(name))
-
-    if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
-        return not_found()
-
-    c = read_global_config()
-
-    if name in c:
-        return c[name]
-    else:
-        return not_found()
-
-
 def set_log_level(log_level: Optional[int] = None):
     """Set log level of Rasa and Tensorflow either to the provided log level or
     to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
@@ -247,3 +212,38 @@ def minimal_kwargs(
         for k, v in kwargs.items()
         if k in possible_arguments and k not in excluded_keys
     }
+
+
+def write_global_config_value(name: Text, value: Any) -> None:
+    """Read global Rasa configuration."""
+
+    try:
+        os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
+
+        c = read_global_config()
+        c[name] = value
+        rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
+    except Exception as e:
+        logger.warning(
+            "Failed to write global config. Error: {}. Skipping." "".format(e)
+        )
+
+
+def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
+    """Read a value from the global Rasa configuration."""
+
+    def not_found():
+        if unavailable_ok:
+            return None
+        else:
+            raise ValueError("Configuration '{}' key not found.".format(name))
+
+    if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
+        return not_found()
+
+    c = read_global_config()
+
+    if name in c:
+        return c[name]
+    else:
+        return not_found()
