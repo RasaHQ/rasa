@@ -87,6 +87,7 @@ class EmbeddingPolicy(Policy):
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
         "batch_size": [8, 32],
+        "batch_strategy": 'sequence',  # string 'sequence' or 'balanced'
         # number of epochs
         "epochs": 1,
         # set random seed to any int to get reproducible results
@@ -211,6 +212,7 @@ class EmbeddingPolicy(Policy):
         self.num_transformer_layers = config["num_transformer_layers"]
 
         self.batch_size = config["batch_size"]
+        self.batch_strategy = config["batch_strategy"]
 
         self.epochs = config["epochs"]
 
@@ -320,7 +322,7 @@ class EmbeddingPolicy(Policy):
     # tf helpers:
     # noinspection PyPep8Naming
     @staticmethod
-    def gen_stratified_batch(session_data, batch_size):
+    def gen_balanced_batch(session_data, batch_size):
 
         num_examples = len(session_data.X)
         ids = np.random.permutation(num_examples)
@@ -330,9 +332,6 @@ class EmbeddingPolicy(Policy):
 
         unique_labels, counts_labels = np.unique(labels, return_counts=True)
         num_labels = len(unique_labels)
-        ids = np.random.permutation(num_labels)
-        unique_labels = unique_labels[ids]
-        counts_labels = counts_labels[ids]
 
         label_data = []
         for label in unique_labels:
@@ -346,7 +345,8 @@ class EmbeddingPolicy(Policy):
         new_X = []
         new_Y = []
         while min(num_data_cycles) == 0:
-            for i in range(num_labels):
+            ids = np.random.permutation(num_labels)
+            for i in ids:
                 if num_data_cycles[i] > 0 and not skipped[i]:
                     skipped[i] = True
                     continue
@@ -393,28 +393,28 @@ class EmbeddingPolicy(Policy):
 
             yield batch_x, batch_y
 
-    # @staticmethod
+    def train_gen_func(self, session_data, batch_size):
+        if self.batch_strategy == 'sequence':
+            return self.gen_sequence_batch(session_data, batch_size)
+        elif self.batch_strategy == 'balanced':
+            return self.gen_balanced_batch(session_data, batch_size)
+        else:
+            raise ValueError(
+                "Wrong batch strategy '{}', "
+                "should be 'sequence' or 'balanced'"
+                "".format(self.batch_strategy)
+            )
+
     def _create_tf_dataset(self, session_data: 'SessionData',
                            batch_size: Union['tf.Tensor', int],
                            shuffle: bool = True) -> 'tf.data.Dataset':
         """Create tf dataset."""
 
-        def train_gen_func(batch_size_):
-            return self.gen_stratified_batch(session_data, batch_size_)
-            # return self.gen_sequence_batch(session_data, batch_size_)
-
         dpt_types = (tf.float32, tf.float32)
         dpt_shapes = ([None] + list(session_data.X[0].shape),
                       [None] + list(session_data.Y[0].shape))
 
-        dataset = tf.data.Dataset.from_generator(train_gen_func, dpt_types, dpt_shapes, args=([batch_size]))
-        # dataset = tf.data.Dataset.from_tensor_slices(
-        #     (session_data.X, session_data.Y,
-        #      session_data.slots, session_data.previous_actions)
-        # )
-        # if shuffle:
-        #     dataset = dataset.shuffle(buffer_size=len(session_data.X))
-        # dataset = dataset.batch(batch_size)
+        dataset = tf.data.Dataset.from_generator(lambda x: self.train_gen_func(session_data, x), dpt_types, dpt_shapes, args=([batch_size]))
 
         return dataset
 
@@ -458,7 +458,7 @@ class EmbeddingPolicy(Policy):
             return x
         else:
             raise ValueError(
-                "Wrong similarity type {}, "
+                "Wrong similarity type '{}', "
                 "should be 'cosine' or 'inner'"
                 "".format(self.similarity_type)
             )
@@ -832,7 +832,7 @@ class EmbeddingPolicy(Policy):
                                          mask)
         else:
             raise ValueError(
-                "Wrong loss type {}, "
+                "Wrong loss type '{}', "
                 "should be 'margin' or 'softmax'"
                 "".format(self.loss_type)
             )
@@ -1248,7 +1248,7 @@ class EmbeddingPolicy(Policy):
 
         if not os.path.exists(path):
             raise Exception(
-                "Failed to load dialogue model. Path {} "
+                "Failed to load dialogue model. Path '{}' "
                 "doesn't exist".format(os.path.abspath(path))
             )
 
