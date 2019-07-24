@@ -51,7 +51,7 @@ class EvaluationStore(object):
         entity_targets: Optional[List[Dict[Text, Any]]] = None,
     ) -> None:
         """Add items or lists of items to the store"""
-        for k, v in locals().items():
+        for k, v in sorted(locals().items()):
             if k != "self" and v:
                 attr = getattr(self, k)
                 if isinstance(v, list):
@@ -77,7 +77,7 @@ class EvaluationStore(object):
             or self.action_predictions != self.action_targets
         )
 
-    def serialise(self) -> Tuple[List, List]:
+    def serialise(self) -> Tuple[List[Text], List[Text]]:
         """Turn targets and predictions to lists of equal size for sklearn"""
 
         targets = (
@@ -187,11 +187,20 @@ async def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=Fal
     return g.generate()
 
 
-def _clean_entity_results(entity_results):
-    return [
-        {k: r[k] for k in ("start", "end", "entity", "value") if k in r}
-        for r in entity_results
-    ]
+def _clean_entity_results(
+    entity_results: List[Dict[Text, Any]]
+) -> List[Dict[Text, Any]]:
+    """Extract only the token variables from an entity dict."""
+    cleaned_entities = []
+
+    for r in tuple(entity_results):
+        cleaned_entity = {}
+        for k in ("start", "end", "entity", "value"):
+            if k in set(r):
+                cleaned_entity.update({k: r[k]})
+        cleaned_entities.append(cleaned_entity)
+
+    return cleaned_entities
 
 
 def _collect_user_uttered_predictions(
