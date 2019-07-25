@@ -103,12 +103,18 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Getting the slot values in the template variables
         template_vars = self._template_variables(filled_slots, kwargs)
 
-        # Filling the template variables in the template text
+        keys_to_interpolate = [
+            "text",
+            "image",
+            "custom",
+            "button",
+            "attachment",
+            "quick_replies",
+        ]
         if template_vars:
-            if "text" in template:
-                template["text"] = interpolate(template["text"], template_vars)
-            elif "custom" in template:
-                template["custom"] = interpolate(template["custom"], template_vars)
+            for key in keys_to_interpolate:
+                if key in template:
+                    template[key] = interpolate(template[key], template_vars)
         return template
 
     @staticmethod
