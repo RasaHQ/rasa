@@ -18,6 +18,8 @@ Changed
 -------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
+- ``metadata`` attribute added to ``UserMessage``, now it's possible to handle 
+  different kinds of user messages
 
 Removed
 -------
