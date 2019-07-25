@@ -12,7 +12,7 @@ class Ticket:
         self.number = number
         self.expires = expires
 
-    def has_expired(self):
+    def has_expired(self) -> bool:
         return time.time() > self.expires
 
     def as_dict(self):
@@ -29,11 +29,11 @@ class Ticket:
 
         return cls(number=data["number"], expires=data["expires"])
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return "Ticket(number: {}, expires: {})".format(self.number, self.expires)
 
 
-class TicketLock(object):
+class TicketLock:
     def __init__(
         self, conversation_id: Text, tickets: Optional[Deque[Ticket]] = None
     ) -> None:

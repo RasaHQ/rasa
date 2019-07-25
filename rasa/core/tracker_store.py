@@ -118,7 +118,7 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     @staticmethod
-    def serialise_tracker(tracker: DialogueStateTracker):
+    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
         dialogue = tracker.as_dialogue()
         return json.dumps(dialogue.as_dict())
 
