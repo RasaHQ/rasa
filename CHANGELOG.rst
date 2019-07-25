@@ -22,6 +22,8 @@ Changed
 - Update pytype to ``2019.7.11``
 - Substitute LSTM with Transformer in ``EmbeddingPolicy``
 - ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
+- in ``EmbeddingPolicy``, non zero ``evaluate_on_num_examples`` is the size of
+  hold out validation set that is excluded from training data
 
 Removed
 -------
