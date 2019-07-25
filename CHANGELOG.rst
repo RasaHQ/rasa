@@ -14,6 +14,7 @@ Added
 - added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
+- Fill slots for custom templates
 - added argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
   the runtime configuration (endpoints and credentials)
 
@@ -29,8 +30,12 @@ Removed
 
 Fixed
 -----
+- interactive learning bug where reverted user utterances were dumped to training data
 - added timeout to terminal input channel to avoid freezing input in case of server
   errors
+- fill slots for image, buttons, quick_replies and attachments in templates
+- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
+
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^
