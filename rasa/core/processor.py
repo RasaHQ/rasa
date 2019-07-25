@@ -83,7 +83,8 @@ class MessageProcessor(object):
 
         if not self.policy_ensemble or not self.domain:
             logger.warning(
-                "No policy ensemble or domain set. Skipping action prediction and execution."
+                "No policy ensemble or domain set. Skipping action prediction and "
+                "execution."
             )
             return None
 

@@ -409,15 +409,16 @@ def create_app(
             )
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
-        tracker = obtain_tracker_store(app.agent, conversation_id)
 
         try:
-            for event in events:
-                tracker.update(event, app.agent.domain)
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = obtain_tracker_store(app.agent, conversation_id)
+                for event in events:
+                    tracker.update(event, app.agent.domain)
 
-            app.agent.tracker_store.save(tracker)
+                app.agent.tracker_store.save(tracker)
 
-            return response.json(tracker.current_state(verbosity))
+                return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -440,13 +441,14 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            tracker = DialogueStateTracker.from_dict(
-                conversation_id, request.json, app.agent.domain.slots
-            )
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = DialogueStateTracker.from_dict(
+                    conversation_id, request.json, app.agent.domain.slots
+                )
 
-            # will override an existing tracker with the same id!
-            app.agent.tracker_store.save(tracker)
-            return response.json(tracker.current_state(verbosity))
+                # will override an existing tracker with the same id!
+                app.agent.tracker_store.save(tracker)
+                return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -509,12 +511,13 @@ def create_app(
         confidence = request_params.get("confidence", None)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+        out = CollectingOutputChannel()
 
         try:
-            out = CollectingOutputChannel()
-            await app.agent.execute_action(
-                conversation_id, action_to_execute, out, policy, confidence
-            )
+            async with app.agent.lock_store.lock(conversation_id):
+                await app.agent.execute_action(
+                    conversation_id, action_to_execute, out, policy, confidence
+                )
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -574,10 +577,12 @@ def create_app(
                 {"parameter": "sender", "in": "body"},
             )
 
+        user_message = UserMessage(message, None, conversation_id, parse_data)
+
         try:
-            user_message = UserMessage(message, None, conversation_id, parse_data)
-            tracker = await app.agent.log_message(user_message)
-            return response.json(tracker.current_state(verbosity))
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = await app.agent.log_message(user_message)
+                return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -756,7 +761,6 @@ def create_app(
         sender_id = UserMessage.DEFAULT_SENDER_ID
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json
-
         try:
             tracker = DialogueStateTracker.from_dict(
                 sender_id, request_params, app.agent.domain.slots
