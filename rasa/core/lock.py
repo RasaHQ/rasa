@@ -24,7 +24,7 @@ class Ticket:
         return json.dumps(self.as_dict())
 
     @classmethod
-    def from_dict(cls, data: Dict[Text, Any]) -> "Ticket":
+    def from_dict(cls, data: Dict[Text, Union[int, float]]) -> "Ticket":
         """Creates `Ticket` from dictionary."""
 
         return cls(number=data["number"], expires=data["expires"])
