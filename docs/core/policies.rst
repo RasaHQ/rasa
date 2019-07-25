@@ -173,31 +173,14 @@ used in our paper: `<https://arxiv.org/abs/1811.11707>`_
 This policy has a pre-defined architecture, which comprises the
 following steps:
 
-    - apply dense layers to create embeddings for user intents,
-      entities and system actions including previous actions and slots;
-    - concatenate user input (user intents and entities),
-      previous system action and slots
-      for current time into an input vector to pre-transformer embedding layer;
-    - using user and previous system action embeddings from the input
-      vector, calculate attention probabilities over the user and
-      system memories (for system memory, this policy uses
-      `NTM mechanism <https://arxiv.org/abs/1410.5401>`_ with attention
-      by location);
-    - sum the user embedding and user attention vector and feed it
-      and the embeddings of the slots as an input to an LSTM cell;
-    - apply a dense layer to the output of the LSTM to get a raw
-      recurrent embedding of a dialogue;
-    - sum this raw recurrent embedding of a dialogue with system
-      attention vector to create dialogue level embedding, this step
-      allows the algorithm to repeat previous system action by copying
-      its embedding vector directly to the current time output;
-    - weight previous LSTM states with system attention probabilities
-      to get the previous action embedding, the policy is likely payed
-      attention to;
-    - if the similarity between this previous action embedding and
-      current time dialogue embedding is high, overwrite current LSTM
-      state with the one from the time when this action happened;
-    - for each LSTM time step, calculate the similarity between the
+    - concatenate user input (user intent and entities),
+      previous system action and slots for current time into an input vector
+      to pre-transformer embedding layer;
+    - feed it to tranformer;
+    - apply a dense layer to the output of the transformer
+      to get embeddings of a dialogue for each time step;
+    - apply a dense layer to create embeddings for system actions for each time step;
+    - calculate the similarity between the
       dialogue embedding and embedded system actions.
       This step is based on the
       `StarSpace <https://arxiv.org/abs/1709.03856>`_ idea.
@@ -226,15 +209,21 @@ It is recommended to use
             - ``hidden_layers_sizes_b`` sets a list of hidden layers
               sizes before embedding layer for system actions, the number
               of hidden layers is equal to the length of the list;
-            - ``rnn_size`` sets the number of units in the LSTM cell;
+            - ``transformer_size`` sets the number of units in the transfomer;
+            - ``num_transformer_layers`` sets the number of transformer layers;
+            - ``pos_encoding`` sets the type of positional encoding in transformer,
+              it should be either ``timing`` or ``emb``;
+            - ``max_seq_length`` sets maximum sequence length
+              if embedding positional encodings are used;
+            - ``num_heads`` sets the number of heads in multihead attention;
 
         - training:
 
-            - ``layer_norm`` if ``true`` layer normalization for lstm
-              cell is turned on,  default ``true``;
             - ``batch_size`` sets the number of training examples in one
               forward/backward pass, the higher the batch size, the more
               memory space you'll need;
+            - ``batch_strategy`` sets the type of batching strategy,
+              it should be either ``sequence`` or ``balanced``;
             - ``epochs`` sets the number of times the algorithm will see
               training data, where one ``epoch`` equals one forward pass and
               one backward pass of all the training examples;
@@ -244,38 +233,49 @@ It is recommended to use
         - embedding:
 
             - ``embed_dim`` sets the dimension of embedding space;
-            - ``mu_pos`` controls how similar the algorithm should try
-              to make embedding vectors for correct intent labels;
-            - ``mu_neg`` controls maximum negative similarity for
-              incorrect intents;
-            - ``similarity_type`` sets the type of the similarity,
-              it should be either ``cosine`` or ``inner``;
             - ``num_neg`` sets the number of incorrect intent labels,
               the algorithm will minimize their similarity to the user
               input during training;
+            - ``similarity_type`` sets the type of the similarity,
+              it should be either ``auto``, ``cosine`` or ``inner``,
+              if ``auto``, it will be set depending on ``loss_type``,
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+            - ``loss_type`` sets the type of the loss function,
+              it should be either ``softmax`` or ``margin``;
+            - ``mu_pos`` controls how similar the algorithm should try
+              to make embedding vectors for correct intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``mu_neg`` controls maximum negative similarity for
+              incorrect intents,
+              used only if ``loss_type`` is set to ``margin``;
             - ``use_max_sim_neg`` if ``true`` the algorithm only
-              minimizes maximum similarity over incorrect intent labels;
+              minimizes maximum similarity over incorrect intent labels,
+              used only if ``loss_type`` is set to ``margin``;
 
         - regularization:
 
             - ``C2`` sets the scale of L2 regularization
             - ``C_emb`` sets the scale of how important is to minimize
               the maximum similarity between embeddings of different
-              intent labels;
-            - ``droprate_a`` sets the dropout rate between hidden
+              intent labels, used only if ``loss_type`` is set to ``margin``;
+            - ``droprate_a`` sets the dropout rate between
               layers before embedding layer for user inputs;
-            - ``droprate_b`` sets the dropout rate between hidden layers
+            - ``droprate_b`` sets the dropout rate between layers
               before embedding layer for system actions;
-            - ``droprate_rnn`` sets the recurrent dropout rate on
-              the LSTM hidden state `<https://arxiv.org/abs/1603.05118>`_;
 
         - train accuracy calculation:
 
             - ``evaluate_every_num_epochs`` sets how often to calculate
               train accuracy, small values may hurt performance;
             - ``evaluate_on_num_examples`` how many examples to use for
-              calculation of train accuracy, large values may hurt
-              performance.
+              hold out validation set to calculate of validation accuracy,
+              large values may hurt performance.
+
+    .. warning::
+
+        if ``evaluate_on_num_examples`` is non zero, random examples will be
+        picked by stratified split and used as **hold out** validation set,
+        so they will be excluded from training data.
 
     .. note::
 

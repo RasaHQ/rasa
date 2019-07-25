@@ -58,16 +58,16 @@ class EmbeddingPolicy(Policy):
         # a list of hidden layers sizes before bot embed layer
         # number of hidden layers is equal to the length of this list
         "hidden_layers_sizes_bot": [],
+        # number of units in transformer
+        "transformer_sizes": 128,
+        # number of transformer layers
+        "num_transformer_layers": 1,
         # type of positional encoding in transformer
-        "pos_encoding": "timing",  # {"timing", "emb"}
+        "pos_encoding": "timing",  # string 'timing' or 'emb'
         # max sequence length if pos_encoding='emb'
         "max_seq_length": 256,
         # number of attention heads in transformer
         "num_heads": 4,
-        # number of units in transformer
-        "transformer_size": 128,
-        # number of transformer layers
-        "num_transformer_layers": 1,
         # training parameters
         # initial and final batch sizes:
         # batch size will be linearly increased for each epoch
@@ -81,19 +81,19 @@ class EmbeddingPolicy(Policy):
         # embedding parameters
         # dimension size of embedding vectors
         "embed_dim": 20,
+        # the type of the similarity
+        "num_neg": 20,
+        # flag if minimize only maximum similarity over incorrect actions
+        "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
+        # the type of the loss function
+        "loss_type": "softmax",  # string 'softmax' or 'margin'
         # how similar the algorithm should try
         # to make embedding vectors for correct actions
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect actions
         "mu_neg": -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
-        # the type of the similarity
-        "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
-        # the type of the loss function
-        "loss_type": "softmax",  # string 'softmax' or 'margin'
         # the number of incorrect actions, the algorithm will minimize
         # their similarity to the user input during training
-        "num_neg": 20,
-        # flag if minimize only maximum similarity over incorrect actions
         "use_max_sim_neg": True,  # flag which loss function to use
         # regularization
         # the scale of L2 regularization
@@ -101,10 +101,10 @@ class EmbeddingPolicy(Policy):
         # the scale of how important is to minimize the maximum similarity
         # between embeddings of different actions
         "C_emb": 0.8,
-        # dropout rate for bot nn
-        "droprate_bot": 0.0,
         # dropout rate for dial nn
-        "droprate_dial": 0.1,
+        "droprate_a": 0.1,
+        # dropout rate for bot nn
+        "droprate_b": 0.0,
         # visualization of accuracy
         # how often calculate validation accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
@@ -213,7 +213,7 @@ class EmbeddingPolicy(Policy):
     def _load_regularization_params(self, config: Dict[Text, Any]) -> None:
         self.C2 = config["C2"]
         self.C_emb = config["C_emb"]
-        self.droprate = {"bot": config["droprate_bot"], "dial": config["droprate_dial"]}
+        self.droprate = {"bot": config["droprate_b"], "dial": config["droprate_a"]}
 
     def _load_visual_params(self, config: Dict[Text, Any]) -> None:
         self.evaluate_every_num_epochs = config["evaluate_every_num_epochs"]
