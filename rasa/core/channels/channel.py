@@ -402,16 +402,13 @@ class RestInput(InputChannel):
     def _extract_input_channel(self, req: Request) -> Text:
         return req.json.get("input_channel") or self.name()
 
-    def _extract_metadata(self, req: Request) -> Optional[Dict]:
-        return req.json.get("metadata", None)
-
     def stream_response(
         self,
         on_new_message: Callable[[UserMessage], Awaitable[None]],
         text: Text,
         sender_id: Text,
         input_channel: Text,
-        metadata: Dict,
+        metadata: Dict = None,
     ) -> Callable[[Any], Awaitable[None]]:
         async def stream(resp: Any) -> None:
             q = Queue()
@@ -449,12 +446,11 @@ class RestInput(InputChannel):
                 request, "stream", default=False
             )
             input_channel = self._extract_input_channel(request)
-            metadata = self._extract_metadata(request)
 
             if should_use_stream:
                 return response.stream(
                     self.stream_response(
-                        on_new_message, text, sender_id, input_channel, metadata
+                        on_new_message, text, sender_id, input_channel
                     ),
                     content_type="text/event-stream",
                 )
