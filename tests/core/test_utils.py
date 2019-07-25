@@ -72,6 +72,7 @@ def test_read_lines():
 
     assert len(lines) == 2
 
+
 def test_pad_lists_to_size():
     list_x = [1, 2, 3]
     list_y = ["a", "b"]
