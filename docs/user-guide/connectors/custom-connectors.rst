@@ -26,10 +26,11 @@ To send a message, you would run a command like:
 .. code-block:: bash
 
     curl -XPOST http://localhost:5000/webhooks/myio/webhook \
-      -d '{"sender": "user1", "message": "hello"}' \
+      -d '{"sender": "user1", "message": "hello", "metadata": {"type":"text"}}' \
       -H "Content-type: application/json"
 
-where ``myio`` is the name of your component.
+where ``myio`` is the name of your component. And you can inform what
+kind of information are you sending through the ``metadata`` attribute.
 
 In your implementation of the ``receive`` endpoint, you need to make
 sure to call ``on_new_message(UserMessage(text, output, sender_id))``.
