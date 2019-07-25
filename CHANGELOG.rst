@@ -6,8 +6,25 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.8] - `master`_
+
+[Unreleased 1.1.9] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+
+[1.1.8] - 2019-07-25
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -24,10 +41,6 @@ Changed
 - ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
 - in ``EmbeddingPolicy``, non zero ``evaluate_on_num_examples`` is the size of
   hold out validation set that is excluded from training data
-
-Removed
--------
-
 
 Fixed
 -----
