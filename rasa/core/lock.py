@@ -17,7 +17,7 @@ class Ticket:
         self.number = number
         self.expires = expires
 
-    def has_expired(self):
+    def has_expired(self) -> bool:
         return time.time() > self.expires
 
     def dumps(self) -> Text:
@@ -31,11 +31,11 @@ class Ticket:
 
         return cls(data.get("number"), data.get("expires"))
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return "Ticket(number: {}, expires: {})".format(self.number, self.expires)
 
 
-class TicketLock(object):
+class TicketLock:
     def __init__(
         self, conversation_id: Text, tickets: Optional[Deque[Ticket]] = None
     ) -> None:
@@ -108,7 +108,7 @@ class TicketLock(object):
 
         return 0
 
-    def _ticket_number_for_index(self, idx: int) -> Optional[int]:
+    def _ticket_number_for_index(self, ticket_index: int) -> Optional[int]:
         """Return ticket number for `idx`.
 
         Return None if there are no tickets, or if `idx` is out of bounds of

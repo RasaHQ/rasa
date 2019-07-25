@@ -20,8 +20,8 @@ class LockError(Exception):
     pass
 
 
-class LockStore(object):
-    def __init__(self, lifetime: int = 60) -> None:
+class LockStore:
+    def __init__(self, lifetime: int = 60):
         self.lifetime = lifetime
 
     @staticmethod
@@ -38,7 +38,7 @@ class LockStore(object):
             )
 
         logger.debug(
-            "Connected to lock store {}.".format(lock_store.__class__.__name__)
+            "Connected to lock store '{}'.".format(lock_store.__class__.__name__)
         )
 
         return lock_store
@@ -171,6 +171,7 @@ class LockStore(object):
 
     def cleanup(self, conversation_id: Text, ticket_number: int) -> None:
         """Remove lock for `conversation_id` if no one is waiting."""
+
         self.finish_serving(conversation_id, ticket_number)
         if not self.is_someone_waiting(conversation_id):
             self.delete_lock(conversation_id)
