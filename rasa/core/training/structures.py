@@ -399,8 +399,7 @@ class Story(object):
 
 
 class StoryGraph(object):
-    """The graph of the story-steps pooled from all the stories
-    present in the training data."""
+    """Graph of the story-steps pooled from all stories in the training data."""
 
     def __init__(
         self,
