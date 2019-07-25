@@ -13,7 +13,7 @@ from rasa.core.broker import EventChannel
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
-from rasa.core.utils import convert_bytes_to_string
+import rasa.core.utils as rasa_core_utils
 from rasa.utils.common import class_from_module_path
 
 if typing.TYPE_CHECKING:
@@ -193,7 +193,7 @@ class RedisTrackerStore(TrackerStore):
     def retrieve(self, sender_id):
         stored = self.red.get(sender_id)
         if stored is not None:
-            stored = convert_bytes_to_string(stored)
+            stored = rasa_core_utils.convert_bytes_to_string(stored)
             return self.deserialise_tracker(sender_id, stored)
         else:
             return None

@@ -160,7 +160,9 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         with open(str(incoming_order_file), "a+") as f_0:
             f_0.write(message.text + "\n")
 
-        async with self.lock_store.lock(message.sender_id, wait=lock_wait):
+        async with self.lock_store.lock(
+            message.sender_id, wait_time_in_seconds=lock_wait
+        ):
 
             # hold up the message processing after the lock has been acquired
             await asyncio.sleep(wait)
@@ -220,7 +222,9 @@ async def test_lock_error(default_agent: Agent):
     ) -> None:
 
         async with self.lock_store.lock(
-            message.sender_id, attempts=attempts, wait=wait_between_attempts
+            message.sender_id,
+            attempts=attempts,
+            wait_time_in_seconds=wait_between_attempts,
         ):
 
             # hold up the message processing after the lock has been acquired

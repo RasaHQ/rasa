@@ -1,31 +1,36 @@
 import asyncio
 import json
 import logging
-import typing
 from typing import Text, Optional, Dict, Union
 
 from async_generator import asynccontextmanager, async_generator, yield_
 
+from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
-
-if typing.TYPE_CHECKING:
-    pass
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
 ACCEPTED_LOCK_STORES = ["in_memory", "redis"]
 
 
+# noinspection PyUnresolvedReferences
 class LockError(Exception):
+    """Exception that is raised when a lock cannot be acquired.
+
+     Attributes:
+          message (str): explanation of which `conversation_id` raised the error
+    """
+
     pass
 
 
 class LockStore(object):
-    def __init__(self, lifetime: int = 60) -> None:
+    def __init__(self, lifetime: int = DEFAULT_LOCK_LIFETIME) -> None:
         self.lifetime = lifetime
 
     @staticmethod
-    def find_lock_store(store=None) -> "LockStore":
+    def find_lock_store(store: EndpointConfig = None) -> "LockStore":
         if store is None or store.type is None or store.type == "in_memory":
             lock_store = InMemoryLockStore()
         elif store.type == "redis":
@@ -66,7 +71,7 @@ class LockStore(object):
         raise NotImplementedError
 
     def issue_ticket(
-        self, conversation_id: Text, lifetime: Union[float, int] = None
+        self, conversation_id: Text, lifetime: Union[float, int] = DEFAULT_LOCK_LIFETIME
     ) -> int:
         """Issue new ticket for lock associated with `conversation_id`.
 
@@ -84,12 +89,15 @@ class LockStore(object):
     @asynccontextmanager
     @async_generator
     async def lock(
-        self, conversation_id: Text, attempts: int = 60, wait: Union[int, float] = 1
+        self,
+        conversation_id: Text,
+        attempts: int = DEFAULT_LOCK_LIFETIME,
+        wait_time_in_seconds: Union[int, float] = 1,
     ) -> None:
         """Acquire lock for `conversation_id` with `ticket`.
 
-        Perform `attempts` with a wait of `wait` seconds between them before
-        raising a `LockError`.
+        Perform `attempts` with a wait_time_in_seconds of `wait_time_in_seconds` seconds
+         between them before raising a `LockError`.
         """
 
         ticket = self.issue_ticket(conversation_id)
@@ -97,7 +105,9 @@ class LockStore(object):
         try:
             # have to use async_generator.yield_() for py 3.5 compatibility
             await yield_(
-                await self._acquire_lock(conversation_id, ticket, attempts, wait)
+                await self._acquire_lock(
+                    conversation_id, ticket, attempts, wait_time_in_seconds
+                )
             )
         finally:
             self.cleanup(conversation_id, ticket)
@@ -166,7 +176,7 @@ class LockStore(object):
 
         lock = self.get_lock(conversation_id)
         if lock:
-            lock.remove_ticket_for_ticket_number(ticket_number)
+            lock.remove_ticket_for(ticket_number)
             self.save_lock(lock)
 
     def cleanup(self, conversation_id: Text, ticket_number: int) -> None:
@@ -174,8 +184,14 @@ class LockStore(object):
         self.finish_serving(conversation_id, ticket_number)
         if not self.is_someone_waiting(conversation_id):
             self.delete_lock(conversation_id)
+
+    @staticmethod
+    def _log_deletion(conversation_id: Text, deletion_successful: bool) -> None:
+        if deletion_successful:
+            logger.debug("Deleted lock for conversation '{}'.".format(conversation_id))
+        else:
             logger.debug(
-                "Deleted lock for conversation '{}' (unused)".format(conversation_id)
+                "Could not delete lock for conversation '{}'.".format(conversation_id)
             )
 
 
@@ -188,8 +204,8 @@ class RedisLockStore(LockStore):
         port: int = 6379,
         db: int = 1,
         password: Optional[Text] = None,
-        lifetime: int = 60,
-    ) -> None:
+        lifetime: int = DEFAULT_LOCK_LIFETIME,
+    ):
         import redis
 
         self.red = redis.StrictRedis(
@@ -203,7 +219,8 @@ class RedisLockStore(LockStore):
             return TicketLock.from_dict(json.loads(serialised_lock))
 
     def delete_lock(self, conversation_id: Text) -> None:
-        self.red.delete(conversation_id)
+        deletion_successful = self.red.delete(conversation_id)
+        self._log_deletion(conversation_id, deletion_successful)
 
     def save_lock(self, lock: TicketLock) -> None:
         self.red.set(lock.conversation_id, lock.dumps())
@@ -212,7 +229,7 @@ class RedisLockStore(LockStore):
 class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
-    def __init__(self, lifetime: int = 60) -> None:
+    def __init__(self, lifetime: int = DEFAULT_LOCK_LIFETIME):
         self.conversation_locks = {}  # type: Dict[Text, TicketLock]
         super().__init__(lifetime)
 
@@ -220,8 +237,10 @@ class InMemoryLockStore(LockStore):
         return self.conversation_locks.get(conversation_id)
 
     def delete_lock(self, conversation_id: Text) -> None:
-        if conversation_id in self.conversation_locks:
-            del self.conversation_locks[conversation_id]
+        deleted_lock = self.conversation_locks.pop(conversation_id, None)
+        self._log_deletion(
+            conversation_id, deletion_successful=deleted_lock is not None
+        )
 
     def save_lock(self, lock: TicketLock) -> None:
         self.conversation_locks[lock.conversation_id] = lock

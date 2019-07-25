@@ -1,13 +1,8 @@
 import json
 import logging
-import typing
+import time
 from collections import deque
 from typing import Text, Optional, Union, Deque, Dict, Any
-
-import time
-
-if typing.TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +15,19 @@ class Ticket:
     def has_expired(self):
         return time.time() > self.expires
 
-    def dumps(self) -> Text:
-        """Return json dump of `Ticket`."""
+    def as_dict(self):
+        return dict(number=self.number, expires=self.expires)
 
-        return json.dumps(dict(number=self.number, expires=self.expires))
+    def dumps(self) -> Text:
+        """Return json dump of `Ticket` as dictionary."""
+
+        return json.dumps(self.as_dict())
 
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "Ticket":
         """Creates `Ticket` from dictionary."""
 
-        return cls(data.get("number"), data.get("expires"))
+        return cls(number=data["number"], expires=data["expires"])
 
     def __repr__(self):
         return "Ticket(number: {}, expires: {})".format(self.number, self.expires)
@@ -58,8 +56,9 @@ class TicketLock(object):
     def is_locked(self, ticket_number: int) -> bool:
         """Return whether `ticket_number` is locked.
 
-        Returns False if lock has expired.
-        Otherwise returns True if `now_serving` is not equal to `ticket`.
+        Returns:
+             False if lock has expired. Otherwise returns True if `now_serving` is
+             not equal to `ticket`.
         """
 
         return self.now_serving != ticket_number
@@ -86,10 +85,11 @@ class TicketLock(object):
     def last_issued(self) -> int:
         """Return number of the ticket that was last added.
 
-        Return -1 if no tickets exist.
+        Returns:
+             Number of `Ticket` that was last added. -1 if no tickets exist.
         """
 
-        ticket_number = self._ticket_number_for_index(-1)
+        ticket_number = self._ticket_number_for(-1)
         if ticket_number is not None:
             return ticket_number
 
@@ -97,30 +97,28 @@ class TicketLock(object):
 
     @property
     def now_serving(self) -> Optional[int]:
-        """Return number of the ticket to be served next.
+        """Get number of the ticket to be served next.
 
-        Return 0 if no tickets exists.
+        Returns:
+             Number of `Ticket` that is served next. 0 if no `Ticket` exists.
         """
 
-        ticket_number = self._ticket_number_for_index(0)
-        if ticket_number is not None:
-            return ticket_number
+        return self._ticket_number_for(0) or 0
 
-        return 0
+    def _ticket_number_for(self, ticket_index: int) -> Optional[int]:
+        """Get ticket number for `ticket_index`.
 
-    def _ticket_number_for_index(self, idx: int) -> Optional[int]:
-        """Return ticket number for `idx`.
-
-        Return None if there are no tickets, or if `idx` is out of bounds of
-        `self.tickets`.
+        Returns:
+             Ticket number for `Ticket` with index `ticket_index`. None if there are no
+             tickets, or if `ticket_index` is out of bounds of `self.tickets`.
         """
 
         self.remove_expired_tickets()
 
-        if not self.tickets or len(self.tickets) < abs(idx):
+        if not self.tickets or len(self.tickets) < abs(ticket_index):
             return None
 
-        return self.tickets[idx].number
+        return self.tickets[ticket_index].number
 
     def _ticket_for_ticket_number(self, ticket_number: int) -> Optional[Ticket]:
         """Return expiration time for `ticket_number`."""
@@ -132,16 +130,14 @@ class TicketLock(object):
     def is_someone_waiting(self) -> bool:
         """Return whether someone is waiting for the lock to become available.
 
-        Returns True if the ticket queue has length greater than 0.
+        Returns:
+             True if the `self.tickets` queue has length greater than 0.
         """
 
         return len(self.tickets) > 0
 
-    def remove_ticket_for_ticket_number(self, ticket_number: int) -> None:
-        """Return whether ticket for `ticket_number` has expired.
-
-        Return True if ticket was not found.
-        """
+    def remove_ticket_for(self, ticket_number: int) -> None:
+        """Remove `Ticket` for `ticket_number."""
 
         ticket = self._ticket_for_ticket_number(ticket_number)
         if ticket:
@@ -150,7 +146,9 @@ class TicketLock(object):
     def has_lock_expired(self, ticket_number: int) -> Optional[bool]:
         """Return whether ticket for `ticket_number` has expired.
 
-        Return True if ticket was not found.
+        Returns:
+             True if `Ticket` for `ticket_number` has expired, False otherwise. True if
+             ticket was not found.
         """
 
         ticket = self._ticket_for_ticket_number(ticket_number)

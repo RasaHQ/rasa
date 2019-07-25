@@ -313,7 +313,7 @@ class Agent(object):
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
-        self.lock_store = self.create_lock_store(lock_store)
+        self.lock_store = self._create_lock_store(lock_store)
         self.action_endpoint = action_endpoint
 
         self._set_fingerprint(fingerprint)
@@ -856,11 +856,11 @@ class Agent(object):
             return InMemoryTrackerStore(domain)
 
     @staticmethod
-    def create_lock_store(store: Optional[LockStore]) -> LockStore:
+    def _create_lock_store(store: Optional[LockStore]) -> LockStore:
         if store is not None:
             return store
-        else:
-            return InMemoryLockStore()
+
+        return InMemoryLockStore()
 
     @staticmethod
     def _create_ensemble(

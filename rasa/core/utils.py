@@ -341,7 +341,7 @@ def file_as_bytes(path: Text) -> bytes:
 
 
 def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
-    """Convert `data` to string if data is bytes-like object."""
+    """Convert `data` to string if it is a bytes-like object."""
 
     if isinstance(data, (bytes, bytearray)):
         return data.decode("utf-8")

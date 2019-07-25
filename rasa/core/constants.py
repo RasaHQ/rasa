@@ -12,6 +12,8 @@ DEFAULT_FALLBACK_ACTION = "action_default_fallback"
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
+DEFAULT_LOCK_LIFETIME = 60
+
 REQUESTED_SLOT = "requested_slot"
 
 # start of special user message section
