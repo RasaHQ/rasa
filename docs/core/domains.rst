@@ -11,6 +11,12 @@ It specifies the ``intents``, ``entities``, ``slots``, and ``actions``
 your bot should know about. Optionally, it can also include ``templates``
 for the things your bot can say.
 
+.. contents::
+   :local:
+
+
+An example of a Domain
+----------------------
 
 As an example, the ``DefaultDomain`` has the following yaml definition:
 
@@ -51,7 +57,7 @@ For example, an action could:
 * just about anything!
 
 Custom Actions and Slots
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 To reference slots in your domain, you need to reference them by
 their **module path**. To reference custom actions, use their **name**.
@@ -76,7 +82,7 @@ see :ref:`custom-actions`).
 .. _utter_templates:
 
 Utterance templates
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 Utterance templates are messages the bot will send back to the user. There are
 two ways to use these templates:
@@ -270,7 +276,7 @@ multiple responses and Rasa will randomly pick one of them, e.g.:
     - text: "Hey, {name}. How is your day going?"
 
 Ignoring entities for certain intents
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------------------
 
 If you want all entities to be ignored for certain intents, you can
 add the ``use_entities: []`` parameter to the intent in your domain
