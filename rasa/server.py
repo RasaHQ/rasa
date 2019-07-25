@@ -908,6 +908,16 @@ def create_app(
 def _get_output_channel(
     request: Request, tracker: Optional[DialogueStateTracker]
 ) -> OutputChannel:
+    """Returns the `OutputChannel` which should be used for the bot's responses.
+
+    Args:
+        request: HTTP request whose query parameters can specify which `OutputChannel` 
+                 should be used.
+        tracker: Tracker for the conversation. Used to get the latest input channel.
+
+    Returns:
+        `OutputChannel` which should be used to return the bot's responses to.
+    """
     requested_output_channel = request.args.get(OUTPUT_CHANNEL_QUERY_KEY)
 
     if (
