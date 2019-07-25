@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 import typing
 from tqdm import tqdm
-from typing import Any, List, Optional, Text, Dict, Tuple, Union, Generator
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, Generator, Callable
 
 import rasa.utils.io
 from rasa.core import utils
@@ -447,6 +447,9 @@ class EmbeddingPolicy(Policy):
         layer_sizes: List[int],
         droprate: float,
         layer_name_suffix: Text,
+        activation: Optional[Callable] = tf.nn.relu,
+        use_bias: bool = True,
+        kernel_initializer: Optional["tf.keras.initializers.Initializer"] = None,
     ) -> "tf.Tensor":
         """Create nn with hidden layers and name suffix."""
 
@@ -456,7 +459,9 @@ class EmbeddingPolicy(Policy):
             x = tf.layers.dense(
                 inputs=x,
                 units=layer_size,
-                activation=tf.nn.relu,
+                activation=activation,
+                use_bias=use_bias,
+                kernel_initializer=kernel_initializer,
                 kernel_regularizer=reg,
                 name="hidden_layer_{}_{}".format(layer_name_suffix, i),
                 reuse=tf.AUTO_REUSE,
@@ -542,30 +547,23 @@ class EmbeddingPolicy(Policy):
         for key, value in hparams.values().items():
             if key.endswith("dropout") or key == "label_smoothing":
                 setattr(hparams, key, value * tf.cast(self._is_training, tf.float32))
-        reg = tf.contrib.layers.l2_regularizer(self.C2)
-
-        x = tf.nn.relu(x_in)
-        x = tf.layers.dense(
-            inputs=x,
-            units=hparams.hidden_size,
-            use_bias=False,
-            kernel_initializer=tf.random_normal_initializer(
-                0.0, hparams.hidden_size ** -0.5
-            ),
-            kernel_regularizer=reg,
-            name="transformer_embed_layer",
-            reuse=tf.AUTO_REUSE,
-        )
-        x = tf.layers.dropout(
-            x, rate=hparams.layer_prepostprocess_dropout, training=self._is_training
-        )
-
-        if hparams.multiply_embedding_mode == "sqrt_depth":
-            x *= hparams.hidden_size ** 0.5
-
-        x *= tf.expand_dims(mask, -1)
 
         with tf.variable_scope("transformer", reuse=tf.AUTO_REUSE):
+            x = self._create_tf_nn(
+                x_in,
+                [hparams.hidden_size],
+                hparams.layer_prepostprocess_dropout,
+                layer_name_suffix="pre_embed",
+                activation=None,
+                use_bias=False,
+                kernel_initializer=tf.random_normal_initializer(
+                    0.0, hparams.hidden_size ** -0.5
+                ),
+            )
+            if hparams.multiply_embedding_mode == "sqrt_depth":
+                x *= hparams.hidden_size ** 0.5
+
+            x *= tf.expand_dims(mask, -1)
             (
                 x,
                 self_attention_bias,

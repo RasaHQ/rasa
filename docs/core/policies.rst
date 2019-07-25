@@ -175,10 +175,9 @@ following steps:
 
     - apply dense layers to create embeddings for user intents,
       entities and system actions including previous actions and slots;
-    - use the embeddings of previous user inputs as a user memory
-      and embeddings of previous system actions as a system memory;
-    - concatenate user input, previous system action and slots
-      embeddings for current time into an input vector to rnn;
+    - concatenate user input (user intents and entities),
+      previous system action and slots
+      for current time into an input vector to pre-transformer embedding layer;
     - using user and previous system action embeddings from the input
       vector, calculate attention probabilities over the user and
       system memories (for system memory, this policy uses
