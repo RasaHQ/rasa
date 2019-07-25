@@ -81,6 +81,7 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
             "jwt_secret",
             "jwt_method",
             "enable_api",
+            "remote_storage",
         ]
         for a in attributes:
             setattr(args, a, None)
