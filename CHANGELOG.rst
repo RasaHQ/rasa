@@ -32,7 +32,7 @@ Fixed
   errors
 - fill slots for image, buttons, quick_replies and attachments in templates
 - ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
-
+- slot setting in interactive learning with the TwoStageFallbackPolicy
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^
