@@ -723,9 +723,9 @@ Check out more details in <a class="reference internal" href="../evaluating-mode
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                  [--max-stories MAX_STORIES] [--out OUT] [--e2e]
                  [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
-                 [--url URL] [--evaluate-models-in-dir] [-u NLU]
-                 [--report [REPORT]] [--successes [SUCCESSES]]
-                 [--errors ERRORS] [--histogram HISTOGRAM] [--confmat CONFMAT]
+                 [--url URL] [-u NLU] [--report [REPORT]]
+                 [--successes [SUCCESSES]] [--errors ERRORS]
+                 [--histogram HISTOGRAM] [--confmat CONFMAT]
                  [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
                  [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  {core,nlu} ...
@@ -771,11 +771,6 @@ Core Test Arguments:
   --url URL             If supplied, downloads a story file from a URL and
                         trains on it. Fetches the data by sending a GET
                         request to the supplied URL. (default: None)
-  --evaluate-models-in-dir
-                        Should be set to evaluate models trained via &#39;rasa
-                        train core --config &lt;config-1&gt; &lt;config-2&gt;&#39;. All models
-                        in the provided directory are evaluated and compared
-                        against each other. (default: False)
 
 NLU Test Arguments:
   -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
