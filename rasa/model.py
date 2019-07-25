@@ -7,6 +7,7 @@ import typing
 from typing import Text, Tuple, Union, Optional, List, Dict
 
 import rasa.utils.io
+from rasa.cli.utils import print_success, create_output_path
 from rasa.constants import (
     DEFAULT_MODELS_PATH,
     CONFIG_MANDATORY_KEYS_CORE,
@@ -381,3 +382,36 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
             retrain_nlu = not merge_model(old_nlu, target_path)
 
         return retrain_core, retrain_nlu
+
+
+def package_model(
+    fingerprint: Fingerprint,
+    output_directory: Text,
+    train_path: Text,
+    fixed_model_name: Optional[Text] = None,
+    model_prefix: Text = "",
+):
+    """
+    Compresses a trained model.
+
+    Args:
+        fingerprint: fingerprint of the model
+        output_directory: path to the directory in which the model should be stored
+        train_path: path to uncompressed model
+        fixed_model_name: name of the compressed model file
+        model_prefix: prefix of the compressed model file
+
+    Returns: path to 'tar.gz' model file
+    """
+    output_directory = create_output_path(
+        output_directory, prefix=model_prefix, fixed_name=fixed_model_name
+    )
+    create_package_rasa(train_path, output_directory, fingerprint)
+
+    print_success(
+        "Your Rasa model is trained and saved at '{}'.".format(
+            os.path.abspath(output_directory)
+        )
+    )
+
+    return output_directory

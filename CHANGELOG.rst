@@ -13,6 +13,7 @@ Added
 -----
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
+- Fill slots for custom templates
 
 Changed
 -------
@@ -28,8 +29,12 @@ Removed
 Fixed
 -----
 - messages with multiple entities are now handled properly with e2e evaluation
+- interactive learning bug where reverted user utterances were dumped to training data
 - added timeout to terminal input channel to avoid freezing input in case of server
   errors
+- fill slots for image, buttons, quick_replies and attachments in templates
+- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
+- slot setting in interactive learning with the TwoStageFallbackPolicy
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^
