@@ -127,7 +127,6 @@ class EmbeddingPolicy(Policy):
         self,
         featurizer: Optional["TrackerFeaturizer"] = None,
         priority: int = 1,
-        encoded_all_actions: Optional["np.ndarray"] = None,
         graph: Optional["tf.Graph"] = None,
         session: Optional["tf.Session"] = None,
         user_placeholder: Optional["tf.Tensor"] = None,
@@ -150,12 +149,8 @@ class EmbeddingPolicy(Policy):
 
         self._load_params(**kwargs)
 
-        # chrono initialization for forget bias
-        self.characteristic_time = None
-
         # encode all actions with numbers
-        # persist this array for prediction time
-        self.encoded_all_actions = encoded_all_actions
+        self._encoded_all_actions = None
 
         # tf related instances
         self.graph = graph
@@ -248,7 +243,7 @@ class EmbeddingPolicy(Policy):
                 [
                     np.stack(
                         [
-                            self.encoded_all_actions[action_idx]
+                            self._encoded_all_actions[action_idx]
                             for action_idx in action_ids
                         ]
                     )
@@ -257,7 +252,7 @@ class EmbeddingPolicy(Policy):
             )
         else:
             return np.stack(
-                [self.encoded_all_actions[action_idx] for action_idx in labels]
+                [self._encoded_all_actions[action_idx] for action_idx in labels]
             )
 
     # noinspection PyPep8Naming
@@ -879,7 +874,7 @@ class EmbeddingPolicy(Policy):
         self.a_in, self.b_in = self._iterator.get_next()
 
         all_actions = tf.constant(
-            self.encoded_all_actions, dtype=tf.float32, name="all_actions"
+            self._encoded_all_actions, dtype=tf.float32, name="all_actions"
         )
 
         self.dial_embed, mask = self._create_tf_dial()
@@ -1119,7 +1114,7 @@ class EmbeddingPolicy(Policy):
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
         # encode all actions with policies' featurizer
-        self.encoded_all_actions = self.featurizer.state_featurizer.create_encoded_all_actions(
+        self._encoded_all_actions = self.featurizer.state_featurizer.create_encoded_all_actions(
             domain
         )
 
@@ -1298,12 +1293,6 @@ class EmbeddingPolicy(Policy):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-        encoded_actions_file = os.path.join(
-            path, file_name + ".encoded_all_actions.pkl"
-        )
-        with open(encoded_actions_file, "wb") as f:
-            pickle.dump(self.encoded_all_actions, f)
-
         tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
         with open(tf_config_file, "wb") as f:
             pickle.dump(self._tf_config, f)
@@ -1364,17 +1353,9 @@ class EmbeddingPolicy(Policy):
 
             attention_weights = cls.load_tensor("attention_weights")
 
-        encoded_actions_file = os.path.join(
-            path, "{}.encoded_all_actions.pkl".format(file_name)
-        )
-
-        with open(encoded_actions_file, "rb") as f:
-            encoded_all_actions = pickle.load(f)
-
         return cls(
             featurizer=featurizer,
             priority=meta["priority"],
-            encoded_all_actions=encoded_all_actions,
             graph=graph,
             session=session,
             user_placeholder=a_in,
