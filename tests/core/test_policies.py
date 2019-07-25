@@ -150,6 +150,7 @@ class PolicyTestCollection(object):
     def test_tf_config(self, trained_policy, tmpdir):
         if hasattr(trained_policy, "session"):
             import tensorflow as tf
+
             # noinspection PyProtectedMember
             assert trained_policy.session._config == tf.Session()._config
             trained_policy.persist(tmpdir.strpath)
