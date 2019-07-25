@@ -380,7 +380,7 @@ def sanitize(s: Optional[Text] = None):
     if s:
         return escape(s)
     else:
-        return s
+        return None
 
 
 def _add_message_edge(
