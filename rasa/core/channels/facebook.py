@@ -1,11 +1,13 @@
 import hashlib
 import hmac
 import logging
-from typing import Text, List, Dict, Any, Callable, Awaitable
-
-from fbmessenger import MessengerClient, attachments
+from fbmessenger import MessengerClient
+from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
+from fbmessenger.quick_replies import QuickReplies, QuickReply
 from sanic import Blueprint, response
+from sanic.request import Request
+from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -27,17 +29,17 @@ class Messenger:
 
         self.on_new_message = on_new_message
         self.client = MessengerClient(page_access_token)
-        self.last_message = {}
+        self.last_message = {}  # type: Dict[Text, Any]
 
-    def get_user_id(self):
-        return self.last_message["sender"]["id"]
+    def get_user_id(self) -> Text:
+        return self.last_message.get("sender", {}).get("id", "")
 
     @staticmethod
     def _is_audio_message(message: Dict[Text, Any]) -> bool:
-        """Check if the users message is a recorced voice message."""
+        """Check if the users message is a recorded voice message."""
         return (
-            message.get("message")
-            and message["message"].get("attachments")
+            "message" in message
+            and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "audio"
         )
 
@@ -45,9 +47,18 @@ class Messenger:
     def _is_user_message(message: Dict[Text, Any]) -> bool:
         """Check if the message is a message from the user"""
         return (
-            message.get("message")
-            and message["message"].get("text")
+            "message" in message
+            and "text" in message["message"]
             and not message["message"].get("is_echo")
+        )
+
+    @staticmethod
+    def _is_quick_reply_message(message: Dict[Text, Any]) -> bool:
+        """Check if the message is a quick reply message."""
+        return (
+            message.get("message") is not None
+            and message["message"].get("quick_reply") is not None
+            and message["message"]["quick_reply"].get("payload")
         )
 
     async def handle(self, payload):
@@ -62,7 +73,11 @@ class Messenger:
     async def message(self, message: Dict[Text, Any]) -> None:
         """Handle an incoming event from the fb webhook."""
 
-        if self._is_user_message(message):
+        # quick reply and user message both share 'text' attribute
+        # so quick reply should be checked first
+        if self._is_quick_reply_message(message):
+            text = message["message"]["quick_reply"]["payload"]
+        elif self._is_user_message(message):
             text = message["message"]["text"]
         elif self._is_audio_message(message):
             attachment = message["message"]["attachments"][0]
@@ -116,22 +131,22 @@ class MessengerBot(OutputChannel):
         # this is a bit hacky, but the client doesn't have a proper API to
         # send messages but instead expects the incoming sender to be present
         # which we don't have as it is stored in the input channel.
-        self.messenger_client.send(
-            element.to_dict(), {"sender": {"id": recipient_id}}, "RESPONSE"
-        )
+        self.messenger_client.send(element.to_dict(), recipient_id, "RESPONSE")
 
-    async def send_text_message(self, recipient_id: Text, message: Text) -> None:
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
         """Send a message through this channel."""
 
-        logger.info("Sending message: " + message)
-
-        for message_part in message.split("\n\n"):
+        for message_part in text.split("\n\n"):
             self.send(recipient_id, FBText(text=message_part))
 
-    async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        self.send(recipient_id, attachments.Image(url=image_url))
+        self.send(recipient_id, Image(url=image))
 
     async def send_text_with_buttons(
         self,
@@ -148,7 +163,7 @@ class MessengerBot(OutputChannel):
                 "Facebook API currently allows only up to 3 buttons. "
                 "If you add more, all will be ignored."
             )
-            await self.send_text_message(recipient_id, text)
+            await self.send_text_message(recipient_id, text, **kwargs)
         else:
             self._add_postback_info(buttons)
 
@@ -165,9 +180,7 @@ class MessengerBot(OutputChannel):
                     },
                 }
             }
-            self.messenger_client.send(
-                payload, {"sender": {"id": recipient_id}}, "RESPONSE"
-            )
+            self.messenger_client.send(payload, recipient_id, "RESPONSE")
 
     async def send_quick_replies(
         self,
@@ -178,11 +191,11 @@ class MessengerBot(OutputChannel):
     ) -> None:
         """Sends quick replies to the output."""
 
-        self._add_text_info(quick_replies)
+        quick_replies = self._convert_to_quick_reply(quick_replies)
         self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
 
-    async def send_custom_message(
-        self, recipient_id: Text, elements: List[Dict[Text, Any]]
+    async def send_elements(
+        self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
         """Sends elements to the output."""
 
@@ -195,19 +208,16 @@ class MessengerBot(OutputChannel):
                 "payload": {"template_type": "generic", "elements": elements},
             }
         }
-        self.messenger_client.send(
-            payload, self._recipient_json(recipient_id), "RESPONSE"
-        )
+        self.messenger_client.send(payload, recipient_id, "RESPONSE")
 
-    @staticmethod
-    def _add_text_info(quick_replies: List[Dict[Text, Any]]) -> None:
-        """Set quick reply type to text for all buttons without content type.
+    async def send_custom_json(
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+    ) -> None:
+        """Sends custom json data to the output."""
 
-        Happens in place."""
+        recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
 
-        for quick_reply in quick_replies:
-            if not quick_reply.get("type"):
-                quick_reply["content_type"] = "text"
+        self.messenger_client.send(json_message, recipient_id, "RESPONSE")
 
     @staticmethod
     def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
@@ -217,9 +227,25 @@ class MessengerBot(OutputChannel):
                 button["type"] = "postback"
 
     @staticmethod
-    def _recipient_json(recipient_id: Text) -> Dict[Text, Dict[Text, Text]]:
-        """Generate the response json for the recipient expected by FB."""
-        return {"sender": {"id": recipient_id}}
+    def _convert_to_quick_reply(quick_replies: List[Dict[Text, Any]]) -> QuickReplies:
+        """Convert quick reply dictionary to FB QuickReplies object"""
+
+        fb_quick_replies = []
+        for quick_reply in quick_replies:
+            try:
+                fb_quick_replies.append(
+                    QuickReply(
+                        title=quick_reply["title"],
+                        payload=quick_reply["payload"],
+                        content_type=quick_reply.get("content_type"),
+                    )
+                )
+            except KeyError as e:
+                raise ValueError(
+                    'Facebook quick replies must define a "{}" field.'.format(e.args[0])
+                )
+
+        return QuickReplies(quick_replies=fb_quick_replies)
 
 
 class FacebookInput(InputChannel):
@@ -262,14 +288,15 @@ class FacebookInput(InputChannel):
 
         fb_webhook = Blueprint("fb_webhook", __name__)
 
+        # noinspection PyUnusedLocal
         @fb_webhook.route("/", methods=["GET"])
-        async def health(request):
+        async def health(request: Request):
             return response.json({"status": "ok"})
 
         @fb_webhook.route("/webhook", methods=["GET"])
-        async def token_verification(request):
-            if request.raw_args.get("hub.verify_token") == self.fb_verify:
-                return request.raw_args.get("hub.challenge")
+        async def token_verification(request: Request):
+            if request.args.get("hub.verify_token") == self.fb_verify:
+                return response.text(request.args.get("hub.challenge"))
             else:
                 logger.warning(
                     "Invalid fb verify token! Make sure this matches "
@@ -278,9 +305,9 @@ class FacebookInput(InputChannel):
                 return response.text("failure, invalid token")
 
         @fb_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request):
+        async def webhook(request: Request):
             signature = request.headers.get("X-Hub-Signature") or ""
-            if not self.validate_hub_signature(self.fb_secret, request.data, signature):
+            if not self.validate_hub_signature(self.fb_secret, request.body, signature):
                 logger.warning(
                     "Wrong fb secret! Make sure this matches the "
                     "secret in your facebook app settings"

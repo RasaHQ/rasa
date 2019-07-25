@@ -1,84 +1,20 @@
-import argparse
 import logging
-from typing import Any, Optional, Text, Tuple, Union
+import typing
+from typing import Any, Optional, Text, Tuple, Union, Dict
 
-from rasa.nlu import config, utils
+from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.training_data import load_data
 from rasa.nlu.training_data.loading import load_data_from_endpoint
-from rasa.nlu.utils import read_endpoints
 from rasa.utils.endpoints import EndpointConfig
 
+
+if typing.TYPE_CHECKING:
+    from rasa.importers.importer import TrainingDataImporter
+
 logger = logging.getLogger(__name__)
-
-
-def create_argument_parser():
-    parser = argparse.ArgumentParser(description="train a custom language parser")
-
-    parser.add_argument(
-        "-o",
-        "--path",
-        default="models/nlu/",
-        help="Path where model files will be saved",
-    )
-
-    group = parser.add_mutually_exclusive_group(required=True)
-
-    group.add_argument(
-        "-d",
-        "--data",
-        default=None,
-        help="Location of the training data. For JSON and "
-        "markdown data, this can either be a single file "
-        "or a directory containing multiple training "
-        "data files.",
-    )
-
-    group.add_argument(
-        "-u", "--url", default=None, help="URL from which to retrieve training data."
-    )
-
-    group.add_argument(
-        "--endpoints",
-        default=None,
-        help="EndpointConfig defining the server from which pull training data.",
-    )
-
-    parser.add_argument(
-        "-c", "--config", required=True, help="Rasa NLU configuration file"
-    )
-
-    parser.add_argument(
-        "-t",
-        "--num_threads",
-        default=1,
-        type=int,
-        help="Number of threads to use during model training",
-    )
-
-    parser.add_argument(
-        "--project", default=None, help="Project this model belongs to."
-    )
-
-    parser.add_argument(
-        "--fixed_model_name",
-        help="If present, a model will always be persisted "
-        "in the specified directory instead of creating "
-        "a folder like 'model_20171020-160213'",
-    )
-
-    parser.add_argument(
-        "--storage",
-        help="Set the remote location where models are stored. "
-        "E.g. on AWS. If nothing is configured, the "
-        "server will only serve the models that are "
-        "on disk in the configured `path`.",
-    )
-
-    utils.add_logging_option_arguments(parser)
-    return parser
 
 
 class TrainingException(Exception):
@@ -109,41 +45,20 @@ def create_persistor(persistor: Optional[Text]):
         return None
 
 
-def do_train_in_worker(
-    cfg: RasaNLUModelConfig,
-    data: Text,
-    path: Text,
-    project: Optional[Text] = None,
-    fixed_model_name: Optional[Text] = None,
-    storage: Optional[Text] = None,
-    component_builder: Optional[ComponentBuilder] = None,
-) -> Text:
-    """Loads the trainer and the data and runs the training in a worker."""
-
-    try:
-        _, _, persisted_path = train(
-            cfg, data, path, project, fixed_model_name, storage, component_builder
-        )
-        return persisted_path
-    except BaseException as e:
-        logger.exception("Failed to train project '{}'.".format(project))
-        raise TrainingException(project, e)
-
-
-def train(
-    nlu_config: Union[Text, RasaNLUModelConfig],
-    data: Text,
+async def train(
+    nlu_config: Union[Text, Dict, RasaNLUModelConfig],
+    data: Union[Text, "TrainingDataImporter"],
     path: Optional[Text] = None,
-    project: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
     storage: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
     **kwargs: Any
-) -> Tuple[Trainer, Interpreter, Text]:
+) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
+    from rasa.importers.importer import TrainingDataImporter
 
-    if isinstance(nlu_config, str):
+    if not isinstance(nlu_config, RasaNLUModelConfig):
         nlu_config = config.load(nlu_config)
 
     # Ensure we are training a model that we can save in the end
@@ -152,15 +67,19 @@ def train(
     trainer = Trainer(nlu_config, component_builder)
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
-        training_data = load_data_from_endpoint(
+        training_data = await load_data_from_endpoint(
             training_data_endpoint, nlu_config.language
         )
+    elif isinstance(data, TrainingDataImporter):
+        training_data = await data.get_nlu_data(nlu_config.data)
     else:
         training_data = load_data(data, nlu_config.language)
+
+    training_data.print_stats()
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
-        persisted_path = trainer.persist(path, persistor, project, fixed_model_name)
+        persisted_path = trainer.persist(path, persistor, fixed_model_name)
     else:
         persisted_path = None
 
@@ -169,7 +88,7 @@ def train(
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.nlu.train` directly is "
-        "no longer supported. "
-        "Please use `rasa train nlu` instead."
+        "Calling `rasa.nlu.train` directly is no longer supported. Please use "
+        "`rasa train` to train a combined Core and NLU model or `rasa train nlu` "
+        "to train an NLU model."
     )

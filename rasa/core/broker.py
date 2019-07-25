@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any, Dict, Optional, Text
 
-from rasa.core.utils import class_from_module_path
+from rasa.utils.common import class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def from_endpoint_config(
     elif broker_config.type == "file":
         return FileProducer.from_endpoint_config(broker_config)
     elif broker_config.type == "kafka":
-        return FileProducer.from_endpoint_config(broker_config)
+        return KafkaProducer.from_endpoint_config(broker_config)
     else:
         return load_event_channel_from_module_string(broker_config)
 
@@ -56,7 +56,12 @@ class EventChannel(object):
 
 class PikaProducer(EventChannel):
     def __init__(
-        self, host, username, password, queue="rasa_core_events", loglevel=logging.INFO
+        self,
+        host,
+        username,
+        password,
+        queue="rasa_core_events",
+        loglevel=logging.WARNING,
     ):
         import pika
 
@@ -64,6 +69,8 @@ class PikaProducer(EventChannel):
 
         self.queue = queue
         self.host = host
+        self.connection = None
+        self.channel = None
         self.credentials = pika.PlainCredentials(username, password)
 
     @classmethod
@@ -163,6 +170,7 @@ class KafkaProducer(EventChannel):
         loglevel=logging.ERROR,
     ):
 
+        self.producer = None
         self.host = host
         self.topic = topic
         self.security_protocol = security_protocol

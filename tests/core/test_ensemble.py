@@ -1,6 +1,6 @@
 import pytest
 
-from rasa.core.policies import Policy
+from rasa.core.policies.policy import Policy
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
     InvalidPolicyConfig,
@@ -76,14 +76,14 @@ def test_policy_priority():
         tracker, domain
     )
     assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
-    assert result.tolist() == priority_2_result
+    assert result == priority_2_result
 
     i = 0  # index of priority_2 in ensemble_1
     result, best_policy = policy_ensemble_1.probabilities_using_best_policy(
         tracker, domain
     )
     assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
-    assert result.tolist() == priority_2_result
+    assert result == priority_2_result
 
 
 class LoadReturnsNonePolicy(Policy):

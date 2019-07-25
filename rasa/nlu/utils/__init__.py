@@ -2,40 +2,13 @@ import errno
 import glob
 import io
 import json
-import logging
 import os
 import re
-import tempfile
-from collections import namedtuple
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Text
 
-import simplejson
-
-import rasa.utils.io
-
-from rasa.utils.endpoints import read_endpoint_config
-
-
-def add_logging_option_arguments(parser, default=logging.WARNING):
-    """Add options to an argument parser to configure logging levels."""
-
-    # arguments for logging configuration
-    parser.add_argument(
-        "--debug",
-        help="Print lots of debugging statements. Sets logging level to DEBUG",
-        action="store_const",
-        dest="loglevel",
-        const=logging.DEBUG,
-        default=default,
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Be verbose. Sets logging level to INFO",
-        action="store_const",
-        dest="loglevel",
-        const=logging.INFO,
-    )
+# backwards compatibility 1.0.x
+# noinspection PyUnresolvedReferences
+from rasa.utils.io import read_json_file
 
 
 def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
@@ -54,17 +27,6 @@ def create_dir(dir_path: Text) -> None:
 
     try:
         os.makedirs(dir_path)
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
-
-
-def create_dir_for_file(file_path: Text) -> None:
-    """Creates any missing parent directories of this files path."""
-
-    try:
-        os.makedirs(os.path.dirname(file_path))
     except OSError as e:
         # be happy if someone already created the path
         if e.errno != errno.EEXIST:
@@ -150,22 +112,6 @@ def module_path_from_object(o: Any) -> Text:
     return o.__class__.__module__ + "." + o.__class__.__name__
 
 
-def class_from_module_path(module_path: Text) -> Type[Any]:
-    """Given the module name and path of a class, tries to retrieve the class.
-
-    The loaded class can be used to instantiate new objects. """
-    import importlib
-
-    # load the module, will raise ImportError if module cannot be loaded
-    if "." in module_path:
-        module_name, _, class_name = module_path.rpartition(".")
-        m = importlib.import_module(module_name)
-        # get the class, will raise AttributeError if class cannot be found
-        return getattr(m, class_name)
-    else:
-        return globals()[module_path]
-
-
 def json_to_string(obj: Any, **kwargs: Any) -> Text:
     indent = kwargs.pop("indent", 2)
     ensure_ascii = kwargs.pop("ensure_ascii", False)
@@ -183,18 +129,6 @@ def write_to_file(filename: Text, text: Text) -> None:
 
     with io.open(filename, "w", encoding="utf-8") as f:
         f.write(str(text))
-
-
-def read_json_file(filename: Text) -> Any:
-    """Read json from a file."""
-    content = rasa.utils.io.read_file(filename)
-    try:
-        return simplejson.loads(content)
-    except ValueError as e:
-        raise ValueError(
-            "Failed to read json from '{}'. Error: "
-            "{}".format(os.path.abspath(filename), e)
-        )
 
 
 def build_entity(
@@ -248,90 +182,23 @@ def remove_model(model_dir: Text) -> bool:
         )
 
 
-def configure_colored_logging(loglevel: Text) -> None:
-    import coloredlogs
+def json_unpickle(file_name: Text) -> Any:
+    """Unpickle an object from file using json."""
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
 
-    field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
-    field_styles["asctime"] = {}
-    level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
-    level_styles["debug"] = {}
-    coloredlogs.install(
-        level=loglevel,
-        use_chroot=False,
-        fmt="%(asctime)s %(levelname)-8s %(name)s  - %(message)s",
-        level_styles=level_styles,
-        field_styles=field_styles,
-    )
+    jsonpickle_numpy.register_handlers()
+
+    with open(file_name, "r", encoding="utf-8") as f:
+        return jsonpickle.loads(f.read())
 
 
-def pycloud_unpickle(file_name: Text) -> Any:
-    """Unpickle an object from file using cloudpickle."""
-    import cloudpickle
+def json_pickle(file_name: Text, obj: Any) -> None:
+    """Pickle an object to a file using json."""
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
 
-    with io.open(file_name, "rb") as f:  # pragma: no test
-        return cloudpickle.load(f, encoding="latin-1")
+    jsonpickle_numpy.register_handlers()
 
-
-def pycloud_pickle(file_name: Text, obj: Any) -> None:
-    """Pickle an object to a file using cloudpickle."""
-    import cloudpickle
-
-    with io.open(file_name, "wb") as f:
-        cloudpickle.dump(obj, f)
-
-
-def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
-    """Creates a tempfile.NamedTemporaryFile object for data.
-
-    mode defines NamedTemporaryFile's  mode parameter in py3."""
-
-    encoding = None if "b" in mode else "utf-8"
-    f = tempfile.NamedTemporaryFile(
-        mode=mode, suffix=suffix, delete=False, encoding=encoding
-    )
-    f.write(data)
-
-    f.close()
-    return f.name
-
-
-def zip_folder(folder: Text) -> Text:
-    """Create an archive from a folder."""
-    import tempfile
-    import shutil
-
-    # WARN: not thread save!
-    zipped_path = tempfile.NamedTemporaryFile(delete=False)
-    zipped_path.close()
-    return shutil.make_archive(zipped_path.name, str("zip"), folder)
-
-
-def concat_url(base: Text, subpath: Optional[Text]) -> Text:
-    """Append a subpath to a base url.
-
-    Strips leading slashes from the subpath if necessary. This behaves
-    differently than `urlparse.urljoin` and will not treat the subpath
-    as a base url if it starts with `/` but will always append it to the
-    `base`."""
-
-    if subpath:
-        url = base
-        if not base.endswith("/"):
-            url += "/"
-        if subpath.startswith("/"):
-            subpath = subpath[1:]
-        return url + subpath
-    else:
-        return base
-
-
-def read_endpoints(endpoint_file: Text) -> "AvailableEndpoints":
-    model = read_endpoint_config(endpoint_file, endpoint_type="model")
-    data = read_endpoint_config(endpoint_file, endpoint_type="data")
-
-    return AvailableEndpoints(model, data)
-
-
-# The EndpointConfig class is currently used to define external endpoints
-# for pulling NLU models from a server and training data
-AvailableEndpoints = namedtuple("AvailableEndpoints", "model data")
+    with open(file_name, "w", encoding="utf-8") as f:
+        f.write(jsonpickle.dumps(obj))

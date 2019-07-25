@@ -1,4 +1,3 @@
-import io
 import os
 
 from setuptools import setup, find_packages
@@ -15,78 +14,73 @@ with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 tests_requires = [
-    "pytest~=3.5",
-    "pytest-pycodestyle~=1.4",
-    "pytest-cov~=2.5",
-    "pytest_sanic~=0.1.0",
-    "pytest_localserver~=0.4.1",
-    "treq~=17.8",
+    "pytest~=4.5",
+    "pytest-cov~=2.7",
+    "pytest-localserver~=0.5.0",
+    "pytest-sanic~=1.0.0",
     "responses~=0.9.0",
-    "httpretty~=0.9.0",
     "freezegun~=0.3.0",
     "nbsphinx>=0.3",
-    "aioresponses~=0.5.2",
+    "aioresponses~=0.6.0",
     "moto~=1.3.8",
-    "mock~=2.0",
 ]
 
 install_requires = [
-    "cloudpickle~=0.6.1",
+    "requests~=2.22",
     "boto3~=1.9",
-    "typing~=3.6",
-    "requests~=2.20",
-    "matplotlib~=2.2",
-    "simplejson~=3.13",
+    "matplotlib~=3.0",
+    "simplejson~=3.16",
     "attrs>=18",
-    "jsonpickle~=1.0",
-    "redis~=2.0",
-    "fakeredis~=0.10.0",
-    "pymongo~=3.7",
+    "jsonpickle~=1.1",
+    "redis~=3.2",
+    "fakeredis~=1.0",
+    "pymongo~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
     "tensorflow~=1.13.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
-    "networkx~=2.2",
-    "fbmessenger~=5.0",
+    "networkx~=2.3",
+    "fbmessenger~=6.0",
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
     "scikit-learn~=0.20.2",
     "ruamel.yaml~=0.15.0",
     "scikit-learn~=0.20.0",
-    "slackclient~=1.0",
+    "slackclient~=1.3",
     "python-telegram-bot~=11.0",
     "twilio~=6.0",
-    "webexteamssdk~=1.0",
+    "webexteamssdk~=1.1",
     "mattermostwrapper~=2.0",
     "rocketchat_API~=0.6.0",
     "colorhash~=1.0",
-    "pika~=0.12.0",
+    "pika~=1.0.0",
     "jsonschema~=2.6",
-    "packaging~=18.0",
+    "packaging~=19.0",
     "gevent~=1.4",
-    "pytz~=2018.9",
-    "python-dateutil~=2.7",
-    "rasa_core_sdk~=0.13.1",
+    "pytz~=2019.1",
+    "python-dateutil~=2.8",
+    "rasa-sdk~=1.1.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "sanic~=18.12.0",
+    "sanic~=19.3.1",
     "sanic-cors~=0.9.0",
-    "sanic-jwt~=1.2",
+    "sanic-jwt~=1.3",
     "aiohttp~=3.5",
-    "questionary>=1.0.1",
-    "python-socketio~=3.0",
+    "questionary>=1.1.0",
+    "python-socketio~=4.0",
     "pydot~=1.4",
     "async_generator~=1.10",
-    "sqlalchemy~=1.2",
+    "SQLAlchemy~=1.3.0",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
 ]
 
 extras_requires = {
     "test": tests_requires,
-    "spacy": ["spacy<=2.0.18,>2.0"],
+    "spacy": ["spacy>=2.1,<2.2"],
     "mitie": ["mitie"],
+    "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
 }
 
 setup(
@@ -109,8 +103,9 @@ setup(
     tests_require=tests_requires,
     extras_require=extras_requires,
     include_package_data=True,
-    description="Machine learning based dialogue engine "
-    "for conversational software.",
+    description="Open source machine learning framework to automate text- and "
+    "voice-based conversations: NLU, dialogue management, connect to "
+    "Slack, Facebook, and more - Create chatbots and voice assistants",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Rasa Technologies GmbH",
@@ -131,5 +126,7 @@ setup(
 )
 
 print ("\nWelcome to Rasa!")
-print ("If any questions please visit documentation page https://rasa.com/docs")
-print ("or join the community discussions on https://forum.rasa.com")
+print (
+    "If you have any questions, please visit our documentation page: https://rasa.com/docs/"
+)
+print ("or join the community discussions on https://forum.rasa.com/")

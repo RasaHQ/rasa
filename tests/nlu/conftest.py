@@ -1,24 +1,24 @@
 import logging
+import os
 
 import pytest
-from rasa.nlu import data_router, config
-from rasa.nlu.components import ComponentBuilder
-from rasa.nlu.model import Trainer
-from rasa.nlu import training_data
-from rasa.nlu.config import RasaNLUModelConfig
 
-logging.basicConfig(level="DEBUG")
+from rasa.nlu import config, train
+from rasa.nlu.components import ComponentBuilder
 
 CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 
+NLU_DEFAULT_CONFIG_PATH = "sample_configs/config_pretrained_embeddings_mitie.yml"
+
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
-TEST_MODEL_PATH = "test_models/test_model_pretrained_embeddings"
+NLU_MODEL_NAME = "nlu_model.tar.gz"
 
-TEST_PROJECTS_PATH = "test_projects"
-# see `rasa.nlu.data_router` for details. avoids deadlock in
-# `deferred_from_future` function during tests
-data_router.DEFERRED_RUN_IN_REACTOR_THREAD = False
+TEST_MODEL_DIR = "test_models"
+
+NLU_MODEL_PATH = os.path.join(TEST_MODEL_DIR, "nlu")
+
+MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 
 @pytest.fixture(scope="session")
@@ -65,15 +65,3 @@ def mitie_feature_extractor(component_builder, default_config):
 @pytest.fixture(scope="session")
 def default_config():
     return config.load(CONFIG_DEFAULTS_PATH)
-
-
-@pytest.fixture(scope="session")
-def trained_nlu_model():
-    cfg = RasaNLUModelConfig({"pipeline": "keyword"})
-    trainer = Trainer(cfg)
-    td = training_data.load_data(DEFAULT_DATA_PATH)
-
-    trainer.train(td)
-    model_path = trainer.persist("test_models", project_name="test_model_keyword")
-
-    return model_path

@@ -5,7 +5,6 @@ import shutil
 import tarfile
 from typing import List, Optional, Text, Tuple
 
-from rasa.nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 
@@ -35,30 +34,29 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
 class Persistor(object):
     """Store models in cloud and fetch them when needed"""
 
-    def persist(self, model_directory: Text, model_name: Text, project: Text) -> None:
+    def persist(self, model_directory: Text, model_name: Text) -> None:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
         if not os.path.isdir(model_directory):
             raise ValueError("Target directory '{}' not found.".format(model_directory))
 
-        file_key, tar_path = self._compress(model_directory, model_name, project)
+        file_key, tar_path = self._compress(model_directory, model_name)
         self._persist_tar(file_key, tar_path)
 
-    def retrieve(self, model_name: Text, project: Text, target_path: Text) -> None:
+    def retrieve(self, model_name: Text, target_path: Text) -> None:
         """Downloads a model that has been persisted to cloud storage."""
 
-        tar_name = self._tar_name(model_name, project)
+        tar_name = model_name
+
+        if not model_name.endswith("tar.gz"):
+            # ensure backward compatibility
+            tar_name = self._tar_name(model_name)
 
         self._retrieve_tar(tar_name)
         self._decompress(tar_name, target_path)
 
-    def list_models(self, project: Text) -> List[Text]:
-        """Lists all the trained models of a project."""
-
-        raise NotImplementedError
-
-    def list_projects(self) -> List[Text]:
-        """Lists all projects."""
+    def list_models(self) -> List[Text]:
+        """Lists all the trained models."""
 
         raise NotImplementedError
 
@@ -72,14 +70,12 @@ class Persistor(object):
 
         raise NotImplementedError("")
 
-    def _compress(
-        self, model_directory: Text, model_name: Text, project: Text
-    ) -> Tuple[Text, Text]:
+    def _compress(self, model_directory: Text, model_name: Text) -> Tuple[Text, Text]:
         """Creates a compressed archive and returns key and tar."""
         import tempfile
 
         dirpath = tempfile.mkdtemp()
-        base_name = self._tar_name(model_name, project, include_extension=False)
+        base_name = self._tar_name(model_name, include_extension=False)
         tar_name = shutil.make_archive(
             os.path.join(dirpath, base_name),
             "gztar",
@@ -90,13 +86,7 @@ class Persistor(object):
         return file_key, tar_name
 
     @staticmethod
-    def _project_prefix(project: Text) -> Text:
-
-        p = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
-        return "{}___".format(p)
-
-    @staticmethod
-    def _project_and_model_from_filename(filename: Text) -> Tuple[Text, Text]:
+    def _model_dir_and_model_from_filename(filename: Text) -> Tuple[Text, Text]:
 
         split = filename.split("___")
         if len(split) > 1:
@@ -106,20 +96,16 @@ class Persistor(object):
             return split[0], ""
 
     @staticmethod
-    def _tar_name(
-        model_name: Text, project: Text, include_extension: bool = True
-    ) -> Text:
+    def _tar_name(model_name: Text, include_extension: bool = True) -> Text:
 
         ext = ".tar.gz" if include_extension else ""
-        return "{p}{m}{ext}".format(
-            p=Persistor._project_prefix(project), m=model_name, ext=ext
-        )
+        return "{m}{ext}".format(m=model_name, ext=ext)
 
     @staticmethod
     def _decompress(compressed_path: Text, target_path: Text) -> None:
 
         with tarfile.open(compressed_path, "r:gz") as tar:
-            tar.extractall(target_path)  # project dir will be created if it not exists
+            tar.extractall(target_path)  # target dir will be created if it not exists
 
 
 class AWSPersistor(Persistor):
@@ -136,31 +122,14 @@ class AWSPersistor(Persistor):
         self.bucket_name = bucket_name
         self.bucket = self.s3.Bucket(bucket_name)
 
-    def list_models(self, project: Text) -> List[Text]:
+    def list_models(self) -> List[Text]:
         try:
-            prefix = self._project_prefix(project)
             return [
-                self._project_and_model_from_filename(obj.key)[1]
-                for obj in self.bucket.objects.filter(Prefix=prefix)
+                self._model_dir_and_model_from_filename(obj.key)[1]
+                for obj in self.bucket.objects.filter()
             ]
         except Exception as e:
-            logger.warning(
-                "Failed to list models for project {} in AWS. {}".format(project, e)
-            )
-            return []
-
-    def list_projects(self) -> List[Text]:
-        try:
-            projects_set = {
-                self._project_and_model_from_filename(obj.key)[0]
-                for obj in self.bucket.objects.filter()
-            }
-            return list(projects_set)
-        except Exception as e:
-            logger.warning(
-                "Failed to list projects in AWS bucket {}. "
-                "Error: {}".format(self.bucket_name, e)
-            )
+            logger.warning("Failed to list models in AWS. {}".format(e))
             return []
 
     def _ensure_bucket_exists(self, bucket_name: Text) -> None:
@@ -205,31 +174,17 @@ class GCSPersistor(Persistor):
         self.bucket_name = bucket_name
         self.bucket = self.storage_client.bucket(bucket_name)
 
-    def list_models(self, project: Text) -> List[Text]:
-
-        try:
-            blob_iterator = self.bucket.list_blobs(prefix=self._project_prefix(project))
-            return [
-                self._project_and_model_from_filename(b.name)[1] for b in blob_iterator
-            ]
-        except Exception as e:
-            logger.warning(
-                "Failed to list models for project {} in "
-                "google cloud storage. {}".format(project, e)
-            )
-            return []
-
-    def list_projects(self) -> List[Text]:
+    def list_models(self) -> List[Text]:
 
         try:
             blob_iterator = self.bucket.list_blobs()
-            projects_set = {
-                self._project_and_model_from_filename(b.name)[0] for b in blob_iterator
-            }
-            return list(projects_set)
+            return [
+                self._model_dir_and_model_from_filename(b.name)[1]
+                for b in blob_iterator
+            ]
         except Exception as e:
             logger.warning(
-                "Failed to list projects in google cloud storage. {}".format(e)
+                "Failed to list models in google cloud storage. {}".format(e)
             )
             return []
 
@@ -280,34 +235,16 @@ class AzurePersistor(Persistor):
         if not exists:
             self.blob_client.create_container(container_name)
 
-    def list_models(self, project: Text) -> List[Text]:
+    def list_models(self) -> List[Text]:
 
         try:
-            blob_iterator = self.blob_client.list_blobs(
-                self.container_name, prefix=self._project_prefix(project)
-            )
+            blob_iterator = self.blob_client.list_blobs(self.container_name)
             return [
-                self._project_and_model_from_filename(b.name)[1] for b in blob_iterator
+                self._model_dir_and_model_from_filename(b.name)[1]
+                for b in blob_iterator
             ]
         except Exception as e:
-            logger.warning(
-                "Failed to list models for project {} in "
-                "azure blob storage. {}".format(project, e)
-            )
-            return []
-
-    def list_projects(self) -> List[Text]:
-        try:
-            # noinspection PyTypeChecker
-            blob_iterator = self.blob_client.list_blobs(
-                self.container_name, prefix=None
-            )
-            projects_set = {
-                self._project_and_model_from_filename(b.name)[0] for b in blob_iterator
-            }
-            return list(projects_set)
-        except Exception as e:
-            logger.warning("Failed to list projects in Azure. {}".format(e))
+            logger.warning("Failed to list models azure blob storage. {}".format(e))
             return []
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:

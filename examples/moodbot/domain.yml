@@ -1,8 +1,8 @@
 intents:
   - greet
   - goodbye
-  - mood_affirm
-  - mood_deny
+  - affirm
+  - deny
   - mood_great
   - mood_unhappy
 
@@ -18,9 +18,9 @@ templates:
   - text: "Hey! How are you?"
     buttons:
     - title: "great"
-      payload: "great"
+      payload: "/mood_great"
     - title: "super sad"
-      payload: "super sad"
+      payload: "/mood_unhappy"
 
   utter_cheer_up:
   - text: "Here is something to cheer you up:"
@@ -30,7 +30,7 @@ templates:
   - text: "Did that help you?"
 
   utter_happy:
-  - text: "Great carry on!"
+  - text: "Great, carry on!"
 
   utter_goodbye:
   - text: "Bye"

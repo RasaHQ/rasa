@@ -1,5 +1,3 @@
-import argparse
-import asyncio
 import json
 import logging
 import os
@@ -8,6 +6,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+from rasa.constants import RESULTS_FILE
 from rasa.core.events import ActionExecuted, UserUttered
 
 if typing.TYPE_CHECKING:
@@ -20,35 +19,6 @@ StoryEvalution = namedtuple(
     "StoryEvaluation",
     "evaluation_store failed_stories action_list in_training_data_fraction",
 )
-
-
-def create_argument_parser():
-    """Create argument parser for the evaluate script."""
-    import rasa.core.cli.arguments
-
-    import rasa.core.cli.train
-    from rasa.core import cli
-
-    parser = argparse.ArgumentParser(description="evaluates a dialogue model")
-    parent_parser = argparse.ArgumentParser(add_help=False)
-    cli.test.add_evaluation_arguments(parent_parser)
-    cli.arguments.add_model_and_story_group(parent_parser, allow_pretrained_model=False)
-    rasa.core.cli.arguments.add_logging_option_arguments(parent_parser)
-    subparsers = parser.add_subparsers(help="mode", dest="mode")
-    subparsers.add_parser(
-        "default",
-        help="default mode: evaluate a dialogue model",
-        parents=[parent_parser],
-    )
-    subparsers.add_parser(
-        "compare",
-        help="compare mode: evaluate multiple"
-        " dialogue models to compare "
-        "policies",
-        parents=[parent_parser],
-    )
-
-    return parser
 
 
 class EvaluationStore(object):
@@ -322,7 +292,7 @@ def _collect_action_executed_predictions(
     action, policy, confidence = processor.predict_next_action(partial_tracker)
     predicted = action.name()
 
-    if predicted != gold and FormPolicy.__name__ in policy:
+    if policy and predicted != gold and FormPolicy.__name__ in policy:
         # FormPolicy predicted wrong action
         # but it might be Ok if form action is rejected
         _emulate_form_rejection(processor, partial_tracker)
@@ -406,7 +376,7 @@ def _in_training_data_fraction(action_list):
     """Given a list of action items, returns the fraction of actions
 
     that were predicted using one of the Memoization policies."""
-    from rasa.core.policies import SimplePolicyEnsemble
+    from rasa.core.policies.ensemble import SimplePolicyEnsemble
 
     in_training_data = [
         a["action"]
@@ -506,15 +476,15 @@ async def test(
     max_stories: Optional[int] = None,
     out_directory: Optional[Text] = None,
     fail_on_prediction_errors: bool = False,
-    use_e2e: bool = False,
+    e2e: bool = False,
 ):
     """Run the evaluation of the stories, optionally plot the results."""
     from rasa.nlu.test import get_evaluation_metrics
 
-    completed_trackers = await _generate_trackers(stories, agent, max_stories, use_e2e)
+    completed_trackers = await _generate_trackers(stories, agent, max_stories, e2e)
 
     story_evaluation, _ = collect_story_predictions(
-        completed_trackers, agent, fail_on_prediction_errors, use_e2e
+        completed_trackers, agent, fail_on_prediction_errors, e2e
     )
 
     evaluation_store = story_evaluation.evaluation_store
@@ -549,7 +519,7 @@ async def test(
         "accuracy": accuracy,
         "actions": story_evaluation.action_list,
         "in_training_data_fraction": story_evaluation.in_training_data_fraction,
-        "is_end_to_end_evaluation": use_e2e,
+        "is_end_to_end_evaluation": e2e,
     }
 
 
@@ -651,22 +621,57 @@ async def compare(models: Text, stories_file: Text, output: Text) -> None:
     utils.dump_obj_as_json_to_file(os.path.join(output, "results.json"), num_correct)
 
 
-def plot_curve(output: Text, no_stories: List[int]) -> None:
-    """Plot the results from run_comparison_evaluation.
+def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:
+
+    graph_path = os.path.join(output, "nlu_model_comparison_graph.pdf")
+
+    _plot_curve(
+        output,
+        number_of_examples,
+        x_label_text="Number of intent examples present during training",
+        y_label_text="Label-weighted average F1 score on test set",
+        graph_path=graph_path,
+    )
+
+
+def plot_core_results(output: Text, number_of_examples: List[int]) -> None:
+
+    graph_path = os.path.join(output, "core_model_comparison_graph.pdf")
+
+    _plot_curve(
+        output,
+        number_of_examples,
+        x_label_text="Number of stories present during training",
+        y_label_text="Number of correct test stories",
+        graph_path=graph_path,
+    )
+
+
+def _plot_curve(
+    output: Text,
+    number_of_examples: List[int],
+    x_label_text: Text,
+    y_label_text: Text,
+    graph_path: Text,
+) -> None:
+    """Plot the results from a model comparison.
 
     Args:
         output: Output directory to save resulting plots to
-        no_stories: Number of stories per run
+        number_of_examples: Number of examples per run
+        x_label_text: text for the x axis
+        y_label_text: text for the y axis
+        graph_path: output path of the plot
     """
     import matplotlib.pyplot as plt
     import numpy as np
-    from rasa.core import utils
+    import rasa.utils.io
 
     ax = plt.gca()
 
     # load results from file
-    data = utils.read_json_file(os.path.join(output, "results.json"))
-    x = no_stories
+    data = rasa.utils.io.read_json_file(os.path.join(output, RESULTS_FILE))
+    x = number_of_examples
 
     # compute mean of all the runs for keras/embed policies
     for label in data.keys():
@@ -683,76 +688,18 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
             alpha=0.2,
         )
     ax.legend(loc=4)
-    ax.set_xlabel("Number of stories present during training")
-    ax.set_ylabel("Number of correct test stories")
-    plt.savefig(os.path.join(output, "model_comparison_graph.pdf"), format="pdf")
-    plt.show()
 
+    ax.set_xlabel(x_label_text)
+    ax.set_ylabel(y_label_text)
 
-def main():
-    from rasa.core.agent import Agent
-    from rasa.core.interpreter import NaturalLanguageInterpreter
-    from rasa.core.utils import AvailableEndpoints, set_default_subparser
-    import rasa.nlu.utils as nlu_utils
-    import rasa.core.cli
-    from rasa.core import utils
+    plt.savefig(graph_path, format="pdf")
 
-    loop = asyncio.get_event_loop()
-
-    # Running as standalone python application
-    arg_parser = create_argument_parser()
-    set_default_subparser(arg_parser, "default")
-    cmdline_arguments = arg_parser.parse_args()
-
-    logging.basicConfig(level=cmdline_arguments.loglevel)
-    _endpoints = AvailableEndpoints.read_endpoints(cmdline_arguments.endpoints)
-
-    if cmdline_arguments.output:
-        nlu_utils.create_dir(cmdline_arguments.output)
-
-    if not cmdline_arguments.core:
-        raise ValueError(
-            "you must provide a core model directory to evaluate using -d / --core"
-        )
-    if cmdline_arguments.mode == "default":
-
-        _interpreter = NaturalLanguageInterpreter.create(
-            cmdline_arguments.nlu, _endpoints.nlu
-        )
-
-        _agent = Agent.load(cmdline_arguments.core, interpreter=_interpreter)
-
-        stories = loop.run_until_complete(
-            rasa.core.cli.train.stories_from_cli_args(cmdline_arguments)
-        )
-
-        loop.run_until_complete(
-            test(
-                stories,
-                _agent,
-                cmdline_arguments.max_stories,
-                cmdline_arguments.output,
-                cmdline_arguments.fail_on_prediction_errors,
-                cmdline_arguments.e2e,
-            )
-        )
-
-    elif cmdline_arguments.mode == "compare":
-        compare(
-            cmdline_arguments.core, cmdline_arguments.stories, cmdline_arguments.output
-        )
-
-        story_n_path = os.path.join(cmdline_arguments.core, "num_stories.json")
-
-        number_of_stories = utils.read_json_file(story_n_path)
-        plot_curve(cmdline_arguments.output, number_of_stories)
-
-    logger.info("Finished evaluation")
+    logger.info("Comparison graph saved to '{}'.".format(graph_path))
 
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.core.test` directly is "
-        "no longer supported. "
-        "Please use `rasa test core` instead."
+        "Calling `rasa.core.test` directly is no longer supported. Please use "
+        "`rasa test` to test a combined Core and NLU model or `rasa test core` "
+        "to test a Core model."
     )

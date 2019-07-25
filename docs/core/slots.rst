@@ -1,13 +1,11 @@
 :desc: Store information the user provided as well as information from database
        queries in slots to influence how the machine learning based dialogue
-       continues. 
+       continues.
 
 .. _slots:
 
-Using Slots
-===========
-
-:ref:`Here <slot_types>` is the full list of slot types defined by Rasa Core.
+Slots
+=====
 
 **Slots are your bot's memory.** They act as a key-value store
 which can be used to store information the user provided (e.g their home city)
@@ -33,8 +31,8 @@ of the conversation, use an ``unfeaturized`` slot.
 How Rasa Uses Slots
 -------------------
 
-The :class:`rasa.core.policies.Policy` doesn't have access to the
-value of your slots. It receives a ``featurized`` representation.
+The ``Policy`` doesn't have access to the
+value of your slots. It receives a featurized representation.
 As mentioned above, for a ``text`` slot the value is irrelevant.
 The policy just sees a ``1`` or ``0`` depending on whether it is set.
 
@@ -83,7 +81,7 @@ users choose a color by clicking a button, the button payloads might
 be ``/choose{"color": "blue"}`` and ``/choose{"color": "red"}``.
 
 You can specify this in your domain file like this:
-(see details in :ref:`domain`)
+(see details in :ref:`domains`)
 
 .. code-block:: yaml
 
@@ -99,7 +97,7 @@ You can specify this in your domain file like this:
 Slots Set by Actions
 ~~~~~~~~~~~~~~~~~~~~
 
-The second option is to set slots by returning events in :ref:`customactions`.
+The second option is to set slots by returning events in :ref:`custom actions <custom-actions>`.
 In this case, your stories need to include the slots.
 For example, you have a custom action to fetch a user's profile, and
 you have a ``categorical`` slot called ``account_type``.
@@ -117,13 +115,13 @@ When the ``fetch_profile`` action is run, it returns a
 
 .. code-block:: python
 
-   from rasa_core_sdk.actions import Action
-   from rasa_core_sdk.events import SlotSet
+   from rasa_sdk.actions import Action
+   from rasa_sdk.events import SlotSet
    import requests
 
    class FetchProfileAction(Action):
        def name(self):
-           return "action_fetch_profile"
+           return "fetch_profile"
 
        def run(self, dispatcher, tracker, domain):
            url = "http://myprofileurl.com"
@@ -148,14 +146,130 @@ When the ``fetch_profile`` action is run, it returns a
 
 In this case you **do** have to include the ``- slot{}`` part in your stories.
 Rasa Core will learn to use this information to decide on the correct action to
-take (in this case, ``utter_welcome_premuim`` or ``utter_welcome_basic``).
+take (in this case, ``utter_welcome_premium`` or ``utter_welcome_basic``).
 
 .. note::
    It is **very easy** to forget about slots if you are writing
    stories by hand. We strongly recommend that you build up these
-   stories using :ref:`interactive_learning` rather than writing them.
+   stories using :ref:`section_interactive_learning_forms` rather than writing them.
 
 
+.. _slot-classes:
+
+Slot Types
+----------
+
+Text Slot
+~~~~~~~~~
+
+.. option:: text
+
+  :Use For: User preferences where you only care whether or not they've
+            been specified.
+  :Example:
+     .. sourcecode:: yaml
+
+        slots:
+           cuisine:
+              type: text
+  :Description:
+      Results in the feature of the slot being set to ``1`` if any value is set.
+      Otherwise the feature will be set to ``0`` (no value is set).
+
+Boolean Slot
+~~~~~~~~~~~~
+
+.. option:: bool
+
+  :Use For: True or False
+  :Example:
+     .. sourcecode:: yaml
+
+        slots:
+           is_authenticated:
+              type: bool
+  :Description:
+      Checks if slot is set and if True
+
+Categorical Slot
+~~~~~~~~~~~~~~~~
+
+.. option:: categorical
+
+  :Use For: Slots which can take one of N values
+  :Example:
+     .. sourcecode:: yaml
+
+        slots:
+           risk_level:
+              type: categorical
+              values:
+              - low
+              - medium
+              - high
+
+  :Description:
+     Creates a one-hot encoding describing which of the ``values`` matched.
+
+Float Slot
+~~~~~~~~~~
+
+.. option:: float
+
+  :Use For: Continuous values
+  :Example:
+     .. sourcecode:: yaml
+
+        slots:
+           temperature:
+              type: float
+              min_value: -100.0
+              max_value:  100.0
+
+  :Defaults: ``max_value=1.0``, ``min_value=0.0``
+  :Description:
+     All values below ``min_value`` will be treated as ``min_value``, the same
+     happens for values above ``max_value``. Hence, if ``max_value`` is set to
+     ``1``, there is no difference between the slot values ``2`` and ``3.5`` in
+     terms of featurization (e.g. both values will influence the dialogue in
+     the same way and the model can not learn to differentiate between them).
+
+List Slot
+~~~~~~~~~
+
+.. option:: list
+
+  :Use For: Lists of values
+  :Example:
+     .. sourcecode:: yaml
+
+        slots:
+           shopping_items:
+              type: list
+  :Description:
+      The feature of this slot is set to ``1`` if a value with a list is set,
+      where the list is not empty. If no value is set, or the empty list is the
+      set value, the feature will be ``0``. The **length of the list stored in
+      the slot does not influence the dialogue**.
+
+.. _unfeaturized-slot:
+
+Unfeaturized Slot
+~~~~~~~~~~~~~~~~~
+
+.. option:: unfeaturized
+
+  :Use For: Data you want to store which shouldn't influence the dialogue flow
+  :Example:
+     .. sourcecode:: yaml
+
+        slots:
+           internal_user_id:
+              type: unfeaturized
+  :Description:
+      There will not be any featurization of this slot, hence its value does
+      not influence the dialogue flow and is ignored when predicting the next
+      action the bot should run.
 
 Custom Slot Types
 -----------------
@@ -207,11 +321,8 @@ can learn from these how to handle the different situations:
    # story1
    ...
    * inform{"people": "3"}
-   - action_book_table
+     - action_book_table
    ...
    # story2
    * inform{"people": "9"}
-   - action_explain_table_limit
-
-
-.. include:: feedback.inc
+     - action_explain_table_limit

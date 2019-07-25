@@ -1,46 +1,41 @@
 import argparse
+import os
+from typing import Text
+
+from rasa.cli.utils import print_error
 
 from rasa.nlu import training_data
 from rasa.nlu.utils import write_to_file
 
 
-def add_arguments(parser):
-    parser.add_argument(
-        "-d", "--data_file", required=True, help="file or dir containing training data"
-    )
+def convert_training_data(
+    data_file: Text, out_file: Text, output_format: Text, language: Text
+):
+    if not os.path.exists(data_file):
+        print_error(
+            "Data file '{}' does not exist. Provide a valid NLU data file using "
+            "the '--data' argument.".format(data_file)
+        )
+        return
 
-    parser.add_argument(
-        "-o",
-        "--out_file",
-        required=True,
-        help="file where to save training data in rasa format",
-    )
-
-    parser.add_argument("-l", "--language", default="en", help="language of the data")
-
-    parser.add_argument(
-        "-f",
-        "--format",
-        required=True,
-        choices=["json", "md"],
-        help="Output format the training data should be converted into.",
-    )
-    return parser
-
-
-def convert_training_data(data_file, out_file, output_format, language):
-    td = training_data.load_data(data_file, language)
-
-    if output_format == "md":
+    if output_format == "json":
+        td = training_data.load_data(data_file, language)
+        output = td.as_json(indent=2)
+    elif output_format == "md":
+        td = training_data.load_data(data_file, language)
         output = td.as_markdown()
     else:
-        output = td.as_json(indent=2)
+        print_error(
+            "Did not recognize output format. Supported output formats: 'json' and "
+            "'md'. Specify the desired output format with '--format'."
+        )
+        return
 
     write_to_file(out_file, output)
 
 
-def main(args):
-    convert_training_data(args.data_file, args.out_file, args.format, args.language)
+def main(args: argparse.Namespace):
+    convert_training_data(args.data, args.out, args.format, args.language)
 
 
 if __name__ == "__main__":

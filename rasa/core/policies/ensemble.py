@@ -10,8 +10,8 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 import numpy as np
 
 import rasa.core
-import rasa.constants
 import rasa.utils.io
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
 
 from rasa.core import utils, training
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -19,11 +19,12 @@ from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.policies import Policy
+from rasa.core.policies.policy import Policy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
+from rasa.utils.common import class_from_module_path
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +75,8 @@ class PolicyEnsemble(object):
                         "in PolicyEnsemble. When personalizing "
                         "priorities, be sure to give all policies "
                         "different priorities. More information: "
-                        "https://rasa.com/docs/core/"
-                        "policies/"
-                    ).format(v, k)
+                        "{}/core/policies/"
+                    ).format(v, k, DOCS_BASE_URL)
                 )
 
     def train(
@@ -95,11 +95,10 @@ class PolicyEnsemble(object):
 
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[List[float], Text]:
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
         raise NotImplementedError
 
-    def _max_histories(self):
-        # type: () -> List[Optional[int]]
+    def _max_histories(self) -> List[Optional[int]]:
         """Return max history."""
 
         max_histories = []
@@ -131,7 +130,8 @@ class PolicyEnsemble(object):
         for package_name in self.versioned_packages:
             try:
                 p = importlib.import_module(package_name)
-                metadata[package_name] = p.__version__
+                v = p.__version__  # pytype: disable=attribute-error
+                metadata[package_name] = v
             except ImportError:
                 pass
 
@@ -143,7 +143,7 @@ class PolicyEnsemble(object):
         # make sure the directory we persist exists
         domain_spec_path = os.path.join(path, "metadata.json")
         training_data_path = os.path.join(path, "stories.md")
-        utils.create_dir_for_file(domain_spec_path)
+        rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [utils.module_path_from_instance(p) for p in self.policies]
 
@@ -190,7 +190,7 @@ class PolicyEnsemble(object):
         from packaging import version
 
         if version_to_check is None:
-            version_to_check = rasa.constants.MINIMUM_COMPATIBLE_VERSION
+            version_to_check = MINIMUM_COMPATIBLE_VERSION
 
         model_version = metadata.get("rasa", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
@@ -232,7 +232,7 @@ class PolicyEnsemble(object):
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
-        ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
+        ensemble_cls = class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
@@ -333,7 +333,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[List[float], Text]:
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
         result = None
         max_confidence = -1
         best_policy_name = None
@@ -342,12 +342,14 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         for i, p in enumerate(self.policies):
             probabilities = p.predict_action_probabilities(tracker, domain)
 
-            if isinstance(tracker.events[-1], ActionExecutionRejected):
+            if len(tracker.events) > 0 and isinstance(
+                tracker.events[-1], ActionExecutionRejected
+            ):
                 probabilities[
                     domain.index_for_action(tracker.events[-1].action_name)
                 ] = 0.0
-            confidence = np.max(probabilities)
 
+            confidence = np.max(probabilities)
             if (confidence, p.priority) > (max_confidence, best_policy_priority):
                 max_confidence = confidence
                 result = probabilities
@@ -355,7 +357,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 best_policy_priority = p.priority
 
         if (
-            result.index(max_confidence) == domain.index_for_action(ACTION_LISTEN_NAME)
+            result is not None
+            and result.index(max_confidence)
+            == domain.index_for_action(ACTION_LISTEN_NAME)
             and tracker.latest_action_name == ACTION_LISTEN_NAME
             and self.is_not_memo_policy(best_policy_name)
         ):
@@ -386,10 +390,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 best_policy_name = "policy_{}_{}".format(
                     fallback_idx, type(fallback_policy).__name__
                 )
-
-        # normalize probabilities
-        if np.sum(result) != 0:
-            result = result / np.nansum(result)
 
         logger.debug("Predicted next action using {}".format(best_policy_name))
         return result, best_policy_name

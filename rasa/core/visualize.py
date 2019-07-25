@@ -1,27 +1,12 @@
-import argparse
-import asyncio
 import logging
 import os
 from typing import Text
 
-import rasa.utils.io
-import rasa.core.cli
-import rasa.core.cli.arguments
-import rasa.core.cli.train
+from rasa.cli.utils import print_error
+
+from rasa.core.domain import InvalidDomain
 
 logger = logging.getLogger(__name__)
-
-
-def add_arguments(parser: argparse.ArgumentParser):
-    """Parse all the command line arguments for the visualisation script."""
-    rasa.core.cli.arguments.add_logging_option_arguments(parser)
-    rasa.core.cli.visualization.add_visualization_arguments(parser)
-    rasa.core.cli.arguments.add_config_arg(parser, nargs=1)
-    rasa.core.cli.arguments.add_domain_arg(parser)
-    rasa.core.cli.arguments.add_model_and_story_group(
-        parser, allow_pretrained_model=False
-    )
-    return parser
 
 
 async def visualize(
@@ -35,9 +20,23 @@ async def visualize(
     from rasa.core.agent import Agent
     from rasa.core import config
 
-    policies = config.load(config_path)
+    try:
+        policies = config.load(config_path)
+    except ValueError as e:
+        print_error(
+            "Could not load config due to: '{}'. To specify a valid config file use "
+            "the '--config' argument.".format(e)
+        )
+        return
 
-    agent = Agent(domain_path, policies=policies)
+    try:
+        agent = Agent(domain=domain_path, policies=policies)
+    except InvalidDomain as e:
+        print_error(
+            "Could not load domain due to: '{}'. To specify a valid domain path use "
+            "the '--domain' argument.".format(e)
+        )
+        return
 
     # this is optional, only needed if the `/greet` type of
     # messages in the stories should be replaced with actual
@@ -66,5 +65,5 @@ if __name__ == "__main__":
     raise RuntimeError(
         "Calling `rasa.core.visualize` directly is "
         "no longer supported. "
-        "Please use `rasa show` instead."
+        "Please use `rasa visualize` instead."
     )

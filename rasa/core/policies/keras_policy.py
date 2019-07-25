@@ -5,6 +5,7 @@ import os
 import tensorflow as tf
 import numpy as np
 import warnings
+import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 import rasa.utils.io
@@ -18,11 +19,16 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.common import obtain_verbosity
 
+# there are a number of issues with imports from tensorflow. hence the deactivation
+# pytype: disable=import-error
+# pytype: disable=module-attr
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +158,8 @@ class KerasPolicy(Policy):
             loss="categorical_crossentropy", optimizer="rmsprop", metrics=["accuracy"]
         )
 
-        logger.debug(model.summary())
+        if obtain_verbosity() > 0:
+            model.summary()
 
         return model
 
@@ -199,6 +206,7 @@ class KerasPolicy(Policy):
                     epochs=self.epochs,
                     batch_size=self.batch_size,
                     shuffle=False,
+                    verbose=obtain_verbosity(),
                     **self._train_params
                 )
                 # the default parameter for epochs in keras fit is 1
@@ -234,7 +242,7 @@ class KerasPolicy(Policy):
                     training_data.y,
                     epochs=self.current_epoch + 1,
                     batch_size=len(training_data.y),
-                    verbose=0,
+                    verbose=obtain_verbosity(),
                     initial_epoch=self.current_epoch,
                 )
 
@@ -254,6 +262,8 @@ class KerasPolicy(Policy):
             return y_pred[-1].tolist()
         elif len(y_pred.shape) == 3:
             return y_pred[0, -1].tolist()
+        else:
+            raise Exception("Network prediction has invalid shape.")
 
     def persist(self, path: Text) -> None:
 
@@ -271,7 +281,7 @@ class KerasPolicy(Policy):
 
             model_file = os.path.join(path, meta["model"])
             # makes sure the model directory exists
-            utils.create_dir_for_file(model_file)
+            rasa.utils.io.create_directory_for_file(model_file)
             with self.graph.as_default(), self.session.as_default():
                 self.model.save(model_file, overwrite=True)
 
@@ -324,3 +334,7 @@ class KerasPolicy(Policy):
                 "Failed to load dialogue model. Path {} "
                 "doesn't exist".format(os.path.abspath(path))
             )
+
+
+# pytype: enable=import-error
+# pytype: disable=module-attr

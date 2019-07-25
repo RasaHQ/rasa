@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, Text, Any, List, Union, Optional
 
-from rasa_core_sdk import Tracker
-from rasa_core_sdk.executor import CollectingDispatcher
-from rasa_core_sdk.forms import FormAction
+from rasa_sdk import Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.forms import FormAction
 
 
 class RestaurantForm(FormAction):
@@ -47,6 +47,7 @@ class RestaurantForm(FormAction):
             "feedback": [self.from_entity(entity="feedback"), self.from_text()],
         }
 
+    # USED FOR DOCS: do not rename without updating in docs
     @staticmethod
     def cuisine_db() -> List[Text]:
         """Database of supported cuisines"""
@@ -71,6 +72,7 @@ class RestaurantForm(FormAction):
         except ValueError:
             return False
 
+    # USED FOR DOCS: do not rename without updating in docs
     def validate_cuisine(
         self,
         value: Text,
@@ -81,13 +83,13 @@ class RestaurantForm(FormAction):
         """Validate cuisine value."""
 
         if value.lower() in self.cuisine_db():
-            # validation succeeded
-            return value
+            # validation succeeded, set the value of the "cuisine" slot to value
+            return {"cuisine": value}
         else:
             dispatcher.utter_template("utter_wrong_cuisine", tracker)
             # validation failed, set this slot to None, meaning the
             # user will be asked for the slot again
-            return None
+            return {"cuisine": None}
 
     def validate_num_people(
         self,
@@ -99,14 +101,14 @@ class RestaurantForm(FormAction):
         """Validate num_people value."""
 
         if self.is_int(value) and int(value) > 0:
-            return value
+            return {"num_people": value}
         else:
             dispatcher.utter_template("utter_wrong_num_people", tracker)
             # validation failed, set slot to None
-            return None
+            return {"num_people": None}
 
-    @staticmethod
     def validate_outdoor_seating(
+        self,
         value: Text,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
@@ -117,18 +119,18 @@ class RestaurantForm(FormAction):
         if isinstance(value, str):
             if "out" in value:
                 # convert "out..." to True
-                return True
+                return {"outdoor_seating": True}
             elif "in" in value:
                 # convert "in..." to False
-                return False
+                return {"outdoor_seating": False}
             else:
                 dispatcher.utter_template("utter_wrong_outdoor_seating", tracker)
                 # validation failed, set slot to None
-                return None
+                return {"outdoor_seating": None}
 
         else:
             # affirm/deny was picked up as T/F
-            return value
+            return {"outdoor_seating": value}
 
     def submit(
         self,
