@@ -933,6 +933,8 @@ def _get_output_channel(
         if channel.name() == requested_output_channel
     ]
 
+    # Check if matching channels can provide a valid output channel,
+    # otherwise use `CollectingOutputChannel`
     return reduce(
         lambda output_channel_created_so_far, input_channel: (
             input_channel.get_output_channel() or output_channel_created_so_far
