@@ -17,7 +17,7 @@ def from_endpoint_config(
         return None
     elif broker_config.type == "pika" or broker_config.type is None:
         return PikaProducer.from_endpoint_config(broker_config)
-    elif broker_config.type == "sql":
+    elif broker_config.type.lower() == "sql":
         return SQLProducer.from_endpoint_config(broker_config)
     elif broker_config.type == "file":
         return FileProducer.from_endpoint_config(broker_config)
