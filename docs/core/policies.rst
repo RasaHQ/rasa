@@ -174,7 +174,8 @@ This policy has a pre-defined architecture, which comprises the
 following steps:
 
     - concatenate user input (user intent and entities),
-      previous system action and slots for current time into an input vector
+      previous system action, slots and active form
+      for each time step into an input vector
       to pre-transformer embedding layer;
     - feed it to tranformer;
     - apply a dense layer to the output of the transformer
