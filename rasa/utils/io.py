@@ -92,14 +92,20 @@ def replace_environment_variables():
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
-def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
+def read_yaml(
+    content: Text, should_replace_environment_variables: bool = True
+) -> Union[List[Any], Dict[Text, Any]]:
     """Parses yaml from a text.
 
      Args:
         content: A text containing yaml content.
+        should_replace_environment_variables: Whether to replace placeholder for
+            environment variables with their values.
     """
     fix_yaml_loader()
-    replace_environment_variables()
+
+    if should_replace_environment_variables:
+        replace_environment_variables()
 
     yaml_parser = yaml.YAML(typ="safe")
     yaml_parser.version = "1.2"
@@ -164,13 +170,17 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
         )
 
 
-def read_yaml_file(filename: Text) -> Union[List[Any], Dict[Text, Any]]:
+def read_yaml_file(
+    filename: Text, should_replace_environment_variables: bool = True
+) -> Union[List[Any], Dict[Text, Any]]:
     """Parses a yaml file.
 
      Args:
         filename: The path to the file which should be read.
+        should_replace_environment_variables: Whether to replace placeholder for
+            environment variables with their values.
     """
-    return read_yaml(read_file(filename, "utf-8"))
+    return read_yaml(read_file(filename, "utf-8"), should_replace_environment_variables)
 
 
 def unarchive(byte_array: bytes, directory: Text) -> Text:
