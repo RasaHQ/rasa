@@ -911,7 +911,7 @@ def _get_output_channel(
     """Returns the `OutputChannel` which should be used for the bot's responses.
 
     Args:
-        request: HTTP request whose query parameters can specify which `OutputChannel` 
+        request: HTTP request whose query parameters can specify which `OutputChannel`
                  should be used.
         tracker: Tracker for the conversation. Used to get the latest input channel.
 
