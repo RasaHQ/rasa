@@ -2,9 +2,13 @@ import pytest
 import copy
 
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
+from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
+from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.training_data import load_data
 
 from tests.nlu.conftest import DEFAULT_DATA_PATH
+
 
 @pytest.fixture(scope="module")
 def training_data():
@@ -17,7 +21,7 @@ def test_data():
 
 
 class ClassifierTestCollection():
-    """Tests every classifier needs to filfill.
+    """Tests every classifier needs to fulfill.
 
     Each classifier can have additional tests in its own class."""
 
@@ -26,9 +30,8 @@ class ClassifierTestCollection():
         return NotImplementedError
 
     @pytest.fixture(scope="class")
-    def filename(self):
-        # return "component_0_"+trained_classifier.name
-        raise NotImplementedError
+    def filename(self, classifier_class):
+        return "component_0_"+classifier_class.name
 
     @pytest.fixture(scope="module")
     def trained_classifier(self, classifier_class, training_data,
@@ -39,16 +42,18 @@ class ClassifierTestCollection():
             arg = kwargs.pop(p, None)
             if arg is not None:
                 train_params.update(arg)
-        classifier = self._create_classifier(component_config, **kwargs)
-        classifier.train(training_data, **train_params)
+        classifier = self._create_classifier(classifier_class, component_config
+                                             , **kwargs)
+        classifier.train(training_data, {}, **train_params)
         return classifier
 
     @pytest.fixture(scope="module")
     def component_config(self):
         return {}
 
-    def _create_classifier(self, component_config, **kwargs):
-        raise NotImplementedError
+    def _create_classifier(self, classifier_class, component_config, **kwargs):
+        classifier = classifier_class(component_config, **kwargs)
+        return classifier
 
     def test_persist_and_load(self, test_data, trained_classifier, filename, tmpdir):
         meta = trained_classifier.persist(filename, tmpdir)
@@ -60,18 +65,27 @@ class ClassifierTestCollection():
             trained_classifier.process(m2)
             assert m1.get("intent") == m2.get("intent")
 
+
 class TestKeywordClassifier(ClassifierTestCollection):
-
-    @pytest.fixture(scope="module")
-    def filename(self):
-        return "component_0_"+KeywordIntentClassifier.name
-
     @pytest.fixture(scope="module")
     def classifier_class(self):
         return KeywordIntentClassifier
 
-    def _create_classifier(self, component_config, **kwargs):
-        classifier = KeywordIntentClassifier(component_config, **kwargs)
-        return classifier
 
+class TestEmbeddingIntentClassifier(ClassifierTestCollection):
+    @pytest.fixture(scope="module")
+    def classifier_class(self):
+        return EmbeddingIntentClassifier
+
+
+class TestMitieIntentClassifier(ClassifierTestCollection):
+    @pytest.fixture(scope="module")
+    def classifier_class(self):
+        return MitieIntentClassifier
+
+
+class TestSklearnIntentClassifier(ClassifierTestCollection):
+    @pytest.fixture(scope="module")
+    def classifier_class(self):
+        return SklearnIntentClassifier
 
