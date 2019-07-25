@@ -147,7 +147,7 @@ class InputChannel(object):
     def get_output_channel(self) -> Optional["OutputChannel"]:
         """Create ``OutputChannel`` based on information provided by the input channel.
 
-        Implementing this is function is not required. If this function returns a valid
+        Implementing this function is not required. If this function returns a valid
         ``OutputChannel`` this can be used by Rasa to send bot responses to the user
         without the user initiating an interaction.
 
