@@ -13,11 +13,13 @@ Added
 -----
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
+- Fill slots for custom templates
 
 Changed
 -------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
+- Update pytype to ``2019.7.11``
 - ``metadata`` attribute added to ``UserMessage``, now it's possible to handle 
   different kinds of user messages
 
@@ -27,8 +29,12 @@ Removed
 
 Fixed
 -----
+- interactive learning bug where reverted user utterances were dumped to training data
 - added timeout to terminal input channel to avoid freezing input in case of server
   errors
+- fill slots for image, buttons, quick_replies and attachments in templates
+- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
+- slot setting in interactive learning with the TwoStageFallbackPolicy
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^

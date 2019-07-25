@@ -417,8 +417,9 @@ class RestInput(InputChannel):
                     on_new_message, text, q, sender_id, input_channel, metadata
                 )
             )
+            result = None  # declare variable up front to avoid pytype error
             while True:
-                result = await q.get()  # pytype: disable=bad-return-type
+                result = await q.get()
                 if result == "DONE":
                     break
                 else:

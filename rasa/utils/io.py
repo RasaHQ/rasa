@@ -234,18 +234,6 @@ def create_path(file_path: Text):
         os.makedirs(parent_dir)
 
 
-def zip_folder(folder: Text) -> Text:
-    """Create an archive from a folder."""
-    import tempfile
-    import shutil
-
-    zipped_path = tempfile.NamedTemporaryFile(delete=False)
-    zipped_path.close()
-
-    # WARN: not thread save!
-    return shutil.make_archive(zipped_path.name, str("zip"), folder)
-
-
 def create_directory_for_file(file_path: Text) -> None:
     """Creates any missing parent directories of this file path."""
 
@@ -300,3 +288,15 @@ def create_validator(
                 raise ValidationError(message=error_message)
 
     return FunctionValidator
+
+
+def zip_folder(folder: Text) -> Text:
+    """Create an archive from a folder."""
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)
