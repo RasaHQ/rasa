@@ -70,7 +70,7 @@ async def test_parsing(default_processor: MessageProcessor):
     assert parsed["entities"][0]["entity"] == "name"
 
 
-async def test_http_parsing():  
+async def test_http_parsing():
     message = UserMessage("lunch?")
 
     endpoint = EndpointConfig("https://interpreter.com")
@@ -89,6 +89,7 @@ async def test_http_parsing():
 
         assert r
 
+
 async def mocked_parse(self, text, message_id=None, tracker=None):
     """Mock parsing a text message and augment it with the slot value 
     from the tracker's state"""
@@ -99,7 +100,8 @@ async def mocked_parse(self, text, message_id=None, tracker=None):
         "text": text,
         "requested_language": tracker.get_slot("requested_language")
     }
-    
+
+
 async def test_parsing_with_tracker():
     message = UserMessage("lunch?")
     tracker = DialogueStateTracker.from_dict("1", [], [Slot("requested_language")])

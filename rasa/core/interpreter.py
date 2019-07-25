@@ -153,7 +153,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             return None, 0.0, []
 
     async def parse(
-        self, text: Text, message_id: Optional[Text] = None, tracker = None
+        self, text: Text, message_id: Optional[Text] = None, tracker=None
     ) -> Dict[Text, Any]:
         """Parse a text message."""
 
@@ -180,7 +180,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
     async def parse(
-        self, text: Text, message_id: Optional[Text] = None, tracker = None
+        self, text: Text, message_id: Optional[Text] = None, tracker=None
     ) -> Dict[Text, Any]:
         """Parse a text message.
 
@@ -196,7 +196,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         return result if result is not None else default_return
 
     async def _rasa_http_parse(
-        self, text: Text, message_id: Optional[Text] = None, tracker = None
+        self, text: Text, message_id: Optional[Text] = None, tracker=None
     ) -> Optional[Dict[Text, Any]]:
         """Send a text message to a running rasa NLU http server.
         Return `None` on failure."""
@@ -252,7 +252,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
             self.interpreter = None
 
     async def parse(
-        self, text: Text, message_id: Optional[Text] = None, tracker = None
+        self, text: Text, message_id: Optional[Text] = None, tracker=None
     ) -> Dict[Text, Any]:
         """Parse a text message.
 
