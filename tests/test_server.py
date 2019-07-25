@@ -768,6 +768,7 @@ def test_execute_with_not_existing_action(rasa_app: SanicTestClient):
         (None, "slack", CollectingOutputChannel),
         ([], None, CollectingOutputChannel),
         ([RestInput()], "slack", CollectingOutputChannel),
+        ([RestInput()], "rest", CollectingOutputChannel),
         ([RestInput(), SlackInput("test")], "slack", SlackBot),
     ],
 )

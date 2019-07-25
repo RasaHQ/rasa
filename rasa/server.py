@@ -933,12 +933,10 @@ def _get_output_channel(
         if channel.name() == requested_output_channel
     ]
 
-    output_channel = reduce(
+    return reduce(
         lambda output_channel_created_so_far, input_channel: (
-            output_channel_created_so_far or input_channel.get_output_channel()
+            input_channel.get_output_channel() or output_channel_created_so_far
         ),
         matching_channels,
-        None,
+        CollectingOutputChannel(),
     )
-
-    return output_channel or CollectingOutputChannel()
