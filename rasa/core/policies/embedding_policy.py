@@ -59,7 +59,7 @@ class EmbeddingPolicy(Policy):
         # number of hidden layers is equal to the length of this list
         "hidden_layers_sizes_bot": [],
         # number of units in transformer
-        "transformer_sizes": 128,
+        "transformer_size": 128,
         # number of transformer layers
         "num_transformer_layers": 1,
         # type of positional encoding in transformer
