@@ -795,7 +795,8 @@ async def _write_stories_to_file(
             tracker = DialogueStateTracker.from_events(
                 "interactive_story_{}".format(i), evts=parsed_events, slots=domain.slots
             )
-            if len(tracker.applied_events()) > 0:
+
+            if any(isinstance(event, UserUttered) for event in tracker.applied_events()):
                 i += 1
                 f.write("\n" + tracker.export_stories())
 
