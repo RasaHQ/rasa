@@ -3,6 +3,7 @@ import datetime
 import pytest
 import uuid
 from aioresponses import aioresponses
+from unittest.mock import patch
 
 import asyncio
 import rasa.utils.io
@@ -81,87 +82,36 @@ async def test_http_parsing():
         assert r
         assert json_of_latest_request(r)["message_id"] == message.message_id
 
+async def mocked_parse(self, text, message_id=None, tracker=None):
+    """Mock parsing a text message and augment it with the slot value 
+    from the tracker's state"""
 
-
-# This class is used for the test test_http_parsing_with_tracker in order
-# to validate that the tracker is passed into the interpreter. Also,
-# it could be used as an example of a use-case for leveraging the tracker
-# within an interpterer. In this example, the interpreter obtains a domain name
-# of the NLU endpoint from the tracker state.
-class TrackerAwareNLUHttpInterpreter(RasaNLUHttpInterpreter):
-    async def _rasa_http_parse(self, text, message_id=None, tracker=None):
-        """Send a text message to a running rasa NLU http server.
-
-        Return `None` on failure."""
-
-        params = {
-            "model": self.model_name,
-            "text": text,
-            "message_id": message_id,
-        }
-
-        assert tracker
-        nlu_endpoint_domain = tracker.get_slot('nlu_endpoint_domain')
-        assert nlu_endpoint_domain
-        
-        url = "https://{}/parse".format(nlu_endpoint_domain)
-
-        # noinspection PyBroadException
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=params) as resp:
-                    if resp.status == 200:
-                        return await resp.json()
-                    else:
-                        logger.error(
-                            "Failed to parse text '{}' using rasa NLU over "
-                            "http. Error: {}".format(text, await resp.text())
-                        )
-                        return None
-        except Exception:
-            logger.exception(
-                "Failed to parse text '{}' using rasa NLU over http.".format(text)
-            )
-            return None
-
-# This test sets the endpoint config to specify the slot name that will specify
-# the NLU project name. We also set that slot in the tracker.
-#
-# Once everything is set up, we're parsing the message and passing the tracker as
-# the context for the interpreter. RasaNLUHttpInterpreter reacts to the fact that
-# the tracker has a slot, and modifies the HTTP url to connect to the right NLU
-# service.
-#
-# Thus we're showing a use-case how a multi-language NLU interpretation can be
-# implemented with a single core runtime.
+    return {
+        "intent": {"name": "", "confidence": 0.0},
+        "entities": [],
+        "text": text,
+        "requested_language": tracker.get_slot("requested_language")
+    }
     
-async def test_http_parsing_with_tracker():
+async def test_parsing_with_tracker():
     message = UserMessage("lunch?")
-    tracker = DialogueStateTracker.from_dict("1", [], [Slot("nlu_endpoint_domain")])
+    tracker = DialogueStateTracker.from_dict("1", [], [Slot("requested_language")])
 
-    # we'll expect this value 'en.interpreter.com' to be part of the NLU domain name
-    tracker._set_slot("nlu_endpoint_domain", "en.interpreter.com")
+    # we'll expect this value 'en' to be part of the result from the interpreter
+    tracker._set_slot("requested_language", "en")
 
     endpoint = EndpointConfig("https://interpreter.com")
-
     with aioresponses() as mocked:
-        mocked.post("https://en.interpreter.com/parse", repeat=True, status=200)
+        mocked.post("https://interpreter.com/parse", repeat=True, status=200)
 
-        # Using a sub-classed interpreter defined for this test
-        inter = TrackerAwareNLUHttpInterpreter(endpoint=endpoint)
-        try:
-            # passing the tracker
-            await MessageProcessor(inter, None, None, tracker, None)._parse_message(
-                message, tracker
+        # mock the parse function with the one defined for this test
+        with patch.object(RasaNLUHttpInterpreter, "parse", mocked_parse):
+            interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
+            result = await MessageProcessor(interpreter, None, None, tracker, None)._parse_message(
+                message,
+                tracker
             )
-        except KeyError:
-            pass  # logger looks for intent and entities, so we except
-
-        # Did we POST to the right domain name?
-        r = latest_request(mocked, "POST", "https://en.interpreter.com/parse")
-
-        assert r
-        assert json_of_latest_request(r)["message_id"] == message.message_id
+            assert result["requested_language"] == "en"
 
 
 async def test_reminder_scheduled(default_processor):
