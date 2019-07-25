@@ -376,7 +376,7 @@ def escape(pattern: Text):
         return pattern.translate(_special_chars_map)
 
 
-def sanitize(s: Optional[Text] = None):
+def sanitize(s: Optional[Text] = None) -> Optional[Text]:
     if s:
         return escape(s)
     else:
