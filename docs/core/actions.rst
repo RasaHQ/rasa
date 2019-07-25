@@ -168,6 +168,11 @@ To do so you can use this
 `endpoint <../../api/http-api.html#tag/Tracker/paths/~1conversations~1{conversation_id}~1execute/post>`_ .
 Specify the action which should be run for a specific user and which output
 channel should be used to communicate the assistant's responses back to the user.
+If your message is static you can define an ``utter_`` action in your domain file with
+a corresponding template. If you need more control, add a custom action in your
+domain and implement the required steps in your action server. Any messages which are
+dispatched in the custom action will be forwarded to the specified output channel.
+
 
 Proactively reaching out to the user is dependent on the abilities of a channel and
 hence not supported by every channel. If your channel does not support it, consider
