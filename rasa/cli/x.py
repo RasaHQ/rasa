@@ -288,8 +288,8 @@ def rasa_x(args: argparse.Namespace):
 
 async def _pull_runtime_config_from_server(
     config_endpoint: Optional[Text],
-    attempts: int = 30,
-    wait_time_between_pulls: Union[int, float] = 0.5,
+    attempts: int = 60,
+    wait_time_between_pulls: Union[int, float] = 1,
     keys: Iterable[Text] = ("endpoints", "credentials"),
 ) -> Optional[List[Text]]:
     """Pull runtime config from `config_endpoint`.
