@@ -6,8 +6,25 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.8] - `master`_
+
+[Unreleased 1.1.9] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+
+[1.1.8] - 2019-07-25
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -22,10 +39,6 @@ Changed
 - Update pytype to ``2019.7.11``
 - ``metadata`` attribute added to ``UserMessage``, now it's possible to handle 
   different kinds of user messages
-
-Removed
--------
-
 
 Fixed
 -----
