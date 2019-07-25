@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import warnings
@@ -7,13 +6,13 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.constants import RESULTS_FILE
-from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.utils import pad_lists_to_size
-from rasa.core.trackers import DialogueStateTracker
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
+    from rasa.core.trackers import DialogueStateTracker
+    from rasa.core.events import ActionExecuted, UserUttered
 
 logger = logging.getLogger(__name__)
 
