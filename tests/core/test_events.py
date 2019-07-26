@@ -75,6 +75,46 @@ def test_event_has_proper_implementation(one_event, another_event):
 
 
 @pytest.mark.parametrize(
+    "user_uttered_data, expected",
+    [
+        (
+            UserUttered(
+                text="hi",
+                intent="/greet",
+                timestamp=1564106636.3234851,
+                input_channel="test",
+                message_id="1",
+                metadata={"type": "text"},
+            ),
+            {
+                "event": "user",
+                "timestamp": 1564106636.3234851,
+                "text": "hi",
+                "parse_data": {"intent": "/greet", "entities": [], "text": "hi"},
+                "input_channel": "test",
+                "message_id": "1",
+                "metadata": {"type": "text"},
+            },
+        ),
+        (
+            UserUttered(timestamp=1564106636.3234851),
+            {
+                "event": "user",
+                "timestamp": 1564106636.3234851,
+                "text": None,
+                "parse_data": {"intent": {}, "entities": [], "text": None},
+                "input_channel": None,
+                "message_id": None,
+                "metadata": None,
+            },
+        ),
+    ],
+)
+def test_UserUttered_to_dict(user_uttered_data, expected):
+    assert user_uttered_data.as_dict() == expected
+
+
+@pytest.mark.parametrize(
     "one_event",
     [
         UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
