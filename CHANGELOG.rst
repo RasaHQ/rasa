@@ -24,6 +24,7 @@ Removed
 Fixed
 -----
 - ``rasa test core`` can handle compressed model files
+- Rasa can handle story files containing multi line comments
 
 
 [1.1.8] - 2019-07-25
