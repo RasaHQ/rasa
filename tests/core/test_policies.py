@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 import rasa.utils.io
-from rasa.core import training, utils
+from rasa.core import training
 from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
@@ -18,7 +18,9 @@ from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import (
     BinarySingleStateFeaturizer,
+    LabelTokenizerSingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
+    FullDialogueTrackerFeaturizer,
 )
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.embedding_policy import EmbeddingPolicy
@@ -113,6 +115,20 @@ class PolicyTestCollection(object):
         policy.train(training_trackers, default_domain)
         return policy
 
+    def test_featurizer(self, trained_policy, tmpdir):
+        assert trained_policy.featurizer.__class__ is self.featurizer().__class__
+        assert (
+            trained_policy.featurizer.state_featurizer.__class__
+            is self.featurizer().state_featurizer.__class__
+        )
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        assert loaded.featurizer.__class__ is self.featurizer().__class__
+        assert (
+            loaded.featurizer.state_featurizer.__class__
+            is self.featurizer().state_featurizer.__class__
+        )
+
     async def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
@@ -177,99 +193,6 @@ class TestKerasPolicyWithTfConfig(PolicyTestCollection):
         loaded = trained_policy.__class__.load(tmpdir.strpath)
         # noinspection PyProtectedMember
         assert loaded.session._config == session_config()
-
-
-class TestFallbackPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = FallbackPolicy(priority=priority)
-        return p
-
-    @pytest.mark.parametrize(
-        "nlu_confidence, last_action_name, should_nlu_fallback",
-        [
-            (0.1, "some_action", False),
-            (0.1, "action_listen", True),
-            (0.9, "some_action", False),
-            (0.9, "action_listen", False),
-        ],
-    )
-    def test_should_nlu_fallback(
-        self, trained_policy, nlu_confidence, last_action_name, should_nlu_fallback
-    ):
-        assert (
-            trained_policy.should_nlu_fallback(nlu_confidence, last_action_name)
-            is should_nlu_fallback
-        )
-
-
-class TestMappingPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = MappingPolicy()
-        return p
-
-
-class TestMemoizationPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        max_history = None
-        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
-            max_history = featurizer.max_history
-        p = MemoizationPolicy(priority=priority, max_history=max_history)
-        return p
-
-    async def test_memorise(self, trained_policy, default_domain):
-        trackers = await train_trackers(default_domain, augmentation_factor=20)
-        trained_policy.train(trackers, default_domain)
-        lookup_with_augmentation = trained_policy.lookup
-
-        trackers = [
-            t for t in trackers if not hasattr(t, "is_augmented") or not t.is_augmented
-        ]
-
-        (
-            all_states,
-            all_actions,
-        ) = trained_policy.featurizer.training_states_and_actions(
-            trackers, default_domain
-        )
-
-        for tracker, states, actions in zip(trackers, all_states, all_actions):
-            recalled = trained_policy.recall(states, tracker, default_domain)
-            assert recalled == default_domain.index_for_action(actions[0])
-
-        nums = np.random.randn(default_domain.num_states)
-        random_states = [{f: num for f, num in zip(default_domain.input_states, nums)}]
-        assert trained_policy._recall_states(random_states) is None
-
-        # compare augmentation for augmentation_factor of 0 and 20:
-        trackers_no_augmentation = await train_trackers(
-            default_domain, augmentation_factor=0
-        )
-        trained_policy.train(trackers_no_augmentation, default_domain)
-        lookup_no_augmentation = trained_policy.lookup
-
-        assert lookup_no_augmentation == lookup_with_augmentation
-
-    def test_memorise_with_nlu(self, trained_policy, default_domain):
-        filename = "data/test_dialogues/default.json"
-        dialogue = read_dialogue_file(filename)
-
-        tracker = DialogueStateTracker(dialogue.name, default_domain.slots)
-        tracker.recreate_from_dialogue(dialogue)
-        states = trained_policy.featurizer.prediction_states([tracker], default_domain)[
-            0
-        ]
-
-        recalled = trained_policy.recall(states, tracker, default_domain)
-        assert recalled is not None
-
-
-class TestAugmentedMemoizationPolicy(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        max_history = None
-        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
-            max_history = featurizer.max_history
-        p = AugmentedMemoizationPolicy(priority=priority, max_history=max_history)
-        return p
 
 
 class TestSklearnPolicy(PolicyTestCollection):
@@ -409,6 +332,20 @@ class TestEmbeddingPolicyWithFullDialogue(PolicyTestCollection):
         p = EmbeddingPolicy(priority=priority)
         return p
 
+    def test_featurizer(self, trained_policy, tmpdir):
+        assert trained_policy.featurizer.__class__ is FullDialogueTrackerFeaturizer
+        assert (
+            trained_policy.featurizer.state_featurizer.__class__
+            is LabelTokenizerSingleStateFeaturizer
+        )
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        assert loaded.featurizer.__class__ is FullDialogueTrackerFeaturizer
+        assert (
+            loaded.featurizer.state_featurizer.__class__
+            is LabelTokenizerSingleStateFeaturizer
+        )
+
 
 class TestEmbeddingPolicyWithMaxHistory(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
@@ -418,13 +355,24 @@ class TestEmbeddingPolicyWithMaxHistory(PolicyTestCollection):
         p = EmbeddingPolicy(priority=priority, max_history=self.max_history)
         return p
 
+    def test_featurizer(self, trained_policy, tmpdir):
+        assert trained_policy.featurizer.__class__ is MaxHistoryTrackerFeaturizer
+        assert (
+            trained_policy.featurizer.state_featurizer.__class__
+            is LabelTokenizerSingleStateFeaturizer
+        )
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        assert loaded.featurizer.__class__ is MaxHistoryTrackerFeaturizer
+        assert (
+            loaded.featurizer.state_featurizer.__class__
+            is LabelTokenizerSingleStateFeaturizer
+        )
+
 
 class TestEmbeddingPolicyWithTfConfig(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
-        # use standard featurizer from EmbeddingPolicy,
-        # since it is using FullDialogueTrackerFeaturizer
-        # if max_history is not specified
-        p = EmbeddingPolicy(priority=priority, **tf_defaults())
+        p = EmbeddingPolicy(featurizer=featurizer, priority=priority, **tf_defaults())
         return p
 
     def test_tf_config(self, trained_policy, tmpdir):
@@ -436,7 +384,79 @@ class TestEmbeddingPolicyWithTfConfig(PolicyTestCollection):
         assert loaded.session._config == session_config()
 
 
-class TestFormPolicy(PolicyTestCollection):
+class TestMemoizationPolicy(PolicyTestCollection):
+    def create_policy(self, featurizer, priority):
+        max_history = None
+        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+            max_history = featurizer.max_history
+        p = MemoizationPolicy(priority=priority, max_history=max_history)
+        return p
+
+    def test_featurizer(self, trained_policy, tmpdir):
+        assert trained_policy.featurizer.__class__ is MaxHistoryTrackerFeaturizer
+        assert trained_policy.featurizer.state_featurizer is None
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        assert loaded.featurizer.__class__ is MaxHistoryTrackerFeaturizer
+        assert loaded.featurizer.state_featurizer is None
+
+    async def test_memorise(self, trained_policy, default_domain):
+        trackers = await train_trackers(default_domain, augmentation_factor=20)
+        trained_policy.train(trackers, default_domain)
+        lookup_with_augmentation = trained_policy.lookup
+
+        trackers = [
+            t for t in trackers if not hasattr(t, "is_augmented") or not t.is_augmented
+        ]
+
+        (
+            all_states,
+            all_actions,
+        ) = trained_policy.featurizer.training_states_and_actions(
+            trackers, default_domain
+        )
+
+        for tracker, states, actions in zip(trackers, all_states, all_actions):
+            recalled = trained_policy.recall(states, tracker, default_domain)
+            assert recalled == default_domain.index_for_action(actions[0])
+
+        nums = np.random.randn(default_domain.num_states)
+        random_states = [{f: num for f, num in zip(default_domain.input_states, nums)}]
+        assert trained_policy._recall_states(random_states) is None
+
+        # compare augmentation for augmentation_factor of 0 and 20:
+        trackers_no_augmentation = await train_trackers(
+            default_domain, augmentation_factor=0
+        )
+        trained_policy.train(trackers_no_augmentation, default_domain)
+        lookup_no_augmentation = trained_policy.lookup
+
+        assert lookup_no_augmentation == lookup_with_augmentation
+
+    def test_memorise_with_nlu(self, trained_policy, default_domain):
+        filename = "data/test_dialogues/default.json"
+        dialogue = read_dialogue_file(filename)
+
+        tracker = DialogueStateTracker(dialogue.name, default_domain.slots)
+        tracker.recreate_from_dialogue(dialogue)
+        states = trained_policy.featurizer.prediction_states([tracker], default_domain)[
+            0
+        ]
+
+        recalled = trained_policy.recall(states, tracker, default_domain)
+        assert recalled is not None
+
+
+class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
+    def create_policy(self, featurizer, priority):
+        max_history = None
+        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+            max_history = featurizer.max_history
+        p = AugmentedMemoizationPolicy(priority=priority, max_history=max_history)
+        return p
+
+
+class TestFormPolicy(TestMemoizationPolicy):
     def create_policy(self, featurizer, priority):
         p = FormPolicy(priority=priority)
         return p
@@ -499,8 +519,52 @@ class TestFormPolicy(PolicyTestCollection):
         random_states = [{f: num for f, num in zip(domain.input_states, nums)}]
         assert trained_policy.recall(random_states, None, domain) is None
 
+    def test_memorise_with_nlu(self, trained_policy, default_domain):
+        pass
 
-class TestTwoStageFallbackPolicy(PolicyTestCollection):
+
+class TestMappingPolicy(PolicyTestCollection):
+    def create_policy(self, featurizer, priority):
+        p = MappingPolicy()
+        return p
+
+    def test_featurizer(self, trained_policy, tmpdir):
+        assert trained_policy.featurizer is None
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        assert loaded.featurizer is None
+
+
+class TestFallbackPolicy(PolicyTestCollection):
+    def create_policy(self, featurizer, priority):
+        p = FallbackPolicy(priority=priority)
+        return p
+
+    def test_featurizer(self, trained_policy, tmpdir):
+        assert trained_policy.featurizer is None
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        assert loaded.featurizer is None
+
+    @pytest.mark.parametrize(
+        "nlu_confidence, last_action_name, should_nlu_fallback",
+        [
+            (0.1, "some_action", False),
+            (0.1, "action_listen", True),
+            (0.9, "some_action", False),
+            (0.9, "action_listen", False),
+        ],
+    )
+    def test_should_nlu_fallback(
+        self, trained_policy, nlu_confidence, last_action_name, should_nlu_fallback
+    ):
+        assert (
+            trained_policy.should_nlu_fallback(nlu_confidence, last_action_name)
+            is should_nlu_fallback
+        )
+
+
+class TestTwoStageFallbackPolicy(TestFallbackPolicy):
     def create_policy(self, featurizer, priority):
         p = TwoStageFallbackPolicy(
             priority=priority, deny_suggestion_intent_name="deny"

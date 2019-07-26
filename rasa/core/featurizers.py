@@ -269,7 +269,7 @@ class TrackerFeaturizer(object):
         use_intent_probabilities: bool = False,
     ) -> None:
 
-        self.state_featurizer = state_featurizer or SingleStateFeaturizer()
+        self.state_featurizer = state_featurizer
         self.use_intent_probabilities = use_intent_probabilities
 
     def _create_states(
