@@ -6,26 +6,46 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.8] - `master`_
+
+[Unreleased 1.1.9] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
 
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+
+[1.1.8] - 2019-07-25
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``TrainingFileImporter`` interface to support customizing the process of loading
+  training data
+- Fill slots for custom templates
 
 Changed
 -------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
-
-Removed
--------
-
+- Update pytype to ``2019.7.11``
 
 Fixed
 -----
+- interactive learning bug where reverted user utterances were dumped to training data
 - added timeout to terminal input channel to avoid freezing input in case of server
   errors
+- fill slots for image, buttons, quick_replies and attachments in templates
+- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
+- slot setting in interactive learning with the TwoStageFallbackPolicy
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^
