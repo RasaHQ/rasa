@@ -13,7 +13,6 @@ from rasa.constants import (
     DEFAULT_NLU_RESULTS_PATH,
     CONFIG_SCHEMA_FILE,
 )
-import rasa.test as rasa_test
 import rasa.utils.validation as validation_utils
 import rasa.cli.utils as cli_utils
 
@@ -59,7 +58,7 @@ def add_subparser(
 
 def test_core(args: argparse.Namespace) -> None:
     from rasa import data
-    from rasa.test import test_core
+    from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
     endpoints = cli_utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
@@ -79,8 +78,8 @@ def test_core(args: argparse.Namespace) -> None:
             args.model, "model", DEFAULT_MODELS_PATH
         )
 
-        if args.evaluate_models_in_dir:
-            rasa_test.test_core_models_in_directory(args.model, stories, output)
+        if args.evaluate_model_directory:
+            test_core_models_in_directory(args.model, stories, output)
         else:
             test_core(
                 model=model_path,
@@ -91,12 +90,13 @@ def test_core(args: argparse.Namespace) -> None:
             )
 
     else:
-        rasa_test.test_core_models(args.model, stories, output)
+        test_core_models(args.model, stories, output)
 
 
 def test_nlu(args: argparse.Namespace) -> None:
     from rasa import data
     import rasa.utils.io as io_utils
+    from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
     nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
@@ -132,7 +132,7 @@ def test_nlu(args: argparse.Namespace) -> None:
                 continue
 
         output = args.report or DEFAULT_NLU_RESULTS_PATH
-        rasa_test.compare_nlu_models(
+        compare_nlu_models(
             configs=config_files,
             nlu=nlu_data,
             output=output,
@@ -144,12 +144,12 @@ def test_nlu(args: argparse.Namespace) -> None:
         config = cli_utils.get_validated_path(
             args.config, "config", DEFAULT_CONFIG_PATH
         )
-        rasa_test.perform_nlu_cross_validation(config, nlu_data, vars(args))
+        perform_nlu_cross_validation(config, nlu_data, vars(args))
     else:
         model_path = cli_utils.get_validated_path(
             args.model, "model", DEFAULT_MODELS_PATH
         )
-        rasa_test.test_nlu(model_path, nlu_data, vars(args))
+        test_nlu(model_path, nlu_data, vars(args))
 
 
 def test(args: argparse.Namespace):
