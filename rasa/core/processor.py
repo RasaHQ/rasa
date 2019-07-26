@@ -523,7 +523,7 @@ class MessageProcessor(object):
             # the timestamp would indicate a time before the time
             # of the action executed
             e.timestamp = time.time()
-            tracker.update(e)
+            tracker.update(e, self.domain)
 
     def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID

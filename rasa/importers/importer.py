@@ -1,3 +1,4 @@
+import asyncio
 from functools import reduce
 from typing import Text, Optional, List, Dict
 import logging
@@ -5,7 +6,6 @@ import logging
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import StoryGraph
-from rasa.importers.simple import SimpleFileImporter
 from rasa.nlu.training_data import TrainingData
 import rasa.utils.io as io_utils
 import rasa.utils.common as common_utils
@@ -13,30 +13,59 @@ import rasa.utils.common as common_utils
 logger = logging.getLogger(__name__)
 
 
-class TrainingFileImporter:
+class TrainingDataImporter:
     """Common interface for different mechanisms to load training data."""
 
     async def get_domain(self) -> Domain:
-        """Retrieves the domain which should be used for the training."""
+        """Retrieves the domain of the bot.
+
+        Returns:
+            Loaded ``Domain``.
+        """
         raise NotImplementedError()
 
-    async def get_story_data(
+    async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        """Retrieves the story data which should be used for the training."""
+        """Retrieves the stories that should be used for training.
+
+        Args:
+            interpreter: Interpreter that should be used to parse end to
+                         end learning annotations.
+            template_variables: Values of templates that should be replaced while
+                                reading the story files.
+            use_e2e: Specifies whether to parse end to end learning annotations.
+            exclusion_percentage: Amount of training data that should be excluded.
+
+        Returns:
+            ``StoryGraph`` containing all loaded stories.
+        """
 
         raise NotImplementedError()
 
     async def get_config(self) -> Dict:
-        """Retrieves the configuration which should be used for the training."""
+        """Retrieves the configuration that should be used for the training.
+
+        Returns:
+            The configuration as dictionary.
+        """
+
         raise NotImplementedError()
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        """Retrieves the nlu training data which should be used for the training."""
+        """Retrieves the NLU training data that should be used for training.
+
+        Args:
+            language: Can be used to only load training data for a certain language.
+
+        Returns:
+            Loaded NLU ``TrainingData``.
+        """
+
         raise NotImplementedError()
 
     @staticmethod
@@ -44,14 +73,45 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        load_only_nlu_data: bool = False,
-    ) -> "TrainingFileImporter":
-        """Loads a `TrainingFileImporter` instance from a configuration file."""
+    ) -> "TrainingDataImporter":
+        """Loads a ``TrainingDataImporter`` instance from a configuration file."""
 
         config = io_utils.read_config_file(config_path)
-        return TrainingFileImporter.load_from_dict(
-            config, config_path, domain_path, training_data_paths, load_only_nlu_data
+        return TrainingDataImporter.load_from_dict(
+            config, config_path, domain_path, training_data_paths
         )
+
+    @staticmethod
+    def load_core_importer_from_config(
+        config_path: Text,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
+    ) -> "TrainingDataImporter":
+        """Loads a ``TrainingDataImporter`` instance from a configuration file that
+           only reads Core training data.
+        """
+
+        importer = TrainingDataImporter.load_from_config(
+            config_path, domain_path, training_data_paths
+        )
+
+        return CoreDataImporter(importer)
+
+    @staticmethod
+    def load_nlu_importer_from_config(
+        config_path: Text,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[List[Text]] = None,
+    ) -> "TrainingDataImporter":
+        """Loads a ``TrainingDataImporter`` instance from a configuration file that
+           only reads NLU training data.
+        """
+
+        importer = TrainingDataImporter.load_from_config(
+            config_path, domain_path, training_data_paths
+        )
+
+        return NluDataImporter(importer)
 
     @staticmethod
     def load_from_dict(
@@ -59,13 +119,15 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        load_only_nlu_data: bool = False,
-    ) -> "TrainingFileImporter":
-        """Loads a `TrainingFileImporter` instance from a dictionary."""
+    ) -> "TrainingDataImporter":
+        """Loads a ``TrainingDataImporter`` instance from a dictionary."""
+
+        from rasa.importers.rasa import RasaFileImporter
+
         config = config or {}
         importers = config.get("importers", [])
         importers = [
-            TrainingFileImporter._importer_from_dict(
+            TrainingDataImporter._importer_from_dict(
                 importer, config_path, domain_path, training_data_paths
             )
             for importer in importers
@@ -74,14 +136,10 @@ class TrainingFileImporter:
 
         if not importers:
             importers = [
-                SimpleFileImporter(config_path, domain_path, training_data_paths)
+                RasaFileImporter(config_path, domain_path, training_data_paths)
             ]
 
-        importer = CombinedFileImporter(importers)
-        if load_only_nlu_data:
-            importer = NluFileImporter(importer)
-
-        return importer
+        return CombinedDataImporter(importers)
 
     @staticmethod
     def _importer_from_dict(
@@ -89,12 +147,13 @@ class TrainingFileImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-    ) -> Optional["TrainingFileImporter"]:
+    ) -> Optional["TrainingDataImporter"]:
         from rasa.importers.skill import SkillSelector
+        from rasa.importers.rasa import RasaFileImporter
 
         module_path = importer_config.pop("name", None)
-        if module_path == SimpleFileImporter.__name__:
-            importer_class = SimpleFileImporter
+        if module_path == RasaFileImporter.__name__:
+            importer_class = RasaFileImporter
         elif module_path == SkillSelector.__name__:
             importer_class = SkillSelector
         else:
@@ -104,9 +163,7 @@ class TrainingFileImporter:
                 logging.warning("Importer '{}' not found.".format(module_path))
                 return None
 
-        import rasa.cli.utils as cli_utils
-
-        constructor_arguments = cli_utils.minimal_kwargs(
+        constructor_arguments = common_utils.minimal_kwargs(
             importer_config, importer_class
         )
         return importer_class(
@@ -114,16 +171,16 @@ class TrainingFileImporter:
         )
 
 
-class NluFileImporter(TrainingFileImporter):
-    """Importer which skips any Core related file reading"""
+class NluDataImporter(TrainingDataImporter):
+    """Importer that skips any Core-related file reading."""
 
-    def __init__(self, actual_importer: TrainingFileImporter):
+    def __init__(self, actual_importer: TrainingDataImporter):
         self._importer = actual_importer
 
     async def get_domain(self) -> Domain:
         return Domain.empty()
 
-    async def get_story_data(
+    async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
@@ -139,57 +196,78 @@ class NluFileImporter(TrainingFileImporter):
         return await self._importer.get_nlu_data(language)
 
 
-class CombinedFileImporter(TrainingFileImporter):
-    """`TrainingFileImporter` which supports using multiple `TrainingFileImporter` as
-        if it would be a single instance.
-    """
+class CoreDataImporter(TrainingDataImporter):
+    """Importer that skips any NLU related file reading."""
 
-    def __init__(self, importers: List[TrainingFileImporter]):
-        self._importers = importers
-
-    async def get_config(self) -> Dict:
-        configs = []
-        # Do this in a loop because Python 3.5 does not support async comprehensions
-        for importer in self._importers:
-            configs.append(await importer.get_config())
-
-        return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
+    def __init__(self, actual_importer: TrainingDataImporter):
+        self._importer = actual_importer
 
     async def get_domain(self) -> Domain:
-        domains = []
-        for importer in self._importers:
-            domains.append(await importer.get_domain())
+        return await self._importer.get_domain()
 
-        return reduce(
-            lambda merged, other: merged.merge(other), domains, Domain.empty()
-        )
-
-    async def get_story_data(
+    async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        story_graphs = []
-        # Do this in a loop because Python 3.5 does not support async comprehensions
-        for importer in self._importers:
-            graph = await importer.get_story_data(
-                interpreter, template_variables, use_e2e, exclusion_percentage
-            )
-            story_graphs.append(graph)
+        return await self._importer.get_stories(
+            interpreter, template_variables, use_e2e, exclusion_percentage
+        )
+
+    async def get_config(self) -> Dict:
+        return await self._importer.get_config()
+
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        return TrainingData()
+
+
+class CombinedDataImporter(TrainingDataImporter):
+    """A ``TrainingDataImporter`` that supports using multiple ``TrainingDataImporter``s as
+        if they were a single instance.
+    """
+
+    def __init__(self, importers: List[TrainingDataImporter]):
+        self._importers = importers
+
+    async def get_config(self) -> Dict:
+        configs = [importer.get_config() for importer in self._importers]
+        configs = await asyncio.gather(*configs)
+
+        return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
+
+    async def get_domain(self) -> Domain:
+        domains = [importer.get_domain() for importer in self._importers]
+        domains = await asyncio.gather(*domains)
 
         return reduce(
-            lambda merged, other: merged.merge(other), story_graphs, StoryGraph([])
+            lambda merged, other: merged.merge(other), domains, Domain.empty()
+        )
+
+    async def get_stories(
+        self,
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
+        stories = [
+            importer.get_stories(
+                interpreter, template_variables, use_e2e, exclusion_percentage
+            )
+            for importer in self._importers
+        ]
+        stories = await asyncio.gather(*stories)
+
+        return reduce(
+            lambda merged, other: merged.merge(other), stories, StoryGraph([])
         )
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        nlu_datas = []
-        # Do this in a loop because Python 3.5 does not support async comprehensions
-        for importer in self._importers:
-            nlu_data = await importer.get_nlu_data(language)
-            nlu_datas.append(nlu_data)
-        training_data = reduce(
-            lambda merged, other: merged.merge(other), nlu_datas, TrainingData()
+        nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
+        nlu_data = await asyncio.gather(*nlu_data)
+
+        return reduce(
+            lambda merged, other: merged.merge(other), nlu_data, TrainingData()
         )
-        return training_data

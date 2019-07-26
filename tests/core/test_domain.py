@@ -503,6 +503,11 @@ def test_load_on_invalid_domain():
     # with pytest.raises(InvalidDomain):
     #     Domain.load("data/test_domains/missing_text_for_templates.yml")
 
+
+def test_is_empty():
+    assert Domain.empty().is_empty()
+
+
 def test_clean_domain():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
     cleaned = Domain.load(domain_path).cleaned_domain()
@@ -530,6 +535,3 @@ def test_clean_domain():
     actual = Domain.from_dict(cleaned)
 
     assert hash(actual) == hash(expected)
-
-def test_is_empty():
-    assert Domain.empty().is_empty()
