@@ -182,6 +182,7 @@ open source dialogue management." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/featurization/">Featurization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Change Log</a></li>
@@ -199,12 +200,13 @@ open source dialogue management." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.7
+          viewing: 1.1.8
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.1.8/core/interactive-learning/">1.1.8</a>
               <a href="../.././1.1.7/core/interactive-learning/">1.1.7</a>
               <a href="../.././1.1.6/core/interactive-learning/">1.1.6</a>
               <a href="../.././1.1.5/core/interactive-learning/">1.1.5</a>
@@ -266,8 +268,20 @@ Some people call this <a class="reference external" href="https://medium.com/&#6
 <p class="last">Rasa X provides a UI for interactive learning, and you can use any user conversation
 as a starting point. See <a class="reference external" href="https://rasa.com/docs/rasa-x/annotate-conversations/">Annotate Conversations</a> in the Rasa X docs.</p>
 </div>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#running-interactive-learning" id="id2">Running Interactive Learning</a></li>
+<li><a class="reference internal" href="#providing-feedback-on-errors" id="id3">Providing feedback on errors</a></li>
+<li><a class="reference internal" href="#visualization-of-conversations" id="id4">Visualization of conversations</a></li>
+<li><a class="reference internal" href="#interactive-learning-with-forms" id="id5">Interactive Learning with Forms</a><ul>
+<li><a class="reference internal" href="#the-form-prefix" id="id6">The <code class="docutils literal notranslate"><span class="pre">form:</span></code> prefix</a></li>
+<li><a class="reference internal" href="#input-validation" id="id7">Input validation</a></li>
+</ul>
+</li>
+</ul>
+</div>
 <div class="section" id="running-interactive-learning">
-<h2>Running Interactive Learning<a class="headerlink" href="#running-interactive-learning" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2">Running Interactive Learning</a><a class="headerlink" href="#running-interactive-learning" title="Permalink to this headline">¶</a></h2>
 <p>Run the following command to start interactive learning:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run actions --actions actions<span class="p">&amp;</span>
 
@@ -311,7 +325,7 @@ action after greeting. We continue this loop, chatting with the bot,
 until the bot chooses the wrong action.</p>
 </div>
 <div class="section" id="providing-feedback-on-errors">
-<h2>Providing feedback on errors<a class="headerlink" href="#providing-feedback-on-errors" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id3">Providing feedback on errors</a><a class="headerlink" href="#providing-feedback-on-errors" title="Permalink to this headline">¶</a></h2>
 <p>For this example we are going to use the <code class="docutils literal notranslate"><span class="pre">concertbot</span></code> example,
 so make sure you have the domain &amp; data for it. You can download
 the data from our <a class="reference external" href="https://github.com/RasaHQ/rasa/tree/master/examples/concertbot">github repo</a>.</p>
@@ -373,7 +387,7 @@ feedback.</p>
 training data for the next training.</p>
 </div>
 <div class="section" id="visualization-of-conversations">
-<h2>Visualization of conversations<a class="headerlink" href="#visualization-of-conversations" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4">Visualization of conversations</a><a class="headerlink" href="#visualization-of-conversations" title="Permalink to this headline">¶</a></h2>
 <p>During the interactive learning, Rasa will plot the current conversation
 and a few similar conversations from the training data to help you
 keep track of where you are.</p>
@@ -383,11 +397,11 @@ as soon as you’ve started interactive learning.</p>
 <img alt="../../_images/interactive_learning_graph.gif" src="../../_images/interactive_learning_graph.gif" />
 </div>
 <div class="section" id="interactive-learning-with-forms">
-<span id="section-interactive-learning-forms"></span><h2>Interactive Learning with Forms<a class="headerlink" href="#interactive-learning-with-forms" title="Permalink to this headline">¶</a></h2>
+<span id="section-interactive-learning-forms"></span><h2><a class="toc-backref" href="#id5">Interactive Learning with Forms</a><a class="headerlink" href="#interactive-learning-with-forms" title="Permalink to this headline">¶</a></h2>
 <p>If you’re using a FormAction, there are some additional things to keep in mind
 when using interactive learning.</p>
 <div class="section" id="the-form-prefix">
-<h3>The <code class="docutils literal notranslate"><span class="pre">form:</span></code> prefix<a class="headerlink" href="#the-form-prefix" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6">The <code class="docutils literal notranslate"><span class="pre">form:</span></code> prefix</a><a class="headerlink" href="#the-form-prefix" title="Permalink to this headline">¶</a></h3>
 <p>The form logic is described by your <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> class, and not by the stories.
 The machine learning policies should not have to learn this behavior, and should
 not get confused if you later change your form action, for example by adding or
@@ -417,7 +431,7 @@ happy paths are still covered by the basic story given in <a class="reference in
 </div>
 </div>
 <div class="section" id="input-validation">
-<h3>Input validation<a class="headerlink" href="#input-validation" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id7">Input validation</a><a class="headerlink" href="#input-validation" title="Permalink to this headline">¶</a></h3>
 <p>Every time the user responds with something <em>other</em> than the requested slot or
 any of the required slots,
 you will be asked whether you want the form action to try and extract a slot

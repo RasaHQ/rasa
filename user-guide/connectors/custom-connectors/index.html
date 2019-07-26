@@ -174,6 +174,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../api/tracker/">Tracker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../api/tracker-stores/">Tracker Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../api/featurization/">Featurization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../migration-guide/">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../changelog/">Rasa Change Log</a></li>
@@ -191,12 +192,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.7
+          viewing: 1.1.8
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.1.8/user-guide/connectors/custom-connectors/">1.1.8</a>
               <a href="../../.././1.1.7/user-guide/connectors/custom-connectors/">1.1.7</a>
               <a href="../../.././1.1.6/user-guide/connectors/custom-connectors/">1.1.6</a>
               <a href="../../.././1.1.5/user-guide/connectors/custom-connectors/">1.1.5</a>
@@ -340,8 +342,9 @@ posted the message to the channel:</p>
                     <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span>
                 <span class="p">)</span>
             <span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># declare variable up front to avoid pytype error</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>  <span class="c1"># pytype: disable=bad-return-type</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="s2">&quot;DONE&quot;</span><span class="p">:</span>
                     <span class="k">break</span>
                 <span class="k">else</span><span class="p">:</span>
