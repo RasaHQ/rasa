@@ -382,7 +382,6 @@ class RestInput(InputChannel):
         queue: Queue,
         sender_id: Text,
         input_channel: Text,
-        metadata: Dict,
     ) -> None:
         collector = QueueOutputChannel(queue)
 
