@@ -1,4 +1,4 @@
-.. :desc: Iterate quickly by developing reusable building blocks of AI assistant skills
+:desc: Iterate quickly by developing reusable building blocks of AI assistant skills
        and combining them at training time.
 
 .. _multi-skill-assistants:

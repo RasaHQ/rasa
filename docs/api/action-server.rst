@@ -1,4 +1,4 @@
-:desc: Check out the API docs for open source chatbot framework Rasa\'s
+:desc: Check out the API docs for open source chatbot framework Rasa's
        action server, which allows you to define your own custom actions.
 
 :pagetype: full

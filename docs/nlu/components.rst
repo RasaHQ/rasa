@@ -1,5 +1,5 @@
-:desc: Customize the components and parameters of Rasa's ML-based NLU pipeline
-       to suit the needs of your contextual AI assistant.
+:desc: Customize the components and parameters of Rasa's Machine Learning based
+       Natural Language Understanding pipeline
 
 .. _components:
 
