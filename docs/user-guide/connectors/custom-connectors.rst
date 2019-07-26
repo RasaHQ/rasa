@@ -31,6 +31,17 @@ To send a message, you would run a command like:
 
 where ``myio`` is the name of your component.
 
+You can also send extra information from your front-end to your
+action server, with it you can use, e.g. name, locations, or tokens
+in our actions. To send a message with ``metadata`` you would run
+a command like:
+
+.. code-block:: bash
+
+    curl -XPOST http://localhost:5000/webhooks/myio/webhook \
+      -d '{"sender": "user1", "message": "here is my token: <token>"}, "metadata: {"type": "token"}' \
+      -H "Content-type: application/json"
+
 In your implementation of the ``receive`` endpoint, you need to make
 sure to call ``on_new_message(UserMessage(text, output, sender_id))``.
 This will tell Rasa Core to handle this user message. The ``output``
