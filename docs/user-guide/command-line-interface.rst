@@ -1,4 +1,4 @@
-:desc: Learn how to use the Rasa command line interface
+:desc: Command line interface for open source chatbot framework Rasa.  Learn how to train, test and run your machine learning-based conversational AI assistants
 
 .. _command-line-interface:
 
