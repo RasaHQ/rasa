@@ -359,7 +359,7 @@ def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
     return graph
 
 
-def escape(pattern: Text):
+def escape(pattern: Text) -> Text:
     """Escape special characters in a string.
 
     Used to fix different behavior in re.escape() for python
