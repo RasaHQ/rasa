@@ -1,9 +1,6 @@
-import logging
 import os
-
 import pytest
 
-from rasa.nlu import config, train
 from rasa.nlu.components import ComponentBuilder
 
 CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
@@ -60,8 +57,3 @@ def mitie_feature_extractor(component_builder, default_config):
     return component_builder.create_component(
         mitie_nlp_config, default_config
     ).extractor
-
-
-@pytest.fixture(scope="session")
-def default_config():
-    return config.load(CONFIG_DEFAULTS_PATH)

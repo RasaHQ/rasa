@@ -4,19 +4,21 @@ from typing import Text
 import pytest
 import logging
 
-from constants import (
+from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
     DEFAULT_MODELS_PATH,
 )
+from rasa.core.interpreter import RegexInterpreter
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.run import _create_app_without_api
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import RestInput
 from rasa.core.channels import channel
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy
+from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.model import get_model
 from rasa.train import train_async
 
@@ -109,12 +111,16 @@ async def default_agent(
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent(
-        default_domain_path, policies=[AugmentedMemoizationPolicy(max_history=3)]
+        default_domain_path,
+        policies=[MemoizationPolicy()],
+        interpreter=RegexInterpreter(),
+        tracker_store=InMemoryTrackerStore(default_domain_path),
     )
 
     training_data = await agent.load_data(default_stories_file)
     agent.train(training_data)
     agent.persist(model_path)
+
     return agent
 
 

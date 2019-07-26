@@ -84,44 +84,6 @@ def loop():
 
 
 @pytest.fixture(scope="session")
-def default_domain_path():
-    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
-
-
-@pytest.fixture(scope="session")
-def default_stories_file():
-    return DEFAULT_STORIES_FILE
-
-
-@pytest.fixture(scope="session")
-def default_stack_config():
-    return DEFAULT_STACK_CONFIG
-
-
-@pytest.fixture(scope="session")
-def default_nlu_data():
-    return DEFAULT_NLU_DATA
-
-
-@pytest.fixture(scope="session")
-def default_domain():
-    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-
-
-@pytest.fixture(scope="session")
-async def default_agent(default_domain):
-    agent = Agent(
-        default_domain,
-        policies=[MemoizationPolicy()],
-        interpreter=RegexInterpreter(),
-        tracker_store=InMemoryTrackerStore(default_domain),
-    )
-    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
-    agent.train(training_data)
-    return agent
-
-
-@pytest.fixture(scope="session")
 def default_agent_path(default_agent, tmpdir_factory):
     path = tmpdir_factory.mktemp("agent").strpath
     default_agent.persist(path)
@@ -164,35 +126,6 @@ def moodbot_metadata(unpacked_trained_moodbot_path):
     return PolicyEnsemble.load_metadata(
         os.path.join(unpacked_trained_moodbot_path, "core")
     )
-
-
-@pytest.fixture()
-async def trained_stack_model(
-    default_domain_path, default_stack_config, default_nlu_data, default_stories_file
-):
-
-    trained_stack_model_path = await train_async(
-        domain=default_domain_path,
-        config=default_stack_config,
-        training_files=[default_nlu_data, default_stories_file],
-    )
-
-    return trained_stack_model_path
-
-
-@pytest.fixture
-async def prepared_agent(tmpdir_factory) -> Agent:
-    model_path = tmpdir_factory.mktemp("model").strpath
-
-    agent = Agent(
-        "data/test_domains/default.yml",
-        policies=[AugmentedMemoizationPolicy(max_history=3)],
-    )
-
-    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
-    agent.train(training_data)
-    agent.persist(model_path)
-    return agent
 
 
 @pytest.fixture
