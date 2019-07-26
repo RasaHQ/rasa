@@ -350,7 +350,7 @@ Comparison Mode:
   -r RUNS, --runs RUNS  Number of comparison runs to make. (default: 3)
   -p PERCENTAGES [PERCENTAGES ...], --percentages PERCENTAGES [PERCENTAGES ...]
                         Percentages of training data to exclude during
-                        comparison. (default: [0, 25, 50, 75, 90])
+                        comparison. (default: [0, 25, 50, 75])
 </pre></div>
 </div>
 <div class="section" id="comparing-nlu-pipelines">
@@ -478,15 +478,17 @@ incorrect action was predicted instead.</p>
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
+                      [--evaluate-model-directory]
 
 optional arguments:
   -h, --help            show this help message and exit
   -m MODEL [MODEL ...], --model MODEL [MODEL ...]
                         Path to a pre-trained model. If it is a &#39;tar.gz&#39; file
                         that model file will be used. If it is a directory,
-                        the latest model in that directory will be used. If
-                        multiple &#39;tar.gz&#39; files are provided, all those models
-                        will be compared. (default: [None])
+                        the latest model in that directory will be used
+                        (exception: &#39;--evaluate-model-directory&#39; flag is set).
+                        If multiple &#39;tar.gz&#39; files are provided, all those
+                        models will be compared. (default: [None])
   -s STORIES, --stories STORIES
                         File or folder containing your test stories. (default:
                         data)
@@ -507,6 +509,11 @@ optional arguments:
   --url URL             If supplied, downloads a story file from a URL and
                         trains on it. Fetches the data by sending a GET
                         request to the supplied URL. (default: None)
+  --evaluate-model-directory
+                        Should be set to evaluate models trained via &#39;rasa
+                        train core --config &lt;config-1&gt; &lt;config-2&gt;&#39;. All models
+                        in the provided directory are evaluated and compared
+                        against each other. (default: False)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
@@ -541,12 +548,12 @@ with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the trainin
 data. This is done for multiple runs to ensure consistent results.</p>
 <p>Once this script has finished, you can use the evaluate script in <code class="docutils literal notranslate"><span class="pre">compare</span></code>
 mode to evaluate the models you just trained:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa <span class="nb">test</span> core -m comparison_models/&lt;model-1&gt;.tar.gz comparison_models/&lt;model-2&gt;.tar.gz <span class="se">\</span>
-  --stories stories_folder --out comparison_results
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa <span class="nb">test</span> core -m comparison_models --stories stories_folder
+--out comparison_results --evaluate-model-directory
 </pre></div>
 </div>
 <p>This will evaluate each of the models on the training set and plot some graphs
-to show you which policy performs best.  By evaluating on the full set of stories, you
+to show you which policy performs best. By evaluating on the full set of stories, you
 can measure how well Rasa Core is predicting the held-out stories.</p>
 <p>If you’re not sure which policies to compare, we’d recommend trying out the
 <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> and the <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> to see which one works better for
