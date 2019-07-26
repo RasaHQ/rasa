@@ -57,7 +57,6 @@ class UserMessage(object):
         self.input_channel = input_channel
 
         self.parse_data = parse_data
-
         self.metadata = metadata
 
 
