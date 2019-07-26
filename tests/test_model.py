@@ -51,6 +51,39 @@ def test_package_model(trained_model, tmpdir_factory):
     assert os.path.basename(packed_model) == "model-file-name.tar.gz"
 
 
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {"model_name": "test-1234", "prefix": None},
+        {"model_name": None, "prefix": "core-"},
+        {"model_name": None, "prefix": None},
+    ],
+)
+def test_package_model(trained_model, parameters):
+    output_path = tempfile.mkdtemp()
+    train_path = rasa.model.unpack_model(trained_model)
+
+    model_path = rasa.model.package_model(
+        _fingerprint(),
+        output_path,
+        train_path,
+        parameters["model_name"],
+        parameters["prefix"],
+    )
+
+    assert os.path.exists(model_path)
+
+    file_name = os.path.basename(model_path)
+
+    if parameters["model_name"]:
+        assert parameters["model_name"] in file_name
+
+    if parameters["prefix"]:
+        assert parameters["prefix"] in file_name
+
+    assert file_name.endswith(".tar.gz")
+
+
 def test_get_latest_model(trained_model):
     import shutil
 

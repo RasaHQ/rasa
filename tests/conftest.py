@@ -4,6 +4,12 @@ from typing import Text
 import pytest
 import logging
 
+from constants import (
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DATA_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_MODELS_PATH,
+)
 from rasa.core.run import _create_app_without_api
 from rasa import server
 from rasa.core import config
@@ -13,19 +19,12 @@ from rasa.core.channels import channel
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.model import get_model
 from rasa.train import train_async
-from tests.core.conftest import (
-    DEFAULT_STORIES_FILE,
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_STACK_CONFIG,
-    DEFAULT_NLU_DATA,
-    END_TO_END_STORY_FILE,
-    MOODBOT_MODEL_PATH,
-)
 
-DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separatedly installable pytest-cli plugin.
+from tests.core.conftest import END_TO_END_STORY_FILE, MOODBOT_MODEL_PATH
+
 pytest_plugins = ["pytester"]
 
 
@@ -37,39 +36,60 @@ def set_log_level_debug(caplog):
     caplog.set_level(logging.DEBUG)
 
 
-@pytest.fixture
-async def default_agent(tmpdir_factory) -> Agent:
-    model_path = tmpdir_factory.mktemp("model").strpath
+@pytest.fixture(scope="session")
+def project() -> Text:
+    import tempfile
+    from rasa.cli.scaffold import create_initial_project
 
-    agent = Agent(
-        "data/test_domains/default.yml",
-        policies=[AugmentedMemoizationPolicy(max_history=3)],
-    )
+    directory = tempfile.mkdtemp()
+    create_initial_project(directory)
 
-    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
-    agent.train(training_data)
-    agent.persist(model_path)
-    return agent
+    return directory
+
+
+###############
+# DEFAULT FILES
+###############
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path():
-    return await train_async(
-        domain="examples/moodbot/domain.yml",
-        config="examples/moodbot/config.yml",
-        training_files="examples/moodbot/data/",
-        output_path=MOODBOT_MODEL_PATH,
-    )
+def default_domain_path(project):
+    return os.path.join(project, DEFAULT_DOMAIN_PATH)
 
 
 @pytest.fixture(scope="session")
-async def unpacked_trained_moodbot_path(trained_moodbot_path):
-    return get_model(trained_moodbot_path)
+def default_stories_file(project):
+    return os.path.join(project, DEFAULT_DATA_PATH, "stories.md")
+
+
+@pytest.fixture(scope="session")
+def default_nlu_file(project):
+    return os.path.join(project, DEFAULT_DATA_PATH, "nlu.md")
+
+
+@pytest.fixture(scope="session")
+def default_config_path(project):
+    return os.path.join(project, DEFAULT_CONFIG_PATH)
+
+
+@pytest.fixture(scope="session")
+def end_to_end_story_file():
+    return END_TO_END_STORY_FILE
+
+
+@pytest.fixture(scope="session")
+def default_config(default_config_path):
+    return config.load(default_config_path)
+
+
+#######
+# AGENT
+#######
 
 
 @pytest.fixture
-async def stack_agent(trained_rasa_model) -> Agent:
-    return await load_agent(model_path=trained_rasa_model)
+async def stack_agent(trained_model) -> Agent:
+    return await load_agent(model_path=trained_model)
 
 
 @pytest.fixture
@@ -82,74 +102,25 @@ async def nlu_agent(trained_nlu_model) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
 
 
-@pytest.fixture(scope="session")
-def default_domain_path():
-    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
+@pytest.fixture
+async def default_agent(
+    tmpdir_factory, default_stories_file, default_domain_path
+) -> Agent:
+    model_path = tmpdir_factory.mktemp("model").strpath
 
-
-@pytest.fixture(scope="session")
-def default_stories_file():
-    return DEFAULT_STORIES_FILE
-
-
-@pytest.fixture(scope="session")
-def default_stack_config():
-    return DEFAULT_STACK_CONFIG
-
-
-@pytest.fixture(scope="session")
-def default_nlu_data():
-    return DEFAULT_NLU_DATA
-
-
-@pytest.fixture(scope="session")
-def end_to_end_story_file():
-    return END_TO_END_STORY_FILE
-
-
-@pytest.fixture(scope="session")
-def default_config():
-    return config.load(DEFAULT_CONFIG_PATH)
-
-
-@pytest.fixture()
-async def trained_rasa_model(
-    default_domain_path, default_config, default_nlu_data, default_stories_file
-):
-    clean_folder("models")
-    trained_stack_model_path = await train_async(
-        domain="data/test_domains/default.yml",
-        config=DEFAULT_STACK_CONFIG,
-        training_files=[default_nlu_data, default_stories_file],
+    agent = Agent(
+        default_domain_path, policies=[AugmentedMemoizationPolicy(max_history=3)]
     )
 
-    return trained_stack_model_path
+    training_data = await agent.load_data(default_stories_file)
+    agent.train(training_data)
+    agent.persist(model_path)
+    return agent
 
 
-@pytest.fixture()
-async def trained_core_model(
-    default_domain_path, default_config, default_nlu_data, default_stories_file
-):
-    trained_core_model_path = await train_async(
-        domain=default_domain_path,
-        config=DEFAULT_STACK_CONFIG,
-        training_files=[default_stories_file],
-    )
-
-    return trained_core_model_path
-
-
-@pytest.fixture()
-async def trained_nlu_model(
-    default_domain_path, default_config, default_nlu_data, default_stories_file
-):
-    trained_nlu_model_path = await train_async(
-        domain=default_domain_path,
-        config=DEFAULT_STACK_CONFIG,
-        training_files=[default_nlu_data],
-    )
-
-    return trained_nlu_model_path
+#############
+# RASA SERVER
+#############
 
 
 @pytest.fixture
@@ -187,45 +158,55 @@ async def rasa_server_without_api():
     return app
 
 
-def clean_folder(folder):
-    import os
+################
+# TRAINED MODELS
+################
 
-    if os.path.exists(folder):
-        import shutil
 
-        shutil.rmtree(folder)
+@pytest.fixture
+async def trained_model(project) -> Text:
+    return await train_model(project)
+
+
+@pytest.fixture
+async def trained_core_model(project) -> Text:
+    return await train_model(project, model_type="core")
+
+
+@pytest.fixture
+async def trained_nlu_model(project) -> Text:
+    return await train_model(project, model_type="nlu")
 
 
 @pytest.fixture(scope="session")
-def project() -> Text:
-    import tempfile
-    from rasa.cli.scaffold import create_initial_project
-
-    directory = tempfile.mkdtemp()
-    create_initial_project(directory)
-
-    return directory
-
-
-def train_model(project: Text, filename: Text = "test.tar.gz"):
-    from rasa.constants import (
-        DEFAULT_CONFIG_PATH,
-        DEFAULT_DATA_PATH,
-        DEFAULT_DOMAIN_PATH,
-        DEFAULT_MODELS_PATH,
+async def trained_moodbot_path():
+    return await train_async(
+        domain="examples/moodbot/domain.yml",
+        config="examples/moodbot/config.yml",
+        training_files="examples/moodbot/data/",
+        output_path=MOODBOT_MODEL_PATH,
     )
-    import rasa.train
 
+
+@pytest.fixture(scope="session")
+async def unpacked_trained_moodbot_path(trained_moodbot_path):
+    return get_model(trained_moodbot_path)
+
+
+async def train_model(
+    project: Text, filename: Text = "test.tar.gz", model_type: Text = "stack"
+):
     output = os.path.join(project, DEFAULT_MODELS_PATH, filename)
     domain = os.path.join(project, DEFAULT_DOMAIN_PATH)
     config = os.path.join(project, DEFAULT_CONFIG_PATH)
-    training_files = os.path.join(project, DEFAULT_DATA_PATH)
 
-    rasa.train(domain, config, training_files, output)
+    if model_type == "core":
+        training_files = os.path.join(project, DEFAULT_DATA_PATH, "stories.md")
+    elif model_type == "nlu":
+        training_files = os.path.join(project, DEFAULT_DATA_PATH, "nlu.md")
+    else:
+        training_files = os.path.join(project, DEFAULT_DATA_PATH)
+
+    await train_async(domain, config, training_files, output)
 
     return output
-
-
-@pytest.fixture(scope="session")
-def trained_model(project) -> Text:
-    return train_model(project)

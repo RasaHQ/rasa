@@ -154,7 +154,7 @@ def test_parse(rasa_app, response_test):
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
     assert rjs["entities"] == response_test.expected_response["entities"]
     assert rjs["text"] == response_test.expected_response["text"]
-    assert rjs["intent"] == response_test.expected_response["intent"]
+    assert rjs["intent"]["name"] == response_test.expected_response["intent"]["name"]
 
 
 @pytest.mark.parametrize(
@@ -213,13 +213,13 @@ def test_train_stack_success(
     rasa_app,
     default_domain_path,
     default_stories_file,
-    default_stack_config,
-    default_nlu_data,
+    default_config_path,
+    default_nlu_file,
 ):
     domain_file = open(default_domain_path)
-    config_file = open(default_stack_config)
+    config_file = open(default_config_path)
     stories_file = open(default_stories_file)
-    nlu_file = open(default_nlu_data)
+    nlu_file = open(default_nlu_file)
 
     payload = dict(
         domain=domain_file.read(),
@@ -250,11 +250,11 @@ def test_train_stack_success(
 
 
 def test_train_nlu_success(
-    rasa_app, default_stack_config, default_nlu_data, default_domain_path
+    rasa_app, default_config_path, default_nlu_file, default_domain_path
 ):
     domain_file = open(default_domain_path)
-    config_file = open(default_stack_config)
-    nlu_file = open(default_nlu_data)
+    config_file = open(default_config_path)
+    nlu_file = open(default_nlu_file)
 
     payload = dict(
         domain=domain_file.read(), config=config_file.read(), nlu=nlu_file.read()
@@ -278,10 +278,10 @@ def test_train_nlu_success(
 
 
 def test_train_core_success(
-    rasa_app, default_stack_config, default_stories_file, default_domain_path
+    rasa_app, default_config_path, default_stories_file, default_domain_path
 ):
     domain_file = open(default_domain_path)
-    config_file = open(default_stack_config)
+    config_file = open(default_config_path)
     core_file = open(default_stories_file)
 
     payload = dict(
@@ -390,8 +390,8 @@ def test_evaluate_stories_end_to_end(rasa_app, end_to_end_story_file):
     }
 
 
-def test_evaluate_intent(rasa_app, default_nlu_data):
-    with open(default_nlu_data, "r") as f:
+def test_evaluate_intent(rasa_app, default_nlu_file):
+    with open(default_nlu_file, "r") as f:
         nlu_data = f.read()
 
     _, response = rasa_app.post("/model/test/intents", data=nlu_data)
@@ -400,10 +400,8 @@ def test_evaluate_intent(rasa_app, default_nlu_data):
     assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
 
 
-def test_evaluate_intent_on_just_nlu_model(
-    rasa_app_nlu: SanicTestClient, default_nlu_data
-):
-    with open(default_nlu_data, "r") as f:
+def test_evaluate_intent_on_just_nlu_model(rasa_app_nlu, default_nlu_file):
+    with open(default_nlu_file, "r") as f:
         nlu_data = f.read()
 
     _, response = rasa_app_nlu.post("/model/test/intents", data=nlu_data)
@@ -413,12 +411,12 @@ def test_evaluate_intent_on_just_nlu_model(
 
 
 def test_evaluate_intent_with_query_param(
-    rasa_app, trained_nlu_model, default_nlu_data
+    rasa_app, trained_nlu_model, default_nlu_file
 ):
     _, response = rasa_app.get("/status")
     previous_model_file = response.json["model_file"]
 
-    with open(default_nlu_data, "r") as f:
+    with open(default_nlu_file, "r") as f:
         nlu_data = f.read()
 
     _, response = rasa_app.post(
@@ -470,7 +468,7 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
     content = response.json
     assert response.status == 200
     assert content["paused"] is False
-    assert content["slots"] == {"location": None, "cuisine": None}
+    assert content["slots"] == {}
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [
         {
