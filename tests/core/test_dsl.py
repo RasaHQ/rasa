@@ -1,4 +1,3 @@
-import io
 import os
 
 import json
@@ -6,9 +5,9 @@ from collections import Counter
 
 import numpy as np
 
-from core.interpreter import RegexInterpreter
-from core.training.dsl import StoryFileReader
 from rasa.core import training
+from rasa.core.interpreter import RegexInterpreter
+from rasa.core.training.dsl import StoryFileReader
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.training.structures import Story
 from rasa.core.featurizers import (
