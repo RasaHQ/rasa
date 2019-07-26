@@ -93,7 +93,7 @@ class Checkpoint(object):
 
 class StoryStep(object):
     """A StoryStep is a section of a story block between two checkpoints.
-        
+
     NOTE: Checkpoints are not only limited to those manually written
     in the story file, but are also implicitly created at points where
     multiple intents are separated in one line by chaining them with "OR"s.
