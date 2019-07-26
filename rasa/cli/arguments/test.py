@@ -71,7 +71,7 @@ def add_test_core_argument_group(
         "to the supplied URL.",
     )
     parser.add_argument(
-        "--evaluate-models-in-dir",
+        "--evaluate-model-directory",
         default=False,
         action="store_true",
         help="Should be set to evaluate models trained via "
@@ -159,7 +159,7 @@ def add_test_nlu_argument_group(
         required=False,
         nargs="+",
         type=int,
-        default=[25, 50, 75, 90],
+        default=[0, 25, 50, 75, 90],
         help="Percentages of training data to exclude during comparison.",
     )
 
@@ -173,6 +173,6 @@ def add_test_core_model_param(parser: argparse.ArgumentParser):
         default=[default_path],
         help="Path to a pre-trained model. If it is a 'tar.gz' file that model file "
         "will be used. If it is a directory, the latest model in that directory "
-        "will be used (exception: '--evaluate-models-in-dir' flag is set). If multiple "
+        "will be used (exception: '--evaluate-model-directory' flag is set). If multiple "
         "'tar.gz' files are provided, all those models will be compared.",
     )

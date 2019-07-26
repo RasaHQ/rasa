@@ -334,13 +334,13 @@ def list_directory(path: Text) -> List[Text]:
         )
 
 
-def create_dir(dir_path: Text) -> None:
+def create_directory(directory_path: Text) -> None:
     """Creates a directory and its super paths.
 
     Succeeds even if the path already exists."""
 
     try:
-        os.makedirs(dir_path)
+        os.makedirs(directory_path)
     except OSError as e:
         # be happy if someone already created the path
         if e.errno != errno.EEXIST:

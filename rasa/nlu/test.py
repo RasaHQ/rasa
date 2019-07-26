@@ -714,7 +714,7 @@ def run_evaluation(
     }  # type: Dict[Text, Optional[Dict]]
 
     if report:
-        io_utils.create_dir(report)
+        io_utils.create_directory(report)
 
     intent_results, entity_results = get_eval_data(interpreter, test_data)
 
@@ -831,7 +831,7 @@ def cross_validate(
         nlu_config = config.load(nlu_config)
 
     if report:
-        io_utils.create_dir(report)
+        io_utils.create_directory(report)
 
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)

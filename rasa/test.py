@@ -16,7 +16,7 @@ from rasa.exceptions import ModelNotFound
 logger = logging.getLogger(__name__)
 
 
-def test_core_models_in_dir(model_directory: Text, stories: Text, output: Text):
+def test_core_models_in_directory(model_directory: Text, stories: Text, output: Text):
     from rasa.core.test import compare_models_in_dir, plot_core_results
 
     loop = asyncio.get_event_loop()
@@ -58,7 +58,7 @@ def test_core(
 ):
     import rasa.core.test
     import rasa.core.utils as core_utils
-    from rasa.model import get_model, get_model_subdirectories
+    import rasa.model
     from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
     from rasa.core.agent import Agent
 
@@ -68,10 +68,10 @@ def test_core(
         kwargs = {}
 
     if output:
-        io_utils.create_dir(output)
+        io_utils.create_directory(output)
 
     try:
-        unpacked_model = get_model(model)
+        unpacked_model = rasa.model.get_model(model)
     except ModelNotFound:
         print_error(
             "Unable to test: could not find a model. Use 'rasa train' to train a "
@@ -79,7 +79,7 @@ def test_core(
         )
         return
 
-    core_path, nlu_path = get_model_subdirectories(unpacked_model)
+    core_path, nlu_path = rasa.model.get_model_subdirectories(unpacked_model)
 
     if not core_path:
         print_error(

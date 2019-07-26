@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- add ``--evaluate-models-in-dir`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
+- add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
 - Fill slots for custom templates

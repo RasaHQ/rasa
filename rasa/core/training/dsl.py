@@ -7,7 +7,7 @@ import re
 import warnings
 from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
-import rasa.utils.io
+import rasa.utils.io as io_utils
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
@@ -176,8 +176,6 @@ class StoryFileReader(object):
         exclusion_percentage: Optional[int] = None,
     ) -> List[StoryStep]:
         """Given a path reads all contained story files."""
-        import rasa.utils.io as io_utils
-
         if not os.path.exists(resource_name):
             raise ValueError(
                 "Story file or folder could not be found. Make "
@@ -185,7 +183,7 @@ class StoryFileReader(object):
                 "or file.".format(os.path.abspath(resource_name))
             )
 
-        files = rasa.utils.io.list_files(resource_name)
+        files = io_utils.list_files(resource_name)
 
         return await StoryFileReader.read_from_files(
             files,

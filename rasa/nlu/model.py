@@ -221,7 +221,7 @@ class Trainer(object):
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)
 
-        rasa.utils.io.create_dir(dir_name)
+        rasa.utils.io.create_directory(dir_name)
 
         if self.training_data:
             metadata.update(self.training_data.persist(dir_name))

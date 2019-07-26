@@ -53,7 +53,7 @@ def test_list_files_ignores_hidden_files(tmpdir):
 
 def test_creation_of_existing_dir(tmpdir):
     # makes sure there is no exception
-    assert io_utils.create_dir(tmpdir.strpath) is None
+    assert io_utils.create_directory(tmpdir.strpath) is None
 
 
 def test_ordered():
