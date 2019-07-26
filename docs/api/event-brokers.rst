@@ -255,7 +255,7 @@ all events to your SQL event broker. To do so, add a ``event_broker`` section to
 endpoint configuration, e.g. ``endpoints.yml``. For example, a valid SQLite configuration
 could look like the following:
 
-.. code-block:: yml
+.. code-block:: yaml
 
     event_broker:
       type: SQL
@@ -264,7 +264,7 @@ could look like the following:
 
 PostgreSQL databases can be used as well:
 
-.. code-block:: yml
+.. code-block:: yaml
 
     event_broker:
       type: SQL
