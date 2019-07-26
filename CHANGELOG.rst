@@ -13,13 +13,15 @@ Added
 -----
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
-- Fill slots for custom templates
+- fill slots for custom templates
+- new event broker class: ``SQLProducer``. This event broker is now used when running locally with
+  Rasa X
 
 Changed
 -------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
-- Update pytype to ``2019.7.11``
+- update pytype to ``2019.7.11``
 
 Removed
 -------
