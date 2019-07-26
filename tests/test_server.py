@@ -38,6 +38,11 @@ test_events = [
 
 
 @pytest.fixture
+def rasa_app_without_api(rasa_server_without_api):
+    return rasa_server_without_api.test_client
+
+
+@pytest.fixture
 def rasa_app(rasa_server):
     return rasa_server.test_client
 
@@ -59,6 +64,12 @@ def rasa_secured_app(rasa_server_secured):
 
 def test_root(rasa_app):
     _, response = rasa_app.get("/")
+    assert response.status == 200
+    assert response.text.startswith("Hello from Rasa:")
+
+
+def test_root_without_enable_api(rasa_app_without_api):
+    _, response = rasa_app_without_api.get("/")
     assert response.status == 200
     assert response.text.startswith("Hello from Rasa:")
 
