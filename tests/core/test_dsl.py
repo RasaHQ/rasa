@@ -6,6 +6,8 @@ from collections import Counter
 
 import numpy as np
 
+from core.interpreter import RegexInterpreter
+from core.training.dsl import StoryFileReader
 from rasa.core import training
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.training.structures import Story
@@ -262,3 +264,21 @@ async def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
 
     assert len(data.X) == 0
     assert len(data.y) == 0
+
+
+async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
+    story_steps = await StoryFileReader.read_from_file(
+        "data/test_stories/stories_with_multiline_comments.md",
+        default_domain,
+        RegexInterpreter(),
+    )
+
+    assert len(story_steps) == 4
+    assert story_steps[0].block_name == "happy path"
+    assert len(story_steps[0].events) == 4
+    assert story_steps[1].block_name == "sad path 1"
+    assert len(story_steps[1].events) == 7
+    assert story_steps[2].block_name == "sad path 2"
+    assert len(story_steps[2].events) == 7
+    assert story_steps[3].block_name == "say goodbye"
+    assert len(story_steps[3].events) == 2
