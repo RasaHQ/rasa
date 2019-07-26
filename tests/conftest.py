@@ -1,7 +1,7 @@
 import pytest
 import logging
 
-from core.run import _create_app_without_api
+from rasa.core.run import _create_app_without_api
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
