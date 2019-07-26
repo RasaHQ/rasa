@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- add root route to server started without ``--enable-api`` parameter
 
 Changed
 -------
