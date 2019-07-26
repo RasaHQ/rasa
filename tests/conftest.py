@@ -1,3 +1,5 @@
+from typing import Text
+
 import pytest
 import logging
 
@@ -191,3 +193,14 @@ def clean_folder(folder):
         import shutil
 
         shutil.rmtree(folder)
+
+
+@pytest.fixture(scope="session")
+def project() -> Text:
+    import tempfile
+    from rasa.cli.scaffold import create_initial_project
+
+    directory = tempfile.mkdtemp()
+    create_initial_project(directory)
+
+    return directory

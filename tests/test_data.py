@@ -172,3 +172,37 @@ def test_is_not_nlu_file_with_json():
         f.write('{"test": "a"}')
 
     assert not data.is_nlu_file(file)
+
+
+@pytest.mark.parametrize(
+    "file_path,is_story_file", [("data/stories.md", True), ("config.yml", False)]
+)
+def test_is_story_file(project, file_path, is_story_file):
+    story_file = os.path.join(project, file_path)
+    assert data.is_story_file(story_file) == is_story_file
+
+
+@pytest.mark.parametrize(
+    "file_path,is_config_file",
+    [
+        ("config.yml", True),
+        ("config.yaml", True),
+        ("data/nlu.md", False),
+        ("config.json", False),
+    ],
+)
+def test_is_config_file(file_path, is_config_file):
+    assert data.is_config_file(file_path) == is_config_file
+
+
+@pytest.mark.parametrize(
+    "file_path,is_domain_file",
+    [
+        ("domain.yml", True),
+        ("domain.yaml", True),
+        ("data/nlu.md", False),
+        ("domain.json", False),
+    ],
+)
+def test_is_domain_file(file_path, is_domain_file):
+    assert data.is_domain_file(file_path) == is_domain_file
