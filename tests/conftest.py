@@ -1,3 +1,4 @@
+import os
 from typing import Text
 
 import pytest
@@ -204,3 +205,27 @@ def project() -> Text:
     create_initial_project(directory)
 
     return directory
+
+
+def train_model(project: Text, filename: Text = "test.tar.gz"):
+    from rasa.constants import (
+        DEFAULT_CONFIG_PATH,
+        DEFAULT_DATA_PATH,
+        DEFAULT_DOMAIN_PATH,
+        DEFAULT_MODELS_PATH,
+    )
+    import rasa.train
+
+    output = os.path.join(project, DEFAULT_MODELS_PATH, filename)
+    domain = os.path.join(project, DEFAULT_DOMAIN_PATH)
+    config = os.path.join(project, DEFAULT_CONFIG_PATH)
+    training_files = os.path.join(project, DEFAULT_DATA_PATH)
+
+    rasa.train(domain, config, training_files, output)
+
+    return output
+
+
+@pytest.fixture(scope="session")
+def trained_model(project) -> Text:
+    return train_model(project)

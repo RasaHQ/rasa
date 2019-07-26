@@ -7,7 +7,7 @@ import pytest
 import rasa.model
 
 from rasa.train import train
-from tests.core.test_model import _fingerprint
+from tests.utilities import _fingerprint
 
 TEST_TEMP = "test_tmp"
 
