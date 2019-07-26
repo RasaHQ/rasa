@@ -1,4 +1,4 @@
-:desc: Read about Rasa\'s HTTP API that has endpoints for conversations,
+:desc: Read about Rasa's HTTP API that has endpoints for conversations,
        training models, and configuring your bot.
 
 :pagetype: full
