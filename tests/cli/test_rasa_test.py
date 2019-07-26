@@ -119,7 +119,7 @@ def test_test_core_comparison_after_train(run_in_default_project):
         "comparison_models",
         "--stories",
         "data/stories",
-        "--evaluate-models-in-dir",
+        "--evaluate-model-directory",
     )
 
     assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
@@ -134,7 +134,7 @@ def test_test_help(run):
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                  [--max-stories MAX_STORIES] [--out OUT] [--e2e]
                  [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
-                 [--url URL] [--evaluate-models-in-dir] [-u NLU]
+                 [--url URL] [--evaluate-model-directory] [-u NLU]
                  [--report [REPORT]] [--successes [SUCCESSES]]
                  [--errors ERRORS] [--histogram HISTOGRAM] [--confmat CONFMAT]
                  [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
@@ -170,7 +170,7 @@ def test_test_core_help(run):
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
-                      [--evaluate-models-in-dir]"""
+                      [--evaluate-model-directory]"""
 
     lines = help_text.split("\n")
 
