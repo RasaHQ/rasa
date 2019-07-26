@@ -117,12 +117,14 @@ class PolicyTestCollection(object):
 
     def test_featurizer(self, trained_policy, tmpdir):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
+        assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
             trained_policy.featurizer.state_featurizer, BinarySingleStateFeaturizer
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
+        assert loaded.featurizer.max_history == self.max_history
         assert isinstance(
             loaded.featurizer.state_featurizer, BinarySingleStateFeaturizer
         )
@@ -354,6 +356,7 @@ class TestEmbeddingPolicyWithMaxHistory(PolicyTestCollection):
 
     def test_featurizer(self, trained_policy, tmpdir):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
+        assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
             trained_policy.featurizer.state_featurizer,
             LabelTokenizerSingleStateFeaturizer,
@@ -361,6 +364,7 @@ class TestEmbeddingPolicyWithMaxHistory(PolicyTestCollection):
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
+        assert loaded.featurizer.max_history == self.max_history
         assert isinstance(
             loaded.featurizer.state_featurizer, LabelTokenizerSingleStateFeaturizer
         )
