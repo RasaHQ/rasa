@@ -1,4 +1,7 @@
 import os
+from shutil import copyfile
+from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
+from rasa.utils.io import list_files, write_yaml_file
 
 
 def test_test_core(run_in_default_project):
@@ -34,8 +37,6 @@ def test_test_nlu_cross_validation(run_in_default_project):
 
 
 def test_test_nlu_comparison(run_in_default_project):
-    from shutil import copyfile
-
     copyfile("config.yml", "nlu-config.yml")
 
     run_in_default_project(
@@ -53,15 +54,89 @@ def test_test_nlu_comparison(run_in_default_project):
     assert os.path.exists("nlu-report")
 
 
+def test_test_core_comparison(run_in_default_project):
+    files = list_files("models")
+    copyfile(files[0], "models/copy-model.tar.gz")
+
+    run_in_default_project(
+        "test",
+        "core",
+        "-m",
+        files[0],
+        "models/copy-model.tar.gz",
+        "--stories",
+        "data/stories.md",
+    )
+
+    assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
+
+
+def test_test_core_comparison_after_train(run_in_default_project):
+    write_yaml_file(
+        {
+            "language": "en",
+            "pipeline": "supervised_embeddings",
+            "policies": [{"name": "KerasPolicy"}],
+        },
+        "config_1.yml",
+    )
+
+    write_yaml_file(
+        {
+            "language": "en",
+            "pipeline": "supervised_embeddings",
+            "policies": [{"name": "MemoizationPolicy"}],
+        },
+        "config_2.yml",
+    )
+    run_in_default_project(
+        "train",
+        "core",
+        "-c",
+        "config_1.yml",
+        "config_2.yml",
+        "--stories",
+        "data/stories.md",
+        "--runs",
+        "2",
+        "--percentages",
+        "25",
+        "75",
+        "--augmentation",
+        "5",
+        "--out",
+        "comparison_models",
+    )
+
+    assert os.path.exists("comparison_models")
+    assert os.path.exists("comparison_models/run_1")
+    assert os.path.exists("comparison_models/run_2")
+
+    run_in_default_project(
+        "test",
+        "core",
+        "-m",
+        "comparison_models",
+        "--stories",
+        "data/stories",
+        "--evaluate-model-directory",
+    )
+
+    assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
+    assert os.path.exists(
+        os.path.join(DEFAULT_RESULTS_PATH, "core_model_comparison_graph.pdf")
+    )
+
+
 def test_test_help(run):
     output = run("test", "--help")
 
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                  [--max-stories MAX_STORIES] [--out OUT] [--e2e]
                  [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
-                 [--url URL] [-u NLU] [--report [REPORT]]
-                 [--successes [SUCCESSES]] [--errors ERRORS]
-                 [--histogram HISTOGRAM] [--confmat CONFMAT]
+                 [--url URL] [--evaluate-model-directory] [-u NLU]
+                 [--report [REPORT]] [--successes [SUCCESSES]]
+                 [--errors ERRORS] [--histogram HISTOGRAM] [--confmat CONFMAT]
                  [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
                  [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  {core,nlu} ..."""
@@ -94,7 +169,8 @@ def test_test_core_help(run):
     help_text = """usage: rasa test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
-                      [--fail-on-prediction-errors] [--url URL]"""
+                      [--fail-on-prediction-errors] [--url URL]
+                      [--evaluate-model-directory]"""
 
     lines = help_text.split("\n")
 
