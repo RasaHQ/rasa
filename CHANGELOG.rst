@@ -38,7 +38,6 @@ Changed
   or a policy ensemble
 - Update pytype to ``2019.7.11``
 - ``metadata`` attribute added to ``UserMessage``
-  different kinds of user messages
 
 Fixed
 -----
