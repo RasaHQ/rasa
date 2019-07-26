@@ -116,17 +116,15 @@ class PolicyTestCollection(object):
         return policy
 
     def test_featurizer(self, trained_policy, tmpdir):
-        assert trained_policy.featurizer.__class__ is self.featurizer().__class__
-        assert (
-            trained_policy.featurizer.state_featurizer.__class__
-            is self.featurizer().state_featurizer.__class__
+        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(
+            trained_policy.featurizer.state_featurizer, BinarySingleStateFeaturizer
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
-        assert loaded.featurizer.__class__ is self.featurizer().__class__
-        assert (
-            loaded.featurizer.state_featurizer.__class__
-            is self.featurizer().state_featurizer.__class__
+        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(
+            loaded.featurizer.state_featurizer, BinarySingleStateFeaturizer
         )
 
     async def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
@@ -333,17 +331,16 @@ class TestEmbeddingPolicyWithFullDialogue(PolicyTestCollection):
         return p
 
     def test_featurizer(self, trained_policy, tmpdir):
-        assert trained_policy.featurizer.__class__ is FullDialogueTrackerFeaturizer
-        assert (
-            trained_policy.featurizer.state_featurizer.__class__
-            is LabelTokenizerSingleStateFeaturizer
+        assert isinstance(trained_policy.featurizer, FullDialogueTrackerFeaturizer)
+        assert isinstance(
+            trained_policy.featurizer.state_featurizer,
+            LabelTokenizerSingleStateFeaturizer,
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
-        assert loaded.featurizer.__class__ is FullDialogueTrackerFeaturizer
-        assert (
-            loaded.featurizer.state_featurizer.__class__
-            is LabelTokenizerSingleStateFeaturizer
+        assert isinstance(loaded.featurizer, FullDialogueTrackerFeaturizer)
+        assert isinstance(
+            loaded.featurizer.state_featurizer, LabelTokenizerSingleStateFeaturizer
         )
 
 
@@ -356,17 +353,16 @@ class TestEmbeddingPolicyWithMaxHistory(PolicyTestCollection):
         return p
 
     def test_featurizer(self, trained_policy, tmpdir):
-        assert trained_policy.featurizer.__class__ is MaxHistoryTrackerFeaturizer
-        assert (
-            trained_policy.featurizer.state_featurizer.__class__
-            is LabelTokenizerSingleStateFeaturizer
+        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(
+            trained_policy.featurizer.state_featurizer,
+            LabelTokenizerSingleStateFeaturizer,
         )
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
-        assert loaded.featurizer.__class__ is MaxHistoryTrackerFeaturizer
-        assert (
-            loaded.featurizer.state_featurizer.__class__
-            is LabelTokenizerSingleStateFeaturizer
+        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(
+            loaded.featurizer.state_featurizer, LabelTokenizerSingleStateFeaturizer
         )
 
 
@@ -393,11 +389,11 @@ class TestMemoizationPolicy(PolicyTestCollection):
         return p
 
     def test_featurizer(self, trained_policy, tmpdir):
-        assert trained_policy.featurizer.__class__ is MaxHistoryTrackerFeaturizer
+        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.state_featurizer is None
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
-        assert loaded.featurizer.__class__ is MaxHistoryTrackerFeaturizer
+        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.state_featurizer is None
 
     async def test_memorise(self, trained_policy, default_domain):
