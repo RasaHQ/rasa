@@ -406,18 +406,17 @@ class RestInput(InputChannel):
         text: Text,
         sender_id: Text,
         input_channel: Text,
-        metadata: Dict = None,
     ) -> Callable[[Any], Awaitable[None]]:
         async def stream(resp: Any) -> None:
             q = Queue()
             task = asyncio.ensure_future(
                 self.on_message_wrapper(
-                    on_new_message, text, q, sender_id, input_channel, metadata
+                    on_new_message, text, q, sender_id, input_channel
                 )
             )
             result = None  # declare variable up front to avoid pytype error
             while True:
-                result = await q.get()
+                result = await q.get() # pytype: disable=bad-return-type
                 if result == "DONE":
                     break
                 else:

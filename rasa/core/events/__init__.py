@@ -180,13 +180,13 @@ class UserUttered(Event):
 
     def __init__(
         self,
-        text: Optional[Text] = None,
+        text: Text = None,
         intent=None,
         entities=None,
-        parse_data: Dict[Text, Any] = None,
+        parse_data: Optional[Dict[Text, Any]] = None,
         timestamp: Optional[int] = None,
         input_channel: Text = None,
-        message_id: Text = None,
+        message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
     ):
         self.text = text
@@ -246,7 +246,7 @@ class UserUttered(Event):
     def empty():
         return UserUttered(None)
 
-    def as_dict(self):
+    def as_dict(self) -> Dict[Text, Any]:
         useruttered_dict = super(UserUttered, self).as_dict()
         input_channel = None  # for backwards compatibility (persisted events)
         metadata = None  # for backwards compatibility (persisted events)
