@@ -6,11 +6,11 @@
 Training Data Format
 ====================
 
-Data Format
-~~~~~~~~~~~
-
 You can provide training data as Markdown or as JSON, as a single file or as a directory containing multiple files.
 Note that Markdown is usually easier to work with.
+
+.. contents::
+   :local:
 
 
 Markdown Format

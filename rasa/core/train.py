@@ -118,7 +118,7 @@ async def train_comparison_models(
                         file_importer,
                         train_path,
                         policy_config=policy_config,
-                        exclusion_percentage=current_run,
+                        exclusion_percentage=percentage,
                         kwargs=kwargs,
                         dump_stories=dump_stories,
                     )
