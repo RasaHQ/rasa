@@ -1,30 +1,29 @@
 # -*- coding: utf-8 -*-
 import argparse
 import asyncio
-import errno
 import json
 import logging
-import os
 import re
 import sys
-import tarfile
-import tempfile
-import warnings
-import zipfile
-from asyncio import AbstractEventLoop, Future
+from pathlib import Path
+from typing import Union
+from asyncio import Future
 from hashlib import md5, sha1
-from io import BytesIO as IOReader, StringIO
+from io import StringIO
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
 
 import aiohttp
 from aiohttp import InvalidURL
-from requests.exceptions import InvalidURL
 from sanic import Sanic
-from sanic.request import Request
 from sanic.views import CompositionView
 
-import rasa.utils.endpoints
+import rasa.utils.io as io_utils
 from rasa.utils.endpoints import read_endpoint_config
+
+
+# backwards compatibility 1.0.x
+# noinspection PyUnresolvedReferences
+from rasa.utils.endpoints import concat_url
 
 logger = logging.getLogger(__name__)
 
@@ -32,40 +31,15 @@ if TYPE_CHECKING:
     from random import Random
 
 
-def configure_file_logging(loglevel, logfile):
-    if logfile:
-        fh = logging.FileHandler(logfile, encoding="utf-8")
-        fh.setLevel(loglevel)
-        logging.getLogger("").addHandler(fh)
-    logging.captureWarnings(True)
+def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text]):
+    if not log_file:
+        return
 
-
-# noinspection PyUnresolvedReferences
-def class_from_module_path(
-    module_path: Text, lookup_path: Optional[Text] = None
-) -> Any:
-    """Given the module name and path of a class, tries to retrieve the class.
-
-    The loaded class can be used to instantiate new objects. """
-    import importlib
-
-    # load the module, will raise ImportError if module cannot be loaded
-    if "." in module_path:
-        module_name, _, class_name = module_path.rpartition(".")
-        m = importlib.import_module(module_name)
-        # get the class, will raise AttributeError if class cannot be found
-        return getattr(m, class_name)
-    else:
-        module = globals().get(module_path, locals().get(module_path))
-        if module is not None:
-            return module
-
-        if lookup_path:
-            # last resort: try to import the class from the lookup path
-            m = importlib.import_module(lookup_path)
-            return getattr(m, module_path)
-        else:
-            raise ImportError("Cannot retrieve class from path {}.".format(module_path))
+    formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logger_obj.level)
+    file_handler.setFormatter(formatter)
+    logger_obj.addHandler(file_handler)
 
 
 def module_path_from_instance(inst: Any) -> Text:
@@ -133,17 +107,6 @@ def lazyproperty(fn):
         return getattr(self, attr_name)
 
     return _lazyprop
-
-
-def create_dir_for_file(file_path: Text) -> None:
-    """Creates any missing parent directories of this files path."""
-
-    try:
-        os.makedirs(os.path.dirname(file_path))
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
 
 
 def one_hot(hot_idx, length, dtype=None):
@@ -259,23 +222,17 @@ def _dump_yaml(obj, output):
     yaml_writer.dump(obj, output)
 
 
-def dump_obj_as_yaml_to_file(filename, obj):
+def dump_obj_as_yaml_to_file(filename: Union[Text, Path], obj: Dict) -> None:
     """Writes data (python dict) to the filename in yaml repr."""
-    with open(filename, "w", encoding="utf-8") as output:
+    with open(str(filename), "w", encoding="utf-8") as output:
         _dump_yaml(obj, output)
 
 
-def dump_obj_as_yaml_to_string(obj):
+def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
     """Writes data (python dict) to a yaml string."""
     str_io = StringIO()
     _dump_yaml(obj, str_io)
     return str_io.getvalue()
-
-
-def read_json_file(filename):
-    """Read json from a file"""
-    with open(filename) as f:
-        return json.load(f)
 
 
 def list_routes(app: Sanic):
@@ -288,7 +245,7 @@ def list_routes(app: Sanic):
 
     def find_route(suffix, path):
         for name, (uri, _) in app.router.routes_names.items():
-            if name.endswith(suffix) and uri == path:
+            if name.split(".")[-1] == suffix and uri == path:
                 return name
         return None
 
@@ -318,34 +275,6 @@ def list_routes(app: Sanic):
     return output
 
 
-def zip_folder(folder):
-    """Create an archive from a folder."""
-    import shutil
-
-    zipped_path = tempfile.NamedTemporaryFile(delete=False)
-    zipped_path.close()
-
-    # WARN: not thread save!
-    return shutil.make_archive(zipped_path.name, str("zip"), folder)
-
-
-def unarchive(byte_array: bytes, directory: Text) -> Text:
-    """Tries to unpack a byte array interpreting it as an archive.
-
-    Tries to use tar first to unpack, if that fails, zip will be used."""
-
-    try:
-        tar = tarfile.open(fileobj=IOReader(byte_array))
-        tar.extractall(directory)
-        tar.close()
-        return directory
-    except tarfile.TarError:
-        zip_ref = zipfile.ZipFile(IOReader(byte_array))
-        zip_ref.extractall(directory)
-        zip_ref.close()
-        return directory
-
-
 def cap_length(s, char_limit=20, append_ellipsis=True):
     """Makes sure the string doesn't exceed the passed char limit.
 
@@ -358,42 +287,6 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
             return s[:char_limit]
     else:
         return s
-
-
-def write_request_body_to_file(request: Request, path: Text):
-    """Writes the body of `request` to `path`."""
-
-    with open(path, "w+b") as f:
-        f.write(request.body)
-
-
-def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
-    """Return a passed boolean argument of the request or a default.
-
-    Checks the `name` parameter of the request if it contains a valid
-    boolean value. If not, `default` is returned."""
-
-    return request.args.get(name, str(default)).lower() == "true"
-
-
-def float_arg(
-    request: Request, key: Text, default: Optional[float] = None
-) -> Optional[float]:
-    """Return a passed argument cast as a float or None.
-
-    Checks the `name` parameter of the request if it contains a valid
-    float value. If not, `None` is returned."""
-
-    arg = request.args.get(key, default)
-
-    if arg is default:
-        return arg
-
-    try:
-        return float(arg)
-    except (ValueError, TypeError):
-        logger.warning("Failed to convert '{}' to float.".format(arg))
-        return default
 
 
 def extract_args(
@@ -412,25 +305,6 @@ def extract_args(
             remaining[k] = v
 
     return extracted, remaining
-
-
-def concat_url(base: Text, subpath: Optional[Text]) -> Text:
-    """Append a subpath to a base url.
-
-    Strips leading slashes from the subpath if necessary. This behaves
-    differently than `urlparse.urljoin` and will not treat the subpath
-    as a base url if it starts with `/` but will always append it to the
-    `base`."""
-
-    if subpath:
-        url = base
-        if not base.endswith("/"):
-            url += "/"
-        if subpath.startswith("/"):
-            subpath = subpath[1:]
-        return url + subpath
-    else:
-        return base
 
 
 def all_subclasses(cls: Any) -> List[Any]:
@@ -474,8 +348,13 @@ def get_file_hash(path: Text) -> Text:
 
 
 def get_text_hash(text: Text, encoding: Text = "utf-8") -> Text:
-    """Calculate the md5 hash of a file."""
+    """Calculate the md5 hash for a text."""
     return md5(text.encode(encoding)).hexdigest()
+
+
+def get_dict_hash(data: Dict, encoding: Text = "utf-8") -> Text:
+    """Calculate the md5 hash of a dictionary."""
+    return md5(json.dumps(data, sort_keys=True).encode(encoding)).hexdigest()
 
 
 async def download_file_from_url(url: Text) -> Text:
@@ -490,7 +369,7 @@ async def download_file_from_url(url: Text) -> Text:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, raise_for_status=True) as resp:
-            filename = nlu_utils.create_temporary_file(await resp.read(), mode="w+b")
+            filename = io_utils.create_temporary_file(await resp.read(), mode="w+b")
 
     return filename
 
@@ -590,12 +469,12 @@ class LockCounter(asyncio.Lock):
         super().__init__()
         self.wait_counter = 0
 
-    async def acquire(self) -> Any:
+    async def acquire(self) -> bool:
         """Acquire the lock, makes sure only one coroutine can retrieve it."""
 
         self.wait_counter += 1
         try:
-            return await super(LockCounter, self).acquire()
+            return await super(LockCounter, self).acquire()  # type: ignore
         finally:
             self.wait_counter -= 1
 

@@ -1,4 +1,3 @@
-import io
 import os
 
 import json
@@ -7,6 +6,8 @@ from collections import Counter
 import numpy as np
 
 from rasa.core import training
+from rasa.core.interpreter import RegexInterpreter
+from rasa.core.training.dsl import StoryFileReader
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.training.structures import Story
 from rasa.core.featurizers import (
@@ -148,7 +149,8 @@ async def test_generate_training_data_with_cycles(tmpdir, default_domain):
     # if we have 4 trackers, there is going to be one example more for label 4
     num_threes = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
-    assert Counter(y) == {0: 6, 1: 2, 8: num_threes, 9: 1, 10: 3}
+
+    assert Counter(y) == {0: 6, 9: 3, 8: num_threes, 1: 2, 10: 1}
 
 
 async def test_generate_training_data_with_unused_checkpoints(tmpdir, default_domain):
@@ -261,3 +263,21 @@ async def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
 
     assert len(data.X) == 0
     assert len(data.y) == 0
+
+
+async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
+    story_steps = await StoryFileReader.read_from_file(
+        "data/test_stories/stories_with_multiline_comments.md",
+        default_domain,
+        RegexInterpreter(),
+    )
+
+    assert len(story_steps) == 4
+    assert story_steps[0].block_name == "happy path"
+    assert len(story_steps[0].events) == 4
+    assert story_steps[1].block_name == "sad path 1"
+    assert len(story_steps[1].events) == 7
+    assert story_steps[2].block_name == "sad path 2"
+    assert len(story_steps[2].events) == 7
+    assert story_steps[3].block_name == "say goodbye"
+    assert len(story_steps[3].events) == 2

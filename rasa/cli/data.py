@@ -1,8 +1,9 @@
 import argparse
+import asyncio
 from typing import List
 
 from rasa import data
-from rasa.cli.default_arguments import add_nlu_data_param
+from rasa.cli.arguments import data as arguments
 from rasa.cli.utils import get_validated_path
 from rasa.constants import DEFAULT_DATA_PATH
 
@@ -18,73 +19,84 @@ def add_subparser(
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Utils for the Rasa training files",
+        help="Utils for the Rasa training files.",
     )
     data_parser.set_defaults(func=lambda _: data_parser.print_help(None))
-    data_subparsers = data_parser.add_subparsers()
 
+    data_subparsers = data_parser.add_subparsers()
     convert_parser = data_subparsers.add_parser(
         "convert",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Convert Rasa data between different formats",
+        help="Converts Rasa data between different formats.",
     )
     convert_parser.set_defaults(func=lambda _: convert_parser.print_help(None))
-    convert_subparsers = convert_parser.add_subparsers()
 
+    convert_subparsers = convert_parser.add_subparsers()
     convert_nlu_parser = convert_subparsers.add_parser(
         "nlu",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Convert NLU training data between markdown and json",
+        help="Converts NLU data between Markdown and json formats.",
     )
-
-    convert.add_arguments(convert_nlu_parser)
     convert_nlu_parser.set_defaults(func=convert.main)
+
+    arguments.set_convert_arguments(convert_nlu_parser)
 
     split_parser = data_subparsers.add_parser(
         "split",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Split Rasa data in training and test data",
+        help="Splits Rasa data into training and test data.",
     )
     split_parser.set_defaults(func=lambda _: split_parser.print_help(None))
-    split_subparsers = split_parser.add_subparsers()
 
+    split_subparsers = split_parser.add_subparsers()
     nlu_split_parser = split_subparsers.add_parser(
         "nlu",
+        parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Perform a split of your NLU data according to the specified "
-        "percentages",
+        help="Performs a split of your NLU data into training and test data "
+        "according to the specified percentages.",
     )
     nlu_split_parser.set_defaults(func=split_nlu_data)
-    _add_split_args(nlu_split_parser)
 
+    arguments.set_split_arguments(nlu_split_parser)
 
-def _add_split_args(parser: argparse.ArgumentParser) -> None:
-    add_nlu_data_param(parser)
-    parser.add_argument(
-        "--training_fraction",
-        type=float,
-        default=0.8,
-        help="Percentage of the data which should be the training data",
+    validate_parser = data_subparsers.add_parser(
+        "validate",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Validates domain and data files to check for possible mistakes.",
     )
-    parser.add_argument(
-        "-o",
-        "--out",
-        type=str,
-        default="train_test_split",
-        help="Directory where the split files should be stored",
-    )
+    validate_parser.set_defaults(func=validate_files)
+    arguments.set_validator_arguments(validate_parser)
 
 
 def split_nlu_data(args):
     from rasa.nlu.training_data.loading import load_data
+    from rasa.nlu.training_data.util import get_file_format
 
     data_path = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = data.get_nlu_directory(data_path)
+
     nlu_data = load_data(data_path)
+    fformat = get_file_format(data_path)
+
     train, test = nlu_data.train_test_split(args.training_fraction)
 
-    train.persist(args.out, filename="training_data.json")
-    test.persist(args.out, filename="test_data.json")
+    train.persist(args.out, filename="training_data.{}".format(fformat))
+    test.persist(args.out, filename="test_data.{}".format(fformat))
+
+
+def validate_files(args):
+    from rasa.core.validator import Validator
+    from rasa.importers.rasa import RasaFileImporter
+
+    loop = asyncio.get_event_loop()
+    file_importer = RasaFileImporter(
+        domain_path=args.domain, training_data_paths=args.data
+    )
+
+    validator = loop.run_until_complete(Validator.from_importer(file_importer))
+    validator.verify_all()

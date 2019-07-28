@@ -10,21 +10,20 @@ from typing import Text
 
 import rasa.nlu
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.nlu import components, utils, constants
-from rasa.nlu.components import Component, ComponentBuilder
-from rasa.nlu.config import (
-    RasaNLUModelConfig,
-    component_config_from_pipeline,
-    make_path_absolute,
-)
+from rasa.nlu import components, utils  # pytype: disable=pyi-error
+from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
+from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.utils import create_dir, write_json_to_file
+from rasa.nlu.utils import write_json_to_file
+import rasa.utils.io
+
+MODEL_NAME_PREFIX = "nlu_"
 
 logger = logging.getLogger(__name__)
 
 
-class InvalidProjectError(Exception):
+class InvalidModelError(Exception):
     """Raised when a model failed to load.
 
     Attributes:
@@ -66,11 +65,11 @@ class Metadata(object):
         """
         try:
             metadata_file = os.path.join(model_dir, "metadata.json")
-            data = utils.read_json_file(metadata_file)
+            data = rasa.utils.io.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
-            raise InvalidProjectError(
+            raise InvalidModelError(
                 "Failed to load model metadata from '{}'. {}".format(abspath, e)
             )
 
@@ -136,8 +135,7 @@ class Trainer(object):
 
         self.config = cfg
         self.skip_validation = skip_validation
-        self.training_data = None
-        # type: Optional[TrainingData]
+        self.training_data = None  # type: Optional[TrainingData]
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in
@@ -206,7 +204,6 @@ class Trainer(object):
         self,
         path: Text,
         persistor: Optional[Persistor] = None,
-        project_name: Text = None,
         fixed_model_name: Text = None,
     ) -> Text:
         """Persist all components of the pipeline to the passed path.
@@ -216,18 +213,15 @@ class Trainer(object):
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         metadata = {"language": self.config["language"], "pipeline": []}
 
-        if project_name is None:
-            project_name = "default"
-
         if fixed_model_name:
             model_name = fixed_model_name
         else:
-            model_name = "model_" + timestamp
+            model_name = MODEL_NAME_PREFIX + timestamp
 
-        path = make_path_absolute(path)
-        dir_name = os.path.join(path, project_name, model_name)
+        path = os.path.abspath(path)
+        dir_name = os.path.join(path, model_name)
 
-        create_dir(dir_name)
+        rasa.utils.io.create_directory(dir_name)
 
         if self.training_data:
             metadata.update(self.training_data.persist(dir_name))
@@ -245,7 +239,7 @@ class Trainer(object):
         Metadata(metadata, dir_name).persist(dir_name)
 
         if persistor is not None:
-            persistor.persist(dir_name, model_name, project_name)
+            persistor.persist(dir_name, model_name)
         logger.info(
             "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
         )

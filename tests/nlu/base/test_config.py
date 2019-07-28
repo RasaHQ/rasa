@@ -9,7 +9,7 @@ from rasa.nlu.components import ComponentBuilder
 from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
 from tests.nlu.utilities import write_file_config
 
-defaults = rasa.utils.io.read_yaml_file(CONFIG_DEFAULTS_PATH)
+defaults = rasa.utils.io.read_config_file(CONFIG_DEFAULTS_PATH)
 
 
 def test_default_config(default_config):

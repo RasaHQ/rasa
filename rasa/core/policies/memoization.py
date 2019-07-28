@@ -15,6 +15,7 @@ from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.common import is_logging_disabled
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ class MemoizationPolicy(Policy):
         pbar = tqdm(
             zip(trackers_as_states, trackers_as_actions),
             desc="Processed actions",
-            disable=online,
+            disable=is_logging_disabled(),
         )
         for states, actions in pbar:
             action = actions[0]
@@ -170,9 +171,7 @@ class MemoizationPolicy(Policy):
             trackers_as_states,
             trackers_as_actions,
         ) = self.featurizer.training_states_and_actions(training_trackers[-1:], domain)
-        self._add_states_to_lookup(
-            trackers_as_states, trackers_as_actions, domain, online=True
-        )
+        self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
 
     def _recall_states(self, states: List[Dict[Text, float]]) -> Optional[int]:
 
@@ -231,7 +230,7 @@ class MemoizationPolicy(Policy):
             "max_history": self.max_history,
             "lookup": self.lookup,
         }
-        utils.create_dir_for_file(memorized_file)
+        rasa.utils.io.create_directory_for_file(memorized_file)
         utils.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod

@@ -13,6 +13,7 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 
+
 logger = logging.getLogger(__name__)
 
 

@@ -1,37 +1,27 @@
 import asyncio
-from functools import partial
-
-import argparse
 import logging
+import shutil
+from functools import partial
+from typing import List, Optional, Text, Union
+
 from sanic import Sanic
 from sanic_cors import CORS
-from typing import List, Optional, Text
 
-import rasa.core.cli.arguments
-import rasa.utils.io
 import rasa.core
-
-from rasa.core import constants, utils, cli
-from rasa.core.channels import BUILTIN_CHANNELS, InputChannel, console
+import rasa.utils
+import rasa.utils.io
+from rasa.core import constants, utils
+from rasa.core.agent import load_agent, Agent
+from rasa.core.channels import BUILTIN_CHANNELS, console
+from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.utils import AvailableEndpoints
+from rasa.core.utils import AvailableEndpoints, configure_file_logging
+from rasa.model import get_model_subdirectories, get_model
+from rasa.utils.common import update_sanic_log_level, class_from_module_path
+from rasa.server import add_root_route
 
 logger = logging.getLogger()  # get the root logger
-
-
-def create_argument_parser():
-    """Parse all the command line arguments for the run script."""
-
-    parser = argparse.ArgumentParser(description="starts the bot")
-    parser.add_argument(
-        "-d", "--core", required=True, type=str, help="core model to run"
-    )
-    parser.add_argument("-u", "--nlu", type=str, help="nlu model to run")
-
-    cli.arguments.add_logging_option_arguments(parser)
-    cli.run.add_run_arguments(parser)
-    return parser
 
 
 def create_http_input_channels(
@@ -40,11 +30,18 @@ def create_http_input_channels(
     """Instantiate the chosen input channel."""
 
     if credentials_file:
-        all_credentials = rasa.utils.io.read_yaml_file(credentials_file)
+        all_credentials = rasa.utils.io.read_config_file(credentials_file)
     else:
         all_credentials = {}
 
     if channel:
+        if len(all_credentials) > 1:
+            logger.info(
+                "Connecting to channel '{}' which was specified by the "
+                "'--connector' argument. Any other channels will be ignored. "
+                "To connect to all given channels, omit the '--connector' "
+                "argument.".format(channel)
+            )
         return [_create_single_channel(channel, all_credentials.get(channel))]
     else:
         return [_create_single_channel(c, k) for c, k in all_credentials.items()]
@@ -58,7 +55,7 @@ def _create_single_channel(channel, credentials):
     else:
         # try to load channel based on class name
         try:
-            input_channel_class = utils.class_from_module_path(channel)
+            input_channel_class = class_from_module_path(channel)
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
             raise Exception(
@@ -70,18 +67,29 @@ def _create_single_channel(channel, credentials):
             )
 
 
+def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
+    app = Sanic(__name__, configure_logging=False)
+    add_root_route(app)
+    CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
+    return app
+
+
 def configure_app(
-    input_channels=None,
-    cors=None,
-    auth_token=None,
-    enable_api=True,
-    jwt_secret=None,
-    jwt_method=None,
-    route="/webhooks/",
-    port=None,
+    input_channels: Optional[List["InputChannel"]] = None,
+    cors: Optional[Union[Text, List[Text]]] = None,
+    auth_token: Optional[Text] = None,
+    enable_api: bool = True,
+    jwt_secret: Optional[Text] = None,
+    jwt_method: Optional[Text] = None,
+    route: Optional[Text] = "/webhooks/",
+    port: int = constants.DEFAULT_SERVER_PORT,
+    endpoints: Optional[AvailableEndpoints] = None,
+    log_file: Optional[Text] = None,
 ):
     """Run the agent."""
-    from rasa.core import server
+    from rasa import server
+
+    configure_file_logging(logger, log_file)
 
     if enable_api:
         app = server.create_app(
@@ -89,10 +97,10 @@ def configure_app(
             auth_token=auth_token,
             jwt_secret=jwt_secret,
             jwt_method=jwt_method,
+            endpoints=endpoints,
         )
     else:
-        app = Sanic(__name__)
-        CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
+        app = _create_app_without_api(cors)
 
     if input_channels:
         rasa.core.channels.channel.register(input_channels, app, route=route)
@@ -103,11 +111,11 @@ def configure_app(
         utils.list_routes(app)
 
     # configure async loop logging
-    async def configure_logging():
+    async def configure_async_logging():
         if logger.isEnabledFor(logging.DEBUG):
             rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())
 
-    app.add_task(configure_logging)
+    app.add_task(configure_async_logging)
 
     if "cmdline" in {c.name() for c in input_channels}:
 
@@ -127,73 +135,108 @@ def configure_app(
 
 
 def serve_application(
-    core_model=None,
-    nlu_model=None,
-    channel=None,
-    port=constants.DEFAULT_SERVER_PORT,
-    credentials_file=None,
-    cors=None,
-    auth_token=None,
-    enable_api=True,
-    jwt_secret=None,
-    jwt_method=None,
-    endpoints=None,
+    model_path: Optional[Text] = None,
+    channel: Optional[Text] = None,
+    port: int = constants.DEFAULT_SERVER_PORT,
+    credentials: Optional[Text] = None,
+    cors: Optional[Union[Text, List[Text]]] = None,
+    auth_token: Optional[Text] = None,
+    enable_api: bool = True,
+    jwt_secret: Optional[Text] = None,
+    jwt_method: Optional[Text] = None,
+    endpoints: Optional[AvailableEndpoints] = None,
+    remote_storage: Optional[Text] = None,
+    log_file: Optional[Text] = None,
 ):
-    if not channel and not credentials_file:
+    if not channel and not credentials:
         channel = "cmdline"
 
-    input_channels = create_http_input_channels(channel, credentials_file)
+    input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(
-        input_channels, cors, auth_token, enable_api, jwt_secret, jwt_method, port=port
+        input_channels,
+        cors,
+        auth_token,
+        enable_api,
+        jwt_secret,
+        jwt_method,
+        port=port,
+        endpoints=endpoints,
+        log_file=log_file,
     )
 
     logger.info(
-        "Starting Rasa Core server on "
+        "Starting Rasa server on "
         "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port))
     )
 
     app.register_listener(
-        partial(load_agent_on_start, core_model, endpoints, nlu_model),
+        partial(load_agent_on_start, model_path, endpoints, remote_storage),
         "before_server_start",
     )
-    app.run(host="0.0.0.0", port=port, access_log=logger.isEnabledFor(logging.DEBUG))
+
+    async def clear_model_files(app: Sanic, _loop: Text) -> None:
+        if app.agent.model_directory:
+            shutil.rmtree(app.agent.model_directory)
+
+    app.register_listener(clear_model_files, "after_server_stop")
+
+    update_sanic_log_level(log_file)
+
+    app.run(host="0.0.0.0", port=port)
 
 
 # noinspection PyUnusedLocal
-async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
+async def load_agent_on_start(
+    model_path: Text,
+    endpoints: AvailableEndpoints,
+    remote_storage: Optional[Text],
+    app: Sanic,
+    loop: Text,
+):
     """Load an agent.
 
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments)."""
     from rasa.core import broker
-    from rasa.core.agent import Agent
 
-    _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+    try:
+        with get_model(model_path) as unpacked_model:
+            _, nlu_model = get_model_subdirectories(unpacked_model)
+            _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+    except Exception:
+        logger.debug("Could not load interpreter from '{}'.".format(model_path))
+        _interpreter = None
+
     _broker = broker.from_endpoint_config(endpoints.event_broker)
-
     _tracker_store = TrackerStore.find_tracker_store(
         None, endpoints.tracker_store, _broker
     )
 
-    if endpoints and endpoints.model:
-        from rasa.core import agent
+    model_server = endpoints.model if endpoints and endpoints.model else None
 
+    app.agent = await load_agent(
+        model_path,
+        model_server=model_server,
+        remote_storage=remote_storage,
+        interpreter=_interpreter,
+        generator=endpoints.nlg,
+        tracker_store=_tracker_store,
+        action_endpoint=endpoints.action,
+    )
+
+    if not app.agent:
+        logger.warning(
+            "Agent could not be loaded with the provided configuration. "
+            "Load default agent without any model."
+        )
         app.agent = Agent(
             interpreter=_interpreter,
             generator=endpoints.nlg,
             tracker_store=_tracker_store,
             action_endpoint=endpoints.action,
-        )
-
-        await agent.load_from_server(app.agent, model_server=endpoints.model)
-    else:
-        app.agent = Agent.load(
-            core_model,
-            interpreter=_interpreter,
-            generator=endpoints.nlg,
-            tracker_store=_tracker_store,
-            action_endpoint=endpoints.action,
+            model_server=model_server,
+            remote_storage=remote_storage,
         )
 
     return app.agent
@@ -201,7 +244,7 @@ async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
 
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.core.run` directly is "
-        "no longer supported. "
-        "Please use `rasa shell` instead."
+        "Calling `rasa.core.run` directly is no longer supported. "
+        "Please use `rasa run` to start a Rasa server or `rasa shell` to chat with "
+        "your bot on the command line."
     )

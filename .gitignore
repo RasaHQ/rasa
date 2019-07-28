@@ -15,11 +15,9 @@ venv
 .ipynb_checkpoints
 .ruby-version
 .tox
+.pytype
 dist/
-data/*
-!data/examples
-!data/test
-!data/README.md
+pip-wheel-metadata
 docs/nlu/_build
 docs/_build
 server/
@@ -47,11 +45,9 @@ out/
 tmp_training_data.json
 .DS_Store
 models/
-projects/
 test_models/model_*
 test_models/test_model_keyword
 test_models/test_model_pretrained_embeddings
-test_projects/test_project_*
 .mypy_cache/
 *.tar.gz
 docs/nlu/key

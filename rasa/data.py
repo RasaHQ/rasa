@@ -1,52 +1,55 @@
-import json
 import logging
 import os
 import shutil
 import tempfile
 import uuid
-from typing import Tuple, List, Text, Set, Union
 import re
+from typing import Tuple, List, Text, Set, Union, Optional
+from rasa.nlu.training_data import loading
 
 logger = logging.getLogger(__name__)
 
 
-def get_core_directory(directories: Union[Text, List[Text]]) -> Text:
-    """Recursively collects all Core training files from a list of directories.
+def get_core_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
+    """Recursively collects all Core training files from a list of paths.
 
     Args:
-        directories: List of paths to directories containing training files.
+        paths: List of paths to training files or folders containing them.
 
     Returns:
         Path to temporary directory containing all found Core training files.
     """
-    core_files, _ = _get_core_nlu_files(directories)
+    core_files, _ = get_core_nlu_files(paths)
     return _copy_files_to_new_dir(core_files)
 
 
-def get_nlu_directory(directories: Union[Text, List[Text]]) -> Text:
-    """Recursively collects all NLU training files from a list of directories.
+def get_nlu_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
+    """Recursively collects all NLU training files from a list of paths.
 
     Args:
-        directories: List of paths to directories containing training files.
+        paths: List of paths to training files or folders containing them.
 
     Returns:
         Path to temporary directory containing all found NLU training files.
     """
-    _, nlu_files = _get_core_nlu_files(directories)
+    _, nlu_files = get_core_nlu_files(paths)
     return _copy_files_to_new_dir(nlu_files)
 
 
-def get_core_nlu_directories(directories: Union[Text, List[Text]]) -> Tuple[Text, Text]:
-    """Recursively collects all training files from a list of directories.
+def get_core_nlu_directories(
+    paths: Optional[Union[Text, List[Text]]],
+) -> Tuple[Text, Text]:
+    """Recursively collects all training files from a list of paths.
 
     Args:
-        directories: List of paths to directories containing training files.
+        paths: List of paths to training files or folders containing them.
 
     Returns:
         Path to directory containing the Core files and path to directory
         containing the NLU training files.
     """
-    story_files, nlu_data_files = _get_core_nlu_files(directories)
+
+    story_files, nlu_data_files = get_core_nlu_files(paths)
 
     story_directory = _copy_files_to_new_dir(story_files)
     nlu_directory = _copy_files_to_new_dir(nlu_data_files)
@@ -54,60 +57,138 @@ def get_core_nlu_directories(directories: Union[Text, List[Text]]) -> Tuple[Text
     return story_directory, nlu_directory
 
 
-def _get_core_nlu_files(
-    directories: Union[Text, List[Text]]
+def get_core_nlu_files(
+    paths: Optional[Union[Text, List[Text]]]
 ) -> Tuple[Set[Text], Set[Text]]:
+    """Recursively collects all training files from a list of paths.
+
+    Args:
+        paths: List of paths to training files or folders containing them.
+        skill_imports: `SkillSelector` instance which determines which files
+                        should be loaded.
+
+    Returns:
+        Tuple of paths to story and NLU files.
+    """
+
     story_files = set()
     nlu_data_files = set()
 
-    if isinstance(directories, str):
-        directories = [directories]
+    if paths is None:
+        paths = []
+    elif isinstance(paths, str):
+        paths = [paths]
 
-    for directory in set(directories):
-        if not directory:
+    for path in set(paths):
+        if not path:
             continue
 
-        new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
-            directory
-        )
+        if _is_valid_filetype(path):
+            if is_nlu_file(path):
+                nlu_data_files.add(os.path.abspath(path))
+            elif is_story_file(path):
+                story_files.add(os.path.abspath(path))
+        else:
+            new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
+                path
+            )
 
-        story_files.update(new_story_files)
-        nlu_data_files.update(new_nlu_data_files)
+            story_files.update(new_story_files)
+            nlu_data_files.update(new_nlu_data_files)
 
     return story_files, nlu_data_files
 
 
-def _find_core_nlu_files_in_directory(directory: Text) -> Tuple[Set[Text], Set[Text]]:
+def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
+
     for root, _, files in os.walk(directory):
         for f in files:
-            if not f.endswith(".json") and not f.endswith(".md"):
+            full_path = os.path.join(root, f)
+
+            if not _is_valid_filetype(full_path):
                 continue
 
-            full_path = os.path.join(root, f)
-            if _is_nlu_file(full_path):
+            if is_nlu_file(full_path):
                 nlu_data_files.add(full_path)
-            else:
+            elif is_story_file(full_path):
                 story_files.add(full_path)
 
     return story_files, nlu_data_files
 
 
-def _is_nlu_file(file_path: Text) -> bool:
-    with open(file_path, encoding="utf-8") as f:
-        if file_path.endswith(".json"):
-            content = f.read()
-            is_nlu_file = json.loads(content).get("rasa_nlu_data") is not None
-        else:
-            is_nlu_file = any(_contains_nlu_pattern(l) for l in f)
-    return is_nlu_file
+def _is_valid_filetype(path: Text) -> bool:
+    is_file = os.path.isfile(path)
+    is_datafile = path.endswith(".json") or path.endswith(".md")
+
+    return is_file and is_datafile
 
 
-def _contains_nlu_pattern(text: Text) -> bool:
-    nlu_pattern = r"\s*##\s*(intent|regex||synonym|lookup):"
+def is_nlu_file(file_path: Text) -> bool:
+    """Checks if a file is a Rasa compatible nlu file.
 
-    return re.match(nlu_pattern, text) is not None
+    Args:
+        file_path: Path of the file which should be checked.
+
+    Returns:
+        `True` if it's a nlu file, otherwise `False`.
+    """
+    return loading.guess_format(file_path) != loading.UNK
+
+
+def is_story_file(file_path: Text) -> bool:
+    """Checks if a file is a Rasa story file.
+
+    Args:
+        file_path: Path of the file which should be checked.
+
+    Returns:
+        `True` if it's a story file, otherwise `False`.
+    """
+    _is_story_file = False
+
+    if file_path.endswith(".md"):
+        with open(file_path, encoding="utf-8") as f:
+            _is_story_file = any(_contains_story_pattern(l) for l in f)
+
+    return _is_story_file
+
+
+def _contains_story_pattern(text: Text) -> bool:
+    story_pattern = r".*##.+"
+
+    return re.match(story_pattern, text) is not None
+
+
+def is_domain_file(file_path: Text) -> bool:
+    """Checks whether the given file path is a Rasa domain file.
+
+    Args:
+        file_path: Path of the file which should be checked.
+
+    Returns:
+        `True` if it's a domain file, otherwise `False`.
+    """
+
+    file_name = os.path.basename(file_path)
+
+    return file_name in ["domain.yml", "domain.yaml"]
+
+
+def is_config_file(file_path: Text) -> bool:
+    """Checks whether the given file path is a Rasa config file.
+
+       Args:
+           file_path: Path of the file which should be checked.
+
+       Returns:
+           `True` if it's a Rasa config file, otherwise `False`.
+       """
+
+    file_name = os.path.basename(file_path)
+
+    return file_name in ["config.yml", "config.yaml"]
 
 
 def _copy_files_to_new_dir(files: Set[Text]) -> Text:

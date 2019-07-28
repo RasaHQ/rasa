@@ -5,17 +5,17 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.model import InvalidModelError
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
-    from spacy.tokens.doc import Doc
+    from spacy.tokens.doc import Doc  # pytype: disable=import-error
     from rasa.nlu.model import Metadata
 
 
 class SpacyNLP(Component):
-
     provides = ["spacy_doc", "spacy_nlp"]
 
     defaults = {
@@ -38,6 +38,22 @@ class SpacyNLP(Component):
         self.nlp = nlp
         super(SpacyNLP, self).__init__(component_config)
 
+    @staticmethod
+    def load_model(spacy_model_name: Text) -> "Language":
+        """Try loading the model, catching the OSError if missing."""
+        import spacy
+
+        try:
+            return spacy.load(spacy_model_name, disable=["parser"])
+        except OSError:
+            raise InvalidModelError(
+                "Model '{}' is not a linked spaCy model.  "
+                "Please download and/or link a spaCy model, "
+                "e.g. by running:\npython -m spacy download "
+                "en_core_web_md\npython -m spacy link "
+                "en_core_web_md en".format(spacy_model_name)
+            )
+
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["spacy"]
@@ -46,7 +62,6 @@ class SpacyNLP(Component):
     def create(
         cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
     ) -> "SpacyNLP":
-        import spacy
 
         component_config = override_defaults(cls.defaults, component_config)
 
@@ -61,7 +76,8 @@ class SpacyNLP(Component):
             "Trying to load spacy model with name '{}'".format(spacy_model_name)
         )
 
-        nlp = spacy.load(spacy_model_name, disable=["parser"])
+        nlp = cls.load_model(spacy_model_name)
+
         cls.ensure_proper_language_model(nlp)
         return cls(component_config, nlp)
 
@@ -85,12 +101,25 @@ class SpacyNLP(Component):
         else:
             return self.nlp(text.lower())
 
+    def docs_for_training_data(self, training_data: TrainingData) -> List[Any]:
+
+        texts = [
+            e.text if self.component_config.get("case_sensitive") else e.text.lower()
+            for e in training_data.intent_examples
+        ]
+
+        docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
+
+        return docs
+
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
 
-        for example in training_data.training_examples:
-            example.set("spacy_doc", self.doc_for_text(example.text))
+        docs = self.docs_for_training_data(training_data)
+
+        for idx, example in enumerate(training_data.training_examples):
+            example.set("spacy_doc", docs[idx])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
@@ -105,14 +134,13 @@ class SpacyNLP(Component):
         cached_component: Optional["SpacyNLP"] = None,
         **kwargs: Any
     ) -> "SpacyNLP":
-        import spacy
 
         if cached_component:
             return cached_component
 
         model_name = meta.get("model")
 
-        nlp = spacy.load(model_name, disable=["parser"])
+        nlp = cls.load_model(model_name)
         cls.ensure_proper_language_model(nlp)
         return cls(meta, nlp)
 

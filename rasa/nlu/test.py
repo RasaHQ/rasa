@@ -1,133 +1,64 @@
 import itertools
-from collections import defaultdict, namedtuple
-
-import json
 import os
 import logging
 import numpy as np
-import shutil
-from typing import List, Optional, Text, Union, Dict
+from collections import defaultdict, namedtuple
 from tqdm import tqdm
+from typing import (
+    Iterable,
+    Iterator,
+    Tuple,
+    List,
+    Set,
+    Optional,
+    Text,
+    Union,
+    Dict,
+    Any,
+)
 
+import rasa.utils.io as io_utils
+
+from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
+from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
+from rasa.nlu.utils import write_to_file
+from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
+from rasa.nlu.components import Component
+from rasa.nlu.tokenizers import Token
 
 logger = logging.getLogger(__name__)
 
-duckling_extractors = {"DucklingHTTPExtractor"}
+PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 
-known_duckling_dimensions = {
-    "amount-of-money",
-    "distance",
-    "duration",
-    "email",
-    "number",
-    "ordinal",
-    "phone-number",
-    "timezone",
-    "temperature",
-    "time",
-    "url",
-    "volume",
-}
-
-entity_processors = {"EntitySynonymMapper"}
+ENTITY_PROCESSORS = {"EntitySynonymMapper"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
 IntentEvaluationResult = namedtuple(
-    "IntentEvaluationResult", "target prediction message confidence"
+    "IntentEvaluationResult",
+    "intent_target " "intent_prediction " "message " "confidence",
 )
 
+EntityEvaluationResult = namedtuple(
+    "EntityEvaluationResult", "entity_targets " "entity_predictions " "tokens"
+)
 
-def create_argument_parser():
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="evaluate a Rasa NLU pipeline with cross "
-        "validation or on external data"
-    )
-
-    utils.add_logging_option_arguments(parser, default=logging.INFO)
-    _add_arguments(parser)
-
-    return parser
-
-
-def _add_arguments(parser):
-    parser.add_argument(
-        "-d", "--data", required=True, help="file containing training/evaluation data"
-    )
-
-    parser.add_argument(
-        "--mode",
-        default="evaluation",
-        help="evaluation|crossvalidation (evaluate "
-        "pretrained model or train model "
-        "by crossvalidation)",
-    )
-
-    # todo: make the two different modes two subparsers
-    parser.add_argument(
-        "-c", "--config", help="model configuration file (crossvalidation only)"
-    )
-
-    parser.add_argument(
-        "-m", "--model", required=False, help="path to model (evaluation only)"
-    )
-
-    parser.add_argument(
-        "-f",
-        "--folds",
-        required=False,
-        default=10,
-        help="number of CV folds (crossvalidation only)",
-    )
-
-    parser.add_argument(
-        "--report",
-        required=False,
-        nargs="?",
-        const="reports",
-        default=False,
-        help="output path to save the intent/entity metrics report",
-    )
-
-    parser.add_argument(
-        "--successes",
-        required=False,
-        nargs="?",
-        const="successes.json",
-        default=False,
-        help="output path to save successful predictions",
-    )
-
-    parser.add_argument(
-        "--errors",
-        required=False,
-        default="errors.json",
-        help="output path to save model errors",
-    )
-
-    parser.add_argument(
-        "--histogram",
-        required=False,
-        default="hist.png",
-        help="output path for the confidence histogram",
-    )
-
-    parser.add_argument(
-        "--confmat",
-        required=False,
-        default="confmat.png",
-        help="output path for the confusion matrix plot",
-    )
+IntentMetrics = Dict[Text, List[float]]
+EntityMetrics = Dict[Text, Dict[Text, List[float]]]
 
 
 def plot_confusion_matrix(
-    cm, classes, normalize=False, title="Confusion matrix", cmap=None, zmin=1, out=None
+    cm: np.array,
+    classes: np.array,
+    normalize: bool = False,
+    title: Text = "Confusion matrix",
+    cmap=None,
+    zmin: int = 1,
+    out: Optional[Text] = None,
 ) -> None:  # pragma: no cover
     """Print and plot the confusion matrix for the intent classification.
     Normalization can be applied by setting `normalize=True`."""
@@ -215,7 +146,9 @@ def log_evaluation_table(
     logger.info("Classification report: \n{}".format(report))
 
 
-def get_evaluation_metrics(targets, predictions, output_dict=False):
+def get_evaluation_metrics(
+    targets: Iterable[Any], predictions: Iterable[Any], output_dict: bool = False
+) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]:
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
@@ -232,28 +165,30 @@ def get_evaluation_metrics(targets, predictions, output_dict=False):
     return report, precision, f1, accuracy
 
 
-def remove_empty_intent_examples(intent_results):
+def remove_empty_intent_examples(
+    intent_results: List[IntentEvaluationResult]
+) -> List[IntentEvaluationResult]:
     """Remove those examples without an intent."""
 
     filtered = []
     for r in intent_results:
         # substitute None values with empty string
         # to enable sklearn evaluation
-        if r.prediction is None:
-            r = r._replace(prediction="")
+        if r.intent_prediction is None:
+            r = r._replace(intent_prediction="")
 
-        if r.target != "" and r.target is not None:
+        if r.intent_target != "" and r.intent_target is not None:
             filtered.append(r)
 
     return filtered
 
 
-def clean_intent_labels(labels):
+def clean_intent_labels(labels: Iterable[Any]) -> List[Text]:
     """Get rid of `None` intents. sklearn metrics do not support them."""
     return [l if l is not None else "" for l in labels]
 
 
-def drop_intents_below_freq(td: TrainingData, cutoff: int = 5):
+def drop_intents_below_freq(td: TrainingData, cutoff: int = 5) -> TrainingData:
     """Remove intent groups with less than cutoff instances."""
 
     logger.debug("Raw data intent examples: {}".format(len(td.intent_examples)))
@@ -266,28 +201,27 @@ def drop_intents_below_freq(td: TrainingData, cutoff: int = 5):
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
 
-def save_json(data, filename):
-    """Write out nlu classification to a file."""
-
-    utils.write_to_file(filename, json.dumps(data, indent=4, ensure_ascii=False))
-
-
-def collect_nlu_successes(intent_results, successes_filename):
+def collect_nlu_successes(
+    intent_results: List[IntentEvaluationResult], successes_filename: Text
+) -> None:
     """Log messages which result in successful predictions
     and save them to file"""
 
     successes = [
         {
             "text": r.message,
-            "intent": r.target,
-            "intent_prediction": {"name": r.prediction, "confidence": r.confidence},
+            "intent": r.intent_target,
+            "intent_prediction": {
+                "name": r.intent_prediction,
+                "confidence": r.confidence,
+            },
         }
         for r in intent_results
-        if r.target == r.prediction
+        if r.intent_target == r.intent_prediction
     ]
 
     if successes:
-        save_json(successes, successes_filename)
+        utils.write_json_to_file(successes_filename, successes)
         logger.info(
             "Model prediction successes saved to {}.".format(successes_filename)
         )
@@ -298,21 +232,26 @@ def collect_nlu_successes(intent_results, successes_filename):
         logger.info("Your model made no successful predictions")
 
 
-def collect_nlu_errors(intent_results, errors_filename):
+def collect_nlu_errors(
+    intent_results: List[IntentEvaluationResult], errors_filename: Text
+) -> None:
     """Log messages which result in wrong predictions and save them to file"""
 
     errors = [
         {
             "text": r.message,
-            "intent": r.target,
-            "intent_prediction": {"name": r.prediction, "confidence": r.confidence},
+            "intent": r.intent_target,
+            "intent_prediction": {
+                "name": r.intent_prediction,
+                "confidence": r.confidence,
+            },
         }
         for r in intent_results
-        if r.target != r.prediction
+        if r.intent_target != r.intent_prediction
     ]
 
     if errors:
-        save_json(errors, errors_filename)
+        utils.write_json_to_file(errors_filename, errors)
         logger.info("Model prediction errors saved to {}.".format(errors_filename))
         logger.debug(
             "\n\nThese intent examples could not be classified "
@@ -322,26 +261,32 @@ def collect_nlu_errors(intent_results, errors_filename):
         logger.info("Your model made no errors")
 
 
-def plot_intent_confidences(intent_results, intent_hist_filename):
+def plot_intent_confidences(
+    intent_results: List[IntentEvaluationResult], intent_hist_filename: Optional[Text]
+) -> None:
     import matplotlib.pyplot as plt
 
     # create histogram of confidence distribution, save to file and display
     plt.gcf().clear()
-    pos_hist = [r.confidence for r in intent_results if r.target == r.prediction]
+    pos_hist = [
+        r.confidence for r in intent_results if r.intent_target == r.intent_prediction
+    ]
 
-    neg_hist = [r.confidence for r in intent_results if r.target != r.prediction]
+    neg_hist = [
+        r.confidence for r in intent_results if r.intent_target != r.intent_prediction
+    ]
 
     plot_histogram([pos_hist, neg_hist], intent_hist_filename)
 
 
 def evaluate_intents(
-    intent_results,
-    report_folder,
-    successes_filename,
-    errors_filename,
-    confmat_filename,
-    intent_hist_filename,
-):  # pragma: no cover
+    intent_results: List[IntentEvaluationResult],
+    report_folder: Optional[Text],
+    successes_filename: Optional[Text],
+    errors_filename: Optional[Text],
+    confmat_filename: Optional[Text],
+    intent_hist_filename: Optional[Text],
+) -> Dict:  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
     Log samples which could not be classified correctly and save them to file.
     Creates a confidence histogram which is saved to file.
@@ -361,21 +306,24 @@ def evaluate_intents(
         "of {} examples".format(len(intent_results), num_examples)
     )
 
-    targets, predictions = _targets_predictions_from(intent_results)
+    target_intents, predicted_intents = _targets_predictions_from(intent_results)
 
     if report_folder:
         report, precision, f1, accuracy = get_evaluation_metrics(
-            targets, predictions, output_dict=True
+            target_intents, predicted_intents, output_dict=True
         )
 
         report_filename = os.path.join(report_folder, "intent_report.json")
 
-        save_json(report, report_filename)
+        utils.write_json_to_file(report_filename, report)
         logger.info("Classification report saved to {}.".format(report_filename))
 
     else:
-        report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
-        log_evaluation_table(report, precision, f1, accuracy)
+        report, precision, f1, accuracy = get_evaluation_metrics(
+            target_intents, predicted_intents
+        )
+        if isinstance(report, str):
+            log_evaluation_table(report, precision, f1, accuracy)
 
     if successes_filename:
         # save classified samples to file for debugging
@@ -390,25 +338,25 @@ def evaluate_intents(
         from sklearn.utils.multiclass import unique_labels
         import matplotlib.pyplot as plt
 
-        cnf_matrix = confusion_matrix(targets, predictions)
-        labels = unique_labels(targets, predictions)
+        cnf_matrix = confusion_matrix(target_intents, predicted_intents)
+        labels = unique_labels(target_intents, predicted_intents)
         plot_confusion_matrix(
             cnf_matrix,
             classes=labels,
             title="Intent Confusion matrix",
             out=confmat_filename,
         )
-        plt.show()
+        plt.show(block=False)
 
         plot_intent_confidences(intent_results, intent_hist_filename)
 
-        plt.show()
+        plt.show(block=False)
 
     predictions = [
         {
             "text": res.message,
-            "intent": res.target,
-            "predicted": res.prediction,
+            "intent": res.intent_target,
+            "predicted": res.intent_prediction,
             "confidence": res.confidence,
         }
         for res in intent_results
@@ -423,7 +371,9 @@ def evaluate_intents(
     }
 
 
-def merge_labels(aligned_predictions, extractor=None):
+def merge_labels(
+    aligned_predictions: List[Dict], extractor: Optional[Text] = None
+) -> np.array:
     """Concatenates all labels of the aligned predictions.
     Takes the aligned prediction labels which are grouped for each message
     and concatenates them."""
@@ -437,20 +387,20 @@ def merge_labels(aligned_predictions, extractor=None):
     return np.array(flattened)
 
 
-def substitute_labels(labels, old, new):
+def substitute_labels(labels: List[Text], old: Text, new: Text) -> List[Text]:
     """Replaces label names in a list of labels."""
     return [new if label == old else label for label in labels]
 
 
 def evaluate_entities(
-    targets, predictions, tokens, extractors, report_folder
-):  # pragma: no cover
+    entity_results: List[EntityEvaluationResult],
+    extractors: Set[Text],
+    report_folder: Optional[Text],
+) -> Dict:  # pragma: no cover
     """Creates summary statistics for each entity extractor.
     Logs precision, recall, and F1 per entity type for each extractor."""
 
-    aligned_predictions = align_all_entity_predictions(
-        targets, predictions, tokens, extractors
-    )
+    aligned_predictions = align_all_entity_predictions(entity_results, extractors)
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
 
@@ -466,19 +416,20 @@ def evaluate_entities(
             )
 
             report_filename = extractor + "_report.json"
-            extractor_report = os.path.join(report_folder, report_filename)
+            extractor_report_filename = os.path.join(report_folder, report_filename)
 
-            save_json(report, extractor_report)
+            utils.write_json_to_file(extractor_report_filename, report)
             logger.info(
                 "Classification report for '{}' saved to '{}'."
-                "".format(extractor, extractor_report)
+                "".format(extractor, extractor_report_filename)
             )
 
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
                 merged_targets, merged_predictions
             )
-            log_evaluation_table(report, precision, f1, accuracy)
+            if isinstance(report, str):
+                log_evaluation_table(report, precision, f1, accuracy)
 
         result[extractor] = {
             "report": report,
@@ -490,19 +441,19 @@ def evaluate_entities(
     return result
 
 
-def is_token_within_entity(token, entity):
+def is_token_within_entity(token: Token, entity: Dict) -> bool:
     """Checks if a token is within the boundaries of an entity."""
     return determine_intersection(token, entity) == len(token.text)
 
 
-def does_token_cross_borders(token, entity):
+def does_token_cross_borders(token: Token, entity: Dict) -> bool:
     """Checks if a token crosses the boundaries of an entity."""
 
     num_intersect = determine_intersection(token, entity)
     return 0 < num_intersect < len(token.text)
 
 
-def determine_intersection(token, entity):
+def determine_intersection(token: Token, entity: Dict) -> int:
     """Calculates how many characters a given token and entity share."""
 
     pos_token = set(range(token.offset, token.end))
@@ -510,7 +461,7 @@ def determine_intersection(token, entity):
     return len(pos_token.intersection(pos_entity))
 
 
-def do_entities_overlap(entities):
+def do_entities_overlap(entities: List[Dict]) -> bool:
     """Checks if entities overlap.
     I.e. cross each others start and end boundaries.
     :param entities: list of entities
@@ -531,7 +482,7 @@ def do_entities_overlap(entities):
     return False
 
 
-def find_intersecting_entites(token, entities):
+def find_intersecting_entites(token: Token, entities: List[Dict]) -> List[Dict]:
     """Finds the entities that intersect with a token.
     :param token: a single token
     :param entities: entities found by a single extractor
@@ -552,7 +503,7 @@ def find_intersecting_entites(token, entities):
     return candidates
 
 
-def pick_best_entity_fit(token, candidates):
+def pick_best_entity_fit(token: Token, candidates: List[Dict]) -> Text:
     """Determines the token label given intersecting entities.
     :param token: a single token
     :param candidates: entities found by a single extractor
@@ -568,7 +519,9 @@ def pick_best_entity_fit(token, candidates):
         return candidates[best_fit]["entity"]
 
 
-def determine_token_labels(token, entities, extractors):
+def determine_token_labels(
+    token: Token, entities: List[Dict], extractors: Optional[Set[Text]]
+) -> Text:
     """Determines the token label given entities that do not overlap.
     Args:
         token: a single token
@@ -587,36 +540,39 @@ def determine_token_labels(token, entities, extractors):
     return pick_best_entity_fit(token, candidates)
 
 
-def do_extractors_support_overlap(extractors):
-    """Checks if extractors support overlapping entities
-    """
+def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
+    """Checks if extractors support overlapping entities"""
     if extractors is None:
         return False
     return CRFEntityExtractor.name not in extractors
 
 
-def align_entity_predictions(targets, predictions, tokens, extractors):
+def align_entity_predictions(
+    result: EntityEvaluationResult, extractors: Set[Text]
+) -> Dict:
     """Aligns entity predictions to the message tokens.
     Determines for every token the true label based on the
     prediction targets and the label assigned by each
     single extractor.
-    :param targets: list of target entities
-    :param predictions: list of predicted entities
-    :param tokens: original message tokens
+    :param result: entity prediction result
     :param extractors: the entity extractors that should be considered
     :return: dictionary containing the true token labels and token labels
              from the extractors
     """
 
     true_token_labels = []
-    entities_by_extractors = {extractor: [] for extractor in extractors}
-    for p in predictions:
+    entities_by_extractors = {
+        extractor: [] for extractor in extractors
+    }  # type: Dict[Text, List]
+    for p in result.entity_predictions:
         entities_by_extractors[p["extractor"]].append(p)
-    extractor_labels = {extractor: [] for extractor in extractors}
-    for t in tokens:
-        true_token_labels.append(determine_token_labels(t, targets, None))
+    extractor_labels = {
+        extractor: [] for extractor in extractors
+    }  # type: Dict[Text, List]
+    for t in result.tokens:
+        true_token_labels.append(determine_token_labels(t, result.entity_targets, None))
         for extractor, entities in entities_by_extractors.items():
-            extracted = determine_token_labels(t, entities, extractor)
+            extracted = determine_token_labels(t, entities, set([extractor]))
             extractor_labels[extractor].append(extracted)
 
     return {
@@ -625,224 +581,162 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
     }
 
 
-def align_all_entity_predictions(targets, predictions, tokens, extractors):
+def align_all_entity_predictions(
+    entity_results: List[EntityEvaluationResult], extractors: Set[Text]
+) -> List[Dict]:
     """ Aligns entity predictions to the message tokens for the whole dataset
         using align_entity_predictions
-    :param targets: list of lists of target entities
-    :param predictions: list of lists of predicted entities
-    :param tokens: list of original message tokens
+    :param entity_results: list of entity prediction results
     :param extractors: the entity extractors that should be considered
     :return: list of dictionaries containing the true token labels and token
              labels from the extractors
     """
-
     aligned_predictions = []
-    for ts, ps, tks in zip(targets, predictions, tokens):
-        aligned_predictions.append(align_entity_predictions(ts, ps, tks, extractors))
+    for result in entity_results:
+        aligned_predictions.append(align_entity_predictions(result, extractors))
 
     return aligned_predictions
 
 
-def get_intent_targets(test_data):  # pragma: no cover
-    """Extracts intent targets from the test data."""
-    return [e.get("intent", "") for e in test_data.training_examples]
+def get_eval_data(
+    interpreter: Interpreter, test_data: TrainingData
+) -> Tuple[
+    List[IntentEvaluationResult], List[EntityEvaluationResult]
+]:  # pragma: no cover
+    """Runs the model for the test set and extracts targets and predictions.
 
-
-def get_entity_targets(test_data):
-    """Extracts entity targets from the test data."""
-    return [e.get("entities", []) for e in test_data.training_examples]
-
-
-def extract_intent(result):  # pragma: no cover
-    """Extracts the intent from a parsing result."""
-    return result.get("intent", {}).get("name")
-
-
-def extract_entities(result):  # pragma: no cover
-    """Extracts entities from a parsing result."""
-    return result.get("entities", [])
-
-
-def extract_message(result):  # pragma: no cover
-    """Extracts the original message from a parsing result."""
-    return result.get("text", {})
-
-
-def extract_confidence(result):  # pragma: no cover
-    """Extracts the confidence from a parsing result."""
-    return result.get("intent", {}).get("confidence")
-
-
-def get_predictions(interpreter, test_data, intent_targets):  # pragma: no cover
-    """Run the model for the test set and extracts intents and entities.
-
-    Return intent and entity predictions, the original messages and the
-    confidences of the predictions."""
+    Returns intent results (intent targets and predictions, the original
+    messages and the confidences of the predictions), as well as entity
+    results(entity_targets, entity_predictions, and tokens)."""
 
     logger.info("Running model for predictions:")
 
-    intent_results, entity_predictions, tokens = [], [], []
+    intent_results, entity_results = [], []
 
-    # cycle makes sure we use all training examples if there are
-    # no intent targets
-    samples_with_targets = zip(
-        test_data.training_examples, itertools.cycle(intent_targets)
+    intent_labels = [e.get("intent") for e in test_data.intent_examples]
+    should_eval_intents = (
+        is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
     )
+    should_eval_entities = is_entity_extractor_present(interpreter)
 
-    for e, target in tqdm(samples_with_targets, total=len(test_data.training_examples)):
-        res = interpreter.parse(e.text, only_output_properties=False)
+    for example in tqdm(test_data.training_examples):
+        result = interpreter.parse(example.text, only_output_properties=False)
 
-        if is_intent_classifier_present(interpreter):
+        if should_eval_intents:
+            intent_prediction = result.get("intent", {}) or {}
             intent_results.append(
                 IntentEvaluationResult(
-                    target,
-                    extract_intent(res),
-                    extract_message(res),
-                    extract_confidence(res),
+                    example.get("intent", ""),
+                    intent_prediction.get("name"),
+                    result.get("text", {}),
+                    intent_prediction.get("confidence"),
                 )
             )
 
-        entity_predictions.append(extract_entities(res))
-        try:
-            tokens.append(res["tokens"])
-        except KeyError:
-            logger.debug(
-                "No tokens present, which is fine if you don't "
-                "have a tokenizer in your pipeline"
+        if should_eval_entities:
+            entity_results.append(
+                EntityEvaluationResult(
+                    example.get("entities", []),
+                    result.get("entities", []),
+                    result.get("tokens", []),
+                )
             )
 
-    return intent_results, entity_predictions, tokens
+    return intent_results, entity_results
 
 
-def get_entity_extractors(interpreter):
+def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
     """Finds the names of entity extractors used by the interpreter.
     Processors are removed since they do not
     detect the boundaries themselves."""
 
     extractors = set([c.name for c in interpreter.pipeline if "entities" in c.provides])
-    return extractors - entity_processors
+    return extractors - ENTITY_PROCESSORS
 
 
-def is_intent_classifier_present(interpreter):
+def is_entity_extractor_present(interpreter: Interpreter) -> bool:
+    """Checks whether entity extractor is present"""
+
+    extractors = get_entity_extractors(interpreter)
+    return extractors != []
+
+
+def is_intent_classifier_present(interpreter: Interpreter) -> bool:
     """Checks whether intent classifier is present"""
 
-    intent_classifier = [c.name for c in interpreter.pipeline if "intent" in c.provides]
-    return intent_classifier != []
+    intent_classifiers = [
+        c.name for c in interpreter.pipeline if "intent" in c.provides
+    ]
+    return intent_classifiers != []
 
 
-def combine_extractor_and_dimension_name(extractor, dim):
-    """Joins the duckling extractor name with a dimension's name."""
-    return "{} ({})".format(extractor, dim)
-
-
-def get_duckling_dimensions(interpreter, duckling_extractor_name):
-    """Gets the activated dimensions of a duckling extractor.
-    If there are no activated dimensions, it uses all known
-    dimensions as a fallback."""
-
-    component = find_component(interpreter, duckling_extractor_name)
-    if component.component_config["dimensions"]:
-        return component.component_config["dimensions"]
-    else:
-        return known_duckling_dimensions
-
-
-def find_component(interpreter, component_name):
-    """Finds a component in a pipeline."""
-
-    for c in interpreter.pipeline:
-        if c.name == component_name:
-            return c
-    return None
-
-
-def remove_duckling_extractors(extractors):
-    """Removes duckling exctractors"""
-    used_duckling_extractors = duckling_extractors.intersection(extractors)
-    for duckling_extractor in used_duckling_extractors:
-        logger.info("Skipping evaluation of {}".format(duckling_extractor))
-        extractors.remove(duckling_extractor)
-
-    return extractors
-
-
-def remove_duckling_entities(entity_predictions):
-    """Removes duckling entity predictions"""
-
-    patched_entity_predictions = []
-    for entities in entity_predictions:
-        patched_entities = []
-        for e in entities:
-            if e["extractor"] not in duckling_extractors:
-                patched_entities.append(e)
-        patched_entity_predictions.append(patched_entities)
-
-    return patched_entity_predictions
+def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
+    """Removes pretrained extractors from the pipeline so that entities
+       from pre-trained extractors are not predicted upon parsing"""
+    pipeline = [c for c in pipeline if c.name not in PRETRAINED_EXTRACTORS]
+    return pipeline
 
 
 def run_evaluation(
-    data_path,
-    model,
-    report_folder=None,
-    successes_filename=None,
-    errors_filename="errors.json",
-    confmat_filename=None,
-    intent_hist_filename=None,
-    component_builder=None,
+    data_path: Text,
+    model_path: Text,
+    report: Optional[Text] = None,
+    successes: Optional[Text] = None,
+    errors: Optional[Text] = "errors.json",
+    confmat: Optional[Text] = None,
+    histogram: Optional[Text] = None,
+    component_builder: Optional[ComponentBuilder] = None,
 ) -> Dict:  # pragma: no cover
-    """Evaluate intent classification and entity extraction."""
+    """
+    Evaluate intent classification and entity extraction.
+
+    :param data_path: path to the test data
+    :param model_path: path to the model
+    :param report: path to folder where reports are stored
+    :param successes: path to file that will contain success cases
+    :param errors: path to file that will contain error cases
+    :param confmat: path to file that will show the confusion matrix
+    :param histogram: path fo file that will show a histogram
+    :param component_builder: component builder
+
+    :return: dictionary containing evaluation results
+    """
 
     # get the metadata config from the package data
-    if isinstance(model, Interpreter):
-        interpreter = model
-    else:
-        interpreter = Interpreter.load(model, component_builder)
+    interpreter = Interpreter.load(model_path, component_builder)
+
+    interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data = training_data.load_data(data_path, interpreter.model_metadata.language)
 
-    extractors = get_entity_extractors(interpreter)
+    result = {
+        "intent_evaluation": None,
+        "entity_evaluation": None,
+    }  # type: Dict[Text, Optional[Dict]]
 
-    if is_intent_classifier_present(interpreter):
-        intent_targets = get_intent_targets(test_data)
-    else:
-        intent_targets = [None] * test_data.training_examples
+    if report:
+        io_utils.create_directory(report)
 
-    intent_results, entity_predictions, tokens = get_predictions(
-        interpreter, test_data, intent_targets
-    )
+    intent_results, entity_results = get_eval_data(interpreter, test_data)
 
-    if duckling_extractors.intersection(extractors):
-        entity_predictions = remove_duckling_entities(entity_predictions)
-        extractors = remove_duckling_extractors(extractors)
-
-    result = {"intent_evaluation": None, "entity_evaluation": None}
-
-    if report_folder:
-        utils.create_dir(report_folder)
-
-    if is_intent_classifier_present(interpreter):
-
+    if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results,
-            report_folder,
-            successes_filename,
-            errors_filename,
-            confmat_filename,
-            intent_hist_filename,
+            intent_results, report, successes, errors, confmat, histogram
         )
 
-    if extractors:
-        entity_targets = get_entity_targets(test_data)
-
+    if entity_results:
         logger.info("Entity evaluation results:")
+        extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(
-            entity_targets, entity_predictions, tokens, extractors, report_folder
+            entity_results, extractors, report
         )
 
     return result
 
 
-def generate_folds(n, td):
+def generate_folds(
+    n: int, td: TrainingData
+) -> Iterator[Tuple[TrainingData, TrainingData]]:
     """Generates n cross validation folds for training data td."""
 
     from sklearn.model_selection import StratifiedKFold
@@ -868,92 +762,255 @@ def generate_folds(n, td):
         )
 
 
-def combine_result(intent_results, entity_results, interpreter, data):
-    """Combines intent and entity result for crossvalidation folds"""
+def combine_result(
+    intent_metrics: IntentMetrics,
+    entity_metrics: EntityMetrics,
+    interpreter: Interpreter,
+    data: TrainingData,
+    intent_results: Optional[List[IntentEvaluationResult]] = None,
+    entity_results: Optional[List[EntityEvaluationResult]] = None,
+) -> Tuple[IntentMetrics, EntityMetrics]:
+    """Collects intent and entity metrics for crossvalidation folds.
+    If `intent_results` or `entity_results` is provided as a list, prediction results
+    are also collected.
+    """
 
-    intent_current_result, entity_current_result = compute_metrics(interpreter, data)
+    (
+        intent_current_metrics,
+        entity_current_metrics,
+        current_intent_results,
+        current_entity_results,
+    ) = compute_metrics(interpreter, data)
 
-    intent_results = {
-        k: v + intent_results[k] for k, v in intent_current_result.items()
-    }
+    if intent_results is not None:
+        intent_results += current_intent_results
 
-    for k, v in entity_current_result.items():
-        entity_results[k] = {
-            key: val + entity_results[k][key] for key, val in v.items()
+    if entity_results is not None:
+        entity_results += current_entity_results
+
+    for k, v in intent_current_metrics.items():
+        intent_metrics[k] = v + intent_metrics[k]
+
+    for extractor, extractor_metric in entity_current_metrics.items():
+        entity_metrics[extractor] = {
+            k: v + entity_metrics[extractor][k] for k, v in extractor_metric.items()
         }
 
-    return intent_results, entity_results
+    return intent_metrics, entity_metrics
 
 
 def cross_validate(
-    data: TrainingData, n_folds: int, nlu_config: Union[RasaNLUModelConfig, Text]
-) -> CVEvaluationResult:
+    data: TrainingData,
+    n_folds: int,
+    nlu_config: Union[RasaNLUModelConfig, Text],
+    report: Optional[Text] = None,
+    successes: Optional[Text] = None,
+    errors: Optional[Text] = "errors.json",
+    confmat: Optional[Text] = None,
+    histogram: Optional[Text] = None,
+) -> Tuple[CVEvaluationResult, CVEvaluationResult]:
     """Stratified cross validation on data.
 
     Args:
         data: Training Data
         n_folds: integer, number of cv folds
         nlu_config: nlu config file
+        report: path to folder where reports are stored
+        successes: path to file that will contain success cases
+        errors: path to file that will contain error cases
+        confmat: path to file that will show the confusion matrix
+        histogram: path fo file that will show a histogram
 
     Returns:
         dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
     from collections import defaultdict
-    import tempfile
 
     if isinstance(nlu_config, str):
         nlu_config = config.load(nlu_config)
 
+    if report:
+        io_utils.create_directory(report)
+
     trainer = Trainer(nlu_config)
-    intent_train_results = defaultdict(list)
-    intent_test_results = defaultdict(list)
-    entity_train_results = defaultdict(lambda: defaultdict(list))
-    entity_test_results = defaultdict(lambda: defaultdict(list))
-    tmp_dir = tempfile.mkdtemp()
+    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
+
+    intent_train_metrics = defaultdict(list)  # type: IntentMetrics
+    intent_test_metrics = defaultdict(list)  # type: IntentMetrics
+    entity_train_metrics = defaultdict(lambda: defaultdict(list))  # type: EntityMetrics
+    entity_test_metrics = defaultdict(lambda: defaultdict(list))  # type: EntityMetrics
+
+    intent_test_results = []  # type: List[IntentEvaluationResult]
+    entity_test_results = []  # type: List[EntityEvaluationResult]
+    intent_classifier_present = False
+    extractors = set()  # type: Set[Text]
 
     for train, test in generate_folds(n_folds, data):
         interpreter = trainer.train(train)
 
         # calculate train accuracy
-        intent_train_results, entity_train_results = combine_result(
-            intent_train_results, entity_train_results, interpreter, train
-        )
+        combine_result(intent_train_metrics, entity_train_metrics, interpreter, train)
         # calculate test accuracy
-        intent_test_results, entity_test_results = combine_result(
-            intent_test_results, entity_test_results, interpreter, test
+        combine_result(
+            intent_test_metrics,
+            entity_test_metrics,
+            interpreter,
+            test,
+            intent_test_results,
+            entity_test_results,
         )
 
-    shutil.rmtree(tmp_dir, ignore_errors=True)
+        if not extractors:
+            extractors = get_entity_extractors(interpreter)
+
+        if is_intent_classifier_present(interpreter):
+            intent_classifier_present = True
+
+    if intent_classifier_present:
+        logger.info("Accumulated test folds intent evaluation results:")
+        evaluate_intents(
+            intent_test_results, report, successes, errors, confmat, histogram
+        )
+
+    if extractors:
+        logger.info("Accumulated test folds entity evaluation results:")
+        evaluate_entities(entity_test_results, extractors, report)
 
     return (
-        CVEvaluationResult(dict(intent_train_results), dict(intent_test_results)),
-        CVEvaluationResult(dict(entity_train_results), dict(entity_test_results)),
+        CVEvaluationResult(dict(intent_train_metrics), dict(intent_test_metrics)),
+        CVEvaluationResult(dict(entity_train_metrics), dict(entity_test_metrics)),
     )
 
 
-def _targets_predictions_from(intent_results):
-    return zip(*[(r.target, r.prediction) for r in intent_results])
+def _targets_predictions_from(
+    intent_results: List[IntentEvaluationResult]
+) -> Iterator[Iterable[Optional[Text]]]:
+    return zip(*[(r.intent_target, r.intent_prediction) for r in intent_results])
 
 
-def compute_metrics(interpreter, corpus):
-    """Computes metrics for intent classification and entity extraction."""
+def compute_metrics(
+    interpreter: Interpreter, corpus: TrainingData
+) -> Tuple[
+    IntentMetrics,
+    EntityMetrics,
+    List[IntentEvaluationResult],
+    List[EntityEvaluationResult],
+]:
+    """Computes metrics for intent classification and entity extraction.
+    Returns intent and entity metrics, and prediction results.
+    """
 
-    intent_targets = get_intent_targets(corpus)
-    intent_results, entity_predictions, tokens = get_predictions(
-        interpreter, corpus, intent_targets
-    )
+    intent_results, entity_results = get_eval_data(interpreter, corpus)
+
     intent_results = remove_empty_intent_examples(intent_results)
 
-    intent_metrics = _compute_intent_metrics(intent_results, interpreter, corpus)
-    entity_metrics = _compute_entity_metrics(
-        entity_predictions, tokens, interpreter, corpus
-    )
+    intent_metrics = _compute_intent_metrics(intent_results)
+    entity_metrics = _compute_entity_metrics(entity_results, interpreter)
 
-    return intent_metrics, entity_metrics
+    return (intent_metrics, entity_metrics, intent_results, entity_results)
 
 
-def _compute_intent_metrics(intent_results, interpreter, corpus):
+def compare_nlu(
+    configs: List[Text],
+    data: TrainingData,
+    exclusion_percentages: List[int],
+    f_score_results: Dict[Text, Any],
+    model_names: List[Text],
+    output: Text,
+    runs: int,
+) -> List[int]:
+    """
+    Trains and compares multiple NLU models.
+    For each run and exclusion percentage a model per config file is trained.
+    Thereby, the model is trained only on the current percentage of training data.
+    Afterwards, the model is tested on the complete test data of that run.
+    All results are stored in the provided output directory.
+
+    Args:
+        configs: config files needed for training
+        data: training data
+        exclusion_percentages: percentages of training data to exclude during comparison
+        f_score_results: dictionary of model name to f-score results per run
+        model_names: names of the models to train
+        output: the output directory
+        runs: number of comparison runs
+
+    Returns: training examples per run
+    """
+
+    from rasa.train import train_nlu
+
+    training_examples_per_run = []
+
+    for run in range(runs):
+
+        logger.info("Beginning comparison run {}/{}".format(run + 1, runs))
+
+        run_path = os.path.join(output, "run_{}".format(run + 1))
+        io_utils.create_path(run_path)
+
+        test_path = os.path.join(run_path, TEST_DATA_FILE)
+        io_utils.create_path(test_path)
+
+        train, test = data.train_test_split()
+        write_to_file(test_path, test.as_markdown())
+
+        training_examples_per_run = []
+
+        for percentage in exclusion_percentages:
+            percent_string = "{}%_exclusion".format(percentage)
+
+            _, train = train.train_test_split(percentage / 100)
+            training_examples_per_run.append(len(train.training_examples))
+
+            model_output_path = os.path.join(run_path, percent_string)
+            train_split_path = os.path.join(model_output_path, TRAIN_DATA_FILE)
+            io_utils.create_path(train_split_path)
+            write_to_file(train_split_path, train.as_markdown())
+
+            for nlu_config, model_name in zip(configs, model_names):
+                logger.info(
+                    "Evaluating configuration '{}' with {} training data.".format(
+                        model_name, percent_string
+                    )
+                )
+
+                try:
+                    model_path = train_nlu(
+                        nlu_config,
+                        train_split_path,
+                        model_output_path,
+                        fixed_model_name=model_name,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "Training model '{}' failed. Error: {}".format(
+                            model_name, str(e)
+                        )
+                    )
+                    f_score_results[model_name][run].append(0.0)
+                    continue
+
+                model_path = os.path.join(get_model(model_path), "nlu")
+
+                report_path = os.path.join(
+                    model_output_path, "{}_report".format(model_name)
+                )
+                errors_path = os.path.join(report_path, "errors.json")
+                result = run_evaluation(
+                    test_path, model_path, report=report_path, errors=errors_path
+                )
+
+                f1 = result["intent_evaluation"]["f1_score"]
+                f_score_results[model_name][run].append(f1)
+
+    return training_examples_per_run
+
+
+def _compute_intent_metrics(
+    intent_results: List[IntentEvaluationResult]
+) -> IntentMetrics:
     """Computes intent evaluation metrics for a given corpus and
     returns the results
     """
@@ -964,25 +1021,20 @@ def _compute_intent_metrics(intent_results, interpreter, corpus):
     return {"Accuracy": [accuracy], "F1-score": [f1], "Precision": [precision]}
 
 
-def _compute_entity_metrics(entity_predictions, tokens, interpreter, corpus):
-    """Computes entity evaluation metrics for a given corpus and
-    returns the results
-    """
-    entity_results = defaultdict(lambda: defaultdict(list))
+def _compute_entity_metrics(
+    entity_results: List[EntityEvaluationResult], interpreter: Interpreter
+) -> EntityMetrics:
+    """Computes entity evaluation metrics and returns the results"""
+
+    entity_metric_results = defaultdict(
+        lambda: defaultdict(list)
+    )  # type: EntityMetrics
     extractors = get_entity_extractors(interpreter)
 
-    if duckling_extractors.intersection(extractors):
-        entity_predictions = remove_duckling_entities(entity_predictions)
-        extractors = remove_duckling_extractors(extractors)
-
     if not extractors:
-        return entity_results
+        return entity_metric_results
 
-    entity_targets = get_entity_targets(corpus)
-
-    aligned_predictions = align_all_entity_predictions(
-        entity_targets, entity_predictions, tokens, extractors
-    )
+    aligned_predictions = align_all_entity_predictions(entity_results, extractors)
 
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
@@ -993,14 +1045,14 @@ def _compute_entity_metrics(entity_predictions, tokens, interpreter, corpus):
         _, precision, f1, accuracy = get_evaluation_metrics(
             merged_targets, merged_predictions
         )
-        entity_results[extractor]["Accuracy"].append(accuracy)
-        entity_results[extractor]["F1-score"].append(f1)
-        entity_results[extractor]["Precision"].append(precision)
+        entity_metric_results[extractor]["Accuracy"].append(accuracy)
+        entity_metric_results[extractor]["F1-score"].append(f1)
+        entity_metric_results[extractor]["Precision"].append(precision)
 
-    return entity_results
+    return entity_metric_results
 
 
-def return_results(results, dataset_name):
+def return_results(results: IntentMetrics, dataset_name: Text) -> None:
     """Returns results of crossvalidation
     :param results: dictionary of results returned from cv
     :param dataset_name: string of which dataset the results are from, e.g.
@@ -1013,7 +1065,7 @@ def return_results(results, dataset_name):
         )
 
 
-def return_entity_results(results, dataset_name):
+def return_entity_results(results: EntityMetrics, dataset_name: Text) -> None:
     """Returns entity results of crossvalidation
     :param results: dictionary of dictionaries of results returned from cv
     :param dataset_name: string of which dataset the results are from, e.g.
@@ -1024,61 +1076,9 @@ def return_entity_results(results, dataset_name):
         return_results(result, dataset_name)
 
 
-def main():
-    parser = create_argument_parser()
-    cmdline_args = parser.parse_args()
-    utils.configure_colored_logging(cmdline_args.loglevel)
-
-    if cmdline_args.mode == "crossvalidation":
-
-        # TODO: move parsing into sub parser
-        # manual check argument dependency
-        if cmdline_args.model is not None:
-            parser.error(
-                "Crossvalidation will train a new model "
-                "- do not specify external model."
-            )
-
-        if cmdline_args.config is None:
-            parser.error(
-                "Crossvalidation will train a new model "
-                "you need to specify a model configuration."
-            )
-
-        nlu_config = config.load(cmdline_args.config)
-        data = training_data.load_data(cmdline_args.data)
-        data = drop_intents_below_freq(data, cutoff=5)
-        results, entity_results = cross_validate(
-            data, int(cmdline_args.folds), nlu_config
-        )
-        logger.info("CV evaluation (n={})".format(cmdline_args.folds))
-
-        if any(results):
-            logger.info("Intent evaluation results")
-            return_results(results.train, "train")
-            return_results(results.test, "test")
-        if any(entity_results):
-            logger.info("Entity evaluation results")
-            return_entity_results(entity_results.train, "train")
-            return_entity_results(entity_results.test, "test")
-
-    elif cmdline_args.mode == "evaluation":
-        run_evaluation(
-            cmdline_args.data,
-            cmdline_args.model,
-            cmdline_args.report,
-            cmdline_args.successes,
-            cmdline_args.errors,
-            cmdline_args.confmat,
-            cmdline_args.histogram,
-        )
-
-    logger.info("Finished evaluation")
-
-
 if __name__ == "__main__":
     raise RuntimeError(
-        "Calling `rasa.nlu.test` directly is "
-        "no longer supported. "
-        "Please use `rasa test nlu` instead."
+        "Calling `rasa.nlu.test` directly is no longer supported. Please use "
+        "`rasa test` to test a combined Core and NLU model or `rasa test nlu` "
+        "to test an NLU model."
     )

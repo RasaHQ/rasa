@@ -1,11 +1,12 @@
 import logging
 import os
 import typing
-from typing import Any, Text
+from typing import Any, Text, Optional
 
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa.nlu.training_data.util import transform_entity_synonyms
+import rasa.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -34,7 +35,7 @@ class DialogflowReader(TrainingDataReader):
                 "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES)
             )
 
-        root_js = utils.read_json_file(fn)
+        root_js = rasa.utils.io.read_json_file(fn)
         examples_js = self._read_examples_js(fn, language, fformat)
 
         if not examples_js:
@@ -44,7 +45,7 @@ class DialogflowReader(TrainingDataReader):
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)
-        elif fformat == DIALOGFLOW_ENTITIES:
+        else:  # path for DIALOGFLOW_ENTITIES
             return self._read_entities(root_js, examples_js)
 
     def _read_intent(self, intent_js, examples_js):
@@ -104,7 +105,7 @@ class DialogflowReader(TrainingDataReader):
         return [{"name": name, "elements": elements}]
 
     @staticmethod
-    def _read_entities(entity_js, examples_js):
+    def _read_entities(entity_js, examples_js) -> "TrainingData":
         from rasa.nlu.training_data import TrainingData
 
         entity_synonyms = transform_entity_synonyms(examples_js)
@@ -114,7 +115,7 @@ class DialogflowReader(TrainingDataReader):
         return TrainingData([], entity_synonyms, [], lookup_tables)
 
     @staticmethod
-    def _read_examples_js(fn, language, fformat):
+    def _read_examples_js(fn: Text, language: Text, fformat: Text) -> Optional[Text]:
         """Infer and load the example file based on the root
         filename and root format."""
 
@@ -125,7 +126,7 @@ class DialogflowReader(TrainingDataReader):
         examples_fn_ending = "_{}_{}.json".format(examples_type, language)
         examples_fn = fn.replace(".json", examples_fn_ending)
         if os.path.isfile(examples_fn):
-            return utils.read_json_file(examples_fn)
+            return rasa.utils.io.read_json_file(examples_fn)
         else:
             return None
 

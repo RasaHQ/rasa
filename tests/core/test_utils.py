@@ -1,3 +1,4 @@
+import asyncio
 import os
 import pytest
 
@@ -7,9 +8,11 @@ from rasa.core import utils
 
 @pytest.fixture(scope="session")
 def loop():
-    from pytest_sanic.plugin import loop as sanic_loop
-
-    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
 
 def test_is_int():
@@ -48,36 +51,6 @@ def test_on_hot_out_of_range():
         utils.one_hot(4, 3)
 
 
-def test_list_routes(default_agent):
-    from rasa.core import server
-
-    app = server.create_app(default_agent, auth_token=None)
-
-    routes = utils.list_routes(app)
-    assert set(routes.keys()) == {
-        "hello",
-        "version",
-        "execute_action",
-        "append_event",
-        "replace_events",
-        "list_trackers",
-        "retrieve_tracker",
-        "retrieve_story",
-        "respond",
-        "predict",
-        "parse",
-        "train_stack",
-        "evaluate_intents",
-        "log_message",
-        "load_model",
-        "evaluate_stories",
-        "get_domain",
-        "continue_training",
-        "status",
-        "tracker_predict",
-    }
-
-
 def test_cap_length():
     assert utils.cap_length("mystring", 6) == "mys..."
 
@@ -107,70 +80,3 @@ def test_read_lines():
     lines = list(lines)
 
     assert len(lines) == 2
-
-
-os.environ["USER_NAME"] = "user"
-os.environ["PASS"] = "pass"
-
-
-def test_read_yaml_string():
-    config_without_env_var = """
-    user: user
-    password: pass
-    """
-    r = rasa.utils.io.read_yaml(config_without_env_var)
-    assert r["user"] == "user" and r["password"] == "pass"
-
-
-def test_read_yaml_string_with_env_var():
-    config_with_env_var = """
-    user: ${USER_NAME}
-    password: ${PASS}
-    """
-    r = rasa.utils.io.read_yaml(config_with_env_var)
-    assert r["user"] == "user" and r["password"] == "pass"
-
-
-def test_read_yaml_string_with_multiple_env_vars_per_line():
-    config_with_env_var = """
-    user: ${USER_NAME} ${PASS}
-    password: ${PASS}
-    """
-    r = rasa.utils.io.read_yaml(config_with_env_var)
-    assert r["user"] == "user pass" and r["password"] == "pass"
-
-
-def test_read_yaml_string_with_env_var_prefix():
-    config_with_env_var_prefix = """
-    user: db_${USER_NAME}
-    password: db_${PASS}
-    """
-    r = rasa.utils.io.read_yaml(config_with_env_var_prefix)
-    assert r["user"] == "db_user" and r["password"] == "db_pass"
-
-
-def test_read_yaml_string_with_env_var_postfix():
-    config_with_env_var_postfix = """
-    user: ${USER_NAME}_admin
-    password: ${PASS}_admin
-    """
-    r = rasa.utils.io.read_yaml(config_with_env_var_postfix)
-    assert r["user"] == "user_admin" and r["password"] == "pass_admin"
-
-
-def test_read_yaml_string_with_env_var_infix():
-    config_with_env_var_infix = """
-    user: db_${USER_NAME}_admin
-    password: db_${PASS}_admin
-    """
-    r = rasa.utils.io.read_yaml(config_with_env_var_infix)
-    assert r["user"] == "db_user_admin" and r["password"] == "db_pass_admin"
-
-
-def test_read_yaml_string_with_env_var_not_exist():
-    config_with_env_var_not_exist = """
-    user: ${USER_NAME}
-    password: ${PASSWORD}
-    """
-    with pytest.raises(ValueError):
-        rasa.utils.io.read_yaml(config_with_env_var_not_exist)

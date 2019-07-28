@@ -1,50 +1,23 @@
-:desc: Define and train custom policies to optimize your contextual assistant
-       for longer context or unseen utterances which require generalization.
+:desc: Define and train customized policy configurations to optimize your
+       contextual assistant for longer context or unseen utterances which
+       require generalization.
 
 .. _policies:
 
-Training and Policies
-=====================
+Policies
+========
 
 .. contents::
-
-
-Training
---------
-
-Rasa Core works by creating training data from your stories and
-training a model on that data.
-
-You can run training from the command line like in the :ref:`quickstart`:
-
-
-.. code-block:: bash
-
-   rasa train core -d domain.yml -s data/stories.md \
-     -o models -c config.yml
-
-Or by creating an agent and running the train method yourself:
-
-.. testcode::
-
-   from rasa.core.agent import Agent
-
-   agent = Agent()
-   data = agent.load_data("stories.md")
-   agent.train(data)
-
-
-Training Script Options
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. program-output:: rasa train core --help
+   :local:
 
 
 Data Augmentation
 ^^^^^^^^^^^^^^^^^
 
-By default, Rasa Core will create longer stories by randomly glueing together
-the ones in your stories file. This is because if you have stories like:
+When you train a model, by default Rasa Core will create
+longer stories by randomly gluing together
+the ones in your stories files.
+This is because if you have stories like:
 
 .. code-block:: story
 
@@ -62,13 +35,24 @@ when it isn't relevant and just respond with the same action no matter
 what happened before.
 
 You can alter this behaviour with the ``--augmentation`` flag.
-``--augmentation 0`` disables this behavior.
+Which allows you to set the ``augmentation_factor``.
+The ``augmentation_factor`` determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since their number
+can become very large quickly.
+The number of sampled stories is ``augmentation_factor`` x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
 
-In python, you can pass the ``augmentation_factor`` argument to the
-``Agent.load_data`` method.
+``--augmentation 0`` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the ``augmentation_factor``) and will automatically
+ignore all augmented stories.
 
-Policies
---------
+
+.. _policy_file:
+
+Configuring Policies
+^^^^^^^^^^^^^^^^^^^^
 
 The :class:`rasa.core.policies.Policy` class decides which action to take
 at every step in the conversation.
@@ -79,18 +63,18 @@ every turn, the policy which predicts the next action with the
 highest confidence will be used. If two policies predict with equal
 confidence, the policy with the higher priority will be used.
 
-Configuration of Policies
-^^^^^^^^^^^^^^^^^^^^^^^^^
+.. note::
 
-.. _policy_file:
+    Per default a maximum of 10 next actions can be predicted
+    by the agent after every user message. To update this value
+    you can set the environment variable ``MAX_NUMBER_OF_PREDICTIONS``
+    to the desired number of maximum predictions.
 
-Configuring policies using a configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you are using the training script, you must set the policies you would like
-the Core model to use in a YAML file.
-
-For example:
+Your project's ``config.yml`` file takes a ``policies`` key
+which you can use to customize the policies your assistant uses.
+In the example below, the last two lines show how to use a custom
+policy class and pass arguments to it.
 
 .. code-block:: yaml
 
@@ -110,26 +94,9 @@ For example:
     - name: "path.to.your.policy.class"
       arg1: "..."
 
-Pass the YAML file's name to the train script using the ``--config``
-argument (or just ``-c``). There is a default config file you can use to
-get started in ``default_config.yml``, which is already implemented
-as the provided ``policies.yml`` file in the starter pack.
-
-
-.. _default_config:
-
-Default configuration
-~~~~~~~~~~~~~~~~~~~~~
-
-By default, we try to provide you with a good set of configuration values
-and policies that suit most people. But you are encouraged to modify
-these to your needs:
-
-.. literalinclude:: ../../rasa/core/default_config.yml
-
 
 Max History
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 One important hyperparameter for Rasa Core policies is the ``max_history``.
 This controls how much dialogue history the model looks at to decide which
@@ -142,7 +109,7 @@ in the policy configuration yaml file.
 
     Only the ``MaxHistoryTrackerFeaturizer`` uses a max history,
     whereas the ``FullDialogueTrackerFeaturizer`` always looks at
-    the full conversation history.
+    the full conversation history. See :ref:`featurization` for details.
 
 As an example, let's say you have an ``out_of_scope`` intent which
 describes off-topic user messages. If your bot sees this intent multiple
@@ -159,40 +126,13 @@ with. So your story might look like this:
       - utter_help_message
 
 For Rasa Core to learn this pattern, the ``max_history``
-has to be `at least` ``3``.
+has to be `at least` 3.
 
 If you increase your ``max_history``, your model will become bigger and
 training will take longer. If you have some information that should
 affect the dialogue very far into the future, you should store it as a
 slot. Slot information is always available for every featurizer.
 
-
-Configuring policies in code
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can load a policy configuration file named ``"policies.yml"`` from your
-code like so:
-
-.. code-block:: python
-
-    from rasa.core import config as policy_config
-    from rasa.core.agent import Agent
-
-    policies = policy_config.load("policies.yml")
-    agent = Agent("domain.yml", policies=policies)
-
-
-Alternatively, you can pass a list of policies directly
-when you create an agent:
-
-.. code-block:: python
-
-   from rasa.core.policies.memoization import MemoizationPolicy
-   from rasa.core.policies.keras_policy import KerasPolicy
-   from rasa.core.agent import Agent
-
-   agent = Agent("domain.yml",
-                 policies=[MemoizationPolicy(), KerasPolicy()])
 
 Keras Policy
 ^^^^^^^^^^^^
@@ -204,11 +144,13 @@ The default architecture is based on an LSTM, but you can override the
 
 
 .. literalinclude:: ../../rasa/core/policies/keras_policy.py
+   :dedent: 4
    :pyobject: KerasPolicy.model_architecture
 
 and the training is run here:
 
 .. literalinclude:: ../../rasa/core/policies/keras_policy.py
+   :dedent: 4
    :pyobject: KerasPolicy.train
 
 You can implement the model of your choice by overriding these methods,
@@ -257,7 +199,7 @@ following steps:
     - for each LSTM time step, calculate the similarity between the
       dialogue embedding and embedded system actions.
       This step is based on the
-      `starspace idea <https://arxiv.org/abs/1709.03856>`_.
+      `StarSpace <https://arxiv.org/abs/1709.03856>`_ idea.
 
 .. note::
 
@@ -388,6 +330,7 @@ It is recommended to use
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
     .. literalinclude:: ../../rasa/core/policies/embedding_policy.py
+       :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)
 
@@ -406,58 +349,62 @@ training data. It predicts the next action with confidence ``1.0``
 if this exact conversation exists in the training data, otherwise it
 predicts ``None`` with confidence ``0.0``.
 
-
-Form Policy
-^^^^^^^^^^^
-
-The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which
-handles the filling of forms. Once a ``FormAction`` is called, the
-``FormPolicy`` will continually predict the ``FormAction`` until all slots
-in the form are filled. For more information, see `Slot Filling
-<https://rasa.com/docs/core/slotfilling/>`_.
-
+.. _mapping-policy:
 
 Mapping Policy
 ^^^^^^^^^^^^^^
 
-The ``MappingPolicy`` can be used to directly map intents to actions such that
-the mapped action will always be executed. The mappings are assigned by giving
-and intent the property `'triggers'`, e.g.:
+The ``MappingPolicy`` can be used to directly map intents to actions. The
+mappings are assigned by giving an intent the property ``triggers``, e.g.:
 
 .. code-block:: yaml
 
   intents:
-   - greet: {triggers: utter_goodbye}
+   - ask_is_bot:
+       triggers: action_is_bot
 
 An intent can only be mapped to at most one action. The bot will run
-the action once it receives a message of the mapped intent. Afterwards,
-it will listen for the next message.
+the mapped action once it receives a message of the triggering intent. Afterwards,
+it will listen for the next message. With the next
+user message, normal prediction will resume.
+
+If you do not want your intent-action mapping to affect the dialogue
+history, the mapped action must return a ``UserUtteranceReverted()``
+event. This will delete the user's latest message, along with any events that
+happened after it, from the dialogue history. This means you should not
+include the intent-action interaction in your stories.
+
+For example, if a user asks "Are you a bot?" off-topic in the middle of the
+flow, you probably want to answer without that interaction affecting the next
+action prediction. A triggered custom action can do anything, but here's a
+simple example that dispatches a bot utterance and then reverts the interaction:
+
+.. code-block:: python
+
+  class ActionIsBot(Action):
+  """Revertible mapped action for utter_is_bot"""
+
+  def name(self):
+      return "action_is_bot"
+
+  def run(self, dispatcher, tracker, domain):
+      dispatcher.utter_template("utter_is_bot", tracker)
+      return [UserUtteranceReverted()]
 
 .. note::
 
-  The mapping policy will predict the mapped action after the intent (e.g.
-  ``utter_goodbye`` in the above example) and afterwards it will wait for
-  the next user message (predicting ``action_listen``). With the next
-  user message normal prediction will resume.
+  If you use the ``MappingPolicy`` to predict bot utterances directly (e.g.
+  ``triggers: utter_{}``), these interactions must go in your stories, as in this
+  case there is no ``UserUtteranceReverted()`` and the
+  intent and the mapped utterance will appear in the dialogue history.
 
-  You should have an example like
-
-  .. code-block:: story
-
-    * greet
-      - utter_goodbye
-
-  in your stories. Otherwise any machine learning policy might be confused
-  by the sudden appearance of the predicted ``action_greet`` in
-  the dialouge history.
-
-.. _fallback_policy:
+.. _fallback-policy:
 
 Fallback Policy
 ^^^^^^^^^^^^^^^
 
-The ``FallbackPolicy`` invokes a `fallback action
-<https://rasa.com/docs/core/fallbacks/>`_ if the intent recognition
+The ``FallbackPolicy`` invokes a :ref:`fallback action
+<fallback-actions>` if the intent recognition
 has a confidence below ``nlu_threshold`` or if none of the dialogue
 policies predict an action with confidence higher than ``core_threshold``.
 
@@ -481,8 +428,8 @@ policies predict an action with confidence higher than ``core_threshold``.
     | ``core_threshold``         | Min confidence needed to accept an action   |
     |                            | prediction from Rasa Core                   |
     +----------------------------+---------------------------------------------+
-    | ``fallback_action_name``   | Name of the `fallback action                |
-    |                            | <https://rasa.com/docs/core/fallbacks/>`_   |
+    | ``fallback_action_name``   | Name of the :ref:`fallback action           |
+    |                            | <fallback-actions>`                         |
     |                            | to be called if the confidence of intent    |
     |                            | or action is below the respective threshold |
     +----------------------------+---------------------------------------------+
@@ -557,14 +504,14 @@ by trying to disambiguate the user input.
     | ``core_threshold``            | Min confidence needed to accept an action|
     |                               | prediction from Rasa Core                |
     +-------------------------------+------------------------------------------+
-    | ``fallback_core_action_name`` | Name of the `fallback action             |
-    |                               | <https://rasa.com/docs/core/fallbacks/>`_|
+    | ``fallback_core_action_name`` | Name of the :ref:`fallback action        |
+    |                               | <fallback-actions>`                      |
     |                               | to be called if the confidence of Rasa   |
     |                               | Core action prediction is below the      |
     |                               | ``core_threshold``                       |
     +-------------------------------+------------------------------------------+
-    | ``fallback_nlu_action_name``  | Name of the `fallback action             |
-    |                               | <https://rasa.com/docs/core/fallbacks/>`_|
+    | ``fallback_nlu_action_name``  | Name of the :ref:`fallback action        |
+    |                               | <fallback-actions>`                      |
     |                               | to be called if the confidence of Rasa   |
     |                               | NLU intent classification is below the   |
     |                               | ``nlu_threshold``                        |
@@ -579,4 +526,12 @@ by trying to disambiguate the user input.
       You can include either the ``FallbackPolicy`` or the
       ``TwoStageFallbackPolicy`` in your configuration, but not both.
 
-.. include:: feedback.inc
+
+
+Form Policy
+^^^^^^^^^^^
+
+The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which
+handles the filling of forms. Once a ``FormAction`` is called, the
+``FormPolicy`` will continually predict the ``FormAction`` until all required
+slots in the form are filled. For more information, see :ref:`forms`.

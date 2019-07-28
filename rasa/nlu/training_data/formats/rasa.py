@@ -4,6 +4,7 @@ import logging
 import typing
 from typing import Any, Dict, Text
 
+from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter,
@@ -56,8 +57,9 @@ class RasaReader(JsonTrainingDataReader):
 
 
 class RasaWriter(TrainingDataWriter):
-    def dumps(self, training_data, **kwargs):
+    def dumps(self, training_data: "TrainingData", **kwargs) -> Text:
         """Writes Training Data to a string in json format."""
+
         js_entity_synonyms = defaultdict(list)
         for k, v in training_data.entity_synonyms.items():
             if k != v:
@@ -98,7 +100,7 @@ def validate_rasa_nlu_data(data: Dict[Text, Any]) -> None:
         e.message += (
             ". Failed to validate training data, make sure your data "
             "is valid. For more information about the format visit "
-            "https://rasa.com/docs/nlu/dataformat/"
+            "{}/nlu/training-data-format/".format(DOCS_BASE_URL)
         )
         raise e
 

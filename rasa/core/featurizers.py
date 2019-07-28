@@ -13,6 +13,7 @@ from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.utils.common import is_logging_disabled
 
 logger = logging.getLogger(__name__)
 
@@ -409,7 +410,7 @@ class TrackerFeaturizer(object):
 
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
-        utils.create_dir_for_file(featurizer_file)
+        rasa.utils.io.create_directory_for_file(featurizer_file)
         with open(featurizer_file, "w", encoding="utf-8") as f:
             # noinspection PyTypeChecker
             f.write(str(jsonpickle.encode(self)))
@@ -471,11 +472,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             "collected trackers (by {}({}))..."
             "".format(type(self).__name__, type(self.state_featurizer).__name__)
         )
-        pbar = tqdm(
-            trackers,
-            desc="Processed trackers",
-            disable=(not logger.isEnabledFor(logging.DEBUG)),
-        )
+        pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
         for tracker in pbar:
             states = self._create_states(tracker, domain, is_binary_training=True)
 
@@ -569,7 +566,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> Tuple[List[List[Dict]], List[List[Text]]]:
+    ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
 
         trackers_as_states = []
         trackers_as_actions = []
@@ -583,11 +580,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             "collected trackers (by {}({}))..."
             "".format(type(self).__name__, type(self.state_featurizer).__name__)
         )
-        pbar = tqdm(
-            trackers,
-            desc="Processed trackers",
-            disable=(not logger.isEnabledFor(logging.DEBUG)),
-        )
+        pbar = tqdm(trackers, desc="Processed trackers", disable=is_logging_disabled())
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
 

@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import io
 import json
 import logging
 import os
 import re
 import warnings
-from typing import Optional, List, Text, Any, Dict, AnyStr, TYPE_CHECKING
+from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
+import rasa.utils.io as io_utils
+from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import ActionExecuted, UserUttered, Event, SlotSet
 from rasa.core.exceptions import StoryParseError
-from rasa.core.interpreter import RegexInterpreter
+from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.structures import (
     Checkpoint,
     STORY_START,
@@ -22,11 +23,10 @@ from rasa.core.training.structures import (
     FORM_PREFIX,
 )
 from rasa.nlu.training_data.formats import MarkdownReader
-
+from rasa.core.domain import Domain
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import Message
-
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +36,10 @@ class EndToEndReader(MarkdownReader):
         """Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>. For the
-        syntax of <example> see the Rasa NLU docs on training data:
-        https://rasa.com/docs/nlu/dataformat/#markdown-format"""
+        syntax of <example> see the Rasa docs on NLU training data:
+        {}/nlu/training-data-format/#markdown-format""".format(
+            DOCS_BASE_URL
+        )
 
         item_regex = re.compile(r"\s*(.+?):\s*(.*)")
         match = re.match(item_regex, line)
@@ -52,9 +54,8 @@ class EndToEndReader(MarkdownReader):
         raise ValueError(
             "Encountered invalid end-to-end format for message "
             "`{}`. Please visit the documentation page on "
-            "end-to-end evaluation at https://rasa.com/docs/core/"
-            "evaluation#end-to-end-evaluation-of-rasa-nlu-and-"
-            "core".format(line)
+            "end-to-end evaluation at {}/user-guide/evaluating-models/"
+            "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
         )
 
 
@@ -96,7 +97,7 @@ class StoryStepBuilder(object):
             end_names = {e.name for s in self.current_steps for e in s.end_checkpoints}
             return [Checkpoint(name) for name in end_names]
 
-    def add_user_messages(self, messages):
+    def add_user_messages(self, messages: List[UserUttered]):
         self.ensure_current_steps()
 
         if len(messages) == 1:
@@ -151,7 +152,13 @@ class StoryStepBuilder(object):
 class StoryFileReader(object):
     """Helper class to read a story file."""
 
-    def __init__(self, domain, interpreter, template_vars=None, use_e2e=False):
+    def __init__(
+        self,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        template_vars: Optional[Dict] = None,
+        use_e2e: bool = False,
+    ):
         self.story_steps = []
         self.current_step_builder = None  # type: Optional[StoryStepBuilder]
         self.domain = domain
@@ -161,16 +168,14 @@ class StoryFileReader(object):
 
     @staticmethod
     async def read_from_folder(
-        resource_name,
-        domain,
-        interpreter=RegexInterpreter(),
-        template_variables=None,
-        use_e2e=False,
-        exclusion_percentage=None,
-    ):
+        resource_name: Text,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> List[StoryStep]:
         """Given a path reads all contained story files."""
-        import rasa.nlu.utils as nlu_utils
-
         if not os.path.exists(resource_name):
             raise ValueError(
                 "Story file or folder could not be found. Make "
@@ -178,15 +183,36 @@ class StoryFileReader(object):
                 "or file.".format(os.path.abspath(resource_name))
             )
 
+        files = io_utils.list_files(resource_name)
+
+        return await StoryFileReader.read_from_files(
+            files,
+            domain,
+            interpreter,
+            template_variables,
+            use_e2e,
+            exclusion_percentage,
+        )
+
+    @staticmethod
+    async def read_from_files(
+        files: Iterable[Text],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> List[StoryStep]:
         story_steps = []
-        for f in nlu_utils.list_files(resource_name):
+
+        for f in files:
             steps = await StoryFileReader.read_from_file(
                 f, domain, interpreter, template_variables, use_e2e
             )
             story_steps.extend(steps)
 
         # if exclusion percentage is not 100
-        if exclusion_percentage and exclusion_percentage is not 100:
+        if exclusion_percentage and exclusion_percentage != 100:
             import random
 
             idx = int(round(exclusion_percentage / 100.0 * len(story_steps)))
@@ -197,12 +223,12 @@ class StoryFileReader(object):
 
     @staticmethod
     async def read_from_file(
-        filename,
-        domain,
-        interpreter=RegexInterpreter(),
-        template_variables=None,
-        use_e2e=False,
-    ):
+        filename: Text,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+    ) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
 
         try:
@@ -264,13 +290,22 @@ class StoryFileReader(object):
             )
             return "", {}
 
-    async def process_lines(self, lines: List[AnyStr]) -> List[StoryStep]:
+    async def process_lines(self, lines: List[Text]) -> List[StoryStep]:
+        multiline_comment = False
 
         for idx, line in enumerate(lines):
             line_num = idx + 1
             try:
                 line = self._replace_template_variables(self._clean_up_line(line))
                 if line.strip() == "":
+                    continue
+                elif line.startswith("<!--"):
+                    multiline_comment = True
+                    continue
+                elif multiline_comment and line.endswith("-->"):
+                    multiline_comment = False
+                    continue
+                elif multiline_comment:
                     continue
                 elif line.startswith("#"):
                     # reached a new story block
@@ -307,12 +342,12 @@ class StoryFileReader(object):
                     )
             except Exception as e:
                 msg = "Error in line {}: {}".format(line_num, e)
-                logger.error(msg, exc_info=1)
+                logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
                 raise ValueError(msg)
         self._add_current_stories_to_result()
         return self.story_steps
 
-    def _replace_template_variables(self, line):
+    def _replace_template_variables(self, line: Text) -> Text:
         def process_match(matchobject):
             varname = matchobject.group(1)
             if varname in self.template_variables:
@@ -353,7 +388,7 @@ class StoryFileReader(object):
 
         self.current_step_builder.add_checkpoint(name, conditions)
 
-    async def _parse_message(self, message, line_num):
+    async def _parse_message(self, message: Text, line_num: int):
         if message.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(message)
         else:
