@@ -32,6 +32,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    user-guide/running-the-server
    user-guide/running-rasa-with-docker
    user-guide/cloud-storage
+   user-guide/connectors/custom-connectors
 
 .. toctree::
    :maxdepth: 1
