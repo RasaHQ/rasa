@@ -256,7 +256,7 @@ class UserUttered(Event):
                 "text": self.text,
                 "parse_data": self.parse_data,
                 "input_channel": getattr(self, "input_channel", None),
-                "message_id": self.message_id,
+                "message_id": getattr(self, "message_id", None),
                 "metadata": getattr(self, "metadata", None),
             }
         )
@@ -271,6 +271,7 @@ class UserUttered(Event):
                     parameters.get("parse_data"),
                     parameters.get("timestamp"),
                     parameters.get("input_channel"),
+                    parameters.get("metadata"),
                 )
             ]
         except KeyError as e:

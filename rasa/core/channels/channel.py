@@ -23,18 +23,7 @@ logger = logging.getLogger(__name__)
 class UserMessage(object):
     """Represents an incoming message.
 
-     Includes the channel the responses should be sent to.
-
-     Attributes:
-        text (Text): The message text content.
-        output_channel (OutputChannel): The message output data.
-        sender_id (Text): The message owner ID.
-        parse_data (Text, Any): Rasa data about the message.
-        input_channel (Text): The message origin name.
-        message_id (Text): ID of the message.
-        metadata (Dict): A dict that contains information about the message.
-
-     """
+     Includes the channel the responses should be sent to."""
 
     DEFAULT_SENDER_ID = "default"
 
@@ -48,6 +37,18 @@ class UserMessage(object):
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
     ) -> None:
+        """ UserMessage arguments.
+
+        Args:
+            text: The message text content.
+            output_channel: The message output data.
+            sender_id: The message owner ID.
+            parse_data: Rasa data about the message.
+            input_channel: The message origin name.
+            message_id: ID of the message.
+            metadata: A dict that contains information about the message.
+
+        """
         self.text = text.strip() if text else text
 
         if message_id is not None:
