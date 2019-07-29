@@ -36,6 +36,7 @@ dataset (converted into Rasa stories):
    * inform{"people": "six"}
       - action_ack_dosearch
 
+
 This is what we call a **story**.
 
 
