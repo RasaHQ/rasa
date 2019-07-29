@@ -39,7 +39,7 @@ a command like:
 .. code-block:: bash
 
     curl -XPOST http://localhost:5000/webhooks/myio/webhook \
-      -d '{"sender": "user1", "message": "here is my token: <token>"}, "metadata: {"type": "token"}' \
+      -d '{"sender": "user1", "message": "here is my token: <token>", "metadata: {"type": "token"}}' \
       -H "Content-type: application/json"
 
 In your implementation of the ``receive`` endpoint, you need to make

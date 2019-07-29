@@ -180,12 +180,12 @@ class UserUttered(Event):
 
     def __init__(
         self,
-        text: Text = None,
+        text: Optional[Text] = None,
         intent=None,
         entities=None,
         parse_data: Optional[Dict[Text, Any]] = None,
-        timestamp: Optional[int] = None,
-        input_channel: Text = None,
+        timestamp: int = time.time(),
+        input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
     ):
@@ -208,7 +208,9 @@ class UserUttered(Event):
         super(UserUttered, self).__init__(timestamp)
 
     @staticmethod
-    def _from_parse_data(text, parse_data, timestamp=None, input_channel=None):
+    def _from_parse_data(
+        text, parse_data, timestamp=None, input_channel=None, metadata=None
+    ):
         return UserUttered(
             text,
             parse_data.get("intent"),
@@ -216,6 +218,7 @@ class UserUttered(Event):
             parse_data,
             timestamp,
             input_channel,
+            metadata,
         )
 
     def __hash__(self):
@@ -247,23 +250,17 @@ class UserUttered(Event):
         return UserUttered(None)
 
     def as_dict(self) -> Dict[Text, Any]:
-        useruttered_dict = super(UserUttered, self).as_dict()
-        input_channel = None  # for backwards compatibility (persisted events)
-        metadata = None  # for backwards compatibility (persisted events)
-        if hasattr(self, "input_channel"):
-            input_channel = self.input_channel
-        if hasattr(self, "metadata"):
-            metadata = self.metadata
-        useruttered_dict.update(
+        _dict = super(UserUttered, self).as_dict()
+        _dict.update(
             {
                 "text": self.text,
                 "parse_data": self.parse_data,
-                "input_channel": input_channel,
+                "input_channel": getattr(self, "input_channel", None),
                 "message_id": self.message_id,
-                "metadata": metadata,
+                "metadata": getattr(self, "metadata", None),
             }
         )
-        return useruttered_dict
+        return _dict
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:

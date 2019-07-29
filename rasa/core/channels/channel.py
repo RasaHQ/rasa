@@ -23,7 +23,18 @@ logger = logging.getLogger(__name__)
 class UserMessage(object):
     """Represents an incoming message.
 
-     Includes the channel the responses should be sent to."""
+     Includes the channel the responses should be sent to.
+
+     Attributes:
+        text (Text): The message text content.
+        output_channel (OutputChannel): The message output data.
+        sender_id (Text): The message owner ID.
+        parse_data (Text, Any): Rasa data about the message.
+        input_channel (Text): The message origin name.
+        message_id (Text): ID of the message.
+        metadata (Dict): A dict that contains information about the message.
+
+     """
 
     DEFAULT_SENDER_ID = "default"
 
@@ -416,7 +427,7 @@ class RestInput(InputChannel):
             )
             result = None  # declare variable up front to avoid pytype error
             while True:
-                result = await q.get()  # pytype: disable=bad-return-type
+                result = await q.get()
                 if result == "DONE":
                     break
                 else:
