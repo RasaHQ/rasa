@@ -332,13 +332,36 @@ class TestEmbeddingPolicy(PolicyTestCollection):
     def test_similarity_type(self, trained_policy):
         assert trained_policy.similarity_type == "inner"
 
-
-class TestEmbeddingPolicySequence(TestEmbeddingPolicy):
-    def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(
-            featurizer=featurizer, priority=priority, **{"batch_strategy": "sequence"}
+    async def test_gen_batch(self, trained_policy, default_domain):
+        training_trackers = await train_trackers(default_domain, augmentation_factor=0)
+        training_data = trained_policy.featurize_for_training(
+            training_trackers, default_domain
         )
-        return p
+        session_data = trained_policy._create_session_data(
+            training_data.X, training_data.y
+        )
+        batch_size = 2
+        batch_x, batch_y = next(
+            trained_policy._gen_batch(session_data=session_data, batch_size=batch_size)
+        )
+        assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
+        assert (
+            batch_x[0].shape == session_data.X[0].shape
+            and batch_y[0].shape == session_data.Y[0].shape
+        )
+        batch_x, batch_y = next(
+            trained_policy._gen_batch(
+                session_data=session_data,
+                batch_size=batch_size,
+                batch_strategy="balanced",
+                shuffle=True,
+            )
+        )
+        assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
+        assert (
+            batch_x[0].shape == session_data.X[0].shape
+            and batch_y[0].shape == session_data.Y[0].shape
+        )
 
 
 class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
