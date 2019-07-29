@@ -1,5 +1,6 @@
-import os
 import io
+import os
+
 import pytest
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError
@@ -196,7 +197,6 @@ def test_file_not_in_path(file, parents):
 
 @pytest.mark.parametrize("actual_path", ["", "file.md", "file"])
 def test_file_path_validator_with_invalid_paths(actual_path):
-
     test_error_message = actual_path
 
     validator = io_utils.file_type_validator([".yml"], test_error_message)
@@ -210,7 +210,6 @@ def test_file_path_validator_with_invalid_paths(actual_path):
 
 @pytest.mark.parametrize("actual_path", ["domain.yml", "lala.yaml"])
 def test_file_path_validator_with_valid_paths(actual_path):
-
     validator = io_utils.file_type_validator([".yml", ".yaml"], "error message")
 
     document = Document(actual_path)
@@ -220,7 +219,6 @@ def test_file_path_validator_with_valid_paths(actual_path):
 
 @pytest.mark.parametrize("user_input", ["", "   ", "\t", "\n"])
 def test_non_empty_text_validator_with_empty_input(user_input):
-
     test_error_message = "enter something"
 
     validator = io_utils.not_empty_validator(test_error_message)
@@ -234,7 +232,6 @@ def test_non_empty_text_validator_with_empty_input(user_input):
 
 @pytest.mark.parametrize("user_input", ["utter_greet", "greet", "Hi there!"])
 def test_non_empty_text_validator_with_valid_input(user_input):
-
     validator = io_utils.not_empty_validator("error message")
 
     document = Document(user_input)
@@ -258,9 +255,3 @@ def test_create_validator_from_callable():
         validator.validate(document)
 
     assert e.value.message == error_message
-
-
-def test_dump_dict_to_temporary_yaml():
-    data = {"some": {"random": {"dictionary", 12300}}}
-    path = io_utils.dump_dict_to_temporary_yaml_file(data)
-    assert io_utils.read_yaml_file(path) == data

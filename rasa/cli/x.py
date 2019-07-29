@@ -306,8 +306,7 @@ async def _pull_runtime_config_from_server(
                         rjs = await resp.json()
                         try:
                             return [
-                                io_utils.dump_dict_to_temporary_yaml_file(rjs[k])
-                                for k in keys
+                                io_utils.create_temporary_file(rjs[k]) for k in keys
                             ]
                         except KeyError as e:
                             cli_utils.print_error_and_exit(
