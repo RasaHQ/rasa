@@ -11,44 +11,6 @@ Policies
    :local:
 
 
-Data Augmentation
-^^^^^^^^^^^^^^^^^
-
-When you train a model, by default Rasa Core will create
-longer stories by randomly gluing together
-the ones in your stories files.
-This is because if you have stories like:
-
-.. code-block:: story
-
-    # thanks
-    * thankyou
-       - utter_youarewelcome
-
-    # bye
-    * goodbye
-       - utter_goodbye
-
-
-You actually want to teach your policy to **ignore** the dialogue history
-when it isn't relevant and just respond with the same action no matter
-what happened before.
-
-You can alter this behaviour with the ``--augmentation`` flag.
-Which allows you to set the ``augmentation_factor``.
-The ``augmentation_factor`` determines how many augmented stories are
-subsampled during training. Subsampling of the augmented stories is done in order to
-not get too many stories from augmentation, since their number
-can become very large quickly.
-The number of sampled stories is ``augmentation_factor`` x10.
-By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
-
-``--augmentation 0`` disables all augmentation behavior.
-The memoization based policies are not affected by augmentation
-(independent of the ``augmentation_factor``) and will automatically
-ignore all augmented stories.
-
-
 .. _policy_file:
 
 Configuring Policies
@@ -93,6 +55,43 @@ policy class and pass arguments to it.
       fallback_action_name: "my_fallback_action"
     - name: "path.to.your.policy.class"
       arg1: "..."
+
+Data Augmentation
+^^^^^^^^^^^^^^^^^
+
+When you train a model, by default Rasa Core will create
+longer stories by randomly gluing together
+the ones in your stories files.
+This is because if you have stories like:
+
+.. code-block:: story
+
+    # thanks
+    * thankyou
+       - utter_youarewelcome
+
+    # bye
+    * goodbye
+       - utter_goodbye
+
+
+You actually want to teach your policy to **ignore** the dialogue history
+when it isn't relevant and just respond with the same action no matter
+what happened before.
+
+You can alter this behaviour with the ``--augmentation`` flag.
+Which allows you to set the ``augmentation_factor``.
+The ``augmentation_factor`` determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since their number
+can become very large quickly.
+The number of sampled stories is ``augmentation_factor`` x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+
+``--augmentation 0`` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the ``augmentation_factor``) and will automatically
+ignore all augmented stories.
 
 
 Max History
