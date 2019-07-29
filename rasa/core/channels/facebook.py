@@ -348,3 +348,7 @@ class FacebookInput(InputChannel):
             if hub_signature == generated_hash:
                 return True
         return False
+
+    def get_output_channel(self) -> OutputChannel:
+        client = MessengerClient(self.fb_access_token)
+        return MessengerBot(client)
