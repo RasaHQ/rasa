@@ -260,6 +260,8 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <ul class="simple">
 <li>add root route to server started without <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> parameter</li>
 <li>add <code class="docutils literal notranslate"><span class="pre">--evaluate-model-directory</span></code> to <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> to evaluate models from <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span> <span class="pre">-c</span> <span class="pre">&lt;config-1&gt;</span> <span class="pre">&lt;config-2&gt;</span></code></li>
+<li>option to send messages to the user by calling
+<code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/conversations/{conversation_id}/execute</span></code></li>
 </ul>
 </div>
 <div class="section" id="changed">
