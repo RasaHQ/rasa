@@ -6,16 +6,17 @@
 Actions
 =======
 
-.. contents::
-
 Actions are the things your bot runs in response to user input.
 There are three kinds of actions in Rasa:
 
- 1. **Default actions**: e.g. ``action_listen``, ``action_restart``,
-    ``action_default_fallback``
- 2. **Utterance actions**: start with ``utter_``, just send a message
+ 1. **Utterance actions**: start with ``utter_``, just send a message
     to the user
- 3. **Custom actions**: any other action, these actions can run arbitrary code
+ 2. **Custom actions**: any other action, these actions can run arbitrary code
+ 3. **Default actions**: e.g. ``action_listen``, ``action_restart``,
+    ``action_default_fallback``
+
+.. contents::
+   :local:
 
 Utterance Actions
 -----------------
@@ -66,7 +67,7 @@ other language and define your actions there - but we provide
 a small python SDK to make development there even easier.
 
 Custom Actions Written in Python
---------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For actions written in python, we have a convenient SDK which starts
 this action server for you.
@@ -147,15 +148,14 @@ events in :ref:`Events <events>`.
 Execute Actions in Other Code
 -----------------------------
 
-Rasa will send an HTTP ``POST`` request to the server defined as your ``action_endpoint`` containing
-information on which action to run. In addition, this request will contain all
+Rasa will send an HTTP ``POST`` request to your server containing
+information on which action to run. Furthermore, this request will contain all
 information about the conversation. :ref:`action-server` shows the detailed API spec.
 
 As a response to the action call from Rasa, you can modify the tracker,
-e.g. by setting slots and sending responses back to the user.
+e.g. by setting slots and send responses back to the user.
 All of the modifications are done using events.
 There is a list of all possible event types in :ref:`events`.
-
 
 Proactively Reaching Out to the User Using Actions
 --------------------------------------------------
