@@ -228,12 +228,18 @@ class KafkaProducer(EventChannel):
 
 
 class SQLProducer(EventChannel):
+    """Save events into an SQL database.
+
+    All events will be stored in a table called `events`.
+
+    """
+
     from sqlalchemy.ext.declarative import declarative_base
 
     Base = declarative_base()
 
-    class SQLEvent(Base):
-        from sqlalchemy import Column, Integer, String, Float, Text
+    class SQLBrokerEvent(Base):
+        from sqlalchemy import Column, Integer, String, Text
 
         __tablename__ = "events"
         id = Column(Integer, primary_key=True)
@@ -246,23 +252,22 @@ class SQLProducer(EventChannel):
         host: Optional[Text] = None,
         port: Optional[int] = None,
         db: Text = "events.db",
-        username: Text = None,
-        password: Text = None,
-        login_db: Optional[Text] = None,
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
     ):
         from rasa.core.tracker_store import SQLTrackerStore
-        from sqlalchemy.orm import sessionmaker
-        from sqlalchemy import create_engine
+        import sqlalchemy
+        import sqlalchemy.orm
 
         engine_url = SQLTrackerStore.get_db_url(
-            dialect, host, port, db, username, password, login_db
+            dialect, host, port, db, username, password
         )
 
-        logger.debug("SQLProducer: Connecting to database: {}".format(engine_url))
+        logger.debug("SQLProducer: Connecting to database: '{}'.".format(engine_url))
 
-        self.engine = create_engine(engine_url)
+        self.engine = sqlalchemy.create_engine(engine_url)
         self.Base.metadata.create_all(self.engine)
-        self.session = sessionmaker(bind=self.engine)()
+        self.session = sqlalchemy.orm.sessionmaker(bind=self.engine)()
 
     @classmethod
     def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventChannel":
@@ -271,6 +276,8 @@ class SQLProducer(EventChannel):
     def publish(self, event: Dict[Text, Any]) -> None:
         """Publishes a json-formatted Rasa Core event into an event queue."""
         self.session.add(
-            self.SQLEvent(sender_id=event.get("sender_id"), data=json.dumps(event))
+            self.SQLBrokerEvent(
+                sender_id=event.get("sender_id"), data=json.dumps(event)
+            )
         )
         self.session.commit()

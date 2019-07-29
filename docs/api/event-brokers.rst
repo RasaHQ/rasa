@@ -237,9 +237,9 @@ according to the security protocol being used. The following implementation show
         print(message.value)
 
 SQL Event Broker
------------------
+----------------
 
-It is possible to use  an SQL database as an event broker. Connections to databases are established using
+It is possible to use an SQL database as an event broker. Connections to databases are established using
 `SQLAlchemy <https://www.sqlalchemy.org/>`_, a Python library which can interact with many
 different types of SQL databases, such as `SQLite <https://sqlite.org/index.html>`_,
 `PostgreSQL <https://www.postgresql.org/>`_ and more. The default Rasa installation allows connections to SQLite
@@ -250,7 +250,7 @@ and PostgreSQL databases, to see other options, please see the
 Adding a SQL Event Broker Using the Endpoint Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can use an endpoint configuration file to instruct Rasa to stream
+You can use the endpoint configuration file to instruct Rasa to save
 all events to your SQL event broker. To do so, add a ``event_broker`` section to your
 endpoint configuration, e.g. ``endpoints.yml``. For example, a valid SQLite configuration
 could look like the following:
@@ -273,13 +273,7 @@ PostgreSQL databases can be used as well:
       dialect: postgresql
       username: myuser
       password: mypassword
-      db: mydatabse
+      db: mydatabase
 
-Then, instruct Rasa to use the endpoint configuration and SQL producer by adding
-``--endpoints <path to your endpoint configuration`` as following example:
-
-.. code-block:: shell
-
-    rasa run -m models --endpoints endpoints.yml
-
-Rasa will then create a table called ``events``, where all events will be added.
+With this configuration applied, Rasa will create a table called ``events`` on the database,
+where all events will be added.

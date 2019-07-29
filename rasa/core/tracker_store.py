@@ -364,6 +364,23 @@ class SQLTrackerStore(TrackerStore):
         password: Text = None,
         login_db: Optional[Text] = None,
     ) -> Union[Text, "URL"]:
+        """Builds an SQLAlchemy `URL` object representing the parameters needed
+        to connect to an SQL database.
+
+        Args:
+            dialect: SQL database type.
+            host: Database network host.
+            port: Database network port.
+            db: Database name.
+            username: User name to use when connecting to the database.
+            password: Password for database user.
+            login_db: Alternative database name to which initially connect, and create
+                the database specified by `db` (PostgreSQL only).
+
+        Returns:
+            URL ready to be used with an SQLAlchemy `Engine` object.
+
+        """
         from urllib.parse import urlsplit
         from sqlalchemy.engine.url import URL
 
