@@ -29,8 +29,6 @@ dataset (converted into Rasa stories):
    * greet
       - action_ask_howcanhelp
    * inform{"location": "rome", "price": "cheap"}  <!-- user utterance, in format intent{entities} -->
-      - slot{"location": "rome"}
-
       - action_on_it
       - action_ask_cuisine
    * inform{"cuisine": "spanish"}
