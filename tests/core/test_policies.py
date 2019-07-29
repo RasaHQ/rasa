@@ -333,6 +333,14 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         assert trained_policy.similarity_type == "inner"
 
 
+class TestEmbeddingPolicySequence(TestEmbeddingPolicy):
+    def create_policy(self, featurizer, priority):
+        p = EmbeddingPolicy(
+            featurizer=featurizer, priority=priority, **{"batch_strategy": "sequence"}
+        )
+        return p
+
+
 class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
         p = EmbeddingPolicy(
