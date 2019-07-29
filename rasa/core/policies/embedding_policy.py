@@ -405,6 +405,7 @@ class EmbeddingPolicy(Policy):
 
             yield batch_x, batch_y
 
+    # noinspection PyPep8Naming
     def _create_tf_dataset(
         self,
         session_data: "SessionData",
@@ -414,15 +415,20 @@ class EmbeddingPolicy(Policy):
     ) -> "tf.data.Dataset":
         """Create tf dataset."""
 
+        # set batch and sequence length to None
+        shape_X = (None, None, session_data.X[0].shape[-1])
+
+        if session_data.Y[0].ndim == 1:
+            shape_Y = (None, session_data.Y[0].shape[-1])
+        else:
+            shape_Y = (None, None, session_data.Y[0].shape[-1])
+
         return tf.data.Dataset.from_generator(
             lambda batch_size_: self._gen_batch(
                 session_data, batch_size_, batch_strategy, shuffle
             ),
             output_types=(tf.float32, tf.float32),
-            output_shapes=(
-                [None] + list(session_data.X[0].shape),  # set batch to None
-                [None] + list(session_data.Y[0].shape),  # set batch to None
-            ),
+            output_shapes=(shape_X, shape_Y),
             args=([batch_size]),
         )
 
