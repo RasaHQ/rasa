@@ -1194,25 +1194,28 @@ class EmbeddingPolicy(Policy):
         batch_size = kwargs.get("batch_size", 5)
         epochs = kwargs.get("epochs", 50)
 
-        for _ in range(epochs):
-            training_data = self._training_data_for_continue_training(
-                batch_size, training_trackers, domain
-            )
+        with self.graph.as_default():
+            for _ in range(epochs):
+                training_data = self._training_data_for_continue_training(
+                    batch_size, training_trackers, domain
+                )
 
-            session_data = self._create_session_data(training_data.X, training_data.y)
-            train_dataset = self._create_tf_dataset(session_data, batch_size)
-            train_init_op = self._iterator.make_initializer(train_dataset)
-            self.session.run(train_init_op)
+                session_data = self._create_session_data(
+                    training_data.X, training_data.y
+                )
+                train_dataset = self._create_tf_dataset(session_data, batch_size)
+                train_init_op = self._iterator.make_initializer(train_dataset)
+                self.session.run(train_init_op)
 
-            # fit to one extra example using updated trackers
-            while True:
-                try:
-                    self.session.run(
-                        self._train_op, feed_dict={self._is_training: True}
-                    )
+                # fit to one extra example using updated trackers
+                while True:
+                    try:
+                        self.session.run(
+                            self._train_op, feed_dict={self._is_training: True}
+                        )
 
-                except tf.errors.OutOfRangeError:
-                    break
+                    except tf.errors.OutOfRangeError:
+                        break
 
     def tf_feed_dict_for_prediction(
         self, tracker: "DialogueStateTracker", domain: "Domain"

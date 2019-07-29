@@ -129,6 +129,12 @@ class PolicyTestCollection(object):
             loaded.featurizer.state_featurizer, BinarySingleStateFeaturizer
         )
 
+    async def test_continue_training(self, trained_policy, default_domain):
+        training_trackers = await train_trackers(default_domain, augmentation_factor=0)
+        trained_policy.continue_training(
+            training_trackers, default_domain, **{"epochs": 1}
+        )
+
     async def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
@@ -318,13 +324,35 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy.train(trackers, domain=default_domain)
 
 
-class TestEmbeddingPolicyWithFeaturizer(PolicyTestCollection):
+class TestEmbeddingPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         p = EmbeddingPolicy(featurizer=featurizer, priority=priority)
         return p
 
+    def test_similarity_type(self, trained_policy):
+        assert trained_policy.similarity_type == "inner"
 
-class TestEmbeddingPolicyWithFullDialogue(PolicyTestCollection):
+
+class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
+    def create_policy(self, featurizer, priority):
+        p = EmbeddingPolicy(
+            featurizer=featurizer, priority=priority, **{"loss_type": "margin"}
+        )
+        return p
+
+    def test_similarity_type(self, trained_policy):
+        assert trained_policy.similarity_type == "cosine"
+
+
+class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
+    def create_policy(self, featurizer, priority):
+        p = EmbeddingPolicy(
+            featurizer=featurizer, priority=priority, **{"evaluate_on_num_examples": 4}
+        )
+        return p
+
+
+class TestEmbeddingPolicyWithFullDialogue(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
@@ -346,7 +374,7 @@ class TestEmbeddingPolicyWithFullDialogue(PolicyTestCollection):
         )
 
 
-class TestEmbeddingPolicyWithMaxHistory(PolicyTestCollection):
+class TestEmbeddingPolicyWithMaxHistory(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using MaxHistoryTrackerFeaturizer
@@ -370,7 +398,7 @@ class TestEmbeddingPolicyWithMaxHistory(PolicyTestCollection):
         )
 
 
-class TestEmbeddingPolicyWithTfConfig(PolicyTestCollection):
+class TestEmbeddingPolicyWithTfConfig(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
         p = EmbeddingPolicy(featurizer=featurizer, priority=priority, **tf_defaults())
         return p

@@ -525,8 +525,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers_as_states.append(states[:-1])
             trackers_as_actions.append(actions)
 
-        self.max_len = self._calculate_max_len(trackers_as_actions)
-        logger.debug("The longest dialogue has {} actions.".format(self.max_len))
+        if self.max_len is None:
+            self.max_len = self._calculate_max_len(trackers_as_actions)
+            logger.debug("The longest dialogue has {} actions.".format(self.max_len))
 
         return trackers_as_states, trackers_as_actions
 
