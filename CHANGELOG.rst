@@ -27,6 +27,7 @@ Fixed
 -----
 - ``rasa test core`` can handle compressed model files
 - Rasa can handle story files containing multi line comments
+- Template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
 
 
 [1.1.8] - 2019-07-25
