@@ -6,7 +6,7 @@
 Stories
 =======
 
-A training example for the Rasa Core dialogue system is called a **story**.
+A training example for the Rasa dialogue system is called a **story**.
 This is a guide to the story data format.
 
 .. note::
@@ -29,13 +29,14 @@ dataset (converted into Rasa stories):
    * greet
       - action_ask_howcanhelp
    * inform{"location": "rome", "price": "cheap"}  <!-- user utterance, in format intent{entities} -->
+      - slot{"location": "rome"}
+
       - action_on_it
       - action_ask_cuisine
    * inform{"cuisine": "spanish"}
       - action_ask_numpeople        <!-- action that the bot should execute -->
    * inform{"people": "six"}
       - action_ack_dosearch
-
 
 This is what we call a **story**.
 
@@ -51,7 +52,46 @@ This is what we call a **story**.
   and contain the name of the action.
 - Events returned by an action are on lines immediately after that
   action. For example, if an action returns a ``SetSlot`` event,
-  this is shown as the line ``- slot{"slot_name": "value"}``
+  this is shown as the line ``- slot{"slot_name": "value"}``.
+
+Let's now take a slightly more detailed look at each of these components,
+along with some things you should keep in mind while using them to write
+your own stories.
+
+User Messages
+~~~~~~~~~~~~~
+While writing stories, you do not have to deal with the specific contents of
+the messages that the users send. Instead, you can take advantage of the output
+from the NLU pipeline, which lets you use just the combination of an intent and
+entities to refer to all the possible messages the users can send to mean the
+same thing.
+
+It is important to include the entities as well because the policies learn to
+predict the next action based on a *combination* of both the intent and
+entities.
+
+Actions
+~~~~~~~
+While writing stories, you will encounter two types of actions - utterances
+and custom actions. Utterances are hardcoded message that a bot can respond
+with. Custom actions, on the other hand, involve custom code being executed. 
+
+All actions (both utterances and custom actions) executed by the bot are shown
+as lines starting with ``-`` followed by the name of the action. For custom
+actions, the action name is the string you choose to return from the ``name``
+method of the custom action class. The convention is that utterances begin
+with the prefix ``utter_`` and custom actions begin with ``action_``.
+
+Events
+~~~~~~
+Events such as setting a slot or activating/deactivating a form have to be
+explicitly written out as part of the stories. Having to include the events
+returned by a custom action separately, when that custom action is already
+part of a story might seem redundant. However, since Rasa cannot easily
+determine this fact during training, this step is a necessary evil.
+
+In order to get around this pitfall, the recommended way to write these
+stories is to use :ref:`interactive-learning`.
 
 
 Checkpoints
@@ -87,8 +127,8 @@ OR Statements
 -------------
 
 Another way to write shorter stories, or to handle multiple intents
-the same way, is to use an ``OR`` statement. For example if you ask
-the user to confirm something, and we want to treat the ``affirm``
+the same way, is to use an ``OR`` statement. For example, if you ask
+the user to confirm something, and you want to treat the ``affirm``
 and ``thankyou`` intents in the same way. The story below will be
 converted into two stories at training time. Just like checkpoints,
 ``OR`` statements can be useful, but if you are using a lot of them,
