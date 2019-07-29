@@ -15,7 +15,7 @@ from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=p
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.utils import create_dir, write_json_to_file
+from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
 
 MODEL_NAME_PREFIX = "nlu_"
@@ -221,7 +221,7 @@ class Trainer(object):
         path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)
 
-        create_dir(dir_name)
+        rasa.utils.io.create_directory(dir_name)
 
         if self.training_data:
             metadata.update(self.training_data.persist(dir_name))

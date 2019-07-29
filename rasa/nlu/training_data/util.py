@@ -4,7 +4,7 @@ import logging
 import os
 from typing import Text
 
-from rasa.nlu import utils
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def get_file_format(resource_name: Text) -> Text:
     if resource_name is None or not os.path.exists(resource_name):
         raise AttributeError("Resource '{}' does not exist.".format(resource_name))
 
-    files = utils.list_files(resource_name)
+    files = io_utils.list_files(resource_name)
 
     file_formats = list(map(lambda f: loading.guess_format(f), files))
 

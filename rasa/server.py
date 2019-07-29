@@ -279,6 +279,13 @@ async def _load_agent(
     return loaded_agent
 
 
+def add_root_route(app: Sanic):
+    @app.get("/")
+    async def hello(request: Request):
+        """Check if the server is running and responds with the version."""
+        return response.text("Hello from Rasa: " + rasa.__version__)
+
+
 def create_app(
     agent: Optional["Agent"] = None,
     cors_origins: Union[Text, List[Text]] = "*",
@@ -316,10 +323,7 @@ def create_app(
     async def handle_error_response(request: Request, exception: ErrorResponse):
         return response.json(exception.error_info, status=exception.status)
 
-    @app.get("/")
-    async def hello(request: Request):
-        """Check if the server is running and responds with the version."""
-        return response.text("Hello from Rasa: " + rasa.__version__)
+    add_root_route(app)
 
     @app.get("/version")
     async def version(request: Request):
