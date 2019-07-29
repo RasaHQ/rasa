@@ -147,28 +147,29 @@ events in :ref:`Events <events>`.
 Execute Actions in Other Code
 -----------------------------
 
-Rasa will send an HTTP ``POST`` request to your server containing
-information on which action to run. Furthermore, this request will contain all
+Rasa will send an HTTP ``POST`` request to the server defined as your ``action_endpoint`` containing
+information on which action to run. In addition, this request will contain all
 information about the conversation. :ref:`action-server` shows the detailed API spec.
 
 As a response to the action call from Rasa, you can modify the tracker,
-e.g. by setting slots and send responses back to the user.
+e.g. by setting slots and sending responses back to the user.
 All of the modifications are done using events.
 There is a list of all possible event types in :ref:`events`.
 
 
-Proactively Reaching out to the User Using Actions
+Proactively Reaching Out to the User Using Actions
 --------------------------------------------------
 
-You might want to proactively reach out to the user,
-e.g. to display the output of a long running background operation
-or if an external event should be communicated to the user.
+You may want to proactively reach out to the user,
+for example to display the output of a long running background operation
+or notify the user of an external event.
 
-To do so you can use this
-`endpoint <../../api/http-api.html#tag/Tracker/paths/~1conversations~1{conversation_id}~1execute/post>`_ .
-Specify the action which should be run for a specific user and which output
+To do so, you can ``POST`` to this
+`endpoint <../../api/http-api.html#tag/Tracker/paths/~1conversations~1{conversation_id}~1execute/post>`_ ,
+specifying the action which should be run for a specific user in the request body. Use the
+``output_channel`` query parameter to specify which output
 channel should be used to communicate the assistant's responses back to the user.
-If your message is static you can define an ``utter_`` action in your domain file with
+If your message is static, you can define an ``utter_`` action in your domain file with
 a corresponding template. If you need more control, add a custom action in your
 domain and implement the required steps in your action server. Any messages which are
 dispatched in the custom action will be forwarded to the specified output channel.
@@ -182,8 +183,9 @@ using the :ref:`callbackInput` channel to send messages to a webhook.
 .. note::
 
    Running an action in a conversation changes the conversation history and affects the
-   assistant's next predictions. If you don't want this, make sure that your action
-   reverts itself by appending a ``ActionReverted`` event to the conversation tracker.
+   assistant's next predictions. If you don't want this to happen, make sure that your action
+   reverts itself by appending a ``ActionReverted`` event to the end of the
+   conversation tracker.
 
 
 Default Actions
