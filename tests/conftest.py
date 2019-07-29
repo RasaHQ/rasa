@@ -1,6 +1,7 @@
 import pytest
 import logging
 
+from rasa.core.run import _create_app_without_api
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
@@ -172,6 +173,13 @@ async def rasa_nlu_server(nlu_agent):
 @pytest.fixture
 async def rasa_server_secured(default_agent):
     app = server.create_app(agent=default_agent, auth_token="rasa", jwt_secret="core")
+    channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
+async def rasa_server_without_api():
+    app = _create_app_without_api()
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
