@@ -44,8 +44,8 @@ class UserMessage(object):
         output_channel: Optional["OutputChannel"] = None,
         sender_id: Optional[Text] = None,
         parse_data: Dict[Text, Any] = None,
-        input_channel: Text = None,
-        message_id: Text = None,
+        input_channel: Optional[Text] = None,
+        message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
     ) -> None:
         self.text = text.strip() if text else text
@@ -83,6 +83,8 @@ def register(
         else:
             p = None
         app.blueprint(channel.blueprint(handler), url_prefix=p)
+
+    app.input_channels = input_channels
 
 
 def button_to_string(button, idx=0):
@@ -154,6 +156,20 @@ class InputChannel(object):
                 cls.name(), cls.name(), DOCS_BASE_URL
             )
         )
+
+    def get_output_channel(self) -> Optional["OutputChannel"]:
+        """Create ``OutputChannel`` based on information provided by the input channel.
+
+        Implementing this function is not required. If this function returns a valid
+        ``OutputChannel`` this can be used by Rasa to send bot responses to the user
+        without the user initiating an interaction.
+
+        Returns:
+            ``OutputChannel`` instance or ``None`` in case creating an output channel
+             only based on the information present in the ``InputChannel`` is not
+             possible.
+        """
+        pass
 
 
 class OutputChannel(object):

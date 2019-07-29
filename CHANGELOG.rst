@@ -14,6 +14,8 @@ Added
 -----
 - add root route to server started without ``--enable-api`` parameter
 - add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
+- option to send messages to the user by calling
+  ``POST /conversations/{conversation_id}/execute``
 
 Changed
 -------

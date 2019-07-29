@@ -120,7 +120,7 @@ class RocketChatInput(InputChannel):
 
     async def send_message(self, text, sender_name, recipient_id, on_new_message):
         if sender_name != self.user:
-            output_channel = RocketChatBot(self.user, self.password, self.server_url)
+            output_channel = self.get_output_channel()
 
             user_msg = UserMessage(
                 text, output_channel, recipient_id, input_channel=self.name()
@@ -153,3 +153,6 @@ class RocketChatInput(InputChannel):
             return response.text("")
 
         return rocketchat_webhook
+
+    def get_output_channel(self) -> OutputChannel:
+        return RocketChatBot(self.user, self.password, self.server_url)
