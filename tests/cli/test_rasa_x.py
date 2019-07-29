@@ -82,7 +82,7 @@ async def test_pull_runtime_config_from_server():
     config_url = "http://rasa-x.com/api/config?token=token"
     credentials = "rasa: http://rasa-x.com:5002/api"
     endpoint_config = """
-    event_broker: 
+    event_broker:
         url: http://event-broker.com
         username: some_username
         password: PASSWORD
