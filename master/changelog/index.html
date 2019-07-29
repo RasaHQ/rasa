@@ -275,6 +275,7 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> can handle compressed model files</li>
 <li>Rasa can handle story files containing multi line comments</li>
+<li>Template will retain <cite>{</cite> if escaped with <cite>{</cite>. e.g. <cite>{{“foo”: {bar}}}</cite> will result in <cite>{“foo”: “replaced value”}</cite></li>
 </ul>
 </div>
 </div>
