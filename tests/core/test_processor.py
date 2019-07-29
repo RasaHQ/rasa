@@ -91,8 +91,8 @@ async def test_http_parsing():
 
 
 async def mocked_parse(self, text, message_id=None, tracker=None):
-    """Mock parsing a text message and augment it with the slot value 
-    from the tracker's state"""
+    """Mock parsing a text message and augment it with the slot
+    value from the tracker's state"""
 
     return {
         "intent": {"name": "", "confidence": 0.0},
