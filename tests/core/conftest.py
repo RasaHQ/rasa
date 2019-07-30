@@ -24,7 +24,6 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.io import zip_folder
 from rasa.train import train_async
 
 matplotlib.use("Agg")
