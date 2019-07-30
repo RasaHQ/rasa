@@ -55,6 +55,9 @@ class EmbeddingPolicy(Policy):
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
+        # a list of hidden layers sizes before user embed layer
+        # number of hidden layers is equal to the length of this list
+        "hidden_layers_sizes_dial": [],
         # a list of hidden layers sizes before bot embed layer
         # number of hidden layers is equal to the length of this list
         "hidden_layers_sizes_bot": [],
@@ -174,7 +177,10 @@ class EmbeddingPolicy(Policy):
 
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
-        self.hidden_layer_sizes_bot = config["hidden_layers_sizes_bot"]
+        self.hidden_layers_sizes = {
+            "a": config["hidden_layers_sizes_dial"],
+            "b": config["hidden_layers_sizes_bot"],
+        }
 
         self.pos_encoding = config["pos_encoding"]
         self.max_seq_length = config["max_seq_length"]
@@ -504,7 +510,7 @@ class EmbeddingPolicy(Policy):
 
         b = self._create_tf_nn(
             b_in,
-            self.hidden_layer_sizes_bot,
+            self.hidden_layers_sizes["b"],
             self.droprate["bot"],
             layer_name_suffix="bot",
         )
@@ -595,17 +601,22 @@ class EmbeddingPolicy(Policy):
                 tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout
             )
 
-    def _create_tf_dial(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
+    def _create_tf_dial(self, a_in) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Create dialogue level embedding and mask."""
 
         # mask different length sequences
         # if there is at least one `-1` it should be masked
         mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
 
-        self.attention_weights = {}
-        a = self._create_t2t_transformer_encoder(
-            self.a_in, mask, self.attention_weights
+        a = self._create_tf_nn(
+            a_in,
+            self.hidden_layers_sizes["a"],
+            self.droprate["dial"],
+            layer_name_suffix="dial",
         )
+
+        self.attention_weights = {}
+        a = self._create_t2t_transformer_encoder(a, mask, self.attention_weights)
 
         dial_embed = self._create_tf_embed(a, layer_name_suffix="dial")
 
@@ -883,7 +894,7 @@ class EmbeddingPolicy(Policy):
             self._encoded_all_actions, dtype=tf.float32, name="all_actions"
         )
 
-        self.dial_embed, mask = self._create_tf_dial()
+        self.dial_embed, mask = self._create_tf_dial(self.a_in)
 
         self.bot_embed = self._create_tf_bot_embed(self.b_in)
         self.all_bot_embed = self._create_tf_bot_embed(all_actions)
@@ -1065,7 +1076,7 @@ class EmbeddingPolicy(Policy):
 
         self._create_tf_placeholders(session_data)
 
-        self.dial_embed, mask = self._create_tf_dial()
+        self.dial_embed, mask = self._create_tf_dial(self.a_in)
 
         self.sim_all = self._tf_raw_sim(
             self.dial_embed[:, :, tf.newaxis, :],
