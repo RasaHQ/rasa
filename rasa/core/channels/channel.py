@@ -42,7 +42,7 @@ class UserMessage(object):
         Args:
             text: the message text content.
             output_channel: the output channel which should be used to send
-            bot responses back to the user.
+                bot responses back to the user.
             sender_id: the message owner ID.
             parse_data: rasa data about the message.
             input_channel: the name of the channel which received this message.
