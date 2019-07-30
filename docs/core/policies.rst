@@ -252,6 +252,9 @@ It is recommended to use
             - ``use_max_sim_neg`` if ``true`` the algorithm only
               minimizes maximum similarity over incorrect intent labels,
               used only if ``loss_type`` is set to ``margin``;
+            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
+              for examples where correct label is predicted with high confidence,
+              used only if ``loss_type`` is set to ``softmax``;
 
         - regularization:
 

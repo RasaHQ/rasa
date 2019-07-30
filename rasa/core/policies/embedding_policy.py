@@ -98,6 +98,8 @@ class EmbeddingPolicy(Policy):
         # the number of incorrect actions, the algorithm will minimize
         # their similarity to the user input during training
         "use_max_sim_neg": True,  # flag which loss function to use
+        # scale loss inverse proportionally to confidence of correct prediction
+        "scale_loss": True,
         # regularization
         # the scale of L2 regularization
         "C2": 0.001,
@@ -210,6 +212,7 @@ class EmbeddingPolicy(Policy):
 
         self.num_neg = config["num_neg"]
         self.use_max_sim_neg = config["use_max_sim_neg"]
+        self.scale_loss = config["scale_loss"]
 
     def _load_regularization_params(self, config: Dict[Text, Any]) -> None:
         self.C2 = config["C2"]
@@ -818,8 +821,8 @@ class EmbeddingPolicy(Policy):
 
         return loss
 
-    @staticmethod
     def _tf_loss_softmax(
+        self,
         sim_pos: "tf.Tensor",
         sim_neg: "tf.Tensor",
         sim_neg_bot_bot: "tf.Tensor",
@@ -838,11 +841,12 @@ class EmbeddingPolicy(Policy):
         neg_labels = tf.zeros_like(logits[:, :, 1:])
         labels = tf.concat([pos_labels, neg_labels], -1)
 
-        # mask loss by prediction confidence
-        pred = tf.nn.softmax(logits)
-        already_learned = tf.pow((1 - pred[:, :, 0]) / 0.5, 4)
+        if self.scale_loss:
+            # mask loss by prediction confidence
+            pred = tf.nn.softmax(logits)
+            mask *= tf.pow((1 - pred[:, :, 0]) / 0.5, 4)
 
-        loss = tf.losses.softmax_cross_entropy(labels, logits, mask * already_learned)
+        loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
         # add regularization losses
         loss += tf.losses.get_regularization_loss()
 

@@ -378,7 +378,8 @@ class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
 class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
         p = EmbeddingPolicy(
-            featurizer=featurizer, priority=priority, **{"evaluate_on_num_examples": 4}
+            featurizer=featurizer, priority=priority, **{"scale_loss": False,
+                                                         "evaluate_on_num_examples": 4}
         )
         return p
 
