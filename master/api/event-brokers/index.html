@@ -272,7 +272,12 @@ tracker looks like this:</p>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">event</span></code> field takes the event’s <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (for more on event
 types, check out the <a class="reference internal" href="../events/#events"><span class="std std-ref">Events</span></a> docs).</p>
-<p>Rasa enables two possible brokers producers: Pika Event Broker and Kafka Event Broker.</p>
+<p>Rasa enables three possible broker types:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#pika-event-broker">Pika Event Broker</a></li>
+<li><a class="reference internal" href="#kafka-event-broker">Kafka Event Broker</a></li>
+<li><a class="reference internal" href="#sql-event-broker">SQL Event Broker</a></li>
+</ul>
 <div class="section" id="pika-event-broker">
 <h2>Pika Event Broker<a class="headerlink" href="#pika-event-broker" title="Permalink to this headline">¶</a></h2>
 <p>The example implementation we’re going to show you here uses <a class="reference external" href="https://pika.readthedocs.io">Pika</a> ,
@@ -348,7 +353,7 @@ example:</p>
 </div>
 <div class="section" id="kafka-event-broker">
 <h2>Kafka Event Broker<a class="headerlink" href="#kafka-event-broker" title="Permalink to this headline">¶</a></h2>
-<p>It is possible to use <a class="reference external" href="https://kafka.apache.org/">Kafka</a> as main broker to you events. In this example
+<p>It is possible to use <a class="reference external" href="https://kafka.apache.org/">Kafka</a> as main broker for your events. In this example
 we are going to use the <a class="reference external" href="https://kafka-python.readthedocs.io/en/master/usage.html">python-kafka</a>
 library, a Kafka client written in Python.</p>
 <div class="section" id="adding-a-kafka-event-broker-using-the-endpoint-configuration">
@@ -465,6 +470,41 @@ according to the security protocol being used. The following implementation show
     <span class="k">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+</div>
+<div class="section" id="sql-event-broker">
+<h2>SQL Event Broker<a class="headerlink" href="#sql-event-broker" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to use an SQL database as an event broker. Connections to databases are established using
+<a class="reference external" href="https://www.sqlalchemy.org/">SQLAlchemy</a>, a Python library which can interact with many
+different types of SQL databases, such as <a class="reference external" href="https://sqlite.org/index.html">SQLite</a>,
+<a class="reference external" href="https://www.postgresql.org/">PostgreSQL</a> and more. The default Rasa installation allows connections to SQLite
+and PostgreSQL databases, to see other options, please see the
+<a class="reference external" href="https://docs.sqlalchemy.org/en/13/dialects/index.html">SQLAlchemy documentation on SQL dialects</a>.</p>
+<div class="section" id="adding-a-sql-event-broker-using-the-endpoint-configuration">
+<h3>Adding a SQL Event Broker Using the Endpoint Configuration<a class="headerlink" href="#adding-a-sql-event-broker-using-the-endpoint-configuration" title="Permalink to this headline">¶</a></h3>
+<p>You can use the endpoint configuration file to instruct Rasa to save
+all events to your SQL event broker. To do so, add a <code class="docutils literal notranslate"><span class="pre">event_broker</span></code> section to your
+endpoint configuration, e.g. <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>. For example, a valid SQLite configuration
+could look like the following:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">event_broker</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
+  <span class="l l-Scalar l-Scalar-Plain">dialect</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">sqlite</span>
+  <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">events.db</span>
+</pre></div>
+</div>
+<p>PostgreSQL databases can be used as well:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">event_broker</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
+  <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
+  <span class="l l-Scalar l-Scalar-Plain">port</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">5432</span>
+  <span class="l l-Scalar l-Scalar-Plain">dialect</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">postgresql</span>
+  <span class="l l-Scalar l-Scalar-Plain">username</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">myuser</span>
+  <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mypassword</span>
+  <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mydatabase</span>
+</pre></div>
+</div>
+<p>With this configuration applied, Rasa will create a table called <code class="docutils literal notranslate"><span class="pre">events</span></code> on the database,
+where all events will be added.</p>
 </div>
 </div>
 </div>
