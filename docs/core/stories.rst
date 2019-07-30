@@ -51,7 +51,7 @@ This is what we call a **story**.
   and contain the name of the action.
 - Events returned by an action are on lines immediately after that
    action. For example, if an action returns a ``SlotSet`` event,
-  this is shown as the line ``- slot{"slot_name": "value"}``.
+  this is shown as ``slot{"slot_name": "value"}``.
 
 Let's now take a slightly more detailed look at each of these components,
 along with some things you should keep in mind while using them to write
