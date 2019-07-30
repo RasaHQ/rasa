@@ -1,13 +1,14 @@
 import asyncio
 import logging
-import tempfile
-from typing import Text, Dict, Optional, List, Any
 import os
+from typing import Text, Dict, Optional, List, Any
 
-from rasa.core.interpreter import RegexInterpreter
-
-from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
-from rasa.model import get_model, get_model_subdirectories, unpack_model
+import rasa.utils.io as io_utils
+from rasa.constants import (
+    DEFAULT_RESULTS_PATH,
+    RESULTS_FILE,
+    NUMBER_OF_TRAINING_STORIES_FILE,
+)
 from rasa.cli.utils import print_error, print_warning
 import rasa.utils.common as utils
 from rasa.exceptions import ModelNotFound
@@ -15,18 +16,22 @@ from rasa.exceptions import ModelNotFound
 logger = logging.getLogger(__name__)
 
 
-def test_compare_core(models: List[Text], stories: Text, output: Text):
-    from rasa.core.test import compare, plot_core_results
-    import rasa.utils.io
-
-    model_directory = copy_models_to_compare(models)
+def test_core_models_in_directory(model_directory: Text, stories: Text, output: Text):
+    from rasa.core.test import compare_models_in_dir, plot_core_results
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(compare(model_directory, stories, output))
+    loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
 
-    story_n_path = os.path.join(model_directory, "num_stories.json")
-    number_of_stories = rasa.utils.io.read_json_file(story_n_path)
+    story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
+    number_of_stories = io_utils.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
+
+
+def test_core_models(models: List[Text], stories: Text, output: Text):
+    from rasa.core.test import compare_models
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(compare_models(models, stories, output))
 
 
 def test(
@@ -53,9 +58,8 @@ def test_core(
 ):
     import rasa.core.test
     import rasa.core.utils as core_utils
-    from rasa.nlu import utils as nlu_utils
-    from rasa.model import get_model
-    from rasa.core.interpreter import NaturalLanguageInterpreter
+    import rasa.model
+    from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
     from rasa.core.agent import Agent
 
     _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
@@ -64,23 +68,23 @@ def test_core(
         kwargs = {}
 
     if output:
-        nlu_utils.create_dir(output)
+        io_utils.create_directory(output)
 
     try:
-        unpacked_model = get_model(model)
+        unpacked_model = rasa.model.get_model(model)
     except ModelNotFound:
         print_error(
             "Unable to test: could not find a model. Use 'rasa train' to train a "
-            "Rasa model."
+            "Rasa model and provide it via the '--model' argument."
         )
         return
 
-    core_path, nlu_path = get_model_subdirectories(unpacked_model)
+    core_path, nlu_path = rasa.model.get_model_subdirectories(unpacked_model)
 
     if not core_path:
         print_error(
-            "Unable to test: could not find a Core model. Use 'rasa train' to "
-            "train a model."
+            "Unable to test: could not find a Core model. Use 'rasa train' to train a "
+            "Rasa model and provide it via the '--model' argument."
         )
 
     use_e2e = kwargs["e2e"] if "e2e" in kwargs else False
@@ -107,12 +111,14 @@ def test_core(
 
 def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict]):
     from rasa.nlu.test import run_evaluation
+    from rasa.model import get_model
 
     try:
         unpacked_model = get_model(model)
     except ModelNotFound:
         print_error(
-            "Could not find any model. Use 'rasa train nlu' to train an NLU model."
+            "Could not find any model. Use 'rasa train nlu' to train a "
+            "Rasa model and provide it via the '--model' argument."
         )
         return
 
@@ -123,7 +129,8 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
         run_evaluation(nlu_data, nlu_model, **kwargs)
     else:
         print_error(
-            "Could not find any model. Use 'rasa train nlu' to train an NLU model."
+            "Could not find any model. Use 'rasa train nlu' to train a "
+            "Rasa model and provide it via the '--model' argument."
         )
 
 
@@ -199,18 +206,3 @@ def perform_nlu_cross_validation(
         logger.info("Entity evaluation results")
         return_entity_results(entity_results.train, "train")
         return_entity_results(entity_results.test, "test")
-
-
-def copy_models_to_compare(models: List[str]) -> Text:
-    models_dir = tempfile.mkdtemp()
-
-    for i, model in enumerate(models):
-        if os.path.exists(model) and os.path.isfile(model):
-            path = os.path.join(models_dir, "model_" + str(i))
-            unpack_model(model, path)
-        else:
-            logger.warning("Ignore '{}' as it is not a valid model file.".format(model))
-
-    logger.debug("Unpacked models to compare to '{}'".format(models_dir))
-
-    return models_dir

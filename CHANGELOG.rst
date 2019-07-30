@@ -6,8 +6,32 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.8] - `master`_
+
+[Unreleased 1.1.9] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- add root route to server started without ``--enable-api`` parameter
+- add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
+- option to send messages to the user by calling
+  ``POST /conversations/{conversation_id}/execute``
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+- ``rasa test core`` can handle compressed model files
+- Rasa can handle story files containing multi line comments
+- Template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
+
+
+[1.1.8] - 2019-07-25
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -23,10 +47,6 @@ Changed
   or a policy ensemble
 - update pytype to ``2019.7.11``
 
-Removed
--------
-
-
 Fixed
 -----
 - interactive learning bug where reverted user utterances were dumped to training data
@@ -35,6 +55,7 @@ Fixed
 - fill slots for image, buttons, quick_replies and attachments in templates
 - ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
 - slot setting in interactive learning with the TwoStageFallbackPolicy
+
 
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^
