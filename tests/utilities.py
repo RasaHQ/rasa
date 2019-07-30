@@ -4,8 +4,8 @@ from typing import Optional, Text
 
 from yarl import URL
 
-from constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
-from importers.rasa import RasaFileImporter
+from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
+from rasa.importers.rasa import RasaFileImporter
 from model import (
     FINGERPRINT_CONFIG_KEY,
     FINGERPRINT_CONFIG_CORE_KEY,
