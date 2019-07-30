@@ -142,7 +142,7 @@ class BotFramework(OutputChannel):
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
-        for e in elements:
+        for e in elements[0]:
             message = self.prepare_message(recipient_id, e)
             await self.send(message)
 
@@ -208,13 +208,23 @@ class BotFrameworkInput(InputChannel):
                         postdata["recipient"],
                         postdata["serviceUrl"],
                     )
-
-                    user_msg = UserMessage(
-                        postdata["text"],
-                        out_channel,
-                        postdata["from"]["id"],
-                        input_channel=self.name(),
-                    )
+                    
+                    if postdata.get('attachments'):
+                        user_msg = UserMessage(
+                            text=(postdata['text'] if postdata.get('text') 
+                                  else ""),
+                            parse_data={"attachement": postdata['attachments'][0]},
+                            output_channel=out_channel,
+                            sender_id=postdata["from"]["id"],
+                            input_channel=self.name(),
+                        )
+                    else:
+                        user_msg = UserMessage(
+                            postdata["text"],
+                            out_channel,
+                            postdata["from"]["id"],
+                            input_channel=self.name(),
+                        )
                     await on_new_message(user_msg)
                 else:
                     logger.info("Not received message type")

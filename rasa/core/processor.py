@@ -297,7 +297,9 @@ class MessageProcessor(object):
     ) -> None:
 
         if message.parse_data:
+            parse_message = await self._parse_message(message)
             parse_data = message.parse_data
+            parse_data.update(parse_message)
         else:
             parse_data = await self._parse_message(message)
 
