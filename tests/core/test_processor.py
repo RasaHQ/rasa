@@ -27,6 +27,7 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -90,14 +91,15 @@ async def test_http_parsing():
         assert r
 
 
-# Mock parsing a text message and augment it with the slot
-# value from the tracker's state
 async def mocked_parse(self, text, message_id=None, tracker=None):
+    """Mock parsing a text message and augment it with the slot
+    value from the tracker's state."""
+
     return {
         "intent": {"name": "", "confidence": 0.0},
         "entities": [],
         "text": text,
-        "requested_language": tracker.get_slot("requested_language")
+        "requested_language": tracker.get_slot("requested_language"),
     }
 
 
@@ -115,10 +117,9 @@ async def test_parsing_with_tracker():
         # mock the parse function with the one defined for this test
         with patch.object(RasaNLUHttpInterpreter, "parse", mocked_parse):
             interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
-            result = await MessageProcessor(interpreter, None, None, tracker, None)._parse_message(
-                message,
-                tracker
-            )
+            result = await MessageProcessor(
+                interpreter, None, None, tracker, None
+            )._parse_message(message, tracker)
             assert result["requested_language"] == "en"
 
 
