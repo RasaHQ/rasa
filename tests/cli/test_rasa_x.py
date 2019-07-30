@@ -55,9 +55,9 @@ def test_prepare_credentials_if_already_valid(tmpdir_factory):
 
 
 def test_if_endpoint_config_is_valid_in_local_mode():
-    config = EndpointConfig(type="sql", dialect="sqlite", db=x.DEFAULT_TRACKER_DB)
+    config = EndpointConfig(type="sql", dialect="sqlite", db=x.DEFAULT_EVENTS_DB)
 
-    assert x._is_correct_tracker_store(config)
+    assert x._is_correct_event_broker(config)
 
 
 @pytest.mark.parametrize(
@@ -71,4 +71,4 @@ def test_if_endpoint_config_is_valid_in_local_mode():
 def test_if_endpoint_config_is_invalid_in_local_mode(kwargs):
     config = EndpointConfig(**kwargs)
 
-    assert not x._is_correct_tracker_store(config)
+    assert not x._is_correct_event_broker(config)
