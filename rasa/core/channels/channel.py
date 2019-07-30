@@ -37,7 +37,7 @@ class UserMessage(object):
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
     ) -> None:
-        """ UserMessage arguments.
+        """Creates a ``UserMessage`` object.
 
         Args:
             text: The message text content.
@@ -46,7 +46,7 @@ class UserMessage(object):
             parse_data: Rasa data about the message.
             input_channel: The message origin name.
             message_id: ID of the message.
-            metadata: A dict that contains information about the message.
+            metadata: Additional metadata for this message.
 
         """
         self.text = text.strip() if text else text
