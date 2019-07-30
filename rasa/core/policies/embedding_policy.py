@@ -57,7 +57,7 @@ class EmbeddingPolicy(Policy):
         # nn architecture
         # a list of hidden layers sizes before user embed layer
         # number of hidden layers is equal to the length of this list
-        "hidden_layers_sizes_dial": [],
+        "hidden_layers_sizes_pre_dial": [],
         # a list of hidden layers sizes before bot embed layer
         # number of hidden layers is equal to the length of this list
         "hidden_layers_sizes_bot": [],
@@ -178,8 +178,8 @@ class EmbeddingPolicy(Policy):
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layers_sizes = {
-            "a": config["hidden_layers_sizes_dial"],
-            "b": config["hidden_layers_sizes_bot"],
+            "pre_dial": config["hidden_layers_sizes_pre_dial"],
+            "bot": config["hidden_layers_sizes_bot"],
         }
 
         self.pos_encoding = config["pos_encoding"]
@@ -510,7 +510,7 @@ class EmbeddingPolicy(Policy):
 
         b = self._create_tf_nn(
             b_in,
-            self.hidden_layers_sizes["b"],
+            self.hidden_layers_sizes["bot"],
             self.droprate["bot"],
             layer_name_suffix="bot",
         )
@@ -610,9 +610,9 @@ class EmbeddingPolicy(Policy):
 
         a = self._create_tf_nn(
             a_in,
-            self.hidden_layers_sizes["a"],
+            self.hidden_layers_sizes["pre_dial"],
             self.droprate["dial"],
-            layer_name_suffix="dial",
+            layer_name_suffix="pre_dial",
         )
 
         self.attention_weights = {}
