@@ -168,7 +168,7 @@ class TelegramInput(InputChannel):
 
     def blueprint(self, on_new_message):
         telegram_webhook = Blueprint("telegram_webhook", __name__)
-        out_channel = TelegramOutput(self.access_token)
+        out_channel = self.get_output_channel()
 
         @telegram_webhook.route("/", methods=["GET"])
         async def health(request: Request):
@@ -241,3 +241,9 @@ class TelegramInput(InputChannel):
 
         out_channel.setWebhook(self.webhook_url)
         return telegram_webhook
+
+    def get_output_channel(self) -> TelegramOutput:
+        channel = TelegramOutput(self.access_token)
+        channel.setWebhook(self.webhook_url)
+
+        return channel
