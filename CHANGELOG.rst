@@ -19,6 +19,12 @@ Added
 
 Changed
 -------
+- new event broker class: ``SQLProducer``. This event broker is now used when running locally with
+  Rasa X
+- substitute LSTM with Transformer in ``EmbeddingPolicy``
+- ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
+- non zero ``evaluate_on_num_examples`` in ``EmbeddingPolicy`` is the size of
+  hold out validation set that is excluded from training data
 
 Removed
 -------
@@ -26,8 +32,8 @@ Removed
 Fixed
 -----
 - ``rasa test core`` can handle compressed model files
-- Rasa can handle story files containing multi line comments
-- Template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
+- rasa can handle story files containing multi line comments
+- template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
 
 
 [1.1.8] - 2019-07-25
@@ -37,17 +43,13 @@ Added
 -----
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
-- Fill slots for custom templates
+- fill slots for custom templates
 
 Changed
 -------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
-- Update pytype to ``2019.7.11``
-- Substitute LSTM with Transformer in ``EmbeddingPolicy``
-- ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
-- in ``EmbeddingPolicy``, non zero ``evaluate_on_num_examples`` is the size of
-  hold out validation set that is excluded from training data
+- update pytype to ``2019.7.11``
 
 Fixed
 -----
