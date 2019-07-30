@@ -209,7 +209,12 @@ class UserUttered(Event):
 
     @staticmethod
     def _from_parse_data(
-        text, parse_data, timestamp=None, input_channel=None, metadata=None
+        text: Text,
+        parse_data: Dict[Text, Any],
+        timestamp: int = None,
+        input_channel: Optional[Text] = None,
+        message_id: Optional[Text] = None,
+        metadata: Optional[Dict] = None,
     ):
         return UserUttered(
             text,
@@ -271,6 +276,7 @@ class UserUttered(Event):
                     parameters.get("parse_data"),
                     parameters.get("timestamp"),
                     parameters.get("input_channel"),
+                    parameters.get("messge_id"),
                     parameters.get("metadata"),
                 )
             ]

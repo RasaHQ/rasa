@@ -40,13 +40,14 @@ class UserMessage(object):
         """Creates a ``UserMessage`` object.
 
         Args:
-            text: The message text content.
-            output_channel: The message output data.
-            sender_id: The message owner ID.
-            parse_data: Rasa data about the message.
-            input_channel: The message origin name.
+            text: the message text content.
+            output_channel: the output channel which should be used to send
+            bot responses back to the user.
+            sender_id: the message owner ID.
+            parse_data: rasa data about the message.
+            input_channel: the name of the channel which received this message.
             message_id: ID of the message.
-            metadata: Additional metadata for this message.
+            metadata: additional metadata for this message.
 
         """
         self.text = text.strip() if text else text
