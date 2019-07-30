@@ -644,7 +644,7 @@ class StoryGraph(object):
     @staticmethod
     def order_steps(
         story_steps: List[StoryStep]
-    ) -> Tuple[deque, Set[Tuple[Text, Text]]]:
+    ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Topological sort of the steps returning the ids of the steps."""
 
         checkpoints = StoryGraph._group_by_start_checkpoint(story_steps)
