@@ -50,7 +50,7 @@ This is what we call a **story**.
 - Actions executed by the bot are shown as lines starting with ``-``
   and contain the name of the action.
 - Events returned by an action are on lines immediately after that
-  action. For example, if an action returns a ``SetSlot`` event,
+   action. For example, if an action returns a ``SlotSet`` event,
   this is shown as the line ``- slot{"slot_name": "value"}``.
 
 Let's now take a slightly more detailed look at each of these components,
