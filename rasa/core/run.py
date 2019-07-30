@@ -19,6 +19,7 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints, configure_file_logging
 from rasa.model import get_model_subdirectories, get_model
 from rasa.utils.common import update_sanic_log_level, class_from_module_path
+from rasa.server import add_root_route
 
 logger = logging.getLogger()  # get the root logger
 
@@ -66,6 +67,13 @@ def _create_single_channel(channel, credentials):
             )
 
 
+def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
+    app = Sanic(__name__, configure_logging=False)
+    add_root_route(app)
+    CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
+    return app
+
+
 def configure_app(
     input_channels: Optional[List["InputChannel"]] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
@@ -92,8 +100,7 @@ def configure_app(
             endpoints=endpoints,
         )
     else:
-        app = Sanic(__name__, configure_logging=False)
-        CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
+        app = _create_app_without_api(cors)
 
     if input_channels:
         rasa.core.channels.channel.register(input_channels, app, route=route)
