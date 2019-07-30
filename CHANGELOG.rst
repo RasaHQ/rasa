@@ -19,6 +19,8 @@ Added
 
 Changed
 -------
+- new event broker class: ``SQLProducer``. This event broker is now used when running locally with
+  Rasa X
 
 Removed
 -------
@@ -38,8 +40,6 @@ Added
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
 - fill slots for custom templates
-- new event broker class: ``SQLProducer``. This event broker is now used when running locally with
-  Rasa X
 
 Changed
 -------
