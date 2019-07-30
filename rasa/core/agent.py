@@ -411,7 +411,7 @@ class Agent(object):
         )
 
     async def parse_message_using_nlu_interpreter(
-        self, message_data: Text
+        self, message_data: Text, tracker: DialogueStateTracker = None
     ) -> Dict[Text, Any]:
         """Handles message text and intent payload input messages.
 
@@ -420,6 +420,8 @@ class Agent(object):
         Args:
             message_data (Text): Contain the received message in text or\
             intent payload format.
+            tracker (DialogueStateTracker): Contains the tracker to be\
+            used by the interpreter.
 
         Returns:
             The parsed message.
@@ -438,7 +440,7 @@ class Agent(object):
 
         processor = self.create_processor()
         message = UserMessage(message_data)
-        return await processor._parse_message(message)
+        return await processor._parse_message(message, tracker)
 
     async def handle_message(
         self,

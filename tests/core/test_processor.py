@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import rasa.utils.io
 from rasa.core import jobs
+from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
     ActionExecuted,
@@ -104,7 +105,6 @@ async def mocked_parse(self, text, message_id=None, tracker=None):
 
 
 async def test_parsing_with_tracker():
-    message = UserMessage("lunch?")
     tracker = DialogueStateTracker.from_dict("1", [], [Slot("requested_language")])
 
     # we'll expect this value 'en' to be part of the result from the interpreter
@@ -117,9 +117,9 @@ async def test_parsing_with_tracker():
         # mock the parse function with the one defined for this test
         with patch.object(RasaNLUHttpInterpreter, "parse", mocked_parse):
             interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
-            result = await MessageProcessor(
-                interpreter, None, None, tracker, None
-            )._parse_message(message, tracker)
+            agent = Agent(None, None, interpreter)
+            result = await agent.parse_message_using_nlu_interpreter("lunch?", tracker)
+
             assert result["requested_language"] == "en"
 
 
