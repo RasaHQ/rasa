@@ -48,10 +48,7 @@ def set_split_arguments(parser: argparse.ArgumentParser):
 
 def set_validator_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "--log-file",
-        type=str,
-        default=None,
-        help="Store logs in specified file.",
+        "--log-file", type=str, default=None, help="Store logs in specified file."
     )
     add_domain_param(parser)
     add_data_param(parser)

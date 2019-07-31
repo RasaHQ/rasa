@@ -98,5 +98,7 @@ def validate_files(args):
         domain_path=args.domain, training_data_paths=args.data
     )
 
-    validator = loop.run_until_complete(Validator.from_importer(file_importer, out=args.log_file))
+    validator = loop.run_until_complete(
+        Validator.from_importer(file_importer, out=args.log_file)
+    )
     validator.verify_all()
