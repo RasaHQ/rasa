@@ -71,7 +71,7 @@ entities.
 
 Actions
 ~~~~~~~
-While writing stories, you will encounter two types of actions - utterances
+While writing stories, you will encounter two types of actions: utterances
 and custom actions. Utterances are hardcoded messages that a bot can respond
 with. Custom actions, on the other hand, involve custom code being executed. 
 
