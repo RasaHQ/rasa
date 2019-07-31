@@ -203,6 +203,8 @@ class UserUttered(Event):
                 "intent": self.intent,
                 "entities": self.entities,
                 "text": text,
+                "message_id": self.message_id,
+                "metadata": self.metadata,
             }
 
         super(UserUttered, self).__init__(timestamp)
@@ -211,7 +213,7 @@ class UserUttered(Event):
     def _from_parse_data(
         text: Text,
         parse_data: Dict[Text, Any],
-        timestamp: int = None,
+        timestamp: Optional[int] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
@@ -223,6 +225,7 @@ class UserUttered(Event):
             parse_data,
             timestamp,
             input_channel,
+            message_id,
             metadata,
         )
 
@@ -276,7 +279,7 @@ class UserUttered(Event):
                     parameters.get("parse_data"),
                     parameters.get("timestamp"),
                     parameters.get("input_channel"),
-                    parameters.get("messge_id"),
+                    parameters.get("message_id"),
                     parameters.get("metadata"),
                 )
             ]

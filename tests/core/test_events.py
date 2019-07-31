@@ -80,6 +80,7 @@ def test_event_has_proper_implementation(one_event, another_event):
         UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
         UserUttered(metadata={"type": "text"}),
         UserUttered(metadata=None),
+        UserUttered(text="hi", message_id="1", metadata={"type": "text"}),
         SlotSet("name", "rasa"),
         Restarted(),
         AllSlotsReset(),

@@ -38,14 +38,6 @@ server into the action server when applicable, where you can find it stored in
 the ``tracker``. Message metadata will not directly affect NLU classification
 or action prediction.
 
-To send a message with metadata, you would run a command like:
-
-.. code-block:: bash
-
-    curl -XPOST http://localhost:5000/webhooks/myio/webhook \
-      -d '{"sender": "user1", "message": "here is my token: <token>", "metadata: {"type": "token"}}' \
-      -H "Content-type: application/json"
-
 Here are all the attributes of ``UserMessage``:
 
 .. autoclass:: rasa.core.channels.UserMessage
