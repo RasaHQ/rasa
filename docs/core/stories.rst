@@ -51,9 +51,9 @@ This is what we call a **story**.
   in the format ``intent{"entity1": "value", "entity2": "value"}``.
 - Actions executed by the bot are shown as lines starting with ``-``
   and contain the name of the action.
-- Events returned by an action are on lines immediately after that
-   action. For example, if an action returns a ``SlotSet`` event,
-  this is shown as ``slot{"slot_name": "value"}``.
+- Events returned by an action are on lines immediately after that action.
+  For example, if an action returns a ``SlotSet`` event, this is shown as
+  ``slot{"slot_name": "value"}``.
 
 Let's now take a slightly more detailed look at each of these components,
 along with some things you should keep in mind while using them to write
@@ -67,8 +67,8 @@ from the NLU pipeline, which lets you use just the combination of an intent and
 entities to refer to all the possible messages the users can send to mean the
 same thing.
 
-It is important to include the entities as well because the policies learn to
-predict the next action based on a *combination* of both the intent and
+It is important to include the entities here as well because the policies learn
+to predict the next action based on a *combination* of both the intent and
 entities (you can, of course, customize this behavior using the
 :ref:`use_entities <use_entities>` attribute).
 
@@ -102,7 +102,13 @@ Form Events
 ***********
 There are three kinds of events that need to be kept in mind while dealing with
 forms in stories.
-1. Form action - this 
+
+1. A form action event (e.g. ``- restaurant_form``) is used in the beginning when
+first starting a form, and also while resuming the form action when the form is
+already active.
+2. A form activation event (e.g. ``- form{"name": "restaurant_form"}``) is used
+right after a form action event 
+3. A form deactivation event (e.g. ``- form{"name": null}``)
 
 
 In order to get around this pitfall, the recommended way to write these
