@@ -1,0 +1,13 @@
+intents:
+  - affirm:
+      triggers: utter_ask_num_people
+
+templates:
+  utter_ask_num_people:
+    - text: "how many people?"
+
+actions:
+  - utter_ask_num_people
+
+forms:
+  - restaurant_form

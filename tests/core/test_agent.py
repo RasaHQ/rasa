@@ -7,13 +7,20 @@ from sanic import Sanic, response
 
 import rasa.utils.io
 import rasa.core
-from rasa.core import jobs, utils
+from rasa.core import config, jobs, utils
 from rasa.core.agent import Agent, load_agent
+from rasa.core.domain import InvalidDomain
 from rasa.core.channels.channel import UserMessage
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
-from tests.core.conftest import DEFAULT_DOMAIN_PATH
+
+from tests.core.conftest import (
+    DEFAULT_DOMAIN_PATH,
+    NO_FORMS_POLICY_CONFIG,
+    NO_MAPPING_POLICY_CONFIG,
+    TRIGGERS_AND_FORMS_DOMAIN,
+)
 
 
 @pytest.fixture(scope="session")
@@ -192,6 +199,22 @@ async def test_load_agent(trained_model):
     assert agent.tracker_store is not None
     assert agent.interpreter is not None
     assert agent.model_directory is not None
+
+
+def test_init_agent_with_missing_policies():
+    with pytest.raises(InvalidDomain) as execinfo:
+        no_form_policy_agent = Agent(
+            domain=TRIGGERS_AND_FORMS_DOMAIN,
+            policies=config.load(NO_FORMS_POLICY_CONFIG),
+        )
+    assert "haven't added the FormPolicy" in str(execinfo.value)
+
+    with pytest.raises(InvalidDomain) as execinfo:
+        no_mapping_policy_agent = Agent(
+            domain=TRIGGERS_AND_FORMS_DOMAIN,
+            policies=config.load(NO_MAPPING_POLICY_CONFIG),
+        )
+    assert "haven't added the MappingPolicy" in str(execinfo.value)
 
 
 async def test_agent_update_model_none_domain(trained_model):

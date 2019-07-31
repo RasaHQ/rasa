@@ -27,6 +27,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
+from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
@@ -298,11 +299,8 @@ class Agent(object):
         if self.domain:
             self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
-        if not self._is_form_policy_present():
-            raise InvalidDomain(
-                "You have defined a form action, but haven't added the "
-                "FormPolicy to your policy ensemble."
-            )
+
+        self._check_missing_policies()
 
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
@@ -315,6 +313,38 @@ class Agent(object):
         self.model_directory = model_directory
         self.model_server = model_server
         self.remote_storage = remote_storage
+
+    def _check_missing_policies(self):
+        """Check for domain elements that work only with certain policies."""
+
+        def check_form_policy():
+            has_form_policy = self.policy_ensemble is not None and any(
+                isinstance(p, FormPolicy) for p in self.policy_ensemble.policies
+            )
+            if self.domain and self.domain.form_names and not has_form_policy:
+                raise InvalidDomain(
+                    "You have defined a form action, but haven't added the "
+                    "FormPolicy to your policy ensemble."
+                )
+
+        def check_mapping_policy():
+            has_mapping_policy = self.policy_ensemble is not None and any(
+                isinstance(p, MappingPolicy) for p in self.policy_ensemble.policies
+            )
+            has_triggers_in_domain = any(
+                [
+                    "triggers" in properties
+                    for intent, properties in self.domain.intent_properties.items()
+                ]
+            )
+            if self.domain and has_triggers_in_domain and not has_mapping_policy:
+                raise InvalidDomain(
+                    "You have defined triggers in your domain, but haven't "
+                    "added the MappingPolicy to your policy ensemble."
+                )
+
+        check_form_policy()
+        check_mapping_policy()
 
     def update_model(
         self,
@@ -953,11 +983,3 @@ class Agent(object):
             )
 
         return None
-
-    def _is_form_policy_present(self) -> bool:
-        """Check whether form policy is present and used."""
-
-        has_form_policy = self.policy_ensemble is not None and any(
-            isinstance(p, FormPolicy) for p in self.policy_ensemble.policies
-        )
-        return not self.domain or not self.domain.form_names or has_form_policy
