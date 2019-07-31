@@ -269,6 +269,9 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <ul class="simple">
 <li>new event broker class: <code class="docutils literal notranslate"><span class="pre">SQLProducer</span></code>. This event broker is now used when running locally with
 Rasa X</li>
+<li>API requests are not longer logged to <code class="docutils literal notranslate"><span class="pre">rasa_core.log</span></code> by default in order to avoid
+problems when running on OpenShift (use <code class="docutils literal notranslate"><span class="pre">--log-file</span> <span class="pre">rasa_core.log</span></code> to retain the
+old behavior)</li>
 </ul>
 </div>
 <div class="section" id="removed">
