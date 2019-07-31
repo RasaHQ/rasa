@@ -61,7 +61,7 @@ class FallbackPolicy(Policy):
 
         pass
 
-    def should_nlu_fallback(
+    def nlu_has_low_confidence(
         self, nlu_confidence: float, last_action_name: Text
     ) -> bool:
         """Checks if fallback action should be predicted.
@@ -76,6 +76,13 @@ class FallbackPolicy(Policy):
             and last_action_name == ACTION_LISTEN_NAME
         )
 
+    def nlu_is_confused(
+
+    ) -> bool:
+        """Check if NLU """
+
+        pass
+
     def fallback_scores(self, domain, fallback_score=1.0):
         """Prediction scores used if a fallback is necessary."""
 
@@ -87,31 +94,38 @@ class FallbackPolicy(Policy):
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
-        """Predicts a fallback action.
+        """Predict a fallback action.
 
         The fallback action is predicted if the NLU confidence is low
         or no other policy has a high-confidence prediction.
         """
 
         nlu_data = tracker.latest_message.parse_data
-
         # if NLU interpreter does not provide confidence score,
         # it is set to 1.0 here in order
         # to not override standard behaviour
         nlu_confidence = nlu_data.get("intent", {}).get("confidence", 1.0)
 
         if tracker.latest_action_name == self.fallback_action_name:
+            # Don't want to go into a loop of constantly predicting
+            # the fallback action.
             result = [0.0] * domain.num_actions
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
 
-        elif self.should_nlu_fallback(nlu_confidence, tracker.latest_action_name):
+        elif self.nlu_confidence_below_threshold(nlu_confidence, tracker.latest_action_name):
             logger.debug(
                 "NLU confidence {} is lower "
                 "than NLU threshold {:.2f}. "
                 "".format(nlu_confidence, self.nlu_threshold)
             )
-            result = self.fallback_scores(domain)
+            result = self.fallback_scores(domain) 
+
+        elif self.nlu_confidences_too_close(nlu_data, tracker.latest_action_name):
+            logger.debug(
+                "Difference between top two predictions "
+                "confidences is less than "
+            )
 
         else:
             # NLU confidence threshold is met, so
@@ -119,7 +133,7 @@ class FallbackPolicy(Policy):
             # if this is the highest confidence in the ensemble,
             # the fallback action will be executed.
             logger.debug(
-                "NLU confidence threshold met, confidence of "
+                "NLU confidence thresholds met, confidence of "
                 "fallback action set to core threshold ({}).".format(
                     self.core_threshold
                 )
