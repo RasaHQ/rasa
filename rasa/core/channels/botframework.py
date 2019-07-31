@@ -142,7 +142,7 @@ class BotFramework(OutputChannel):
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
     ) -> None:
-        for e in elements[0]:
+        for e in elements:
             message = self.prepare_message(recipient_id, e)
             await self.send(message)
 
