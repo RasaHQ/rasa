@@ -21,6 +21,9 @@ Changed
 -------
 - new event broker class: ``SQLProducer``. This event broker is now used when running locally with
   Rasa X
+- API requests are not longer logged to ``rasa_core.log`` by default in order to avoid
+  problems when running on OpenShift (use ``--log-file rasa_core.log`` to retain the
+  old behavior)
 
 Removed
 -------
