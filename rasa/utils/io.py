@@ -6,6 +6,7 @@ import tarfile
 import tempfile
 import warnings
 import zipfile
+import glob
 from asyncio import AbstractEventLoop
 from typing import Text, Any, Dict, Union, List, Type, Callable
 import ruamel.yaml as yaml
@@ -234,18 +235,6 @@ def create_path(file_path: Text):
         os.makedirs(parent_dir)
 
 
-def zip_folder(folder: Text) -> Text:
-    """Create an archive from a folder."""
-    import tempfile
-    import shutil
-
-    zipped_path = tempfile.NamedTemporaryFile(delete=False)
-    zipped_path.close()
-
-    # WARN: not thread save!
-    return shutil.make_archive(zipped_path.name, str("zip"), folder)
-
-
 def create_directory_for_file(file_path: Text) -> None:
     """Creates any missing parent directories of this file path."""
 
@@ -300,3 +289,71 @@ def create_validator(
                 raise ValidationError(message=error_message)
 
     return FunctionValidator
+
+
+def list_files(path: Text) -> List[Text]:
+    """Returns all files excluding hidden files.
+
+    If the path points to a file, returns the file."""
+
+    return [fn for fn in list_directory(path) if os.path.isfile(fn)]
+
+
+def list_subdirectories(path: Text) -> List[Text]:
+    """Returns all folders excluding hidden files.
+
+    If the path points to a file, returns an empty list."""
+
+    return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
+
+
+def list_directory(path: Text) -> List[Text]:
+    """Returns all files and folders excluding hidden files.
+
+    If the path points to a file, returns the file. This is a recursive
+    implementation returning files in any depth of the path."""
+
+    if not isinstance(path, str):
+        raise ValueError(
+            "`resource_name` must be a string type. "
+            "Got `{}` instead".format(type(path))
+        )
+
+    if os.path.isfile(path):
+        return [path]
+    elif os.path.isdir(path):
+        results = []
+        for base, dirs, files in os.walk(path):
+            # remove hidden files
+            goodfiles = filter(lambda x: not x.startswith("."), files)
+            results.extend(os.path.join(base, f) for f in goodfiles)
+        return results
+    else:
+        raise ValueError(
+            "Could not locate the resource '{}'.".format(os.path.abspath(path))
+        )
+
+
+def create_directory(directory_path: Text) -> None:
+    """Creates a directory and its super paths.
+
+    Succeeds even if the path already exists."""
+
+    try:
+        os.makedirs(directory_path)
+    except OSError as e:
+        # be happy if someone already created the path
+        if e.errno != errno.EEXIST:
+            raise
+
+
+def zip_folder(folder: Text) -> Text:
+    """Create an archive from a folder."""
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)

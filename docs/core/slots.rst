@@ -7,6 +7,12 @@
 Slots
 =====
 
+.. contents::
+   :local:
+
+What are slots?
+---------------
+
 **Slots are your bot's memory.** They act as a key-value store
 which can be used to store information the user provided (e.g their home city)
 as well as information gathered about the outside world (e.g. the result of a

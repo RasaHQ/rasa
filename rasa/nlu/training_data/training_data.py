@@ -43,8 +43,6 @@ class TrainingData(object):
         self.sort_regex_features()
         self.lookup_tables = lookup_tables if lookup_tables else []
 
-        self.print_stats()
-
     def merge(self, *others: "TrainingData") -> "TrainingData":
         """Return merged instance of this data with other training data."""
 
@@ -52,6 +50,7 @@ class TrainingData(object):
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
         lookup_tables = deepcopy(self.lookup_tables)
+        others = [other for other in others if other]
 
         for o in others:
             training_examples.extend(deepcopy(o.training_examples))
@@ -68,6 +67,15 @@ class TrainingData(object):
         return TrainingData(
             training_examples, entity_synonyms, regex_features, lookup_tables
         )
+
+    def __hash__(self) -> int:
+        from rasa.core import utils as core_utils
+
+        # Sort keys to ensure dictionary order in Python 3.5
+        stringified = self.as_json(sort_keys=True)
+        text_hash = core_utils.get_text_hash(stringified)
+
+        return int(text_hash, 16)
 
     @staticmethod
     def sanitize_examples(examples: List[Message]) -> List[Message]:
@@ -123,7 +131,7 @@ class TrainingData(object):
             RasaWriter,
         )
 
-        return RasaWriter().dumps(self)
+        return RasaWriter().dumps(self, **kwargs)
 
     def as_markdown(self) -> Text:
         """Generates the markdown representation of the TrainingData."""
@@ -241,3 +249,14 @@ class TrainingData(object):
             )
             + "\t- found entities: {}\n".format(list_to_str(self.entities))
         )
+
+    def is_empty(self) -> bool:
+        """Checks if any training data was loaded."""
+
+        lists_to_check = [
+            self.training_examples,
+            self.entity_synonyms,
+            self.regex_features,
+            self.lookup_tables,
+        ]
+        return not any([len(l) > 0 for l in lists_to_check])
