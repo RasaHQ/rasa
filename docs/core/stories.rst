@@ -52,8 +52,8 @@ This is what we call a **story**.
 - Actions executed by the bot are shown as lines starting with ``-``
   and contain the name of the action.
 - Events returned by an action are on lines immediately after that
-  action. For example, if an action returns a ``SetSlot`` event,
-  this is shown as the line ``- slot{"slot_name": "value"}``.
+   action. For example, if an action returns a ``SlotSet`` event,
+  this is shown as ``slot{"slot_name": "value"}``.
 
 Let's now take a slightly more detailed look at each of these components,
 along with some things you should keep in mind while using them to write
@@ -74,8 +74,8 @@ entities (you can, of course, customize this behavior using the
 
 Actions
 ~~~~~~~
-While writing stories, you will encounter two types of actions - utterances
-and custom actions. Utterances are hardcoded message that a bot can respond
+While writing stories, you will encounter two types of actions: utterances
+and custom actions. Utterances are hardcoded messages that a bot can respond
 with. Custom actions, on the other hand, involve custom code being executed. 
 
 All actions (both utterances and custom actions) executed by the bot are shown
