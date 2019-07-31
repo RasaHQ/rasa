@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 import rasa.utils.io
-from rasa.core import training, utils
+from rasa.core import training
 from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
@@ -226,7 +226,9 @@ class TestMappingPolicy(PolicyTestCollection):
 
     @pytest.fixture
     def tracker(self, domain_with_mapping):
-        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID)
+        return DialogueStateTracker(
+            UserMessage.DEFAULT_SENDER_ID, domain_with_mapping.slots
+        )
 
     @pytest.fixture(
         params=[
@@ -265,7 +267,6 @@ class TestMappingPolicy(PolicyTestCollection):
         assert action_planned == ACTION_LISTEN_NAME
         assert scores != [0] * domain_with_mapping.num_actions
 
-
     def test_do_not_follow_other_policy(
         self, priority, domain_with_mapping, intent_mapping
     ):
@@ -293,14 +294,9 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trained_policy.train(trackers, default_domain)
         lookup_with_augmentation = trained_policy.lookup
 
-        trackers = [
-            t for t in trackers if not hasattr(t, "is_augmented") or not t.is_augmented
-        ]
+        trackers = [t for t in trackers if not hasattr(t, "is_augmented")]
 
-        (
-            all_states,
-            all_actions,
-        ) = trained_policy.featurizer.training_states_and_actions(
+        all_states, all_actions = trained_policy.featurizer.training_states_and_actions(
             trackers, default_domain
         )
 
@@ -370,7 +366,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         return await train_trackers(default_domain, augmentation_factor=20)
 
     def test_additional_train_args_do_not_raise(
-        self, mock_search, default_domain, trackers, featurizer, priority
+        self, default_domain, trackers, featurizer, priority
     ):
         policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
         policy.train(trackers, domain=default_domain, this_is_not_a_feature=True)
@@ -528,7 +524,7 @@ class TestFormPolicy(PolicyTestCollection):
         p = FormPolicy(priority=priority)
         return p
 
-    async def test_memorise(self, trained_policy, default_domain):
+    async def test_memorise(self, trained_policy):
         domain = Domain.load("data/test_domains/form.yml")
         trackers = await training.load_data("data/test_stories/stories_form.md", domain)
         trained_policy.train(trackers, domain)
@@ -658,7 +654,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_ASK_REPHRASE_NAME
 
     async def test_successful_rephrasing(
-        self, trained_policy, default_channel, default_nlg, default_domain
+        self, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -695,7 +691,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
     async def test_affirmed_rephrasing(
-        self, trained_policy, default_channel, default_nlg, default_domain
+        self, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -738,7 +734,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_FALLBACK_NAME
 
     async def test_rephrasing_instead_affirmation(
-        self, trained_policy, default_channel, default_nlg, default_domain
+        self, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
