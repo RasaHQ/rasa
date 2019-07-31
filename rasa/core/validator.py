@@ -8,6 +8,7 @@ from rasa.core.training.dsl import StoryStep
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
 from rasa.core.actions.action import UTTER_PREFIX
+from rasa.core.utils import configure_file_logging
 
 logger = logging.getLogger(__name__)
 
@@ -15,22 +16,25 @@ logger = logging.getLogger(__name__)
 class Validator(object):
     """A class used to verify usage of intents and utterances."""
 
-    def __init__(self, domain: Domain, intents: TrainingData, stories: List[StoryStep]):
+    def __init__(self, domain: Domain, intents: TrainingData, stories: List[StoryStep], out):
         """Initializes the Validator object. """
+
+        if out:
+            configure_file_logging(logging.root, out)
 
         self.domain = domain
         self.intents = intents
         self.stories = stories
 
     @classmethod
-    async def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
+    async def from_importer(cls, importer: TrainingDataImporter, out) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
 
         domain = await importer.get_domain()
         stories = await importer.get_stories()
         intents = await importer.get_nlu_data()
 
-        return cls(domain, intents, stories.story_steps)
+        return cls(domain, intents, stories.story_steps, out=out)
 
     def verify_intents(self):
         """Compares list of intents in domain with intents in NLU training data."""
