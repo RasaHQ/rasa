@@ -90,7 +90,7 @@ def train_core(
     args.domain = get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
-    stories = get_validated_path(
+    story_file = get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
@@ -105,7 +105,7 @@ def train_core(
         return train_core(
             domain=args.domain,
             config=config,
-            stories=stories,
+            stories=story_file,
             output=output,
             train_path=train_path,
             fixed_model_name=args.fixed_model_name,
@@ -114,7 +114,7 @@ def train_core(
     else:
         from rasa.core.train import do_compare_training
 
-        loop.run_until_complete(do_compare_training(args, stories))
+        loop.run_until_complete(do_compare_training(args, story_file))
 
 
 def train_nlu(
