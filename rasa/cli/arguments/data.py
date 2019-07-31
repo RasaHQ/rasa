@@ -4,7 +4,6 @@ from rasa.cli.arguments.default_arguments import (
     add_nlu_data_param,
     add_out_param,
     add_data_param,
-    add_stories_param,
     add_domain_param,
 )
 

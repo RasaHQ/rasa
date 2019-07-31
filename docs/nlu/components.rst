@@ -466,6 +466,14 @@ WhitespaceTokenizer
 :Description:
     Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
     extractor.
+:Configuration:
+    Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "WhitespaceTokenizer"
+          case_sensitive: false
 
 JiebaTokenizer
 ~~~~~~~~~~~~~~

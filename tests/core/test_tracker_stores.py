@@ -134,7 +134,7 @@ def test_tracker_store_from_invalid_string(default_domain):
     ],
 )
 def test_get_db_url_with_fully_specified_url(full_url):
-    assert SQLTrackerStore._get_db_url(host=full_url) == full_url
+    assert SQLTrackerStore.get_db_url(host=full_url) == full_url
 
 
 def test_get_db_url_with_port_in_host():
@@ -145,7 +145,7 @@ def test_get_db_url_with_port_in_host():
     expected = "{}://{}/{}".format(dialect, host, db)
 
     assert (
-        str(SQLTrackerStore._get_db_url(dialect="postgresql", host=host, db=db))
+        str(SQLTrackerStore.get_db_url(dialect="postgresql", host=host, db=db))
         == expected
     )
 
@@ -155,7 +155,7 @@ def test_get_db_url_with_correct_host():
 
     assert (
         str(
-            SQLTrackerStore._get_db_url(
+            SQLTrackerStore.get_db_url(
                 dialect="postgresql", host="localhost", port=5005, db="mydb"
             )
         )
