@@ -296,11 +296,11 @@ class Agent(object):
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
-        if self.domain:
-            self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
 
-        self._check_missing_policies()
+        if self.domain:
+            self.domain.add_requested_slot()
+            self._check_missing_policies()
 
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
@@ -321,7 +321,7 @@ class Agent(object):
             has_form_policy = self.policy_ensemble is not None and any(
                 isinstance(p, FormPolicy) for p in self.policy_ensemble.policies
             )
-            if self.domain and self.domain.form_names and not has_form_policy:
+            if self.domain.form_names and not has_form_policy:
                 raise InvalidDomain(
                     "You have defined a form action, but haven't added the "
                     "FormPolicy to your policy ensemble."
@@ -337,7 +337,7 @@ class Agent(object):
                     for intent, properties in self.domain.intent_properties.items()
                 ]
             )
-            if self.domain and has_triggers_in_domain and not has_mapping_policy:
+            if has_triggers_in_domain and not has_mapping_policy:
                 raise InvalidDomain(
                     "You have defined triggers in your domain, but haven't "
                     "added the MappingPolicy to your policy ensemble."
