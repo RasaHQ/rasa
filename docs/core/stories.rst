@@ -6,6 +6,9 @@
 Stories
 =======
 
+.. contents::
+   :local:
+
 A training example for the Rasa dialogue system is called a **story**.
 This is a guide to the story data format.
 
@@ -20,12 +23,11 @@ This is a guide to the story data format.
 Format
 ------
 
-Here's an example from the `bAbI <https://research.fb.com/downloads/babi/>`_
-dataset (converted into Rasa stories):
+Here's an example of a dialogue in the Rasa story format:
 
 .. code-block:: story
 
-   ## story_07715946    <!-- name of the story - just for debugging -->
+   ## greet + location/price + cuisine + num people    <!-- name of the story - just for debugging -->
    * greet
       - action_ask_howcanhelp
    * inform{"location": "rome", "price": "cheap"}  <!-- user utterance, in format intent{entities} -->
@@ -67,7 +69,8 @@ same thing.
 
 It is important to include the entities as well because the policies learn to
 predict the next action based on a *combination* of both the intent and
-entities.
+entities (you can, of course, customize this behavior using the
+:ref:`use_entities <use_entities>` attribute).
 
 Actions
 ~~~~~~~
@@ -78,8 +81,8 @@ with. Custom actions, on the other hand, involve custom code being executed.
 All actions (both utterances and custom actions) executed by the bot are shown
 as lines starting with ``-`` followed by the name of the action. For custom
 actions, the action name is the string you choose to return from the ``name``
-method of the custom action class. The convention is that utterances begin
-with the prefix ``utter_`` and custom actions begin with ``action_``.
+method of the custom action class. All utterances must begin with the prefix
+``utter_``, and custom actions must begin with ``action_``.
 
 Events
 ~~~~~~
@@ -87,14 +90,30 @@ Events such as setting a slot or activating/deactivating a form have to be
 explicitly written out as part of the stories. Having to include the events
 returned by a custom action separately, when that custom action is already
 part of a story might seem redundant. However, since Rasa cannot easily
-determine this fact during training, this step is a necessary evil.
+determine this fact during training, this step is necessary.
+
+Slot Events
+***********
+Slot events are written as ``- slot{"slot_name": "value"}``. If this slot is set
+inside a custom action, it is written on the line immediately following the
+custom action event.
+
+Form Events
+***********
+There are three kinds of events that need to be kept in mind while dealing with
+forms in stories.
+1. Form action - this 
+
 
 In order to get around this pitfall, the recommended way to write these
-stories is to use :ref:`interactive-learning`.
+stories is to use :ref:`interactive learning <interactive-learning>`.
 
+
+Writing Fewer and Shorter Stories
+---------------------------------
 
 Checkpoints
------------
+~~~~~~~~~~~
 
 You can use ``> checkpoints`` to modularize and simplify your training
 data. Checkpoints can be useful, but **do not overuse them**. Using
@@ -123,15 +142,13 @@ contains checkpoints:
 
 
 OR Statements
--------------
+~~~~~~~~~~~~~
 
 Another way to write shorter stories, or to handle multiple intents
 the same way, is to use an ``OR`` statement. For example, if you ask
 the user to confirm something, and you want to treat the ``affirm``
 and ``thankyou`` intents in the same way. The story below will be
-converted into two stories at training time. Just like checkpoints,
-``OR`` statements can be useful, but if you are using a lot of them,
-it is probably better to restructure your domain and/or intents:
+converted into two stories at training time:
 
 .. code-block:: story
 
@@ -141,6 +158,8 @@ it is probably better to restructure your domain and/or intents:
     * affirm OR thankyou
       - action_handle_affirmation
 
+Just like checkpoints, ``OR`` statements can be useful, but if you are using a
+lot of them, it is probably better to restructure your domain and/or intents.
 
 .. note::
 
