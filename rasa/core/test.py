@@ -9,10 +9,10 @@ from rasa.constants import RESULTS_FILE
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
+from rasa.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
-    from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

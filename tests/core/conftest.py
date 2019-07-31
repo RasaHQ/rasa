@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from typing import Text
 
@@ -6,6 +7,7 @@ import matplotlib
 import pytest
 
 import rasa.utils.io
+from rasa.core import train
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel
 from rasa.core.domain import Domain
