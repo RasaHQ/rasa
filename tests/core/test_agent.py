@@ -16,7 +16,7 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 
 from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     NO_FORMS_POLICY_CONFIG,
     NO_MAPPING_POLICY_CONFIG,
     TRIGGERS_AND_FORMS_DOMAIN,
@@ -240,7 +240,12 @@ async def test_load_agent_on_not_existing_path():
 
 @pytest.mark.parametrize(
     "model_path",
-    ["non-existing-path", DEFAULT_DOMAIN_PATH, "not-existing-model.tar.gz", None],
+    [
+        "non-existing-path",
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+        "not-existing-model.tar.gz",
+        None,
+    ],
 )
 async def test_agent_load_on_invalid_model_path(model_path):
     with pytest.raises(ValueError):
