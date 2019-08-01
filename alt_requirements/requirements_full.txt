@@ -1,4 +1,4 @@
-# Minimum Instal Requirements
+# Minimum Install Requirements
 -r ../requirements.txt
 
 # Spacy Requirements
