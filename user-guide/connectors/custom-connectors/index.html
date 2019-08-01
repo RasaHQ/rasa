@@ -192,12 +192,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.8
+          viewing: 1.2.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.2.0/user-guide/connectors/custom-connectors/">1.2.0</a>
               <a href="../../.././1.1.8/user-guide/connectors/custom-connectors/">1.1.8</a>
               <a href="../../.././1.1.7/user-guide/connectors/custom-connectors/">1.1.7</a>
               <a href="../../.././1.1.6/user-guide/connectors/custom-connectors/">1.1.6</a>
@@ -267,6 +268,47 @@ and port with your values).</p>
 </pre></div>
 </div>
 <p>where <code class="docutils literal notranslate"><span class="pre">myio</span></code> is the name of your component.</p>
+<p>If you need to use extra information from your front end in your custom
+actions, you can add this information in the <code class="docutils literal notranslate"><span class="pre">metadata</span></code> dict of your user
+message. This information will accompany the user message through the rasa
+server into the action server when applicable, where you can find it stored in
+the <code class="docutils literal notranslate"><span class="pre">tracker</span></code>. Message metadata will not directly affect NLU classification
+or action prediction.</p>
+<p>Here are all the attributes of <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code>:</p>
+<dl class="class">
+<dt id="rasa.core.channels.UserMessage">
+<em class="property">class </em><code class="descclassname">rasa.core.channels.</code><code class="descname">UserMessage</code><span class="sig-paren">(</span><em>text=None</em>, <em>output_channel=None</em>, <em>sender_id=None</em>, <em>parse_data=None</em>, <em>input_channel=None</em>, <em>message_id=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents an incoming message.</p>
+<p>Includes the channel the responses should be sent to.</p>
+<dl class="method">
+<dt id="rasa.core.channels.UserMessage.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>text=None</em>, <em>output_channel=None</em>, <em>sender_id=None</em>, <em>parse_data=None</em>, <em>input_channel=None</em>, <em>message_id=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code> object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>text</strong> – the message text content.</li>
+<li><strong>output_channel</strong> – the output channel which should be used to send
+bot responses back to the user.</li>
+<li><strong>sender_id</strong> – the message owner ID.</li>
+<li><strong>parse_data</strong> – rasa data about the message.</li>
+<li><strong>input_channel</strong> – the name of the channel which received this message.</li>
+<li><strong>message_id</strong> – ID of the message.</li>
+<li><strong>metadata</strong> – additional metadata for this message.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 <p>In your implementation of the <code class="docutils literal notranslate"><span class="pre">receive</span></code> endpoint, you need to make
 sure to call <code class="docutils literal notranslate"><span class="pre">on_new_message(UserMessage(text,</span> <span class="pre">output,</span> <span class="pre">sender_id))</span></code>.
 This will tell Rasa Core to handle this user message. The <code class="docutils literal notranslate"><span class="pre">output</span></code>
@@ -309,7 +351,7 @@ posted the message to the channel:</p>
         <span class="n">text</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
         <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">,</span>
         <span class="n">sender_id</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
-        <span class="n">input_channel</span><span class="p">,</span>
+        <span class="n">input_channel</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">collector</span> <span class="o">=</span> <span class="n">QueueOutputChannel</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span>
 

@@ -200,12 +200,13 @@ AI Assistant." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.1.8
+          viewing: 1.2.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.2.0/user-guide/evaluating-models/">1.2.0</a>
               <a href="../.././1.1.8/user-guide/evaluating-models/">1.1.8</a>
               <a href="../.././1.1.7/user-guide/evaluating-models/">1.1.7</a>
               <a href="../.././1.1.6/user-guide/evaluating-models/">1.1.6</a>
@@ -545,12 +546,12 @@ with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the trainin
 data. This is done for multiple runs to ensure consistent results.</p>
 <p>Once this script has finished, you can use the evaluate script in <code class="docutils literal notranslate"><span class="pre">compare</span></code>
 mode to evaluate the models you just trained:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa <span class="nb">test</span> core -m comparison_models/&lt;model-1&gt;.tar.gz comparison_models/&lt;model-2&gt;.tar.gz <span class="se">\</span>
-  --stories stories_folder --out comparison_results
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa <span class="nb">test</span> core -m comparison_models --stories stories_folder
+--out comparison_results --evaluate-model-directory
 </pre></div>
 </div>
 <p>This will evaluate each of the models on the training set and plot some graphs
-to show you which policy performs best.  By evaluating on the full set of stories, you
+to show you which policy performs best. By evaluating on the full set of stories, you
 can measure how well Rasa Core is predicting the held-out stories.</p>
 <p>If you’re not sure which policies to compare, we’d recommend trying out the
 <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> and the <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> to see which one works better for
