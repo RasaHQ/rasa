@@ -7,8 +7,27 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
-[Unreleased 1.1.9] - `master`_
+[Unreleased 1.2.1] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+
+Changed
+-------
+
+
+Removed
+-------
+
+
+Fixed
+-----
+
+
+[1.2.0] - 2019-08-01
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -26,15 +45,11 @@ Changed
   old behavior)
 - ``metadata`` attribute added to ``UserMessage``
 
-Removed
--------
-
 Fixed
 -----
 - ``rasa test core`` can handle compressed model files
 - Rasa can handle story files containing multi line comments
 - Template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
-
 
 [1.1.8] - 2019-07-25
 ^^^^^^^^^^^^^^^^^^^^
