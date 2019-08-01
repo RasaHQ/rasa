@@ -82,3 +82,4 @@ docs/core/key.pub
 failed_stories.md
 errors.json
 pip-wheel-metadata/*
+events.db
