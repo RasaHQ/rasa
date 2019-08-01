@@ -279,18 +279,31 @@ or action prediction.</p>
 <p>Here are all the attributes of <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code>:</p>
 <dl class="class">
 <dt id="rasa.core.channels.UserMessage">
-<em class="property">class </em><code class="descclassname">rasa.core.channels.</code><code class="descname">UserMessage</code><span class="sig-paren">(</span><em>text=None</em>, <em>output_channel=None</em>, <em>sender_id=None</em>, <em>parse_data=None</em>, <em>input_channel=None</em>, <em>message_id=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.channels.</code><code class="descname">UserMessage</code><span class="sig-paren">(</span><em>text=None</em>, <em>output_channel=None</em>, <em>sender_id=None</em>, <em>parse_data=None</em>, <em>input_channel=None</em>, <em>message_id=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents an incoming message.</p>
 <p>Includes the channel the responses should be sent to.</p>
 <dl class="method">
 <dt id="rasa.core.channels.UserMessage.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>text=None</em>, <em>output_channel=None</em>, <em>sender_id=None</em>, <em>parse_data=None</em>, <em>input_channel=None</em>, <em>message_id=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>text=None</em>, <em>output_channel=None</em>, <em>sender_id=None</em>, <em>parse_data=None</em>, <em>input_channel=None</em>, <em>message_id=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.channels.UserMessage.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code> object.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>text</strong> – the message text content.</li>
+<li><strong>output_channel</strong> – the output channel which should be used to send
+bot responses back to the user.</li>
+<li><strong>sender_id</strong> – the message owner ID.</li>
+<li><strong>parse_data</strong> – rasa data about the message.</li>
+<li><strong>input_channel</strong> – the name of the channel which received this message.</li>
+<li><strong>message_id</strong> – ID of the message.</li>
+<li><strong>metadata</strong> – additional metadata for this message.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</td>
 </tr>
 </tbody>
 </table>
