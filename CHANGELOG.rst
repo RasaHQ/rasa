@@ -14,9 +14,16 @@ Added
 -----
 - add root route to server started without ``--enable-api`` parameter
 - add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
+- option to send messages to the user by calling
+  ``POST /conversations/{conversation_id}/execute``
 
 Changed
 -------
+- new event broker class: ``SQLProducer``. This event broker is now used when running locally with
+  Rasa X
+- API requests are not longer logged to ``rasa_core.log`` by default in order to avoid
+  problems when running on OpenShift (use ``--log-file rasa_core.log`` to retain the
+  old behavior)
 
 Removed
 -------
@@ -25,6 +32,7 @@ Fixed
 -----
 - ``rasa test core`` can handle compressed model files
 - Rasa can handle story files containing multi line comments
+- Template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
 
 
 [1.1.8] - 2019-07-25
@@ -34,13 +42,13 @@ Added
 -----
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
-- Fill slots for custom templates
+- fill slots for custom templates
 
 Changed
 -------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
-- Update pytype to ``2019.7.11``
+- update pytype to ``2019.7.11``
 
 Fixed
 -----
