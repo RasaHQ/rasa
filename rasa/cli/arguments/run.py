@@ -19,7 +19,9 @@ def add_server_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--log-file",
         type=str,
-        default="rasa_core.log",
+        # Rasa should not log to a file by default, otherwise there will be problems
+        # when running on OpenShift
+        default=None,
         help="Store logs in specified file.",
     )
     add_endpoint_param(
