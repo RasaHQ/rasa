@@ -460,7 +460,9 @@ the pipeline to do intent classification.</p>
 <dt id="rasa.nlu.components.Component.required_packages">
 <em class="property">classmethod </em><code class="descname">required_packages</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.required_packages" title="Permalink to this definition">¶</a></dt>
 <dd><p>Specify which python packages need to be installed to use this
-component, e.g. <code class="docutils literal notranslate"><span class="pre">[&quot;spacy&quot;]</span></code>.</p>
+component, e.g. <code class="docutils literal notranslate"><span class="pre">[&quot;spacy&quot;]</span></code>. More specifically, these should be
+importable python package names e.g. <cite>sklearn</cite> and not package
+names in the dependencies sense e.g. <cite>scikit-learn</cite></p>
 <p>This list of requirements allows us to fail early during training
 if a required package is not installed.</p>
 <table class="docutils field-list" frame="void" rules="none">
