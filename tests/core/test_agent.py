@@ -203,14 +203,14 @@ async def test_load_agent(trained_model):
 
 def test_init_agent_with_missing_policies():
     with pytest.raises(InvalidDomain) as execinfo:
-        no_form_policy_agent = Agent(
+        Agent(
             domain=TRIGGERS_AND_FORMS_DOMAIN,
             policies=config.load(NO_FORMS_POLICY_CONFIG),
         )
     assert "haven't added the FormPolicy" in str(execinfo.value)
 
     with pytest.raises(InvalidDomain) as execinfo:
-        no_mapping_policy_agent = Agent(
+        Agent(
             domain=TRIGGERS_AND_FORMS_DOMAIN,
             policies=config.load(NO_MAPPING_POLICY_CONFIG),
         )
