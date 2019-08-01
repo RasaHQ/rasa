@@ -1,5 +1,5 @@
 :desc: Support any language like English, Spanish, German, Arabic or Chinese
-       with open soruce chatbot framework Rasa.
+       with open source chatbot framework Rasa.
 
 .. _language-support:
 
