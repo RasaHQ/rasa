@@ -8,7 +8,7 @@ from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
 from tests.core import utilities
-from tests.core.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
 async def test_create_train_data_no_history(default_domain):
@@ -145,7 +145,7 @@ async def test_create_train_data_unfeaturized_entities():
 
 
 def test_domain_from_template():
-    domain_file = DEFAULT_DOMAIN_PATH
+    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
     domain = Domain.load(domain_file)
 
     assert not domain.is_empty()
@@ -387,7 +387,7 @@ def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
 
 
 def test_domain_warnings():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH)
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
     warning_types = [
         "action_warnings",
