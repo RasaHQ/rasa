@@ -35,7 +35,21 @@ class UserMessage(object):
         parse_data: Dict[Text, Any] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
+        metadata: Optional[Dict] = None,
     ) -> None:
+        """Creates a ``UserMessage`` object.
+
+        Args:
+            text: the message text content.
+            output_channel: the output channel which should be used to send
+                bot responses back to the user.
+            sender_id: the message owner ID.
+            parse_data: rasa data about the message.
+            input_channel: the name of the channel which received this message.
+            message_id: ID of the message.
+            metadata: additional metadata for this message.
+
+        """
         self.text = text.strip() if text else text
 
         if message_id is not None:
@@ -56,6 +70,7 @@ class UserMessage(object):
         self.input_channel = input_channel
 
         self.parse_data = parse_data
+        self.metadata = metadata
 
 
 def register(
@@ -395,7 +410,7 @@ class RestInput(InputChannel):
         text: Text,
         queue: Queue,
         sender_id: Text,
-        input_channel,
+        input_channel: Text,
     ) -> None:
         collector = QueueOutputChannel(queue)
 
