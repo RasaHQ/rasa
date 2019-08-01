@@ -1,4 +1,3 @@
-
 :desc: Open source alternative to IBM Watson for conversational bots and NLP
 
 .. _ibm-watson-to-rasa:
