@@ -8,7 +8,7 @@ from rasa.core.agent import Agent
 from rasa.model import get_model
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def loop():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -28,8 +28,6 @@ async def test_restoring_tracker(trained_moodbot_path, recwarn):
 
     # makes sure there are no warnings. warnings are raised, if the models
     # predictions differ from the tracker when the dumped tracker is replayed
-
-    print([e.message for e in recwarn if e._category_name == "UserWarning"])
     assert [e for e in recwarn if e._category_name == "UserWarning"] == []
 
     assert len(tracker.events) == 7
