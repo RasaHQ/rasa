@@ -481,7 +481,13 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
             "timestamp": 1514764800,
         }
     ]
-    assert content["latest_message"] == {"text": None, "intent": {}, "entities": []}
+    assert content["latest_message"] == {
+        "text": None,
+        "intent": {},
+        "entities": [],
+        "message_id": None,
+        "metadata": None,
+    }
 
 
 @pytest.mark.parametrize("event", test_events)
