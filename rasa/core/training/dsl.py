@@ -7,6 +7,7 @@ import re
 import warnings
 from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
+import rasa.utils.io as io_utils
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
@@ -175,8 +176,6 @@ class StoryFileReader(object):
         exclusion_percentage: Optional[int] = None,
     ) -> List[StoryStep]:
         """Given a path reads all contained story files."""
-        import rasa.nlu.utils as nlu_utils
-
         if not os.path.exists(resource_name):
             raise ValueError(
                 "Story file or folder could not be found. Make "
@@ -184,7 +183,7 @@ class StoryFileReader(object):
                 "or file.".format(os.path.abspath(resource_name))
             )
 
-        files = nlu_utils.list_files(resource_name)
+        files = io_utils.list_files(resource_name)
 
         return await StoryFileReader.read_from_files(
             files,
@@ -229,7 +228,7 @@ class StoryFileReader(object):
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
-    ):
+    ) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
 
         try:
@@ -292,12 +291,21 @@ class StoryFileReader(object):
             return "", {}
 
     async def process_lines(self, lines: List[Text]) -> List[StoryStep]:
+        multiline_comment = False
 
         for idx, line in enumerate(lines):
             line_num = idx + 1
             try:
                 line = self._replace_template_variables(self._clean_up_line(line))
                 if line.strip() == "":
+                    continue
+                elif line.startswith("<!--"):
+                    multiline_comment = True
+                    continue
+                elif multiline_comment and line.endswith("-->"):
+                    multiline_comment = False
+                    continue
+                elif multiline_comment:
                     continue
                 elif line.startswith("#"):
                     # reached a new story block

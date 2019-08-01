@@ -92,6 +92,13 @@ class Checkpoint(object):
 
 
 class StoryStep(object):
+    """A StoryStep is a section of a story block between two checkpoints.
+
+    NOTE: Checkpoints are not only limited to those manually written
+    in the story file, but are also implicitly created at points where
+    multiple intents are separated in one line by chaining them with "OR"s.
+    """
+
     def __init__(
         self,
         block_name: Optional[Text] = None,
@@ -392,6 +399,8 @@ class Story(object):
 
 
 class StoryGraph(object):
+    """Graph of the story-steps pooled from all stories in the training data."""
+
     def __init__(
         self,
         story_steps: List[StoryStep],

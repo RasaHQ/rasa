@@ -1,5 +1,4 @@
 import errno
-import glob
 import io
 import json
 import os
@@ -18,62 +17,6 @@ def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
         return os.path.normpath(os.path.relpath(f, path))
     else:
         return None
-
-
-def create_dir(dir_path: Text) -> None:
-    """Creates a directory and its super paths.
-
-    Succeeds even if the path already exists."""
-
-    try:
-        os.makedirs(dir_path)
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
-
-
-def list_directory(path: Text) -> List[Text]:
-    """Returns all files and folders excluding hidden files.
-
-    If the path points to a file, returns the file. This is a recursive
-    implementation returning files in any depth of the path."""
-
-    if not isinstance(path, str):
-        raise ValueError(
-            "`resource_name` must be a string type. "
-            "Got `{}` instead".format(type(path))
-        )
-
-    if os.path.isfile(path):
-        return [path]
-    elif os.path.isdir(path):
-        results = []
-        for base, dirs, files in os.walk(path):
-            # remove hidden files
-            goodfiles = filter(lambda x: not x.startswith("."), files)
-            results.extend(os.path.join(base, f) for f in goodfiles)
-        return results
-    else:
-        raise ValueError(
-            "Could not locate the resource '{}'.".format(os.path.abspath(path))
-        )
-
-
-def list_files(path: Text) -> List[Text]:
-    """Returns all files excluding hidden files.
-
-    If the path points to a file, returns the file."""
-
-    return [fn for fn in list_directory(path) if os.path.isfile(fn)]
-
-
-def list_subdirectories(path: Text) -> List[Text]:
-    """Returns all folders excluding hidden files.
-
-    If the path points to a file, returns an empty list."""
-
-    return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
 
 
 def lazyproperty(fn: Callable) -> Any:
