@@ -1,4 +1,3 @@
-
 :desc: Open source alternative to Microsoft LUIS for conversational bots and NLP
 
 .. _microsoft-luis-to-rasa:
