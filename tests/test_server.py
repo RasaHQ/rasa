@@ -825,3 +825,17 @@ def test_get_latest_output_channel(input_channels: List[Text], expected_channel:
     actual = rasa.server._get_output_channel(request, tracker)
 
     assert isinstance(actual, expected_channel)
+
+
+def test_app_when_app_has_no_input_channels():
+    request = MagicMock()
+
+    class NoInputChannels:
+        pass
+
+    request.app = NoInputChannels()
+
+    actual = rasa.server._get_output_channel(
+        request, DialogueStateTracker.from_events("default", [])
+    )
+    assert isinstance(actual, CollectingOutputChannel)
