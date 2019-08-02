@@ -253,8 +253,8 @@ class SlackInput(InputChannel):
         failure conditions defined here:
         https://api.slack.com/events-api#failure_conditions
         """
-        retry_reason = request.headers.get("HTTP_X_SLACK_RETRY_REASON")
-        retry_count = request.headers.get("HTTP_X_SLACK_RETRY_NUM")
+        retry_reason = request.headers.get("x-slack-retry-reason")
+        retry_count = request.headers.get("x-slack-retry-num")
         if retry_count and retry_reason in self.errors_ignore_retry:
             logger.warning(
                 "Received retry #{} request from slack"
