@@ -244,6 +244,5 @@ class TelegramInput(InputChannel):
 
     def get_output_channel(self) -> TelegramOutput:
         channel = TelegramOutput(self.access_token)
-        channel.setWebhook(self.webhook_url)
 
         return channel
