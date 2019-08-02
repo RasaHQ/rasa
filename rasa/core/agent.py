@@ -314,7 +314,7 @@ class Agent(object):
         self.model_server = model_server
         self.remote_storage = remote_storage
 
-    def _check_missing_policies(self):
+    def _check_missing_policies(self) -> None:
         """Check for domain elements that work only with certain policies."""
 
         def check_form_policy():
