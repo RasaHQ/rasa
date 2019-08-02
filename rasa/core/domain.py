@@ -319,6 +319,11 @@ class Domain(object):
         return len(self.input_states)
 
     def add_requested_slot(self):
+        """Add a slot called requested_slot to the list of slots.
+
+        The value of this slot will hold the name of the slot which the user
+        needs to fill in next (either explicitly or implicitly).
+        """
         if self.form_names and REQUESTED_SLOT not in [s.name for s in self.slots]:
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
 
