@@ -273,7 +273,7 @@ class MessageProcessor(object):
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
-    async def _parse_message(self, message, tracker=None):
+    async def _parse_message(self, message, tracker: DialogueStateTracker = None):
         # for testing - you can short-cut the NLU part with a message
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
