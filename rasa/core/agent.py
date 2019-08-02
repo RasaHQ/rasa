@@ -521,7 +521,7 @@ class Agent(object):
         self,
         sender_id: Text,
         action: Text,
-        output_channel: CollectingOutputChannel,
+        output_channel: OutputChannel,
         policy: Text,
         confidence: float,
     ) -> DialogueStateTracker:
