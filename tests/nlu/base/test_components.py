@@ -58,7 +58,7 @@ def test_builder_create_unknown(component_builder, default_config):
     with pytest.raises(Exception) as excinfo:
         component_config = {"name": "my_made_up_componment"}
         component_builder.create_component(component_config, default_config)
-    assert "Unknown component name" in str(excinfo.value)
+    assert "Cannot import class" in str(excinfo.value)
 
 
 def test_builder_create_by_module_path_wrong_class(component_builder, default_config):
