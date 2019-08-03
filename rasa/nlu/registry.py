@@ -139,15 +139,29 @@ def get_component_class(component_name: Text) -> Type["Component"]:
         if component_name not in old_style_names:
             try:
                 return class_from_module_path(component_name)
-            except Exception:
+            except ModuleNotFoundError as e:
+                # when component_name is a path to a class but that path is invalid
                 raise Exception(
-                    "Failed to find component class for '{}'. Unknown "
-                    "component name. Check your configured pipeline and make "
-                    "sure the mentioned component is not misspelled. If you "
-                    "are creating your own component, make sure it is either "
-                    "listed as part of the `component_classes` in "
-                    "`rasa.nlu.registry.py` or is a proper name of a class "
-                    "in a module.".format(component_name)
+                    "Failed to find component class for '{}'.Unknown component name.\n{}".format(
+                        component_name, e.msg
+                    )
+                )
+            except AttributeError:
+                # when component_name is a path to a class but the path does not contain that class
+                module_name, _, class_name = component_name.rpartition(".")
+                raise Exception(
+                    "Failed to find component class for '{}'.Unknown component name.\n"
+                    "Cannot find class '{}' in module {}.".format(
+                        component_name, class_name, module_name
+                    )
+                )
+            except ImportError:
+                # when component_name is a class name and not part of old_style_names
+                raise Exception(
+                    "Failed to find component class for '{0}'.Unknown component name.\n"
+                    "Cannot import class '{0}' from  global namespace.".format(
+                        component_name
+                    )
                 )
         else:
             # DEPRECATED ensures compatibility, remove in future versions
