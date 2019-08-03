@@ -63,18 +63,14 @@ def test_builder_create_unknown(component_builder, default_config):
 
 def test_builder_create_by_module_path_wrong_class(component_builder, default_config):
     with pytest.raises(Exception) as excinfo:
-        component_config = {
-            "name": "rasa.nlu.featurizers.regex_featurizer.MadeUpClass"
-        }
+        component_config = {"name": "rasa.nlu.featurizers.regex_featurizer.MadeUpClass"}
         component_builder.create_component(component_config, default_config)
     assert "Cannot find class" in str(excinfo.value)
 
 
 def test_builder_create_by_module_path_wrong_path(component_builder, default_config):
     with pytest.raises(Exception) as excinfo:
-        component_config = {
-            "name": "made.up.path.RegexFeaturizer"
-        }
+        component_config = {"name": "made.up.path.RegexFeaturizer"}
         component_builder.create_component(component_config, default_config)
     assert "No module named" in str(excinfo.value)
 
