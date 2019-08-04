@@ -326,7 +326,7 @@ class MessageProcessor(object):
         )
 
     @staticmethod
-    def _should_handle_message(tracker):
+    def _should_handle_message(tracker: DialogueStateTracker):
         return (
             not tracker.is_paused()
             or tracker.latest_message.intent.get("name") == USER_INTENT_RESTART
