@@ -42,10 +42,6 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
-TRIGGERS_AND_FORMS_DOMAIN = "data/test_domains/triggers_and_forms.yml"
-NO_FORMS_POLICY_CONFIG = "data/test_config/no_form_policy.yml"
-NO_MAPPING_POLICY_CONFIG = "data/test_config/no_mapping_policy.yml"
-
 MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
