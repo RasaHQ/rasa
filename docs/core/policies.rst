@@ -177,7 +177,7 @@ following steps:
       previous system action, slots and active form
       for each time step into an input vector
       to pre-transformer embedding layer;
-    - feed it to tranformer;
+    - feed it to transformer;
     - apply a dense layer to the output of the transformer
       to get embeddings of a dialogue for each time step;
     - apply a dense layer to create embeddings for system actions for each time step;
