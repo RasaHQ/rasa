@@ -150,7 +150,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                 # when component_name is a path to a class but the path does not contain that class
                 module_name, _, class_name = component_name.rpartition(".")
                 raise Exception(
-                    "Failed to find component class for '{}'.Unknown component name.\n"
+                    "Failed to find class '{}' in module '{}'.\n"
                     "Cannot find class '{}' in module {}.".format(
                         component_name, class_name, module_name
                     )
