@@ -15,12 +15,7 @@ from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 
-from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    NO_FORMS_POLICY_CONFIG,
-    NO_MAPPING_POLICY_CONFIG,
-    TRIGGERS_AND_FORMS_DOMAIN,
-)
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture(scope="session")
@@ -202,6 +197,31 @@ async def test_load_agent(trained_model):
 
 
 def test_init_agent_with_missing_policies():
+    TRIGGERS_AND_FORMS_DOMAIN = """
+    intents:
+      - affirm:
+          triggers: utter_ask_num_people
+    templates:
+      utter_ask_num_people:
+        - text: "how many people?"
+    actions:
+      - utter_ask_num_people
+    forms:
+      - restaurant_form
+    """
+
+    NO_MAPPING_POLICY_CONFIG = """
+    policies:
+      - name: MemoizationPolicy
+      - name: FormPolicy
+    """
+
+    NO_FORMS_POLICY_CONFIG = """
+    policies:
+      - name: MemoizationPolicy
+      - name: MappingPolicy
+    """
+
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
             domain=TRIGGERS_AND_FORMS_DOMAIN,

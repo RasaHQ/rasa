@@ -1,4 +1,0 @@
-policies:
-  - name: FallbackPolicy
-  - name: MemoizationPolicy
-  - name: MappingPolicy
