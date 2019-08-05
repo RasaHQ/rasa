@@ -1114,8 +1114,6 @@ class EmbeddingPolicy(Policy):
 
         if attention:
             return tf.concat(attention, 0)
-        else:
-            return
 
     # training methods
     def train(
