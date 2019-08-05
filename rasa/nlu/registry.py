@@ -151,7 +151,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                 module_name, _, class_name = component_name.rpartition(".")
                 raise Exception(
                     "Failed to find class '{}' in module '{}'.\n"
-                    "Cannot find class '{}' in module {}.".format(
+                    "".format(
                         component_name, class_name, module_name
                     )
                 )
