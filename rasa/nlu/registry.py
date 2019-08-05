@@ -142,7 +142,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
             except ModuleNotFoundError as e:
                 # when component_name is a path to a class but that path is invalid
                 raise Exception(
-                    "Failed to find component class for '{}'.Unknown component name.\n{}".format(
+                    "Failed to find module '{}'. \n{}".format(
                         component_name, e.msg
                     )
                 )
