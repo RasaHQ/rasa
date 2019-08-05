@@ -34,6 +34,15 @@ class MappingPolicy(Policy):
 
     @staticmethod
     def validate_against_domain(ensemble, domain):
+        has_mapping_policy = ensemble is not None and any(
+            isinstance(p, MappingPolicy) for p in ensemble.policies
+        )
+        has_triggers_in_domain = any(
+            [
+                "triggers" in properties
+                for intent, properties in domain.intent_properties.items()
+            ]
+        )
         if has_triggers_in_domain and not has_mapping_policy:
             raise InvalidDomain(
                 "You have defined triggers in your domain, but haven't "

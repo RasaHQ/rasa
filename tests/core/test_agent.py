@@ -9,9 +9,10 @@ import rasa.utils.io
 import rasa.core
 from rasa.core import config, jobs, utils
 from rasa.core.agent import Agent, load_agent
-from rasa.core.domain import InvalidDomain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.channels.channel import UserMessage
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
+from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 
@@ -197,43 +198,44 @@ async def test_load_agent(trained_model):
 
 
 def test_init_agent_with_missing_policies():
-    TRIGGERS_AND_FORMS_DOMAIN = """
-    intents:
-      - affirm:
-          triggers: utter_ask_num_people
-    templates:
-      utter_ask_num_people:
-        - text: "how many people?"
-    actions:
-      - utter_ask_num_people
-    forms:
-      - restaurant_form
-    """
+    TRIGGERS_AND_FORMS_DOMAIN = {
+        "intents": [
+            {"affirm": {"triggers": "utter_ask_num_people"}}
+        ],
+        "templates": {
+            "utter_ask_num_people": [{"text": "how many people?"}]
+        },
+        "actions": ["utter_ask_num_people"],
+        "forms": ["restaurant_form"]
+    }
 
-    NO_MAPPING_POLICY_CONFIG = """
-    policies:
-      - name: MemoizationPolicy
-      - name: FormPolicy
-    """
+    NO_MAPPING_POLICY_CONFIG = {
+        'policies': [
+            {'name': 'MemoizationPolicy'},
+            {'name': 'FormPolicy'}
+        ]
+    }
 
-    NO_FORMS_POLICY_CONFIG = """
-    policies:
-      - name: MemoizationPolicy
-      - name: MappingPolicy
-    """
+    NO_FORMS_POLICY_CONFIG = {
+        'policies': [
+            {'name': 'MemoizationPolicy'},
+            {'name': 'MappingPolicy'}
+        ]
+    }
 
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
-            domain=TRIGGERS_AND_FORMS_DOMAIN,
-            policies=config.load(NO_FORMS_POLICY_CONFIG),
+            domain=Domain.from_dict(TRIGGERS_AND_FORMS_DOMAIN),
+            policies=PolicyEnsemble.from_dict(NO_FORMS_POLICY_CONFIG),
         )
     assert "haven't added the FormPolicy" in str(execinfo.value)
 
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
-            domain=TRIGGERS_AND_FORMS_DOMAIN,
-            policies=config.load(NO_MAPPING_POLICY_CONFIG),
+            domain=Domain.from_dict(TRIGGERS_AND_FORMS_DOMAIN),
+            policies=PolicyEnsemble.from_dict(NO_MAPPING_POLICY_CONFIG),
         )
+    print(execinfo.value)
     assert "haven't added the MappingPolicy" in str(execinfo.value)
 
 
