@@ -281,6 +281,7 @@ def plot_intent_confidences(
 
 def evaluate_intents(
     intent_results: List[IntentEvaluationResult],
+    output_folder: Optional[Text],
     report_folder: Optional[Text],
     successes_filename: Optional[Text],
     errors_filename: Optional[Text],
@@ -326,10 +327,14 @@ def evaluate_intents(
             log_evaluation_table(report, precision, f1, accuracy)
 
     if successes_filename:
+        if output_folder:
+            successes_filename = os.path.join(output_folder, successes_filename)
         # save classified samples to file for debugging
         collect_nlu_successes(intent_results, successes_filename)
 
     if errors_filename:
+        if output_folder:
+            errors_filename = os.path.join(output_folder, errors_filename)
         # log and save misclassified samples to file for debugging
         collect_nlu_errors(intent_results, errors_filename)
 
@@ -337,6 +342,10 @@ def evaluate_intents(
         from sklearn.metrics import confusion_matrix
         from sklearn.utils.multiclass import unique_labels
         import matplotlib.pyplot as plt
+
+        if output_folder:
+            confmat_filename = os.path.join(output_folder, confmat_filename)
+            intent_hist_filename = os.path.join(output_folder, intent_hist_filename)
 
         cnf_matrix = confusion_matrix(target_intents, predicted_intents)
         labels = unique_labels(target_intents, predicted_intents)
@@ -394,6 +403,7 @@ def substitute_labels(labels: List[Text], old: Text, new: Text) -> List[Text]:
 
 def evaluate_entities(
     entity_results: List[EntityEvaluationResult],
+    output_folder: Optional[Text],
     extractors: Set[Text],
     report_folder: Optional[Text],
 ) -> Dict:  # pragma: no cover
@@ -417,6 +427,8 @@ def evaluate_entities(
 
             report_filename = extractor + "_report.json"
             extractor_report_filename = os.path.join(report_folder, report_filename)
+            if output_folder:
+                extractor_report_filename = os.path.join(output_folder, extractor_report_filename)
 
             utils.write_json_to_file(extractor_report_filename, report)
             logger.info(
@@ -680,6 +692,7 @@ def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
 def run_evaluation(
     data_path: Text,
     model_path: Text,
+    out_directory: Optional[Text] = None,
     report: Optional[Text] = None,
     successes: Optional[Text] = None,
     errors: Optional[Text] = "errors.json",
@@ -692,6 +705,7 @@ def run_evaluation(
 
     :param data_path: path to the test data
     :param model_path: path to the model
+    :param out_directory: path to folder where all output will be stored
     :param report: path to folder where reports are stored
     :param successes: path to file that will contain success cases
     :param errors: path to file that will contain error cases
@@ -714,6 +728,8 @@ def run_evaluation(
     }  # type: Dict[Text, Optional[Dict]]
 
     if report:
+        if out_directory:
+            report = os.path.join(out_directory, report)
         io_utils.create_directory(report)
 
     intent_results, entity_results = get_eval_data(interpreter, test_data)
@@ -721,14 +737,14 @@ def run_evaluation(
     if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results, report, successes, errors, confmat, histogram
+            intent_results, out_directory, report, successes, errors, confmat, histogram
         )
 
     if entity_results:
         logger.info("Entity evaluation results:")
         extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(
-            entity_results, extractors, report
+            entity_results, out_directory, extractors, report
         )
 
     return result
