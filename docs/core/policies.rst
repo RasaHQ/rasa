@@ -1,5 +1,5 @@
 :desc: Define and train customized policy configurations to optimize your
-       contextual assistant for longer context or unseen utterances which
+       contextual assistant for longer contexts or unseen utterances which
        require generalization.
 
 .. _policies:
