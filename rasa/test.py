@@ -109,7 +109,12 @@ def test_core(
     )
 
 
-def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict], output: Text = DEFAULT_RESULTS_PATH):
+def test_nlu(
+    model: Optional[Text],
+    nlu_data: Optional[Text],
+    kwargs: Optional[Dict],
+    output: Text = DEFAULT_RESULTS_PATH,
+):
     from rasa.nlu.test import run_evaluation
     from rasa.model import get_model
 
