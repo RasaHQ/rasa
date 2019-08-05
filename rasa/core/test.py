@@ -203,7 +203,7 @@ def _clean_entity_results(
         cleaned_entity = {"text": text}
         for k in ("start", "end", "entity", "value"):
             if k in set(r):
-                cleaned_entity.update({k: r[k]})
+                cleaned_entity[k] = r[k]
         cleaned_entities.append(cleaned_entity)
 
     return cleaned_entities

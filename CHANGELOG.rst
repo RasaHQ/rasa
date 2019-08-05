@@ -16,7 +16,7 @@ Added
 
 Changed
 -------
-
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
 
 Removed
 -------
@@ -24,6 +24,7 @@ Removed
 
 Fixed
 -----
+- messages with multiple entities are now handled properly with e2e evaluation
 
 
 [1.2.0] - 2019-08-01
@@ -40,7 +41,6 @@ Changed
 -------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
-- ``end_to_end_story.md`` was re-written in the restaurantbot domain
 - Update pytype to ``2019.7.11``
 - new event broker class: ``SQLProducer``. This event broker is now used when running locally with
   Rasa X
@@ -72,7 +72,6 @@ Changed
 
 Fixed
 -----
-- messages with multiple entities are now handled properly with e2e evaluation
 - interactive learning bug where reverted user utterances were dumped to training data
 - added timeout to terminal input channel to avoid freezing input in case of server
   errors
