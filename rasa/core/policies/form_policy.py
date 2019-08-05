@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional, Dict, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
+from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
 from rasa.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
@@ -28,6 +28,17 @@ class FormPolicy(MemoizationPolicy):
         super(FormPolicy, self).__init__(
             featurizer=featurizer, priority=priority, max_history=2, lookup=lookup
         )
+
+    @staticmethod
+    def validate_against_domain(ensemble, domain):
+        has_form_policy = ensemble is not None and any(
+            isinstance(p, FormPolicy) for p in ensemble.policies
+        )
+        if domain.form_names and not has_form_policy:
+            raise InvalidDomain(
+                "You have defined a form action, but haven't added the "
+                "FormPolicy to your policy ensemble."
+            )
 
     @staticmethod
     def _get_active_form_name(state):

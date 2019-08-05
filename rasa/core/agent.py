@@ -298,9 +298,12 @@ class Agent(object):
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
 
-        if self.domain:
+        if self.domain is not None:
             self.domain.add_requested_slot()
-            self._check_missing_policies()
+            PolicyEnsemble.check_missing_policies(
+                self.policy_ensemble,
+                self.domain
+            )
 
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
@@ -313,38 +316,6 @@ class Agent(object):
         self.model_directory = model_directory
         self.model_server = model_server
         self.remote_storage = remote_storage
-
-    def _check_missing_policies(self):
-        """Check for domain elements that work only with certain policies."""
-
-        def check_form_policy():
-            has_form_policy = self.policy_ensemble is not None and any(
-                isinstance(p, FormPolicy) for p in self.policy_ensemble.policies
-            )
-            if self.domain.form_names and not has_form_policy:
-                raise InvalidDomain(
-                    "You have defined a form action, but haven't added the "
-                    "FormPolicy to your policy ensemble."
-                )
-
-        def check_mapping_policy():
-            has_mapping_policy = self.policy_ensemble is not None and any(
-                isinstance(p, MappingPolicy) for p in self.policy_ensemble.policies
-            )
-            has_triggers_in_domain = any(
-                [
-                    "triggers" in properties
-                    for intent, properties in self.domain.intent_properties.items()
-                ]
-            )
-            if has_triggers_in_domain and not has_mapping_policy:
-                raise InvalidDomain(
-                    "You have defined triggers in your domain, but haven't "
-                    "added the MappingPolicy to your policy ensemble."
-                )
-
-        check_form_policy()
-        check_mapping_policy()
 
     def update_model(
         self,

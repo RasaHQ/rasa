@@ -20,6 +20,8 @@ from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
+from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
@@ -59,6 +61,17 @@ class PolicyEnsemble(object):
                     events_metadata[action_name].add(event)
 
         return events_metadata
+
+    @staticmethod
+    def check_missing_policies(ensemble, domain) -> None:
+        """Check for domain elements that work only with certain policies."""
+
+        policies_needing_validation = [
+            FormPolicy,
+            MappingPolicy,
+        ]
+        for policy_cls in policies_needing_validation:
+            policy_cls.validate_against_domain(ensemble, domain)
 
     def _check_priorities(self) -> None:
         """Checks for duplicate policy priorities within PolicyEnsemble."""

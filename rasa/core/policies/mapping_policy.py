@@ -32,6 +32,14 @@ class MappingPolicy(Policy):
 
         super(MappingPolicy, self).__init__(priority=priority)
 
+    @staticmethod
+    def validate_against_domain(ensemble, domain):
+        if has_triggers_in_domain and not has_mapping_policy:
+            raise InvalidDomain(
+                "You have defined triggers in your domain, but haven't "
+                "added the MappingPolicy to your policy ensemble."
+            )
+
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
