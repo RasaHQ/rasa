@@ -66,10 +66,7 @@ class PolicyEnsemble(object):
     def check_missing_policies(ensemble, domain) -> None:
         """Check for domain elements that work only with certain policies."""
 
-        policies_needing_validation = [
-            FormPolicy,
-            MappingPolicy,
-        ]
+        policies_needing_validation = [FormPolicy, MappingPolicy]
         for policy_cls in policies_needing_validation:
             policy_cls.validate_against_domain(ensemble, domain)
 
