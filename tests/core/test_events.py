@@ -78,6 +78,9 @@ def test_event_has_proper_implementation(one_event, another_event):
     "one_event",
     [
         UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
+        UserUttered(metadata={"type": "text"}),
+        UserUttered(metadata=None),
+        UserUttered(text="hi", message_id="1", metadata={"type": "text"}),
         SlotSet("name", "rasa"),
         Restarted(),
         AllSlotsReset(),
@@ -135,6 +138,7 @@ def test_json_parse_user():
             },
             "entities": []
           },
+          "metadata": {},
         }
     # DOCS END
     # fmt: on
@@ -143,6 +147,7 @@ def test_json_parse_user():
         intent={"name": "greet", "confidence": 0.9},
         entities=[],
         parse_data={"intent": {"name": "greet", "confidence": 0.9}, "entities": []},
+        metadata={},
     )
 
 

@@ -930,7 +930,8 @@ def _get_output_channel(
     ):
         requested_output_channel = tracker.get_latest_input_channel()
 
-    registered_input_channels = request.app.input_channels or []
+    # Interactive training does not set `input_channels`, hence we have to be cautious
+    registered_input_channels = getattr(request.app, "input_channels", None) or []
     matching_channels = [
         channel
         for channel in registered_input_channels
