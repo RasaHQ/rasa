@@ -481,7 +481,13 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
             "timestamp": 1514764800,
         }
     ]
-    assert content["latest_message"] == {"text": None, "intent": {}, "entities": []}
+    assert content["latest_message"] == {
+        "text": None,
+        "intent": {},
+        "entities": [],
+        "message_id": None,
+        "metadata": None,
+    }
 
 
 @pytest.mark.parametrize("event", test_events)
@@ -819,3 +825,17 @@ def test_get_latest_output_channel(input_channels: List[Text], expected_channel:
     actual = rasa.server._get_output_channel(request, tracker)
 
     assert isinstance(actual, expected_channel)
+
+
+def test_app_when_app_has_no_input_channels():
+    request = MagicMock()
+
+    class NoInputChannels:
+        pass
+
+    request.app = NoInputChannels()
+
+    actual = rasa.server._get_output_channel(
+        request, DialogueStateTracker.from_events("default", [])
+    )
+    assert isinstance(actual, CollectingOutputChannel)
