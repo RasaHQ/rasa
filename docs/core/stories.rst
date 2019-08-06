@@ -9,8 +9,9 @@ Stories
 .. contents::
    :local:
 
-A training example for the Rasa dialogue system is called a **story**.
-This is a guide to the story data format.
+Rasa stories are a form of training data used to train the Rasa Core dialogue management models.
+
+A story is a representation of a conversation between a user and an AI assistant, converted into a specific format where user inputs are expressed as corresponding intents (and entities where necessary) while the responses of an assistant are expressed as corresponding action names.
 
 .. note::
 
@@ -170,8 +171,8 @@ lot of them, it is probably better to restructure your domain and/or intents.
     will slow down training.
 
 
-End-to-End Training Format
---------------------------
+End-to-End Story Evaluation Format
+----------------------------------
 
 The end-to-end story format is a format that combines both NLU and Core training data
 into a single file for evaluation. You can read more about it
