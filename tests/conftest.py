@@ -12,7 +12,7 @@ from rasa.model import get_model
 from rasa.train import train_async
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
-    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STACK_CONFIG,
     DEFAULT_NLU_DATA,
     END_TO_END_STORY_FILE,
@@ -81,7 +81,7 @@ async def nlu_agent(trained_nlu_model) -> Agent:
 
 @pytest.fixture(scope="session")
 def default_domain_path():
-    return DEFAULT_DOMAIN_PATH
+    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture(scope="session")

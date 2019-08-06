@@ -1,3 +1,7 @@
+:desc: Learn to handle greetings, off-topic chitchat, and other small talk
+       in your bot using features provided by Rasa's open source chat assistant
+       platform.
+
 .. _small-talk:
 
 ==========
