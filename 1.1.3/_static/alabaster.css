@@ -141,7 +141,7 @@ div.body p, div.body dd, div.body li, div.body blockquote {
     -moz-hyphens: none;
     -ms-hyphens: none;
     -webkit-hyphens: none;
-    hyphens: none; 
+    hyphens: none;
 }
 
 #have-questions-or-feedback{
@@ -392,7 +392,7 @@ div.body h6 {
     color: #242424;
 }
 
-div.body h1 { margin-top: 0; padding-top: 0; font-size: 200%; }
+div.body h1 { margin-top: 0; margin-bottom: 0; padding-top: 0; font-size: 200%; }
 div.body h2 { font-size: 130%; }
 div.body h3 { font-size: 110%; }
 div.body h4 { font-size: 90%; }
@@ -1301,7 +1301,7 @@ input.jp-Stdin-input {
     font-family: 'Source Sans Pro', 'Helvetica Neue', 'Arial', sans-serif;
     font-size: 18px;
     background-color: #fff;
-    color: #617287;   
+    color: #617287;
 }
 input.jp-Stdin-input:focus {
     outline:none;
@@ -1451,7 +1451,7 @@ div .copyable {
 	text-align: center;
   z-index: 1;
 }
-.progress ul {  
+.progress ul {
 	display: table-row;
 }
 .progress ul li {
@@ -1477,7 +1477,7 @@ div .copyable {
 	border: solid 3px #d6d6d6; /* Default Circle Color */
 	position: absolute;
 	display: block;
-	top: -10px;	
+	top: -10px;
 	margin-right: auto;
 	margin-left: auto;
 	z-index: -1;
@@ -1485,7 +1485,7 @@ div .copyable {
 	-webkit-box-sizing: border-box;
 	   -moz-box-sizing: border-box;
 	        box-sizing: border-box;
-	
+
 	-webkit-border-radius: 50%;
 	   -moz-border-radius: 50%;
 	        border-radius: 50%;
@@ -1634,4 +1634,16 @@ div.section {
 
 .sidebar-collapse-button > span:hover {
     color: #574ae2;
-}    
+}
+
+.edit-link{
+    color: #574ae2;
+    font-size: 80%;
+}
+
+.edit-link .reference{
+    color: #574ae2;
+    font-weight: bold;
+    margin-top: -50px;
+    margin-left: 2px;
+}

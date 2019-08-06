@@ -200,12 +200,13 @@ continues." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.2.0
+          viewing: 1.2.1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.2.1/core/slots/">1.2.1</a>
               <a href="../.././1.2.0/core/slots/">1.2.0</a>
               <a href="../.././1.1.8/core/slots/">1.1.8</a>
               <a href="../.././1.1.7/core/slots/">1.1.7</a>
@@ -257,7 +258,10 @@ continues." />
 
 <div class="section" id="slots">
 <span id="id1"></span><h1>Slots<a class="headerlink" href="#slots" title="Permalink to this headline">¶</a></h1>
-<div class="contents local topic" id="contents">
+
+  <div class="edit-link">
+    <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/core/slots.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>EDIT THIS PAGE</a>
+  </div><div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#what-are-slots" id="id3">What are slots?</a></li>
 <li><a class="reference internal" href="#how-rasa-uses-slots" id="id4">How Rasa Uses Slots</a></li>
@@ -630,7 +634,7 @@ a vector of length <code class="docutils literal notranslate"><span class="pre">
                 <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-    <span class="k">return</span> <span class="n">r</span>
+        <span class="k">return</span> <span class="n">r</span>
 </pre></div>
 </div>
 <p>Now we also need some training stories, so that Rasa Core
