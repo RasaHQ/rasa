@@ -427,10 +427,6 @@ def evaluate_entities(
 
             report_filename = extractor + "_report.json"
             extractor_report_filename = os.path.join(report_folder, report_filename)
-            if output_folder:
-                extractor_report_filename = os.path.join(
-                    output_folder, extractor_report_filename
-                )
 
             utils.write_json_to_file(extractor_report_filename, report)
             logger.info(

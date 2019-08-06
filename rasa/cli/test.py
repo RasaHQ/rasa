@@ -100,6 +100,10 @@ def test_nlu(args: argparse.Namespace) -> None:
 
     nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
+    output = args.out or DEFAULT_RESULTS_PATH
+
+    if not os.path.exists(output):
+        os.makedirs(output)
 
     if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])
@@ -131,11 +135,11 @@ def test_nlu(args: argparse.Namespace) -> None:
                 )
                 continue
 
-        output = args.report or DEFAULT_NLU_RESULTS_PATH
+        report_output = args.report or DEFAULT_NLU_RESULTS_PATH
         compare_nlu_models(
             configs=config_files,
             nlu=nlu_data,
-            output=output,
+            output=report_output,
             runs=args.runs,
             exclusion_percentages=args.percentages,
         )
@@ -149,7 +153,7 @@ def test_nlu(args: argparse.Namespace) -> None:
         model_path = cli_utils.get_validated_path(
             args.model, "model", DEFAULT_MODELS_PATH
         )
-        test_nlu(model_path, nlu_data, vars(args))
+        test_nlu(model_path, nlu_data, vars(args), output)
 
 
 def test(args: argparse.Namespace):
