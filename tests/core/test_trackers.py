@@ -53,10 +53,6 @@ class MockRedisTrackerStore(RedisTrackerStore):
         self.red = fakeredis.FakeStrictRedis()
         self.record_exp = None
 
-        # added in redis==3.3.0
-        self.health_check_interval = 0
-        self.next_health_check = 0
-
         TrackerStore.__init__(self, domain)
 
 
