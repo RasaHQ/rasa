@@ -5,6 +5,8 @@
 Slack
 =====
 
+.. edit-link::
+
 You first have to create a Slack app to get credentials.
 Once you have them you can add these to your ``credentials.yml``.
 

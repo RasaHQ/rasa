@@ -7,6 +7,8 @@
 Architecture
 ============
 
+.. edit-link::
+
 
 Message Handling
 ^^^^^^^^^^^^^^^^

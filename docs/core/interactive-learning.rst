@@ -7,6 +7,8 @@
 Interactive Learning
 ====================
 
+.. edit-link::
+
 This page shows how to use interactive learning on the command line.
 
 In interactive learning mode, you provide feedback to your bot while you talk

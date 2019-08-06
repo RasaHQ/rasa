@@ -6,6 +6,8 @@
 Language Support
 ================
 
+.. edit-link::
+
 **You can use Rasa NLU to build assistants in any language you want!** The
 ``supervised_embeddings`` pipeline can be used for **any language** because
 it trains custom word embeddings for your domain. Read more about this

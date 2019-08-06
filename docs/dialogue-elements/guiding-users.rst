@@ -4,6 +4,8 @@
 Guiding Users
 =============
 
+.. edit-link::
+
 .. contents::
    :local:
 

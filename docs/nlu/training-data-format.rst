@@ -6,6 +6,8 @@
 Training Data Format
 ====================
 
+.. edit-link::
+
 Data Format
 ~~~~~~~~~~~
 

@@ -7,6 +7,8 @@
 Choosing a Pipeline
 ===================
 
+.. edit-link::
+
 Choosing an NLU pipeline allows you to customize your model and finetune
 it on your dataset.
 

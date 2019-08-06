@@ -5,6 +5,8 @@
 Custom Connectors
 =================
 
+.. edit-link::
+
 You can also implement your own custom channel. You can
 use the ``rasa.core.channels.channel.RestInput`` class as a template.
 The methods you need to implement are ``blueprint`` and ``name``. The method

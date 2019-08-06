@@ -7,6 +7,8 @@
 Policies
 ========
 
+.. edit-link::
+
 .. contents::
    :local:
 

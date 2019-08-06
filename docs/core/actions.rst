@@ -6,6 +6,8 @@
 Actions
 =======
 
+.. edit-link::
+
 .. contents::
 
 Actions are the things your bot runs in response to user input.

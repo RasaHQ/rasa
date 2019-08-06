@@ -6,6 +6,8 @@
 Domains
 =======
 
+.. edit-link::
+
 The ``Domain`` defines the universe in which your assistant operates.
 It specifies the ``intents``, ``entities``, ``slots``, and ``actions``
 your bot should know about. Optionally, it can also include ``templates``

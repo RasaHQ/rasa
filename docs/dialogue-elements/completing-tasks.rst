@@ -4,6 +4,8 @@
 Completing Tasks
 ================
 
+.. edit-link::
+
 .. contents::
    :local:
 
