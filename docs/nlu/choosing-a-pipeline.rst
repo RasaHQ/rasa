@@ -1,5 +1,5 @@
 :desc: Set up a pipeline of pre-trained word vectors form GloVe or fastText
-       or fit them specifically on your dataset using the tensorflow pipeline
+       or fit them specifically on your dataset using the TensorFlow pipeline
        for open source NLU.
 
 .. _choosing-a-pipeline:
@@ -11,6 +11,10 @@ Choosing a Pipeline
 
 Choosing an NLU pipeline allows you to customize your model and finetune
 it on your dataset.
+
+.. contents::
+   :local:
+
 
 The Short Answer
 ----------------
@@ -156,12 +160,12 @@ final context dictionary is used to persist the model's metadata.
 
 
 
-Returned Entities Object
-------------------------
-In the object returned after parsing there are two fields that show information
-about how the pipeline impacted the entities returned. The ``extractor`` field
-of an entity tells you which entity extractor found this particular entity.
-The ``processors`` field contains the name of components that altered this
+The "entity" object explained
+-----------------------------
+After parsing, the entity is returned as a dictionary.  There are two fields that show information
+about how the pipeline impacted the entities returned: the ``extractor`` field
+of an entity tells you which entity extractor found this particular entity, and
+the ``processors`` field contains the name of components that altered this
 specific entity.
 
 The use of synonyms can also cause the ``value`` field not match the ``text``

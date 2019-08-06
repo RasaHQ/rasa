@@ -28,7 +28,9 @@ from rasa.train import train_async
 
 matplotlib.use("Agg")
 
-DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
+DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
+
+DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
@@ -52,7 +54,8 @@ TEST_DIALOGUES = [
 ]
 
 EXAMPLE_DOMAINS = [
-    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     "examples/formbot/domain.yml",
     "examples/moodbot/domain.yml",
     "examples/restaurantbot/domain.yml",
@@ -81,7 +84,7 @@ def loop():
 
 @pytest.fixture(scope="session")
 def default_domain_path():
-    return DEFAULT_DOMAIN_PATH
+    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture(scope="session")
@@ -101,7 +104,7 @@ def default_nlu_data():
 
 @pytest.fixture(scope="session")
 def default_domain():
-    return Domain.load(DEFAULT_DOMAIN_PATH)
+    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
 
 @pytest.fixture(scope="session")

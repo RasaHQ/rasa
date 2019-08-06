@@ -1,3 +1,6 @@
+:desc: Check out how to make your Rasa assistant available on platforms like
+       Facebook Messenger, Slack, Telegram or even your very own website. 
+
 .. _messaging-and-voice-channels:
 
 Messaging and Voice Channels

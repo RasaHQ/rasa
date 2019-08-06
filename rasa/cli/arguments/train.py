@@ -88,7 +88,7 @@ def add_compare_params(
         "--percentages",
         nargs="*",
         type=int,
-        default=[0, 5, 25, 50, 70, 90, 95],
+        default=[0, 25, 50, 75],
         help="Range of exclusion percentages.",
     )
     parser.add_argument(

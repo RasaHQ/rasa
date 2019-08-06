@@ -96,6 +96,8 @@ The response to this request will include the bot responses, e.g.
    ]
 
 
+.. _callbackInput:
+
 CallbackInput
 ^^^^^^^^^^^^^
 

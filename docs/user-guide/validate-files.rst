@@ -1,4 +1,4 @@
-:desc: Check the domain, stories and intent files for possible errors.
+:desc: Check your domain, stories and intent files for possible errors.
 
 .. _validate-files:
 

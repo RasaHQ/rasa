@@ -33,6 +33,20 @@ To send a message, you would run a command like:
 
 where ``myio`` is the name of your component.
 
+If you need to use extra information from your front end in your custom
+actions, you can add this information in the ``metadata`` dict of your user
+message. This information will accompany the user message through the rasa
+server into the action server when applicable, where you can find it stored in
+the ``tracker``. Message metadata will not directly affect NLU classification
+or action prediction.
+
+Here are all the attributes of ``UserMessage``:
+
+.. autoclass:: rasa.core.channels.UserMessage
+
+   .. automethod:: __init__
+
+
 In your implementation of the ``receive`` endpoint, you need to make
 sure to call ``on_new_message(UserMessage(text, output, sender_id))``.
 This will tell Rasa Core to handle this user message. The ``output``

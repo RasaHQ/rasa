@@ -1,4 +1,4 @@
-:desc: Read more how to define assistant utterances or use a service to generate the
+:desc: Read how to define assistant utterances or use a service to generate the
        responses using Rasa as an open source chat assistant platform.
 
 .. _responses:

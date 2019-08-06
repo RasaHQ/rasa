@@ -63,7 +63,7 @@
       },
       "event": "user",
       "text": "/greet",
-      "input_channel": null
+      "input_channel": null, "message_id": null, "metadata": null
     },
     {
       "timestamp": 1517821726.200373,
@@ -105,7 +105,7 @@
       },
       "event": "user",
       "text": "/mood_great",
-      "input_channel": null
+      "input_channel": null, "message_id": null, "metadata": null
     },
     {
       "timestamp": 1517821726.209908,

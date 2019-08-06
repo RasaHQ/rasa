@@ -1,4 +1,4 @@
-:desc: Find out how to use the HTTP API of Rasa to integrate
+:desc: Find out how to use Rasa's HTTP API to integrate Rasa
        with your backend components.
 
 .. _running-the-server:

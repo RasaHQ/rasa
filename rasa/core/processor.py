@@ -145,7 +145,7 @@ class MessageProcessor(object):
         self,
         sender_id: Text,
         action_name: Text,
-        output_channel: CollectingOutputChannel,
+        output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
         policy: Text,
         confidence: float,
@@ -311,6 +311,7 @@ class MessageProcessor(object):
                 parse_data,
                 input_channel=message.input_channel,
                 message_id=message.message_id,
+                metadata=message.metadata,
             ),
             self.domain,
         )
@@ -522,7 +523,7 @@ class MessageProcessor(object):
             # the timestamp would indicate a time before the time
             # of the action executed
             e.timestamp = time.time()
-            tracker.update(e)
+            tracker.update(e, self.domain)
 
     def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
