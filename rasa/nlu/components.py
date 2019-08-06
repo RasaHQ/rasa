@@ -44,7 +44,7 @@ def validate_requirements(component_names: List[Text]) -> None:
             "Not all required importable packages are installed. "
             + "To use this pipeline, you need to install the "
             "missing dependencies. "
-            + "Please install the package(s) that contain the module(s){}".format(
+            + "Please install the package(s) that contain the module(s): {}".format(
                 ", ".join(failed_imports)
             )
         )

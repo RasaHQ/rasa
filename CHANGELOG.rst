@@ -23,7 +23,8 @@ Removed
 
 Fixed
 -----
-
+- ``Flood control exceeded`` error in Telegram connector which happened because the
+  webhook was set twice
 
 [1.2.1] - 2019-08-06
 ^^^^^^^^^^^^^^^^^^^^
