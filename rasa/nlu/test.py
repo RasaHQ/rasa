@@ -281,12 +281,12 @@ def plot_intent_confidences(
 
 def evaluate_intents(
     intent_results: List[IntentEvaluationResult],
-    output_folder: Optional[Text],
     report_folder: Optional[Text],
     successes_filename: Optional[Text],
     errors_filename: Optional[Text],
     confmat_filename: Optional[Text],
     intent_hist_filename: Optional[Text],
+    output_folder: Optional[Text] = None,
 ) -> Dict:  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
     Log samples which could not be classified correctly and save them to file.
@@ -403,9 +403,9 @@ def substitute_labels(labels: List[Text], old: Text, new: Text) -> List[Text]:
 
 def evaluate_entities(
     entity_results: List[EntityEvaluationResult],
-    output_folder: Optional[Text],
     extractors: Set[Text],
     report_folder: Optional[Text],
+    output_folder: Optional[Text] = None,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for each entity extractor.
     Logs precision, recall, and F1 per entity type for each extractor."""
@@ -735,14 +735,14 @@ def run_evaluation(
     if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results, out_directory, report, successes, errors, confmat, histogram
+            intent_results, report, successes, errors, confmat, histogram, out_directory
         )
 
     if entity_results:
         logger.info("Entity evaluation results:")
         extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(
-            entity_results, out_directory, extractors, report
+            entity_results, extractors, report, out_directory
         )
 
     return result
@@ -817,6 +817,7 @@ def cross_validate(
     data: TrainingData,
     n_folds: int,
     nlu_config: Union[RasaNLUModelConfig, Text],
+    output: Optional[Text] = None,
     report: Optional[Text] = None,
     successes: Optional[Text] = None,
     errors: Optional[Text] = "errors.json",
@@ -884,12 +885,12 @@ def cross_validate(
     if intent_classifier_present:
         logger.info("Accumulated test folds intent evaluation results:")
         evaluate_intents(
-            intent_test_results, report, successes, errors, confmat, histogram
+            intent_test_results, report, successes, errors, confmat, histogram, output
         )
 
     if extractors:
         logger.info("Accumulated test folds entity evaluation results:")
-        evaluate_entities(entity_test_results, extractors, report)
+        evaluate_entities(entity_test_results, extractors, report, output)
 
     return (
         CVEvaluationResult(dict(intent_train_metrics), dict(intent_test_metrics)),

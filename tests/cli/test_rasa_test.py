@@ -13,7 +13,7 @@ def test_test_core(run_in_default_project):
 def test_test(run_in_default_project):
     run_in_default_project("test", "--report", "report")
 
-    assert os.path.exists("report")
+    assert os.path.exists("results/report")
     assert os.path.exists("results")
     assert os.path.exists("results/hist.png")
     assert os.path.exists("results/confmat.png")
@@ -51,7 +51,7 @@ def test_test_nlu_comparison(run_in_default_project):
         "2",
     )
 
-    assert os.path.exists("nlu-report")
+    assert os.path.exists("results/nlu-report")
 
 
 def test_test_core_comparison(run_in_default_project):
@@ -132,9 +132,9 @@ def test_test_help(run):
     output = run("test", "--help")
 
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--out OUT] [--e2e]
-                 [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
-                 [--url URL] [--evaluate-model-directory] [-u NLU]
+                 [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
+                 [--fail-on-prediction-errors] [--url URL]
+                 [--evaluate-model-directory] [-u NLU] [--out OUT]
                  [--report [REPORT]] [--successes [SUCCESSES]]
                  [--errors ERRORS] [--histogram HISTOGRAM] [--confmat CONFMAT]
                  [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
@@ -150,8 +150,8 @@ def test_test_help(run):
 def test_test_nlu_help(run):
     output = run("test", "nlu", "--help")
 
-    help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU]
-                     [--out OUT] [--report [REPORT]] [--successes [SUCCESSES]]
+    help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
+                     [--report [REPORT]] [--successes [SUCCESSES]]
                      [--errors ERRORS] [--histogram HISTOGRAM]
                      [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
                      [--cross-validation] [-f FOLDS] [-r RUNS]

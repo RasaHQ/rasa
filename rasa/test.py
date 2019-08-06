@@ -187,7 +187,7 @@ def compare_nlu_models(
 
 
 def perform_nlu_cross_validation(
-    config: Text, nlu: Text, kwargs: Optional[Dict[Text, Any]]
+    config: Text, nlu: Text, output: Text, kwargs: Optional[Dict[Text, Any]]
 ):
     import rasa.nlu.config
     from rasa.nlu.test import (
@@ -203,7 +203,7 @@ def perform_nlu_cross_validation(
     data = rasa.nlu.training_data.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = utils.minimal_kwargs(kwargs, cross_validate)
-    results, entity_results = cross_validate(data, folds, nlu_config, **kwargs)
+    results, entity_results = cross_validate(data, folds, nlu_config, output, **kwargs)
     logger.info("CV evaluation (n={})".format(folds))
 
     if any(results):

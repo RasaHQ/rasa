@@ -102,6 +102,9 @@ def test_nlu(args: argparse.Namespace) -> None:
     nlu_data = data.get_nlu_directory(nlu_data)
     output = args.out or DEFAULT_RESULTS_PATH
 
+    if not os.path.exists(output):
+        os.makedirs(output)
+
     if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])
         if os.path.isdir(args.config):
@@ -149,7 +152,7 @@ def test_nlu(args: argparse.Namespace) -> None:
         config = cli_utils.get_validated_path(
             args.config, "config", DEFAULT_CONFIG_PATH
         )
-        perform_nlu_cross_validation(config, nlu_data, vars(args))
+        perform_nlu_cross_validation(config, nlu_data, output, vars(args))
     else:
         model_path = cli_utils.get_validated_path(
             args.model, "model", DEFAULT_MODELS_PATH
