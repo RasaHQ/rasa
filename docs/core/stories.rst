@@ -103,16 +103,14 @@ Form Events
 There are three kinds of events that need to be kept in mind while dealing with
 forms in stories.
 
-1. A form action event (e.g. ``- restaurant_form``) is used in the beginning when
-first starting a form, and also while resuming the form action when the form is
-already active.
-2. A form activation event (e.g. ``- form{"name": "restaurant_form"}``) is used
-right after a form action event 
-3. A form deactivation event (e.g. ``- form{"name": null}``)
+- A form action event (e.g. ``- restaurant_form``) is used in the beginning when first starting a form, and also while resuming the form action when the form is already active.
+- A form activation event (e.g. ``- form{"name": "restaurant_form"}``) is used right after a form action event.
+- A form deactivation event (e.g. ``- form{"name": null}``), which is used to deactivate the form.
 
 
-In order to get around this pitfall, the recommended way to write these
-stories is to use :ref:`interactive learning <interactive-learning>`.
+.. note::
+    In order to get around the pitfall of forgetting to add events, the recommended
+    way to write these stories is to use :ref:`interactive learning <interactive-learning>`.
 
 
 Writing Fewer and Shorter Stories
@@ -168,6 +166,16 @@ Just like checkpoints, ``OR`` statements can be useful, but if you are using a
 lot of them, it is probably better to restructure your domain and/or intents.
 
 .. note::
+    Adding lines to your stories with many ``OR`` statements
+    will slow down training.
 
-   Adding lines to your stories with many ``OR`` statements
-   will slow down training.
+
+End-to-End Training Format
+--------------------------
+
+The end-to-end story format is a format that combines both NLU and Core training data
+into a single file for evaluation. You can read more about it
+:ref:`here <end_to_end_evaluation>`.
+
+.. warning::
+    As of now, this format can only be used for evaluation and not for training.
