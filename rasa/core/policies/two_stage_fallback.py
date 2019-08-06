@@ -76,19 +76,26 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         self.fallback_nlu_action_name = fallback_nlu_action_name
         self.deny_suggestion_intent_name = deny_suggestion_intent_name
 
+    @staticmethod
+    def validate_against_domain(ensemble: 'PolicyEnsemble', domain: Domain) -> None:
+        if ensemble is None:
+            return
+
+        for p in ensemble.policies:
+            if isinstance(p, TwoStageFallbackPolicy):
+                if p.deny_suggestion_intent_name not in domain.intents:
+                    raise InvalidDomain(
+                        "The intent {} must be present in the "
+                        "domain file to use the "
+                        "`TwoStageFallbackPolicy`."
+                        "".format(p.deny_suggestion_intent_name)
+                    )
+
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
         """Predicts the next action if NLU confidence is low.
         """
-
-        if self.deny_suggestion_intent_name not in domain.intents:
-            raise InvalidDomain(
-                "The intent {} must be present in the "
-                "domain file to use the "
-                "`TwoStageFallbackPolicy`."
-                "".format(self.deny_suggestion_intent_name)
-            )
 
         nlu_data = tracker.latest_message.parse_data
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)

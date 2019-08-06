@@ -22,6 +22,7 @@ from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
+from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
@@ -66,7 +67,11 @@ class PolicyEnsemble(object):
     def check_missing_policies(ensemble: "PolicyEnsemble", domain: Domain) -> None:
         """Check for domain elements that work only with certain policies."""
 
-        policies_needing_validation = [FormPolicy, MappingPolicy]
+        policies_needing_validation = [
+            FormPolicy,
+            MappingPolicy,
+            TwoStageFallbackPolicy,
+        ]
         for policy in policies_needing_validation:
             policy.validate_against_domain(ensemble, domain)
 

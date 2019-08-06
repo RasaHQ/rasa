@@ -197,12 +197,20 @@ async def test_load_agent(trained_model):
     assert agent.model_directory is not None
 
 
-def test_init_agent_with_missing_policies():
+def test_incompatible_domain_and_policy():
     TRIGGERS_AND_FORMS_DOMAIN = {
         "intents": [{"affirm": {"triggers": "utter_ask_num_people"}}],
         "templates": {"utter_ask_num_people": [{"text": "how many people?"}]},
         "actions": ["utter_ask_num_people"],
         "forms": ["restaurant_form"],
+    }
+
+    DOMAIN_WITHOUT_DENY_SUGGESTION_INTENT = {
+        "intents": ["affirm"]
+    }
+
+    POLICY_WITH_TWO_STAGE_FALLBACK = {
+        "policies": [{"name": "TwoStageFallbackPolicy"}]
     }
 
     NO_MAPPING_POLICY_CONFIG = {
@@ -226,6 +234,13 @@ def test_init_agent_with_missing_policies():
             policies=PolicyEnsemble.from_dict(NO_MAPPING_POLICY_CONFIG),
         )
     assert "haven't added the MappingPolicy" in str(execinfo.value)
+
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(DOMAIN_WITHOUT_DENY_SUGGESTION_INTENT),
+            policies=PolicyEnsemble.from_dict(POLICY_WITH_TWO_STAGE_FALLBACK),
+        )
+    assert "The intent out_of_scope must be present" in str(execinfo.value)
 
 
 async def test_agent_update_model_none_domain(trained_model):
