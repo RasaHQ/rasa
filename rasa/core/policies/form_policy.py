@@ -30,7 +30,10 @@ class FormPolicy(MemoizationPolicy):
         )
 
     @staticmethod
-    def validate_against_domain(ensemble, domain):
+    def validate_against_domain(ensemble: "PolicyEnsemble", domain: Domain):
+        if not domain:
+            return
+
         has_form_policy = ensemble is not None and any(
             isinstance(p, FormPolicy) for p in ensemble.policies
         )

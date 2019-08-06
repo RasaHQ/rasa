@@ -63,12 +63,12 @@ class PolicyEnsemble(object):
         return events_metadata
 
     @staticmethod
-    def check_missing_policies(ensemble, domain) -> None:
+    def check_missing_policies(ensemble: "PolicyEnsemble", domain: Domain) -> None:
         """Check for domain elements that work only with certain policies."""
 
         policies_needing_validation = [FormPolicy, MappingPolicy]
-        for policy_cls in policies_needing_validation:
-            policy_cls.validate_against_domain(ensemble, domain)
+        for policy in policies_needing_validation:
+            policy.validate_against_domain(ensemble, domain)
 
     def _check_priorities(self) -> None:
         """Checks for duplicate policy priorities within PolicyEnsemble."""

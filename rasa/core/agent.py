@@ -300,7 +300,8 @@ class Agent(object):
 
         if self.domain is not None:
             self.domain.add_requested_slot()
-            PolicyEnsemble.check_missing_policies(self.policy_ensemble, self.domain)
+
+        PolicyEnsemble.check_missing_policies(self.policy_ensemble, self.domain)
 
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
