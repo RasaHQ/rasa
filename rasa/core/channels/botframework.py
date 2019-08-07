@@ -213,7 +213,7 @@ class BotFrameworkInput(InputChannel):
                         user_msg = UserMessage(
                             text=(postdata['text'] if postdata.get('text') 
                                   else ""),
-                            parse_data={"attachement": postdata['attachments'][0]},
+                            metadata={"attachements": postdata['attachments']},
                             output_channel=out_channel,
                             sender_id=postdata["from"]["id"],
                             input_channel=self.name(),
