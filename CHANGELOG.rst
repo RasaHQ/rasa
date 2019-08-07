@@ -11,7 +11,10 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- experimental training data importer which supports training with data of multiple
+  sub bots. Please see the
+  `docs <https://rasa.com/docs/rasa/api/training-data-importers/>`_ for more
+  information.
 
 Changed
 -------
