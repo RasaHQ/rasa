@@ -57,16 +57,16 @@ configuration file:
 SkillSelector (experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note::
+.. warning::
 
     This feature is currently experimental and might change or be removed in the future.
     Please share your feedback on it in the `forum <https://forum.rasa.com>`_ to help
     us making this feature ready for production.
 
-With this importer you can build a contextual AI assistant by combining
-reusable "building blocks" called skills.
-You might, for example, handle chitchat with one skill and greet your users with
-another. These skills can be developed in isolation, and then combined at train time
+With this importer you can build a contextual AI assistant by combining multiple
+reusable Rasa projects.
+You might, for example, handle chitchat with one project and greet your users with
+another. These projects can be developed in isolation, and then combined at train time
 to create your assistant.
 
 An example directory structure could look like this:
@@ -75,7 +75,7 @@ An example directory structure could look like this:
 
     .
     ├── config.yml
-    └── skills
+    └── projects
         ├── GreetBot
         │   ├── data
         │   │   ├── nlu.md
@@ -88,8 +88,8 @@ An example directory structure could look like this:
             │   └── stories.md
             └── domain.yml
 
-In this example the contextual AI assistant imports the ``ChitchatBot`` skill which in turn
-imports the ``GreetBot`` skill. Skill imports are defined in the configuration files of
+In this example the contextual AI assistant imports the ``ChitchatBot`` project which in turn
+imports the ``GreetBot`` project. Project imports are defined in the configuration files of
 each project.
 To instruct Rasa to use the ``SkillSelector`` module, put this section in the config
 file of your root project:
@@ -100,13 +100,13 @@ file of your root project:
     - name: SkillSelector
 
 
-Then specify which skills you want to import.
+Then specify which projects you want to import.
 In our example, the ``config.yml`` in the root project would look like this:
 
 .. code-block:: yaml
 
     imports:
-    - skills/ChitchatBot
+    - projects/ChitchatBot
 
 The configuration file of the ``ChitchatBot`` in turn references the ``GreetBot``:
 
@@ -115,10 +115,10 @@ The configuration file of the ``ChitchatBot`` in turn references the ``GreetBot`
     imports:
     - ../GreetBot
 
-The ``GreetBot`` skill does not specify further skills so the ``config.yml`` can be
+The ``GreetBot`` project does not specify further projects so the ``config.yml`` can be
 omitted.
 
-Rasa uses relative paths from the referencing configuration file to import skills.
+Rasa uses relative paths from the referencing configuration file to import projects.
 These can be anywhere on your file system as long as the file access is permitted.
 
 During the training process Rasa will import all required training files, combine
@@ -127,14 +127,14 @@ them, and train a unified AI assistant.
 .. note::
 
     Rasa will use the policy and NLU pipeline configuration of the root project
-    directory during the training. Policy or NLU configurations of imported skills will
-    be ignored.
+    directory during the training. **Policy or NLU configurations of imported projects
+    will be ignored.**
 
 .. note::
 
-    Equal identifiers will be merged, e.g. if two skills have training data
-    for an intent ``greet``, their training data will be combined.
-
+    Equal intents, entities, slots, templates, actions and forms will be merged,
+    e.g. if two projects have training data for an intent ``greet``,
+    their training data will be combined.
 
 Writing a Custom Importer
 ~~~~~~~~~~~~~~~~~~~~~~~~~
