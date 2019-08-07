@@ -67,7 +67,7 @@ class PolicyEnsemble(object):
     def check_domain_ensemble_compatibility(
         ensemble: "PolicyEnsemble", domain: Domain
     ) -> None:
-        """Check for domain elements that work only with certain policies."""
+        """Check for elements that only work with certain policy/domain combinations."""
 
         policies_needing_validation = [
             FormPolicy,
