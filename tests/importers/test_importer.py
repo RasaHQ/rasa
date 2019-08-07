@@ -4,7 +4,6 @@ from typing import Text, Dict, Type, List
 
 import pytest
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH, DEFAULT_DATA_PATH
-from rasa.core.domain import Domain
 from rasa.importers.importer import (
     CombinedDataImporter,
     TrainingDataImporter,
@@ -32,44 +31,6 @@ async def test_use_of_interface():
     for f in functions_to_test:
         with pytest.raises(NotImplementedError):
             await f()
-
-
-async def test_rasa_file_importer(project: Text):
-    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
-    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-
-    importer = RasaFileImporter(config_path, domain_path, [default_data_path])
-
-    domain = await importer.get_domain()
-    assert len(domain.intents) == 6
-    assert domain.slots == []
-    assert domain.entities == []
-    assert len(domain.action_names) == 13
-    assert len(domain.templates) == 5
-
-    stories = await importer.get_stories()
-    assert len(stories.story_steps) == 4
-
-    nlu_data = await importer.get_nlu_data("en")
-    assert len(nlu_data.intents) == 6
-    assert len(nlu_data.intent_examples) == 39
-
-
-async def test_rasa_file_importer_with_invalid_config():
-    importer = RasaFileImporter(config_file="invalid path")
-    actual = await importer.get_config()
-
-    assert actual == {}
-
-
-async def test_rasa_file_importer_with_invalid_domain(tmp_path: Path):
-    config_file = tmp_path / "config.yml"
-    config_file.write_text("")
-    importer = TrainingDataImporter.load_from_dict({}, str(config_file), None, [])
-
-    actual = await importer.get_domain()
-    assert actual.as_dict() == Domain.empty().as_dict()
 
 
 async def test_combined_file_importer_with_single_importer(project: Text):
