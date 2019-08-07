@@ -29,7 +29,7 @@ class FormPolicy(MemoizationPolicy):
             featurizer=featurizer, priority=priority, max_history=2, lookup=lookup
         )
 
-    @staticmethod
+    @classmethod
     def validate_against_domain(cls, ensemble: "PolicyEnsemble", domain: Domain):
         if not domain:
             return
