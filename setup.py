@@ -23,6 +23,7 @@ tests_requires = [
     "nbsphinx>=0.3",
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
+    "fakeredis~=1.0",
 ]
 
 install_requires = [
@@ -33,7 +34,6 @@ install_requires = [
     "attrs>=18",
     "jsonpickle~=1.1",
     "redis~=3.3.5",
-    "fakeredis~=1.0",
     "pymongo~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
