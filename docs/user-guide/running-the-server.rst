@@ -6,6 +6,8 @@
 Running the Server
 ==================
 
+.. edit-link::
+
 .. contents::
    :local:
 

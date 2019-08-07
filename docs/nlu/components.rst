@@ -6,6 +6,8 @@
 Components
 ==========
 
+.. edit-link::
+
 .. note::
    For clarity, we have renamed the pre-defined pipelines to reflect
    what they *do* rather than which libraries they use as of Rasa NLU
