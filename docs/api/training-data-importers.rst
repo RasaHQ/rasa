@@ -127,7 +127,7 @@ them, and train a unified AI assistant.
 .. note::
 
     Rasa will use the policy and NLU pipeline configuration of the root project
-    directory during the training. Policy or NLU configurations of imported skills will
+    directory during training. Policy or NLU configurations of imported skills will
     be ignored.
 
 .. note::
