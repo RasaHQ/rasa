@@ -30,8 +30,6 @@ Fixed
 
 Fixed
 -----
-- ``Flood control exceeded`` error in Telegram connector which happened because the
-  webhook was set twice
 - ``UserUttered`` events always got the same timestamp
 
 [1.2.1] - 2019-08-06
