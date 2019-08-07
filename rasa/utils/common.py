@@ -255,6 +255,6 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
     logger.warning(
         "The {} is currently experimental and might change or be "
         "removed in the future. Please share your feedback on it in the "
-        "forum (https://forum.rasa.com) to help us making this feature "
+        "forum (https://forum.rasa.com) to help us make this feature "
         "ready for production.".format(feature_name)
     )
