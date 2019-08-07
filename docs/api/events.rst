@@ -6,6 +6,8 @@
 Events
 ======
 
+.. edit-link::
+
 Conversations in Rasa are represented as a sequence of events.
 This page lists the event types defined in Rasa Core.
 
