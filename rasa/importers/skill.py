@@ -12,6 +12,7 @@ from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
+import rasa.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,8 @@ class SkillSelector(TrainingDataImporter):
                 "".join(["\n-{}".format(i) for i in self._imports])
             )
         )
+
+        rasa.utils.common.mark_as_experimental_feature(feature_name="SkillSelector")
 
     def _init_from_path(self, path: Text) -> None:
         if os.path.isfile(path):
