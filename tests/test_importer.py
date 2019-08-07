@@ -14,7 +14,7 @@ from rasa.importers.importer import (
 from rasa.importers.rasa import RasaFileImporter
 
 # noinspection PyUnresolvedReferences
-from rasa.importers.skill import SkillSelector
+from rasa.importers.multi_project import MultiProjectImporter
 
 # noinspection PyUnresolvedReferences
 from tests.core.conftest import project
@@ -103,13 +103,22 @@ async def test_combined_file_importer_with_single_importer(project: Text):
         ({"importers": [{"name": "RasaFileImporter"}]}, [RasaFileImporter]),
         ({"importers": [{"name": "NotExistingModule"}]}, [RasaFileImporter]),
         (
-            {"importers": [{"name": "rasa.importers.skill.SkillSelector"}]},
-            [SkillSelector],
+            {
+                "importers": [
+                    {"name": "rasa.importers.multi_project.MultiProjectImporter"}
+                ]
+            },
+            [MultiProjectImporter],
         ),
-        ({"importers": [{"name": "SkillSelector"}]}, [SkillSelector]),
+        ({"importers": [{"name": "MultiProjectImporter"}]}, [MultiProjectImporter]),
         (
-            {"importers": [{"name": "RasaFileImporter"}, {"name": "SkillSelector"}]},
-            [RasaFileImporter, SkillSelector],
+            {
+                "importers": [
+                    {"name": "RasaFileImporter"},
+                    {"name": "MultiProjectImporter"},
+                ]
+            },
+            [RasaFileImporter, MultiProjectImporter],
         ),
     ],
 )
@@ -134,11 +143,13 @@ def test_load_from_config(tmpdir: Path):
 
     config_path = str(tmpdir / "config.yml")
 
-    io_utils.write_yaml_file({"importers": [{"name": "SkillSelector"}]}, config_path)
+    io_utils.write_yaml_file(
+        {"importers": [{"name": "MultiProjectImporter"}]}, config_path
+    )
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, CombinedDataImporter)
-    assert isinstance(importer._importers[0], SkillSelector)
+    assert isinstance(importer._importers[0], MultiProjectImporter)
 
 
 async def test_nlu_only(project: Text):

@@ -54,8 +54,8 @@ configuration file:
    importers:
    - name: "RasaFileImporter"
 
-SkillSelector (experimental)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+MultiProjectImporter (experimental)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
 
@@ -91,13 +91,13 @@ An example directory structure could look like this:
 In this example the contextual AI assistant imports the ``ChitchatBot`` project which in turn
 imports the ``GreetBot`` project. Project imports are defined in the configuration files of
 each project.
-To instruct Rasa to use the ``SkillSelector`` module, put this section in the config
+To instruct Rasa to use the ``MultiProjectImporter`` module, put this section in the config
 file of your root project:
 
 .. code-block:: yaml
 
     importers:
-    - name: SkillSelector
+    - name: MultiProjectImporter
 
 
 Then specify which projects you want to import.

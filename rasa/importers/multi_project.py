@@ -17,7 +17,7 @@ import rasa.utils.common
 logger = logging.getLogger(__name__)
 
 
-class SkillSelector(TrainingDataImporter):
+class MultiProjectImporter(TrainingDataImporter):
     def __init__(
         self,
         config_file: Text,
@@ -45,12 +45,14 @@ class SkillSelector(TrainingDataImporter):
         self._nlu_paths += list(extra_nlu_files)
 
         logger.debug(
-            "Selected skills: {}".format(
+            "Selected projects: {}".format(
                 "".join(["\n-{}".format(i) for i in self._imports])
             )
         )
 
-        rasa.utils.common.mark_as_experimental_feature(feature_name="SkillSelector")
+        rasa.utils.common.mark_as_experimental_feature(
+            feature_name="MultiProjectImporter"
+        )
 
     def _init_from_path(self, path: Text) -> None:
         if os.path.isfile(path):
