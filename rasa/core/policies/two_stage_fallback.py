@@ -18,6 +18,10 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker
 
+if typing.TYPE_CHECKING:
+    from rasa.core.policies.ensemble import PolicyEnsemble
+
+
 logger = logging.getLogger(__name__)
 
 

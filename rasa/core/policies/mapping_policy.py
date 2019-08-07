@@ -17,6 +17,10 @@ from rasa.core.events import ActionExecuted
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 
+if typing.TYPE_CHECKING:
+    from rasa.core.policies.ensemble import PolicyEnsemble
+
+
 logger = logging.getLogger(__name__)
 
 
