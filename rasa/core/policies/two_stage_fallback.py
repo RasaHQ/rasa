@@ -77,7 +77,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         self.deny_suggestion_intent_name = deny_suggestion_intent_name
 
     @classmethod
-    def validate_against_domain(cls, ensemble: 'PolicyEnsemble', domain: Domain) -> None:
+    def validate_against_domain(
+        cls, ensemble: "PolicyEnsemble", domain: Domain
+    ) -> None:
         if ensemble is None:
             return
 
