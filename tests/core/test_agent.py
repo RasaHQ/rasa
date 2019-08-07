@@ -205,13 +205,9 @@ def test_incompatible_domain_and_policy():
         "forms": ["restaurant_form"],
     }
 
-    DOMAIN_WITHOUT_DENY_SUGGESTION_INTENT = {
-        "intents": ["affirm"]
-    }
+    DOMAIN_WITHOUT_DENY_SUGGESTION_INTENT = {"intents": ["affirm"]}
 
-    POLICY_WITH_TWO_STAGE_FALLBACK = {
-        "policies": [{"name": "TwoStageFallbackPolicy"}]
-    }
+    POLICY_WITH_TWO_STAGE_FALLBACK = {"policies": [{"name": "TwoStageFallbackPolicy"}]}
 
     NO_MAPPING_POLICY_CONFIG = {
         "policies": [{"name": "MemoizationPolicy"}, {"name": "FormPolicy"}]
