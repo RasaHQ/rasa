@@ -7,6 +7,8 @@
 Evaluating Models
 =================
 
+.. edit-link::
+
 .. contents::
    :local:
 
