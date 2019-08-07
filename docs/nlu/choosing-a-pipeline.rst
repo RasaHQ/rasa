@@ -276,7 +276,13 @@ default is to use a simple whitespace tokenizer:
     - name: "CRFEntityExtractor"
     - name: "EntitySynonymMapper"
     - name: "CountVectorsFeaturizer"
+    - name: "CountVectorsFeaturizer"
+      analyzer: "char_wb"
+      min_ngram: 1
+      max_ngram: 4
     - name: "EmbeddingIntentClassifier"
+
+The pipeline uses two instances of ``CountVectorsFeaturizer``. The first one featurizes text based on words. The second one featurizes text based on character n-grams, preserving word boundaries. We empirically found the second featurizer to be more powerful.
 
 If you have a custom tokenizer for your language, you can replace the whitespace
 tokenizer with something more accurate.
