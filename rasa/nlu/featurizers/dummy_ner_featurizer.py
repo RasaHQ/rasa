@@ -34,14 +34,16 @@ class DummyNERFeaturizer(Featurizer):
         """Construct a new count vectorizer using the sklearn framework."""
 
         super(DummyNERFeaturizer, self).__init__(component_config)
-        self.num_features = component_config.get("num_features")
+        self.num_features = self.component_config["num_features"]
 
     def train(
         self, training_data: TrainingData, cfg: RasaNLUModelConfig = None, **kwargs: Any
     ) -> None:
         """Train the featurizer.
         """
-        pass
+        for i, example in enumerate(training_data.intent_examples):
+            # create bag for each example
+            self.process(example)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         tokens = message.get("tokens", [])

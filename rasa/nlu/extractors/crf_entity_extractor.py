@@ -50,6 +50,7 @@ class CRFEntityExtractor(EntityExtractor):
                 "title",
                 "digit",
                 "pattern",
+                "ner_features",
             ],
             ["low", "title", "upper"],
         ],
@@ -119,7 +120,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         features = self.component_config.get("features", [])
         fts = set(itertools.chain.from_iterable(features))
-        self.ner_features = "pos" in fts or "pos2" in fts
+        self.ner_features = "ner_features" in fts
 
     def _validate_configuration(self):
         if len(self.component_config.get("features", [])) % 2 != 1:
@@ -573,7 +574,7 @@ class CRFEntityExtractor(EntityExtractor):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
             tag = self.__tag_of_token(token) if self.pos_features else None
-            custom_ner_features = ner_features if self.ner_features else None
+            custom_ner_features = ner_features[i] if self.ner_features else None
             crf_format.append((token.text, tag, entity, pattern, custom_ner_features))
         return crf_format
 
