@@ -76,6 +76,7 @@ class CRFEntityExtractor(EntityExtractor):
         "upper": lambda doc: doc[0].isupper(),  # pytype: disable=attribute-error
         "digit": lambda doc: doc[0].isdigit(),  # pytype: disable=attribute-error
         "pattern": lambda doc: doc[3],
+        "ner_features": lambda doc: doc[4],
     }
 
     def __init__(
@@ -91,6 +92,8 @@ class CRFEntityExtractor(EntityExtractor):
         self._validate_configuration()
 
         self._check_pos_features_and_spacy()
+        # possibly add a check here to ensure ner_features iff custom_extractor
+        self._check_ner_features()
 
     def _check_pos_features_and_spacy(self):
         import itertools
@@ -110,6 +113,13 @@ class CRFEntityExtractor(EntityExtractor):
                 "See https://spacy.io/usage/ for installation"
                 "instructions."
             )
+
+    def _check_ner_features(self):
+        import itertools
+
+        features = self.component_config.get("features", [])
+        fts = set(itertools.chain.from_iterable(features))
+        self.ner_features = "pos" in fts or "pos2" in fts
 
     def _validate_configuration(self):
         if len(self.component_config.get("features", [])) % 2 != 1:
@@ -439,7 +449,7 @@ class CRFEntityExtractor(EntityExtractor):
         sentence: List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]],
     ) -> List[Text]:
 
-        return [label for _, _, label, _ in sentence]
+        return [label for _, _, label, _, _ in sentence]
 
     def _from_json_to_crf(
         self, message: Message, entity_offsets: List[Tuple[int, int, Text]]
@@ -529,6 +539,25 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return token.tag_
 
+    @staticmethod
+    def __other_ner_features(message):
+        features = message.get("ner_features", [])
+        tokens = message.get("tokens", [])
+        # perhaps an assertion here instead? following pattern above.
+        if len(tokens) != len(features):
+            raise Exception(
+                "Number of tokens for custom NER features does not match len(tokens)"
+            )
+        # convert to python-crfsuite feature format
+        features_out = []
+        for feature in features:
+            feature_dict = {str(i): feature[i] for i in range(0, len(feature))}
+            converted = {'custom_ner_ft': feature_dict}
+            features_out.append(converted)
+        print(features_out)
+        return features_out
+
+
     def _from_text_to_crf(
         self, message: Message, entities: List[Text] = None
     ) -> List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]:
@@ -539,11 +568,14 @@ class CRFEntityExtractor(EntityExtractor):
             tokens = message.get("spacy_doc")
         else:
             tokens = message.get("tokens")
+        if self.ner_features:
+            ner_features = self.__other_ner_features(message)
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
             tag = self.__tag_of_token(token) if self.pos_features else None
-            crf_format.append((token.text, tag, entity, pattern))
+            custom_ner_features = ner_features if self.ner_features else None
+            crf_format.append((token.text, tag, entity, pattern, custom_ner_features))
         return crf_format
 
     def _train_model(
