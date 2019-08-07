@@ -40,18 +40,11 @@ def test_test_nlu_comparison(run_in_default_project):
     copyfile("config.yml", "nlu-config.yml")
 
     run_in_default_project(
-        "test",
-        "nlu",
-        "-c",
-        "config.yml",
-        "nlu-config.yml",
-        "--report",
-        "nlu-report",
-        "--run",
-        "2",
+        "test", "nlu", "-c", "config.yml", "nlu-config.yml", "--run", "2"
     )
 
-    assert os.path.exists("results/nlu-report")
+    assert os.path.exists("results/run_1")
+    assert os.path.exists("results/run_2")
 
 
 def test_test_core_comparison(run_in_default_project):

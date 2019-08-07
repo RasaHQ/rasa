@@ -46,7 +46,7 @@ def test(
         kwargs = {}
 
     test_core(model, stories, endpoints, output, **kwargs)
-    test_nlu(model, nlu_data, kwargs, output)
+    test_nlu(model, nlu_data, output, kwargs)
 
 
 def test_core(
@@ -112,8 +112,8 @@ def test_core(
 def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
-    kwargs: Optional[Dict],
     output: Text = DEFAULT_RESULTS_PATH,
+    kwargs: Optional[Dict] = None,
 ):
     from rasa.nlu.test import run_evaluation
     from rasa.model import get_model
@@ -127,8 +127,7 @@ def test_nlu(
         )
         return
 
-    if output:
-        io_utils.create_directory(output)
+    io_utils.create_directory(output)
 
     nlu_model = os.path.join(unpacked_model, "nlu")
 

@@ -15,6 +15,7 @@ from rasa.constants import (
 )
 import rasa.utils.validation as validation_utils
 import rasa.cli.utils as cli_utils
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +68,7 @@ def test_core(args: argparse.Namespace) -> None:
     stories = data.get_core_directory(stories)
     output = args.out or DEFAULT_RESULTS_PATH
 
-    if not os.path.exists(output):
-        os.makedirs(output)
+    io_utils.create_directory(output)
 
     if isinstance(args.model, list) and len(args.model) == 1:
         args.model = args.model[0]
@@ -95,15 +95,13 @@ def test_core(args: argparse.Namespace) -> None:
 
 def test_nlu(args: argparse.Namespace) -> None:
     from rasa import data
-    import rasa.utils.io as io_utils
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
     nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
     output = args.out or DEFAULT_RESULTS_PATH
 
-    if not os.path.exists(output):
-        os.makedirs(output)
+    io_utils.create_directory(output)
 
     if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])
@@ -135,15 +133,10 @@ def test_nlu(args: argparse.Namespace) -> None:
                 )
                 continue
 
-        report_output = args.report or DEFAULT_NLU_RESULTS_PATH
-
-        if output:
-            report_output = os.path.join(output, report_output)
-
         compare_nlu_models(
             configs=config_files,
             nlu=nlu_data,
-            output=report_output,
+            output=output,
             runs=args.runs,
             exclusion_percentages=args.percentages,
         )
@@ -158,7 +151,7 @@ def test_nlu(args: argparse.Namespace) -> None:
             args.model, "model", DEFAULT_MODELS_PATH
         )
 
-        test_nlu(model_path, nlu_data, vars(args), output)
+        test_nlu(model_path, nlu_data, output, vars(args))
 
 
 def test(args: argparse.Namespace):
