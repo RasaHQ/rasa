@@ -6,9 +6,40 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-
-[Unreleased 1.1.9] - `master`_
+[Unreleased 1.2.2] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+
+Changed
+-------
+
+
+Removed
+-------
+
+
+Fixed
+-----
+- ``Flood control exceeded`` error in Telegram connector which happened because the
+  webhook was set twice
+
+[1.2.1] - 2019-08-06
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Docs now have an ``EDIT THIS PAGE`` button
+
+Fixed
+-----
+- ``Flood control exceeded`` error in Telegram connector which happened because the
+  webhook was set twice
+
+[1.2.0] - 2019-08-01
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -21,16 +52,16 @@ Changed
 -------
 - new event broker class: ``SQLProducer``. This event broker is now used when running locally with
   Rasa X
-
-Removed
--------
+- API requests are not longer logged to ``rasa_core.log`` by default in order to avoid
+  problems when running on OpenShift (use ``--log-file rasa_core.log`` to retain the
+  old behavior)
+- ``metadata`` attribute added to ``UserMessage``
 
 Fixed
 -----
 - ``rasa test core`` can handle compressed model files
 - Rasa can handle story files containing multi line comments
 - Template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
-
 
 [1.1.8] - 2019-07-25
 ^^^^^^^^^^^^^^^^^^^^

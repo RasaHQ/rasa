@@ -6,6 +6,8 @@
 Stories
 =======
 
+.. edit-link::
+
 A training example for the Rasa Core dialogue system is called a **story**.
 This is a guide to the story data format.
 
