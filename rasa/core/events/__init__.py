@@ -184,7 +184,7 @@ class UserUttered(Event):
         intent=None,
         entities=None,
         parse_data: Optional[Dict[Text, Any]] = None,
-        timestamp: int = time.time(),
+        timestamp: Optional[int] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
