@@ -552,11 +552,10 @@ class CRFEntityExtractor(EntityExtractor):
         features_out = []
         for feature in features:
             feature_dict = {str(i): feature[i] for i in range(0, len(feature))}
-            converted = {'custom_ner_ft': feature_dict}
+            converted = {"custom_ner_ft": feature_dict}
             features_out.append(converted)
-        print(features_out)
+        print (features_out)
         return features_out
-
 
     def _from_text_to_crf(
         self, message: Message, entities: List[Text] = None

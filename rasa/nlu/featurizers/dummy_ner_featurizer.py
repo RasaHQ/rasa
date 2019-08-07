@@ -23,9 +23,8 @@ class DummyNERFeaturizer(Featurizer):
 
     defaults = {
         # limit vocabulary size
-        "num_features": 10,  # int or None
+        "num_features": 10  # int or None
     }
-
 
     def __init__(
         self,
@@ -47,9 +46,7 @@ class DummyNERFeaturizer(Featurizer):
     def process(self, message: Message, **kwargs: Any) -> None:
         tokens = message.get("tokens", [])
         ner_features = np.random.rand(len(tokens), self.num_features)
-        message.set(
-            "ner_features", ner_features
-        )
+        message.set("ner_features", ner_features)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
