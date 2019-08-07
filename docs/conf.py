@@ -31,6 +31,7 @@ extensions = [
     "rasabaster.card",
     "rasabaster.chatbubble",
     "rasabaster.copyable",
+    "rasabaster.editlink",
     "rasabaster.runnable",
     "rasabaster.conversations",
 ]

@@ -7,6 +7,8 @@
 Tracker Stores
 ==============
 
+.. edit-link::
+
 All conversations are stored within a `tracker store`.
 Rasa Core provides implementations for different store types out of the box.
 If you want to use another store, you can also build a custom tracker store by extending the `TrackerStore` class.
