@@ -1,6 +1,7 @@
 import os
 import pytest
 
+from nlu import config
 from rasa.nlu.components import ComponentBuilder
 
 CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
@@ -21,6 +22,11 @@ MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 @pytest.fixture(scope="session")
 def component_builder():
     return ComponentBuilder()
+
+
+@pytest.fixture(scope="session")
+def default_config():
+    return config.load(CONFIG_DEFAULTS_PATH)
 
 
 @pytest.fixture(scope="session")

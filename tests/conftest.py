@@ -4,6 +4,7 @@ from typing import Text
 import pytest
 import logging
 
+from rasa.core.domain import Domain
 from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
@@ -25,9 +26,17 @@ from rasa.train import train_async
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separatedly installable pytest-cli plugin.
-from tests.core.conftest import END_TO_END_STORY_FILE, MOODBOT_MODEL_PATH
 
 pytest_plugins = ["pytester"]
+
+
+DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
+DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
+
+END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
+END_TO_END_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
+
+MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 
 @pytest.fixture(autouse=True)
@@ -52,6 +61,16 @@ def project() -> Text:
 ###############
 # DEFAULT FILES
 ###############
+
+
+@pytest.fixture(scope="session")
+def default_domain_path_with_slots():
+    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
+
+
+@pytest.fixture(scope="session")
+def default_domain_path_with_mapping():
+    return DEFAULT_DOMAIN_PATH_WITH_MAPPING
 
 
 @pytest.fixture(scope="session")
@@ -80,8 +99,18 @@ def end_to_end_story_file():
 
 
 @pytest.fixture(scope="session")
+def end_to_end_story_file_with_unkown_entity():
+    return END_TO_END_STORY_FILE_UNKNOWN_ENTITY
+
+
+@pytest.fixture(scope="session")
 def default_config(default_config_path):
     return config.load(default_config_path)
+
+
+@pytest.fixture(scope="session")
+def default_domain(default_domain_path):
+    return Domain.load(default_domain_path)
 
 
 #######

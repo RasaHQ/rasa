@@ -1,13 +1,10 @@
 import asyncio
-import logging
 import os
-from typing import Text
 
 import matplotlib
 import pytest
 
 import rasa.utils.io
-from rasa.core import train
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel
 from rasa.core.domain import Domain
@@ -16,14 +13,13 @@ from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import (
     AugmentedMemoizationPolicy,
-    MemoizationPolicy,
     Policy,
+    MemoizationPolicy,
 )
 from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.train import train_async
 
 matplotlib.use("Agg")
 
@@ -88,6 +84,44 @@ def default_agent_path(default_agent, tmpdir_factory):
     path = tmpdir_factory.mktemp("agent").strpath
     default_agent.persist(path)
     return path
+
+
+@pytest.fixture(scope="session")
+def default_domain_path():
+    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
+
+
+@pytest.fixture(scope="session")
+def default_stories_file():
+    return DEFAULT_STORIES_FILE
+
+
+@pytest.fixture(scope="session")
+def default_stack_config():
+    return DEFAULT_STACK_CONFIG
+
+
+@pytest.fixture(scope="session")
+def default_nlu_data():
+    return DEFAULT_NLU_DATA
+
+
+@pytest.fixture(scope="session")
+def default_domain():
+    return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+
+
+@pytest.fixture(scope="session")
+async def default_agent(default_domain):
+    agent = Agent(
+        default_domain,
+        policies=[MemoizationPolicy()],
+        interpreter=RegexInterpreter(),
+        tracker_store=InMemoryTrackerStore(default_domain),
+    )
+    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
+    agent.train(training_data)
+    return agent
 
 
 @pytest.fixture
