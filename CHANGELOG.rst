@@ -6,8 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-
-[Unreleased 1.2.1] - `master`_
+[Unreleased 1.2.2] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -24,7 +23,20 @@ Removed
 
 Fixed
 -----
+- ``Flood control exceeded`` error in Telegram connector which happened because the
+  webhook was set twice
 
+[1.2.1] - 2019-08-06
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Docs now have an ``EDIT THIS PAGE`` button
+
+Fixed
+-----
+- ``Flood control exceeded`` error in Telegram connector which happened because the
+  webhook was set twice
 
 [1.2.0] - 2019-08-01
 ^^^^^^^^^^^^^^^^^^^^
