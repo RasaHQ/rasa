@@ -1,4 +1,5 @@
 import logging
+import typing
 from typing import List, Optional, Dict, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME

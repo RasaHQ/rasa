@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import typing
 from typing import Any, List, Text
 
 import rasa.utils.io
