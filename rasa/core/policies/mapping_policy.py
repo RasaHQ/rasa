@@ -32,13 +32,13 @@ class MappingPolicy(Policy):
 
         super(MappingPolicy, self).__init__(priority=priority)
 
-    @staticmethod
-    def validate_against_domain(ensemble: "PolicyEnsemble", domain: Domain):
+    @classmethod
+    def validate_against_domain(cls, ensemble: "PolicyEnsemble", domain: Domain):
         if not domain:
             return
 
         has_mapping_policy = ensemble is not None and any(
-            isinstance(p, MappingPolicy) for p in ensemble.policies
+            isinstance(p, cls) for p in ensemble.policies
         )
         has_triggers_in_domain = any(
             [

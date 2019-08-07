@@ -76,13 +76,13 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         self.fallback_nlu_action_name = fallback_nlu_action_name
         self.deny_suggestion_intent_name = deny_suggestion_intent_name
 
-    @staticmethod
-    def validate_against_domain(ensemble: 'PolicyEnsemble', domain: Domain) -> None:
+    @classmethod
+    def validate_against_domain(cls, ensemble: 'PolicyEnsemble', domain: Domain) -> None:
         if ensemble is None:
             return
 
         for p in ensemble.policies:
-            if isinstance(p, TwoStageFallbackPolicy):
+            if isinstance(p, cls):
                 if p.deny_suggestion_intent_name not in domain.intents:
                     raise InvalidDomain(
                         "The intent {} must be present in the "
