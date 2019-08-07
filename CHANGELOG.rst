@@ -12,10 +12,10 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 
-
 Changed
 -------
-
+- messages with multiple entities are now handled properly with e2e evaluation
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
 
 Removed
 -------
@@ -56,6 +56,9 @@ Added
 
 Changed
 -------
+- ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
+  or a policy ensemble
+- Update pytype to ``2019.7.11``
 - new event broker class: ``SQLProducer``. This event broker is now used when running locally with
   Rasa X
 - API requests are not longer logged to ``rasa_core.log`` by default in order to avoid
