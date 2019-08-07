@@ -122,7 +122,8 @@ Rasa uses relative paths from the referencing configuration file to import proje
 These can be anywhere on your file system as long as the file access is permitted.
 
 During the training process Rasa will import all required training files, combine
-them, and train a unified AI assistant.
+them, and train a unified AI assistant. The merging of the training data happens during
+runtime, so no additional files with training data are created or visible.
 
 .. note::
 
