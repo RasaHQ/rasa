@@ -217,7 +217,7 @@ def _collect_user_uttered_predictions(
     user_uttered_eval_store = EvaluationStore()
 
     intent_gold = event.parse_data.get("true_intent")
-    predicted_intent = event.parse_data.get("intent").get("name")
+    predicted_intent = event.parse_data.get("intent", {}).get("name")
 
     if not predicted_intent:
         predicted_intent = [None]
