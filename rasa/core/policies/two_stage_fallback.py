@@ -92,7 +92,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             if isinstance(p, cls):
                 if p.deny_suggestion_intent_name not in domain.intents:
                     raise InvalidDomain(
-                        "The intent {} must be present in the "
+                        "The intent '{}' must be present in the "
                         "domain file to use the "
                         "`TwoStageFallbackPolicy`."
                         "".format(p.deny_suggestion_intent_name)
