@@ -232,3 +232,10 @@ def test_json_parse_agent():
     evt = {"event": "agent", "text": "Hey, how are you?"}
     # DOCS END
     assert Event.from_parameters(evt) == AgentUttered("Hey, how are you?")
+
+
+def test_correct_timestamp_setting():
+    user_event = UserUttered()
+    user_event2 = UserUttered()
+
+    assert user_event.timestamp != user_event2.timestamp
