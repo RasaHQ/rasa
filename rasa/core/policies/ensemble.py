@@ -64,7 +64,9 @@ class PolicyEnsemble(object):
         return events_metadata
 
     @staticmethod
-    def check_missing_policies(ensemble: "PolicyEnsemble", domain: Domain) -> None:
+    def check_domain_ensemble_compatibility(
+        ensemble: "PolicyEnsemble", domain: Domain
+    ) -> None:
         """Check for domain elements that work only with certain policies."""
 
         policies_needing_validation = [
