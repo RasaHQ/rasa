@@ -1,6 +1,6 @@
 import logging
 import typing
-from typing import List, Optional, Dict, Text
+from typing import List, Optional, Dict, Text, Optional
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
@@ -35,7 +35,9 @@ class FormPolicy(MemoizationPolicy):
         )
 
     @classmethod
-    def validate_against_domain(cls, ensemble: "PolicyEnsemble", domain: Domain):
+    def validate_against_domain(
+        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ):
         if not domain:
             return
 

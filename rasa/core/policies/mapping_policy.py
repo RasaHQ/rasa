@@ -2,7 +2,7 @@ import logging
 import json
 import os
 import typing
-from typing import Any, List, Text
+from typing import Any, List, Text, Optional
 
 import rasa.utils.io
 
@@ -38,7 +38,9 @@ class MappingPolicy(Policy):
         super(MappingPolicy, self).__init__(priority=priority)
 
     @classmethod
-    def validate_against_domain(cls, ensemble: "PolicyEnsemble", domain: Domain):
+    def validate_against_domain(
+        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ):
         if not domain:
             return
 

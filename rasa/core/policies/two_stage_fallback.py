@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import typing
-from typing import List, Text
+from typing import List, Text, Optional
 
 import rasa.utils.io
 from rasa.core import utils
@@ -83,7 +83,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
     @classmethod
     def validate_against_domain(
-        cls, ensemble: "PolicyEnsemble", domain: Domain
+        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
     ) -> None:
         if ensemble is None:
             return
