@@ -70,7 +70,7 @@ same thing.
 
 It is important to include the entities here as well because the policies learn
 to predict the next action based on a *combination* of both the intent and
-entities (you can, of course, customize this behavior using the
+entities (you can, however, change this behavior using the
 :ref:`use_entities <use_entities>` attribute).
 
 Actions
