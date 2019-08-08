@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from nlu import config
+from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 
 CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"

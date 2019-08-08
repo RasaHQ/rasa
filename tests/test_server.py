@@ -21,7 +21,7 @@ from rasa.model import unpack_model
 from rasa.utils.endpoints import EndpointConfig
 from sanic import Sanic
 from sanic.testing import SanicTestClient
-from tests.nlu.utilities import ResponseTest
+from tests.utilities import ResponseTest
 
 
 # a couple of event instances that we can use for testing
