@@ -12,7 +12,13 @@ from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
-from rasa.core.constants import REQUESTED_SLOT
+from rasa.core.constants import (
+    REQUESTED_SLOT,
+    DEFAULT_KNOWLEDGE_BASE_ACTION,
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_ENTITY_TYPE,
+    SLOT_LAST_ENTITY,
+)
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.utils.endpoints import EndpointConfig
@@ -327,6 +333,18 @@ class Domain(object):
         """
         if self.form_names and REQUESTED_SLOT not in [s.name for s in self.slots]:
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
+
+    def add_knowledge_base_slots(self):
+        if DEFAULT_KNOWLEDGE_BASE_ACTION in self.action_names:
+            slot_names = [s.name for s in self.slots]
+            knowledge_base_slots = [
+                SLOT_LISTED_ITEMS,
+                SLOT_LAST_ENTITY,
+                SLOT_LAST_ENTITY_TYPE,
+            ]
+            for s in knowledge_base_slots:
+                if s not in slot_names:
+                    self.slots.append(UnfeaturizedSlot(s))
 
     def action_for_name(
         self, action_name: Text, action_endpoint: Optional[EndpointConfig]
