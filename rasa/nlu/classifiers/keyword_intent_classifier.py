@@ -1,5 +1,6 @@
 import os
 import logging
+import copy
 import typing
 from typing import Any, Dict, Optional, Text
 
@@ -55,6 +56,26 @@ class KeywordIntentClassifier(Component):
                 for ex in training_data.training_examples
                 if ex.get("intent") == intent
             ]
+        self._validate_keyword_map(self.intent_keyword_map)
+
+    @staticmethod
+    def _validate_keyword_map(keyword_map):
+        for i, (intent1, ex1s) in enumerate(keyword_map.items()):
+            for j, (intent2, ex2s) in enumerate(keyword_map.items()):
+                if j > i:
+                    comp_string1 = "\n".join(ex2s)
+                    comp_string2 = "\n".join(ex2s)
+                    for ex1 in ex1s:
+                        if ex1 in comp_string2:
+                            logger.warning("Keyword '{}' is an example of intent '{}',"
+                                           "but also matches intent '{}"
+                                           "".format(ex1, intent1, intent2))
+                    for ex2 in ex2s:
+                        if ex2 in comp_string1:
+                            logger.warning("Keyword '{}' is an example of intent '{}',"
+                                           "but also matches intent '{}"
+                                           "".format(ex2, intent2, intent1))
+
 
     def process(self, message: Message, **kwargs: Any) -> None:
         intent_name = self._map_keyword_to_intent(message.text)

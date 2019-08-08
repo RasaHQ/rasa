@@ -2,9 +2,10 @@ import pytest
 import copy
 
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
-from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+# TODO: add tests for other classifers
+# from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+# from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
+# from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.training_data import load_data
 
 from tests.nlu.conftest import DEFAULT_DATA_PATH
@@ -12,11 +13,6 @@ from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 @pytest.fixture(scope="module")
 def training_data():
-    return load_data(DEFAULT_DATA_PATH)
-
-
-@pytest.fixture(scope="module")
-def test_data():
     return load_data(DEFAULT_DATA_PATH)
 
 
@@ -55,11 +51,11 @@ class ClassifierTestCollection():
         classifier = classifier_class(component_config, **kwargs)
         return classifier
 
-    def test_persist_and_load(self, test_data, trained_classifier, filename, tmpdir):
+    def test_persist_and_load(self, training_data, trained_classifier, filename, tmpdir):
         meta = trained_classifier.persist(filename, tmpdir)
         loaded = trained_classifier.__class__.load(meta, tmpdir)
-        predicted = copy.copy(test_data)
-        actual = copy.copy(test_data)
+        predicted = copy.copy(training_data)
+        actual = copy.copy(training_data)
         for m1, m2 in zip(predicted.training_examples, actual.training_examples):
             loaded.process(m1)
             trained_classifier.process(m2)
@@ -70,3 +66,5 @@ class TestKeywordClassifier(ClassifierTestCollection):
     @pytest.fixture(scope="module")
     def classifier_class(self):
         return KeywordIntentClassifier
+
+
