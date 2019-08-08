@@ -6,11 +6,12 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.2.2] - `master`_
+[Unreleased 1.2.3] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 
 
 Changed
@@ -23,8 +24,14 @@ Removed
 
 Fixed
 -----
-- ``Flood control exceeded`` error in Telegram connector which happened because the
-  webhook was set twice
+
+
+[1.2.2] - 2019-08-07
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- ``UserUttered`` events always got the same timestamp
 
 [1.2.1] - 2019-08-06
 ^^^^^^^^^^^^^^^^^^^^
