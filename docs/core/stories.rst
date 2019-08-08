@@ -14,7 +14,6 @@ Rasa stories are a form of training data used to train the Rasa's dialogue manag
 A story is a representation of a conversation between a user and an AI assistant, converted into a specific format where user inputs are expressed as corresponding intents (and entities where necessary) while the responses of an assistant are expressed as corresponding action names.
 
 .. note::
-
    You can also **spread your stories across multiple files** and specify the
    folder containing the files for most of the scripts (e.g. training,
    visualization). The stories will be treated as if they would have
