@@ -135,12 +135,13 @@ lots of checkpoints can quickly make your example stories hard to
 understand. It makes sense to use them if a story block is repeated
 very often in different stories, but stories *without* checkpoints
 are easier to read and write. Here is an example story file which
-contains checkpoints:
+contains checkpoints (note that you can attach more than one checkpoint
+at a time):
 
 .. code-block:: story
 
     ## first story
-    * hello
+    * greet
        - action_ask_user_question
     > check_asked_question
 
@@ -148,11 +149,19 @@ contains checkpoints:
     > check_asked_question
     * affirm
       - action_handle_affirmation
+    > check_handled_affirmation
 
     ## user denies question
     > check_asked_question
     * deny
       - action_handle_denial
+    > check_handled_denial
+
+    ## user leaves
+    > check_handled_denial
+    > check_handled_affirmation
+    * goodbye
+      - utter_goodbye
 
 
 OR Statements
