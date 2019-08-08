@@ -9,7 +9,7 @@ Stories
 .. contents::
    :local:
 
-Rasa stories are a form of training data used to train the Rasa Core dialogue management models.
+Rasa stories are a form of training data used to train the Rasa's dialogue management models.
 
 A story is a representation of a conversation between a user and an AI assistant, converted into a specific format where user inputs are expressed as corresponding intents (and entities where necessary) while the responses of an assistant are expressed as corresponding action names.
 
@@ -67,7 +67,7 @@ same thing.
 
 It is important to include the entities here as well because the policies learn
 to predict the next action based on a *combination* of both the intent and
-entities (you can, of course, customize this behavior using the
+entities (you can, however, change this behavior using the
 :ref:`use_entities <use_entities>` attribute).
 
 Actions
@@ -92,7 +92,7 @@ Events
 Events such as setting a slot or activating/deactivating a form have to be
 explicitly written out as part of the stories. Having to include the events
 returned by a custom action separately, when that custom action is already
-part of a story might seem redundant. However, since Rasa cannot easily
+part of a story might seem redundant. However, since Rasa cannot
 determine this fact during training, this step is necessary.
 
 You can read more about events :ref:`here <end_to_end_evaluation>`.
@@ -187,4 +187,4 @@ into a single file for evaluation. You can read more about it
 :ref:`here <end_to_end_evaluation>`.
 
 .. warning::
-    As of now, this format can only be used for evaluation and not for training.
+    This format is only used for end-to-end evaluation and cannot be used for training.
