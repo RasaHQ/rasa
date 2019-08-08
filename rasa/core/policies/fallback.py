@@ -61,7 +61,7 @@ class FallbackPolicy(Policy):
 
         pass
 
-    def should_nlu_fallback(
+    def top_prediction_below_threshold(
         self, nlu_confidence: float, last_action_name: Text
     ) -> bool:
         """Checks if fallback action should be predicted.
@@ -75,6 +75,15 @@ class FallbackPolicy(Policy):
             nlu_confidence < self.nlu_threshold
             and last_action_name == ACTION_LISTEN_NAME
         )
+
+    def top_confidences_too_close(self, nlu_data: Dict[Text, Any]) -> bool:
+        pass
+
+    def should_nlu_fallback(self, nlu_data: Dict[Text, Any]) -> bool:
+        """Checks if fallback action should be predicted."""
+        if (self.top_prediction_below_threshold()
+            or self.top_confidences_too_close(nlu_data)):
+            pass
 
     def fallback_scores(self, domain, fallback_score=1.0):
         """Prediction scores used if a fallback is necessary."""
@@ -95,6 +104,8 @@ class FallbackPolicy(Policy):
 
         nlu_data = tracker.latest_message.parse_data
 
+        breakpoint()
+
         # if NLU interpreter does not provide confidence score,
         # it is set to 1.0 here in order
         # to not override standard behaviour
@@ -105,7 +116,7 @@ class FallbackPolicy(Policy):
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
 
-        elif self.should_nlu_fallback(nlu_confidence, tracker.latest_action_name):
+        elif self.should_nlu_fallback(nlu_data, tracker.latest_action_name):
             logger.debug(
                 "NLU confidence {} is lower "
                 "than NLU threshold {:.2f}. "
