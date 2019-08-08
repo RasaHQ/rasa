@@ -1,8 +1,14 @@
+:desc: Read about common dialogue patterns encountered by task-oriented
+       bots and how best to handle them using Rasa's open source dialogue
+       management system.
+
 .. _completing-tasks:
 
 ================
 Completing Tasks
 ================
+
+.. edit-link::
 
 .. contents::
    :local:

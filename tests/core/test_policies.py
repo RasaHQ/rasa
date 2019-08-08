@@ -5,14 +5,17 @@ import numpy as np
 import pytest
 
 import rasa.utils.io
-from rasa.core import training, utils
+from rasa.core import training
 from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_LISTEN_NAME,
     ActionRevertFallbackEvents,
+    ACTION_RESTART_NAME,
+    ACTION_BACK_NAME,
 )
+from rasa.core.constants import USER_INTENT_RESTART, USER_INTENT_BACK
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
@@ -29,7 +32,11 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
-from tests.core.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
+from tests.core.conftest import (
+    DEFAULT_DOMAIN_PATH_WITH_MAPPING,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_STORIES_FILE,
+)
 from tests.core.utilities import get_tracker, read_dialogue_file, user_uttered
 
 
@@ -107,7 +114,7 @@ class PolicyTestCollection(object):
 
     @pytest.fixture(scope="module")
     async def trained_policy(self, featurizer, priority):
-        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
         policy = self.create_policy(featurizer, priority)
         training_trackers = await train_trackers(default_domain, augmentation_factor=20)
         policy.train(training_trackers, default_domain)
@@ -155,6 +162,14 @@ class PolicyTestCollection(object):
             loaded = trained_policy.__class__.load(tmpdir.strpath)
             # noinspection PyProtectedMember
             assert loaded.session._config is None
+
+    @staticmethod
+    def _get_next_action(policy, events, domain):
+        tracker = get_tracker(events)
+
+        scores = policy.predict_action_probabilities(tracker, domain)
+        index = scores.index(max(scores))
+        return domain.action_names[index]
 
 
 class TestKerasPolicy(PolicyTestCollection):
@@ -205,6 +220,66 @@ class TestMappingPolicy(PolicyTestCollection):
         p = MappingPolicy()
         return p
 
+    @pytest.fixture(scope="module")
+    def domain_with_mapping(self):
+        return Domain.load(DEFAULT_DOMAIN_PATH_WITH_MAPPING)
+
+    @pytest.fixture
+    def tracker(self, domain_with_mapping):
+        return DialogueStateTracker(
+            UserMessage.DEFAULT_SENDER_ID, domain_with_mapping.slots
+        )
+
+    @pytest.fixture(
+        params=[
+            ("default", "utter_default"),
+            ("greet", "utter_greet"),
+            (USER_INTENT_RESTART, ACTION_RESTART_NAME),
+            (USER_INTENT_BACK, ACTION_BACK_NAME),
+        ]
+    )
+    def intent_mapping(self, request):
+        return request.param
+
+    def test_predict_mapped_action(self, priority, domain_with_mapping, intent_mapping):
+        policy = self.create_policy(None, priority)
+        events = [
+            ActionExecuted(ACTION_LISTEN_NAME),
+            user_uttered(intent_mapping[0], 1),
+        ]
+
+        assert (
+            self._get_next_action(policy, events, domain_with_mapping)
+            == intent_mapping[1]
+        )
+
+    def test_predict_action_listen(self, priority, domain_with_mapping, intent_mapping):
+        policy = self.create_policy(None, priority)
+        events = [
+            ActionExecuted(ACTION_LISTEN_NAME),
+            user_uttered(intent_mapping[0], 1),
+            ActionExecuted(intent_mapping[1], policy="policy_0_MappingPolicy"),
+        ]
+        tracker = get_tracker(events)
+        scores = policy.predict_action_probabilities(tracker, domain_with_mapping)
+        index = scores.index(max(scores))
+        action_planned = domain_with_mapping.action_names[index]
+        assert action_planned == ACTION_LISTEN_NAME
+        assert scores != [0] * domain_with_mapping.num_actions
+
+    def test_do_not_follow_other_policy(
+        self, priority, domain_with_mapping, intent_mapping
+    ):
+        policy = self.create_policy(None, priority)
+        events = [
+            ActionExecuted(ACTION_LISTEN_NAME),
+            user_uttered(intent_mapping[0], 1),
+            ActionExecuted(intent_mapping[1], policy="other_policy"),
+        ]
+        tracker = get_tracker(events)
+        scores = policy.predict_action_probabilities(tracker, domain_with_mapping)
+        assert scores == [0] * domain_with_mapping.num_actions
+
 
 class TestMemoizationPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
@@ -219,14 +294,9 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trained_policy.train(trackers, default_domain)
         lookup_with_augmentation = trained_policy.lookup
 
-        trackers = [
-            t for t in trackers if not hasattr(t, "is_augmented") or not t.is_augmented
-        ]
+        trackers = [t for t in trackers if not hasattr(t, "is_augmented")]
 
-        (
-            all_states,
-            all_actions,
-        ) = trained_policy.featurizer.training_states_and_actions(
+        all_states, all_actions = trained_policy.featurizer.training_states_and_actions(
             trackers, default_domain
         )
 
@@ -285,7 +355,7 @@ class TestSklearnPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
     def default_domain(self):
-        return Domain.load(DEFAULT_DOMAIN_PATH)
+        return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
     @pytest.fixture
     def tracker(self, default_domain):
@@ -296,7 +366,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         return await train_trackers(default_domain, augmentation_factor=20)
 
     def test_additional_train_args_do_not_raise(
-        self, mock_search, default_domain, trackers, featurizer, priority
+        self, default_domain, trackers, featurizer, priority
     ):
         policy = self.create_policy(featurizer=featurizer, priority=priority, cv=None)
         policy.train(trackers, domain=default_domain, this_is_not_a_feature=True)
@@ -454,7 +524,7 @@ class TestFormPolicy(PolicyTestCollection):
         p = FormPolicy(priority=priority)
         return p
 
-    async def test_memorise(self, trained_policy, default_domain):
+    async def test_memorise(self, trained_policy):
         domain = Domain.load("data/test_domains/form.yml")
         trackers = await training.load_data("data/test_stories/stories_form.md", domain)
         trained_policy.train(trackers, domain)
@@ -535,14 +605,6 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         return Domain.from_yaml(content)
 
     @staticmethod
-    def _get_next_action(policy, events, domain):
-        tracker = get_tracker(events)
-
-        scores = policy.predict_action_probabilities(tracker, domain)
-        index = scores.index(max(scores))
-        return domain.action_names[index]
-
-    @staticmethod
     async def _get_tracker_after_reverts(events, channel, nlg, domain):
         tracker = get_tracker(events)
         action = ActionRevertFallbackEvents()
@@ -592,7 +654,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_ASK_REPHRASE_NAME
 
     async def test_successful_rephrasing(
-        self, trained_policy, default_channel, default_nlg, default_domain
+        self, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -629,7 +691,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
     async def test_affirmed_rephrasing(
-        self, trained_policy, default_channel, default_nlg, default_domain
+        self, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -672,7 +734,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_FALLBACK_NAME
 
     async def test_rephrasing_instead_affirmation(
-        self, trained_policy, default_channel, default_nlg, default_domain
+        self, default_channel, default_nlg, default_domain
     ):
         events = [
             ActionExecuted(ACTION_LISTEN_NAME),

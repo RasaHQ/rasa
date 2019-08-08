@@ -17,6 +17,8 @@ def from_endpoint_config(
         return None
     elif broker_config.type == "pika" or broker_config.type is None:
         return PikaProducer.from_endpoint_config(broker_config)
+    elif broker_config.type.lower() == "sql":
+        return SQLProducer.from_endpoint_config(broker_config)
     elif broker_config.type == "file":
         return FileProducer.from_endpoint_config(broker_config)
     elif broker_config.type == "kafka":
@@ -223,3 +225,59 @@ class KafkaProducer(EventChannel):
 
     def _close(self):
         self.producer.close()
+
+
+class SQLProducer(EventChannel):
+    """Save events into an SQL database.
+
+    All events will be stored in a table called `events`.
+
+    """
+
+    from sqlalchemy.ext.declarative import declarative_base
+
+    Base = declarative_base()
+
+    class SQLBrokerEvent(Base):
+        from sqlalchemy import Column, Integer, String, Text
+
+        __tablename__ = "events"
+        id = Column(Integer, primary_key=True)
+        sender_id = Column(String(255))
+        data = Column(Text)
+
+    def __init__(
+        self,
+        dialect: Text = "sqlite",
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
+        db: Text = "events.db",
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
+    ):
+        from rasa.core.tracker_store import SQLTrackerStore
+        import sqlalchemy
+        import sqlalchemy.orm
+
+        engine_url = SQLTrackerStore.get_db_url(
+            dialect, host, port, db, username, password
+        )
+
+        logger.debug("SQLProducer: Connecting to database: '{}'.".format(engine_url))
+
+        self.engine = sqlalchemy.create_engine(engine_url)
+        self.Base.metadata.create_all(self.engine)
+        self.session = sqlalchemy.orm.sessionmaker(bind=self.engine)()
+
+    @classmethod
+    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventChannel":
+        return cls(host=broker_config.url, **broker_config.kwargs)
+
+    def publish(self, event: Dict[Text, Any]) -> None:
+        """Publishes a json-formatted Rasa Core event into an event queue."""
+        self.session.add(
+            self.SQLBrokerEvent(
+                sender_id=event.get("sender_id"), data=json.dumps(event)
+            )
+        )
+        self.session.commit()

@@ -1,10 +1,12 @@
-:desc: Configure the custom components of your ML model to optimise the
-       processes performed on the user input of your contextual assistant.
+:desc: Customize the components and parameters of Rasa's Machine Learning based
+       Natural Language Understanding pipeline
 
 .. _components:
 
 Components
 ==========
+
+.. edit-link::
 
 .. note::
    For clarity, we have renamed the pre-defined pipelines to reflect

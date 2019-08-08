@@ -1,13 +1,16 @@
-:desc: Read more about how to run custom actions and code with open source Rasa
-       Stack to integrate your contextual Assistant in your processes and databases.
+:desc: Learn about about how to write your own custom actions with the
+       open source Rasa framework to be able to interact with the external
+       world - ranging from databases to third-party APIs.
 
 .. _actions:
 
 Actions
 =======
 
+.. edit-link::
+
 Actions are the things your bot runs in response to user input.
-There are three kinds of actions in Rasa Core:
+There are three kinds of actions in Rasa:
 
  1. **Utterance actions**: start with ``utter_``, just send a message
     to the user
@@ -48,7 +51,7 @@ An action can run any code you want. Custom actions can turn on the lights,
 add an event to a calendar, check a user's bank balance, or anything
 else you can imagine.
 
-Core will call an endpoint you can specify, when a custom action is
+Rasa will call an endpoint you can specify, when a custom action is
 predicted. This endpoint should be a webserver that reacts to this
 call, runs the code and optionally returns information to modify
 the dialogue state.
@@ -146,16 +149,47 @@ There is an example of a ``SlotSet`` event
 events in :ref:`Events <events>`.
 
 Execute Actions in Other Code
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 
-Rasa Core will send an HTTP ``POST`` request to your server containing
+Rasa will send an HTTP ``POST`` request to your server containing
 information on which action to run. Furthermore, this request will contain all
-information about the conversation.
+information about the conversation. :ref:`action-server` shows the detailed API spec.
 
-As a response to the action call from Core, you can modify the tracker,
+As a response to the action call from Rasa, you can modify the tracker,
 e.g. by setting slots and send responses back to the user.
 All of the modifications are done using events.
 There is a list of all possible event types in :ref:`events`.
+
+Proactively Reaching Out to the User Using Actions
+--------------------------------------------------
+
+You may want to proactively reach out to the user,
+for example to display the output of a long running background operation
+or notify the user of an external event.
+
+To do so, you can ``POST`` to this
+`endpoint <../../api/http-api.html#tag/Tracker/paths/~1conversations~1{conversation_id}~1execute/post>`_ ,
+specifying the action which should be run for a specific user in the request body. Use the
+``output_channel`` query parameter to specify which output
+channel should be used to communicate the assistant's responses back to the user.
+If your message is static, you can define an ``utter_`` action in your domain file with
+a corresponding template. If you need more control, add a custom action in your
+domain and implement the required steps in your action server. Any messages which are
+dispatched in the custom action will be forwarded to the specified output channel.
+
+
+Proactively reaching out to the user is dependent on the abilities of a channel and
+hence not supported by every channel. If your channel does not support it, consider
+using the :ref:`callbackInput` channel to send messages to a webhook.
+
+
+.. note::
+
+   Running an action in a conversation changes the conversation history and affects the
+   assistant's next predictions. If you don't want this to happen, make sure that your action
+   reverts itself by appending a ``ActionReverted`` event to the end of the
+   conversation tracker.
+
 
 Default Actions
 ---------------
@@ -206,5 +240,5 @@ to the list of actions in your domain:
   actions:
   - action_default_ask_affirmation
 
-Rasa Core will then call your action endpoint and treat it as every other
+Rasa will then call your action endpoint and treat it as every other
 custom action.

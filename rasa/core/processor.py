@@ -145,7 +145,7 @@ class MessageProcessor(object):
         self,
         sender_id: Text,
         action_name: Text,
-        output_channel: CollectingOutputChannel,
+        output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
         policy: Text,
         confidence: float,
@@ -311,6 +311,7 @@ class MessageProcessor(object):
                 parse_data,
                 input_channel=message.input_channel,
                 message_id=message.message_id,
+                metadata=message.metadata,
             ),
             self.domain,
         )
