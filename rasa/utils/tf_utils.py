@@ -161,7 +161,10 @@ def create_tf_dataset(
     """Create tf dataset."""
 
     # set batch and sequence length to None
-    shape_X = (None, None, session_data.X[0].shape[-1])
+    if session_data.X[0].ndim == 1:
+        shape_X = (None, session_data.X[0].shape[-1])
+    else:
+        shape_X = (None, None, session_data.X[0].shape[-1])
 
     if session_data.Y[0].ndim == 1:
         shape_Y = (None, session_data.Y[0].shape[-1])

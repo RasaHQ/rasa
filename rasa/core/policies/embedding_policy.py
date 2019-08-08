@@ -28,9 +28,6 @@ import tensorflow as tf
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
-# namedtuple for all tf session related data
-SessionData = namedtuple("SessionData", ("X", "Y", "labels"))
-
 
 class EmbeddingPolicy(Policy):
     """Transformer Embedding Dialogue Policy (TEDP)
@@ -188,8 +185,8 @@ class EmbeddingPolicy(Policy):
 
     def _load_embedding_params(self, config: Dict[Text, Any]) -> None:
         self.embed_dim = config["embed_dim"]
-        self.mu_pos = config["mu_pos"]
-        self.mu_neg = config["mu_neg"]
+        self.num_neg = config["num_neg"]
+
         self.similarity_type = config["similarity_type"]
         self.loss_type = config["loss_type"]
         if self.similarity_type == "auto":
@@ -198,8 +195,10 @@ class EmbeddingPolicy(Policy):
             elif self.loss_type == "margin":
                 self.similarity_type = "cosine"
 
-        self.num_neg = config["num_neg"]
+        self.mu_pos = config["mu_pos"]
+        self.mu_neg = config["mu_neg"]
         self.use_max_sim_neg = config["use_max_sim_neg"]
+
         self.scale_loss = config["scale_loss"]
 
     def _load_regularization_params(self, config: Dict[Text, Any]) -> None:
@@ -255,7 +254,7 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     def _create_session_data(
         self, data_X: "np.ndarray", data_Y: Optional["np.ndarray"] = None
-    ) -> "SessionData":
+    ) -> "tf_utils.SessionData":
         """Combine all tf session related data into a named tuple"""
 
         if data_Y is not None:
@@ -273,7 +272,7 @@ class EmbeddingPolicy(Policy):
             labels = None
             Y = None
 
-        return SessionData(X=data_X, Y=Y, labels=labels)
+        return tf_utils.SessionData(X=data_X, Y=Y, labels=labels)
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
         """Create embedding bot vector."""
@@ -333,20 +332,20 @@ class EmbeddingPolicy(Policy):
             # add time dimension if max history featurizer is used
             self.b_in = self.b_in[:, tf.newaxis, :]
 
-        all_actions = tf.constant(
-            self._encoded_all_actions, dtype=tf.float32, name="all_actions"
+        all_bot_raw = tf.constant(
+            self._encoded_all_actions, dtype=tf.float32, name="all_bot_raw"
         )
 
         self.dial_embed, mask = self._create_tf_dial(self.a_in)
 
         self.bot_embed = self._create_tf_bot_embed(self.b_in)
-        self.all_bot_embed = self._create_tf_bot_embed(all_actions)
+        self.all_bot_embed = self._create_tf_bot_embed(all_bot_raw)
 
         return tf_utils.calculate_loss_acc(self.dial_embed,
                                            self.bot_embed,
                                            self.b_in,
                                            self.all_bot_embed,
-                                           all_actions,
+                                           all_bot_raw,
                                            self.num_neg,
                                            mask,
                                            self.loss_type,
@@ -357,7 +356,7 @@ class EmbeddingPolicy(Policy):
                                            self.scale_loss)
 
     # prepare for prediction
-    def _create_tf_placeholders(self, session_data: "SessionData") -> None:
+    def _create_tf_placeholders(self, session_data: "tf_utils.SessionData") -> None:
         """Create placeholders for prediction."""
 
         dialogue_len = None  # use dynamic time
@@ -372,7 +371,7 @@ class EmbeddingPolicy(Policy):
             name="b",
         )
 
-    def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
+    def _build_tf_pred_graph(self, session_data: "tf_utils.SessionData") -> "tf.Tensor":
         """Rebuild tf graph for prediction."""
 
         self._create_tf_placeholders(session_data)
@@ -443,7 +442,6 @@ class EmbeddingPolicy(Policy):
             eval_session_data = None
 
         self.graph = tf.Graph()
-
         with self.graph.as_default():
             # set random seed in tf
             tf.set_random_seed(self.random_seed)
