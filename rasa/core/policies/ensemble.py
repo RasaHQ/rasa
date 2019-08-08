@@ -65,7 +65,7 @@ class PolicyEnsemble(object):
 
     @staticmethod
     def check_domain_ensemble_compatibility(
-        ensemble: "PolicyEnsemble", domain: Domain
+        ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations."""
 

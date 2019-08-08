@@ -37,7 +37,7 @@ class FormPolicy(MemoizationPolicy):
     @classmethod
     def validate_against_domain(
         cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
-    ):
+    ) -> None:
         if not domain:
             return
 
