@@ -83,7 +83,7 @@ All actions (both utterances and custom actions) executed by the bot are shown
 as lines starting with ``-`` followed by the name of the action. For custom
 actions, the action name is the string you choose to return from the ``name``
 method of the custom action class. All utterances must begin with the prefix
-``utter_``, and custom actions must begin with ``action_``.
+``utter_``.
 
 Events
 ~~~~~~
