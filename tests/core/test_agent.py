@@ -197,46 +197,51 @@ async def test_load_agent(trained_model):
     assert agent.model_directory is not None
 
 
-def test_incompatible_domain_and_policy():
-    TRIGGERS_AND_FORMS_DOMAIN = {
-        "intents": [{"affirm": {"triggers": "utter_ask_num_people"}}],
-        "templates": {"utter_ask_num_people": [{"text": "how many people?"}]},
-        "actions": ["utter_ask_num_people"],
-        "forms": ["restaurant_form"],
-    }
-
-    DOMAIN_WITHOUT_DENY_SUGGESTION_INTENT = {"intents": ["affirm"]}
-
-    POLICY_WITH_TWO_STAGE_FALLBACK = {"policies": [{"name": "TwoStageFallbackPolicy"}]}
-
-    NO_MAPPING_POLICY_CONFIG = {
-        "policies": [{"name": "MemoizationPolicy"}, {"name": "FormPolicy"}]
-    }
-
-    NO_FORMS_POLICY_CONFIG = {
-        "policies": [{"name": "MemoizationPolicy"}, {"name": "MappingPolicy"}]
-    }
-
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [({"forms": ["restaurant_form"]}, {"policies": [{"name": "MemoizationPolicy"}]})],
+)
+def test_form_without_form_policy(domain, policy_config):
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
-            domain=Domain.from_dict(TRIGGERS_AND_FORMS_DOMAIN),
-            policies=PolicyEnsemble.from_dict(NO_FORMS_POLICY_CONFIG),
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
         )
     assert "haven't added the FormPolicy" in str(execinfo.value)
 
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {
+                "intents": [{"affirm": {"triggers": "utter_ask_num_people"}}],
+                "actions": ["utter_ask_num_people"]
+            },
+            {"policies": [{"name": "MemoizationPolicy"}]},
+        )
+    ],
+)
+def test_trigger_without_mapping_policy(domain, policy_config):
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
-            domain=Domain.from_dict(TRIGGERS_AND_FORMS_DOMAIN),
-            policies=PolicyEnsemble.from_dict(NO_MAPPING_POLICY_CONFIG),
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
         )
     assert "haven't added the MappingPolicy" in str(execinfo.value)
 
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [({"intents": ["affirm"]}, {"policies": [{"name": "TwoStageFallbackPolicy"}]})],
+)
+def test_two_stage_fallback_without_deny_suggestion(domain, policy_config):
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
-            domain=Domain.from_dict(DOMAIN_WITHOUT_DENY_SUGGESTION_INTENT),
-            policies=PolicyEnsemble.from_dict(POLICY_WITH_TWO_STAGE_FALLBACK),
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "The intent out_of_scope must be present" in str(execinfo.value)
+    assert "The intent 'out_of_scope' must be present" in str(execinfo.value)
 
 
 async def test_agent_update_model_none_domain(trained_model):
