@@ -228,7 +228,7 @@ class StoryFileReader(object):
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
-    ):
+    ) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
 
         try:
@@ -291,12 +291,21 @@ class StoryFileReader(object):
             return "", {}
 
     async def process_lines(self, lines: List[Text]) -> List[StoryStep]:
+        multiline_comment = False
 
         for idx, line in enumerate(lines):
             line_num = idx + 1
             try:
                 line = self._replace_template_variables(self._clean_up_line(line))
                 if line.strip() == "":
+                    continue
+                elif line.startswith("<!--"):
+                    multiline_comment = True
+                    continue
+                elif multiline_comment and line.endswith("-->"):
+                    multiline_comment = False
+                    continue
+                elif multiline_comment:
                     continue
                 elif line.startswith("#"):
                     # reached a new story block

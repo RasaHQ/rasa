@@ -7,6 +7,8 @@
 Installation
 ============
 
+.. edit-link::
+
 The recommended way to get started with Rasa is via ``pip``:
 
 .. copyable::

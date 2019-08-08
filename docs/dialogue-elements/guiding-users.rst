@@ -1,8 +1,14 @@
+:desc: Read about dialogue patterns you can use to deliver a friendlier user
+       experience with your bot using Rasa's open source dialogue chat
+       assistant platform.
+
 .. _guiding-users:
 
 =============
 Guiding Users
 =============
+
+.. edit-link::
 
 .. contents::
    :local:

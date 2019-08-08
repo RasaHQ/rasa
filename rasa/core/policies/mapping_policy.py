@@ -53,7 +53,13 @@ class MappingPolicy(Policy):
 
         prediction = [0.0] * domain.num_actions
         intent = tracker.latest_message.intent.get("name")
-        action = domain.intent_properties.get(intent, {}).get("triggers")
+        if intent == USER_INTENT_RESTART:
+            action = ACTION_RESTART_NAME
+        elif intent == USER_INTENT_BACK:
+            action = ACTION_BACK_NAME
+        else:
+            action = domain.intent_properties.get(intent, {}).get("triggers")
+
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
             if action:
                 idx = domain.index_for_action(action)
@@ -64,12 +70,6 @@ class MappingPolicy(Policy):
                     )
                 else:
                     prediction[idx] = 1
-            elif intent == USER_INTENT_RESTART:
-                idx = domain.index_for_action(ACTION_RESTART_NAME)
-                prediction[idx] = 1
-            elif intent == USER_INTENT_BACK:
-                idx = domain.index_for_action(ACTION_BACK_NAME)
-                prediction[idx] = 1
 
             if any(prediction):
                 logger.debug(
@@ -93,6 +93,14 @@ class MappingPolicy(Policy):
 
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
                 prediction[idx] = 1
+            else:
+                logger.debug(
+                    "The mapped action, '{}', for this intent, '{}', was "
+                    "executed last, but it was predicted by another policy, '{}', so MappingPolicy is not"
+                    "predicting any action.".format(
+                        action, intent, latest_action.policy
+                    )
+                )
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "
