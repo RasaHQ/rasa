@@ -40,8 +40,8 @@ Here's an example of a dialogue in the Rasa story format:
       - action_ack_dosearch
 
 
-This is what we call a **story**.
-
+What makes up a story?
+~~~~~~~~~~~~~~~~~~~~~~
 
 - A story starts with a name preceded by two hashes ``## story_03248462``.
   You can call the story anything you like, but it can be very useful for
@@ -56,9 +56,6 @@ This is what we call a **story**.
   For example, if an action returns a ``SlotSet`` event, this is shown as
   ``slot{"slot_name": "value"}``.
 
-Let's now take a slightly more detailed look at each of these components,
-along with some things you should keep in mind while using them to write
-your own stories.
 
 User Messages
 ~~~~~~~~~~~~~
@@ -77,13 +74,18 @@ Actions
 ~~~~~~~
 While writing stories, you will encounter two types of actions: utterances
 and custom actions. Utterances are hardcoded messages that a bot can respond
-with. Custom actions, on the other hand, involve custom code being executed. 
+with. Custom actions, on the other hand, involve custom code being executed.
 
 All actions (both utterances and custom actions) executed by the bot are shown
-as lines starting with ``-`` followed by the name of the action. For custom
-actions, the action name is the string you choose to return from the ``name``
-method of the custom action class. All utterances must begin with the prefix
-``utter_``, and custom actions must begin with ``action_``.
+as lines starting with ``-`` followed by the name of the action.
+
+All utterances must begin with the prefix ``utter_``, and must match the name
+of the template defined in the domain.
+
+For custom actions, the action name is the string you choose to return from
+the ``name`` method of the custom action class. Although there is no restriction
+on naming your custom actions (unlike utterances), the best practice here is to
+prefix the name with ``action_``.
 
 Events
 ~~~~~~
@@ -93,11 +95,14 @@ returned by a custom action separately, when that custom action is already
 part of a story might seem redundant. However, since Rasa cannot easily
 determine this fact during training, this step is necessary.
 
+You can read more about events :ref:`here <end_to_end_evaluation>`.
+
 Slot Events
 ***********
 Slot events are written as ``- slot{"slot_name": "value"}``. If this slot is set
 inside a custom action, it is written on the line immediately following the
-custom action event.
+custom action event. If your custom action resets a slot value to `None`, the
+corresponding event for that would be ``-slot{"slot_name": null}``.
 
 Form Events
 ***********
@@ -105,7 +110,7 @@ There are three kinds of events that need to be kept in mind while dealing with
 forms in stories.
 
 - A form action event (e.g. ``- restaurant_form``) is used in the beginning when first starting a form, and also while resuming the form action when the form is already active.
-- A form activation event (e.g. ``- form{"name": "restaurant_form"}``) is used right after a form action event.
+- A form activation event (e.g. ``- form{"name": "restaurant_form"}``) is used right after the first form action event.
 - A form deactivation event (e.g. ``- form{"name": null}``), which is used to deactivate the form.
 
 
@@ -116,6 +121,7 @@ forms in stories.
 
 Writing Fewer and Shorter Stories
 ---------------------------------
+
 
 Checkpoints
 ~~~~~~~~~~~
@@ -155,6 +161,7 @@ the user to confirm something, and you want to treat the ``affirm``
 and ``thankyou`` intents in the same way. The story below will be
 converted into two stories at training time:
 
+
 .. code-block:: story
 
     ## story
@@ -166,8 +173,9 @@ converted into two stories at training time:
 Just like checkpoints, ``OR`` statements can be useful, but if you are using a
 lot of them, it is probably better to restructure your domain and/or intents.
 
-.. note::
-    Adding lines to your stories with many ``OR`` statements
+
+.. warning::
+    Overusing these features (both checkpoints and OR statements)
     will slow down training.
 
 
