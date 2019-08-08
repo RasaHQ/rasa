@@ -216,7 +216,7 @@ def test_form_without_form_policy(domain, policy_config):
         (
             {
                 "intents": [{"affirm": {"triggers": "utter_ask_num_people"}}],
-                "actions": ["utter_ask_num_people"]
+                "actions": ["utter_ask_num_people"],
             },
             {"policies": [{"name": "MemoizationPolicy"}]},
         )
