@@ -70,22 +70,3 @@ class TestKeywordClassifier(ClassifierTestCollection):
     @pytest.fixture(scope="module")
     def classifier_class(self):
         return KeywordIntentClassifier
-
-
-class TestEmbeddingIntentClassifier(ClassifierTestCollection):
-    @pytest.fixture(scope="module")
-    def classifier_class(self):
-        return EmbeddingIntentClassifier
-
-
-class TestMitieIntentClassifier(ClassifierTestCollection):
-    @pytest.fixture(scope="module")
-    def classifier_class(self):
-        return MitieIntentClassifier
-
-
-class TestSklearnIntentClassifier(ClassifierTestCollection):
-    @pytest.fixture(scope="module")
-    def classifier_class(self):
-        return SklearnIntentClassifier
-
