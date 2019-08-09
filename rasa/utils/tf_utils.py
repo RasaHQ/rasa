@@ -738,6 +738,15 @@ def calculate_loss_acc(a_embed: "tf.Tensor",
     return loss, acc
 
 
+def confidence_from_sim(sim: "tf.Tensor", similarity_type: Text) -> "tf.Tensor":
+    if similarity_type == "cosine":
+        # clip negative values to zero
+        return tf.nn.relu(sim)
+    else:
+        # normalize result to [0, 1] with softmax
+        return tf.nn.softmax(sim)
+
+
 def linearly_increasing_batch_size(epoch: int, batch_size: Union[List[int], int], epochs: int) -> int:
     """Linearly increase batch size with every epoch.
 

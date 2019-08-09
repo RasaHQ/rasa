@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 import rasa.utils.io
+from rasa.utils import tf_utils
 from rasa.core import training
 from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
@@ -357,7 +358,7 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         )
         batch_size = 2
         batch_x, batch_y = next(
-            trained_policy._gen_batch(session_data=session_data, batch_size=batch_size)
+            tf_utils.gen_batch(session_data=session_data, batch_size=batch_size)
         )
         assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
         assert (
@@ -365,7 +366,7 @@ class TestEmbeddingPolicy(PolicyTestCollection):
             and batch_y[0].shape == session_data.Y[0].shape
         )
         batch_x, batch_y = next(
-            trained_policy._gen_batch(
+            tf_utils.gen_batch(
                 session_data=session_data,
                 batch_size=batch_size,
                 batch_strategy="balanced",

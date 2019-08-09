@@ -345,14 +345,7 @@ class EmbeddingIntentClassifier(Component):
             self.all_intents_embed[tf.newaxis, :, :],
             None,
         )
-    
-        if self.similarity_type == "cosine":
-            # clip negative values to zero
-            confidence = tf.nn.relu(self.sim_all)
-        else:
-            # normalize result to [0, 1] with softmax
-            confidence = tf.nn.softmax(self.sim_all)
-    
+
         self.intent_embed = self._create_tf_embed_fnn(
             self.b_in, self.hidden_layer_sizes["b"], name="b"
         )
@@ -361,7 +354,7 @@ class EmbeddingIntentClassifier(Component):
             self.message_embed[:, tf.newaxis, :], self.intent_embed, None
         )
     
-        return confidence
+        return tf_utils.confidence_from_sim(self.sim_all, self.similarity_type)
 
     def train(
         self,
@@ -426,11 +419,11 @@ class EmbeddingIntentClassifier(Component):
 
             loss, acc = self._build_tf_train_graph()
 
+            # define which optimizer to use
             self._train_op = tf.train.AdamOptimizer().minimize(loss)
 
             # train tensorflow graph
             self.session = tf.Session()
-
             tf_utils.train_tf_dataset(
                 train_init_op, eval_init_op, batch_size_in, loss, acc, self._train_op, self.session, self._is_training,
                 self.epochs, self.batch_size, self.evaluate_on_num_examples, self.evaluate_every_num_epochs

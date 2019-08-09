@@ -384,20 +384,13 @@ class EmbeddingPolicy(Policy):
             mask,
         )
 
-        if self.similarity_type == "cosine":
-            # clip negative values to zero
-            confidence = tf.nn.relu(self.sim_all)
-        else:
-            # normalize result to [0, 1] with softmax
-            confidence = tf.nn.softmax(self.sim_all)
-
         self.bot_embed = self._create_tf_bot_embed(self.b_in)
 
         self.sim = tf_utils.tf_raw_sim(
             self.dial_embed[:, :, tf.newaxis, :], self.bot_embed, mask
         )
 
-        return confidence
+        return tf_utils.confidence_from_sim(self.sim_all, self.similarity_type)
 
     # training methods
     def train(
@@ -457,6 +450,7 @@ class EmbeddingPolicy(Policy):
                                                                     self.batch_strategy)
 
             self._is_training = tf.placeholder_with_default(False, shape=())
+
             loss, acc = self._build_tf_train_graph()
 
             # define which optimizer to use
