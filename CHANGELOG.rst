@@ -13,7 +13,7 @@ Added
 -----
 - bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 - `FallbackPolicy` can now be configured to trigger when the difference between confidences of
-two predicted intents are too narrow
+two predicted intents is too narrow
 
 Changed
 -------
