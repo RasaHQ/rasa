@@ -34,6 +34,20 @@ def train_val_split(
     label_counts = dict(
         zip(*np.unique(session_data.labels, return_counts=True, axis=0))
     )
+
+    if evaluate_on_num_examples >= len(session_data.X) - len(label_counts):
+        raise ValueError(
+            "Validation set of {} is too large. Remaining train set "
+            "should be at least equal to number of classes {}."
+            "".format(evaluate_on_num_examples, len(label_counts))
+        )
+    elif evaluate_on_num_examples < len(label_counts):
+        raise ValueError(
+            "Validation set of {} is too small. It should be "
+            "at least equal to number of classes {}."
+            "".format(evaluate_on_num_examples, len(label_counts))
+        )
+
     counts = np.array([label_counts[label] for label in session_data.labels])
 
     multi_X = session_data.X[counts > 1]
