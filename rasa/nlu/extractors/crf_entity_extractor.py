@@ -553,9 +553,10 @@ class CRFEntityExtractor(EntityExtractor):
         tokens = message.get("tokens", [])
         # perhaps an assertion here instead? following pattern above.
         if len(tokens) != len(features):
-            raise Exception(
-                f"Number of tokens for custom NER features ({len(features)}) does not match len(tokens) ({len(tokens)})"
+            warn_string = "Number of tokens for custom NER features ({l_ft}) does not match len(tokens) ({l_to})".format(
+                l_ft=len(features), l_to=len(tokens)
             )
+            raise Exception(warn_string)
         # convert to python-crfsuite feature format
         features_out = []
         for feature in features:
