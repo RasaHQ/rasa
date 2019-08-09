@@ -72,13 +72,6 @@ class KeywordIntentClassifier(Component):
                                     "example of intent '{}"
                                     "".format(ex1, intent1, ex2, intent2)
                                 )
-                    # for ex2 in ex2s:
-                    #     for ex1 in ex1s:
-                    #         if re.search(r"\b" + ex2 + r"\b", ex1, flags=re_flags):
-                    #             logger.warning("Keyword '{}' is an example of intent '{}',"
-                    #                            "but also a substring of '{}', which is an "
-                    #                            "example of intent '{}"
-                    #                            "".format(ex2, intent2, ex1, intent1))
 
     def process(self, message: Message, **kwargs: Any) -> None:
         intent_name = self._map_keyword_to_intent(message.text)
@@ -100,10 +93,10 @@ class KeywordIntentClassifier(Component):
         else:
             logger.debug(
                 "KeywordClassifier found intent with keywords: '{}',"
-                "the message will be classified as having intent '{}'."
+                "the message will not be classified."
                 "".format(found_intents.items(), list(found_intents.keys())[0])
             )
-            return list(found_intents.keys())[0]
+            return None
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
