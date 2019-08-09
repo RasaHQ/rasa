@@ -13,6 +13,7 @@ from tensor2tensor.layers.common_attention import large_compatible_negative
 from rasa.utils.common import is_logging_disabled
 import typing
 from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable
+
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
 
@@ -25,9 +26,9 @@ SessionData = namedtuple("SessionData", ("X", "Y", "labels"))
 
 
 # noinspection PyPep8Naming
-def train_val_split(session_data: "SessionData",
-                    evaluate_on_num_examples: int,
-                    random_seed: int) -> Tuple["SessionData", "SessionData"]:
+def train_val_split(
+    session_data: "SessionData", evaluate_on_num_examples: int, random_seed: int
+) -> Tuple["SessionData", "SessionData"]:
     """Create random hold out validation set using stratified split."""
 
     label_counts = dict(
@@ -66,18 +67,16 @@ def shuffle_session_data(session_data: "SessionData") -> "SessionData":
 
     ids = np.random.permutation(len(session_data.X))
     return SessionData(
-        X=session_data.X[ids],
-        Y=session_data.Y[ids],
-        labels=session_data.labels[ids],
+        X=session_data.X[ids], Y=session_data.Y[ids], labels=session_data.labels[ids]
     )
 
 
 # noinspection PyPep8Naming
 def gen_batch(
-        session_data: "SessionData",
-        batch_size: int,
-        batch_strategy: Text = "sequence",
-        shuffle: bool = False,
+    session_data: "SessionData",
+    batch_size: int,
+    batch_strategy: Text = "sequence",
+    shuffle: bool = False,
 ) -> Generator[Tuple["np.ndarray", "np.ndarray"], None, None]:
     """Generate batches."""
 
@@ -121,8 +120,8 @@ def gen_batch(
 
                 num_i = int(counts_labels[i] / num_examples * batch_size) + 1
 
-                new_X.append(label_data[i].X[data_idx[i]: data_idx[i] + num_i])
-                new_Y.append(label_data[i].Y[data_idx[i]: data_idx[i] + num_i])
+                new_X.append(label_data[i].X[data_idx[i] : data_idx[i] + num_i])
+                new_Y.append(label_data[i].Y[data_idx[i] : data_idx[i] + num_i])
 
                 data_idx[i] += num_i
                 if data_idx[i] >= counts_labels[i]:
@@ -141,12 +140,8 @@ def gen_batch(
     )
 
     for batch_num in range(num_batches):
-        batch_x = session_data.X[
-                  batch_num * batch_size: (batch_num + 1) * batch_size
-                  ]
-        batch_y = session_data.Y[
-                  batch_num * batch_size: (batch_num + 1) * batch_size
-                  ]
+        batch_x = session_data.X[batch_num * batch_size : (batch_num + 1) * batch_size]
+        batch_y = session_data.Y[batch_num * batch_size : (batch_num + 1) * batch_size]
 
         yield batch_x, batch_y
 
@@ -181,18 +176,16 @@ def create_tf_dataset(
     )
 
 
-def create_iterator_init_datasets(session_data: "SessionData",
-                                  eval_session_data: "SessionData",
-                                  batch_size: Union["tf.Tensor", int],
-                                  batch_strategy: Text,
-                                  ) -> Tuple["tf.data.Iterator", "tf.Operation", "tf.Operation"]:
+def create_iterator_init_datasets(
+    session_data: "SessionData",
+    eval_session_data: "SessionData",
+    batch_size: Union["tf.Tensor", int],
+    batch_strategy: Text,
+) -> Tuple["tf.data.Iterator", "tf.Operation", "tf.Operation"]:
     """Create iterator and init datasets."""
 
     train_dataset = create_tf_dataset(
-        session_data,
-        batch_size,
-        batch_strategy=batch_strategy,
-        shuffle=True,
+        session_data, batch_size, batch_strategy=batch_strategy, shuffle=True
     )
 
     iterator = tf.data.Iterator.from_structure(
@@ -260,12 +253,13 @@ def tf_normalize_if_cosine(x: "tf.Tensor", similarity_type: Text) -> "tf.Tensor"
 
 
 # noinspection PyPep8Naming
-def create_tf_embed(x: "tf.Tensor",
-                    embed_dim: int,
-                    C2: float,
-                    similarity_type: Text,
-                    layer_name_suffix: Text,
-                    ) -> "tf.Tensor":
+def create_tf_embed(
+    x: "tf.Tensor",
+    embed_dim: int,
+    C2: float,
+    similarity_type: Text,
+    layer_name_suffix: Text,
+) -> "tf.Tensor":
     """Create dense embedding layer with a name."""
 
     reg = tf.contrib.layers.l2_regularizer(C2)
@@ -281,13 +275,15 @@ def create_tf_embed(x: "tf.Tensor",
     return tf_normalize_if_cosine(embed_x, similarity_type)
 
 
-def create_t2t_hparams(num_transformer_layers: int,
-                       transformer_size: int,
-                       num_heads: int,
-                       droprate: float,
-                       pos_encoding: Text,
-                       max_seq_length: int,
-                       is_training: "tf.Tensor") -> "HParams":
+def create_t2t_hparams(
+    num_transformer_layers: int,
+    transformer_size: int,
+    num_heads: int,
+    droprate: float,
+    pos_encoding: Text,
+    max_seq_length: int,
+    is_training: "tf.Tensor",
+) -> "HParams":
     """Create parameters for t2t transformer."""
 
     hparams = transformer_base()
@@ -341,7 +337,6 @@ def create_t2t_transformer_encoder(
             kernel_initializer=tf.random_normal_initializer(
                 0.0, hparams.hidden_size ** -0.5
             ),
-
         )
         if hparams.multiply_embedding_mode == "sqrt_depth":
             x *= hparams.hidden_size ** 0.5
@@ -373,9 +368,7 @@ def create_t2t_transformer_encoder(
 
         x *= tf.expand_dims(mask, -1)
 
-        return tf.nn.dropout(
-            tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout
-        )
+        return tf.nn.dropout(tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout)
 
 
 def _tf_make_flat(x: "tf.Tensor") -> "tf.Tensor":
@@ -405,9 +398,7 @@ def _tf_calc_iou_mask(
     intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
     union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
 
-    iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(
-        union_b_in_flat, -1
-    )
+    iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
     return 1.0 - tf.nn.relu(tf.sign(1.0 - iou))
 
 
@@ -434,15 +425,13 @@ def _tf_get_negs(
     shuffled_indices = tf.transpose(
         tf.random.shuffle(tf.transpose(all_indices, (1, 0))), (1, 0)
     )
-    neg_ids = shuffled_indices[:, : num_neg]
+    neg_ids = shuffled_indices[:, :num_neg]
 
     bad_negs = _tf_calc_iou_mask(raw_flat, all_raw, neg_ids)
     if len(raw_pos.shape) == 3:
         bad_negs = tf.reshape(bad_negs, (batch_size, seq_length, -1))
 
-    neg_embed = _tf_sample_neg(
-        batch_size * seq_length, all_embed, neg_ids
-    )
+    neg_embed = _tf_sample_neg(batch_size * seq_length, all_embed, neg_ids)
     if len(raw_pos.shape) == 3:
         neg_embed = tf.reshape(
             neg_embed, (batch_size, seq_length, -1, all_embed.shape[-1])
@@ -452,22 +441,22 @@ def _tf_get_negs(
 
 
 def sample_negatives(
-    a_embed: "tf.Tensor", b_embed: "tf.Tensor", b_raw: "tf.Tensor", all_b_embed: "tf.Tensor", all_b_raw: "tf.Tensor", num_neg: int
+    a_embed: "tf.Tensor",
+    b_embed: "tf.Tensor",
+    b_raw: "tf.Tensor",
+    all_b_embed: "tf.Tensor",
+    all_b_raw: "tf.Tensor",
+    num_neg: int,
 ) -> Tuple[
     "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor"
 ]:
     """Sample negative examples."""
 
     neg_dial_embed, dial_bad_negs = _tf_get_negs(
-        _tf_make_flat(a_embed),
-        _tf_make_flat(b_raw),
-        b_raw,
-        num_neg
+        _tf_make_flat(a_embed), _tf_make_flat(b_raw), b_raw, num_neg
     )
 
-    neg_bot_embed, bot_bad_negs = _tf_get_negs(
-        all_b_embed, all_b_raw, b_raw, num_neg
-    )
+    neg_bot_embed, bot_bad_negs = _tf_get_negs(all_b_embed, all_b_raw, b_raw, num_neg)
     return (
         tf.expand_dims(a_embed, -2),
         tf.expand_dims(b_embed, -2),
@@ -478,7 +467,9 @@ def sample_negatives(
     )
 
 
-def tf_raw_sim(a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
+def tf_raw_sim(
+    a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"]
+) -> "tf.Tensor":
     """Calculate similarity between given tensors."""
 
     sim = tf.reduce_sum(a * b, -1)
@@ -504,21 +495,15 @@ def tf_sim(
     neg_inf = large_compatible_negative(pos_dial_embed.dtype)
 
     sim_pos = tf_raw_sim(pos_dial_embed, pos_bot_embed, mask)
-    sim_neg = (
-        tf_raw_sim(pos_dial_embed, neg_bot_embed, mask)
-        + neg_inf * bot_bad_negs
-    )
+    sim_neg = tf_raw_sim(pos_dial_embed, neg_bot_embed, mask) + neg_inf * bot_bad_negs
     sim_neg_bot_bot = (
-        tf_raw_sim(pos_bot_embed, neg_bot_embed, mask)
-        + neg_inf * bot_bad_negs
+        tf_raw_sim(pos_bot_embed, neg_bot_embed, mask) + neg_inf * bot_bad_negs
     )
     sim_neg_dial_dial = (
-        tf_raw_sim(pos_dial_embed, neg_dial_embed, mask)
-        + neg_inf * dial_bad_negs
+        tf_raw_sim(pos_dial_embed, neg_dial_embed, mask) + neg_inf * dial_bad_negs
     )
     sim_neg_bot_dial = (
-        tf_raw_sim(pos_bot_embed, neg_dial_embed, mask)
-        + neg_inf * dial_bad_negs
+        tf_raw_sim(pos_bot_embed, neg_dial_embed, mask) + neg_inf * dial_bad_negs
     )
 
     # output similarities between user input and bot actions
@@ -682,20 +667,21 @@ def choose_loss(
 
 
 # noinspection PyPep8Naming
-def calculate_loss_acc(a_embed: "tf.Tensor",
-                       b_embed: "tf.Tensor",
-                       b_raw: "tf.Tensor",
-                       all_b_embed: "tf.Tensor",
-                       all_b_raw: "tf.Tensor",
-                       num_neg: int,
-                       mask: Optional["tf.Tensor"],
-                       loss_type: Text,
-                       mu_pos: float,
-                       mu_neg: float,
-                       use_max_sim_neg: bool,
-                       C_emb: float,
-                       scale_loss: bool,
-                       ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+def calculate_loss_acc(
+    a_embed: "tf.Tensor",
+    b_embed: "tf.Tensor",
+    b_raw: "tf.Tensor",
+    all_b_embed: "tf.Tensor",
+    all_b_raw: "tf.Tensor",
+    num_neg: int,
+    mask: Optional["tf.Tensor"],
+    loss_type: Text,
+    mu_pos: float,
+    mu_neg: float,
+    use_max_sim_neg: bool,
+    C_emb: float,
+    scale_loss: bool,
+) -> Tuple["tf.Tensor", "tf.Tensor"]:
     """Calculate loss and accuracy."""
 
     (
@@ -708,13 +694,7 @@ def calculate_loss_acc(a_embed: "tf.Tensor",
     ) = sample_negatives(a_embed, b_embed, b_raw, all_b_embed, all_b_raw, num_neg)
 
     # calculate similarities
-    (
-        sim_pos,
-        sim_neg,
-        sim_neg_bot_bot,
-        sim_neg_dial_dial,
-        sim_neg_bot_dial,
-    ) = tf_sim(
+    (sim_pos, sim_neg, sim_neg_bot_bot, sim_neg_dial_dial, sim_neg_bot_dial) = tf_sim(
         pos_dial_embed,
         pos_bot_embed,
         neg_dial_embed,
@@ -727,7 +707,13 @@ def calculate_loss_acc(a_embed: "tf.Tensor",
     acc = tf_calc_accuracy(sim_pos, sim_neg)
 
     loss = choose_loss(
-        sim_pos, sim_neg, sim_neg_bot_bot, sim_neg_dial_dial, sim_neg_bot_dial, mask, loss_type,
+        sim_pos,
+        sim_neg,
+        sim_neg_bot_bot,
+        sim_neg_dial_dial,
+        sim_neg_bot_dial,
+        mask,
+        loss_type,
         mu_pos,
         mu_neg,
         use_max_sim_neg,
@@ -747,7 +733,9 @@ def confidence_from_sim(sim: "tf.Tensor", similarity_type: Text) -> "tf.Tensor":
         return tf.nn.softmax(sim)
 
 
-def linearly_increasing_batch_size(epoch: int, batch_size: Union[List[int], int], epochs: int) -> int:
+def linearly_increasing_batch_size(
+    epoch: int, batch_size: Union[List[int], int], epochs: int
+) -> int:
     """Linearly increase batch size with every epoch.
 
     The idea comes from https://arxiv.org/abs/1711.00489.
@@ -758,16 +746,20 @@ def linearly_increasing_batch_size(epoch: int, batch_size: Union[List[int], int]
 
     if epochs > 1:
         return int(
-            batch_size[0]
-            + epoch * (batch_size[1] - batch_size[0]) / (epochs - 1)
+            batch_size[0] + epoch * (batch_size[1] - batch_size[0]) / (epochs - 1)
         )
     else:
         return int(batch_size[0])
 
 
 def output_training_stat_dataset(
-    eval_init_op: "tf.Operation", loss: "tf.Tensor", acc: "tf.Tensor", session: "tf.Session", is_training: "tf.Session",
-    batch_size_in: "tf.Tensor", ep_batch_size: int,
+    eval_init_op: "tf.Operation",
+    loss: "tf.Tensor",
+    acc: "tf.Tensor",
+    session: "tf.Session",
+    is_training: "tf.Session",
+    batch_size_in: "tf.Tensor",
+    ep_batch_size: int,
 ) -> Tuple[float, float]:
     """Output training statistics"""
 
@@ -847,11 +839,15 @@ def train_tf_dataset(
         )
 
         if eval_init_op is not None:
-            if (ep + 1) % evaluate_every_num_epochs == 0 or (
-                ep + 1
-            ) == epochs:
+            if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
                 eval_loss, eval_acc = output_training_stat_dataset(
-                    eval_init_op, loss, acc, session, is_training, batch_size_in, ep_batch_size
+                    eval_init_op,
+                    loss,
+                    acc,
+                    session,
+                    is_training,
+                    batch_size_in,
+                    ep_batch_size,
                 )
                 if (ep + 1) != epochs:
                     logger.info(

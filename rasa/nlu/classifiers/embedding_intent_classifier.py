@@ -278,9 +278,7 @@ class EmbeddingIntentClassifier(Component):
             [intent_dict[e.get("intent")] for e in training_data.intent_examples]
         )
 
-        Y = np.stack(
-            [self._encoded_all_intents[intent_idx] for intent_idx in labels]
-        )
+        Y = np.stack([self._encoded_all_intents[intent_idx] for intent_idx in labels])
 
         return tf_utils.SessionData(X=X, Y=Y, labels=labels)
 
@@ -298,7 +296,9 @@ class EmbeddingIntentClassifier(Component):
             self._is_training,
             layer_name_suffix=name,
         )
-        return tf_utils.create_tf_embed(x, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix=name)
+        return tf_utils.create_tf_embed(
+            x, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix=name
+        )
 
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
         self.a_in, self.b_in = self._iterator.get_next()
@@ -318,23 +318,29 @@ class EmbeddingIntentClassifier(Component):
             all_intents, self.hidden_layer_sizes["b"], name="b"
         )
 
-        return tf_utils.calculate_loss_acc(self.message_embed,
-                                           self.intent_embed,
-                                           self.b_in,
-                                           self.all_intents_embed,
-                                           all_intents,
-                                           self.num_neg,
-                                           None,
-                                           self.loss_type,
-                                           self.mu_pos,
-                                           self.mu_neg,
-                                           self.use_max_sim_neg,
-                                           self.C_emb,
-                                           self.scale_loss)
+        return tf_utils.calculate_loss_acc(
+            self.message_embed,
+            self.intent_embed,
+            self.b_in,
+            self.all_intents_embed,
+            all_intents,
+            self.num_neg,
+            None,
+            self.loss_type,
+            self.mu_pos,
+            self.mu_neg,
+            self.use_max_sim_neg,
+            self.C_emb,
+            self.scale_loss,
+        )
 
     def _build_tf_pred_graph(self, session_data: "tf_utils.SessionData") -> "tf.Tensor":
-        self.a_in = tf.placeholder(tf.float32, (None, session_data.X.shape[-1]), name="a")
-        self.b_in = tf.placeholder(tf.float32, (None, None, session_data.Y.shape[-1]), name="b")
+        self.a_in = tf.placeholder(
+            tf.float32, (None, session_data.X.shape[-1]), name="a"
+        )
+        self.b_in = tf.placeholder(
+            tf.float32, (None, None, session_data.Y.shape[-1]), name="b"
+        )
 
         self.message_embed = self._create_tf_embed_fnn(
             self.a_in, self.hidden_layer_sizes["a"], name="a"
@@ -353,7 +359,7 @@ class EmbeddingIntentClassifier(Component):
         self.sim = tf_utils.tf_raw_sim(
             self.message_embed[:, tf.newaxis, :], self.intent_embed, None
         )
-    
+
         return tf_utils.confidence_from_sim(self.sim_all, self.similarity_type)
 
     def train(
@@ -394,9 +400,9 @@ class EmbeddingIntentClassifier(Component):
         session_data = self._create_session_data(training_data, intent_dict)
 
         if self.evaluate_on_num_examples:
-            session_data, eval_session_data = tf_utils.train_val_split(session_data,
-                                                                       self.evaluate_on_num_examples,
-                                                                       self.random_seed)
+            session_data, eval_session_data = tf_utils.train_val_split(
+                session_data, self.evaluate_on_num_examples, self.random_seed
+            )
         else:
             eval_session_data = None
 
@@ -408,12 +414,13 @@ class EmbeddingIntentClassifier(Component):
             # allows increasing batch size
             batch_size_in = tf.placeholder(tf.int64)
 
-            (self._iterator,
-             train_init_op,
-             eval_init_op) = tf_utils.create_iterator_init_datasets(session_data,
-                                                                    eval_session_data,
-                                                                    batch_size_in,
-                                                                    self.batch_strategy)
+            (
+                self._iterator,
+                train_init_op,
+                eval_init_op,
+            ) = tf_utils.create_iterator_init_datasets(
+                session_data, eval_session_data, batch_size_in, self.batch_strategy
+            )
 
             self._is_training = tf.placeholder_with_default(False, shape=())
 
@@ -425,8 +432,18 @@ class EmbeddingIntentClassifier(Component):
             # train tensorflow graph
             self.session = tf.Session()
             tf_utils.train_tf_dataset(
-                train_init_op, eval_init_op, batch_size_in, loss, acc, self._train_op, self.session, self._is_training,
-                self.epochs, self.batch_size, self.evaluate_on_num_examples, self.evaluate_every_num_epochs
+                train_init_op,
+                eval_init_op,
+                batch_size_in,
+                loss,
+                acc,
+                self._train_op,
+                self.session,
+                self._is_training,
+                self.epochs,
+                self.batch_size,
+                self.evaluate_on_num_examples,
+                self.evaluate_every_num_epochs,
             )
 
             # rebuild the graph for prediction
@@ -434,9 +451,7 @@ class EmbeddingIntentClassifier(Component):
 
     # process helpers
     # noinspection PyPep8Naming
-    def _calculate_message_sim(
-        self, X: np.ndarray
-    ) -> Tuple[np.ndarray, List[float]]:
+    def _calculate_message_sim(self, X: np.ndarray) -> Tuple[np.ndarray, List[float]]:
         """Calculate message similarities"""
 
         message_sim = self.session.run(self.pred_confidence, feed_dict={self.a_in: X})
