@@ -5,7 +5,7 @@ matplotlib==3.0.3
 simplejson==3.16.0
 attrs==19.1.0
 jsonpickle==1.1
-redis==3.2.1
+redis==3.3.5
 fakeredis==1.0.3
 pymongo==3.8.0
 numpy==1.16.3

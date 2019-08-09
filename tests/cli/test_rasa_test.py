@@ -13,18 +13,18 @@ def test_test_core(run_in_default_project):
 def test_test(run_in_default_project):
     run_in_default_project("test", "--report", "report")
 
-    assert os.path.exists("report")
+    assert os.path.exists("results/report")
     assert os.path.exists("results")
-    assert os.path.exists("hist.png")
-    assert os.path.exists("confmat.png")
+    assert os.path.exists("results/hist.png")
+    assert os.path.exists("results/confmat.png")
 
 
 def test_test_nlu(run_in_default_project):
     run_in_default_project("test", "nlu", "--nlu", "data", "--success", "success.json")
 
-    assert os.path.exists("hist.png")
-    assert os.path.exists("confmat.png")
-    assert os.path.exists("success.json")
+    assert os.path.exists("results/hist.png")
+    assert os.path.exists("results/confmat.png")
+    assert os.path.exists("results/success.json")
 
 
 def test_test_nlu_cross_validation(run_in_default_project):
@@ -32,26 +32,19 @@ def test_test_nlu_cross_validation(run_in_default_project):
         "test", "nlu", "--cross-validation", "-c", "config.yml", "-f", "2"
     )
 
-    assert os.path.exists("hist.png")
-    assert os.path.exists("confmat.png")
+    assert os.path.exists("results/hist.png")
+    assert os.path.exists("results/confmat.png")
 
 
 def test_test_nlu_comparison(run_in_default_project):
     copyfile("config.yml", "nlu-config.yml")
 
     run_in_default_project(
-        "test",
-        "nlu",
-        "-c",
-        "config.yml",
-        "nlu-config.yml",
-        "--report",
-        "nlu-report",
-        "--run",
-        "2",
+        "test", "nlu", "-c", "config.yml", "nlu-config.yml", "--run", "2"
     )
 
-    assert os.path.exists("nlu-report")
+    assert os.path.exists("results/run_1")
+    assert os.path.exists("results/run_2")
 
 
 def test_test_core_comparison(run_in_default_project):
@@ -132,9 +125,9 @@ def test_test_help(run):
     output = run("test", "--help")
 
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--out OUT] [--e2e]
-                 [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
-                 [--url URL] [--evaluate-model-directory] [-u NLU]
+                 [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
+                 [--fail-on-prediction-errors] [--url URL]
+                 [--evaluate-model-directory] [-u NLU] [--out OUT]
                  [--report [REPORT]] [--successes [SUCCESSES]]
                  [--errors ERRORS] [--histogram HISTOGRAM] [--confmat CONFMAT]
                  [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
@@ -150,7 +143,7 @@ def test_test_help(run):
 def test_test_nlu_help(run):
     output = run("test", "nlu", "--help")
 
-    help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU]
+    help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
                      [--report [REPORT]] [--successes [SUCCESSES]]
                      [--errors ERRORS] [--histogram HISTOGRAM]
                      [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]

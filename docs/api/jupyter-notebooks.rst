@@ -6,6 +6,8 @@
 Jupyter Notebooks
 =================
 
+.. edit-link::
+
 This page contains the most important methods for using Rasa in a Jupyter notebook.
 
 Running asynchronous Rasa code in Jupyter Notebooks requires an extra requirement,
