@@ -377,6 +377,7 @@ class BotUttered(Event):
 
         m = self.data.copy()
         m["text"] = self.text
+        m["timestamp"] = self.timestamp
         m.update(self.metadata)
 
         if m.get("image") == m.get("attachment"):
