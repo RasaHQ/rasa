@@ -5,7 +5,6 @@ pipeline:
   - name: "SpacyTokenizer"
   - name: "SpacyFeaturizer"
   - name: "SklearnIntentClassifier"
-  - name: "rasa.nlu.featurizers.dummy_ner_featurizer.DummyNERFeaturizer"
   - name: "CRFEntityExtractor"
     features: [ ["low", "title", "upper"],
       [

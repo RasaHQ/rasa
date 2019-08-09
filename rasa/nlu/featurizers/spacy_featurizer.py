@@ -23,7 +23,7 @@ def features_for_doc(doc: "Doc") -> np.ndarray:
 
 class SpacyFeaturizer(Featurizer):
 
-    provides = ["text_features"]
+    provides = ["text_features", "ner_features"]
 
     requires = ["spacy_doc"]
 
@@ -40,7 +40,9 @@ class SpacyFeaturizer(Featurizer):
 
     def _set_spacy_features(self, message):
         """Adds the spacy word vectors to the messages text features."""
-
-        fs = features_for_doc(message.get("spacy_doc"))
+        doc = message.get("spacy_doc")
+        fs = features_for_doc(doc)
         features = self._combine_with_existing_text_features(message, fs)
         message.set("text_features", features)
+        ner_features = [t.vector for t in doc]
+        message.set("ner_features", ner_features)

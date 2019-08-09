@@ -554,7 +554,7 @@ class CRFEntityExtractor(EntityExtractor):
         # perhaps an assertion here instead? following pattern above.
         if len(tokens) != len(features):
             raise Exception(
-                "Number of tokens for custom NER features does not match len(tokens)"
+                f"Number of tokens for custom NER features ({len(features)}) does not match len(tokens) ({len(tokens)})"
             )
         # convert to python-crfsuite feature format
         features_out = []
@@ -566,7 +566,15 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _from_text_to_crf(
         self, message: Message, entities: List[Text] = None
-    ) -> List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]:
+    ) -> List[
+        Tuple[
+            Optional[Text],
+            Optional[Text],
+            Text,
+            Dict[Text, Any],
+            Optional[Dict[Text, Any]],
+        ]
+    ]:
         """Takes a sentence and switches it to crfsuite format."""
 
         crf_format = []
