@@ -46,7 +46,7 @@ def test(
         kwargs = {}
 
     test_core(model, stories, endpoints, output, **kwargs)
-    test_nlu(model, nlu_data, kwargs)
+    test_nlu(model, nlu_data, output, kwargs)
 
 
 def test_core(
@@ -109,7 +109,12 @@ def test_core(
     )
 
 
-def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[Dict]):
+def test_nlu(
+    model: Optional[Text],
+    nlu_data: Optional[Text],
+    output: Text = DEFAULT_RESULTS_PATH,
+    kwargs: Optional[Dict] = None,
+):
     from rasa.nlu.test import run_evaluation
     from rasa.model import get_model
 
@@ -122,11 +127,13 @@ def test_nlu(model: Optional[Text], nlu_data: Optional[Text], kwargs: Optional[D
         )
         return
 
+    io_utils.create_directory(output)
+
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
         kwargs = utils.minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
-        run_evaluation(nlu_data, nlu_model, **kwargs)
+        run_evaluation(nlu_data, nlu_model, out_directory=output, **kwargs)
     else:
         print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
@@ -179,7 +186,7 @@ def compare_nlu_models(
 
 
 def perform_nlu_cross_validation(
-    config: Text, nlu: Text, kwargs: Optional[Dict[Text, Any]]
+    config: Text, nlu: Text, output: Text, kwargs: Optional[Dict[Text, Any]]
 ):
     import rasa.nlu.config
     from rasa.nlu.test import (
@@ -195,7 +202,7 @@ def perform_nlu_cross_validation(
     data = rasa.nlu.training_data.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = utils.minimal_kwargs(kwargs, cross_validate)
-    results, entity_results = cross_validate(data, folds, nlu_config, **kwargs)
+    results, entity_results = cross_validate(data, folds, nlu_config, output, **kwargs)
     logger.info("CV evaluation (n={})".format(folds))
 
     if any(results):
