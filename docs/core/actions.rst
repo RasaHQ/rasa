@@ -1,10 +1,13 @@
-:desc: Read more about how to run custom actions and code with open source Rasa
-       Stack to integrate your contextual Assistant in your processes and databases.
+:desc: Learn about about how to write your own custom actions with the
+       open source Rasa framework to be able to interact with the external
+       world - ranging from databases to third-party APIs.
 
 .. _actions:
 
 Actions
 =======
+
+.. edit-link::
 
 Actions are the things your bot runs in response to user input.
 There are three kinds of actions in Rasa:
