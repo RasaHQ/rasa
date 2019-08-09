@@ -1,8 +1,10 @@
 import os
 import sys
-from typing import Any, Optional, Text, List
+from typing import Any, Optional, Text, List, TYPE_CHECKING
 import logging
-from questionary import Question
+
+if TYPE_CHECKING:
+    from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
@@ -164,7 +166,7 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def payload_from_button_question(button_question: Question) -> Text:
+def payload_from_button_question(button_question: "Question") -> Text:
     """Prompts user with a button question and returns the nlu payload."""
     response = button_question.ask()
     payload = response[response.find("(") + 1 : response.find(")")]
