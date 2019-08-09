@@ -19,9 +19,6 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker
 
-if typing.TYPE_CHECKING:
-    from rasa.core.policies.ensemble import PolicyEnsemble
-
 
 logger = logging.getLogger(__name__)
 
@@ -90,15 +87,16 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
         for p in ensemble.policies:
             if isinstance(p, cls):
+                fallback_intent = getattr(p, "deny_suggestion_intent_name")
                 if (
                     domain is None
-                    or p.deny_suggestion_intent_name not in domain.intents
+                    or fallback_intent not in domain.intents
                 ):
                     raise InvalidDomain(
                         "The intent '{}' must be present in the "
                         "domain file to use the "
                         "`TwoStageFallbackPolicy`."
-                        "".format(p.deny_suggestion_intent_name)
+                        "".format(fallback_intent)
                     )
 
     def predict_action_probabilities(
