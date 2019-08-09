@@ -101,7 +101,7 @@ class EmbeddingIntentClassifier(Component):
         # how often to calculate training accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
-        "evaluate_on_num_examples": 100,  # large values may hurt performance
+        "evaluate_on_num_examples": 0,  # large values may hurt performance
     }
 
     def __init__(
