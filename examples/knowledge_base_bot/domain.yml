@@ -1,0 +1,37 @@
+intents:
+  - greet
+  - goodbye
+  - query_knowledge_base
+
+entities:
+  - object_type
+  - mention
+  - attribute
+  - wifi
+  - cuisine
+
+slots:
+  object_type:
+    type: text
+  mention:
+    type: text
+  attribute:
+    type: text
+  wifi:
+    type: bool
+  cuisine:
+    type: text
+
+actions:
+- utter_greet
+- utter_goodbye
+- action_query_knowledge_base
+
+templates:
+  utter_greet:
+  - text: "Hey!"
+  - text: "Hello! How can I help you?"
+
+  utter_goodbye:
+  - text: "Bye"
+  - text: "Goodbye. See you soon."
