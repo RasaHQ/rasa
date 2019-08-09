@@ -47,6 +47,7 @@ class EmbeddingIntentClassifier(Component):
 
     requires = ["text_features"]
 
+    # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
@@ -103,6 +104,7 @@ class EmbeddingIntentClassifier(Component):
         # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 0,  # large values may hurt performance
     }
+    # end default properties (DOC MARKER - don't remove)
 
     def __init__(
         self,

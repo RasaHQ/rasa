@@ -101,7 +101,6 @@ class EmbeddingPolicy(Policy):
         # how many examples to use for hold out validation set
         "evaluate_on_num_examples": 0,  # large values may hurt performance
     }
-
     # end default properties (DOC MARKER - don't remove)
 
     @staticmethod
