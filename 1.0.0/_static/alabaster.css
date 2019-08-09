@@ -7,6 +7,7 @@
   font-family: 'Source Sans Pro';
   font-style: normal;
   font-weight: 400;
+  font-display: swap;
   src: local('Source Sans Pro Regular'), local('SourceSansPro-Regular'),
        url('fonts/source-sans-pro-v11-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
        url('fonts/source-sans-pro-v11-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
@@ -16,6 +17,7 @@
   font-family: 'Source Sans Pro';
   font-style: italic;
   font-weight: 400;
+  font-display: swap;
   src: local('Source Sans Pro Italic'), local('SourceSansPro-Italic'),
        url('fonts/source-sans-pro-v11-latin-italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
        url('fonts/source-sans-pro-v11-latin-italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
@@ -25,6 +27,7 @@
   font-family: 'Source Sans Pro';
   font-style: normal;
   font-weight: 600;
+  font-display: swap;
   src: local('Source Sans Pro SemiBold'), local('SourceSansPro-SemiBold'),
        url('fonts/source-sans-pro-v11-latin-600.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
        url('fonts/source-sans-pro-v11-latin-600.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
@@ -35,6 +38,7 @@
   font-family: 'Source Code Pro';
   font-style: normal;
   font-weight: 500;
+  font-display: swap;
   src: local('Source Code Pro Medium'), local('SourceCodePro-Medium'),
        url('fonts/source-code-pro-v7-latin-500.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
        url('fonts/source-code-pro-v7-latin-500.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
@@ -45,6 +49,7 @@
   font-family: 'Source Code Pro';
   font-style: normal;
   font-weight: 700;
+  font-display: swap;
   src: local('Source Code Pro Bold'), local('SourceCodePro-Bold'),
        url('fonts/source-code-pro-v7-latin-700.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
        url('fonts/source-code-pro-v7-latin-700.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
@@ -59,7 +64,6 @@ body {
     color: #617287;
     margin: 0;
     padding: 0;
-    margin-top: 64px;
 }
 
 * {
@@ -69,7 +73,7 @@ body {
 
 div.document {
     width: 1300px;
-    margin: 30px auto 0 auto;
+    margin: 0 auto;
 }
 
 div.document.wide {
@@ -105,10 +109,8 @@ div.sphinxsidebar {
     font-size: 14px;
     line-height: 1.5;
     overflow-y: auto;
-    top: 0;
+    top: 64px;
     bottom: 0;
-    height: 100vh;
-    margin-top: 63px;
     background:#F4F5F7;
     border-right:1px solid #E8E8E8;
 }
@@ -118,6 +120,7 @@ div.sphinxsidebar {
     background: #F4F5F7;
     height: 100vh;
     position: fixed;
+    top: 0;
     margin-left: 0;
 }
 
@@ -1002,7 +1005,7 @@ nav#breadcrumbs li+li:before {
     font-size: 120%;
     z-index: 100;
     position: relative;
-    position:fixed;
+    position: sticky;
     width: 100%;
     top: 0;
 }
@@ -1646,4 +1649,38 @@ div.section {
     font-weight: bold;
     margin-top: -50px;
     margin-left: 2px;
+}
+
+.announcement-banner {
+    display: none;
+    position: relative;
+    background-color: #574ae2;
+    color: white;
+    text-align: center;
+    font-size: 1rem;
+    padding: 0.6rem 3rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    z-index: 999;
+}
+
+.announcement-banner--visible {
+    display: block;
+}
+
+.announcement-banner a {
+    color: inherit;
+}
+
+.announcement-banner__close {
+    position: absolute;
+    right: 0px;
+    top: 50%;
+    transform: translateY(-50%);
+    -webkit-appearance: none;
+    background-color: transparent;
+    color: inherit;
+    font-size: 1.5rem;
+    cursor: pointer;
+    border: 0;
+    padding: 0.7rem 1rem;
 }
