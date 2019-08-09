@@ -50,7 +50,6 @@ class CRFEntityExtractor(EntityExtractor):
                 "title",
                 "digit",
                 "pattern",
-                "ner_features",
             ],
             ["low", "title", "upper"],
         ],
@@ -402,7 +401,15 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _sentence_to_features(
         self,
-        sentence: List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]],
+        sentence: List[
+            Tuple[
+                Optional[Text],
+                Optional[Text],
+                Text,
+                Dict[Text, Any],
+                Optional[Dict[Text, Any]],
+            ]
+        ],
     ) -> List[Dict[Text, Any]]:
         """Convert a word into discrete features in self.crf_features,
         including word before and word after."""
@@ -555,7 +562,6 @@ class CRFEntityExtractor(EntityExtractor):
             feature_dict = {str(i): feature[i] for i in range(0, len(feature))}
             converted = {"custom_ner_ft": feature_dict}
             features_out.append(converted)
-        print (features_out)
         return features_out
 
     def _from_text_to_crf(

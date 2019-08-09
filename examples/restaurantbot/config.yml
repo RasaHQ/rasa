@@ -7,6 +7,23 @@ pipeline:
   - name: "SklearnIntentClassifier"
   - name: "rasa.nlu.featurizers.dummy_ner_featurizer.DummyNERFeaturizer"
   - name: "CRFEntityExtractor"
+    features: [ ["low", "title", "upper"],
+      [
+          "bias",
+          "low",
+          "prefix5",
+          "prefix2",
+          "suffix5",
+          "suffix3",
+          "suffix2",
+          "upper",
+          "title",
+          "digit",
+          "pattern",
+          "ner_features",
+      ],
+     ["low", "title", "upper"]]
+
   - name: "EntitySynonymMapper"
 
 policies:
