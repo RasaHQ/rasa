@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa.nlu.components import Component
-from rasa.utils import tf_utils
+from rasa.utils import train_utils
 
 import tensorflow as tf
 
@@ -271,7 +271,7 @@ class EmbeddingIntentClassifier(Component):
     # noinspection PyPep8Naming
     def _create_session_data(
         self, training_data: "TrainingData", intent_dict: Dict[Text, int]
-    ) -> "tf_utils.SessionData":
+    ) -> "train_utils.SessionData":
         """Prepare data for training"""
 
         X = np.stack([e.get("text_features") for e in training_data.intent_examples])
@@ -282,7 +282,7 @@ class EmbeddingIntentClassifier(Component):
 
         Y = np.stack([self._encoded_all_intents[intent_idx] for intent_idx in labels])
 
-        return tf_utils.SessionData(X=X, Y=Y, labels=labels)
+        return train_utils.SessionData(X=X, Y=Y, labels=labels)
 
     # tf helpers:
     def _create_tf_embed_fnn(
@@ -290,7 +290,7 @@ class EmbeddingIntentClassifier(Component):
     ) -> "tf.Tensor":
         """Create nn with hidden layers and name"""
 
-        x = tf_utils.create_tf_fnn(
+        x = train_utils.create_tf_fnn(
             x_in,
             layer_sizes,
             self.droprate,
@@ -298,7 +298,7 @@ class EmbeddingIntentClassifier(Component):
             self._is_training,
             layer_name_suffix=name,
         )
-        return tf_utils.create_tf_embed(
+        return train_utils.create_tf_embed(
             x, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix=name
         )
 
@@ -320,7 +320,7 @@ class EmbeddingIntentClassifier(Component):
             all_intents, self.hidden_layer_sizes["b"], name="b"
         )
 
-        return tf_utils.calculate_loss_acc(
+        return train_utils.calculate_loss_acc(
             self.message_embed,
             self.intent_embed,
             self.b_in,
@@ -336,7 +336,7 @@ class EmbeddingIntentClassifier(Component):
             self.scale_loss,
         )
 
-    def _build_tf_pred_graph(self, session_data: "tf_utils.SessionData") -> "tf.Tensor":
+    def _build_tf_pred_graph(self, session_data: "train_utils.SessionData") -> "tf.Tensor":
         self.a_in = tf.placeholder(
             tf.float32, (None, session_data.X.shape[-1]), name="a"
         )
@@ -348,7 +348,7 @@ class EmbeddingIntentClassifier(Component):
             self.a_in, self.hidden_layer_sizes["a"], name="a"
         )
 
-        self.sim_all = tf_utils.tf_raw_sim(
+        self.sim_all = train_utils.tf_raw_sim(
             self.message_embed[:, tf.newaxis, :],
             self.all_intents_embed[tf.newaxis, :, :],
             None,
@@ -358,11 +358,11 @@ class EmbeddingIntentClassifier(Component):
             self.b_in, self.hidden_layer_sizes["b"], name="b"
         )
 
-        self.sim = tf_utils.tf_raw_sim(
+        self.sim = train_utils.tf_raw_sim(
             self.message_embed[:, tf.newaxis, :], self.intent_embed, None
         )
 
-        return tf_utils.confidence_from_sim(self.sim_all, self.similarity_type)
+        return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
 
     def train(
         self,
@@ -402,7 +402,7 @@ class EmbeddingIntentClassifier(Component):
         session_data = self._create_session_data(training_data, intent_dict)
 
         if self.evaluate_on_num_examples:
-            session_data, eval_session_data = tf_utils.train_val_split(
+            session_data, eval_session_data = train_utils.train_val_split(
                 session_data, self.evaluate_on_num_examples, self.random_seed
             )
         else:
@@ -420,7 +420,7 @@ class EmbeddingIntentClassifier(Component):
                 self._iterator,
                 train_init_op,
                 eval_init_op,
-            ) = tf_utils.create_iterator_init_datasets(
+            ) = train_utils.create_iterator_init_datasets(
                 session_data, eval_session_data, batch_size_in, self.batch_strategy
             )
 
@@ -433,7 +433,7 @@ class EmbeddingIntentClassifier(Component):
 
             # train tensorflow graph
             self.session = tf.Session()
-            tf_utils.train_tf_dataset(
+            train_utils.train_tf_dataset(
                 train_init_op,
                 eval_init_op,
                 batch_size_in,
@@ -524,15 +524,15 @@ class EmbeddingIntentClassifier(Component):
             if e.errno != errno.EEXIST:
                 raise
         with self.graph.as_default():
-            tf_utils.persist_tensor("message_placeholder", self.a_in, self.graph)
-            tf_utils.persist_tensor("intent_placeholder", self.b_in, self.graph)
+            train_utils.persist_tensor("message_placeholder", self.a_in, self.graph)
+            train_utils.persist_tensor("intent_placeholder", self.b_in, self.graph)
 
-            tf_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
-            tf_utils.persist_tensor("pred_confidence", self.pred_confidence, self.graph)
-            tf_utils.persist_tensor("similarity", self.sim, self.graph)
+            train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
+            train_utils.persist_tensor("pred_confidence", self.pred_confidence, self.graph)
+            train_utils.persist_tensor("similarity", self.sim, self.graph)
 
-            tf_utils.persist_tensor("message_embed", self.message_embed, self.graph)
-            tf_utils.persist_tensor("intent_embed", self.intent_embed, self.graph)
+            train_utils.persist_tensor("message_embed", self.message_embed, self.graph)
+            train_utils.persist_tensor("intent_embed", self.intent_embed, self.graph)
 
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
@@ -564,16 +564,16 @@ class EmbeddingIntentClassifier(Component):
 
                 saver.restore(sess, checkpoint)
 
-                a_in = tf_utils.load_tensor("message_placeholder")
-                b_in = tf_utils.load_tensor("intent_placeholder")
+                a_in = train_utils.load_tensor("message_placeholder")
+                b_in = train_utils.load_tensor("intent_placeholder")
 
-                sim_all = tf_utils.load_tensor("similarity_all")
-                pred_confidence = tf_utils.load_tensor("pred_confidence")
-                sim = tf_utils.load_tensor("similarity")
+                sim_all = train_utils.load_tensor("similarity_all")
+                pred_confidence = train_utils.load_tensor("pred_confidence")
+                sim = train_utils.load_tensor("similarity")
 
-                message_embed = tf_utils.load_tensor("message_embed")
-                intent_embed = tf_utils.load_tensor("intent_embed")
-                all_intents_embed = tf_utils.load_tensor("all_intents_embed")
+                message_embed = train_utils.load_tensor("message_embed")
+                intent_embed = train_utils.load_tensor("intent_embed")
+                all_intents_embed = train_utils.load_tensor("all_intents_embed")
 
             with io.open(
                 os.path.join(model_dir, file_name + "_inv_intent_dict.pkl"), "rb"

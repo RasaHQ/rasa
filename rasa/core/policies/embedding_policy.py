@@ -20,7 +20,7 @@ from rasa.core.featurizers import (
 )
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils import tf_utils
+from rasa.utils import train_utils
 
 import tensorflow as tf
 
@@ -253,7 +253,7 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     def _create_session_data(
         self, data_X: "np.ndarray", data_Y: Optional["np.ndarray"] = None
-    ) -> "tf_utils.SessionData":
+    ) -> "train_utils.SessionData":
         """Combine all tf session related data into a named tuple"""
 
         if data_Y is not None:
@@ -271,12 +271,12 @@ class EmbeddingPolicy(Policy):
             labels = None
             Y = None
 
-        return tf_utils.SessionData(X=data_X, Y=Y, labels=labels)
+        return train_utils.SessionData(X=data_X, Y=Y, labels=labels)
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
         """Create embedding bot vector."""
 
-        b = tf_utils.create_tf_fnn(
+        b = train_utils.create_tf_fnn(
             b_in,
             self.hidden_layers_sizes["bot"],
             self.droprate["bot"],
@@ -284,7 +284,7 @@ class EmbeddingPolicy(Policy):
             self._is_training,
             layer_name_suffix="bot",
         )
-        return tf_utils.create_tf_embed(
+        return train_utils.create_tf_embed(
             b, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="bot"
         )
 
@@ -295,7 +295,7 @@ class EmbeddingPolicy(Policy):
         # if there is at least one `-1` it should be masked
         mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
 
-        a = tf_utils.create_tf_fnn(
+        a = train_utils.create_tf_fnn(
             a_in,
             self.hidden_layers_sizes["pre_dial"],
             self.droprate["dial"],
@@ -305,7 +305,7 @@ class EmbeddingPolicy(Policy):
         )
 
         self.attention_weights = {}
-        hparams = tf_utils.create_t2t_hparams(
+        hparams = train_utils.create_t2t_hparams(
             self.num_transformer_layers,
             self.transformer_size,
             self.num_heads,
@@ -315,11 +315,11 @@ class EmbeddingPolicy(Policy):
             self._is_training,
         )
 
-        a = tf_utils.create_t2t_transformer_encoder(
+        a = train_utils.create_t2t_transformer_encoder(
             a, mask, self.attention_weights, hparams, self.C2, self._is_training
         )
 
-        dial_embed = tf_utils.create_tf_embed(
+        dial_embed = train_utils.create_tf_embed(
             a, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="dial"
         )
 
@@ -348,7 +348,7 @@ class EmbeddingPolicy(Policy):
         self.bot_embed = self._create_tf_bot_embed(self.b_in)
         self.all_bot_embed = self._create_tf_bot_embed(all_bot_raw)
 
-        return tf_utils.calculate_loss_acc(
+        return train_utils.calculate_loss_acc(
             self.dial_embed,
             self.bot_embed,
             self.b_in,
@@ -365,7 +365,7 @@ class EmbeddingPolicy(Policy):
         )
 
     # prepare for prediction
-    def _create_tf_placeholders(self, session_data: "tf_utils.SessionData") -> None:
+    def _create_tf_placeholders(self, session_data: "train_utils.SessionData") -> None:
         """Create placeholders for prediction."""
 
         dialogue_len = None  # use dynamic time
@@ -380,14 +380,14 @@ class EmbeddingPolicy(Policy):
             name="b",
         )
 
-    def _build_tf_pred_graph(self, session_data: "tf_utils.SessionData") -> "tf.Tensor":
+    def _build_tf_pred_graph(self, session_data: "train_utils.SessionData") -> "tf.Tensor":
         """Rebuild tf graph for prediction."""
 
         self._create_tf_placeholders(session_data)
 
         self.dial_embed, mask = self._create_tf_dial(self.a_in)
 
-        self.sim_all = tf_utils.tf_raw_sim(
+        self.sim_all = train_utils.tf_raw_sim(
             self.dial_embed[:, :, tf.newaxis, :],
             self.all_bot_embed[tf.newaxis, tf.newaxis, :, :],
             mask,
@@ -395,11 +395,11 @@ class EmbeddingPolicy(Policy):
 
         self.bot_embed = self._create_tf_bot_embed(self.b_in)
 
-        self.sim = tf_utils.tf_raw_sim(
+        self.sim = train_utils.tf_raw_sim(
             self.dial_embed[:, :, tf.newaxis, :], self.bot_embed, mask
         )
 
-        return tf_utils.confidence_from_sim(self.sim_all, self.similarity_type)
+        return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
 
     # training methods
     def train(
@@ -437,7 +437,7 @@ class EmbeddingPolicy(Policy):
         session_data = self._create_session_data(training_data.X, training_data.y)
 
         if self.evaluate_on_num_examples:
-            session_data, eval_session_data = tf_utils.train_val_split(
+            session_data, eval_session_data = train_utils.train_val_split(
                 session_data, self.evaluate_on_num_examples, self.random_seed
             )
         else:
@@ -455,7 +455,7 @@ class EmbeddingPolicy(Policy):
                 self._iterator,
                 train_init_op,
                 eval_init_op,
-            ) = tf_utils.create_iterator_init_datasets(
+            ) = train_utils.create_iterator_init_datasets(
                 session_data, eval_session_data, batch_size_in, self.batch_strategy
             )
 
@@ -468,7 +468,7 @@ class EmbeddingPolicy(Policy):
 
             # train tensorflow graph
             self.session = tf.Session(config=self._tf_config)
-            tf_utils.train_tf_dataset(
+            train_utils.train_tf_dataset(
                 train_init_op,
                 eval_init_op,
                 batch_size_in,
@@ -486,7 +486,7 @@ class EmbeddingPolicy(Policy):
             # rebuild the graph for prediction
             self.pred_confidence = self._build_tf_pred_graph(session_data)
 
-            self.attention_weights = tf_utils.extract_attention(self.attention_weights)
+            self.attention_weights = train_utils.extract_attention(self.attention_weights)
 
     def continue_training(
         self,
@@ -508,7 +508,7 @@ class EmbeddingPolicy(Policy):
                 session_data = self._create_session_data(
                     training_data.X, training_data.y
                 )
-                train_dataset = tf_utils.create_tf_dataset(session_data, batch_size)
+                train_dataset = train_utils.create_tf_dataset(session_data, batch_size)
                 train_init_op = self._iterator.make_initializer(train_dataset)
                 self.session.run(train_init_op)
 
@@ -578,18 +578,18 @@ class EmbeddingPolicy(Policy):
         rasa.utils.io.create_directory_for_file(checkpoint)
 
         with self.graph.as_default():
-            tf_utils.persist_tensor("user_placeholder", self.a_in, self.graph)
-            tf_utils.persist_tensor("bot_placeholder", self.b_in, self.graph)
+            train_utils.persist_tensor("user_placeholder", self.a_in, self.graph)
+            train_utils.persist_tensor("bot_placeholder", self.b_in, self.graph)
 
-            tf_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
-            tf_utils.persist_tensor("pred_confidence", self.pred_confidence, self.graph)
-            tf_utils.persist_tensor("similarity", self.sim, self.graph)
+            train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
+            train_utils.persist_tensor("pred_confidence", self.pred_confidence, self.graph)
+            train_utils.persist_tensor("similarity", self.sim, self.graph)
 
-            tf_utils.persist_tensor("dial_embed", self.dial_embed, self.graph)
-            tf_utils.persist_tensor("bot_embed", self.bot_embed, self.graph)
-            tf_utils.persist_tensor("all_bot_embed", self.all_bot_embed, self.graph)
+            train_utils.persist_tensor("dial_embed", self.dial_embed, self.graph)
+            train_utils.persist_tensor("bot_embed", self.bot_embed, self.graph)
+            train_utils.persist_tensor("all_bot_embed", self.all_bot_embed, self.graph)
 
-            tf_utils.persist_tensor(
+            train_utils.persist_tensor(
                 "attention_weights", self.attention_weights, self.graph
             )
 
@@ -636,18 +636,18 @@ class EmbeddingPolicy(Policy):
 
             saver.restore(session, checkpoint)
 
-            a_in = tf_utils.load_tensor("user_placeholder")
-            b_in = tf_utils.load_tensor("bot_placeholder")
+            a_in = train_utils.load_tensor("user_placeholder")
+            b_in = train_utils.load_tensor("bot_placeholder")
 
-            sim_all = tf_utils.load_tensor("similarity_all")
-            pred_confidence = tf_utils.load_tensor("pred_confidence")
-            sim = tf_utils.load_tensor("similarity")
+            sim_all = train_utils.load_tensor("similarity_all")
+            pred_confidence = train_utils.load_tensor("pred_confidence")
+            sim = train_utils.load_tensor("similarity")
 
-            dial_embed = tf_utils.load_tensor("dial_embed")
-            bot_embed = tf_utils.load_tensor("bot_embed")
-            all_bot_embed = tf_utils.load_tensor("all_bot_embed")
+            dial_embed = train_utils.load_tensor("dial_embed")
+            bot_embed = train_utils.load_tensor("bot_embed")
+            all_bot_embed = train_utils.load_tensor("all_bot_embed")
 
-            attention_weights = tf_utils.load_tensor("attention_weights")
+            attention_weights = train_utils.load_tensor("attention_weights")
 
         return cls(
             featurizer=featurizer,
