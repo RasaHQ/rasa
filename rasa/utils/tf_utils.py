@@ -86,6 +86,68 @@ def shuffle_session_data(session_data: "SessionData") -> "SessionData":
 
 
 # noinspection PyPep8Naming
+def balance_session_data(
+    session_data: "SessionData", batch_size: int, shuffle: bool
+) -> "SessionData":
+    """Mix session data to account for class imbalance."""
+
+    num_examples = len(session_data.X)
+    unique_labels, counts_labels = np.unique(
+        session_data.labels, return_counts=True, axis=0
+    )
+    num_labels = len(unique_labels)
+
+    # need to call every time, so that the data is shuffled inside each class
+    label_data = []
+    for label in unique_labels:
+        label_data.append(
+            SessionData(
+                X=session_data.X[session_data.labels == label],
+                Y=session_data.Y[session_data.labels == label],
+                labels=session_data.labels[session_data.labels == label],
+            )
+        )
+
+    data_idx = [0] * num_labels
+    num_data_cycles = [0] * num_labels
+    skipped = [False] * num_labels
+    new_X = []
+    new_Y = []
+    new_labels = []
+    while min(num_data_cycles) == 0:
+        if shuffle:
+            ids = np.random.permutation(num_labels)
+        else:
+            ids = range(num_labels)
+
+        for i in ids:
+            if num_data_cycles[i] > 0 and not skipped[i]:
+                skipped[i] = True
+                continue
+            else:
+                skipped[i] = False
+
+            num_i = int(counts_labels[i] / num_examples * batch_size) + 1
+
+            new_X.append(label_data[i].X[data_idx[i] : data_idx[i] + num_i])
+            new_Y.append(label_data[i].Y[data_idx[i] : data_idx[i] + num_i])
+            new_labels.append(label_data[i].labels[data_idx[i] : data_idx[i] + num_i])
+
+            data_idx[i] += num_i
+            if data_idx[i] >= counts_labels[i]:
+                num_data_cycles[i] += 1
+                data_idx[i] = 0
+
+            if min(num_data_cycles) > 0:
+                break
+
+    return SessionData(
+        X=np.concatenate(new_X),
+        Y=np.concatenate(new_Y),
+        labels=np.concatenate(new_labels),
+    )
+
+
 def gen_batch(
     session_data: "SessionData",
     batch_size: int,
@@ -98,56 +160,7 @@ def gen_batch(
         session_data = shuffle_session_data(session_data)
 
     if batch_strategy == "balanced":
-        num_examples = len(session_data.X)
-        unique_labels, counts_labels = np.unique(
-            session_data.labels, return_counts=True, axis=0
-        )
-        num_labels = len(unique_labels)
-
-        label_data = []
-        for label in unique_labels:
-            label_data.append(
-                SessionData(
-                    X=session_data.X[session_data.labels == label],
-                    Y=session_data.Y[session_data.labels == label],
-                    labels=None,  # ignore new labels
-                )
-            )
-
-        data_idx = [0] * num_labels
-        num_data_cycles = [0] * num_labels
-        skipped = [False] * num_labels
-        new_X = []
-        new_Y = []
-        while min(num_data_cycles) == 0:
-            if shuffle:
-                ids = np.random.permutation(num_labels)
-            else:
-                ids = range(num_labels)
-
-            for i in ids:
-                if num_data_cycles[i] > 0 and not skipped[i]:
-                    skipped[i] = True
-                    continue
-                else:
-                    skipped[i] = False
-
-                num_i = int(counts_labels[i] / num_examples * batch_size) + 1
-
-                new_X.append(label_data[i].X[data_idx[i] : data_idx[i] + num_i])
-                new_Y.append(label_data[i].Y[data_idx[i] : data_idx[i] + num_i])
-
-                data_idx[i] += num_i
-                if data_idx[i] >= counts_labels[i]:
-                    num_data_cycles[i] += 1
-                    data_idx[i] = 0
-
-                if min(num_data_cycles) > 0:
-                    break
-
-        session_data = SessionData(
-            X=np.concatenate(new_X), Y=np.concatenate(new_Y), labels=None
-        )  # ignore new labels
+        session_data = balance_session_data(session_data, batch_size, shuffle)
 
     num_batches = session_data.X.shape[0] // batch_size + int(
         session_data.X.shape[0] % batch_size > 0
