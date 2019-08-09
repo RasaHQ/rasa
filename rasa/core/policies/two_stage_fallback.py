@@ -88,10 +88,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         for p in ensemble.policies:
             if isinstance(p, cls):
                 fallback_intent = getattr(p, "deny_suggestion_intent_name")
-                if (
-                    domain is None
-                    or fallback_intent not in domain.intents
-                ):
+                if domain is None or fallback_intent not in domain.intents:
                     raise InvalidDomain(
                         "The intent '{}' must be present in the "
                         "domain file to use the "
