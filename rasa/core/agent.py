@@ -552,9 +552,10 @@ class Agent(object):
 
             >>> from rasa.core.agent import Agent
             >>> from rasa.core.interpreter import RasaNLUInterpreter
+            >>> import asyncio
             >>> agent = Agent.load("examples/restaurantbot/models/current")
-            >>> await agent.handle_text("hello")
-            [u'how can I help you?']
+            >>> asyncio.run(agent.handle_text("hello"))
+            [{'recipient_id': 'default', 'text': 'how can I help you?'}]
 
         """
 
