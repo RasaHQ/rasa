@@ -15,9 +15,9 @@ DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 REQUESTED_SLOT = "requested_slot"
 
 # slots for knowledge base
-SLOT_LISTED_ITEMS = "knowledge_base_listed_items"
-SLOT_LAST_ENTITY = "knowledge_base_last_entity"
-SLOT_LAST_ENTITY_TYPE = "knowledge_base_last_entity_type"
+SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
+SLOT_LAST_ENTITY = "knowledge_base_last_object"
+SLOT_LAST_ENTITY_TYPE = "knowledge_base_last_object_type"
 DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
 # start of special user message section
