@@ -15,6 +15,7 @@ Added
 - `FallbackPolicy` can now be configured to trigger when the difference between confidences of
 two predicted intents is too narrow
 
+
 Changed
 -------
 - NLU evaluations now also stores its output in the output directory like the core evaluation
