@@ -20,9 +20,6 @@ from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
-from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.mapping_policy import MappingPolicy
-from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
@@ -68,6 +65,10 @@ class PolicyEnsemble(object):
         ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations."""
+
+        from rasa.core.policies.form_policy import FormPolicy
+        from rasa.core.policies.mapping_policy import MappingPolicy
+        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 
         policies_needing_validation = [
             FormPolicy,
