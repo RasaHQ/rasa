@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 
 
 Changed
@@ -19,6 +20,7 @@ Changed
 - ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
 - non zero ``evaluate_on_num_examples`` in ``EmbeddingPolicy`` is the size of
   hold out validation set that is excluded from training data
+- NLU evaluations now also stores its output in the output directory like the core evaluation
 
 Removed
 -------

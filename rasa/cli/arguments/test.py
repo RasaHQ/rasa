@@ -85,6 +85,13 @@ def add_test_nlu_argument_group(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
+
+    add_out_param(
+        parser,
+        default=DEFAULT_RESULTS_PATH,
+        help_text="Output path for any files created during the evaluation.",
+    )
+
     parser.add_argument(
         "--report",
         required=False,

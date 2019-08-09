@@ -277,6 +277,8 @@ multiple responses and Rasa will randomly pick one of them, e.g.:
     - text: "Hey, {name}. How are you?"
     - text: "Hey, {name}. How is your day going?"
 
+.. _use_entities:
+
 Ignoring entities for certain intents
 -------------------------------------
 
