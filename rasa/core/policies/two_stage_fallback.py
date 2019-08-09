@@ -98,10 +98,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             )
 
         nlu_data = tracker.latest_message.parse_data
-        nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
         last_intent_name = nlu_data["intent"].get("name", None)
         should_nlu_fallback = self.should_nlu_fallback(
-            nlu_confidence, tracker.latest_action_name
+            nlu_data, tracker.latest_action_name
         )
         user_rephrased = has_user_rephrased(tracker)
 
