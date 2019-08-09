@@ -333,10 +333,9 @@ the bot wants to respond.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.agent</span> <span class="k">import</span> <span class="n">Agent</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">rasa.core.interpreter</span> <span class="k">import</span> <span class="n">RasaNLUInterpreter</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;examples/restaurantbot/models/current&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">handle_text</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">))</span>
-<span class="go">[{&#39;recipient_id&#39;: &#39;default&#39;, &#39;text&#39;: &#39;how can I help you?&#39;}]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">handle_text</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
+<span class="go">[u&#39;how can I help you?&#39;]</span>
 </pre></div>
 </div>
 </td>
