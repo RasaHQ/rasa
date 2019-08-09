@@ -61,7 +61,7 @@ class EmbeddingPolicy(Policy):
         # batch size will be linearly increased for each epoch
         "batch_size": [8, 32],
         # how to create batches
-        "batch_strategy": "sequence",  # string 'sequence' or 'balanced'
+        "batch_strategy": "balanced",  # string 'sequence' or 'balanced'
         # number of epochs
         "epochs": 1,
         # set random seed to any int to get reproducible results

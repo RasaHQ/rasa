@@ -61,7 +61,7 @@ class EmbeddingIntentClassifier(Component):
         # linearly increased for each epoch
         "batch_size": [64, 256],
         # how to create batches
-        "batch_strategy": "sequence",  # string 'sequence' or 'balanced'
+        "batch_strategy": "balanced",  # string 'sequence' or 'balanced'
         # number of epochs
         "epochs": 300,
         # set random seed to any int to get reproducible results
