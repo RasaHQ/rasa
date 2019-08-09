@@ -6,6 +6,8 @@
 Featurization
 ==============
 
+.. edit-link::
+
 In order to apply machine learning algorithms to conversational AI, we need
 to build up vector representations of conversations.
 
