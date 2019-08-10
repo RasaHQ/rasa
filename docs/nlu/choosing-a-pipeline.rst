@@ -222,7 +222,41 @@ a full list of components. For example, these two configurations are equivalent:
     - name: "EntitySynonymMapper"
     - name: "SklearnIntentClassifier"
 
-Below is a list of all the pre-configured pipeline templates.
+Below is a list of all the pre-configured pipeline templates with customization information.
+
+.. _section_supervised_embeddings_pipeline:
+
+supervised_embeddings
+~~~~~~~~~~~~~~~~~~~~~
+
+To train a Rasa model in your preferred language, define the
+``supervised_embeddings`` pipeline as your pipeline in your ``config.yml`` or other configuration file:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "supervised_embeddings"
+
+The ``supervised_embeddings`` pipeline supports any language that can be tokenized, and by default uses whitespace
+for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are default
+components that make up the ``supervised_embeddings`` pipeline:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "WhitespaceTokenizer"
+    - name: "RegexFeaturizer"
+    - name: "CRFEntityExtractor"
+    - name: "EntitySynonymMapper"
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
+
+So for example, if your chosen language is not white-spaced tokenized (words are not separated by spaces), you
+can replace the ``WhitespaceTokenizer`` with your own tokenizer. We support a number of different :ref:`tokenizers <tokenizers>`,
+or you can :ref:`create your own <custom-nlu-components>`.
 
 .. _section_pretrained_embeddings_spacy_pipeline:
 
@@ -234,8 +268,8 @@ To use the ``pretrained_embeddings_spacy`` template:
 .. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
-See :ref:`language-support` for possible values for ``language``. To use
-the components and configure them separately:
+See :ref:`pretrained-word-vectors` for supported values for ``language`` and instructions
+on how to link your own. To use the components and configure them separately:
 
 .. code-block:: yaml
 
@@ -250,60 +284,22 @@ the components and configure them separately:
     - name: "EntitySynonymMapper"
     - name: "SklearnIntentClassifier"
 
-.. _section_supervised_embeddings_pipeline:
-
-supervised_embeddings
-~~~~~~~~~~~~~~~~~~~~~
-
-To use it as a template:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "supervised_embeddings"
-
-The supervised embeddings pipeline supports any language that can be tokenized. The
-default is to use a simple whitespace tokenizer:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "WhitespaceTokenizer"
-    - name: "RegexFeaturizer"
-    - name: "CRFEntityExtractor"
-    - name: "EntitySynonymMapper"
-    - name: "CountVectorsFeaturizer"
-    - name: "EmbeddingIntentClassifier"
-
-If you have a custom tokenizer for your language, you can replace the whitespace
-tokenizer with something more accurate.
-
 .. _section_mitie_pipeline:
 
-mitie
+MITIE
 ~~~~~
 
-There is no pipeline template, as you need to configure the location
-of MITIE's featurizer. To use the components and configure them separately:
-
+To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
+:ref:`here <mitie>`. This will give you the file path to pass to the ``model`` parameter.
 
 .. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie.yml
     :language: yaml
 
-mitie 2
-~~~~~~~
-
-This pipeline uses MITIE's featurizer and also its multiclass classifier.
+Another version of this pipeline uses MITIE's featurizer and also its multi-class classifier.
 Training can be quite slow, so this is not recommended for large datasets.
-There is no pipeline template, as you need to configure the location
-of MITIE's featurizer. To use the components and configure them separately:
 
 .. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
-
 
 
 Custom pipelines
