@@ -80,7 +80,7 @@ class FallbackPolicy(Policy):
         self, nlu_data: Dict[Text, Any]
     ) -> Tuple[bool, Optional[float]]:
         """Check if top 2 confidences are closer than ``ambiguity_threshold``."""
-        intents = nlu_data.get("intent_ranking")
+        intents = nlu_data.get("intent_ranking", [])
         if len(intents) >= 2:
             first_confidence = intents[0].get("confidence", 1.0)
             second_confidence = intents[1].get("confidence", 1.0)
