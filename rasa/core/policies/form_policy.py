@@ -47,7 +47,9 @@ class FormPolicy(MemoizationPolicy):
         if domain.form_names and not has_form_policy:
             raise InvalidDomain(
                 "You have defined a form action, but haven't added the "
-                "FormPolicy to your policy ensemble."
+                "FormPolicy to your policy ensemble. Either remove all "
+                "forms from your domain or exclude FormPolicy from your "
+                "ensemble."
             )
 
     @staticmethod

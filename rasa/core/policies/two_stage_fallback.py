@@ -94,9 +94,10 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 if domain is None or fallback_intent not in domain.intents:
                     raise InvalidDomain(
                         "The intent '{}' must be present in the "
-                        "domain file to use the "
-                        "`TwoStageFallbackPolicy`."
-                        "".format(fallback_intent)
+                        "domain file to use TwoStageFallbackPolicy. "
+                        "Either include the intent '{}' in your domain "
+                        "or exclude TwoStageFallbackPolicy from your "
+                        "policy ensemble".format(fallback_intent)
                     )
 
     def predict_action_probabilities(

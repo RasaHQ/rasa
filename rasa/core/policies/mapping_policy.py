@@ -56,7 +56,9 @@ class MappingPolicy(Policy):
         if has_triggers_in_domain and not has_mapping_policy:
             raise InvalidDomain(
                 "You have defined triggers in your domain, but haven't "
-                "added the MappingPolicy to your policy ensemble."
+                "added the MappingPolicy to your policy ensemble. "
+                "Either remove the triggers from your domain or "
+                "exclude MappingPolicy from your ensemble."
             )
 
     def train(
