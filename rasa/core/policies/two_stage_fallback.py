@@ -93,9 +93,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 fallback_intent = getattr(p, "deny_suggestion_intent_name")
                 if domain is None or fallback_intent not in domain.intents:
                     raise InvalidDomain(
-                        "The intent '{}' must be present in the "
+                        "The intent '{0}' must be present in the "
                         "domain file to use TwoStageFallbackPolicy. "
-                        "Either include the intent '{}' in your domain "
+                        "Either include the intent '{0}' in your domain "
                         "or exclude TwoStageFallbackPolicy from your "
                         "policy ensemble".format(fallback_intent)
                     )
