@@ -470,7 +470,8 @@ Two-Stage Fallback Policy
 The ``TwoStageFallbackPolicy`` handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.
 
-- If a NLU prediction has a low confidence score, the user is asked to affirm
+- If an NLU prediction has a low confidence score or is not significantly higher
+  than the second highest ranked prediction, the user is asked to affirm
   the classification of the intent.
 
     - If they affirm, the story continues as if the intent was classified
