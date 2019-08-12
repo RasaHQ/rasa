@@ -68,6 +68,15 @@ class TrainingData(object):
             training_examples, entity_synonyms, regex_features, lookup_tables
         )
 
+    def filter_by_intent(self, intent: Text):
+
+        training_examples = []
+        for ex in self.training_examples:
+            if ex.get(intent) == intent:
+                training_examples.append(ex)
+
+        return TrainingData(training_examples)
+
     def __hash__(self) -> int:
         from rasa.core import utils as core_utils
 
@@ -86,11 +95,17 @@ class TrainingData(object):
         for ex in examples:
             if ex.get("intent"):
                 ex.set("intent", ex.get("intent").strip())
+            if ex.get("response"):
+                ex.set("response", ex.get("response").strip())
         return examples
 
     @lazyproperty
     def intent_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("intent")]
+
+    @lazyproperty
+    def response_examples(self) -> List[Message]:
+        return [ex for ex in self.training_examples if ex.get("response")]
 
     @lazyproperty
     def entity_examples(self) -> List[Message]:
@@ -102,10 +117,25 @@ class TrainingData(object):
         return set([ex.get("intent") for ex in self.training_examples]) - {None}
 
     @lazyproperty
+    def responses(self) -> Set[Text]:
+        """Returns the set of responses in the training data."""
+        return set([ex.get("response") for ex in self.training_examples]) - {None}
+
+    @lazyproperty
+    def response_types(self) -> Set[Text]:
+        """Returns the total number of response types in the training data"""
+        return set([ex.get("intent") for ex in self.training_examples if ex.get("response") is not None])
+
+    @lazyproperty
     def examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
         intents = [ex.get("intent") for ex in self.training_examples]
         return dict(Counter(intents))
+
+    @lazyproperty
+    def examples_per_response(self) -> Dict[Text, int]:
+        """Calculates the number of examples per response."""
+        return dict(Counter(self.responses))
 
     @lazyproperty
     def entities(self) -> Set[Text]:
@@ -190,6 +220,13 @@ class TrainingData(object):
                 "intent predictions."
             )
 
+        if "" in self.responses:
+            warnings.warn(
+                "Found empty response, please check your "
+                "training data. This may result in wrong "
+                "response predictions."
+            )
+
         # emit warnings for intents with only a few training samples
         for intent, count in self.examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
@@ -216,6 +253,7 @@ class TrainingData(object):
         preserving the fraction of examples per intent."""
 
         train, test = [], []
+        # TODO: split on response type as well
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
             random.shuffle(ex)
@@ -244,10 +282,15 @@ class TrainingData(object):
                 len(self.intent_examples), len(self.intents)
             )
             + "\t- Found intents: {}\n".format(list_to_str(self.intents))
+            + "\t- response examples: {} ({} distinct response)\n".format(
+                len(self.response_examples), len(self.responses)
+            )
             + "\t- entity examples: {} ({} distinct entities)\n".format(
                 len(self.entity_examples), len(self.entities)
             )
             + "\t- found entities: {}\n".format(list_to_str(self.entities))
+
+
         )
 
     def is_empty(self) -> bool:

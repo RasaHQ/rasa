@@ -12,6 +12,7 @@ from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClas
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa.nlu.rankers.embedding_response_selector import ResponseSelector
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
@@ -66,6 +67,8 @@ component_classes = [
     MitieIntentClassifier,
     KeywordIntentClassifier,
     EmbeddingIntentClassifier,
+    # rankers
+    ResponseSelector
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -183,7 +186,7 @@ def load_component_by_meta(
 
 
 def create_component_by_config(
-    component_config: Dict[Text, Any], config: "RasaNLUModelConfig"
+    component_config: Dict[Text, Any], config: "RasaNLUModelConfig", **kwargs: Any
 ) -> Optional["Component"]:
     """Resolves a component and calls it's create method.
 
@@ -193,4 +196,4 @@ def create_component_by_config(
     # try to get class name first, else create by name
     component_name = component_config.get("class", component_config["name"])
     component_class = get_component_class(component_name)
-    return component_class.create(component_config, config)
+    return component_class.create(component_config, config, **kwargs)

@@ -132,14 +132,14 @@ class ResponseSelector(EmbeddingIntentClassifier):
             message_embed: Optional['tf.Tensor'] = None,
             label_embed: Optional['tf.Tensor'] = None,
             all_labels_embed: Optional['tf.Tensor'] = None,
-            response_type: Text = None,
+            **kwargs: Any,
     ) -> None:
         super(ResponseSelector, self).__init__(component_config, inv_label_dict,  session, graph,
                                                message_placeholder, label_placeholder, sim_all, pred_confidence,
                                                similarity_op, message_embed, label_embed,
                                                all_labels_embed)
 
-        self.response_type = response_type
+        self.response_type = kwargs['response_type']
 
     def _load_tb_params(self, config: Dict[Text, Any]) -> None:
         self.summary_dir = config["summary_dir"]
@@ -270,11 +270,11 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     # training data helpers:
     @staticmethod
-    def _create_label_dict(training_data: "TrainingData", label_type: Text = "response") -> Dict[Text, int]:
+    def _create_label_dict(training_data: "TrainingData", attribute: Text = 'intent') -> Dict[Text, int]:
         """Create intent dictionary"""
 
         distinct_labels = set(
-            [example.get(label_type) for example in training_data.intent_examples if example.get(label_type) is not None]
+            [example.get(attribute) for example in training_data.intent_examples if example.get(attribute)]
         )
         return {response: idx for idx, response in enumerate(sorted(distinct_labels))}
 
@@ -288,8 +288,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
     def _create_encoded_labels(self,
                                label_dict: Dict[Text, int],
                                training_data: 'TrainingData',
-                               label_type: Text = "intent",
-                               label_feats: Text = "intent_features") -> np.ndarray:
+                               attribute: Text = "intent",
+                               attribute_feats: Text = "intent_features") -> np.ndarray:
         """Create matrix with intents encoded in rows as bag of words.
 
         If intent_tokenization_flag is off, returns identity matrix.
@@ -304,8 +304,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
                     self._find_example_for_label(
                         key,
                         training_data.intent_examples,
-                        label_type,
-                    ).get(label_feats)
+                        attribute,
+                    ).get(attribute_feats)
                 )
 
             return np.array(encoded_all_labels)
@@ -337,7 +337,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
         tb_sum_dir = os.path.join(self.summary_dir, 'response_selector')
 
-        label_dict = self._create_label_dict(training_data)
+        training_data = training_data.filter_by_intent(self.response_type)
+
+        label_dict = self._create_label_dict(training_data, attribute='response')
 
         if len(label_dict) < 2:
             logger.error("Can not train a response selector. "
@@ -347,7 +349,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
         self.inv_label_dict = {v: k for k, v in label_dict.items()} # idx: response
         self._encoded_all_labels = self._create_encoded_labels(
-            label_dict, training_data, label_type="response", label_feats="response_features")
+            label_dict, training_data, attribute="response", attribute_feats="response_features")
 
         # check if number of negatives is less than number of intents
         logger.debug(
@@ -358,7 +360,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         )
 
         # noinspection PyAttributeOutsideInit
-        self.num_neg = min(self.num_neg, self._encoded_all_intents.shape[0] - 1)
+        self.num_neg = min(self.num_neg, self._encoded_all_labels.shape[0] - 1)
 
         session_data = self._create_session_data(training_data, label_dict)
 

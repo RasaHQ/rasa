@@ -131,11 +131,14 @@ class Trainer(object):
         cfg: RasaNLUModelConfig,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
+        training_data: Optional[TrainingData] = None,
     ):
 
         self.config = cfg
         self.skip_validation = skip_validation
-        self.training_data = None  # type: Optional[TrainingData]
+        self.training_data = training_data
+
+        self.training_data.validate()
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in
@@ -148,11 +151,11 @@ class Trainer(object):
             components.validate_requirements(cfg.component_names)
 
         # build pipeline
-        self.pipeline = self._build_pipeline(cfg, component_builder)
+        self.pipeline = self._build_pipeline(cfg, component_builder, training_data)
 
     @staticmethod
     def _build_pipeline(
-        cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
+        cfg: RasaNLUModelConfig, component_builder: ComponentBuilder, training_data: TrainingData
     ) -> List[Component]:
         """Transform the passed names of the pipeline components into classes"""
         pipeline = []
@@ -160,17 +163,18 @@ class Trainer(object):
         # Transform the passed names of the pipeline components into classes
         for i in range(len(cfg.pipeline)):
             component_cfg = cfg.for_component(i)
-            component = component_builder.create_component(component_cfg, cfg)
-            pipeline.append(component)
+            if component_cfg.get("name") == "ResponseSelector":
+                for response_type in training_data.response_types:
+                    component = component_builder.create_component(component_cfg, cfg, response_type=response_type)
+                    pipeline.append(component)
+            else:
+                component = component_builder.create_component(component_cfg, cfg)
+                pipeline.append(component)
 
         return pipeline
 
-    def train(self, data: TrainingData, **kwargs: Any) -> "Interpreter":
+    def train(self, **kwargs: Any) -> "Interpreter":
         """Trains the underlying pipeline using the provided training data."""
-
-        self.training_data = data
-
-        self.training_data.validate()
 
         context = kwargs
 
@@ -184,7 +188,7 @@ class Trainer(object):
             components.validate_arguments(self.pipeline, context)
 
         # data gets modified internally during the training - hence the copy
-        working_data = copy.deepcopy(data)
+        working_data = copy.deepcopy(self.training_data)
 
         for i, component in enumerate(self.pipeline):
             logger.info("Starting to train component {}".format(component.name))

@@ -12,7 +12,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 logger = logging.getLogger(__name__)
 
-
+# TODO: Check if we want to support shared vocab
 class CountVectorsFeaturizer(Featurizer):
     """Bag of words featurizer
 
@@ -31,6 +31,9 @@ class CountVectorsFeaturizer(Featurizer):
     requires = []
 
     defaults = {
+
+        # whether to use a shared vocab
+        "use_shared_vocab": False,
         # the parameters are taken from
         # sklearn's CountVectorizer
         # whether to use word or character n-grams
@@ -70,6 +73,9 @@ class CountVectorsFeaturizer(Featurizer):
         return ["sklearn"]
 
     def _load_count_vect_params(self):
+
+        self.use_shared_vocab = self.component_config['use_shared_vocab']
+
         # set analyzer
         self.analyzer = self.component_config["analyzer"]
 
@@ -98,6 +104,9 @@ class CountVectorsFeaturizer(Featurizer):
 
         # if convert all characters to lowercase
         self.lowercase = self.component_config["lowercase"]
+
+        # Flag to check if test data has been featurized or not.
+        self.is_test_data_featurized = False
 
     # noinspection PyPep8Naming
     def _load_OOV_params(self):
@@ -159,36 +168,50 @@ class CountVectorsFeaturizer(Featurizer):
         # declare class instance for CountVectorizer
         self.vectorizer = vectorizer
 
-    def _get_message_text(self, message):
-        if message.get("spacy_doc"):  # if lemmatize is possible
-            text_tokens = [t.lemma_ for t in message.get("spacy_doc")]
-            # text = " ".join([t.lemma_ for t in message.get("spacy_doc")])
-        elif message.get("tokens"):  # if directly tokens is provided
-            text_tokens = [t.text for t in message.get("tokens")]
-        else:
-            text_tokens = message.text.split()
+    def _tokenizer(self, text):
+        """Override tokenizer in CountVectorizer."""
 
-        text = re.sub(r"\b[0-9]+\b", "__NUMBER__", " ".join(text_tokens))
-        if self.lowercase:
-            text = text.lower()
+        text = re.sub(r"\b[0-9]+\b", "__NUMBER__", text)
 
-        if self.OOV_token and self.analyzer == "word":
-            text_tokens = text.split()
+        token_pattern = re.compile(self.token_pattern)
+        tokens = token_pattern.findall(text)
+
+        if self.OOV_token:
             if hasattr(self.vectorizer, "vocabulary_"):
                 # CountVectorizer is trained, process for prediction
                 if self.OOV_token in self.vectorizer.vocabulary_:
-                    text_tokens = [
+                    tokens = [
                         t if t in self.vectorizer.vocabulary_.keys() else self.OOV_token
-                        for t in text_tokens
+                        for t in tokens
                     ]
             elif self.OOV_words:
                 # CountVectorizer is not trained, process for train
-                text_tokens = [
-                    self.OOV_token if t in self.OOV_words else t for t in text_tokens
-                ]
-            text = " ".join(text_tokens)
+                tokens = [self.OOV_token if t in self.OOV_words else t for t in tokens]
 
-        return text
+        return tokens
+
+    @staticmethod
+    def _get_message_text(message):
+        if message.get("spacy_doc"):  # if lemmatize is possible
+            return " ".join([t.lemma_ for t in message.get("spacy_doc")])
+        elif message.get("tokens"):  # if directly tokens is provided
+            return " ".join([t.text for t in message.get("tokens")])
+        else:
+            return message.text
+
+    @staticmethod
+    def _get_message_intent(message):
+        return ' '.join([t.text for t in message.get("intent_tokens")])
+
+    @staticmethod
+    def _get_message_response(message):
+        if message.get("response_tokens") is None:
+            return ' '
+        return ' '.join([t.text for t in message.get("response_tokens")])
+
+    @staticmethod
+    def _get_text_sequence(text):
+        return text.split()
 
     # noinspection PyPep8Naming
     def _check_OOV_present(self, examples):
@@ -198,6 +221,7 @@ class CountVectorsFeaturizer(Featurizer):
                     self.lowercase and self.OOV_token in t.lower()
                 ):
                     return
+
             logger.warning(
                 "OOV_token='{}' was given, but it is not present "
                 "in the training data. All unseen words "
@@ -219,17 +243,41 @@ class CountVectorsFeaturizer(Featurizer):
             # create spacy lemma_ for OOV_words
             self.OOV_words = [t.lemma_ for w in self.OOV_words for t in spacy_nlp(w)]
 
-        self.vectorizer = CountVectorizer(
-            token_pattern=self.token_pattern,
-            strip_accents=self.strip_accents,
-            lowercase=self.lowercase,
-            stop_words=self.stop_words,
-            ngram_range=(self.min_ngram, self.max_ngram),
-            max_df=self.max_df,
-            min_df=self.min_df,
-            max_features=self.max_features,
-            analyzer=self.analyzer,
-        )
+        if self.use_shared_vocab:
+            self.vectorizer = CountVectorizer(token_pattern=self.token_pattern,
+                                        strip_accents=self.strip_accents,
+                                        lowercase=self.lowercase,
+                                        stop_words=self.stop_words,
+                                        ngram_range=(self.min_ngram,
+                                                     self.max_ngram),
+                                        max_df=self.max_df,
+                                        min_df=self.min_df,
+                                        max_features=self.max_features,
+                                        tokenizer=self._tokenizer,
+                                        analyzer=self.analyzer)
+        else:
+            self.vectorizer = [CountVectorizer(token_pattern=self.token_pattern,
+                                         strip_accents=self.strip_accents,
+                                         lowercase=self.lowercase,
+                                         stop_words=self.stop_words,
+                                         ngram_range=(self.min_ngram,
+                                                      self.max_ngram),
+                                         max_df=self.max_df,
+                                         min_df=self.min_df,
+                                         max_features=self.max_features,
+                                         tokenizer=self._tokenizer,
+                                         analyzer=self.analyzer),
+                         CountVectorizer(token_pattern=self.token_pattern,
+                                         strip_accents=self.strip_accents,
+                                         lowercase=self.lowercase,
+                                         stop_words=self.stop_words,
+                                         ngram_range=(self.min_ngram,
+                                                      self.max_ngram),
+                                         max_df=self.max_df,
+                                         min_df=self.min_df,
+                                         max_features=self.max_features,
+                                         tokenizer=self._tokenizer,
+                                         analyzer=self.analyzer)]
 
         lem_exs = [
             self._get_message_text(example) for example in training_data.intent_examples
@@ -237,9 +285,37 @@ class CountVectorsFeaturizer(Featurizer):
 
         self._check_OOV_present(lem_exs)
 
+        lem_ints = [self._get_message_intent(example)
+                    for example in training_data.intent_examples]
+
+        lem_resps = [self._get_message_response(example)
+                     for example in training_data.intent_examples]
+
+        empty_resps = False
+        unique_resps = set(lem_resps)
+        if len(unique_resps) == 1 and next(iter(unique_resps)) == ' ':
+            empty_resps = True
+
+        self._check_OOV_present(lem_ints)
+        self._check_OOV_present(lem_resps)
+
+        # noinspection PyPep8Naming
         try:
-            # noinspection PyPep8Naming
-            X = self.vectorizer.fit_transform(lem_exs).toarray()
+            if self.use_shared_vocab:
+                # noinspection PyPep8Naming
+                self.vectorizer.fit(lem_exs + lem_ints + lem_resps)
+                X = self.vectorizer.transform(lem_exs).toarray()
+                Y_ints = self.vectorizer.transform(lem_ints).toarray()
+                Y_resps = self.vectorizer.transform(lem_resps)
+
+            else:
+                X = self.vect[0].fit_transform(lem_exs)
+                Y_ints = self.vect[1].fit_transform(lem_ints)
+                if not empty_resps:
+                    Y_resps = self.vect[1].fit_transform(lem_resps)
+                else:
+                    Y_resps = None
+
         except ValueError:
             self.vectorizer = None
             return
@@ -250,8 +326,14 @@ class CountVectorsFeaturizer(Featurizer):
                 "text_features",
                 self._combine_with_existing_text_features(example, X[i]),
             )
+            example.set("intent_features", Y_ints[i])
+            if Y_resps is not None:
+                example.set("response_features", Y_resps[i])
 
     def process(self, message: Message, **kwargs: Any) -> None:
+
+        # TODO: add featurization of test data
+
         if self.vectorizer is None:
             logger.error(
                 "There is no trained CountVectorizer: "
@@ -261,7 +343,10 @@ class CountVectorsFeaturizer(Featurizer):
         else:
             message_text = self._get_message_text(message)
 
-            bag = self.vectorizer.transform([message_text]).toarray().squeeze()
+            if self.use_shared_vocab:
+                bag = self.vectorizer.transform([message_text]).toarray().squeeze()
+            else:
+                bag = self.vectorizer[0].transform([message_text]).toarray().squeeze()
             message.set(
                 "text_features", self._combine_with_existing_text_features(message, bag)
             )
@@ -275,7 +360,7 @@ class CountVectorsFeaturizer(Featurizer):
         file_name = file_name + ".pkl"
         if self.vectorizer:
             featurizer_file = os.path.join(model_dir, file_name)
-            utils.json_pickle(featurizer_file, self.vectorizer.vocabulary_)
+            utils.json_pickle(featurizer_file, self.vectorizer)
         return {"file": file_name}
 
     @classmethod
@@ -292,20 +377,21 @@ class CountVectorsFeaturizer(Featurizer):
         featurizer_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(featurizer_file):
-            vocabulary = utils.json_unpickle(featurizer_file)
-
-            vectorizer = CountVectorizer(
-                token_pattern=meta["token_pattern"],
-                strip_accents=meta["strip_accents"],
-                lowercase=meta["lowercase"],
-                stop_words=meta["stop_words"],
-                ngram_range=(meta["min_ngram"], meta["max_ngram"]),
-                max_df=meta["max_df"],
-                min_df=meta["min_df"],
-                max_features=meta["max_features"],
-                analyzer=meta["analyzer"],
-                vocabulary=vocabulary,
-            )
+            # vocabulary = utils.json_unpickle(featurizer_file)
+            #
+            # vectorizer = CountVectorizer(
+            #     token_pattern=meta["token_pattern"],
+            #     strip_accents=meta["strip_accents"],
+            #     lowercase=meta["lowercase"],
+            #     stop_words=meta["stop_words"],
+            #     ngram_range=(meta["min_ngram"], meta["max_ngram"]),
+            #     max_df=meta["max_df"],
+            #     min_df=meta["min_df"],
+            #     max_features=meta["max_features"],
+            #     analyzer=meta["analyzer"],
+            #     vocabulary=vocabulary,
+            # )
+            vectorizer = utils.json_unpickle(featurizer_file)
 
             return cls(meta, vectorizer)
         else:

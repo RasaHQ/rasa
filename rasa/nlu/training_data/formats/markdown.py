@@ -17,7 +17,7 @@ SYNONYM = "synonym"
 REGEX = "regex"
 LOOKUP = "lookup"
 RESPONSE = "response"
-available_sections = [INTENT, SYNONYM, REGEX, LOOKUP, RESPONSE]
+available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
 
 # regex for: `[entity_text](entity_type(:entity_synonym)?)`
 ent_regex = re.compile(
@@ -70,7 +70,7 @@ class MarkdownReader(TrainingDataReader):
             line = line.strip()
             header = self._find_section_header(line)
             if header:
-                self._set_current_section(header[0], header[1])
+                self._set_current_section(header)
             else:
                 self._parse_item(line)
                 self._load_files(line)
@@ -99,7 +99,10 @@ class MarkdownReader(TrainingDataReader):
         for name, regex in self.section_regexes.items():
             match = re.search(regex, line)
             if match is not None:
-                return name, match.group(1)
+                if name is RESPONSE:
+                    return INTENT, match.group(1), RESPONSE, match.group(2)
+                else:
+                    return name, match.group(1), None, None
         return None
 
     def _load_files(self, line):
@@ -183,13 +186,19 @@ class MarkdownReader(TrainingDataReader):
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(ent_regex, lambda m: m.groupdict()["entity_text"], example)
         self._add_synonyms(plain_text, entities)
-        message = Message(plain_text, {"intent": self.current_title})
+
+        if self.current_subsection is not None:
+            message = Message(plain_text, {"intent": self.current_title, "response": self.current_subtitle})
+        else:
+            message = Message(plain_text, {"intent": self.current_title, "response": None})
         if len(entities) > 0:
             message.set("entities", entities)
         return message
 
-    def _set_current_section(self, section, title):
+    def _set_current_section(self, header):
         """Update parsing mode."""
+
+        section = header[0]
         if section not in available_sections:
             raise ValueError(
                 "Found markdown section {} which is not "
@@ -197,8 +206,7 @@ class MarkdownReader(TrainingDataReader):
                 "".format(section, ",".join(available_sections))
             )
 
-        self.current_section = section
-        self.current_title = title
+        self.current_section, self.current_title, self.current_subsection, self.current_subtitle = header
 
 
 class MarkdownWriter(TrainingDataWriter):
