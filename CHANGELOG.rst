@@ -15,7 +15,7 @@ Added
 
 Changed
 -------
-- added character-level ``CountVectorsFeaturizer`` with empirically found good parameters into the ``supervised_embeddins`` NLU pipeline template
+- added character-level ``CountVectorsFeaturizer`` with empirically found good parameters into the ``supervised_embeddings`` NLU pipeline template
 
 
 Removed
