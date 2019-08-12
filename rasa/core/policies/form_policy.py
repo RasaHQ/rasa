@@ -48,7 +48,7 @@ class FormPolicy(MemoizationPolicy):
             raise InvalidDomain(
                 "You have defined a form action, but haven't added the "
                 "FormPolicy to your policy ensemble. Either remove all "
-                "forms from your domain or exclude FormPolicy from your "
+                "forms from your domain or exclude the FormPolicy from your "
                 "ensemble."
             )
 
