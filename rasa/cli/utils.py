@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 from typing import Any, Optional, Text, List
 import logging
 from questionary import Question
@@ -7,6 +8,9 @@ from questionary import Question
 from rasa.constants import DEFAULT_MODELS_PATH
 
 logger = logging.getLogger(__name__)
+
+
+FREE_TEXT_INPUT_PROMPT = "Type out your own message"
 
 
 def get_validated_path(
@@ -167,6 +171,8 @@ def signal_handler(sig, frame):
 def payload_from_button_question(button_question: Question) -> Text:
     """Prompts user with a button question and returns the nlu payload."""
     response = button_question.ask()
+    if re.match(f"[0-9]*: {FREE_TEXT_INPUT_PROMPT}", response):
+        # Free text input option is chosen
+        return FREE_TEXT_INPUT_PROMPT
     payload = response[response.find("(") + 1 : response.find(")")]
-
     return payload

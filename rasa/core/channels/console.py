@@ -18,6 +18,7 @@ from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
 
+
 DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
 
@@ -40,6 +41,9 @@ def print_bot_output(
             button_to_string(button, idx)
             for idx, button in enumerate(message.get("buttons"))
         ]
+        choices.append(
+            button_to_string({"title": rasa.cli.utils.FREE_TEXT_INPUT_PROMPT}, len(choices))
+        )
 
         question = questionary.select(
             message.get("text"),
@@ -65,16 +69,17 @@ def print_bot_output(
         )
 
 
-def get_cmd_input(button_question: questionary.Question) -> Optional[Text]:
+def get_user_input(button_question: questionary.Question) -> Optional[Text]:
     if button_question is not None:
         response = rasa.cli.utils.payload_from_button_question(button_question)
+        if response == rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
+            response = get_user_input(None)
     else:
         response = questionary.text(
             "",
             qmark="Your input ->",
             style=Style([("qmark", "#b373d6"), ("", "#b373d6")]),
         ).ask()
-
     return response.strip() if response is not None else None
 
 
@@ -125,7 +130,7 @@ async def record_messages(
     num_messages = 0
     button_question = None
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = get_cmd_input(button_question)
+        text = get_user_input(button_question)
 
         if text == exit_text or text is None:
             break
