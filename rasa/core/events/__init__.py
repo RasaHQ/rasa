@@ -180,19 +180,21 @@ class UserUttered(Event):
 
     def __init__(
         self,
-        text,
+        text: Optional[Text] = None,
         intent=None,
         entities=None,
-        parse_data=None,
-        timestamp=None,
-        input_channel=None,
-        message_id=None,
+        parse_data: Optional[Dict[Text, Any]] = None,
+        timestamp: Optional[int] = None,
+        input_channel: Optional[Text] = None,
+        message_id: Optional[Text] = None,
+        metadata: Optional[Dict] = None,
     ):
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
         self.input_channel = input_channel
         self.message_id = message_id
+        self.metadata = metadata
 
         if parse_data:
             self.parse_data = parse_data
@@ -201,12 +203,21 @@ class UserUttered(Event):
                 "intent": self.intent,
                 "entities": self.entities,
                 "text": text,
+                "message_id": self.message_id,
+                "metadata": self.metadata,
             }
 
         super(UserUttered, self).__init__(timestamp)
 
     @staticmethod
-    def _from_parse_data(text, parse_data, timestamp=None, input_channel=None):
+    def _from_parse_data(
+        text: Text,
+        parse_data: Dict[Text, Any],
+        timestamp: Optional[int] = None,
+        input_channel: Optional[Text] = None,
+        message_id: Optional[Text] = None,
+        metadata: Optional[Dict] = None,
+    ):
         return UserUttered(
             text,
             parse_data.get("intent"),
@@ -214,6 +225,8 @@ class UserUttered(Event):
             parse_data,
             timestamp,
             input_channel,
+            message_id,
+            metadata,
         )
 
     def __hash__(self):
@@ -244,19 +257,18 @@ class UserUttered(Event):
     def empty():
         return UserUttered(None)
 
-    def as_dict(self):
-        d = super(UserUttered, self).as_dict()
-        input_channel = None  # for backwards compatibility (persisted evemts)
-        if hasattr(self, "input_channel"):
-            input_channel = self.input_channel
-        d.update(
+    def as_dict(self) -> Dict[Text, Any]:
+        _dict = super(UserUttered, self).as_dict()
+        _dict.update(
             {
                 "text": self.text,
                 "parse_data": self.parse_data,
-                "input_channel": input_channel,
+                "input_channel": getattr(self, "input_channel", None),
+                "message_id": getattr(self, "message_id", None),
+                "metadata": getattr(self, "metadata", None),
             }
         )
-        return d
+        return _dict
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -267,6 +279,8 @@ class UserUttered(Event):
                     parameters.get("parse_data"),
                     parameters.get("timestamp"),
                     parameters.get("input_channel"),
+                    parameters.get("message_id"),
+                    parameters.get("metadata"),
                 )
             ]
         except KeyError as e:
@@ -363,6 +377,7 @@ class BotUttered(Event):
 
         m = self.data.copy()
         m["text"] = self.text
+        m["timestamp"] = self.timestamp
         m.update(self.metadata)
 
         if m.get("image") == m.get("attachment"):

@@ -7,6 +7,8 @@
 Entity Extraction
 =================
 
+.. edit-link::
+
 .. contents::
    :local:
 

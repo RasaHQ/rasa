@@ -313,6 +313,7 @@ class MessageProcessor(object):
                 parse_data,
                 input_channel=message.input_channel,
                 message_id=message.message_id,
+                metadata=message.metadata,
             ),
             self.domain,
         )

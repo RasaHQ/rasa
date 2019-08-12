@@ -5,6 +5,8 @@
 Command Line Interface
 ======================
 
+.. edit-link::
+
 
 .. contents::
    :local:
