@@ -96,7 +96,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                         "The intent '{0}' must be present in the "
                         "domain file to use TwoStageFallbackPolicy. "
                         "Either include the intent '{0}' in your domain "
-                        "or exclude TwoStageFallbackPolicy from your "
+                        "or exclude the TwoStageFallbackPolicy from your "
                         "policy ensemble".format(fallback_intent)
                     )
 
