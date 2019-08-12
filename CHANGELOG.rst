@@ -19,7 +19,7 @@ Added
 
 Changed
 -------
-
+- NLU evaluations now also stores its output in the output directory like the core evaluation
 
 Removed
 -------
