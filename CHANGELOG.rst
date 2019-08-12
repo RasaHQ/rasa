@@ -15,10 +15,12 @@ Added
   which can be used in channels
 - both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier`` can be used
   with ``softmax`` starspace loss
-
+- throw error during training when triggers are defined in the domain without
+  ``MappingPolicy`` being present in the policy ensemble
 
 Changed
 -------
+- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 - substitute LSTM with Transformer in ``EmbeddingPolicy``
 - ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
 - non zero ``evaluate_on_num_examples`` in ``EmbeddingPolicy``
