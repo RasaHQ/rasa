@@ -124,7 +124,7 @@ registered_pipeline_templates = {
 }
 
 
-def pipeline_template(s: Text) -> Optional[List[Dict[Text, Text]]]:
+def pipeline_template(s: Text) -> Optional[List[Dict[Text, Any]]]:
     components = registered_pipeline_templates.get(s)
 
     if components:
