@@ -820,9 +820,11 @@ intent and the mapped utterance will appear in the dialogue history.</p>
 </div>
 <div class="section" id="fallback-policy">
 <span id="id4"></span><h2><a class="toc-backref" href="#id12">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if the intent recognition
-has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code> or if none of the dialogue
-policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if at least one of the following occurs:
+1. The intent recognition has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>.
+2. The highest ranked intent differs in confidence with the second highest ranked intent
+by less than <code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code>.
+3. None of the dialogue policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</p>
 <p><strong>Configuration:</strong></p>
 <blockquote>
 <div><p>The thresholds and fallback action can be adjusted in the policy configuration
@@ -830,6 +832,7 @@ file as parameters of the <code class="docutils literal notranslate"><span class
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;FallbackPolicy&quot;</span>
     <span class="l l-Scalar l-Scalar-Plain">nlu_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="l l-Scalar l-Scalar-Plain">ambiguity_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
     <span class="l l-Scalar l-Scalar-Plain">core_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
     <span class="l l-Scalar l-Scalar-Plain">fallback_action_name</span><span class="p p-Indicator">:</span> <span class="s">&#39;action_default_fallback&#39;</span>
 </pre></div>
@@ -844,11 +847,16 @@ file as parameters of the <code class="docutils literal notranslate"><span class
 <td>Min confidence needed to accept an NLU
 prediction</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code></td>
+<td>Min amount by which the confidence of the
+top intent must exceed that of the second
+highest ranked intent.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
 <td>Min confidence needed to accept an action
 prediction from Rasa Core</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">fallback_action_name</span></code></td>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">fallback_action_name</span></code></td>
 <td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
 to be called if the confidence of intent
 or action is below the respective threshold</td>
@@ -862,7 +870,8 @@ or action is below the respective threshold</td>
 
 <span class="n">fallback</span> <span class="o">=</span> <span class="n">FallbackPolicy</span><span class="p">(</span><span class="n">fallback_action_name</span><span class="o">=</span><span class="s2">&quot;action_default_fallback&quot;</span><span class="p">,</span>
                           <span class="n">core_threshold</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
-                          <span class="n">nlu_threshold</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+                          <span class="n">nlu_threshold</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+                          <span class="n">ambiguity_threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 
 <span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span><span class="s2">&quot;domain.yml&quot;</span><span class="p">,</span> <span class="n">policies</span><span class="o">=</span><span class="p">[</span><span class="n">KerasPolicy</span><span class="p">(),</span> <span class="n">fallback</span><span class="p">])</span>
 </pre></div>
@@ -879,7 +888,8 @@ or action is below the respective threshold</td>
 <p>The <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.</p>
 <ul>
-<li><p class="first">If a NLU prediction has a low confidence score, the user is asked to affirm
+<li><p class="first">If an NLU prediction has a low confidence score or is not significantly higher
+than the second highest ranked prediction, the user is asked to affirm
 the classification of the intent.</p>
 <blockquote>
 <div><ul class="simple">
@@ -918,6 +928,7 @@ policy configuration.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">TwoStageFallbackPolicy</span>
     <span class="l l-Scalar l-Scalar-Plain">nlu_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
+    <span class="l l-Scalar l-Scalar-Plain">ambiguity_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
     <span class="l l-Scalar l-Scalar-Plain">core_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.3</span>
     <span class="l l-Scalar l-Scalar-Plain">fallback_core_action_name</span><span class="p p-Indicator">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
     <span class="l l-Scalar l-Scalar-Plain">fallback_nlu_action_name</span><span class="p p-Indicator">:</span> <span class="s">&quot;action_default_fallback&quot;</span>
@@ -934,23 +945,38 @@ policy configuration.</p>
 <td>Min confidence needed to accept an NLU
 prediction</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
-<td>Min confidence needed to accept an action
-prediction from Rasa Core</td>
+<tr class="row-even"><td colspan="2"><dl class="first last docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code>       | Min amount by which the confidence of the</dt>
+<dd><div class="first last line-block">
+<div class="line">top intent must exceed that of the second</div>
+<div class="line">highest ranked intent.</div>
+</div>
+</dd>
+</dl>
+</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">fallback_core_action_name</span></code></td>
+<tr class="row-odd"><td colspan="2"><dl class="first last docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>            | Min confidence needed to accept an action</dt>
+<dd><div class="first last line-block">
+<div class="line">prediction from Rasa Core</div>
+</div>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">fallback_core_action_name</span></code></td>
 <td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
 to be called if the confidence of Rasa
 Core action prediction is below the
 <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">fallback_nlu_action_name</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">fallback_nlu_action_name</span></code></td>
 <td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
 to be called if the confidence of Rasa
 NLU intent classification is below the
 <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code></td>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code></td>
 <td>The name of the intent which is used to
 detect that the user denies the suggested
 intents</td>
