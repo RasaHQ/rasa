@@ -1,8 +1,14 @@
+:desc: Learn to handle greetings, off-topic chitchat, and other small talk
+       in your bot using features provided by Rasa's open source chat assistant
+       platform.
+
 .. _small-talk:
 
 ==========
 Small Talk
 ==========
+
+.. edit-link::
 
 Small talk includes the back-and-forth that makes conversations natural,
 but doesn’t directly relate to the user's goal. This includes greetings,

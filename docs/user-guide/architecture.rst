@@ -1,4 +1,4 @@
-:desc: Check the architecture to understand how Rasa Core uses machine
+:desc: Check the architecture to understand how Rasa uses machine
        learning, context and state of the conversation to predict the
        next action of the AI Assistant.
 
@@ -6,6 +6,8 @@
 
 Architecture
 ============
+
+.. edit-link::
 
 
 Message Handling

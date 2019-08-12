@@ -5,6 +5,8 @@
 Slack
 =====
 
+.. edit-link::
+
 You first have to create a Slack app to get credentials.
 Once you have them you can add these to your ``credentials.yml``.
 
@@ -47,7 +49,9 @@ you need to supply a ``credentials.yml`` with the following content:
    slack:
      slack_token: "xoxb-286425452756-safjasdf7sl38KLls"
      slack_channel: "#my_channel"
-
+     slack_retry_reason_header: "x-slack-retry-reason" #Slack HTTP header name indicating reason that slack send retry request. This configuration is optional.
+     slack_retry_number_header: "x-slack-retry-num" #Slack HTTP header name indicating the attempt number. This configuration is optional.
+     errors_ignore_retry: None #Any error codes given by Slack included in this list will be ignored. Error codes are listed `here <https://api.slack.com/events-api#errors>`_.
 
 The endpoint for receiving slack messages is
 ``http://localhost:5005/webhooks/slack/webhook``, replacing

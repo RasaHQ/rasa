@@ -7,6 +7,8 @@
 Evaluating Models
 =================
 
+.. edit-link::
+
 .. contents::
    :local:
 
@@ -204,11 +206,11 @@ mode to evaluate the models you just trained:
 
 .. code-block:: bash
 
-  $ rasa test core -m comparison_models/<model-1>.tar.gz comparison_models/<model-2>.tar.gz \
-    --stories stories_folder --out comparison_results
+  $ rasa test core -m comparison_models --stories stories_folder
+  --out comparison_results --evaluate-model-directory
 
 This will evaluate each of the models on the training set and plot some graphs
-to show you which policy performs best.  By evaluating on the full set of stories, you
+to show you which policy performs best. By evaluating on the full set of stories, you
 can measure how well Rasa Core is predicting the held-out stories.
 
 If you're not sure which policies to compare, we'd recommend trying out the

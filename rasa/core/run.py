@@ -12,13 +12,14 @@ import rasa.utils
 import rasa.utils.io
 from rasa.core import constants, utils
 from rasa.core.agent import load_agent, Agent
-from rasa.core.channels import BUILTIN_CHANNELS, console
+from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints, configure_file_logging
 from rasa.model import get_model_subdirectories, get_model
 from rasa.utils.common import update_sanic_log_level, class_from_module_path
+from rasa.server import add_root_route
 
 logger = logging.getLogger()  # get the root logger
 
@@ -66,6 +67,13 @@ def _create_single_channel(channel, credentials):
             )
 
 
+def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
+    app = Sanic(__name__, configure_logging=False)
+    add_root_route(app)
+    CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
+    return app
+
+
 def configure_app(
     input_channels: Optional[List["InputChannel"]] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
@@ -81,6 +89,8 @@ def configure_app(
     """Run the agent."""
     from rasa import server
 
+    configure_file_logging(logger, log_file)
+
     if enable_api:
         app = server.create_app(
             cors_origins=cors,
@@ -90,10 +100,7 @@ def configure_app(
             endpoints=endpoints,
         )
     else:
-        app = Sanic(__name__, configure_logging=False)
-        CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
-
-    configure_file_logging(log_file)
+        app = _create_app_without_api(cors)
 
     if input_channels:
         rasa.core.channels.channel.register(input_channels, app, route=route)
@@ -159,7 +166,7 @@ def serve_application(
     )
 
     logger.info(
-        "Starting Rasa Core server on "
+        "Starting Rasa server on "
         "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port))
     )
 

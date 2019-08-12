@@ -5,6 +5,8 @@
 Telegram
 ========
 
+.. edit-link::
+
 You first have to create a Telegram bot to get credentials.
 Once you have them you can add these to your ``credentials.yml``.
 

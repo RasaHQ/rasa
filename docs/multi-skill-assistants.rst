@@ -1,10 +1,12 @@
-.. :desc: Iterate quickly by developing reusable building blocks of AI assistant skills
+:desc: Iterate quickly by developing reusable building blocks of AI assistant skills
        and combining them at training time.
 
 .. _multi-skill-assistants:
 
 Multi-skill Assistants
 ======================
+
+.. edit-link::
 
 You can build a contextual AI assistant by combining reusable "building blocks"
 called skills.
@@ -33,7 +35,18 @@ An example directory structure could look like this:
 
 In this example the contextual AI assistant imports the ``ChitchatBot`` skill which in turn
 imports the ``GreetBot`` skill. Skill imports are defined in the configuration files of
-each project. In our example, the ``config.yml`` in the root project would look like this:
+each project.
+To instruct Rasa to use the the module to import skills, put this section in the
+config file of your root project:
+
+.. code-block:: yaml
+
+    importers:
+    - name: SkillSelector
+
+
+Then specify which skills you want to import.
+In our example, the ``config.yml`` in the root project would look like this:
 
 .. code-block:: yaml
 

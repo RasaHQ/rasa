@@ -5,6 +5,8 @@
 RocketChat
 ==========
 
+.. edit-link::
+
 Getting Credentials
 ^^^^^^^^^^^^^^^^^^^
 

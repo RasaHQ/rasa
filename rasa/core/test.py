@@ -400,9 +400,9 @@ def collect_story_predictions(
     story_eval_store = EvaluationStore()
     failed = []
     correct_dialogues = []
-    num_stories = len(completed_trackers)
+    number_of_stories = len(completed_trackers)
 
-    logger.info("Evaluating {} stories\nProgress:".format(num_stories))
+    logger.info("Evaluating {} stories\nProgress:".format(number_of_stories))
 
     action_list = []
 
@@ -451,7 +451,7 @@ def collect_story_predictions(
             action_list=action_list,
             in_training_data_fraction=in_training_data_fraction,
         ),
-        num_stories,
+        number_of_stories,
     )
 
 
@@ -587,38 +587,61 @@ def plot_story_evaluation(
     fig.savefig(os.path.join(out_directory, "story_confmat.pdf"), bbox_inches="tight")
 
 
-async def compare(models: Text, stories_file: Text, output: Text) -> None:
-    """Evaluates multiple trained models on a test set."""
-    from rasa.core.agent import Agent
-    import rasa.nlu.utils as nlu_utils
+async def compare_models_in_dir(
+    model_dir: Text, stories_file: Text, output: Text
+) -> None:
+    """Evaluates multiple trained models in a directory on a test set."""
     from rasa.core import utils
+    import rasa.utils.io as io_utils
 
-    num_correct = defaultdict(list)
+    number_correct = defaultdict(list)
 
-    for run in nlu_utils.list_subdirectories(models):
-        num_correct_run = defaultdict(list)
+    for run in io_utils.list_subdirectories(model_dir):
+        number_correct_in_run = defaultdict(list)
 
-        for model in sorted(nlu_utils.list_subdirectories(run)):
-            logger.info("Evaluating model {}".format(model))
+        for model in sorted(io_utils.list_files(run)):
+            if not model.endswith("tar.gz"):
+                continue
 
-            agent = Agent.load(model)
-
-            completed_trackers = await _generate_trackers(stories_file, agent)
-
-            story_eval_store, no_of_stories = collect_story_predictions(
-                completed_trackers, agent
-            )
-
-            failed_stories = story_eval_store.failed_stories
+            # The model files are named like <policy-name><number>.tar.gz
+            # Remove the number from the name to get the policy name
             policy_name = "".join(
                 [i for i in os.path.basename(model) if not i.isdigit()]
             )
-            num_correct_run[policy_name].append(no_of_stories - len(failed_stories))
+            number_of_correct_stories = await _evaluate_core_model(model, stories_file)
+            number_correct_in_run[policy_name].append(number_of_correct_stories)
 
-        for k, v in num_correct_run.items():
-            num_correct[k].append(v)
+        for k, v in number_correct_in_run.items():
+            number_correct[k].append(v)
 
-    utils.dump_obj_as_json_to_file(os.path.join(output, "results.json"), num_correct)
+    utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), number_correct)
+
+
+async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
+    """Evaluates provided trained models on a test set."""
+    from rasa.core import utils
+
+    number_correct = defaultdict(list)
+
+    for model in models:
+        number_of_correct_stories = await _evaluate_core_model(model, stories_file)
+        number_correct[os.path.basename(model)].append(number_of_correct_stories)
+
+    utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), number_correct)
+
+
+async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
+    from rasa.core.agent import Agent
+
+    logger.info("Evaluating model '{}'".format(model))
+
+    agent = Agent.load(model)
+    completed_trackers = await _generate_trackers(stories_file, agent)
+    story_eval_store, number_of_stories = collect_story_predictions(
+        completed_trackers, agent
+    )
+    failed_stories = story_eval_store.failed_stories
+    return number_of_stories - len(failed_stories)
 
 
 def plot_nlu_results(output: Text, number_of_examples: List[int]) -> None:

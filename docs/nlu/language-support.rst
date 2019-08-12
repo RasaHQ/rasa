@@ -1,10 +1,12 @@
 :desc: Support any language like English, Spanish, German, Arabic or Chinese
-       with open soruce chatbot framework Rasa.
+       with open source chatbot framework Rasa.
 
 .. _language-support:
 
 Language Support
 ================
+
+.. edit-link::
 
 **You can use Rasa NLU to build assistants in any language you want!** The
 ``supervised_embeddings`` pipeline can be used for **any language** because
@@ -13,6 +15,9 @@ pipeline in :ref:`choosing-a-pipeline`.
 
 Other backends have some restrictions and support those languages
 which have pre-trained word vectors available.
+
+.. contents::
+   :local:
 
 
 Training a model in any language using the ``supervised_embeddings`` pipeline
