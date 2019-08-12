@@ -38,7 +38,7 @@ COPY MANIFEST.in .
 COPY requirements.txt .
 
 # Install Rasa and its dependencies
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Rasa as package
 COPY rasa ./rasa
