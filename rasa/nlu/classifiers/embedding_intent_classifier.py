@@ -76,12 +76,11 @@ class EmbeddingIntentClassifier(Component):
         # the type of the loss function
         "loss_type": "softmax",  # string 'softmax' or 'margin'
         # how similar the algorithm should try
-        # to make embedding vectors for correct intent labels
+        # to make embedding vectors for correct labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
-        # maximum negative similarity for incorrect intent labels
+        # maximum negative similarity for incorrect labels
         "mu_neg": -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
-        # flag: if true, only minimize the maximum similarity for
-        # incorrect intent labels
+        # flag: if true, only minimize the maximum similarity for incorrect labels
         "use_max_sim_neg": True,
         # scale loss inverse proportionally to confidence of correct prediction
         "scale_loss": True,
@@ -89,15 +88,15 @@ class EmbeddingIntentClassifier(Component):
         # the scale of L2 regularization
         "C2": 0.002,
         # the scale of how critical the algorithm should be of minimizing the
-        # maximum similarity between embeddings of different intent labels
+        # maximum similarity between embeddings of different labels
         "C_emb": 0.8,
         # dropout rate for rnn
         "droprate": 0.2,
-        # flag: if true, the algorithm will split the intent labels into tokens
+        # flag: if true, the algorithm will split the labels into tokens
         #       and use bag-of-words representations for them
-        "intent_tokenization_flag": False,
-        # delimiter string to split the intent labels
-        "intent_split_symbol": "_",
+        "label_tokenization_flag": False,
+        # delimiter string to split the labels
+        "label_split_symbol": "_",
         # visualization of accuracy
         # how often to calculate training accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
@@ -109,17 +108,17 @@ class EmbeddingIntentClassifier(Component):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        inv_intent_dict: Optional[Dict[int, Text]] = None,
+        inv_label_dict: Optional[Dict[int, Text]] = None,
         session: Optional["tf.Session"] = None,
         graph: Optional["tf.Graph"] = None,
         message_placeholder: Optional["tf.Tensor"] = None,
-        intent_placeholder: Optional["tf.Tensor"] = None,
+        label_placeholder: Optional["tf.Tensor"] = None,
         similarity_all: Optional["tf.Tensor"] = None,
         pred_confidence: Optional["tf.Tensor"] = None,
         similarity: Optional["tf.Tensor"] = None,
         message_embed: Optional["tf.Tensor"] = None,
-        intent_embed: Optional["tf.Tensor"] = None,
-        all_intents_embed: Optional["tf.Tensor"] = None,
+        label_embed: Optional["tf.Tensor"] = None,
+        all_labels_embed: Optional["tf.Tensor"] = None,
     ) -> None:
         """Declare instant variables with default values"""
 
@@ -127,24 +126,24 @@ class EmbeddingIntentClassifier(Component):
 
         self._load_params()
 
-        # transform numbers to intents
-        self.inv_intent_dict = inv_intent_dict
-        # encode all intents with numbers
-        self._encoded_all_intents = None
+        # transform numbers to labels
+        self.inv_label_dict = inv_label_dict
+        # encode all labels with numbers
+        self._encoded_all_labels = None
 
         # tf related instances
         self.session = session
         self.graph = graph
         self.a_in = message_placeholder
-        self.b_in = intent_placeholder
+        self.b_in = label_placeholder
         self.sim_all = similarity_all
         self.pred_confidence = pred_confidence
         self.sim = similarity
 
         # persisted embeddings
         self.message_embed = message_embed
-        self.intent_embed = intent_embed
-        self.all_intents_embed = all_intents_embed
+        self.label_embed = label_embed
+        self.all_labels_embed = all_labels_embed
 
         # internal tf instances
         self._iterator = None
@@ -188,15 +187,15 @@ class EmbeddingIntentClassifier(Component):
         self.C_emb = config["C_emb"]
         self.droprate = config["droprate"]
 
-    def _load_flag_if_tokenize_intents(self, config: Dict[Text, Any]) -> None:
-        self.intent_tokenization_flag = config["intent_tokenization_flag"]
-        self.intent_split_symbol = config["intent_split_symbol"]
-        if self.intent_tokenization_flag and not self.intent_split_symbol:
+    def _load_flag_if_tokenize_labels(self, config: Dict[Text, Any]) -> None:
+        self.label_tokenization_flag = config["label_tokenization_flag"]
+        self.label_split_symbol = config["label_split_symbol"]
+        if self.label_tokenization_flag and not self.label_split_symbol:
             logger.warning(
-                "intent_split_symbol was not specified, "
-                "so intent tokenization will be ignored"
+                "label_split_symbol was not specified, "
+                "so label tokenization will be ignored"
             )
-            self.intent_tokenization_flag = False
+            self.label_tokenization_flag = False
 
     def _load_visual_params(self, config: Dict[Text, Any]) -> None:
         self.evaluate_every_num_epochs = config["evaluate_every_num_epochs"]
@@ -209,7 +208,7 @@ class EmbeddingIntentClassifier(Component):
         self._load_nn_architecture_params(self.component_config)
         self._load_embedding_params(self.component_config)
         self._load_regularization_params(self.component_config)
-        self._load_flag_if_tokenize_intents(self.component_config)
+        self._load_flag_if_tokenize_labels(self.component_config)
         self._load_visual_params(self.component_config)
 
     # package safety checks
@@ -219,68 +218,68 @@ class EmbeddingIntentClassifier(Component):
 
     # training data helpers:
     @staticmethod
-    def _create_intent_dict(training_data: "TrainingData") -> Dict[Text, int]:
-        """Create intent dictionary"""
+    def _create_label_dict(training_data: "TrainingData") -> Dict[Text, int]:
+        """Create label dictionary"""
 
-        distinct_intents = set(
+        distinct_labels = set(
             [example.get("intent") for example in training_data.intent_examples]
         )
-        return {intent: idx for idx, intent in enumerate(sorted(distinct_intents))}
+        return {label: idx for idx, label in enumerate(sorted(distinct_labels))}
 
     @staticmethod
-    def _create_intent_token_dict(
-        intents: List[Text], intent_split_symbol: Text
+    def _create_label_token_dict(
+        labels: List[Text], label_split_symbol: Text
     ) -> Dict[Text, int]:
-        """Create intent token dictionary"""
+        """Create label token dictionary"""
 
         distinct_tokens = set(
-            [token for intent in intents for token in intent.split(intent_split_symbol)]
+            [token for label in labels for token in label.split(label_split_symbol)]
         )
         return {token: idx for idx, token in enumerate(sorted(distinct_tokens))}
 
-    def _create_encoded_intents(self, intent_dict: Dict[Text, int]) -> np.ndarray:
-        """Create matrix with intents encoded in rows as bag of words.
+    def _create_encoded_labels(self, label_dict: Dict[Text, int]) -> np.ndarray:
+        """Create matrix with labels encoded in rows as bag of words.
 
-        If intent_tokenization_flag is off, returns identity matrix.
+        If label_tokenization_flag is off, returns identity matrix.
         """
 
-        if self.intent_tokenization_flag:
-            intent_token_dict = self._create_intent_token_dict(
-                list(intent_dict.keys()), self.intent_split_symbol
+        if self.label_tokenization_flag:
+            label_token_dict = self._create_label_token_dict(
+                list(label_dict.keys()), self.label_split_symbol
             )
 
-            encoded_all_intents = np.zeros((len(intent_dict), len(intent_token_dict)))
-            for key, idx in intent_dict.items():
-                for t in key.split(self.intent_split_symbol):
-                    encoded_all_intents[idx, intent_token_dict[t]] = 1
+            encoded_all_labels = np.zeros((len(label_dict), len(label_token_dict)))
+            for key, idx in label_dict.items():
+                for t in key.split(self.label_split_symbol):
+                    encoded_all_labels[idx, label_token_dict[t]] = 1
 
-            return encoded_all_intents
+            return encoded_all_labels
         else:
-            return np.eye(len(intent_dict))
+            return np.eye(len(label_dict))
 
     # noinspection PyPep8Naming
     def _create_all_Y(self, size: int) -> np.ndarray:
-        """Stack encoded_all_intents on top of each other
+        """Stack encoded_all_labels on top of each other
 
         to create candidates for training examples and
         to calculate training accuracy
         """
 
-        return np.stack([self._encoded_all_intents] * size)
+        return np.stack([self._encoded_all_labels] * size)
 
     # noinspection PyPep8Naming
     def _create_session_data(
-        self, training_data: "TrainingData", intent_dict: Dict[Text, int]
+        self, training_data: "TrainingData", label_dict: Dict[Text, int]
     ) -> "train_utils.SessionData":
         """Prepare data for training"""
 
         X = np.stack([e.get("text_features") for e in training_data.intent_examples])
 
         labels = np.array(
-            [intent_dict[e.get("intent")] for e in training_data.intent_examples]
+            [label_dict[e.get("intent")] for e in training_data.intent_examples]
         )
 
-        Y = np.stack([self._encoded_all_intents[intent_idx] for intent_idx in labels])
+        Y = np.stack([self._encoded_all_labels[label_idx] for label_idx in labels])
 
         return train_utils.SessionData(X=X, Y=Y, labels=labels)
 
@@ -305,27 +304,27 @@ class EmbeddingIntentClassifier(Component):
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
         self.a_in, self.b_in = self._iterator.get_next()
 
-        all_intents = tf.constant(
-            self._encoded_all_intents, dtype=tf.float32, name="all_intents"
+        all_labels = tf.constant(
+            self._encoded_all_labels, dtype=tf.float32, name="all_labels"
         )
 
         self.message_embed = self._create_tf_embed_fnn(
             self.a_in, self.hidden_layer_sizes["a"], name="a"
         )
 
-        self.intent_embed = self._create_tf_embed_fnn(
+        self.label_embed = self._create_tf_embed_fnn(
             self.b_in, self.hidden_layer_sizes["b"], name="b"
         )
-        self.all_intents_embed = self._create_tf_embed_fnn(
-            all_intents, self.hidden_layer_sizes["b"], name="b"
+        self.all_labels_embed = self._create_tf_embed_fnn(
+            all_labels, self.hidden_layer_sizes["b"], name="b"
         )
 
         return train_utils.calculate_loss_acc(
             self.message_embed,
-            self.intent_embed,
+            self.label_embed,
             self.b_in,
-            self.all_intents_embed,
-            all_intents,
+            self.all_labels_embed,
+            all_labels,
             self.num_neg,
             None,
             self.loss_type,
@@ -352,16 +351,16 @@ class EmbeddingIntentClassifier(Component):
 
         self.sim_all = train_utils.tf_raw_sim(
             self.message_embed[:, tf.newaxis, :],
-            self.all_intents_embed[tf.newaxis, :, :],
+            self.all_labels_embed[tf.newaxis, :, :],
             None,
         )
 
-        self.intent_embed = self._create_tf_embed_fnn(
+        self.label_embed = self._create_tf_embed_fnn(
             self.b_in, self.hidden_layer_sizes["b"], name="b"
         )
 
         self.sim = train_utils.tf_raw_sim(
-            self.message_embed[:, tf.newaxis, :], self.intent_embed, None
+            self.message_embed[:, tf.newaxis, :], self.label_embed, None
         )
 
         return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
@@ -372,15 +371,15 @@ class EmbeddingIntentClassifier(Component):
         cfg: Optional["RasaNLUModelConfig"] = None,
         **kwargs: Any
     ) -> None:
-        """Train the embedding intent classifier on a data set."""
+        """Train the embedding label classifier on a data set."""
 
         logger.debug("Started training embedding classifier.")
 
         # set numpy random seed
         np.random.seed(self.random_seed)
 
-        intent_dict = self._create_intent_dict(training_data)
-        if len(intent_dict) < 2:
+        label_dict = self._create_label_dict(training_data)
+        if len(label_dict) < 2:
             logger.error(
                 "Can not train an intent classifier. "
                 "Need at least 2 different classes. "
@@ -388,20 +387,20 @@ class EmbeddingIntentClassifier(Component):
             )
             return
 
-        self.inv_intent_dict = {v: k for k, v in intent_dict.items()}
-        self._encoded_all_intents = self._create_encoded_intents(intent_dict)
+        self.inv_label_dict = {v: k for k, v in label_dict.items()}
+        self._encoded_all_labels = self._create_encoded_labels(label_dict)
 
-        # check if number of negatives is less than number of intents
+        # check if number of negatives is less than number of labels
         logger.debug(
             "Check if num_neg {} is smaller than "
-            "number of intents {}, "
-            "else set num_neg to the number of intents - 1"
-            "".format(self.num_neg, self._encoded_all_intents.shape[0])
+            "number of labels {}, "
+            "else set num_neg to the number of labels - 1"
+            "".format(self.num_neg, self._encoded_all_labels.shape[0])
         )
         # noinspection PyAttributeOutsideInit
-        self.num_neg = min(self.num_neg, self._encoded_all_intents.shape[0] - 1)
+        self.num_neg = min(self.num_neg, self._encoded_all_labels.shape[0] - 1)
 
-        session_data = self._create_session_data(training_data, intent_dict)
+        session_data = self._create_session_data(training_data, label_dict)
 
         if self.evaluate_on_num_examples:
             session_data, eval_session_data = train_utils.train_val_split(
@@ -462,14 +461,14 @@ class EmbeddingIntentClassifier(Component):
 
         message_sim = message_sim.flatten()  # sim is a matrix
 
-        intent_ids = message_sim.argsort()[::-1]
+        label_ids = message_sim.argsort()[::-1]
         message_sim[::-1].sort()
 
         # transform sim to python list for JSON serializing
-        return intent_ids, message_sim.tolist()
+        return label_ids, message_sim.tolist()
 
     def process(self, message: "Message", **kwargs: Any) -> None:
-        """Return the most likely intent and its similarity to the input."""
+        """Return the most likely label and its similarity to the input."""
 
         intent = {"name": None, "confidence": 0.0}
         intent_ranking = []
@@ -487,20 +486,20 @@ class EmbeddingIntentClassifier(Component):
             X = message.get("text_features").reshape(1, -1)
 
             # load tf graph and session
-            intent_ids, message_sim = self._calculate_message_sim(X)
+            label_ids, message_sim = self._calculate_message_sim(X)
 
             # if X contains all zeros do not predict some label
-            if X.any() and intent_ids.size > 0:
+            if X.any() and label_ids.size > 0:
                 intent = {
-                    "name": self.inv_intent_dict[intent_ids[0]],
+                    "name": self.inv_label_dict[label_ids[0]],
                     "confidence": message_sim[0],
                 }
 
-                ranking = list(zip(list(intent_ids), message_sim))
+                ranking = list(zip(list(label_ids), message_sim))
                 ranking = ranking[:INTENT_RANKING_LENGTH]
                 intent_ranking = [
-                    {"name": self.inv_intent_dict[intent_idx], "confidence": score}
-                    for intent_idx, score in ranking
+                    {"name": self.inv_label_dict[label_idx], "confidence": score}
+                    for label_idx, score in ranking
                 ]
 
         message.set("intent", intent, add_to_output=True)
@@ -527,7 +526,7 @@ class EmbeddingIntentClassifier(Component):
                 raise
         with self.graph.as_default():
             train_utils.persist_tensor("message_placeholder", self.a_in, self.graph)
-            train_utils.persist_tensor("intent_placeholder", self.b_in, self.graph)
+            train_utils.persist_tensor("label_placeholder", self.b_in, self.graph)
 
             train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
             train_utils.persist_tensor(
@@ -536,15 +535,15 @@ class EmbeddingIntentClassifier(Component):
             train_utils.persist_tensor("similarity", self.sim, self.graph)
 
             train_utils.persist_tensor("message_embed", self.message_embed, self.graph)
-            train_utils.persist_tensor("intent_embed", self.intent_embed, self.graph)
+            train_utils.persist_tensor("label_embed", self.label_embed, self.graph)
 
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
         with io.open(
-            os.path.join(model_dir, file_name + "_inv_intent_dict.pkl"), "wb"
+            os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "wb"
         ) as f:
-            pickle.dump(self.inv_intent_dict, f)
+            pickle.dump(self.inv_label_dict, f)
 
         return {"file": file_name}
 
@@ -569,34 +568,34 @@ class EmbeddingIntentClassifier(Component):
                 saver.restore(sess, checkpoint)
 
                 a_in = train_utils.load_tensor("message_placeholder")
-                b_in = train_utils.load_tensor("intent_placeholder")
+                b_in = train_utils.load_tensor("label_placeholder")
 
                 sim_all = train_utils.load_tensor("similarity_all")
                 pred_confidence = train_utils.load_tensor("pred_confidence")
                 sim = train_utils.load_tensor("similarity")
 
                 message_embed = train_utils.load_tensor("message_embed")
-                intent_embed = train_utils.load_tensor("intent_embed")
-                all_intents_embed = train_utils.load_tensor("all_intents_embed")
+                label_embed = train_utils.load_tensor("label_embed")
+                all_labels_embed = train_utils.load_tensor("all_labels_embed")
 
             with io.open(
-                os.path.join(model_dir, file_name + "_inv_intent_dict.pkl"), "rb"
+                os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "rb"
             ) as f:
-                inv_intent_dict = pickle.load(f)
+                inv_label_dict = pickle.load(f)
 
             return cls(
                 component_config=meta,
-                inv_intent_dict=inv_intent_dict,
+                inv_label_dict=inv_label_dict,
                 session=sess,
                 graph=graph,
                 message_placeholder=a_in,
-                intent_placeholder=b_in,
+                label_placeholder=b_in,
                 similarity_all=sim_all,
                 pred_confidence=pred_confidence,
                 similarity=sim,
                 message_embed=message_embed,
-                intent_embed=intent_embed,
-                all_intents_embed=all_intents_embed,
+                label_embed=label_embed,
+                all_labels_embed=all_labels_embed,
             )
 
         else:
