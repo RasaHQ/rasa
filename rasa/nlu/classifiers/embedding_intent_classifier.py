@@ -336,7 +336,9 @@ class EmbeddingIntentClassifier(Component):
             self.scale_loss,
         )
 
-    def _build_tf_pred_graph(self, session_data: "train_utils.SessionData") -> "tf.Tensor":
+    def _build_tf_pred_graph(
+        self, session_data: "train_utils.SessionData"
+    ) -> "tf.Tensor":
         self.a_in = tf.placeholder(
             tf.float32, (None, session_data.X.shape[-1]), name="a"
         )
@@ -528,7 +530,9 @@ class EmbeddingIntentClassifier(Component):
             train_utils.persist_tensor("intent_placeholder", self.b_in, self.graph)
 
             train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
-            train_utils.persist_tensor("pred_confidence", self.pred_confidence, self.graph)
+            train_utils.persist_tensor(
+                "pred_confidence", self.pred_confidence, self.graph
+            )
             train_utils.persist_tensor("similarity", self.sim, self.graph)
 
             train_utils.persist_tensor("message_embed", self.message_embed, self.graph)

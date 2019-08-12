@@ -380,7 +380,9 @@ class EmbeddingPolicy(Policy):
             name="b",
         )
 
-    def _build_tf_pred_graph(self, session_data: "train_utils.SessionData") -> "tf.Tensor":
+    def _build_tf_pred_graph(
+        self, session_data: "train_utils.SessionData"
+    ) -> "tf.Tensor":
         """Rebuild tf graph for prediction."""
 
         self._create_tf_placeholders(session_data)
@@ -486,7 +488,9 @@ class EmbeddingPolicy(Policy):
             # rebuild the graph for prediction
             self.pred_confidence = self._build_tf_pred_graph(session_data)
 
-            self.attention_weights = train_utils.extract_attention(self.attention_weights)
+            self.attention_weights = train_utils.extract_attention(
+                self.attention_weights
+            )
 
     def continue_training(
         self,
@@ -582,7 +586,9 @@ class EmbeddingPolicy(Policy):
             train_utils.persist_tensor("bot_placeholder", self.b_in, self.graph)
 
             train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
-            train_utils.persist_tensor("pred_confidence", self.pred_confidence, self.graph)
+            train_utils.persist_tensor(
+                "pred_confidence", self.pred_confidence, self.graph
+            )
             train_utils.persist_tensor("similarity", self.sim, self.graph)
 
             train_utils.persist_tensor("dial_embed", self.dial_embed, self.graph)
