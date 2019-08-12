@@ -11,12 +11,17 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- throw error during training when triggers are defined in the domain without
+  ``MappingPolicy`` being present in the policy ensemble
+
+Changed
+-------
 - bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 
 
 Changed
 -------
-
+- NLU evaluations now also stores its output in the output directory like the core evaluation
 
 Removed
 -------
