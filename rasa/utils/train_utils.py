@@ -779,7 +779,7 @@ def linearly_increasing_batch_size(
         return int(batch_size[0])
 
 
-def output_training_stat_dataset(
+def output_validation_stat(
     eval_init_op: "tf.Operation",
     loss: "tf.Tensor",
     acc: "tf.Tensor",
@@ -867,7 +867,7 @@ def train_tf_dataset(
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
-                eval_loss, eval_acc = output_training_stat_dataset(
+                eval_loss, eval_acc = output_validation_stat(
                     eval_init_op,
                     loss,
                     acc,
