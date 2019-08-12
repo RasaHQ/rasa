@@ -52,6 +52,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         self,
         priority: int = 4,
         nlu_threshold: float = 0.3,
+        ambiguity_threshold: float = 0.1,
         core_threshold: float = 0.3,
         fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
         fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
@@ -63,6 +64,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             nlu_threshold: minimum threshold for NLU confidence.
                 If intent prediction confidence is lower than this,
                 predict fallback action with confidence 1.0.
+            ambiguity_threshold: threshold for minimum difference
+                between confidences of the top two predictions
             core_threshold: if NLU confidence threshold is met,
                 predict fallback action with confidence
                 `core_threshold`. If this is the highest confidence in
@@ -75,7 +78,11 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                  to detect that the user denies the suggested intents.
         """
         super(TwoStageFallbackPolicy, self).__init__(
-            priority, nlu_threshold, core_threshold, fallback_core_action_name
+            priority,
+            nlu_threshold,
+            ambiguity_threshold,
+            core_threshold,
+            fallback_core_action_name,
         )
 
         self.fallback_nlu_action_name = fallback_nlu_action_name
@@ -107,10 +114,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         """
 
         nlu_data = tracker.latest_message.parse_data
-        nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
         last_intent_name = nlu_data["intent"].get("name", None)
         should_nlu_fallback = self.should_nlu_fallback(
-            nlu_confidence, tracker.latest_action_name
+            nlu_data, tracker.latest_action_name
         )
         user_rephrased = has_user_rephrased(tracker)
 
@@ -200,6 +206,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         meta = {
             "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
+            "ambiguity_threshold": self.ambiguity_threshold,
             "core_threshold": self.core_threshold,
             "fallback_core_action_name": self.fallback_action_name,
             "fallback_nlu_action_name": self.fallback_nlu_action_name,
