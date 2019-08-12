@@ -29,7 +29,7 @@ from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
 from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.core.utils import dump_obj_as_str_to_file, AvailableEndpoints
+from rasa.core.utils import dump_obj_as_json_to_file, dump_obj_as_str_to_file, AvailableEndpoints
 from rasa.model import get_model_subdirectories, fingerprint_from_path
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
@@ -600,26 +600,25 @@ def create_app(
         # training data
         temp_dir = tempfile.mkdtemp()
 
-        config_path = os.path.join(temp_dir, "config.yml")
-        dump_obj_as_str_to_file(config_path, rjs["config"])
+        filenames = {"config": "config.yml", "nlu": "nlu.md", "stories": "stories.md", "domain": "domain.yml"}
+        for (key, filename) in filenames.items():
+            if key not in rjs: continue
+            temp_path = os.path.join(temp_dir, filename)
+            temp_data = rjs[key]
+            if isinstance(temp_data, dict):
+                dump_obj_as_json_to_file(temp_path, temp_data)
+            else:
+                dump_obj_as_str_to_file(temp_path, temp_data)
 
-        if "nlu" in rjs:
-            nlu_path = os.path.join(temp_dir, "nlu.md")
-            dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
-
-        if "stories" in rjs:
-            stories_path = os.path.join(temp_dir, "stories.md")
-            dump_obj_as_str_to_file(stories_path, rjs["stories"])
-
-        domain_path = DEFAULT_DOMAIN_PATH
         if "domain" in rjs:
-            domain_path = os.path.join(temp_dir, "domain.yml")
-            dump_obj_as_str_to_file(domain_path, rjs["domain"])
+            domain_path = os.path.join(temp_dir, filenames['domain'])
+        else:
+            domain_path = DEFAULT_DOMAIN_PATH
 
         try:
             model_path = await train_async(
                 domain=domain_path,
-                config=config_path,
+                config=os.path.join(temp_dir, filenames["config"]),
                 training_files=temp_dir,
                 output_path=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
@@ -645,7 +644,7 @@ def create_app(
             )
 
     def validate_request(rjs):
-        if "config" not in rjs:
+        if not rjs.get("config"):
             raise ErrorResponse(
                 400,
                 "BadRequest",
@@ -653,7 +652,7 @@ def create_app(
                 {"parameter": "config", "in": "body"},
             )
 
-        if "nlu" not in rjs and "stories" not in rjs:
+        if not rjs.get("nlu") and not rjs.get("stories"):
             raise ErrorResponse(
                 400,
                 "BadRequest",
@@ -662,7 +661,7 @@ def create_app(
                 {"parameters": ["nlu", "stories"], "in": "body"},
             )
 
-        if "stories" in rjs and "domain" not in rjs:
+        if rjs.get("stories") and not rjs.get("domain"):
             raise ErrorResponse(
                 400,
                 "BadRequest",

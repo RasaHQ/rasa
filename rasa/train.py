@@ -78,15 +78,15 @@ async def train_async(
         training_files, skill_imports
     )
 
+    if domain is None:
+        return handle_domain_if_not_exists(
+            config, nlu_data_directory, output_path, fixed_model_name
+        )
+
     with ExitStack() as stack:
         train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
         nlu_data = stack.enter_context(TempDirectoryPath(nlu_data_directory))
         story = stack.enter_context(TempDirectoryPath(story_directory))
-
-        if domain is None:
-            return handle_domain_if_not_exists(
-                config, nlu_data_directory, output_path, fixed_model_name
-            )
 
         return await _train_async_internal(
             domain,
@@ -98,11 +98,6 @@ async def train_async(
             force_training,
             fixed_model_name,
             kwargs,
-        )
-
-    if domain is None:
-        return handle_domain_if_not_exists(
-            config, nlu_data_directory, output_path, fixed_model_name
         )
 
 

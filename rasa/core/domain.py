@@ -69,8 +69,13 @@ class Domain(object):
 
         domain = Domain.empty()
         for path in paths:
-            other = cls.from_path(path, skill_imports)
-            domain = domain.merge(other)
+            try:
+                other = cls.from_path(path, skill_imports)
+            except FileNotFoundError as error:
+                # Skip missing file and continue with other files
+                logger.warning(error)
+            else:
+                domain = domain.merge(other)
 
         return domain
 
@@ -87,7 +92,7 @@ class Domain(object):
         elif os.path.isdir(path):
             domain = cls.from_directory(path, skill_imports)
         else:
-            raise Exception(
+            raise FileNotFoundError(
                 "Failed to load domain specification from '{}'. "
                 "File not found!".format(os.path.abspath(path))
             )
@@ -890,6 +895,9 @@ class Domain(object):
                     "no matching utterance template. Please "
                     "check your domain.".format(template)
                 )
+
+    def is_empty(self) -> bool:
+        return len(self.intent_properties) <= 0
 
 
 class TemplateDomain(Domain):
