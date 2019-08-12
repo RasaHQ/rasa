@@ -336,6 +336,11 @@ class Domain(object):
 
     def add_knowledge_base_slots(self):
         if DEFAULT_KNOWLEDGE_BASE_ACTION in self.action_names:
+            logger.warning(
+                "You are using an experiential feature: Action '{}'!".format(
+                    DEFAULT_KNOWLEDGE_BASE_ACTION
+                )
+            )
             slot_names = [s.name for s in self.slots]
             knowledge_base_slots = [
                 SLOT_LISTED_ITEMS,
