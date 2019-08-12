@@ -95,9 +95,9 @@ class EmbeddingIntentClassifier(Component):
         "droprate": 0.2,
         # flag: if true, the algorithm will split the intent labels into tokens
         #       and use bag-of-words representations for them
-        "intent_tokenization_flag": False,
+        "label_tokenization_flag": False,
         # delimiter string to split the intent labels
-        "intent_split_symbol": "_",
+        "label_split_symbol": "_",
         # visualization of accuracy
         # how often to calculate training accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
@@ -189,14 +189,14 @@ class EmbeddingIntentClassifier(Component):
         self.droprate = config["droprate"]
 
     def _load_flag_if_tokenize_intents(self, config: Dict[Text, Any]) -> None:
-        self.intent_tokenization_flag = config["intent_tokenization_flag"]
-        self.intent_split_symbol = config["intent_split_symbol"]
-        if self.intent_tokenization_flag and not self.intent_split_symbol:
+        self.label_tokenization_flag = config["label_tokenization_flag"]
+        self.label_split_symbol = config["label_split_symbol"]
+        if self.label_tokenization_flag and not self.label_split_symbol:
             logger.warning(
-                "intent_split_symbol was not specified, "
+                "label_split_symbol was not specified, "
                 "so intent tokenization will be ignored"
             )
-            self.intent_tokenization_flag = False
+            self.label_tokenization_flag = False
 
     def _load_visual_params(self, config: Dict[Text, Any]) -> None:
         self.evaluate_every_num_epochs = config["evaluate_every_num_epochs"]
@@ -244,14 +244,14 @@ class EmbeddingIntentClassifier(Component):
         If intent_tokenization_flag is off, returns identity matrix.
         """
 
-        if self.intent_tokenization_flag:
+        if self.label_tokenization_flag:
             intent_token_dict = self._create_intent_token_dict(
-                list(intent_dict.keys()), self.intent_split_symbol
+                list(intent_dict.keys()), self.label_split_symbol
             )
 
             encoded_all_intents = np.zeros((len(intent_dict), len(intent_token_dict)))
             for key, idx in intent_dict.items():
-                for t in key.split(self.intent_split_symbol):
+                for t in key.split(self.label_split_symbol):
                     encoded_all_intents[idx, intent_token_dict[t]] = 1
 
             return encoded_all_intents

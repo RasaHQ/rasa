@@ -16,7 +16,8 @@ INTENT = "intent"
 SYNONYM = "synonym"
 REGEX = "regex"
 LOOKUP = "lookup"
-available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
+RESPONSE = "response"
+available_sections = [INTENT, SYNONYM, REGEX, LOOKUP, RESPONSE]
 
 # regex for: `[entity_text](entity_type(:entity_synonym)?)`
 ent_regex = re.compile(
@@ -26,6 +27,7 @@ ent_regex = re.compile(
 item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
+response_regex = re.compile(r"##\s*{}:(.+),{}:(.+)".format(INTENT, RESPONSE))
 
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 
@@ -89,7 +91,7 @@ class MarkdownReader(TrainingDataReader):
         def make_regex(section_name):
             return re.compile(r"##\s*{}:(.+)".format(section_name))
 
-        return {sn: make_regex(sn) for sn in section_names}
+        return {sn: make_regex(sn) for sn in section_names}.update({RESPONSE: response_regex})
 
     def _find_section_header(self, line):
         """Checks if the current line contains a section header
