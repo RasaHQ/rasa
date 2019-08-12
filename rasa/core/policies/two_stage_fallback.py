@@ -97,7 +97,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                         "domain file to use TwoStageFallbackPolicy. "
                         "Either include the intent '{0}' in your domain "
                         "or exclude the TwoStageFallbackPolicy from your "
-                        "policy ensemble".format(fallback_intent)
+                        "policy configuration".format(fallback_intent)
                     )
 
     def predict_action_probabilities(
