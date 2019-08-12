@@ -71,16 +71,16 @@ class EmbeddingPolicy(Policy):
         "embed_dim": 20,
         # the type of the similarity
         "num_neg": 20,
-        # flag if minimize only maximum similarity over incorrect actions
+        # flag if minimize only maximum similarity over incorrect labels
         "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
         "loss_type": "softmax",  # string 'softmax' or 'margin'
         # how similar the algorithm should try
-        # to make embedding vectors for correct actions
+        # to make embedding vectors for correct labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
-        # maximum negative similarity for incorrect actions
+        # maximum negative similarity for incorrect labels
         "mu_neg": -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
-        # the number of incorrect actions, the algorithm will minimize
+        # the number of incorrect labels, the algorithm will minimize
         # their similarity to the user input during training
         "use_max_sim_neg": True,  # flag which loss function to use
         # scale loss inverse proportionally to confidence of correct prediction
@@ -89,7 +89,7 @@ class EmbeddingPolicy(Policy):
         # the scale of L2 regularization
         "C2": 0.001,
         # the scale of how important is to minimize the maximum similarity
-        # between embeddings of different actions
+        # between embeddings of different labels
         "C_emb": 0.8,
         # dropout rate for dial nn
         "droprate_a": 0.1,
@@ -138,8 +138,8 @@ class EmbeddingPolicy(Policy):
 
         self._load_params(**kwargs)
 
-        # encode all actions with numbers
-        self._encoded_all_actions = None
+        # encode all labels with numbers
+        self._encoded_all_labels = None
 
         # tf related instances
         self.graph = graph
@@ -225,29 +225,26 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     @staticmethod
     def _labels_for_Y(data_Y: "np.ndarray") -> "np.ndarray":
-        """Prepare Y data for training: extract actions indices."""
+        """Prepare Y data for training: extract labels indices."""
 
         return data_Y.argmax(axis=-1)
 
     # noinspection PyPep8Naming
-    def _action_features_for_Y(self, labels: "np.ndarray") -> "np.ndarray":
-        """Prepare Y data for training: features for action labels."""
+    def _label_features_for_Y(self, labels: "np.ndarray") -> "np.ndarray":
+        """Prepare Y data for training: features for label labels."""
 
         if len(labels.shape) == 2:
             return np.stack(
                 [
                     np.stack(
-                        [
-                            self._encoded_all_actions[action_idx]
-                            for action_idx in action_ids
-                        ]
+                        [self._encoded_all_labels[label_idx] for label_idx in label_ids]
                     )
-                    for action_ids in labels
+                    for label_ids in labels
                 ]
             )
         else:
             return np.stack(
-                [self._encoded_all_actions[action_idx] for action_idx in labels]
+                [self._encoded_all_labels[label_idx] for label_idx in labels]
             )
 
     # noinspection PyPep8Naming
@@ -259,7 +256,7 @@ class EmbeddingPolicy(Policy):
         if data_Y is not None:
             # training time
             labels = self._labels_for_Y(data_Y)
-            Y = self._action_features_for_Y(labels)
+            Y = self._label_features_for_Y(labels)
 
             # idea taken from sklearn's stratify split
             if labels.ndim == 2:
@@ -324,7 +321,7 @@ class EmbeddingPolicy(Policy):
         )
 
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
-            # pick last action if max history featurizer is used
+            # pick last label if max history featurizer is used
             dial_embed = dial_embed[:, -1:, :]
             mask = mask[:, -1:]
 
@@ -340,7 +337,7 @@ class EmbeddingPolicy(Policy):
             self.b_in = self.b_in[:, tf.newaxis, :]
 
         all_bot_raw = tf.constant(
-            self._encoded_all_actions, dtype=tf.float32, name="all_bot_raw"
+            self._encoded_all_labels, dtype=tf.float32, name="all_bot_raw"
         )
 
         self.dial_embed, mask = self._create_tf_dial(self.a_in)
@@ -420,16 +417,16 @@ class EmbeddingPolicy(Policy):
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
-        # encode all actions with policies' featurizer
-        self._encoded_all_actions = self.featurizer.state_featurizer.create_encoded_all_actions(
-            domain
-        )
+        # encode all labels with policies' featurizer
+        (
+            self._encoded_all_labels
+        ) = self.featurizer.state_featurizer.create_encoded_all_labels(domain)
 
-        # check if number of negatives is less than number of actions
+        # check if number of negatives is less than number of labels
         logger.debug(
             "Check if num_neg {} is smaller "
-            "than number of actions {}, "
-            "else set num_neg to the number of actions - 1"
+            "than number of labels {}, "
+            "else set num_neg to the number of labels - 1"
             "".format(self.num_neg, domain.num_actions)
         )
         # noinspection PyAttributeOutsideInit
