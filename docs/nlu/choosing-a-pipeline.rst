@@ -1,11 +1,13 @@
 :desc: Set up a pipeline of pre-trained word vectors form GloVe or fastText
-       or fit them specifically on your dataset using the tensorflow pipeline
+       or fit them specifically on your dataset using the TensorFlow pipeline
        for open source NLU.
 
 .. _choosing-a-pipeline:
 
 Choosing a Pipeline
 ===================
+
+.. edit-link::
 
 Choosing an NLU pipeline allows you to customize your model and finetune
 it on your dataset.

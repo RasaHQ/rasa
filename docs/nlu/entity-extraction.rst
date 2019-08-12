@@ -1,10 +1,13 @@
-:desc: Use open source named entity recognition like spacy and duckling
-       for building contextual AI Assistants.
+:desc: Use open source named entity recognition like Spacy or Duckling
+       and customize them according to your needs to build contextual
+       AI assistants
 
 .. _entity-extraction:
 
 Entity Extraction
 =================
+
+.. edit-link::
 
 .. contents::
    :local:

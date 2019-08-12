@@ -1,7 +1,12 @@
+:desc: Learn how to integrate open source chatbot platform Rasa into
+       Jupyter notebooks, alongside all your machine learning code.
+
 .. _jupyter-notebooks:
 
 Jupyter Notebooks
 =================
+
+.. edit-link::
 
 This page contains the most important methods for using Rasa in a Jupyter notebook.
 

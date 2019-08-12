@@ -26,7 +26,7 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 
 
 def validate_requirements(component_names: List[Text]) -> None:
-    """Ensures that all required python packages are installed to
+    """Ensures that all required importable python packages are installed to
     instantiate and used the passed components."""
     from rasa.nlu import registry
 
@@ -41,10 +41,12 @@ def validate_requirements(component_names: List[Text]) -> None:
         # if available, use the development file to figure out the correct
         # version numbers for each requirement
         raise Exception(
-            "Not all required packages are installed. "
+            "Not all required importable packages are installed. "
             + "To use this pipeline, you need to install the "
             "missing dependencies. "
-            + "Please install {}".format(", ".join(failed_imports))
+            + "Please install the package(s) that contain the module(s): {}".format(
+                ", ".join(failed_imports)
+            )
         )
 
 
@@ -198,7 +200,9 @@ class Component(object, metaclass=ComponentMetaclass):
     @classmethod
     def required_packages(cls) -> List[Text]:
         """Specify which python packages need to be installed to use this
-        component, e.g. ``["spacy"]``.
+        component, e.g. ``["spacy"]``. More specifically, these should be
+        importable python package names e.g. `sklearn` and not package
+        names in the dependencies sense e.g. `scikit-learn`
 
         This list of requirements allows us to fail early during training
         if a required package is not installed."""
