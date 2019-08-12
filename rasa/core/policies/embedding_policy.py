@@ -420,7 +420,7 @@ class EmbeddingPolicy(Policy):
         # encode all labels with policies' featurizer
         (
             self._encoded_all_labels
-        ) = self.featurizer.state_featurizer.create_encoded_all_labels(domain)
+        ) = self.featurizer.state_featurizer.create_encoded_all_actions(domain)
 
         # check if number of negatives is less than number of labels
         logger.debug(

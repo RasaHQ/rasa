@@ -605,12 +605,6 @@ class TestMappingPolicy(PolicyTestCollection):
         p = MappingPolicy()
         return p
 
-    def test_featurizer(self, trained_policy, tmpdir):
-        assert trained_policy.featurizer is None
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
-        assert loaded.featurizer is None
-
     @pytest.fixture(scope="module")
     def domain_with_mapping(self):
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_MAPPING)
@@ -684,19 +678,33 @@ class TestFallbackPolicy(PolicyTestCollection):
         assert loaded.featurizer is None
 
     @pytest.mark.parametrize(
-        "nlu_confidence, last_action_name, should_nlu_fallback",
+        "top_confidence, all_confidences, last_action_name, should_nlu_fallback",
         [
-            (0.1, "some_action", False),
-            (0.1, "action_listen", True),
-            (0.9, "some_action", False),
-            (0.9, "action_listen", False),
+            (0.1, [0.1], "some_action", False),
+            (0.1, [0.1], "action_listen", True),
+            (0.9, [0.9, 0.1], "some_action", False),
+            (0.9, [0.9, 0.1], "action_listen", False),
+            (0.4, [0.4, 0.35], "some_action", False),
+            (0.4, [0.4, 0.35], "action_listen", True),
+            (0.9, [0.9, 0.85], "action_listen", True),
         ],
     )
     def test_should_nlu_fallback(
-        self, trained_policy, nlu_confidence, last_action_name, should_nlu_fallback
+        self,
+        trained_policy,
+        top_confidence,
+        all_confidences,
+        last_action_name,
+        should_nlu_fallback,
     ):
+        nlu_data = {
+            "intent": {"confidence": top_confidence},
+            "intent_ranking": [
+                {"confidence": confidence} for confidence in all_confidences
+            ],
+        }
         assert (
-            trained_policy.should_nlu_fallback(nlu_confidence, last_action_name)
+            trained_policy.should_nlu_fallback(nlu_data, last_action_name)
             is should_nlu_fallback
         )
 

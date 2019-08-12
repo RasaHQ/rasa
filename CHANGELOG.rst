@@ -15,6 +15,7 @@ Added
   which can be used in channels
 - both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier`` can be used
   with ``softmax`` starspace loss
+- `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
 
