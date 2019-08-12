@@ -38,10 +38,7 @@ class KeywordIntentClassifier(Component):
 
         super(KeywordIntentClassifier, self).__init__(component_config)
 
-        if intent_keyword_map is None:
-            self.intent_keyword_map = {}
-        else:
-            self.intent_keyword_map = intent_keyword_map
+        self.intent_keyword_map = intent_keyword_map or {}
 
     def train(
         self,
@@ -87,6 +84,7 @@ class KeywordIntentClassifier(Component):
                 if re.search(r"\b" + example + r"\b", text, flags=re_flags):
                     found_intents.update({intent: example})
         if len(found_intents) == 0:
+            logger.debug("KeywordClassifier did not find any keywords in the message.")
             return None
         elif len(found_intents) == 1:
             return list(found_intents.keys())[0]
