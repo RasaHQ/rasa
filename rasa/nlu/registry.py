@@ -108,7 +108,7 @@ registered_pipeline_templates = {
         {"name": "EntitySynonymMapper"},
         {"name": "SklearnIntentClassifier"},
     ],
-    "keyword": ["KeywordIntentClassifier"],
+    "keyword": [{"name": "KeywordIntentClassifier"}],
     "supervised_embeddings": [
         {"name": "WhitespaceTokenizer"},
         {"name": "RegexFeaturizer"},
