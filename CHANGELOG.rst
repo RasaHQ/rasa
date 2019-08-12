@@ -14,6 +14,7 @@ Added
 - `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
+- The tracker is now avaialble within the interpreter's ``parse`` method, giving the ability to create interpreter classes that use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
 
 Changed
 -------
