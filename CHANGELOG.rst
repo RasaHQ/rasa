@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
 
