@@ -775,19 +775,3 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         next_action = self._get_next_action(trained_policy, events, default_domain)
 
         assert next_action == ACTION_LISTEN_NAME
-
-    def test_exception_if_intent_not_present(self, trained_policy):
-        content = """
-                actions:
-                  - utter_hello
-
-                intents:
-                  - greet
-                """
-        domain = Domain.from_yaml(content)
-
-        events = [ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME)]
-
-        tracker = get_tracker(events)
-        with pytest.raises(InvalidDomain):
-            trained_policy.predict_action_probabilities(tracker, domain)
