@@ -47,8 +47,6 @@ COPY requirements.txt .
 # Install Rasa and its dependencies
 RUN pip install -r alt_requirements/requirements_full.txt
 
-COPY rasa ./rasa
-
 # Install Rasa as package
 COPY rasa ./rasa
 RUN pip install .
