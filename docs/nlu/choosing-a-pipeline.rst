@@ -285,7 +285,8 @@ default is to use a simple whitespace tokenizer:
 The pipeline uses two instances of ``CountVectorsFeaturizer``. The first one 
 featurizes text based on words. The second one featurizes text based on character 
 n-grams, preserving word boundaries. We empirically found the second featurizer 
-to be more powerful.
+to be more powerful, but we decided to keep the first featurizer as well to make
+featurization more robust.
 
 If you have a custom tokenizer for your language, you can replace the whitespace
 tokenizer with something more accurate.
