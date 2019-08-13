@@ -256,10 +256,11 @@ def format_bot_output(message: BotUttered) -> Text:
         output += "\nAttachment: " + data.get("attachment")
 
     if data.get("buttons"):
-        output += "\nButtons:"
-        for idx, button in enumerate(data.get("buttons")):
-            button_str = button_to_string(button, idx)
-            output += "\n" + button_str
+        output += "\nButtons:\n"
+        choices = cliutils.button_choices_from_message_data(
+            data, allow_free_text_input=True
+        )
+        output += "\n".join(choices)
 
     if data.get("elements"):
         output += "\nElements:"
@@ -921,16 +922,21 @@ async def _predict_till_next_listen(
         if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
             "buttons", None
         ):
-            data = last_event["data"]
-            message = last_event.get("text", "")
-            choices = [
-                button_to_string(button, idx)
-                for idx, button in enumerate(data.get("buttons"))
-            ]
-
-            question = questionary.select(message, choices)
-            button_payload = cliutils.payload_from_button_question(question)
+            button_payload = _get_button_choice(last_event)
             await send_message(endpoint, sender_id, button_payload)
+
+
+def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
+    data = last_event["data"]
+    message = last_event.get("text", "")
+
+    choices = cliutils.button_choices_from_message_data(
+        data, allow_free_text_input=True
+    )
+
+    question = questionary.select(message, choices)
+    button_payload = cliutils.payload_from_button_question(question)
+    return button_payload
 
 
 async def _correct_wrong_nlu(
