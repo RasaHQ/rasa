@@ -75,6 +75,7 @@ def get_user_input(button_question: questionary.Question) -> Optional[Text]:
     if button_question is not None:
         response = rasa.cli.utils.payload_from_button_question(button_question)
         if response == rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
+            # Re-prompt user with a free text input
             response = get_user_input(None)
     else:
         response = questionary.text(
