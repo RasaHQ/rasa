@@ -23,6 +23,7 @@ Removed
 
 Fixed
 -----
+- Free text input was not allowed when the response template contained buttons, which has now been fixed.
 
 
 [1.2.2] - 2019-08-07
