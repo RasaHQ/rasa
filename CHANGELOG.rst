@@ -22,7 +22,10 @@ Added
 
 Changed
 -------
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
+  into the ``supervised_embeddings`` NLU pipeline template
 - bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
+- NLU evaluations now also stores its output in the output directory like the core evaluation
 - substitute LSTM with Transformer in ``EmbeddingPolicy``
 - ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
 - non zero ``evaluate_on_num_examples`` in ``EmbeddingPolicy``
