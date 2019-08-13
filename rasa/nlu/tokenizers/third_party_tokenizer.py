@@ -33,7 +33,7 @@ class ThirdPartyTokenizer(Tokenizer, Component):
 
     def tokenize(self, text: Text) -> typing.List[Token]:
         if self.third_party_service_endpoint is not None:
-            req = requests.get(self.third_party_service_endpoint + str(text))
+            req = requests.post(self.third_party_service_endpoint, data={"text": text})
             return [Token(v["text"], v["end"]) for v in req.json()]
         else:
             logger.warning(
