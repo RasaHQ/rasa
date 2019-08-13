@@ -43,8 +43,6 @@ Removed
 Fixed
 -----
 - ``MappingPolicy`` standard featurizer is set to ``None``
-- ``Flood control exceeded`` error in Telegram connector which happened because the
-  webhook was set twice
 
 [1.2.2] - 2019-08-07
 ^^^^^^^^^^^^^^^^^^^^
