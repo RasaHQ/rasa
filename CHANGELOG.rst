@@ -15,7 +15,7 @@ Added
   which can be used in channels
 - both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier`` can be used
   with ``softmax`` starspace loss
-- `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
+- ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
 - The tracker is now avaialble within the interpreter's ``parse`` method, giving the ability to create interpreter classes that use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
@@ -24,7 +24,7 @@ Changed
 -------
 - added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
   into the ``supervised_embeddings`` NLU pipeline template
-- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
+- bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
 - NLU evaluations now also stores its output in the output directory like the core evaluation
 - substitute LSTM with Transformer in ``EmbeddingPolicy``
 - ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
