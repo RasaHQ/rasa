@@ -605,6 +605,12 @@ class TestMappingPolicy(PolicyTestCollection):
         p = MappingPolicy()
         return p
 
+    def test_featurizer(self, trained_policy, tmpdir):
+        assert trained_policy.featurizer is None
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        assert loaded.featurizer is None
+
     @pytest.fixture(scope="module")
     def domain_with_mapping(self):
         return Domain.load(DEFAULT_DOMAIN_PATH_WITH_MAPPING)
