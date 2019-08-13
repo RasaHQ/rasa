@@ -364,9 +364,9 @@ paths:
       - Model
       summary: Train a Rasa model
       description: >-
-        Trains a Rasa model. Depending on the data given only a dialogue model,
+        Trains a new Rasa model. Depending on the data given only a dialogue model,
         only a NLU model, or a model combining a trained dialogue model with an
-        NLU model will be trained. The trained model is not loaded by default.
+        NLU model will be trained. The new model is not loaded by default.
       requestBody:
         required: true
         content:
