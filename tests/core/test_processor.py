@@ -1,12 +1,15 @@
+import aiohttp
 import asyncio
 import datetime
 import uuid
 
 import pytest
 from aioresponses import aioresponses
+from unittest.mock import patch
 
 import rasa.utils.io
 from rasa.core import jobs
+from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
     ActionExecuted,
@@ -16,10 +19,17 @@ from rasa.core.events import (
     Restarted,
     UserUttered,
 )
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.slots import Slot
+from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="session")
@@ -80,6 +90,37 @@ async def test_http_parsing():
         r = latest_request(mocked, "POST", "https://interpreter.com/model/parse")
 
         assert r
+
+
+async def mocked_parse(self, text, message_id=None, tracker=None):
+    """Mock parsing a text message and augment it with the slot
+    value from the tracker's state."""
+
+    return {
+        "intent": {"name": "", "confidence": 0.0},
+        "entities": [],
+        "text": text,
+        "requested_language": tracker.get_slot("requested_language"),
+    }
+
+
+async def test_parsing_with_tracker():
+    tracker = DialogueStateTracker.from_dict("1", [], [Slot("requested_language")])
+
+    # we'll expect this value 'en' to be part of the result from the interpreter
+    tracker._set_slot("requested_language", "en")
+
+    endpoint = EndpointConfig("https://interpreter.com")
+    with aioresponses() as mocked:
+        mocked.post("https://interpreter.com/parse", repeat=True, status=200)
+
+        # mock the parse function with the one defined for this test
+        with patch.object(RasaNLUHttpInterpreter, "parse", mocked_parse):
+            interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
+            agent = Agent(None, None, interpreter)
+            result = await agent.parse_message_using_nlu_interpreter("lunch?", tracker)
+
+            assert result["requested_language"] == "en"
 
 
 async def test_reminder_scheduled(

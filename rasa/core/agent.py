@@ -27,6 +27,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
+from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
@@ -295,14 +296,14 @@ class Agent(object):
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
-        if self.domain:
-            self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
-        if not self._is_form_policy_present():
-            raise InvalidDomain(
-                "You have defined a form action, but haven't added the "
-                "FormPolicy to your policy ensemble."
-            )
+
+        if self.domain is not None:
+            self.domain.add_requested_slot()
+
+        PolicyEnsemble.check_domain_ensemble_compatibility(
+            self.policy_ensemble, self.domain
+        )
 
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
@@ -411,7 +412,7 @@ class Agent(object):
         )
 
     async def parse_message_using_nlu_interpreter(
-        self, message_data: Text
+        self, message_data: Text, tracker: DialogueStateTracker = None
     ) -> Dict[Text, Any]:
         """Handles message text and intent payload input messages.
 
@@ -420,6 +421,8 @@ class Agent(object):
         Args:
             message_data (Text): Contain the received message in text or\
             intent payload format.
+            tracker (DialogueStateTracker): Contains the tracker to be\
+            used by the interpreter.
 
         Returns:
             The parsed message.
@@ -438,7 +441,7 @@ class Agent(object):
 
         processor = self.create_processor()
         message = UserMessage(message_data)
-        return await processor._parse_message(message)
+        return await processor._parse_message(message, tracker)
 
     async def handle_message(
         self,
@@ -953,11 +956,3 @@ class Agent(object):
             )
 
         return None
-
-    def _is_form_policy_present(self) -> bool:
-        """Check whether form policy is present and used."""
-
-        has_form_policy = self.policy_ensemble is not None and any(
-            isinstance(p, FormPolicy) for p in self.policy_ensemble.policies
-        )
-        return not self.domain or not self.domain.form_names or has_form_policy
