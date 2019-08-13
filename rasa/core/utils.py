@@ -457,6 +457,71 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
     return handler
 
 
+# noinspection PyUnresolvedReferences
+def initialise_pika_connection(
+    host: Text,
+    username: Text,
+    password: Text,
+    connection_attempts: int = 20,
+    retry_delay_in_seconds: Union[int, float] = 5,
+) -> "pika.BlockingConnection":
+    """Create a Pika `BlockingConnection`.
+
+    Args:
+        host: Pika host
+        username: username for authentication with Pika host
+        password: password for authentication with Pika host
+        connection_attempts: number of connection attempts before giving up
+        retry_delay_in_seconds: delay in seconds between connection attempts
+
+    Returns:
+        Pika `BlockingConnection` with provided parameters
+    """
+
+    import pika
+
+    parameters = pika.ConnectionParameters(
+        host,
+        credentials=pika.PlainCredentials(username, password),
+        connection_attempts=connection_attempts,
+        # Wait between retries since
+        # it can take some time until
+        # RabbitMQ comes up.
+        retry_delay=retry_delay_in_seconds,
+    )
+    return pika.BlockingConnection(parameters)
+
+
+# noinspection PyUnresolvedReferences
+def declare_pika_channel_with_queue(
+    connection: "pika.adapters.BlockingConnection", queue: Text
+) -> "pika.adapters.blocking_connection.BlockingChannel":
+    """Creates a """
+    channel = connection.channel()
+    channel.queue_declare(queue, durable=True)
+
+    return channel
+
+
+# noinspection PyUnresolvedReferences
+def close_pika_connection(connection: "pika.adapters.BlockingConnection"):
+    """Attempt to close Pika connection."""
+
+    from pika.exceptions import AMQPError
+
+    host = connection.parameters.host
+    try:
+        connection.close()
+        logger.debug(
+            "Successfully closed Pika connection with host '{}'." "".format(host)
+        )
+    except AMQPError as e:
+        logger.debug(
+            "Failed to close Pika connection with host '{}'. "
+            "Details: {}.".format(host, e)
+        )
+
+
 class LockCounter(asyncio.Lock):
     """Decorated asyncio lock that counts how many coroutines are waiting.
 

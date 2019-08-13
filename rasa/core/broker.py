@@ -1,7 +1,8 @@
 import json
 import logging
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, Union
 
+import rasa.core.utils as rasa_core_utils
 from rasa.utils.common import class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
 
@@ -59,21 +60,23 @@ class EventChannel(object):
 class PikaProducer(EventChannel):
     def __init__(
         self,
-        host,
-        username,
-        password,
-        queue="rasa_core_events",
-        loglevel=logging.WARNING,
+        host: Text,
+        username: Text,
+        password: Text,
+        queue: Text = "rasa_core_events",
+        loglevel: Union[Text, int] = logging.WARNING,
     ):
-        import pika
-
         logging.getLogger("pika").setLevel(loglevel)
 
         self.queue = queue
         self.host = host
-        self.connection = None
-        self.channel = None
-        self.credentials = pika.PlainCredentials(username, password)
+        self.connection = rasa_core_utils.initialise_pika_connection(
+            self.host, username, password
+        )
+
+        self.channel = rasa_core_utils.declare_pika_channel_with_queue(
+            self.connection, self.queue
+        )
 
     @classmethod
     def from_endpoint_config(
@@ -84,33 +87,15 @@ class PikaProducer(EventChannel):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event):
-        self._open_connection()
+    def publish(self, event: Dict):
         self._publish(json.dumps(event))
-        self._close()
 
-    def _open_connection(self):
-        import pika
-
-        parameters = pika.ConnectionParameters(
-            self.host,
-            credentials=self.credentials,
-            connection_attempts=20,
-            retry_delay=5,
-        )
-        self.connection = pika.BlockingConnection(parameters)
-        self.channel = self.connection.channel()
-        self.channel.queue_declare(self.queue, durable=True)
-
-    def _publish(self, body):
+    def _publish(self, body: Text):
         self.channel.basic_publish("", self.queue, body)
         logger.debug(
-            "Published pika events to queue {} at "
-            "{}:\n{}".format(self.queue, self.host, body)
+            "Published Pika events to queue '{}' on host "
+            "'{}':\n{}".format(self.queue, self.host, body)
         )
-
-    def _close(self):
-        self.connection.close()
 
 
 class FileProducer(EventChannel):
@@ -256,7 +241,6 @@ class SQLProducer(EventChannel):
         password: Optional[Text] = None,
     ):
         from rasa.core.tracker_store import SQLTrackerStore
-        import sqlalchemy
         import sqlalchemy.orm
 
         engine_url = SQLTrackerStore.get_db_url(
