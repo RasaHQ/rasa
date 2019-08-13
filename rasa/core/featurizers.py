@@ -371,8 +371,8 @@ class TrackerFeaturizer(object):
             labels.append(story_labels)
 
         y = np.array(labels)
-        # if it is MaxHistoryFeaturizer, squeeze out time axis
         if y.ndim == 3 and isinstance(self, MaxHistoryTrackerFeaturizer):
+            # if it is MaxHistoryFeaturizer, remove time axis
             y = y[:, 0, :]
 
         return y
@@ -390,6 +390,12 @@ class TrackerFeaturizer(object):
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> DialogueTrainingData:
         """Create training data."""
+
+        if self.state_featurizer is None:
+            raise TypeError(
+                "Variable 'state_featurizer' is not set. Provide "
+                "'SingleStateFeaturizer' class to featurize trackers."
+            )
 
         self.state_featurizer.prepare_from_domain(domain)
 
