@@ -1,4 +1,5 @@
 import os
+import shutil
 from typing import Text
 
 import pytest
@@ -200,17 +201,20 @@ async def rasa_server_without_api():
 
 @pytest.fixture
 async def trained_model(project) -> Text:
-    return await train_model(project)
+    yield await train_model(project)
+    shutil.rmtree(os.path.join(project, DEFAULT_MODELS_PATH))
 
 
 @pytest.fixture
 async def trained_core_model(project) -> Text:
-    return await train_model(project, model_type="core")
+    yield await train_model(project, model_type="core")
+    shutil.rmtree(os.path.join(project, DEFAULT_MODELS_PATH))
 
 
 @pytest.fixture
 async def trained_nlu_model(project) -> Text:
-    return await train_model(project, model_type="nlu")
+    yield await train_model(project, model_type="nlu")
+    shutil.rmtree(os.path.join(project, DEFAULT_MODELS_PATH))
 
 
 @pytest.fixture(scope="session")
