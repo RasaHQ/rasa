@@ -26,6 +26,7 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.tokenizers.third_party_tokenizer import ThirdPartyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
@@ -49,6 +50,7 @@ component_classes = [
     SpacyTokenizer,
     WhitespaceTokenizer,
     JiebaTokenizer,
+    ThirdPartyTokenizer,
     # extractors
     SpacyEntityExtractor,
     MitieEntityExtractor,
