@@ -177,19 +177,15 @@ def button_choices_from_message_data(
         for idx, button in enumerate(message.get("buttons"))
     ]
     if allow_free_text_input:
-        choices.append(
-            button_to_string(
-                {"title": rasa.cli.utils.FREE_TEXT_INPUT_PROMPT}, len(choices)
-            )
-        )
+        choices.append(FREE_TEXT_INPUT_PROMPT)
     return choices
 
 
 def payload_from_button_question(button_question: Question) -> Text:
     """Prompts user with a button question and returns the nlu payload."""
     response = button_question.ask()
-    if re.match("[0-9]*: {}".format(FREE_TEXT_INPUT_PROMPT), response):
+    if response == FREE_TEXT_INPUT_PROMPT:
         # Free text input option is chosen
-        return FREE_TEXT_INPUT_PROMPT
+        return response
     payload = response[response.find("(") + 1 : response.find(")")]
     return payload
