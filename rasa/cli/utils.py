@@ -1,10 +1,11 @@
 import os
 import sys
 import re
-from typing import Any, Optional, Text, List
+from typing import Any, Optional, Text, List, Dict
 import logging
 from questionary import Question
 
+from rasa.core.channels.channel import button_to_string
 from rasa.constants import DEFAULT_MODELS_PATH
 
 logger = logging.getLogger(__name__)
@@ -166,6 +167,22 @@ def print_error(*args: Any):
 def signal_handler(sig, frame):
     print ("Goodbye 👋")
     sys.exit(0)
+
+
+def button_choices_from_message_data(
+    message: Dict[Text, Any], allow_free_text_input: bool = True
+) -> Question:
+    choices = [
+        button_to_string(button, idx)
+        for idx, button in enumerate(message.get("buttons"))
+    ]
+    if allow_free_text_input:
+        choices.append(
+            button_to_string(
+                {"title": rasa.cli.utils.FREE_TEXT_INPUT_PROMPT}, len(choices)
+            )
+        )
+    return choices
 
 
 def payload_from_button_question(button_question: Question) -> Text:

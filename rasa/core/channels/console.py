@@ -9,7 +9,7 @@ from aiohttp import ClientTimeout
 from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
-import rasa.cli.utils
+import rasa.cli.utils as cliutils
 from rasa.core import utils
 from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.channel import RestInput, button_to_string, element_to_string
@@ -23,28 +23,20 @@ DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
 
 def print_bot_output(
-    message, color=rasa.cli.utils.bcolors.OKBLUE
+    message, color=cliutils.bcolors.OKBLUE
 ) -> Optional[questionary.Question]:
     if ("text" in message) and not ("buttons" in message):
-        rasa.cli.utils.print_color(message.get("text"), color=color)
+        cliutils.print_color(message.get("text"), color=color)
 
     if "image" in message:
-        rasa.cli.utils.print_color("Image: " + message.get("image"), color=color)
+        cliutils.print_color("Image: " + message.get("image"), color=color)
 
     if "attachment" in message:
-        rasa.cli.utils.print_color(
-            "Attachment: " + message.get("attachment"), color=color
-        )
+        cliutils.print_color("Attachment: " + message.get("attachment"), color=color)
 
     if "buttons" in message:
-        choices = [
-            button_to_string(button, idx)
-            for idx, button in enumerate(message.get("buttons"))
-        ]
-        choices.append(
-            button_to_string(
-                {"title": rasa.cli.utils.FREE_TEXT_INPUT_PROMPT}, len(choices)
-            )
+        choices = cliutils.button_choices_from_message_data(
+            message, allow_free_text_input=True
         )
 
         question = questionary.select(
@@ -55,26 +47,24 @@ def print_bot_output(
         return question
 
     if "elements" in message:
-        rasa.cli.utils.print_color("Elements:", color=color)
+        cliutils.print_color("Elements:", color=color)
         for idx, element in enumerate(message.get("elements")):
-            rasa.cli.utils.print_color(element_to_string(element, idx), color=color)
+            cliutils.print_color(element_to_string(element, idx), color=color)
 
     if "quick_replies" in message:
-        rasa.cli.utils.print_color("Quick Replies:", color=color)
+        cliutils.print_color("Quick Replies:", color=color)
         for idx, element in enumerate(message.get("quick_replies")):
-            rasa.cli.utils.print_color(button_to_string(element, idx), color=color)
+            cliutils.print_color(button_to_string(element, idx), color=color)
 
     if "custom" in message:
-        rasa.cli.utils.print_color("Custom json:", color=color)
-        rasa.cli.utils.print_color(
-            json.dumps(message.get("custom"), indent=2), color=color
-        )
+        cliutils.print_color("Custom json:", color=color)
+        cliutils.print_color(json.dumps(message.get("custom"), indent=2), color=color)
 
 
 def get_user_input(button_question: questionary.Question) -> Optional[Text]:
     if button_question is not None:
-        response = rasa.cli.utils.payload_from_button_question(button_question)
-        if response == rasa.cli.utils.FREE_TEXT_INPUT_PROMPT:
+        response = cliutils.payload_from_button_question(button_question)
+        if response == cliutils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
             response = get_user_input(None)
     else:
@@ -125,7 +115,7 @@ async def record_messages(
 
     exit_text = INTENT_MESSAGE_PREFIX + "stop"
 
-    rasa.cli.utils.print_success(
+    cliutils.print_success(
         "Bot loaded. Type a message and press enter "
         "(use '{}' to exit): ".format(exit_text)
     )
