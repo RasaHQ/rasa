@@ -32,6 +32,7 @@ def pipelines_for_tests():
                 "WhitespaceTokenizer",
                 "MitieTokenizer",
                 "SpacyTokenizer",
+                "ThirdPartyTokenizer",
                 "MitieFeaturizer",
                 "SpacyFeaturizer",
                 "NGramFeaturizer",

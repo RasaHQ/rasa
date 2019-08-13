@@ -1,3 +1,4 @@
+import logging
 import typing
 from typing import Any, Dict, Text
 
@@ -6,6 +7,8 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
+
+logger = logging.getLogger(__name__)
 
 
 class ThirdPartyTokenizer(Tokenizer, Component):
@@ -29,5 +32,12 @@ class ThirdPartyTokenizer(Tokenizer, Component):
         message.set("tokens", self.tokenize(message.text))
 
     def tokenize(self, text: Text) -> typing.List[Token]:
-        req = requests.get(self.third_party_service_endpoint + str(text))
-        return [Token(v["text"], v["end"]) for v in req.json()]
+        if self.third_party_service_endpoint is not None:
+            req = requests.get(self.third_party_service_endpoint + str(text))
+            return [Token(v["text"], v["end"]) for v in req.json()]
+        else:
+            logger.warning(
+                "Third party tokenizer component in pipeline, but no "
+                "`third_party_service_endpoint` configuration in the config."
+            )
+            return [Token(text, 0)]
