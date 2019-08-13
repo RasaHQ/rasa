@@ -171,7 +171,7 @@ def signal_handler(sig, frame):
 def payload_from_button_question(button_question: Question) -> Text:
     """Prompts user with a button question and returns the nlu payload."""
     response = button_question.ask()
-    if re.match(f"[0-9]*: {FREE_TEXT_INPUT_PROMPT}", response):
+    if re.match("[0-9]*: {}".format(FREE_TEXT_INPUT_PROMPT), response):
         # Free text input option is chosen
         return FREE_TEXT_INPUT_PROMPT
     payload = response[response.find("(") + 1 : response.find(")")]
