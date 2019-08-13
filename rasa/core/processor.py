@@ -273,16 +273,18 @@ class MessageProcessor(object):
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
-    async def _parse_message(self, message):
+    async def _parse_message(self, message, tracker: DialogueStateTracker = None):
         # for testing - you can short-cut the NLU part with a message
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
         if message.text.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(
-                message.text, message.message_id
+                message.text, message.message_id, tracker
             )
         else:
-            parse_data = await self.interpreter.parse(message.text, message.message_id)
+            parse_data = await self.interpreter.parse(
+                message.text, message.message_id, tracker
+            )
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
@@ -299,7 +301,7 @@ class MessageProcessor(object):
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            parse_data = await self._parse_message(message)
+            parse_data = await self._parse_message(message, tracker)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
@@ -325,7 +327,7 @@ class MessageProcessor(object):
         )
 
     @staticmethod
-    def _should_handle_message(tracker):
+    def _should_handle_message(tracker: DialogueStateTracker):
         return (
             not tracker.is_paused()
             or tracker.latest_message.intent.get("name") == USER_INTENT_RESTART

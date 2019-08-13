@@ -11,14 +11,21 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
+- throw error during training when triggers are defined in the domain without
+  ``MappingPolicy`` being present in the policy ensemble
 - experimental training data importer which supports training with data of multiple
   sub bots. Please see the
   `docs <https://rasa.com/docs/rasa/api/training-data-importers/>`_ for more
   information.
-- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
+- The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that 
+  use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
 
 Changed
 -------
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
+  into the ``supervised_embeddings`` NLU pipeline template
+- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 - NLU evaluations now also stores its output in the output directory like the core evaluation
 
 Removed
