@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- bot messages contain the `timestamp` of the `BotUttered` event,
+- bot messages contain the ``timestamp`` of the ``BotUttered`` event,
   which can be used in channels
 - both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier`` can be used
   with ``softmax`` starspace loss
