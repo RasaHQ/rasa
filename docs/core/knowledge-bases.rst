@@ -9,7 +9,7 @@ Knowledge Base Actions
 .. edit-link::
 
 .. warning::
-   This feature is still experimental. Please provide feedback.
+   This feature is experimental.
 
 .. contents::
    :local:
@@ -21,7 +21,7 @@ Additionally, users do not only refer to objects by their names, but also use te
 restaurant", to refer to a specific object.
 Objects need to be recognised and reused at a later point in the conversation.
 
-To handle the above challenges, we recommend that you create an ``ActionQueryKnowledgeBase``.
+To handle the above challenges, we recommend that you create a custom action that inherits from ``ActionQueryKnowledgeBase``.
 This is a single actions which contains the logic to query a knowledge base for objects and their attributes.
 The action is also able to resolve certain mention of objects, such as ``the first one`` or ``that restaurant``.
 You can find a complete example in ``examples/knowledge_base_bot``.
@@ -37,7 +37,7 @@ Create an ActionQueryKnowledgeBase
 Whenever you create an ``ActionQueryKnowledgeBase``, you need to pass a ``KnowledgeBase`` to the constructor.
 A knowledge base can be used to store complex data structures.
 If you just have some data points that fit into memory, you can use our ``InMemoryKnowledgeBase`` implementation.
-To initialize a ``InMemoryKnowledgeBase`` you need to provide the data and the schema in form of a python dictionary.
+To initialize an ``InMemoryKnowledgeBase`` you need to provide the data and the schema in form of a python dictionary.
 The schema and data need to follow a specific data structure.
 
 Let's take a look at an example:
@@ -83,7 +83,7 @@ Just inherit ``KnowledgeBase`` and implement the methods ``get_objects()`` and `
    We wrote a `blog post <https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/>`_
    that explains how you can set up your own knowledge base.
 
-As soon as you defined your knowledge base, you can actually create the ``ActionQueryKnowledgeBase``.
+As soon as you defined your knowledge base, you can actually create your custom action that inherits ``ActionQueryKnowledgeBase``.
 
 .. code-block:: python
 
@@ -100,6 +100,7 @@ Don't forget to add it to your domain file.
 .. note::
    If you overwrite the default action name ``action_query_knowledge_base``, you need to add the following three
    slots to your domain file: ``knowledge_base_objects``, ``knowledge_base_last_object``, and ``knowledge_base_last_object_type``.
+   The slots are used internally by ``ActionQueryKnowledgeBase``.
    If you keep the default action name, those slots will be added automatically for you.
 
 Defining the NLU Data
@@ -168,12 +169,24 @@ The attributes "cuisine" and "city" should be included in the attribute list of 
 You also need to add those entities as entities and slots in the domain file.
 If the NER detected those attributes in the request of the user, the action will use those for filter the restaurants.
 
+Once the bot retrieved some entities from the knowledge base, it will response to the user with
+
+    `Found the following objects of type 'restaurant':`
+    `1: I due forni`
+    `2: PastaBar`
+    `3: Berlin Burrito Company`
+
+Or if no entities could be found
+
+    `I could not find any objects of type 'restaurant'.`
+
+If you want to change the utterance of the bot, you can overwrite the methods ``utter_no_objects_found()`` and ``utter_objects()``.
 
 Query the Knowledge Base for an Attribute of an Object
 ------------------------------------------------------
 
-To obtain the value of an attribute for a specific object, the action needs to know the object and attribute of
-interest.
+To obtain the value of an attribute for a specific object from the knowledge base, the action needs to know the object
+and attribute of interest.
 Every object has a key attribute which should be unique.
 Thus, we use the value of that key attribute to identify an object.
 The user can either refer to the object of interest by its name, e.g. value of the key attribute, or he refers to a
@@ -183,6 +196,16 @@ The attribute of interest should be included in the user's request.
 For example, ``What is the cuisine of PastaBar?``, contains the attribute of interest "cuisine" and the object of
 interest "PastaBar".
 Both should be marked as entities in the NLU training data, e.g. ``What is the [cuisine](attribute) of [PastaBar](restaurant)?``.
+
+If the attribute was found in the knowledge base, the bot will response with the following utterance:
+
+    `'PastaBar' has the value 'Italian' for attribute 'cuisine'.`
+
+If no value for the requested attribute was found, the bot will response with
+
+    `Did not found a valid value for attribute 'cuisine' for object 'PastaBar'.`
+
+If you want to change the utterance of the bot, you can overwrite the method ``utter_attribute_value()``.
 
 .. _resolve_mentions:
 
@@ -230,8 +253,3 @@ The knowledge base action would detect that the user wants to obtain the value o
 If no mention or object could be detected by the NER, the action just assumes the user is talking about he last
 mentioned object, e.g. "PastaBar".
 You can disable this behaviour by setting ``use_last_object_mention`` to ``False`` when initializing the action.
-
-Limitations of ActionQueryKnowledgeBase
----------------------------------------
-
-TODO
