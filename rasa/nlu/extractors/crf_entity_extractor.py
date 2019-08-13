@@ -454,14 +454,30 @@ class CRFEntityExtractor(EntityExtractor):
 
     @staticmethod
     def _sentence_to_labels(
-        sentence: List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]],
+        sentence: List[
+            Tuple[
+                Optional[Text],
+                Optional[Text],
+                Text,
+                Dict[Text, Any],
+                Optional[Dict[str, Any]],
+            ]
+        ],
     ) -> List[Text]:
 
         return [label for _, _, label, _, _ in sentence]
 
     def _from_json_to_crf(
         self, message: Message, entity_offsets: List[Tuple[int, int, Text]]
-    ) -> List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]:
+    ) -> List[
+        Tuple[
+            Optional[Text],
+            Optional[Text],
+            Text,
+            Dict[Text, Any],
+            Optional[Dict[Text, Any]],
+        ]
+    ]:
         """Convert json examples to format of underlying crfsuite."""
 
         if self.pos_features:
