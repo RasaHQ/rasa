@@ -42,7 +42,9 @@ def print_bot_output(
             for idx, button in enumerate(message.get("buttons"))
         ]
         choices.append(
-            button_to_string({"title": rasa.cli.utils.FREE_TEXT_INPUT_PROMPT}, len(choices))
+            button_to_string(
+                {"title": rasa.cli.utils.FREE_TEXT_INPUT_PROMPT}, len(choices)
+            )
         )
 
         question = questionary.select(
