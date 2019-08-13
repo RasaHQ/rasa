@@ -203,8 +203,6 @@ It is recommended to use
         otherwise the policy will be trained only for ``1``
         epoch.
 
-    The main feature of this policy is **transformer**.
-
     The algorithm also has hyper-parameters to control:
 
         - neural network's architecture:
@@ -282,6 +280,8 @@ It is recommended to use
         if ``evaluate_on_num_examples`` is non zero, random examples will be
         picked by stratified split and used as **hold out** validation set,
         so they will be excluded from training data.
+        We suggest to set it to zero if data set contains a lot of unique examples
+        of dialogue turns
 
     .. note::
 
@@ -380,9 +380,11 @@ Fallback Policy
 ^^^^^^^^^^^^^^^
 
 The ``FallbackPolicy`` invokes a :ref:`fallback action
-<fallback-actions>` if the intent recognition
-has a confidence below ``nlu_threshold`` or if none of the dialogue
-policies predict an action with confidence higher than ``core_threshold``.
+<fallback-actions>` if at least one of the following occurs:
+1. The intent recognition has a confidence below ``nlu_threshold``.
+2. The highest ranked intent differs in confidence with the second highest ranked intent
+by less than ``ambiguity_threshold``.
+3. None of the dialogue policies predict an action with confidence higher than ``core_threshold``.
 
 **Configuration:**
 
@@ -394,12 +396,17 @@ policies predict an action with confidence higher than ``core_threshold``.
       policies:
         - name: "FallbackPolicy"
           nlu_threshold: 0.3
+          ambiguity_threshold: 0.1
           core_threshold: 0.3
           fallback_action_name: 'action_default_fallback'
 
     +----------------------------+---------------------------------------------+
     | ``nlu_threshold``          | Min confidence needed to accept an NLU      |
     |                            | prediction                                  |
+    +----------------------------+---------------------------------------------+
+    | ``ambiguity_threshold``    | Min amount by which the confidence of the   |
+    |                            | top intent must exceed that of the second   |
+    |                            | highest ranked intent.                      |
     +----------------------------+---------------------------------------------+
     | ``core_threshold``         | Min confidence needed to accept an action   |
     |                            | prediction from Rasa Core                   |
@@ -420,7 +427,8 @@ policies predict an action with confidence higher than ``core_threshold``.
 
        fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
                                  core_threshold=0.3,
-                                 nlu_threshold=0.3)
+                                 nlu_threshold=0.3,
+                                 ambiguity_threshold=0.1)
 
        agent = Agent("domain.yml", policies=[KerasPolicy(), fallback])
 
@@ -436,7 +444,8 @@ Two-Stage Fallback Policy
 The ``TwoStageFallbackPolicy`` handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.
 
-- If a NLU prediction has a low confidence score, the user is asked to affirm
+- If an NLU prediction has a low confidence score or is not significantly higher
+  than the second highest ranked prediction, the user is asked to affirm
   the classification of the intent.
 
     - If they affirm, the story continues as if the intent was classified
@@ -468,6 +477,7 @@ by trying to disambiguate the user input.
         policies:
           - name: TwoStageFallbackPolicy
             nlu_threshold: 0.3
+            ambiguity_threshold: 0.1
             core_threshold: 0.3
             fallback_core_action_name: "action_default_fallback"
             fallback_nlu_action_name: "action_default_fallback"
@@ -477,6 +487,10 @@ by trying to disambiguate the user input.
     | ``nlu_threshold``             | Min confidence needed to accept an NLU   |
     |                               | prediction                               |
     +-------------------------------+------------------------------------------+
+    | ``ambiguity_threshold``       | Min amount by which the confidence of the|
+    |                               | top intent must exceed that of the second|
+    |                               | highest ranked intent.                   |
+    +--------------------------------------------------------------------------+
     | ``core_threshold``            | Min confidence needed to accept an action|
     |                               | prediction from Rasa Core                |
     +-------------------------------+------------------------------------------+
