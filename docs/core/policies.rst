@@ -203,8 +203,6 @@ It is recommended to use
         otherwise the policy will be trained only for ``1``
         epoch.
 
-    The main feature of this policy is **transformer**.
-
     The algorithm also has hyper-parameters to control:
 
         - neural network's architecture:
@@ -282,6 +280,8 @@ It is recommended to use
         if ``evaluate_on_num_examples`` is non zero, random examples will be
         picked by stratified split and used as **hold out** validation set,
         so they will be excluded from training data.
+        We suggest to set it to zero if data set contains a lot of unique examples
+        of dialogue turns
 
     .. note::
 
