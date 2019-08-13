@@ -14,6 +14,15 @@ Knowledge Base Actions
 .. contents::
    :local:
 
+
+TODO:
+- just one knowledge base at a time can be used
+- overwrite representation function / key attribute / get attributes
+- how to build a new knowledge base
+- limitations of implementation
+- update doc to new code changes
+
+
 A lot of users want to obtain detailed information about certain objects, such as restaurants or hotels, during a conversation.
 In order to answer those user requests domain knowledge is needed.
 Hard-coding the information would not help as the information are subject to change.

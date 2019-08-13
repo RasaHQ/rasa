@@ -1,0 +1,58 @@
+{
+    "restaurant": [
+        {"id": 0, "name": "PastaBar", "cuisine": "Italian", "wifi": "False"},
+        {"id": 1, "name": "Berlin Burrito Company", "cuisine": "Mexican", "wifi": "True"},
+        {"id": 2, "name": "I due forni", "cuisine": "Italian", "wifi": "False"}
+    ],
+    "hotel": [
+        {
+            "id": 0,
+            "name": "Hilton",
+            "price-range": "expensive",
+            "breakfast-included": "True",
+            "city": "Berlin"
+        },
+        {
+            "id": 1,
+            "name": "Hilton",
+            "price-range": "expensive",
+            "breakfast-included": "True",
+            "city": "Frankfurt am Main"
+        },
+        {
+            "id": 2,
+            "name": "B&B",
+            "price-range": "mid-range",
+            "breakfast-included": "True",
+            "city": "Berlin"
+        },
+        {
+            "id": 3,
+            "name": "Berlin Wall Hostel",
+            "price-range": "cheap",
+            "breakfast-included": "False",
+            "city": "Berlin"
+        },
+        {
+            "id": 4,
+            "name": "City Hotel",
+            "price-range": "expensive",
+            "breakfast-included": "False",
+            "city": "Berlin"
+        },
+        {
+            "id": 5,
+            "name": "Jugendherberge",
+            "price-range": "cheap",
+            "breakfast-included": "True",
+            "city": "Berlin"
+        },
+        {
+            "id": 6,
+            "name": "Berlin Hotel",
+            "price-range": "mid-range",
+            "breakfast-included": "False",
+            "city": "Berlin"
+        }
+    ]
+}
