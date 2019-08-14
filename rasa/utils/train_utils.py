@@ -835,8 +835,8 @@ def train_tf_dataset(
 
     train_loss = 0
     train_acc = 0
-    eval_loss = 0
-    eval_acc = 0
+    val_loss = 0
+    val_acc = 0
     for ep in pbar:
 
         ep_batch_size = linearly_increasing_batch_size(ep, batch_size, epochs)
@@ -861,13 +861,14 @@ def train_tf_dataset(
         train_loss = ep_train_loss / batches_per_epoch
         train_acc = ep_train_acc / batches_per_epoch
 
-        pbar.set_postfix(
-            {"loss": "{:.3f}".format(train_loss), "acc": "{:.3f}".format(train_acc)}
-        )
+        postfix_dict = {
+            "loss": "{:.3f}".format(train_loss),
+            "acc": "{:.3f}".format(train_acc),
+        }
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
-                eval_loss, eval_acc = output_validation_stat(
+                val_loss, val_acc = output_validation_stat(
                     eval_init_op,
                     loss,
                     acc,
@@ -876,13 +877,15 @@ def train_tf_dataset(
                     batch_size_in,
                     ep_batch_size,
                 )
-                if (ep + 1) != epochs:
-                    logger.info(
-                        "Evaluation results: "
-                        "validation loss: {:.3f}, "
-                        "validation accuracy: {:.3f}"
-                        "".format(eval_loss, eval_acc)
-                    )
+
+            postfix_dict.update(
+                {
+                    "val_loss": "{:.3f}".format(val_loss),
+                    "val_acc": "{:.3f}".format(val_acc),
+                }
+            )
+
+        pbar.set_postfix(postfix_dict)
 
     final_message = (
         "Finished training embedding policy, "
@@ -892,7 +895,7 @@ def train_tf_dataset(
     if eval_init_op is not None:
         final_message += (
             ", validation loss={:.3f}, validation accuracy={:.3f}"
-            "".format(eval_loss, eval_acc)
+            "".format(val_loss, val_acc)
         )
     logger.info(final_message)
 
