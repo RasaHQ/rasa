@@ -184,11 +184,9 @@ def button_choices_from_message_data(
 def payload_from_button_question(button_question: Question) -> Text:
     """Prompt user with a button question and returns the nlu payload."""
     response = button_question.ask()
-    if response == FREE_TEXT_INPUT_PROMPT:
-        # Free text input option is chosen
-        return response
-    payload = response[response.find("(") + 1 : response.find(")")]
-    return payload
+    if response != FREE_TEXT_INPUT_PROMPT:
+        response = response[response.find("(") + 1 : response.find(")")]
+    return response
 
 
 class bcolors(object):
