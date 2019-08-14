@@ -2,7 +2,8 @@ import json
 import logging
 from typing import Any, Dict, Optional, Text, Union
 
-import rasa.core.utils as rasa_core_utils
+import rasa.utils.brokers as broker_utils
+
 from rasa.utils.common import class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
 
@@ -57,6 +58,90 @@ class EventChannel(object):
         raise NotImplementedError("Event broker must implement the `publish` method.")
 
 
+# noinspection PyUnresolvedReferences
+def initialise_pika_connection(
+    host: Text,
+    username: Text,
+    password: Text,
+    connection_attempts: int = 20,
+    retry_delay_in_seconds: Union[int, float] = 5,
+) -> "pika.BlockingConnection":
+    """Create a Pika `BlockingConnection`.
+
+    Args:
+        host: Pika host
+        username: username for authentication with Pika host
+        password: password for authentication with Pika host
+        connection_attempts: number of connection attempts before giving up
+        retry_delay_in_seconds: delay in seconds between connection attempts
+
+    Returns:
+        Pika `BlockingConnection` with provided parameters
+    """
+
+    import pika
+
+    parameters = pika.ConnectionParameters(
+        host,
+        credentials=pika.PlainCredentials(username, password),
+        connection_attempts=connection_attempts,
+        # Wait between retries since
+        # it can take some time until
+        # RabbitMQ comes up.
+        retry_delay=retry_delay_in_seconds,
+    )
+    return pika.BlockingConnection(parameters)
+
+
+# noinspection PyUnresolvedReferences
+def initialise_channel(
+    host: Text, queue: Text, username: Text, password: Text
+) -> "pika.adapters.blocking_connection.BlockingChannel":
+    """Initialise a Pika channel with a durable queue.
+
+    Args:
+        host: Pika host
+        queue: Pika queue to declare
+        username: username for authentication with Pika host
+        password: password for authentication with Pika host
+
+    Returns:
+        Pika `BlockingChannel` with declared queue
+    """
+
+    connection = initialise_pika_connection(host, username, password)
+
+    return _declare_pika_channel_with_queue(connection, queue)
+
+
+# noinspection PyUnresolvedReferences
+def _declare_pika_channel_with_queue(
+    connection: "pika.adapters.BlockingConnection", queue: Text
+) -> "pika.adapters.blocking_connection.BlockingChannel":
+    """Declare a durable queue on Pika connection."""
+
+    channel = connection.channel()
+    channel.queue_declare(queue, durable=True)
+
+    return channel
+
+
+# noinspection PyUnresolvedReferences
+def close_pika_connection(connection: "pika.adapters.BlockingConnection"):
+    """Attempt to close Pika connection."""
+
+    from pika.exceptions import AMQPError
+
+    host = connection.parameters.host
+    try:
+        connection.close()
+        logger.debug(
+            "Successfully closed Pika connection with host '{}'." "".format(host)
+        )
+    except AMQPError:
+        logger.exception("Failed to close Pika connection with host '{}'.".format(host))
+
+
 class PikaProducer(EventChannel):
     def __init__(
         self,
@@ -70,13 +155,7 @@ class PikaProducer(EventChannel):
 
         self.queue = queue
         self.host = host
-        self.connection = rasa_core_utils.initialise_pika_connection(
-            self.host, username, password
-        )
-
-        self.channel = rasa_core_utils.declare_pika_channel_with_queue(
-            self.connection, self.queue
-        )
+        self.channel = initialise_channel(host, queue, username, password)
 
     @classmethod
     def from_endpoint_config(
@@ -87,10 +166,10 @@ class PikaProducer(EventChannel):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event: Dict):
+    def publish(self, event: Dict) -> None:
         self._publish(json.dumps(event))
 
-    def _publish(self, body: Text):
+    def _publish(self, body: Text) -> None:
         self.channel.basic_publish("", self.queue, body)
         logger.debug(
             "Published Pika events to queue '{}' on host "
