@@ -6,6 +6,8 @@
 Running Rasa with Docker
 ========================
 
+.. edit-link::
+
 This is a guide on how to build a Rasa assistant with Docker.
 If you haven't used Rasa before, we'd recommend that you start with the :ref:`rasa-tutorial`.
 

@@ -6,6 +6,8 @@
 Multi-skill Assistants
 ======================
 
+.. edit-link::
+
 You can build a contextual AI assistant by combining reusable "building blocks"
 called skills.
 You might, for example, handle chitchat with one skill and greet your users with

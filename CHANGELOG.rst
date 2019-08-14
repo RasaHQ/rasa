@@ -6,26 +6,52 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-
-[Unreleased 1.2.1] - `master`_
+[Unreleased 1.2.3] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- added argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
+- `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
+- throw error during training when triggers are defined in the domain without
+  ``MappingPolicy`` being present in the policy ensemble
+- The tracker is now avaialble within the interpreter's ``parse`` method, giving the ability to create interpreter classes that use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
+- argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
   the runtime configuration (endpoints and credentials)
+- ``LockStore`` class storing instances of ``TicketLock`` for every ``conversation_id``
 
 Changed
 -------
-
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
+  into the ``supervised_embeddings`` NLU pipeline template
+- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
+- NLU evaluations now also stores its output in the output directory like the core evaluation
+- serialise ``DialogueStateTracker`` as json instead of pickle
 
 Removed
 -------
 
-
 Fixed
 -----
 
+
+[1.2.2] - 2019-08-07
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- ``UserUttered`` events always got the same timestamp
+
+[1.2.1] - 2019-08-06
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Docs now have an ``EDIT THIS PAGE`` button
+
+Fixed
+-----
+- ``Flood control exceeded`` error in Telegram connector which happened because the
+  webhook was set twice
 
 [1.2.0] - 2019-08-01
 ^^^^^^^^^^^^^^^^^^^^
@@ -126,14 +152,12 @@ Added
 - ``info`` log when credentials were provided for multiple channels and channel in
   ``--connector`` argument was specified at the same time
 - validate export paths in interactive learning
-- ``LockStore`` class storing instances of ``TicketLock`` for every ``conversation_id``
 
 Changed
 -------
 - deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
   or ``rasa.core.run.configure_app`` instead.
 - ``Agent.load()`` also accepts ``tar.gz`` model file
-- serialise ``DialogueStateTracker`` as json instead of pickle
 
 Removed
 -------

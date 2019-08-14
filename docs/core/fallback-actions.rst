@@ -6,6 +6,8 @@
 Fallback Actions
 ================
 
+.. edit-link::
+
 Sometimes you want to revert to a fallback action, such as replying,
 `"Sorry, I didn't understand that"`. You can handle fallback cases by adding
 either the ``FallbackPolicy`` or the ``TwoStageFallbackPolicy`` to your

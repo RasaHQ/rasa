@@ -5,6 +5,8 @@
 Cisco Webex Teams
 =================
 
+.. edit-link::
+
 You first have to create a cisco webex app to get credentials.
 Once you have them you can add these to your ``credentials.yml``.
 

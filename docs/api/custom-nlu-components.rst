@@ -6,6 +6,8 @@
 Custom NLU Components
 =====================
 
+.. edit-link::
+
 You can create a custom component to perform a specific task which NLU doesn't currently offer (for example, sentiment analysis).
 Below is the specification of the :class:`rasa.nlu.components.Component` class with the methods you'll need to implement.
 
