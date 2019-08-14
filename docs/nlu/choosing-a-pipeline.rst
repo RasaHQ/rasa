@@ -238,8 +238,8 @@ To train a Rasa model in your preferred language, define the
 
     pipeline: "supervised_embeddings"
 
-The ``supervised_embeddings`` pipeline supports any language that can be tokenized, and by default uses whitespace
-for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are default
+The ``supervised_embeddings`` pipeline supports any language that can be tokenized.  By default it uses whitespace
+for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are the default
 components that make up the ``supervised_embeddings`` pipeline:
 
 .. code-block:: yaml
@@ -254,7 +254,7 @@ components that make up the ``supervised_embeddings`` pipeline:
     - name: "CountVectorsFeaturizer"
     - name: "EmbeddingIntentClassifier"
 
-So for example, if your chosen language is not white-spaced tokenized (words are not separated by spaces), you
+So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
 can replace the ``WhitespaceTokenizer`` with your own tokenizer. We support a number of different :ref:`tokenizers <tokenizers>`,
 or you can :ref:`create your own <custom-nlu-components>`.
 
