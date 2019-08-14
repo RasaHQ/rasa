@@ -96,7 +96,7 @@ async def train_comparison_models(
                     policy_config, domain, [story_file]
                 )
 
-                config_name = os.path.basename(policy_config)
+                config_name = os.path.splitext(os.path.basename(policy_config))[0]
                 logging.info(
                     "Starting to train {} round {}/{}"
                     " with {}% exclusion"
