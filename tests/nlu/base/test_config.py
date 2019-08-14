@@ -1,5 +1,6 @@
 import json
 import tempfile
+from typing import Text
 
 import pytest
 
@@ -41,16 +42,18 @@ def test_invalid_pipeline_template():
     assert "unknown pipeline template" in str(execinfo.value)
 
 
-def test_pipeline_looksup_registry():
-    for pipeline_template in registered_pipeline_templates:
-        args = {"pipeline": pipeline_template}
-        f = write_file_config(args)
-        final_config = config.load(f.name)
-        components = [c for c in final_config.pipeline]
+@pytest.mark.parametrize(
+    "pipeline_template", list(registered_pipeline_templates.keys())
+)
+def test_pipeline_looksup_registry(pipeline_template: Text):
+    args = {"pipeline": pipeline_template}
+    f = write_file_config(args)
+    final_config = config.load(f.name)
+    components = [c for c in final_config.pipeline]
 
-        assert json.dumps(components, sort_keys=True) == json.dumps(
-            registered_pipeline_templates[pipeline_template], sort_keys=True
-        )
+    assert json.dumps(components, sort_keys=True) == json.dumps(
+        registered_pipeline_templates[pipeline_template], sort_keys=True
+    )
 
 
 def test_default_config_file():
