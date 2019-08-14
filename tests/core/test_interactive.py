@@ -4,6 +4,7 @@ import uuid
 from aioresponses import aioresponses
 
 import rasa.utils.io
+import rasa.cli.utils as cli_utils
 from rasa.core.events import BotUttered
 from rasa.core.training import interactive
 from rasa.utils.endpoints import EndpointConfig
@@ -95,6 +96,7 @@ def test_bot_output_format():
         "Buttons:\n"
         "1: yes (/yes)\n"
         '2: no (/no) - {"extra": "extra"}\n'
+        "Type out your own message...\n"
         "Elements:\n"
         '1: element1 - {"buttons": '
         '[{"payload": "/button1", "title": "button1"}]'

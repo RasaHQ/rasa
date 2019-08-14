@@ -9,8 +9,7 @@ from aiohttp import ClientTimeout
 from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
-import rasa.cli.utils as cliutils
-from rasa.cli.utils import button_to_string, element_to_string
+from rasa.cli import utils as cli_utils
 
 from rasa.core import utils
 from rasa.core.channels.channel import UserMessage
@@ -51,12 +50,12 @@ def print_bot_output(
     if "elements" in message:
         cliutils.print_color("Elements:", color=color)
         for idx, element in enumerate(message.get("elements")):
-            cliutils.print_color(element_to_string(element, idx), color=color)
+            cliutils.print_color(cli_utils.element_to_string(element, idx), color=color)
 
     if "quick_replies" in message:
         cliutils.print_color("Quick Replies:", color=color)
         for idx, element in enumerate(message.get("quick_replies")):
-            cliutils.print_color(button_to_string(element, idx), color=color)
+            cliutils.print_color(cli_utils.button_to_string(element, idx), color=color)
 
     if "custom" in message:
         cliutils.print_color("Custom json:", color=color)

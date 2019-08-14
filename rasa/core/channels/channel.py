@@ -9,7 +9,7 @@ from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 
 import rasa.utils.endpoints
-from rasa.cli.utils import button_to_string
+from rasa.cli import utils as cli_utils
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 
@@ -221,7 +221,7 @@ class OutputChannel(object):
 
         await self.send_text_message(recipient_id, text, **kwargs)
         for idx, button in enumerate(buttons):
-            button_msg = button_to_string(button, idx)
+            button_msg = cli_utils.button_to_string(button, idx)
             await self.send_text_message(recipient_id, button_msg, **kwargs)
 
     async def send_quick_replies(
