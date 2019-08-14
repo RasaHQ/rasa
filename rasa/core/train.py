@@ -5,7 +5,7 @@ import tempfile
 import typing
 from typing import Dict, Optional, Text, Union, List
 
-from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
+from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
 
@@ -119,7 +119,7 @@ async def train_comparison_models(
                     new_fingerprint = await model.model_fingerprint(file_importer)
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
-                    model_name = config_name + "_percentage_" + str(percentage)
+                    model_name = config_name + PERCENTAGE_KEY + str(percentage)
                     model.package_model(
                         fingerprint=new_fingerprint,
                         output_directory=output_dir,
