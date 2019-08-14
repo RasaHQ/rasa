@@ -65,7 +65,7 @@ def initialise_pika_connection(
     password: Text,
     connection_attempts: int = 20,
     retry_delay_in_seconds: Union[int, float] = 5,
-) -> "pika.BlockingConnection":
+) -> "BlockingConnection":
     """Create a Pika `BlockingConnection`.
 
     Args:
@@ -96,7 +96,7 @@ def initialise_pika_connection(
 # noinspection PyUnresolvedReferences
 def initialise_pika_channel(
     host: Text, queue: Text, username: Text, password: Text
-) -> "pika.adapters.blocking_connection.BlockingChannel":
+) -> "BlockingChannel":
     """Initialise a Pika channel with a durable queue.
 
     Args:
@@ -117,7 +117,7 @@ def initialise_pika_channel(
 # noinspection PyUnresolvedReferences
 def _declare_pika_channel_with_queue(
     connection: "pika.adapters.BlockingConnection", queue: Text
-) -> "pika.adapters.blocking_connection.BlockingChannel":
+) -> "BlockingChannel":
     """Declare a durable queue on Pika connection."""
 
     channel = connection.channel()
@@ -127,7 +127,7 @@ def _declare_pika_channel_with_queue(
 
 
 # noinspection PyUnresolvedReferences
-def close_pika_connection(connection: "pika.adapters.BlockingConnection") -> None:
+def close_pika_connection(connection: "BlockingConnection") -> None:
     """Attempt to close Pika connection."""
 
     from pika.exceptions import AMQPError
