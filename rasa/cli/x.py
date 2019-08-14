@@ -115,24 +115,23 @@ def _overwrite_endpoints_for_local_x(
         wait_time_between_pulls=2,
     )
 
-    print("have endpoints", endpoints.event_broker)
-    # overwrite_existing_event_broker = False
-    # if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
-    #     print_error(
-    #         "Rasa X currently only supports a SQLite event broker with path '{}' "
-    #         "when running locally. You can deploy Rasa X with Docker "
-    #         "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
-    #         "other event broker configurations.".format(DEFAULT_EVENTS_DB)
-    #     )
-    #     overwrite_existing_event_broker = questionary.confirm(
-    #         "Do you want to continue with the default SQLite event broker?"
-    #     ).ask()
-    #
-    #     if not overwrite_existing_event_broker:
-    #         exit(0)
-    #
-    # if not endpoints.tracker_store or overwrite_existing_event_broker:
-    #     endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
+    overwrite_existing_event_broker = False
+    if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
+        print_error(
+            "Rasa X currently only supports a SQLite event broker with path '{}' "
+            "when running locally. You can deploy Rasa X with Docker "
+            "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
+            "other event broker configurations.".format(DEFAULT_EVENTS_DB)
+        )
+        overwrite_existing_event_broker = questionary.confirm(
+            "Do you want to continue with the default SQLite event broker?"
+        ).ask()
+
+        if not overwrite_existing_event_broker:
+            exit(0)
+
+    if not endpoints.tracker_store or overwrite_existing_event_broker:
+        endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
 
 
 def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
