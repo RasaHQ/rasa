@@ -24,19 +24,19 @@ DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
 
 def print_bot_output(
-    message, color=cliutils.bcolors.OKBLUE
+    message, color=cli_utils.bcolors.OKBLUE
 ) -> Optional[questionary.Question]:
     if ("text" in message) and not ("buttons" in message):
-        cliutils.print_color(message.get("text"), color=color)
+        cli_utils.print_color(message.get("text"), color=color)
 
     if "image" in message:
-        cliutils.print_color("Image: " + message.get("image"), color=color)
+        cli_utils.print_color("Image: " + message.get("image"), color=color)
 
     if "attachment" in message:
-        cliutils.print_color("Attachment: " + message.get("attachment"), color=color)
+        cli_utils.print_color("Attachment: " + message.get("attachment"), color=color)
 
     if "buttons" in message:
-        choices = cliutils.button_choices_from_message_data(
+        choices = cli_utils.button_choices_from_message_data(
             message, allow_free_text_input=True
         )
 
@@ -48,24 +48,24 @@ def print_bot_output(
         return question
 
     if "elements" in message:
-        cliutils.print_color("Elements:", color=color)
+        cli_utils.print_color("Elements:", color=color)
         for idx, element in enumerate(message.get("elements")):
-            cliutils.print_color(cli_utils.element_to_string(element, idx), color=color)
+            cli_utils.print_color(cli_utils.element_to_string(element, idx), color=color)
 
     if "quick_replies" in message:
-        cliutils.print_color("Quick Replies:", color=color)
+        cli_utils.print_color("Quick Replies:", color=color)
         for idx, element in enumerate(message.get("quick_replies")):
-            cliutils.print_color(cli_utils.button_to_string(element, idx), color=color)
+            cli_utils.print_color(cli_utils.button_to_string(element, idx), color=color)
 
     if "custom" in message:
-        cliutils.print_color("Custom json:", color=color)
-        cliutils.print_color(json.dumps(message.get("custom"), indent=2), color=color)
+        cli_utils.print_color("Custom json:", color=color)
+        cli_utils.print_color(json.dumps(message.get("custom"), indent=2), color=color)
 
 
 def get_user_input(button_question: questionary.Question) -> Optional[Text]:
     if button_question is not None:
-        response = cliutils.payload_from_button_question(button_question)
-        if response == cliutils.FREE_TEXT_INPUT_PROMPT:
+        response = cli_utils.payload_from_button_question(button_question)
+        if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
             response = get_user_input(None)
     else:
@@ -116,7 +116,7 @@ async def record_messages(
 
     exit_text = INTENT_MESSAGE_PREFIX + "stop"
 
-    cliutils.print_success(
+    cli_utils.print_success(
         "Bot loaded. Type a message and press enter "
         "(use '{}' to exit): ".format(exit_text)
     )
