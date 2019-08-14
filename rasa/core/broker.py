@@ -1,11 +1,13 @@
 import json
 import logging
+import typing
 from typing import Any, Dict, Optional, Text, Union
-
-import rasa.utils.brokers as broker_utils
 
 from rasa.utils.common import class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
+
+if typing.TYPE_CHECKING:
+    from pika.adapters.blocking_connection import BlockingChannel, BlockingConnection
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +118,7 @@ def initialise_pika_channel(
 
 # noinspection PyUnresolvedReferences
 def _declare_pika_channel_with_queue(
-    connection: "pika.adapters.BlockingConnection", queue: Text
+    connection: "BlockingConnection", queue: Text
 ) -> "BlockingChannel":
     """Declare a durable queue on Pika connection."""
 
