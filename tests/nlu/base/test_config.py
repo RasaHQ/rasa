@@ -1,3 +1,4 @@
+import json
 import tempfile
 
 import pytest
@@ -41,12 +42,15 @@ def test_invalid_pipeline_template():
 
 
 def test_pipeline_looksup_registry():
-    pipeline_template = list(registered_pipeline_templates)[0]
-    args = {"pipeline": pipeline_template}
-    f = write_file_config(args)
-    final_config = config.load(f.name)
-    components = [c for c in final_config.pipeline]
-    assert components == registered_pipeline_templates[pipeline_template]
+    for pipeline_template in registered_pipeline_templates:
+        args = {"pipeline": pipeline_template}
+        f = write_file_config(args)
+        final_config = config.load(f.name)
+        components = [c for c in final_config.pipeline]
+
+        assert json.dumps(components, sort_keys=True) == json.dumps(
+            registered_pipeline_templates[pipeline_template], sort_keys=True
+        )
 
 
 def test_default_config_file():
