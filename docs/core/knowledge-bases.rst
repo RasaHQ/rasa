@@ -14,12 +14,6 @@ Knowledge Base Actions
 .. contents::
    :local:
 
-
-TODO:
-- just one knowledge base at a time can be used
-- limitations of implementation
-
-
 A lot of users want to obtain detailed information about certain objects, such as restaurants or hotels, during a conversation.
 Users, for example, want to know restaurants in Berlin.
 They want to obtain details, such as, if an restaurant has outside seating or how expensive the restaurant is.
@@ -182,6 +176,8 @@ Create an ActionQueryKnowledgeBase
 
 Whenever you create an ``ActionQueryKnowledgeBase``, you need to pass a ``KnowledgeBase`` to the constructor.
 It can be either an ``InMemoryKnowledgeBase`` or your own implementation of a ``KnowledgeBase``.
+However, you can just use one knowledge base.
+The usage of multiple knowledge bases at the same time is not supported.
 To create your own knowledge base action, you need to inherit ``ActionQueryKnowledgeBase`` and pass the knowledge
 base to the constructor of ``ActionQueryKnowledgeBase``.
 
@@ -354,3 +350,19 @@ The knowledge base action would detect that the user wants to obtain the value o
 If no mention or object could be detected by the NER, the action just assumes the user is talking about he last
 mentioned object, e.g. "PastaBar".
 You can disable this behaviour by setting ``use_last_object_mention`` to ``False`` when initializing the action.
+
+Limitations
+-----------
+
+``ActionQueryKnowledgeBase`` should allow you to get easily started with using a knowledge base for Rasa.
+However, the action can only handle two kind of user requests:
+
+- the user wants to get a list of objects from the knowledge base or
+- the user wants to get the value of an attribute for a specific object
+
+The action is, for example, not able to compare objects or consider relations between objects in your knowledge base.
+If you want to tackle more complex use cases, you can write your own custom action.
+We added some helper function to ``rasa_sdk.knowledge_base.utils`` that might help you when implementing your own
+solution.
+We recommend to use the ``KnowledgeBase`` interface, so that you can still use the ``ActionQueryKnowledgeBase``
+alongside your new custom action.
