@@ -13,6 +13,7 @@ assistant on your local machine. The `knowledgebasebot` consists of the followin
 - **config.yml** contains the model configuration
 - **domain.yml** contains the domain of the assistant  
 - **endpoints.yml** contains the webhook configuration for the custom action  
+- **knowledge_base_data.json** contains the data for the knowledge base
 
 ## How to use this example?
 

@@ -7,8 +7,10 @@ entities:
   - object_type
   - mention
   - attribute
-  - wifi
+  - hotel
+  - restaurant
   - cuisine
+  - city
 
 slots:
   object_type:
@@ -17,14 +19,19 @@ slots:
     type: text
   attribute:
     type: text
-  wifi:
-    type: bool
+  hotel:
+    type: text
+  restaurant:
+    type: text
+  city:
+    type: text
   cuisine:
     type: text
 
 actions:
 - utter_greet
 - utter_goodbye
+- utter_ask_rephrase
 - action_query_knowledge_base
 
 templates:
@@ -35,3 +42,7 @@ templates:
   utter_goodbye:
   - text: "Bye"
   - text: "Goodbye. See you soon."
+
+  utter_ask_rephrase:
+  - text: "Sorry, I'm not sure I understand. Can you rephrase?"
+  - text: "Can you please rephrase? I did not got that."
