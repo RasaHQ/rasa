@@ -94,7 +94,7 @@ def initialise_pika_connection(
 
 
 # noinspection PyUnresolvedReferences
-def initialise_channel(
+def initialise_pika_channel(
     host: Text, queue: Text, username: Text, password: Text
 ) -> "pika.adapters.blocking_connection.BlockingChannel":
     """Initialise a Pika channel with a durable queue.
@@ -127,7 +127,7 @@ def _declare_pika_channel_with_queue(
 
 
 # noinspection PyUnresolvedReferences
-def close_pika_connection(connection: "pika.adapters.BlockingConnection"):
+def close_pika_connection(connection: "pika.adapters.BlockingConnection") -> None:
     """Attempt to close Pika connection."""
 
     from pika.exceptions import AMQPError
@@ -155,7 +155,7 @@ class PikaProducer(EventChannel):
 
         self.queue = queue
         self.host = host
-        self.channel = initialise_channel(host, queue, username, password)
+        self.channel = initialise_pika_channel(host, queue, username, password)
 
     @classmethod
     def from_endpoint_config(

@@ -21,10 +21,8 @@ Changed
 - added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
   into the ``supervised_embeddings`` NLU pipeline template
 - bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
-
-Changed
--------
 - NLU evaluations now also stores its output in the output directory like the core evaluation
+- Pika keeps a single connection open, instead of open and closing on each incoming event
 
 Removed
 -------
