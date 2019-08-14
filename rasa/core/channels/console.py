@@ -50,7 +50,9 @@ def print_bot_output(
     if "elements" in message:
         cli_utils.print_color("Elements:", color=color)
         for idx, element in enumerate(message.get("elements")):
-            cli_utils.print_color(cli_utils.element_to_string(element, idx), color=color)
+            cli_utils.print_color(
+                cli_utils.element_to_string(element, idx), color=color
+            )
 
     if "quick_replies" in message:
         cli_utils.print_color("Quick Replies:", color=color)
