@@ -11,7 +11,7 @@ from rasa.constants import DEFAULT_MODELS_PATH
 logger = logging.getLogger(__name__)
 
 
-FREE_TEXT_INPUT_PROMPT = "Type out your own message"
+FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
 
 
 def get_validated_path(
@@ -129,7 +129,7 @@ def create_output_path(
         return os.path.join(output_path, file_name)
 
 
-def button_to_string(button, idx=0):
+def button_to_string(button: Dict[Text, Any], idx: int = 0) -> Text:
     """Create a string representation of a button."""
 
     title = button.pop("title", "")
@@ -152,7 +152,7 @@ def button_to_string(button, idx=0):
     return button_string
 
 
-def element_to_string(element, idx=0):
+def element_to_string(element: Dict[Text, Any], idx: int = 0) -> Text:
     """Create a string representation of an element."""
     title = element.pop("title", "")
 
