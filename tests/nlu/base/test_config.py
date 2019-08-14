@@ -45,7 +45,7 @@ def test_invalid_pipeline_template():
 @pytest.mark.parametrize(
     "pipeline_template", list(registered_pipeline_templates.keys())
 )
-def test_pipeline_looksup_registry(pipeline_template: Text):
+def test_pipeline_registry_lookup(pipeline_template: Text):
     args = {"pipeline": pipeline_template}
     f = write_file_config(args)
     final_config = config.load(f.name)
