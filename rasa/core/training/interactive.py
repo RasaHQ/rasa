@@ -260,7 +260,7 @@ def format_bot_output(message: BotUttered) -> Text:
             data, allow_free_text_input=True
         )
         for choice in choices:
-            output += ("\n" + choice)
+            output += "\n" + choice
 
     if data.get("elements"):
         output += "\nElements:"
