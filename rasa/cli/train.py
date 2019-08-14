@@ -1,7 +1,7 @@
 import argparse
 import os
 from typing import List, Optional, Text, Dict
-import rasa.cli.arguments as arguments
+import rasa.cli.arguments.train as train_arguments
 
 from rasa.cli.utils import get_validated_path, missing_config_keys, print_error
 from rasa.constants import (
@@ -18,8 +18,6 @@ from rasa.constants import (
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
-    import rasa.cli.arguments.train as core_cli
-
     train_parser = subparsers.add_parser(
         "train",
         help="Trains a Rasa model using your NLU data and stories.",
@@ -27,7 +25,7 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    arguments.train.set_train_arguments(train_parser)
+    train_arguments.set_train_arguments(train_parser)
 
     train_subparsers = train_parser.add_subparsers()
     train_core_parser = train_subparsers.add_parser(
@@ -49,8 +47,8 @@ def add_subparser(
 
     train_parser.set_defaults(func=train)
 
-    arguments.train.set_train_core_arguments(train_core_parser)
-    arguments.train.set_train_nlu_arguments(train_nlu_parser)
+    train_arguments.set_train_core_arguments(train_core_parser)
+    train_arguments.set_train_nlu_arguments(train_nlu_parser)
 
 
 def train(args: argparse.Namespace) -> Optional[Text]:

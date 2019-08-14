@@ -5,6 +5,9 @@
 
 Migration Guide
 ===============
+
+.. edit-link::
+
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
