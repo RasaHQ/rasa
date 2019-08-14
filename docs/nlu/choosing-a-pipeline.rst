@@ -22,21 +22,15 @@ The Short Answer
 If you have less than 1000 total training examples, and there is a spaCy model for your
 language, use the ``pretrained_embeddings_spacy`` pipeline:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "pretrained_embeddings_spacy"
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
+    :language: yaml
 
 
 If you have 1000 or more labelled utterances,
 use the ``supervised_embeddings`` pipeline:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "supervised_embeddings"
+.. literalinclude:: ../../sample_configs/config_supervised_embeddings.yml
+    :language: yaml
 
 
 A Longer Answer
@@ -203,11 +197,8 @@ Pre-configured Pipelines
 A template is just a shortcut for
 a full list of components. For example, these two configurations are equivalent:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "pretrained_embeddings_spacy"
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
+    :language: yaml
 
 .. code-block:: yaml
 
@@ -232,11 +223,8 @@ supervised_embeddings
 To train a Rasa model in your preferred language, define the
 ``supervised_embeddings`` pipeline as your pipeline in your ``config.yml`` or other configuration file:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "supervised_embeddings"
+.. literalinclude:: ../../sample_configs/config_supervised_embeddings.yml
+    :language: yaml
 
 The ``supervised_embeddings`` pipeline supports any language that can be tokenized.  By default it uses whitespace
 for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are the default
