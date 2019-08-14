@@ -28,12 +28,17 @@ def get_validated_path(
         The current value if it was valid, else the default value of the
         argument if it is valid, else `None`.
     """
-
     if current is None or current is not None and not os.path.exists(current):
         if default is not None and os.path.exists(default):
             reason_str = "'{}' not found.".format(current)
             if current is None:
                 reason_str = "Parameter '{}' not set.".format(parameter)
+            else:
+                logger.warning(
+                    "'{}' does not exist. Using default value '{}' instead.".format(
+                        current, default
+                    )
+                )
 
             logger.debug(
                 "{} Using default location '{}' instead.".format(reason_str, default)
