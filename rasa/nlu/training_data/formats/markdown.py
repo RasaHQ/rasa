@@ -27,7 +27,7 @@ ent_regex = re.compile(
 item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
-response_regex = re.compile(r"##\s*{}:(.+),{}:(.+)".format(INTENT, RESPONSE))
+response_regex = re.compile(r"##\s*{}:(.+),\s*{}:(.+)".format(INTENT, RESPONSE))
 
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 
@@ -91,7 +91,10 @@ class MarkdownReader(TrainingDataReader):
         def make_regex(section_name):
             return re.compile(r"##\s*{}:(.+)".format(section_name))
 
-        return {sn: make_regex(sn) for sn in section_names}.update({RESPONSE: response_regex})
+        # TODO: check if this can be improved somehow
+        # section_regexes = {RESPONSE: response_regex}
+        section_regexes = {sn: make_regex(sn) for sn in section_names}
+        return section_regexes
 
     def _find_section_header(self, line):
         """Checks if the current line contains a section header
@@ -99,10 +102,12 @@ class MarkdownReader(TrainingDataReader):
         for name, regex in self.section_regexes.items():
             match = re.search(regex, line)
             if match is not None:
-                if name is RESPONSE:
-                    return INTENT, match.group(1), RESPONSE, match.group(2)
-                else:
-                    return name, match.group(1), None, None
+                if name is INTENT:
+                    sub_match = re.search(response_regex, line)
+                    if sub_match is not None:
+                        return INTENT, sub_match.group(1), RESPONSE, sub_match.group(2)
+
+                return name, match.group(1), None, None
         return None
 
     def _load_files(self, line):

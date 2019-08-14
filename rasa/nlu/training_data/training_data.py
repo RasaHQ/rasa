@@ -72,7 +72,7 @@ class TrainingData(object):
 
         training_examples = []
         for ex in self.training_examples:
-            if ex.get(intent) == intent:
+            if ex.get("intent") == intent:
                 training_examples.append(ex)
 
         return TrainingData(training_examples)

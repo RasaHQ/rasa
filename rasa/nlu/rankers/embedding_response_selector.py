@@ -139,7 +139,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
                                                similarity_op, message_embed, label_embed,
                                                all_labels_embed)
 
-        self.response_type = kwargs['response_type']
+        if "response_type" in kwargs:
+            self.response_type = kwargs['response_type']
 
     def _load_tb_params(self, config: Dict[Text, Any]) -> None:
         self.summary_dir = config["summary_dir"]
@@ -314,14 +315,14 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     # noinspection PyPep8Naming
     def _create_session_data(
-            self, training_data: "TrainingData", label_dict: Dict[Text, int], label_type: Text = "intent",
+            self, training_data: "TrainingData", label_dict: Dict[Text, int], attribute: Text = "intent",
     ) -> "train_utils.SessionData":
         """Prepare data for training"""
 
         X = np.stack([e.get("text_features") for e in training_data.intent_examples])
 
         labels = np.array(
-            [label_dict[e.get(label_type)] for e in training_data.intent_examples]
+            [label_dict[e.get(attribute)] for e in training_data.intent_examples]
         )
 
         Y = np.stack([self._encoded_all_labels[label] for label in labels])
@@ -362,7 +363,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # noinspection PyAttributeOutsideInit
         self.num_neg = min(self.num_neg, self._encoded_all_labels.shape[0] - 1)
 
-        session_data = self._create_session_data(training_data, label_dict)
+        session_data = self._create_session_data(training_data, label_dict, attribute="response")
 
         if self.evaluate_on_num_examples:
             session_data, eval_session_data = train_utils.train_val_split(
@@ -460,9 +461,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
             saver.save(self.session, checkpoint)
 
         with io.open(
-            os.path.join(model_dir, file_name + "_inv_intent_dict.pkl"), "wb"
+            os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "wb"
         ) as f:
-            pickle.dump(self.inv_intent_dict, f)
+            pickle.dump(self.inv_label_dict, f)
 
         return {"file": file_name}
 
