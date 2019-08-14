@@ -289,13 +289,11 @@ class Agent(object):
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
-        if self.domain:
-            self.domain.add_requested_slot()
-            self.domain.add_knowledge_base_slots()
         self.policy_ensemble = self._create_ensemble(policies)
 
         if self.domain is not None:
             self.domain.add_requested_slot()
+            self.domain.add_knowledge_base_slots()
 
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
