@@ -154,7 +154,17 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _create_dataset(
         self, examples: List[Message]
-    ) -> List[List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]]:
+    ) -> List[
+        List[
+            Tuple[
+                Optional[Text],
+                Optional[Text],
+                Text,
+                Dict[Text, Any],
+                Optional[Dict[Text, Any]],
+            ]
+        ]
+    ]:
         dataset = []
         for example in examples:
             entity_offsets = self._convert_example(example)
@@ -612,7 +622,15 @@ class CRFEntityExtractor(EntityExtractor):
     def _train_model(
         self,
         df_train: List[
-            List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]
+            List[
+                Tuple[
+                    Optional[Text],
+                    Optional[Text],
+                    Text,
+                    Dict[Text, Any],
+                    Optional[Dict[Text, Any]],
+                ]
+            ]
         ],
     ) -> None:
         """Train the crf tagger based on the training data."""
