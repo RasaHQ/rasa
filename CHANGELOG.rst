@@ -18,8 +18,9 @@ Added
 
 Changed
 -------
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
+  into the ``supervised_embeddings`` NLU pipeline template
 - bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
-
 
 Changed
 -------
