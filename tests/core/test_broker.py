@@ -21,7 +21,7 @@ def test_pika_broker_from_config():
 
     assert isinstance(actual, PikaProducer)
     assert actual.host == "localhost"
-    assert actual.credentials.username == "username"
+    assert actual.username == "username"
     assert actual.queue == "queue"
 
 

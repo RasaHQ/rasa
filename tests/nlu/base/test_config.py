@@ -40,7 +40,7 @@ def test_invalid_pipeline_template():
     assert "unknown pipeline template" in str(execinfo.value)
 
 
-def test_pipeline_looksup_registry():
+def test_pipeline_looks_up_registry():
     pipeline_template = list(registered_pipeline_templates)[0]
     args = {"pipeline": pipeline_template}
     f = write_file_config(args)

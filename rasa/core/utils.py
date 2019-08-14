@@ -18,6 +18,7 @@ from sanic import Sanic
 from sanic.views import CompositionView
 
 import rasa.utils.io as io_utils
+
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.endpoints import concat_url
@@ -60,10 +61,10 @@ def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
 
 
 def subsample_array(
-        arr: List[Any],
-        max_values: int,
-        can_modify_incoming_array: bool = True,
-        rand: Optional["Random"] = None,
+    arr: List[Any],
+    max_values: int,
+    can_modify_incoming_array: bool = True,
+    rand: Optional["Random"] = None,
 ) -> List[Any]:
     """Shuffles the array and returns `max_values` number of elements."""
     import random
@@ -118,7 +119,7 @@ def generate_id(prefix="", max_chars=None):
 
 def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
-        print(
+        print (
             "Invalid answer, only {}{} allowed\n".format(
                 ", ".join(valid_values[:max_suggested]),
                 ",..." if len(valid_values) > max_suggested else "",
@@ -270,7 +271,7 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
 
 
 def extract_args(
-        kwargs: Dict[Text, Any], keys_to_extract: Set[Text]
+    kwargs: Dict[Text, Any], keys_to_extract: Set[Text]
 ) -> Tuple[Dict[Text, Any], Dict[Text, Any]]:
     """Go through the kwargs and filter out the specified keys.
 
@@ -381,13 +382,13 @@ class AvailableEndpoints(object):
         return cls(nlg, nlu, action, model, tracker_store, event_broker)
 
     def __init__(
-            self,
-            nlg=None,
-            nlu=None,
-            action=None,
-            model=None,
-            tracker_store=None,
-            event_broker=None,
+        self,
+        nlg=None,
+        nlu=None,
+        action=None,
+        model=None,
+        tracker_store=None,
+        event_broker=None,
     ):
         self.model = model
         self.action = action
