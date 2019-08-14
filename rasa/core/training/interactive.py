@@ -27,7 +27,6 @@ from rasa.core.actions.action import (
     UTTER_PREFIX,
 )
 from rasa.core.channels.channel import UserMessage
-from rasa.core.channels.channel import button_to_string, element_to_string
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,
     DEFAULT_SERVER_PORT,
@@ -256,22 +255,23 @@ def format_bot_output(message: BotUttered) -> Text:
         output += "\nAttachment: " + data.get("attachment")
 
     if data.get("buttons"):
-        output += "\nButtons:\n"
+        output += "\nButtons:"
         choices = cliutils.button_choices_from_message_data(
             data, allow_free_text_input=True
         )
-        output += "\n".join(choices)
+        for choice in choices:
+            output += ("\n" + choice)
 
     if data.get("elements"):
         output += "\nElements:"
         for idx, element in enumerate(data.get("elements")):
-            element_str = element_to_string(element, idx)
+            element_str = cliutils.element_to_string(element, idx)
             output += "\n" + element_str
 
     if data.get("quick_replies"):
         output += "\nQuick replies:"
         for idx, element in enumerate(data.get("quick_replies")):
-            element_str = element_to_string(element, idx)
+            element_str = cliutils.element_to_string(element, idx)
             output += "\n" + element_str
     return output
 
@@ -886,7 +886,7 @@ async def _predict_till_next_listen(
     sender_ids: List[Text],
     plot_file: Optional[Text],
 ) -> None:
-    """Predict and validate actions until we need to wait for a user msg."""
+    """Predict and validate actions until we need to wait for a user message."""
 
     listen = False
     while not listen:
@@ -922,8 +922,9 @@ async def _predict_till_next_listen(
         if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
             "buttons", None
         ):
-            button_payload = _get_button_choice(last_event)
-            await send_message(endpoint, sender_id, button_payload)
+            response = _get_button_choice(last_event)
+            if response != cliutils.FREE_TEXT_INPUT_PROMPT:
+                await send_message(endpoint, sender_id, response)
 
 
 def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
@@ -933,10 +934,9 @@ def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
     choices = cliutils.button_choices_from_message_data(
         data, allow_free_text_input=True
     )
-
     question = questionary.select(message, choices)
-    button_payload = cliutils.payload_from_button_question(question)
-    return button_payload
+    response = cliutils.payload_from_button_question(question)
+    return response
 
 
 async def _correct_wrong_nlu(
@@ -1390,6 +1390,7 @@ async def record_messages(
                 if await is_listening_for_message(sender_id, endpoint):
                     await _enter_user_message(sender_id, endpoint)
                     await _validate_nlu(intents, endpoint, sender_id)
+
                 await _predict_till_next_listen(
                     endpoint, sender_id, sender_ids, plot_file
                 )
