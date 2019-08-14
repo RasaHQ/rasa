@@ -45,4 +45,5 @@ class SpacyFeaturizer(Featurizer):
         features = self._combine_with_existing_text_features(message, fs)
         message.set("text_features", features)
         ner_features = [t.vector for t in doc]
+        ner_features = self._combine_with_existing_ner_features(message, ner_features)
         message.set("ner_features", ner_features)
