@@ -4,7 +4,6 @@ import uuid
 from aioresponses import aioresponses
 
 import rasa.utils.io
-import rasa.cli.utils as cli_utils
 from rasa.core.events import BotUttered
 from rasa.core.training import interactive
 from rasa.utils.endpoints import EndpointConfig
