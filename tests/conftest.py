@@ -201,20 +201,17 @@ async def rasa_server_without_api():
 
 @pytest.fixture
 async def trained_model(project) -> Text:
-    yield await train_model(project)
-    shutil.rmtree(os.path.join(project, DEFAULT_MODELS_PATH))
+    return await train_model(project)
 
 
 @pytest.fixture
 async def trained_core_model(project) -> Text:
-    yield await train_model(project, model_type="core")
-    shutil.rmtree(os.path.join(project, DEFAULT_MODELS_PATH))
+    return await train_model(project, model_type="core")
 
 
 @pytest.fixture
 async def trained_nlu_model(project) -> Text:
-    yield await train_model(project, model_type="nlu")
-    shutil.rmtree(os.path.join(project, DEFAULT_MODELS_PATH))
+    return await train_model(project, model_type="nlu")
 
 
 @pytest.fixture(scope="session")
