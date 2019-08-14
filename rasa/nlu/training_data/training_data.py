@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 
-from collections import Counter
-
 import logging
 import os
 import random
 import warnings
+from collections import Counter
 from copy import deepcopy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
+import rasa.utils.common as rasa_utils
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
-from rasa.nlu.utils import lazyproperty, list_to_str, write_to_file
+from rasa.nlu.utils import list_to_str, write_to_file
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -88,32 +88,32 @@ class TrainingData(object):
                 ex.set("intent", ex.get("intent").strip())
         return examples
 
-    @lazyproperty
+    @rasa_utils.lazyproperty
     def intent_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("intent")]
 
-    @lazyproperty
+    @rasa_utils.lazyproperty
     def entity_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("entities")]
 
-    @lazyproperty
+    @rasa_utils.lazyproperty
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
         return set([ex.get("intent") for ex in self.training_examples]) - {None}
 
-    @lazyproperty
+    @rasa_utils.lazyproperty
     def examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
         intents = [ex.get("intent") for ex in self.training_examples]
         return dict(Counter(intents))
 
-    @lazyproperty
+    @rasa_utils.lazyproperty
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
         return set(entity_types)
 
-    @lazyproperty
+    @rasa_utils.lazyproperty
     def examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]

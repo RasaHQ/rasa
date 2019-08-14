@@ -1,8 +1,8 @@
 import logging
 import os
 import shutil
-from typing import Any, Callable, Dict, List, Text, Optional, Type
 from types import TracebackType
+from typing import Any, Callable, Dict, List, Text, Optional, Type
 
 import rasa.core.utils
 import rasa.utils.io
@@ -247,3 +247,21 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         return c[name]
     else:
         return not_found()
+
+
+def lazyproperty(fn: Callable) -> Any:
+    """Allows to avoid recomputing a property over and over.
+
+    The result gets stored in a local var. Computation of the property
+    will happen once, on the first call of the property. All
+    succeeding calls will use the value stored in the private property."""
+
+    attr_name = "_lazy_" + fn.__name__
+
+    @property
+    def _lazyprop(self):
+        if not hasattr(self, attr_name):
+            setattr(self, attr_name, fn(self))
+        return getattr(self, attr_name)
+
+    return _lazyprop

@@ -5,12 +5,12 @@ import json
 import logging
 import re
 import sys
-from pathlib import Path
-from typing import Union
 from asyncio import Future
 from hashlib import md5, sha1
 from io import StringIO
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
+from typing import Union
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -18,12 +18,10 @@ from sanic import Sanic
 from sanic.views import CompositionView
 
 import rasa.utils.io as io_utils
-from rasa.utils.endpoints import read_endpoint_config
-
-
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.endpoints import concat_url
+from rasa.utils.endpoints import read_endpoint_config
 
 logger = logging.getLogger(__name__)
 
@@ -62,10 +60,10 @@ def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
 
 
 def subsample_array(
-    arr: List[Any],
-    max_values: int,
-    can_modify_incoming_array: bool = True,
-    rand: Optional["Random"] = None,
+        arr: List[Any],
+        max_values: int,
+        can_modify_incoming_array: bool = True,
+        rand: Optional["Random"] = None,
 ) -> List[Any]:
     """Shuffles the array and returns `max_values` number of elements."""
     import random
@@ -89,24 +87,6 @@ def is_int(value: Any) -> bool:
         return value == int(value)
     except Exception:
         return False
-
-
-def lazyproperty(fn):
-    """Allows to avoid recomputing a property over and over.
-
-    Instead the result gets stored in a local var. Computation of the property
-    will happen once, on the first call of the property. All succeeding calls
-    will use the value stored in the private property."""
-
-    attr_name = "_lazy_" + fn.__name__
-
-    @property
-    def _lazyprop(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
-        return getattr(self, attr_name)
-
-    return _lazyprop
 
 
 def one_hot(hot_idx, length, dtype=None):
@@ -138,7 +118,7 @@ def generate_id(prefix="", max_chars=None):
 
 def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
-        print (
+        print(
             "Invalid answer, only {}{} allowed\n".format(
                 ", ".join(valid_values[:max_suggested]),
                 ",..." if len(valid_values) > max_suggested else "",
@@ -290,7 +270,7 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
 
 
 def extract_args(
-    kwargs: Dict[Text, Any], keys_to_extract: Set[Text]
+        kwargs: Dict[Text, Any], keys_to_extract: Set[Text]
 ) -> Tuple[Dict[Text, Any], Dict[Text, Any]]:
     """Go through the kwargs and filter out the specified keys.
 
@@ -401,13 +381,13 @@ class AvailableEndpoints(object):
         return cls(nlg, nlu, action, model, tracker_store, event_broker)
 
     def __init__(
-        self,
-        nlg=None,
-        nlu=None,
-        action=None,
-        model=None,
-        tracker_store=None,
-        event_broker=None,
+            self,
+            nlg=None,
+            nlu=None,
+            action=None,
+            model=None,
+            tracker_store=None,
+            event_broker=None,
     ):
         self.model = model
         self.action = action

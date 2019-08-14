@@ -3,7 +3,7 @@ import logging
 import typing
 from typing import Any, Dict, Optional, Text, Union
 
-from rasa.utils.common import class_from_module_path
+import rasa.utils.common as rasa_utils
 from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
@@ -37,7 +37,7 @@ def load_event_channel_from_module_string(
     """Instantiate an event channel based on its class name."""
 
     try:
-        event_channel = class_from_module_path(broker_config.type)
+        event_channel = rasa_utils.class_from_module_path(broker_config.type)
         return event_channel.from_endpoint_config(broker_config)
     except (AttributeError, ImportError) as e:
         logger.warning(
@@ -137,9 +137,7 @@ def close_pika_connection(connection: "BlockingConnection") -> None:
     host = connection.parameters.host
     try:
         connection.close()
-        logger.debug(
-            "Successfully closed Pika connection with host '{}'." "".format(host)
-        )
+        logger.debug("Successfully closed Pika connection with host '{}'.".format(host))
     except AMQPError:
         logger.exception("Failed to close Pika connection with host '{}'.".format(host))
 
@@ -157,7 +155,14 @@ class PikaProducer(EventChannel):
 
         self.queue = queue
         self.host = host
-        self.channel = initialise_pika_channel(host, queue, username, password)
+        self.username = username
+        self.password = password
+
+    @rasa_utils.lazyproperty
+    def channel(self):
+        return initialise_pika_channel(
+            self.host, self.queue, self.username, self.password
+        )
 
     @classmethod
     def from_endpoint_config(
@@ -169,9 +174,7 @@ class PikaProducer(EventChannel):
         return cls(broker_config.url, **broker_config.kwargs)
 
     def publish(self, event: Dict) -> None:
-        self._publish(json.dumps(event))
-
-    def _publish(self, body: Text) -> None:
+        body = json.dumps(event)
         self.channel.basic_publish("", self.queue, body)
         logger.debug(
             "Published Pika events to queue '{}' on host "
