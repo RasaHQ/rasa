@@ -127,7 +127,10 @@ registered_pipeline_templates = {
 
 
 def pipeline_template(s: Text) -> Optional[List[Dict[Text, Any]]]:
-    return registered_pipeline_templates.get(s)
+    import copy
+
+    # do a deepcopy to avoid changing the template configurations
+    return copy.deepcopy(registered_pipeline_templates.get(s))
 
 
 def get_component_class(component_name: Text) -> Type["Component"]:
