@@ -379,9 +379,19 @@ def remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]:
     return {k: v for k, v in obj.items() if v is not None}
 
 
-def pad_list_to_size(_list, size, padding_value=None):
-    """Pads _list with padding_value up to size"""
-    return _list + [padding_value] * (size - len(_list))
+def pad_lists_to_size(
+    list_x: List, list_y: List, padding_value: Optional[Any] = None
+) -> Tuple[List, List]:
+    """Compares list sizes and pads them to equal length."""
+
+    difference = len(list_x) - len(list_y)
+
+    if difference > 0:
+        return list_x, list_y + [padding_value] * difference
+    elif difference < 0:
+        return list_x + [padding_value] * (-difference), list_y
+    else:
+        return list_x, list_y
 
 
 class AvailableEndpoints(object):
