@@ -168,6 +168,15 @@ class CountVectorsFeaturizer(Featurizer):
         # declare class instance for CountVectorizer
         self.vectorizer = vectorizer
 
+        if self.vectorizer is not None:
+            if isinstance(self.vectorizer, list):
+                self.vectorizer[0].tokenizer = lambda x: self._tokenizer(self, x)
+                self.vectorizer[1].tokenizer = lambda x: self._tokenizer(self, x)
+            else:
+                self.vectorizer.tokenizer = lambda x: self._tokenizer(self, x)
+
+
+    @staticmethod
     def _tokenizer(self, text):
         """Override tokenizer in CountVectorizer."""
 
@@ -253,7 +262,7 @@ class CountVectorsFeaturizer(Featurizer):
                                         max_df=self.max_df,
                                         min_df=self.min_df,
                                         max_features=self.max_features,
-                                        tokenizer=self._tokenizer,
+                                        tokenizer=lambda x: self._tokenizer(self,x),
                                         analyzer=self.analyzer)
         else:
             self.vectorizer = [CountVectorizer(token_pattern=self.token_pattern,
@@ -265,7 +274,7 @@ class CountVectorsFeaturizer(Featurizer):
                                          max_df=self.max_df,
                                          min_df=self.min_df,
                                          max_features=self.max_features,
-                                         tokenizer=self._tokenizer,
+                                         tokenizer=lambda x: self._tokenizer(self,x),
                                          analyzer=self.analyzer),
                          CountVectorizer(token_pattern=self.token_pattern,
                                          strip_accents=self.strip_accents,
@@ -276,7 +285,7 @@ class CountVectorsFeaturizer(Featurizer):
                                          max_df=self.max_df,
                                          min_df=self.min_df,
                                          max_features=self.max_features,
-                                         tokenizer=self._tokenizer,
+                                         tokenizer=lambda x: self._tokenizer(self,x),
                                          analyzer=self.analyzer)]
 
         lem_exs = [
@@ -309,10 +318,10 @@ class CountVectorsFeaturizer(Featurizer):
                 Y_resps = self.vectorizer.transform(lem_resps)
 
             else:
-                X = self.vect[0].fit_transform(lem_exs)
-                Y_ints = self.vect[1].fit_transform(lem_ints)
+                X = self.vectorizer[0].fit_transform(lem_exs).toarray()
+                Y_ints = self.vectorizer[1].fit_transform(lem_ints).toarray()
                 if not empty_resps:
-                    Y_resps = self.vect[1].fit_transform(lem_resps)
+                    Y_resps = self.vectorizer[1].fit_transform(lem_resps).toarray()
                 else:
                     Y_resps = None
 
@@ -360,7 +369,10 @@ class CountVectorsFeaturizer(Featurizer):
         file_name = file_name + ".pkl"
         if self.vectorizer:
             featurizer_file = os.path.join(model_dir, file_name)
-            utils.json_pickle(featurizer_file, self.vectorizer)
+            if not self.use_shared_vocab:
+                utils.json_pickle(featurizer_file,[self.vectorizer[0].vocabulary_, self.vectorizer[1].vocabulary_])
+            else:
+                utils.json_pickle(featurizer_file, self.vectorizer.vocabulary_)
         return {"file": file_name}
 
     @classmethod
@@ -377,21 +389,44 @@ class CountVectorsFeaturizer(Featurizer):
         featurizer_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(featurizer_file):
-            # vocabulary = utils.json_unpickle(featurizer_file)
-            #
-            # vectorizer = CountVectorizer(
-            #     token_pattern=meta["token_pattern"],
-            #     strip_accents=meta["strip_accents"],
-            #     lowercase=meta["lowercase"],
-            #     stop_words=meta["stop_words"],
-            #     ngram_range=(meta["min_ngram"], meta["max_ngram"]),
-            #     max_df=meta["max_df"],
-            #     min_df=meta["min_df"],
-            #     max_features=meta["max_features"],
-            #     analyzer=meta["analyzer"],
-            #     vocabulary=vocabulary,
-            # )
-            vectorizer = utils.json_unpickle(featurizer_file)
+            vocabulary = utils.json_unpickle(featurizer_file)
+
+            if isinstance(vocabulary,list):
+                vectorizer = [CountVectorizer(token_pattern=meta["token_pattern"],
+                                                strip_accents=meta["strip_accents"],
+                                                lowercase=meta["lowercase"],
+                                                stop_words=meta["stop_words"],
+                                                ngram_range=(meta["min_ngram"], meta["max_ngram"]),
+                                                max_df=meta["max_df"],
+                                                min_df=meta["min_df"],
+                                                max_features=meta["max_features"],
+                                                analyzer=meta["analyzer"],
+                                                vocabulary=vocabulary[0],
+                                              ),
+                              CountVectorizer(token_pattern=meta["token_pattern"],
+                                                strip_accents=meta["strip_accents"],
+                                                lowercase=meta["lowercase"],
+                                                stop_words=meta["stop_words"],
+                                                ngram_range=(meta["min_ngram"], meta["max_ngram"]),
+                                                max_df=meta["max_df"],
+                                                min_df=meta["min_df"],
+                                                max_features=meta["max_features"],
+                                                analyzer=meta["analyzer"],
+                                                vocabulary=vocabulary[1],
+                                              )
+                              ]
+            else:
+                vectorizer = CountVectorizer(token_pattern=meta["token_pattern"],
+                                                strip_accents=meta["strip_accents"],
+                                                lowercase=meta["lowercase"],
+                                                stop_words=meta["stop_words"],
+                                                ngram_range=(meta["min_ngram"], meta["max_ngram"]),
+                                                max_df=meta["max_df"],
+                                                min_df=meta["min_df"],
+                                                max_features=meta["max_features"],
+                                                analyzer=meta["analyzer"],
+                                                vocabulary=vocabulary,
+                                              )
 
             return cls(meta, vectorizer)
         else:
