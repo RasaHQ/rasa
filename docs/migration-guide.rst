@@ -23,8 +23,8 @@ Rasa 1.2 to Rasa 1.3
 
 General
 ~~~~~~~
-- defaults parameters and architectures for both ``EmbeddingPolicy`` and
-  ``EmbeddingIntentClassifier`` are changed. Old trained models cannot be loaded.
+- Default parameters and architectures for both ``EmbeddingPolicy`` and
+  ``EmbeddingIntentClassifier`` are changed. **Old trained models cannot be loaded**.
   You need to retrain your models if you used these algorithms.
 - **Compare** mode of ``rasa train core`` allows the whole core config comparison.
   Therefore, we changed the naming of trained models. They are named by config file
