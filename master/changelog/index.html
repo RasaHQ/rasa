@@ -262,8 +262,8 @@
 <h1>Rasa Change Log<a class="headerlink" href="#rasa-change-log" title="Permalink to this headline">¶</a></h1>
 <p>All notable changes to this project will be documented in this file.
 This project adheres to <a class="reference external" href="http://semver.org/">Semantic Versioning</a> starting with version 1.0.</p>
-<div class="section" id="unreleased-1-2-3-master">
-<h2>[Unreleased 1.2.3] - <a class="reference external" href="https://github.com/RasaHQ/rasa/">master</a><a class="headerlink" href="#unreleased-1-2-3-master" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="unreleased-1-3-master">
+<h2>[Unreleased 1.3] - <a class="reference external" href="https://github.com/RasaHQ/rasa/">master</a><a class="headerlink" href="#unreleased-1-3-master" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="added">
 <h3>Added<a class="headerlink" href="#added" title="Permalink to this headline">¶</a></h3>
 </div>
@@ -272,7 +272,7 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <ul class="simple">
 <li>messages with multiple entities are now handled properly with e2e evaluation</li>
 <li><code class="docutils literal notranslate"><span class="pre">data/test_evaluations/end_to_end_story.md</span></code> was re-written in the restaurantbot domain</li>
-<li><cite>FallbackPolicy</cite> can now be configured to trigger when the difference between confidences of two predicted intents is too narrow</li>
+<li><code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> can now be configured to trigger when the difference between confidences of two predicted intents is too narrow</li>
 <li>throw error during training when triggers are defined in the domain without
 <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> being present in the policy ensemble</li>
 <li>experimental training data importer which supports training with data of multiple
@@ -288,9 +288,11 @@ use the tracker state (eg. slot values) during the parsing of the message. More 
 <ul class="simple">
 <li>added character-level <code class="docutils literal notranslate"><span class="pre">CountVectorsFeaturizer</span></code> with empirically found parameters
 into the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> NLU pipeline template</li>
-<li>bot messages contain the <cite>timestamp</cite> of the <cite>BotUttered</cite> event, which can be used in channels</li>
+<li>bot messages contain the <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> of the <code class="docutils literal notranslate"><span class="pre">BotUttered</span></code> event, which can be used in channels</li>
 <li>NLU evaluations now also stores its output in the output directory like the core evaluation</li>
 <li>show warning in case a default path is used instead of a provided, invalid path</li>
+<li>compare mode of <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> allows the whole core config comparison,
+naming style of models trained for comparison is changed (this is a breaking change)</li>
 </ul>
 </div>
 <div class="section" id="removed">

@@ -281,7 +281,7 @@ AI Assistant." />
 </ul>
 </li>
 <li><a class="reference internal" href="#evaluating-a-core-model" id="id9">Evaluating a Core Model</a></li>
-<li><a class="reference internal" href="#comparing-policies" id="id10">Comparing Policies</a></li>
+<li><a class="reference internal" href="#comparing-core-configurations" id="id10">Comparing Core Configurations</a></li>
 <li><a class="reference internal" href="#end-to-end-evaluation" id="id11">End-to-End Evaluation</a></li>
 </ul>
 </div>
@@ -539,9 +539,9 @@ Python Logging Options:
 </pre></div>
 </div>
 </div>
-<div class="section" id="comparing-policies">
-<h2><a class="toc-backref" href="#id10">Comparing Policies</a><a class="headerlink" href="#comparing-policies" title="Permalink to this headline">¶</a></h2>
-<p>To choose a specific policy configuration, or to choose hyperparameters for a
+<div class="section" id="comparing-core-configurations">
+<h2><a class="toc-backref" href="#id10">Comparing Core Configurations</a><a class="headerlink" href="#comparing-core-configurations" title="Permalink to this headline">¶</a></h2>
+<p>To choose a configuration for your core model, or to choose hyperparameters for a
 specific policy, you want to measure how well Rasa Core will <cite>generalise</cite>
 to conversations which it hasn’t seen before. Especially in the beginning
 of a project, you do not have a lot of real conversations to use to train
@@ -549,9 +549,8 @@ your bot, so you don’t just want to throw some away to use as a test set.</p>
 <p>Rasa Core has some scripts to help you choose and fine-tune your policy configuration.
 Once you are happy with it, you can then train your final configuration on your
 full data set. To do this, you first have to train models for your different
-policies. Create two (or more) config files including the policies you want to
-compare (containing only one policy each), and then use the <code class="docutils literal notranslate"><span class="pre">compare</span></code> mode of
-the train script to train your models:</p>
+configurations. Create two (or more) config files including the policies you want to
+compare, and then use the <code class="docutils literal notranslate"><span class="pre">compare</span></code> mode of the train script to train your models:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa train core -c config_1.yml config_2.yml <span class="se">\</span>
   -d domain.yml -s stories_folder --out comparison_models --runs <span class="m">3</span> <span class="se">\</span>
   --percentages <span class="m">0</span> <span class="m">5</span> <span class="m">25</span> <span class="m">50</span> <span class="m">70</span> <span class="m">95</span>
@@ -566,10 +565,12 @@ mode to evaluate the models you just trained:</p>
 --out comparison_results --evaluate-model-directory
 </pre></div>
 </div>
-<p>This will evaluate each of the models on the training set and plot some graphs
+<p>This will evaluate each of the models on the provided stories
+(can be either training or test set) and plot some graphs
 to show you which policy performs best. By evaluating on the full set of stories, you
 can measure how well Rasa Core is predicting the held-out stories.</p>
-<p>If you’re not sure which policies to compare, we’d recommend trying out the
+<p>To compare single policies create config files containing only one policy each.
+If you’re not sure which policies to compare, we’d recommend trying out the
 <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> and the <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> to see which one works better for
 you.</p>
 <div class="admonition note">
