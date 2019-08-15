@@ -555,6 +555,7 @@ def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
         return False
 
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+
     return CRFEntityExtractor.name not in extractors
 
 
