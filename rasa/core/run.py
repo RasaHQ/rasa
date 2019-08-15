@@ -12,7 +12,7 @@ import rasa.utils
 import rasa.utils.io
 from rasa.core import constants, utils
 from rasa.core.agent import load_agent, Agent
-from rasa.core.channels import BUILTIN_CHANNELS, console
+from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore

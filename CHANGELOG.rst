@@ -6,20 +6,33 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.2.4] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.3] - `master`_
 
 Added
 -----
+- bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
+- ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
+- experimental training data importer which supports training with data of multiple
+  sub bots. Please see the
+  `docs <https://rasa.com/docs/rasa/api/training-data-importers/>`_ for more
+  information.
+- throw error during training when triggers are defined in the domain without
+  ``MappingPolicy`` being present in the policy ensemble
+- The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that 
+  use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
 
 Changed
 -------
-
-Removed
--------
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
+  into the ``supervised_embeddings`` NLU pipeline template
+- NLU evaluations now also stores its output in the output directory like the core evaluation
+- show warning in case a default path is used instead of a provided, invalid path
+- compare mode of ``rasa train core`` allows the whole core config comparison,
+  naming style of models trained for comparison is changed (this is a breaking change)
 
 Fixed
 -----
+- ``rasa test nlu`` with a folder of configuration files
 
 [1.2.3] - 2019-08-15
 ^^^^^^^^^^^^^^^^^^^^

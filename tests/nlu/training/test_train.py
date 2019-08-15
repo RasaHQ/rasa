@@ -97,8 +97,8 @@ async def test_random_seed(component_builder, tmpdir):
     """test if train result is the same for two runs of tf embedding"""
 
     _config = utilities.base_test_conf("supervised_embeddings")
-    # set fixed random seed to 1
-    _config.set_component_attr(5, random_seed=1)
+    # set fixed random seed of the embedding intent classifier to 1
+    _config.set_component_attr(6, random_seed=1)
     # first run
     (trained_a, _, persisted_path_a) = await train(
         _config,
