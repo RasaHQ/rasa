@@ -184,8 +184,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
                     for label_idx, score in ranking
                 ]
 
-        message.set("response", label, add_to_output=True)
-        message.set("response_ranking", label_ranking, add_to_output=True)
+        message.set("utter_{0}_response".format(self.response_type), label, add_to_output=True)
+        message.set("utter_{0}_response_ranking".format(self.response_type), label_ranking, add_to_output=True)
 
     # # noinspection PyPep8Naming
     # def process(self, message: 'Message', **kwargs: Any) -> None:
@@ -465,6 +465,14 @@ class ResponseSelector(EmbeddingIntentClassifier):
         ) as f:
             pickle.dump(self.inv_label_dict, f)
 
+        derived_meta = {'response_type': self.response_type}
+
+        # TODO: check if this is correct way. Maybe return the value from this function and add to model metadata
+        with io.open(
+            os.path.join(model_dir, file_name + "_derived_meta.pkl"), "wb"
+        ) as f:
+            pickle.dump(derived_meta, f)
+
         return {"file": file_name}
 
     @classmethod
@@ -503,6 +511,11 @@ class ResponseSelector(EmbeddingIntentClassifier):
             ) as f:
                 inv_label_dict = pickle.load(f)
 
+            with io.open(
+                    os.path.join(model_dir, file_name + "_derived_meta.pkl"), "rb"
+            ) as f:
+                derived_metadata = pickle.load(f)
+
             return cls(
                 component_config=meta,
                 inv_label_dict=inv_label_dict,
@@ -516,6 +529,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
                 message_embed=message_embed,
                 label_embed=label_embed,
                 all_labels_embed=all_labels_embed,
+                response_type=derived_metadata['response_type'],
             )
 
         else:

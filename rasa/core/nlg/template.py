@@ -86,6 +86,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         # Fetching a random template for the passed template name
         r = copy.deepcopy(self._random_template_for(template_name, output_channel))
+        print('R', r)
         # Filling the slots in the template and returning the template
         if r is not None:
             return self._fill_template(r, filled_slots, **kwargs)

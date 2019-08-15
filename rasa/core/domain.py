@@ -283,6 +283,7 @@ class Domain(object):
         self.action_names = (
             action.combine_user_with_default_actions(action_names) + form_names
         )
+        self.response_actions = self.collect_response_actions()
         self.store_entities_as_slots = store_entities_as_slots
 
         self._check_domain_sanity()
@@ -298,6 +299,21 @@ class Domain(object):
         text_hash = utils.get_text_hash(self_as_string)
 
         return int(text_hash, 16)
+
+    def collect_response_actions(self):
+        """Return names of those actions which query the tracker from response rather than pick from template"""
+
+        response_actions = []
+        for intent, properties in self.intent_properties.items():
+            if "response" in properties:
+                if properties.get("response") and "triggers" in properties:
+                    response_actions.append(properties.get("triggers"))
+
+        return response_actions
+
+    def is_response_action(self, action_name):
+        return action_name in self.response_actions
+
 
     @utils.lazyproperty
     def user_actions_and_forms(self):

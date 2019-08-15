@@ -181,7 +181,11 @@ class ActionUtterTemplate(Action):
     async def run(self, output_channel, nlg, tracker, domain):
         """Simple run implementation uttering a (hopefully defined) template."""
 
-        message = await nlg.generate(self.template_name, tracker, output_channel.name())
+        if domain.is_response_action(self.template_name):
+            query_key = '{0}_response'.format(self.template_name)
+            message = {'text': tracker.latest_message.parse_data.get(query_key).get("name")}
+        else:
+            message = await nlg.generate(self.template_name, tracker, output_channel.name())
         if message is None:
             if not self.silent_fail:
                 logger.error(
