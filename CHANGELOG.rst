@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.2.3] - `master`_
+[Unreleased 1.2.4] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -14,12 +14,20 @@ Added
 
 Changed
 -------
-- messages with multiple entities are now handled properly with e2e evaluation
-- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
 
 Removed
 -------
 
+Fixed
+-----
+
+[1.2.3] - 2019-08-15
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- messages with multiple entities are now handled properly with e2e evaluation
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
 
 Fixed
 -----
