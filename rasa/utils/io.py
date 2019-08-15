@@ -6,8 +6,9 @@ import tarfile
 import tempfile
 import warnings
 import zipfile
+import glob
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict, Union, List, Type
+from typing import Text, Any, Dict, Union, List, Type, Callable
 import ruamel.yaml as yaml
 from io import BytesIO as IOReader
 
@@ -234,18 +235,6 @@ def create_path(file_path: Text):
         os.makedirs(parent_dir)
 
 
-def zip_folder(folder: Text) -> Text:
-    """Create an archive from a folder."""
-    import tempfile
-    import shutil
-
-    zipped_path = tempfile.NamedTemporaryFile(delete=False)
-    zipped_path.close()
-
-    # WARN: not thread save!
-    return shutil.make_archive(zipped_path.name, str("zip"), folder)
-
-
 def create_directory_for_file(file_path: Text) -> None:
     """Creates any missing parent directories of this file path."""
 
@@ -257,23 +246,117 @@ def create_directory_for_file(file_path: Text) -> None:
             raise
 
 
-def questionary_file_path_validator(
+def file_type_validator(
     valid_file_types: List[Text], error_message: Text
 ) -> Type["Validator"]:
     """Creates a `Validator` class which can be used with `questionary` to validate
        file paths.
     """
 
+    def is_valid(path: Text) -> bool:
+        return path is not None and any(
+            [path.endswith(file_type) for file_type in valid_file_types]
+        )
+
+    return create_validator(is_valid, error_message)
+
+
+def not_empty_validator(error_message: Text) -> Type["Validator"]:
+    """Creates a `Validator` class which can be used with `questionary` to validate
+    that the user entered something other than whitespace.
+    """
+
+    def is_valid(input: Text) -> bool:
+        return input is not None and input.strip() != ""
+
+    return create_validator(is_valid, error_message)
+
+
+def create_validator(
+    function: Callable[[Text], bool], error_message: Text
+) -> Type["Validator"]:
+    """Helper method to create `Validator` classes from callable functions. Should be
+    removed when questionary supports `Validator` objects."""
+
     from prompt_toolkit.validation import Validator, ValidationError
     from prompt_toolkit.document import Document
 
-    class ExportPathValidator(Validator):
-        def validate(self, document: Document) -> None:
-            path = document.text
-            is_valid = path is not None and any(
-                [path.endswith(file_type) for file_type in valid_file_types]
-            )
+    class FunctionValidator(Validator):
+        @staticmethod
+        def validate(document: Document) -> None:
+            is_valid = function(document.text)
             if not is_valid:
                 raise ValidationError(message=error_message)
 
-    return ExportPathValidator
+    return FunctionValidator
+
+
+def list_files(path: Text) -> List[Text]:
+    """Returns all files excluding hidden files.
+
+    If the path points to a file, returns the file."""
+
+    return [fn for fn in list_directory(path) if os.path.isfile(fn)]
+
+
+def list_subdirectories(path: Text) -> List[Text]:
+    """Returns all folders excluding hidden files.
+
+    If the path points to a file, returns an empty list."""
+
+    return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
+
+
+def list_directory(path: Text) -> List[Text]:
+    """Returns all files and folders excluding hidden files.
+
+    If the path points to a file, returns the file. This is a recursive
+    implementation returning files in any depth of the path."""
+
+    if not isinstance(path, str):
+        raise ValueError(
+            "`resource_name` must be a string type. "
+            "Got `{}` instead".format(type(path))
+        )
+
+    if os.path.isfile(path):
+        return [path]
+    elif os.path.isdir(path):
+        results = []
+        for base, dirs, files in os.walk(path):
+            # add not hidden files
+            good_files = filter(lambda x: not x.startswith("."), files)
+            results.extend(os.path.join(base, f) for f in good_files)
+            # add not hidden directories
+            good_directories = filter(lambda x: not x.startswith("."), dirs)
+            results.extend(os.path.join(base, f) for f in good_directories)
+        return results
+    else:
+        raise ValueError(
+            "Could not locate the resource '{}'.".format(os.path.abspath(path))
+        )
+
+
+def create_directory(directory_path: Text) -> None:
+    """Creates a directory and its super paths.
+
+    Succeeds even if the path already exists."""
+
+    try:
+        os.makedirs(directory_path)
+    except OSError as e:
+        # be happy if someone already created the path
+        if e.errno != errno.EEXIST:
+            raise
+
+
+def zip_folder(folder: Text) -> Text:
+    """Create an archive from a folder."""
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)

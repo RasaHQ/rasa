@@ -1,6 +1,5 @@
 import argparse
 import logging
-import os
 
 from typing import List
 
@@ -62,7 +61,7 @@ def shell_nlu(args: argparse.Namespace):
 
     _, nlu_model = get_model_subdirectories(model_path)
 
-    if not os.path.exists(nlu_model):
+    if not nlu_model:
         print_error(
             "No NLU model found. Train a model before running the "
             "server using `rasa train nlu`."
@@ -92,7 +91,7 @@ def shell(args: argparse.Namespace):
 
     core_model, nlu_model = get_model_subdirectories(model_path)
 
-    if not os.path.exists(core_model):
+    if not core_model:
         import rasa.nlu.run
 
         rasa.nlu.run.run_cmdline(nlu_model)

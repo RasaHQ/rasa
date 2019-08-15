@@ -17,7 +17,7 @@ from rasa.core.agent import Agent
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def loop():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -104,22 +104,180 @@ def test_nlg_schema_validation_empty_image():
         ("tag.with.float.val", 1.3),
         ("tag-w-$", "banana"),
         ("tagCamelCase", "two"),
+        ("empty_string", ""),
+        ("null", None),
     ],
 )
 def test_nlg_fill_template_text(slot_name, slot_value):
     template = {"text": "{" + slot_name + "}"}
     t = TemplatedNaturalLanguageGenerator(templates=dict())
-    result = t._fill_template_text(
-        template=template, filled_slots={slot_name: slot_value}
-    )
+    result = t._fill_template(template=template, filled_slots={slot_name: slot_value})
     assert result == {"text": str(slot_value)}
 
 
+@pytest.mark.parametrize(
+    "img_slot_name, img_slot_value",
+    [("url", "https://www.exampleimg.com"), ("img1", "https://www.appleimg.com")],
+)
+def test_nlg_fill_template_image(img_slot_name, img_slot_value):
+    template = {"image": "{" + img_slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template, filled_slots={img_slot_name: img_slot_value}
+    )
+    assert result == {"image": str(img_slot_value)}
+
+
+@pytest.mark.parametrize(
+    "slot_name, slot_value",
+    [
+        ("tag_w_underscore", "a"),
+        ("tag with space", "bacon"),
+        ("tag.with.dot", "chocolate"),
+        ("tag-w-dash", "apple pie"),
+        ("tag-w-$", "banana"),
+        ("tag-w-@", "one"),
+        ("tagCamelCase", "two"),
+        ("tag-w-*", "three"),
+        ("tag_w_underscore", "a"),
+        ("tag.with.float.val", 1.3),
+        ("tag-w-$", "banana"),
+        ("tagCamelCase", "two"),
+        ("empty_string", ""),
+        ("null", None),
+    ],
+)
+def test_nlg_fill_template_custom(slot_name, slot_value):
+    template = {"text": "{" + slot_name + "}"}
+    template = {
+        "custom": {
+            "field": "{" + slot_name + "}",
+            "properties": {"field_prefixed": "prefix_{" + slot_name + "}"},
+        }
+    }
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(template=template, filled_slots={slot_name: slot_value})
+    assert result == {
+        "custom": {
+            "field": str(slot_value),
+            "properties": {"field_prefixed": "prefix_" + str(slot_value)},
+        }
+    }
+
+
+@pytest.mark.parametrize(
+    "template_text, expected",
+    [
+        ('{{"variable":"{slot_1}"}}', '{"variable":"foo"}'),
+        ("{slot_1} and {slot_2}", "foo and bar"),
+        ("{{{slot_1}, {slot_2}!}}", "{foo, bar!}"),
+        ("{{{slot_1}}}", "{foo}"),
+        ("{{slot_1}}", "{slot_1}"),
+    ],
+)
+def test_nlg_fill_template_text_with_json(template_text, expected):
+    template = {"text": template_text}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template, filled_slots={"slot_1": "foo", "slot_2": "bar"}
+    )
+    assert result == {"text": expected}
+
+
 @pytest.mark.parametrize("slot_name, slot_value", [("tag_w_\n", "a")])
-def test_nlg_fill_template_text_w_bad_slot_name2(slot_name, slot_value):
+def test_nlg_fill_template_with_bad_slot_name(slot_name, slot_value):
     template_text = "{" + slot_name + "}"
     t = TemplatedNaturalLanguageGenerator(templates=dict())
-    result = t._fill_template_text(
+    result = t._fill_template(
         template={"text": template_text}, filled_slots={slot_name: slot_value}
     )
     assert result["text"] == template_text
+
+
+@pytest.mark.parametrize(
+    "text_slot_name, text_slot_value, img_slot_name, img_slot_value",
+    [
+        ("tag_w_underscore", "a", "url", "https://www.exampleimg.com"),
+        ("tag with space", "bacon", "img1", "https://www.appleimg.com"),
+    ],
+)
+def test_nlg_fill_template_image_and_text(
+    text_slot_name, text_slot_value, img_slot_name, img_slot_value
+):
+    template = {"text": "{" + text_slot_name + "}", "image": "{" + img_slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template,
+        filled_slots={text_slot_name: text_slot_value, img_slot_name: img_slot_value},
+    )
+    assert result == {"text": str(text_slot_value), "image": str(img_slot_value)}
+
+
+@pytest.mark.parametrize(
+    "text_slot_name, text_slot_value, cust_slot_name, cust_slot_value",
+    [
+        ("tag_w_underscore", "a", "tag.with.dot", "chocolate"),
+        ("tag with space", "bacon", "tag-w-dash", "apple pie"),
+    ],
+)
+def test_nlg_fill_template_text_and_custom(
+    text_slot_name, text_slot_value, cust_slot_name, cust_slot_value
+):
+    template = {
+        "text": "{" + text_slot_name + "}",
+        "custom": {
+            "field": "{" + cust_slot_name + "}",
+            "properties": {"field_prefixed": "prefix_{" + cust_slot_name + "}"},
+        },
+    }
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template,
+        filled_slots={text_slot_name: text_slot_value, cust_slot_name: cust_slot_value},
+    )
+    assert result == {
+        "text": str(text_slot_value),
+        "custom": {
+            "field": str(cust_slot_value),
+            "properties": {"field_prefixed": "prefix_" + str(cust_slot_value)},
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "attach_slot_name, attach_slot_value", [("attach_file", "https://attach.pdf")]
+)
+def test_nlg_fill_template_attachment(attach_slot_name, attach_slot_value):
+    template = {"attachment": "{" + attach_slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template, filled_slots={attach_slot_name: attach_slot_value}
+    )
+    assert result == {"attachment": str(attach_slot_value)}
+
+
+@pytest.mark.parametrize(
+    "button_slot_name, button_slot_value", [("button_1", "button1")]
+)
+def test_nlg_fill_template_button(button_slot_name, button_slot_value):
+    template = {"button": "{" + button_slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template, filled_slots={button_slot_name: button_slot_value}
+    )
+    assert result == {"button": str(button_slot_value)}
+
+
+@pytest.mark.parametrize(
+    "quick_replies_slot_name, quick_replies_slot_value", [("qreply", "reply 1")]
+)
+def test_nlg_fill_template_quick_replies(
+    quick_replies_slot_name, quick_replies_slot_value
+):
+    template = {"quick_replies": "{" + quick_replies_slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template,
+        filled_slots={quick_replies_slot_name: quick_replies_slot_value},
+    )
+    assert result == {"quick_replies": str(quick_replies_slot_value)}

@@ -86,6 +86,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/tracker
    api/tracker-stores
    api/event-brokers
+   api/training-data-importers
    api/featurization
    migration-guide
    changelog
@@ -99,4 +100,3 @@ Understand messages, hold conversations, and connect to messaging channels and A
    Wit.ai <migrate-from/facebook-wit-ai-to-rasa>
    LUIS <migrate-from/microsoft-luis-to-rasa>
    IBM Watson <migrate-from/ibm-watson-to-rasa>
-

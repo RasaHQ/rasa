@@ -6,7 +6,9 @@ mapping:
     - type: "map"
       mapping:
         use_entities:
-          type: "bool"
+          type: "any"
+        ignore_entities:
+          type: "any"
       allowempty: True
     - type: "str"
   entities:

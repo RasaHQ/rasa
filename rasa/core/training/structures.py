@@ -92,6 +92,13 @@ class Checkpoint(object):
 
 
 class StoryStep(object):
+    """A StoryStep is a section of a story block between two checkpoints.
+
+    NOTE: Checkpoints are not only limited to those manually written
+    in the story file, but are also implicitly created at points where
+    multiple intents are separated in one line by chaining them with "OR"s.
+    """
+
     def __init__(
         self,
         block_name: Optional[Text] = None,
@@ -392,6 +399,8 @@ class Story(object):
 
 
 class StoryGraph(object):
+    """Graph of the story-steps pooled from all stories in the training data."""
+
     def __init__(
         self,
         story_steps: List[StoryStep],
@@ -407,6 +416,12 @@ class StoryGraph(object):
         else:
             self.story_end_checkpoints = {}
 
+    def __hash__(self) -> int:
+        self_as_string = self.as_story_string()
+        text_hash = utils.get_text_hash(self_as_string)
+
+        return int(text_hash, 16)
+
     def ordered_steps(self) -> List[StoryStep]:
         """Returns the story steps ordered by topological order of the DAG."""
 
@@ -419,6 +434,16 @@ class StoryGraph(object):
             (self.get(source), self.get(target))
             for source, target in self.cyclic_edge_ids
         ]
+
+    def merge(self, other: Optional["StoryGraph"]) -> "StoryGraph":
+        if not other:
+            return self
+
+        steps = self.story_steps.copy() + other.story_steps
+        story_end_checkpoints = self.story_end_checkpoints.copy().update(
+            other.story_end_checkpoints
+        )
+        return StoryGraph(steps, story_end_checkpoints)
 
     @staticmethod
     def overlapping_checkpoint_names(
@@ -758,3 +783,8 @@ class StoryGraph(object):
             visualization.persist_graph(graph, output_file)
 
         return graph
+
+    def is_empty(self) -> bool:
+        """Checks if `StoryGraph` is empty."""
+
+        return not self.story_steps

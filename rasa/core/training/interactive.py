@@ -334,20 +334,31 @@ def _selection_choices_from_intent_prediction(
 
 
 async def _request_free_text_intent(sender_id: Text, endpoint: EndpointConfig) -> Text:
-    question = questionary.text("Please type the intent name:")
+    question = questionary.text(
+        message="Please type the intent name:",
+        validate=io_utils.not_empty_validator("Please enter an intent name"),
+    )
     return await _ask_questions(question, sender_id, endpoint)
 
 
 async def _request_free_text_action(sender_id: Text, endpoint: EndpointConfig) -> Text:
-    question = questionary.text("Please type the action name:")
+    question = questionary.text(
+        message="Please type the action name:",
+        validate=io_utils.not_empty_validator("Please enter an action name"),
+    )
     return await _ask_questions(question, sender_id, endpoint)
 
 
 async def _request_free_text_utterance(
     sender_id: Text, endpoint: EndpointConfig, action: Text
 ) -> Text:
+
     question = questionary.text(
-        "Please type the message for your new utter_template '{}':".format(action)
+        message=(
+            "Please type the message for your new utterance "
+            "template '{}':".format(action)
+        ),
+        validate=io_utils.not_empty_validator("Please enter a template message"),
     )
     return await _ask_questions(question, sender_id, endpoint)
 
@@ -561,9 +572,12 @@ async def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
     tracker = await retrieve_tracker(endpoint, sender_id)
     events = tracker.get("events", [])
 
-    await _write_stories_to_file(story_path, events)
+    serialised_domain = await retrieve_domain(endpoint)
+    domain = Domain.from_dict(serialised_domain)
+
+    await _write_stories_to_file(story_path, events, domain)
     await _write_nlu_to_file(nlu_path, events)
-    await _write_domain_to_file(domain_path, events, endpoint)
+    await _write_domain_to_file(domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
 
@@ -661,7 +675,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             message="Export stories to (if file exists, this "
             "will append the stories)",
             default=PATHS["stories"],
-            validate=io_utils.questionary_file_path_validator(
+            validate=io_utils.file_type_validator(
                 [".md"],
                 "Please provide a valid export path for the stories, e.g. 'stories.md'.",
             ),
@@ -670,7 +684,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             message="Export NLU data to (if file exists, this will "
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
-            validate=io_utils.questionary_file_path_validator(
+            validate=io_utils.file_type_validator(
                 [".md"],
                 "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
             ),
@@ -679,7 +693,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             message="Export domain file to (if file exists, this "
             "will be overwritten)",
             default=PATHS["domain"],
-            validate=io_utils.questionary_file_path_validator(
+            validate=io_utils.file_type_validator(
                 [".yml", ".yaml"],
                 "Please provide a valid export path for the domain file, e.g. 'domain.yml'.",
             ),
@@ -748,6 +762,9 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
             msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
             msgs.append(msg)
 
+        elif event.get("event") == UserUtteranceReverted.type_name and msgs:
+            msgs.pop()  # user corrected the nlu, remove incorrect example
+
     return msgs
 
 
@@ -758,7 +775,7 @@ def _collect_actions(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
 
 
 async def _write_stories_to_file(
-    export_story_path: Text, events: List[Dict[Text, Any]]
+    export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the sender_id to the file paths."""
 
@@ -772,10 +789,18 @@ async def _write_stories_to_file(
         append_write = "w"  # make a new file if not
 
     with open(export_story_path, append_write, encoding="utf-8") as f:
+        i = 1
         for conversation in sub_conversations:
             parsed_events = rasa.core.events.deserialise_events(conversation)
-            s = Story.from_events(parsed_events)
-            f.write("\n" + s.as_story_string(flat=True))
+            tracker = DialogueStateTracker.from_events(
+                "interactive_story_{}".format(i), evts=parsed_events, slots=domain.slots
+            )
+
+            if any(
+                isinstance(event, UserUttered) for event in tracker.applied_events()
+            ):
+                i += 1
+                f.write("\n" + tracker.export_stories())
 
 
 async def _write_nlu_to_file(
@@ -827,14 +852,11 @@ def _intents_from_messages(messages):
 
 
 async def _write_domain_to_file(
-    domain_path: Text, events: List[Dict[Text, Any]], endpoint: EndpointConfig
+    domain_path: Text, events: List[Dict[Text, Any]], old_domain: Domain
 ) -> None:
     """Write an updated domain file to the file path."""
 
     io_utils.create_path(domain_path)
-
-    domain = await retrieve_domain(endpoint)
-    old_domain = Domain.from_dict(domain)
 
     messages = _collect_messages(events)
     actions = _collect_actions(events)

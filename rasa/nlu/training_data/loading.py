@@ -6,7 +6,6 @@ import requests
 import typing
 from typing import Optional, Text
 
-import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats import markdown
 from rasa.nlu.training_data.formats.dialogflow import (
@@ -57,7 +56,7 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     if not os.path.exists(resource_name):
         raise ValueError("File '{}' does not exist.".format(resource_name))
 
-    files = utils.list_files(resource_name)
+    files = io_utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
     data_sets = [ds for ds in data_sets if ds]
     if len(data_sets) == 0:
@@ -119,7 +118,7 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
     if fformat == UNK:
         raise ValueError("Unknown data format for file '{}'.".format(filename))
 
-    logger.info("Training data format of '{}' is '{}'.".format(filename, fformat))
+    logger.debug("Training data format of '{}' is '{}'.".format(filename, fformat))
     reader = _reader_factory(fformat)
 
     if reader:
@@ -141,7 +140,7 @@ def guess_format(filename: Text) -> Text:
 
     content = ""
     try:
-        content = rasa.utils.io.read_file(filename)
+        content = io_utils.read_file(filename)
         js = json.loads(content)
     except ValueError:
         if any([marker in content for marker in _markdown_section_markers]):
@@ -153,3 +152,11 @@ def guess_format(filename: Text) -> Text:
                 break
 
     return guess
+
+
+def _guess_format(filename: Text) -> Text:
+    logger.warning(
+        "Using '_guess_format()' is deprecated since Rasa 1.1.5. "
+        "Please use 'guess_format()' instead."
+    )
+    return guess_format(filename)

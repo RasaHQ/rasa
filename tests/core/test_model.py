@@ -1,15 +1,17 @@
 import os
 import tempfile
 import time
-from typing import Text, Optional, List
+import shutil
+from typing import Text, Optional
 
 import pytest
+from _pytest.tmpdir import TempdirFactory
 
 import rasa
-import rasa.data as data
 import rasa.core
 import rasa.nlu
-from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.importers.rasa import RasaFileImporter
+from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 from rasa.core.domain import Domain
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
@@ -65,22 +67,37 @@ def test_get_model_exception(model_path):
         get_model(model_path)
 
 
-def test_get_model_from_directory_with_subdirectories(trained_model):
+def test_get_model_from_directory_with_subdirectories(
+    trained_model, tmpdir_factory: TempdirFactory
+):
     unpacked = get_model(trained_model)
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
 
-    assert os.path.exists(unpacked_core)
-    assert os.path.exists(unpacked_nlu)
+    assert unpacked_core
+    assert unpacked_nlu
+
+    directory = tmpdir_factory.mktemp("empty_model_dir").strpath
+    with pytest.raises(ModelNotFound):
+        get_model_subdirectories(directory)
+
+
+def test_get_model_from_directory_nlu_only(trained_model):
+    unpacked = get_model(trained_model)
+    shutil.rmtree(os.path.join(unpacked, "core"))
+    unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
+
+    assert not unpacked_core
+    assert unpacked_nlu
 
 
 def _fingerprint(
     config: Optional[Text] = None,
     config_nlu: Optional[Text] = None,
     config_core: Optional[Text] = None,
-    domain: Optional[List[Text]] = None,
+    domain: Optional[int] = None,
     rasa_version: Text = "1.0",
-    stories: Optional[List[Text]] = None,
-    nlu: Optional[List[Text]] = None,
+    stories: Optional[int] = None,
+    nlu: Optional[int] = None,
 ):
     return {
         FINGERPRINT_CONFIG_KEY: config if config is not None else ["test"],
@@ -144,47 +161,43 @@ def _project_files(
     domain="domain.yml",
     training_files=DEFAULT_DATA_PATH,
 ):
-
-    if training_files is None:
-        core_directory = None
-        nlu_directory = None
-    else:
-        core_directory, nlu_directory = data.get_core_nlu_directories(
-            os.path.join(project, training_files)
-        )
     paths = {
         "config_file": config_file,
-        "domain": domain,
-        "nlu_data": core_directory,
-        "stories": nlu_directory,
+        "domain_path": domain,
+        "training_data_paths": training_files,
     }
 
-    return {k: v if v is None else os.path.join(project, v) for k, v in paths.items()}
+    paths = {k: v if v is None else os.path.join(project, v) for k, v in paths.items()}
+    paths["training_data_paths"] = [paths["training_data_paths"]]
+
+    return RasaFileImporter(**paths)
 
 
-def test_create_fingerprint_from_paths(project):
+async def test_create_fingerprint_from_paths(project):
     project_files = _project_files(project)
 
-    assert model_fingerprint(**project_files)
+    assert await model_fingerprint(project_files)
 
 
 @pytest.mark.parametrize(
     "project_files", [["invalid", "invalid", "invalid"], [None, None, None]]
 )
-def test_create_fingerprint_from_invalid_paths(project, project_files):
-    project_files = _project_files(project, *project_files)
+async def test_create_fingerprint_from_invalid_paths(project, project_files):
+    from rasa.nlu.training_data import TrainingData
+    from rasa.core.training.structures import StoryGraph
 
+    project_files = _project_files(project, *project_files)
     expected = _fingerprint(
         config="",
         config_nlu="",
         config_core="",
-        domain=[],
+        domain=hash(Domain.empty()),
         rasa_version=rasa.__version__,
-        stories=[],
-        nlu=[],
+        stories=hash(StoryGraph([])),
+        nlu=hash(TrainingData()),
     )
 
-    actual = model_fingerprint(**project_files)
+    actual = await model_fingerprint(project_files)
     assert actual[FINGERPRINT_TRAINED_AT_KEY] is not None
 
     del actual[FINGERPRINT_TRAINED_AT_KEY]
@@ -194,12 +207,12 @@ def test_create_fingerprint_from_invalid_paths(project, project_files):
 
 
 @pytest.mark.parametrize("use_fingerprint", [True, False])
-def test_rasa_packaging(trained_model, project, use_fingerprint):
+async def test_rasa_packaging(trained_model, project, use_fingerprint):
     unpacked_model_path = get_model(trained_model)
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
     if use_fingerprint:
-        fingerprint = model_fingerprint(**_project_files(project))
+        fingerprint = await model_fingerprint(_project_files(project))
     else:
         fingerprint = None
 

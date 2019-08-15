@@ -1,7 +1,8 @@
 import logging
 import json
 import os
-from typing import Any, List, Text
+import typing
+from typing import Any, List, Text, Optional
 
 import rasa.utils.io
 
@@ -12,10 +13,14 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
 )
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+
+if typing.TYPE_CHECKING:
+    from rasa.core.policies.ensemble import PolicyEnsemble
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +36,30 @@ class MappingPolicy(Policy):
         """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__(priority=priority)
+
+    @classmethod
+    def validate_against_domain(
+        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ) -> None:
+        if not domain:
+            return
+
+        has_mapping_policy = ensemble is not None and any(
+            isinstance(p, cls) for p in ensemble.policies
+        )
+        has_triggers_in_domain = any(
+            [
+                "triggers" in properties
+                for intent, properties in domain.intent_properties.items()
+            ]
+        )
+        if has_triggers_in_domain and not has_mapping_policy:
+            raise InvalidDomain(
+                "You have defined triggers in your domain, but haven't "
+                "added the MappingPolicy to your policy ensemble. "
+                "Either remove the triggers from your domain or "
+                "exclude the MappingPolicy from your policy configuration."
+            )
 
     def train(
         self,
@@ -53,23 +82,23 @@ class MappingPolicy(Policy):
 
         prediction = [0.0] * domain.num_actions
         intent = tracker.latest_message.intent.get("name")
-        action = domain.intent_properties.get(intent, {}).get("triggers")
+        if intent == USER_INTENT_RESTART:
+            action = ACTION_RESTART_NAME
+        elif intent == USER_INTENT_BACK:
+            action = ACTION_BACK_NAME
+        else:
+            action = domain.intent_properties.get(intent, {}).get("triggers")
+
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
                     logger.warning(
-                        "MappingPolicy tried to predict unkown "
+                        "MappingPolicy tried to predict unknown "
                         "action '{}'.".format(action)
                     )
                 else:
                     prediction[idx] = 1
-            elif intent == USER_INTENT_RESTART:
-                idx = domain.index_for_action(ACTION_RESTART_NAME)
-                prediction[idx] = 1
-            elif intent == USER_INTENT_BACK:
-                idx = domain.index_for_action(ACTION_BACK_NAME)
-                prediction[idx] = 1
 
             if any(prediction):
                 logger.debug(
@@ -80,8 +109,9 @@ class MappingPolicy(Policy):
         elif tracker.latest_action_name == action and action is not None:
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.action_name == action
-
-            if latest_action.policy == type(self).__name__:
+            if latest_action.policy == type(
+                self
+            ).__name__ or latest_action.policy.endswith("_" + type(self).__name__):
                 # this ensures that we only predict listen, if we predicted
                 # the mapped action
                 logger.debug(
@@ -92,6 +122,14 @@ class MappingPolicy(Policy):
 
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
                 prediction[idx] = 1
+            else:
+                logger.debug(
+                    "The mapped action, '{}', for this intent, '{}', was "
+                    "executed last, but it was predicted by another policy, '{}', so MappingPolicy is not"
+                    "predicting any action.".format(
+                        action, intent, latest_action.policy
+                    )
+                )
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "

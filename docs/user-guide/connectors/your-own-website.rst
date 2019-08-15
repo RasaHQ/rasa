@@ -5,6 +5,8 @@
 Your Own Website
 ================
 
+.. edit-link::
+
 If you just want an easy way for users to test your bot, the best option
 is usually the chat interface that ships with Rasa X, where you can `invite users
 to test your bot <../../rasa-x/docs/get-feedback-from-test-users>`_.
@@ -93,6 +95,8 @@ The response to this request will include the bot responses, e.g.
      {"text": "Hey Rasa!"}, {"image": "http://example.com/image.jpg"}
    ]
 
+
+.. _callbackInput:
 
 CallbackInput
 ^^^^^^^^^^^^^
