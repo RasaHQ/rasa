@@ -883,7 +883,7 @@ class Domain(object):
 
         utterances = [a for a in self.action_names if a.startswith(action.UTTER_PREFIX)]
 
-        missing_templates = [t for t in utterances if t not in self.templates.keys()]
+        missing_templates = [t for t in utterances if t not in self.templates.keys() and t not in self.response_actions]
 
         if missing_templates:
             for template in missing_templates:

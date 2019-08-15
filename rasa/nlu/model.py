@@ -165,8 +165,13 @@ class Trainer(object):
             component_cfg = cfg.for_component(i)
             if component_cfg.get("name") == "ResponseSelector":
                 for response_type in training_data.response_types:
+                    ## TODO: very hacky still. Any suggestions?
+
                     component = component_builder.create_component(component_cfg, cfg, response_type=response_type)
                     pipeline.append(component)
+
+                    if component_cfg.get("merge_all"):
+                        break
             else:
                 component = component_builder.create_component(component_cfg, cfg)
                 pipeline.append(component)

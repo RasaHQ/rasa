@@ -55,7 +55,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     requires = ["text_features"]
 
-    name = 'response_selector'
+    name = 'ResponseSelector'
 
     defaults = {
         # nn architecture
@@ -113,7 +113,11 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 0,  # large values may hurt performance,
 
-        "summary_dir": os.path.join(os.getcwd(), 'tb_logs')
+        # Tensorboard config
+        "summary_dir": os.path.join(os.getcwd(), 'tb_logs'),
+
+        # selector config
+        "merge_all": False,
 
     }
     # end default properties (DOC MARKER - don't remove)
@@ -145,9 +149,13 @@ class ResponseSelector(EmbeddingIntentClassifier):
     def _load_tb_params(self, config: Dict[Text, Any]) -> None:
         self.summary_dir = config["summary_dir"]
 
+    def _load_selector_params(self, config: Dict[Text, Any]):
+        self.merge_all = config["merge_all"]
+
     def _load_params(self) -> None:
         super(ResponseSelector, self)._load_params()
         self._load_tb_params(self.component_config)
+        self._load_selector_params(self.component_config)
 
     def process(self, message: "Message", **kwargs: Any) -> None:
         """Return the most likely intent and its similarity to the input."""
@@ -184,8 +192,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
                     for label_idx, score in ranking
                 ]
 
-        message.set("utter_{0}_response".format(self.response_type), label, add_to_output=True)
-        message.set("utter_{0}_response_ranking".format(self.response_type), label_ranking, add_to_output=True)
+        key_placeholder = self.response_type if not self.merge_all else "generic"
+        message.set("utter_{0}_response".format(key_placeholder), label, add_to_output=True)
+        message.set("utter_{0}_response_ranking".format(key_placeholder), label_ranking, add_to_output=True)
 
     # # noinspection PyPep8Naming
     # def process(self, message: 'Message', **kwargs: Any) -> None:
@@ -338,7 +347,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
         tb_sum_dir = os.path.join(self.summary_dir, 'response_selector')
 
-        training_data = training_data.filter_by_intent(self.response_type)
+        if not self.merge_all:
+            training_data = training_data.filter_by_intent(self.response_type)
 
         label_dict = self._create_label_dict(training_data, attribute='response')
 
