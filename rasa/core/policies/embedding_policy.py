@@ -233,7 +233,7 @@ class EmbeddingPolicy(Policy):
     def _label_features_for_Y(self, labels: "np.ndarray") -> "np.ndarray":
         """Prepare Y data for training: features for label labels."""
 
-        if len(labels.shape) == 2:
+        if len(labels.shape) == 2:  # max history featurizer is used
             return np.stack(
                 [
                     np.stack(
@@ -242,7 +242,7 @@ class EmbeddingPolicy(Policy):
                     for label_ids in labels
                 ]
             )
-        else:
+        else:  # full dialogue featurizer is used
             return np.stack(
                 [self._encoded_all_labels[label_idx] for label_idx in labels]
             )
