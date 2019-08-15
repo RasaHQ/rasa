@@ -6,12 +6,17 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.2.3] - `master`_
+[Unreleased 1.3] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
+
+Changed
+-------
+- messages with multiple entities are now handled properly with e2e evaluation
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
+- ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
 - experimental training data importer which supports training with data of multiple
@@ -25,17 +30,18 @@ Changed
 -------
 - added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
   into the ``supervised_embeddings`` NLU pipeline template
-- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
+- bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
 - NLU evaluations now also stores its output in the output directory like the core evaluation
 - show warning in case a default path is used instead of a provided, invalid path
+- compare mode of ``rasa train core`` allows the whole core config comparison,
+  naming style of models trained for comparison is changed (this is a breaking change)
 
 Removed
 -------
 
-
 Fixed
 -----
-
+- ``rasa test nlu`` with a folder of configuration files
 
 [1.2.2] - 2019-08-07
 ^^^^^^^^^^^^^^^^^^^^
@@ -68,6 +74,9 @@ Added
 
 Changed
 -------
+- ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
+  or a policy ensemble
+- Update pytype to ``2019.7.11``
 - new event broker class: ``SQLProducer``. This event broker is now used when running locally with
   Rasa X
 - API requests are not longer logged to ``rasa_core.log`` by default in order to avoid
