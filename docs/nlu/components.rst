@@ -1,10 +1,12 @@
-:desc: Configure the custom components of your ML model to optimise the
-       processes performed on the user input of your contextual assistant.
+:desc: Customize the components and parameters of Rasa's Machine Learning based
+       Natural Language Understanding pipeline
 
 .. _components:
 
 Components
 ==========
+
+.. edit-link::
 
 .. note::
    For clarity, we have renamed the pre-defined pipelines to reflect
@@ -466,6 +468,14 @@ WhitespaceTokenizer
 :Description:
     Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
     extractor.
+:Configuration:
+    Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "WhitespaceTokenizer"
+          case_sensitive: false
 
 JiebaTokenizer
 ~~~~~~~~~~~~~~
@@ -663,7 +673,7 @@ CRFEntityExtractor
           # Available features are:
           # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
           # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
-          # ``bias``, ``upper`` and ``digit``
+          # ``bias``, ``upper``, ``digit`` and ``pattern``
           features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
           # The flag determines whether to use BILOU tagging or not. BILOU

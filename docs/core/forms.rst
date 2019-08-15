@@ -6,6 +6,8 @@
 Forms
 =====
 
+.. edit-link::
+
 .. note::
    There is an in-depth tutorial `here <https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/>`_ about how to use Rasa Forms for slot filling.
 
@@ -47,7 +49,7 @@ configuration file. For example:
   policies:
     - name: "FormPolicy"
 
-see ``examples/formbot/domain.yml`` for an example.
+see ``examples/formbot/config.yml`` for an example.
 
 Form Basics
 -----------

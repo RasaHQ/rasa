@@ -1,10 +1,11 @@
-
 :desc: Open source alternative to Facebook's Wit.ai for conversational bots and NLP
 
 .. _facebook-wit-ai-to-rasa:
 
 Rasa as open source alternative to Facebook's Wit.ai - Migration Guide
 ======================================================================
+
+.. edit-link::
 
 This guide shows you how to migrate your application built with Facebook's Wit.ai to Rasa. Here are a few reasons why we see developers switching:
 

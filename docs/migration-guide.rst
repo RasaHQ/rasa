@@ -5,8 +5,30 @@
 
 Migration Guide
 ===============
+
+.. edit-link::
+
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
+
+.. _migration-to-rasa-1.3:
+
+Rasa 1.2 to Rasa 1.3
+------------------------------------------------
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  It is not possible to load previously trained models. Please make sure to retrain a
+  model before trying to use it with this improved version.
+
+General
+~~~~~~~
+
+- **Compare** mode of ``rasa train core`` allows the whole core config comparison.
+  Therefore, we changed the naming of trained models. They are named by config file
+  name instead of policy name. Old naming style will not be read correctly when
+  creating **compare** plots (``rasa test core``). Please remove old trained models in comparison folder
+  and retrain. Normal core training is unaffected.
 
 .. _migration-to-rasa-1.0:
 

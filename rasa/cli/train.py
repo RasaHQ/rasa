@@ -1,7 +1,7 @@
 import argparse
 import os
 from typing import List, Optional, Text, Dict
-import rasa.cli.arguments as arguments
+import rasa.cli.arguments.train as train_arguments
 
 from rasa.cli.utils import get_validated_path, missing_config_keys, print_error
 from rasa.constants import (
@@ -18,8 +18,6 @@ from rasa.constants import (
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
-    import rasa.cli.arguments.train as core_cli
-
     train_parser = subparsers.add_parser(
         "train",
         help="Trains a Rasa model using your NLU data and stories.",
@@ -27,7 +25,7 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    arguments.train.set_train_arguments(train_parser)
+    train_arguments.set_train_arguments(train_parser)
 
     train_subparsers = train_parser.add_subparsers()
     train_core_parser = train_subparsers.add_parser(
@@ -49,8 +47,8 @@ def add_subparser(
 
     train_parser.set_defaults(func=train)
 
-    arguments.train.set_train_core_arguments(train_core_parser)
-    arguments.train.set_train_nlu_arguments(train_nlu_parser)
+    train_arguments.set_train_core_arguments(train_core_parser)
+    train_arguments.set_train_nlu_arguments(train_nlu_parser)
 
 
 def train(args: argparse.Namespace) -> Optional[Text]:
@@ -90,9 +88,10 @@ def train_core(
     args.domain = get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
-    stories = get_validated_path(
+    story_file = get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
+    kwargs = extract_additional_arguments(args)
 
     # Policies might be a list for the compare training. Do normal training
     # if only list item was passed.
@@ -105,17 +104,16 @@ def train_core(
         return train_core(
             domain=args.domain,
             config=config,
-            stories=stories,
+            stories=story_file,
             output=output,
             train_path=train_path,
             fixed_model_name=args.fixed_model_name,
-            kwargs=extract_additional_arguments(args),
+            kwargs=kwargs,
         )
     else:
         from rasa.core.train import do_compare_training
 
-        loop.run_until_complete(do_compare_training(args, stories, None))
-        return None
+        loop.run_until_complete(do_compare_training(args, story_file, kwargs))
 
 
 def train_nlu(

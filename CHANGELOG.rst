@@ -6,25 +6,130 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.1.7] - `master`_
+[Unreleased 1.3] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
-
 
 Changed
 -------
+- messages with multiple entities are now handled properly with e2e evaluation
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
+- ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
+- throw error during training when triggers are defined in the domain without
+  ``MappingPolicy`` being present in the policy ensemble
+- experimental training data importer which supports training with data of multiple
+  sub bots. Please see the
+  `docs <https://rasa.com/docs/rasa/api/training-data-importers/>`_ for more
+  information.
+- The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that 
+  use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
 
+Changed
+-------
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
+  into the ``supervised_embeddings`` NLU pipeline template
+- bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
+- NLU evaluations now also stores its output in the output directory like the core evaluation
+- show warning in case a default path is used instead of a provided, invalid path
+- compare mode of ``rasa train core`` allows the whole core config comparison,
+  naming style of models trained for comparison is changed (this is a breaking change)
 
 Removed
 -------
 
+Fixed
+-----
+- ``rasa test nlu`` with a folder of configuration files
+
+[1.2.2] - 2019-08-07
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- ``UserUttered`` events always got the same timestamp
+
+[1.2.1] - 2019-08-06
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Docs now have an ``EDIT THIS PAGE`` button
+
+Fixed
+-----
+- ``Flood control exceeded`` error in Telegram connector which happened because the
+  webhook was set twice
+
+[1.2.0] - 2019-08-01
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- add root route to server started without ``--enable-api`` parameter
+- add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
+- option to send messages to the user by calling
+  ``POST /conversations/{conversation_id}/execute``
+
+Changed
+-------
+- ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
+  or a policy ensemble
+- Update pytype to ``2019.7.11``
+- new event broker class: ``SQLProducer``. This event broker is now used when running locally with
+  Rasa X
+- API requests are not longer logged to ``rasa_core.log`` by default in order to avoid
+  problems when running on OpenShift (use ``--log-file rasa_core.log`` to retain the
+  old behavior)
+- ``metadata`` attribute added to ``UserMessage``
+
+Fixed
+-----
+- ``rasa test core`` can handle compressed model files
+- Rasa can handle story files containing multi line comments
+- Template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
+
+[1.1.8] - 2019-07-25
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``TrainingFileImporter`` interface to support customizing the process of loading
+  training data
+- fill slots for custom templates
+
+Changed
+-------
+- ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
+  or a policy ensemble
+- update pytype to ``2019.7.11``
+
+Fixed
+-----
+- interactive learning bug where reverted user utterances were dumped to training data
+- added timeout to terminal input channel to avoid freezing input in case of server
+  errors
+- fill slots for image, buttons, quick_replies and attachments in templates
+- ``rasa train core`` in comparison mode stores the model files compressed (``tar.gz`` files)
+- slot setting in interactive learning with the TwoStageFallbackPolicy
+
+
+[1.1.7] - 2019-07-18
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
+- ``case_sensitive`` option added to ``WhiteSpaceTokenizer`` with ``true`` as default.
 
 Fixed
 -----
 - validation no longer throws an error during interactive learning
+- fixed wrong cleaning of ``use_entities`` in case it was a list and not ``True``
+- updated the server endpoint ``/model/parse`` to handle also messages with the intent prefix
+- fixed bug where "No model found" message appeared after successfully running the bot
+- debug logs now print to ``rasa_core.log`` when running ``rasa x -vv`` or ``rasa run -vv``
 
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^

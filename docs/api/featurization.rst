@@ -6,6 +6,8 @@
 Featurization
 ==============
 
+.. edit-link::
+
 In order to apply machine learning algorithms to conversational AI, we need
 to build up vector representations of conversations.
 
@@ -49,7 +51,7 @@ of the tracker has a couple steps:
             The vectors ``X, y`` indicate a presence of a certain intent,
             entity, previous action or slot e.g. ``[0 0 1 0 0 1 ...]``.
 
-        - ``LabelTokenizerSingleStateFeaturizer`` creates an vector
+        - ``LabelTokenizerSingleStateFeaturizer`` creates a vector
             based on the feature label:
             All active feature labels (e.g. ``prev_action_listen``) are split
             into tokens and represented as a bag-of-words. For example, actions

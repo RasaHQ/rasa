@@ -53,41 +53,6 @@ def read_global_config() -> Dict[Text, Any]:
         return {}
 
 
-def write_global_config_value(name: Text, value: Any) -> None:
-    """Read global Rasa configuration."""
-
-    try:
-        os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
-
-        c = read_global_config()
-        c[name] = value
-        rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
-    except Exception as e:
-        logger.warning(
-            "Failed to write global config. Error: {}. Skipping." "".format(e)
-        )
-
-
-def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
-    """Read a value from the global Rasa configuration."""
-
-    def not_found():
-        if unavailable_ok:
-            return None
-        else:
-            raise ValueError("Configuration '{}' key not found.".format(name))
-
-    if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
-        return not_found()
-
-    c = read_global_config()
-
-    if name in c:
-        return c[name]
-    else:
-        return not_found()
-
-
 def set_log_level(log_level: Optional[int] = None):
     """Set log level of Rasa and Tensorflow either to the provided log level or
     to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
@@ -220,3 +185,76 @@ def class_from_module_path(
             return getattr(m, module_path)
         else:
             raise ImportError("Cannot retrieve class from path {}.".format(module_path))
+
+
+def minimal_kwargs(
+    kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
+) -> Dict[Text, Any]:
+    """Returns only the kwargs which are required by a function. Keys, contained in
+    the exception list, are not included.
+
+    Args:
+        kwargs: All available kwargs.
+        func: The function which should be called.
+        excluded_keys: Keys to exclude from the result.
+
+    Returns:
+        Subset of kwargs which are accepted by `func`.
+
+    """
+
+    excluded_keys = excluded_keys or []
+
+    possible_arguments = arguments_of(func)
+
+    return {
+        k: v
+        for k, v in kwargs.items()
+        if k in possible_arguments and k not in excluded_keys
+    }
+
+
+def write_global_config_value(name: Text, value: Any) -> None:
+    """Read global Rasa configuration."""
+
+    try:
+        os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
+
+        c = read_global_config()
+        c[name] = value
+        rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
+    except Exception as e:
+        logger.warning(
+            "Failed to write global config. Error: {}. Skipping." "".format(e)
+        )
+
+
+def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
+    """Read a value from the global Rasa configuration."""
+
+    def not_found():
+        if unavailable_ok:
+            return None
+        else:
+            raise ValueError("Configuration '{}' key not found.".format(name))
+
+    if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
+        return not_found()
+
+    c = read_global_config()
+
+    if name in c:
+        return c[name]
+    else:
+        return not_found()
+
+
+def mark_as_experimental_feature(feature_name: Text) -> None:
+    """Warns users that they are using an experimental feature."""
+
+    logger.warning(
+        "The {} is currently experimental and might change or be "
+        "removed in the future 🔬 Please share your feedback on it in the "
+        "forum (https://forum.rasa.com) to help us make this feature "
+        "ready for production.".format(feature_name)
+    )
