@@ -35,7 +35,7 @@ Removed
 
 Fixed
 -----
-
+- ``rasa test nlu`` with a folder of configuration files
 
 [1.2.2] - 2019-08-07
 ^^^^^^^^^^^^^^^^^^^^
