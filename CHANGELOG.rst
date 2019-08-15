@@ -28,6 +28,7 @@ Changed
   into the ``supervised_embeddings`` NLU pipeline template
 - bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 - NLU evaluations now also stores its output in the output directory like the core evaluation
+- show warning in case a default path is used instead of a provided, invalid path
 
 Removed
 -------
@@ -35,7 +36,7 @@ Removed
 
 Fixed
 -----
-
+- ``rasa test nlu`` with a folder of configuration files
 
 [1.2.2] - 2019-08-07
 ^^^^^^^^^^^^^^^^^^^^
