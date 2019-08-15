@@ -6,15 +6,18 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.2.3] - `master`_
+[Unreleased 1.3] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- bot messages contain the ``timestamp`` of the ``BotUttered`` event,
-  which can be used in channels
-- both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier`` can be used
-  with ``softmax`` starspace loss
+- ``softmax`` starspace loss for both ``EmbeddingPolicy`` and
+  ``EmbeddingIntentClassifier``
+
+Changed
+-------
+- messages with multiple entities are now handled properly with e2e evaluation
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
 - ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
@@ -24,9 +27,6 @@ Added
   information.
 - The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that 
   use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
-
-Changed
--------
 - added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
   into the ``supervised_embeddings`` NLU pipeline template
 - bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
@@ -39,12 +39,13 @@ Changed
   hold out validation set that is excluded from training data
 - NLU evaluations now also stores its output in the output directory
   like the core evaluation
-- defaults parameters for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
-  are changed
+- defaults parameters and architectures for both ``EmbeddingPolicy`` and
+  ``EmbeddingIntentClassifier`` are changed (this is a breaking change)
+- compare mode of ``rasa train core`` allows the whole core config comparison,
+  naming style of models trained for comparison is changed (this is a breaking change)
 
 Removed
 -------
-
 
 Fixed
 -----
@@ -82,6 +83,9 @@ Added
 
 Changed
 -------
+- ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
+  or a policy ensemble
+- Update pytype to ``2019.7.11``
 - new event broker class: ``SQLProducer``. This event broker is now used when running locally with
   Rasa X
 - API requests are not longer logged to ``rasa_core.log`` by default in order to avoid
