@@ -392,7 +392,7 @@ class TrackerFeaturizer(object):
         """Create training data."""
 
         if self.state_featurizer is None:
-            raise TypeError(
+            raise ValueError(
                 "Variable 'state_featurizer' is not set. Provide "
                 "'SingleStateFeaturizer' class to featurize trackers."
             )
