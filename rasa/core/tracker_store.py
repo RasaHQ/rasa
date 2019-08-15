@@ -170,13 +170,29 @@ class RedisTrackerStore(TrackerStore):
         password=None,
         event_broker=None,
         record_exp=None,
+        is_sentinel=False,
+        sentinel_master=None,
+        sentinel_port=26379,
+        sentinel_socket_timeout=0.1,
     ):
 
         import redis
 
-        self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
-        self.record_exp = record_exp
-        super(RedisTrackerStore, self).__init__(domain, event_broker)
+        if not is_sentinel:
+            self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
+            self.record_exp = record_exp
+            super(RedisTrackerStore, self).__init__(domain, event_broker)
+        else:
+            from redis import sentinel  # pytype: disable=import-error
+
+            redis_sentinel = sentinel.Sentinel(
+                [(host, sentinel_port)], socket_timeout=sentinel_socket_timeout
+            )
+            try:
+                redis_sentinel.discover_master(sentinel_master)
+                redis_sentinel.discover_slaves(sentinel_master)
+            except (sentinel.MasterNotFoundError, sentinel.SlaveNotFoundError) as e:
+                logger.error("Could not connect to redis-sentinel: {}".format(e))
 
     def save(self, tracker, timeout=None):
         if self.event_broker:
