@@ -6,7 +6,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.2.3] - `master`_
+[Unreleased 1.3] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -16,7 +16,7 @@ Changed
 -------
 - messages with multiple entities are now handled properly with e2e evaluation
 - ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
-- `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
+- ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
 - experimental training data importer which supports training with data of multiple
@@ -30,9 +30,11 @@ Changed
 -------
 - added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
   into the ``supervised_embeddings`` NLU pipeline template
-- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
+- bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
 - NLU evaluations now also stores its output in the output directory like the core evaluation
 - show warning in case a default path is used instead of a provided, invalid path
+- compare mode of ``rasa train core`` allows the whole core config comparison,
+  naming style of models trained for comparison is changed (this is a breaking change)
 
 Removed
 -------
