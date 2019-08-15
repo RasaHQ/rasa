@@ -27,7 +27,7 @@ General
 - **Compare** mode of ``rasa train core`` allows the whole core config comparison.
   Therefore, we changed the naming of trained models. They are named by config file
   name instead of policy name. Old naming style will not be read correctly when
-  creating **compare** plots (`rasa test core`). Please remove old trained models in comparison folder
+  creating **compare** plots (``rasa test core``). Please remove old trained models in comparison folder
   and retrain. Normal core training is unaffected.
 
 .. _migration-to-rasa-1.0:
