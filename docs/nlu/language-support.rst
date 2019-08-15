@@ -58,7 +58,7 @@ spaCy
 ~~~~~
 
 With the ``pretrained_embeddings_spacy`` :ref:`pipeline <section_pretrained_embeddings_spacy_pipeline>`, you can use spaCy's
-`pre-trained language models <https://spacy.io/docs/usage/adding-languages>`_ or load fastText vectors, which are available
+`pre-trained language models <https://spacy.io/usage/models#languages>`_ or load fastText vectors, which are available
 for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md>`_. If you want
 to incorporate a custom model you've found into spaCy, check out their page on
 `adding languages <https://spacy.io/docs/usage/adding-languages>`_. As described in the documentation, you need to

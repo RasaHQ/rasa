@@ -256,8 +256,8 @@ To use the ``pretrained_embeddings_spacy`` template:
 .. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
-See :ref:`pretrained-word-vectors` for supported values for ``language`` and instructions
-on how to link your own. To use the components and configure them separately:
+See :ref:`pretrained-word-vectors` for more information about loading spacy language models.
+To use the components and configure them separately:
 
 .. code-block:: yaml
 
