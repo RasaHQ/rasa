@@ -6,6 +6,8 @@
 Components
 ==========
 
+.. edit-link::
+
 .. note::
    For clarity, we have renamed the pre-defined pipelines to reflect
    what they *do* rather than which libraries they use as of Rasa NLU
@@ -671,7 +673,7 @@ CRFEntityExtractor
           # Available features are:
           # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
           # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
-          # ``bias``, ``upper`` and ``digit``
+          # ``bias``, ``upper``, ``digit`` and ``pattern``
           features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
           # The flag determines whether to use BILOU tagging or not. BILOU

@@ -6,6 +6,8 @@
 Dialogue Elements
 =================
 
+.. edit-link::
+
 Dialogue elements are common conversation patterns.
 We use three different levels of abstraction to discuss AI assistants.
 This can be helpful in a product team, so that you have a common language
