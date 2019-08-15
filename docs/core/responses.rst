@@ -6,6 +6,8 @@
 Responses
 =========
 
+.. edit-link::
+
 If you want your assistant to respond to user messages, you need to manage
 these responses. In the training data for your bot,
 your stories, you specify the actions your bot

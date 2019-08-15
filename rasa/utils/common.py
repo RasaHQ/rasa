@@ -247,3 +247,14 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         return c[name]
     else:
         return not_found()
+
+
+def mark_as_experimental_feature(feature_name: Text) -> None:
+    """Warns users that they are using an experimental feature."""
+
+    logger.warning(
+        "The {} is currently experimental and might change or be "
+        "removed in the future 🔬 Please share your feedback on it in the "
+        "forum (https://forum.rasa.com) to help us make this feature "
+        "ready for production.".format(feature_name)
+    )
