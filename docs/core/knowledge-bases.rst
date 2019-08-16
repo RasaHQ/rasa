@@ -128,7 +128,7 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
   ``set_key_attribute_of_object()``.
 - ``get_representation_function_of_object``: This methods returns a lambda function that maps an object from the
   knowledge base to a string representation. This function is used whenever an object is outputted to the user.
-  Per default the lambda function is set to ``lambda obj: obj["name"]``. So, it returns the value of the attribute
+  By default the lambda function is set to ``lambda obj: obj["name"]``. So, it returns the value of the attribute
   "name" of the object. If your object does not have an attribute "name", or the "name" of an object might be
   ambiguous, you should set a new lambda function for that object type by calling
   ``set_representation_function_of_object()``.
