@@ -335,6 +335,14 @@ class Domain(object):
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
 
     def add_knowledge_base_slots(self):
+        """
+        Add slots for the knowledge base action to the list of slots, if the
+        default knowledge base action name is present.
+
+        As soon as the knowledge base action is not experimental anymore, we should
+        consider creating a new section in the domain file dedicated to knowledge
+        base slots.
+        """
         if DEFAULT_KNOWLEDGE_BASE_ACTION in self.action_names:
             logger.warning(
                 "You are using an experiential feature: Action '{}'!".format(
