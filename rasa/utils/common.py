@@ -267,12 +267,12 @@ def lazy_property(function: Callable) -> Any:
     will happen once, on the first call of the property. All
     succeeding calls will use the value stored in the private property."""
 
-    attr_name = "_lazy_" + fn.__name__
+    attr_name = "_lazy_" + function.__name__
 
     @property
     def _lazyprop(self):
         if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
+            setattr(self, attr_name, function(self))
         return getattr(self, attr_name)
 
     return _lazyprop
