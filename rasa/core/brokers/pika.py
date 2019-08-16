@@ -129,7 +129,7 @@ class PikaProducer(EventChannel):
         self.password = password
         self.channel = None  # delay opening channel until first event
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.channel:
             close_pika_channel(self.channel)
             close_pika_connection(self.channel.connection)
