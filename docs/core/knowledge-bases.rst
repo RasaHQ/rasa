@@ -237,6 +237,9 @@ If you want to use ``ActionQueryKnowledgeBase``, you need to specify the followi
 Don't forget to add those entities to your domain file (as entities and slots).
 
 
+.. _custom_knowledge_base:
+
+
 Create an ActionQueryKnowledgeBase
 ----------------------------------
 
