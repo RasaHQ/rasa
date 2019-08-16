@@ -5,7 +5,7 @@ import tempfile
 import typing
 from typing import Dict, Optional, Text, Union, List
 
-from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
+from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
 
@@ -80,7 +80,6 @@ async def train_comparison_models(
     kwargs: Optional[Dict] = None,
 ):
     """Train multiple models for comparison of policies"""
-    from rasa.core import config
     from rasa import model
     from rasa.importers.importer import TrainingDataImporter
 
@@ -92,23 +91,17 @@ async def train_comparison_models(
 
         for current_run, percentage in enumerate(exclusion_percentages, 1):
             for policy_config in policy_configs:
-                policies = config.load(policy_config)
-
-                if len(policies) > 1:
-                    raise ValueError(
-                        "You can only specify one policy per model for comparison"
-                    )
 
                 file_importer = TrainingDataImporter.load_core_importer_from_config(
                     policy_config, domain, [story_file]
                 )
 
-                policy_name = type(policies[0]).__name__
+                config_name = os.path.splitext(os.path.basename(policy_config))[0]
                 logging.info(
                     "Starting to train {} round {}/{}"
                     " with {}% exclusion"
                     "".format(
-                        policy_name, current_run, len(exclusion_percentages), percentage
+                        config_name, current_run, len(exclusion_percentages), percentage
                     )
                 )
 
@@ -126,7 +119,7 @@ async def train_comparison_models(
                     new_fingerprint = await model.model_fingerprint(file_importer)
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
-                    model_name = policy_name + str(current_run)
+                    model_name = config_name + PERCENTAGE_KEY + str(percentage)
                     model.package_model(
                         fingerprint=new_fingerprint,
                         output_directory=output_dir,
