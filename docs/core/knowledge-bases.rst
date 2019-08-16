@@ -9,19 +9,27 @@ Knowledge Base Actions
 .. edit-link::
 
 .. warning::
-   This feature is experimental. We introduce experimental features to get feedback on implementations, so do please try it out. However, the functionality might be changed or removed in the future. If you have feedback (positive or negative) please comment in the `community forum <https://forum.rasa.com>`_
+   This feature is experimental.
+   We introduce experimental features to get feedback on implementations, so do please try it out.
+   However, the functionality might be changed or removed in the future.
+   If you have feedback (positive or negative) please comment in the `community forum <https://forum.rasa.com>`_.
 
 .. contents::
    :local:
 
-A lot of users want to obtain detailed information about certain objects, such as restaurants or hotels, during a conversation.
-Users, for example, want to know restaurants in Berlin.
+
+Using knowledge base actions you are able to handle the following kind of dialogues:
+
+.. image:: ../_static/images/knowledge-base-example.png
+
+As you can see users might want to obtain detailed information about certain objects, such as restaurants or hotels,
+during a conversation.
 They want to obtain details, such as, if an restaurant has outside seating or how expensive the restaurant is.
 In order to answer those user requests domain knowledge is needed.
 Hard-coding the information would not help as the information are subject to change.
-Additionally, users do not only refer to objects by their names, but also use terms, such as "the first one" or "that
-restaurant", to refer to a specific object.
-Objects need to be recognised and reused at a later point in the conversation.
+Additionally, users do not only refer to objects by their names, but also use terms, such as "the first one" or "it",
+to refer to a specific restaurant.
+Restaurants need to be recognised and reused at a later point in the conversation.
 
 To handle the above challenges, we recommend that you create a custom action that inherits from ``ActionQueryKnowledgeBase``.
 This is a single actions which contains the logic to query a knowledge base for objects and their attributes.
@@ -35,7 +43,7 @@ You can find a complete example in ``examples/knowledge_base_bot``.
 
 
 Create a Knowledge Base
-----------------------
+-----------------------
 
 The data you will use to answer the user's request comes from a knowledge base.
 A knowledge base can be used to store complex data structures.
