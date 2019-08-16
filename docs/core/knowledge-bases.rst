@@ -47,7 +47,7 @@ Create a Knowledge Base
 
 The data you will use to answer the user's request comes from a knowledge base.
 A knowledge base can be used to store complex data structures.
-If you just have some data points that fit into memory, you can use our ``InMemoryKnowledgeBase`` implementation.
+We suggest you get started by using the ``InMemoryKnowledgeBase``. Once you want to start working with a large amount of data, you can switch to a :ref:`custom-knowledge-base` .
 To initialize an ``InMemoryKnowledgeBase`` you need to provide the data in a json file.
 
 Let's take a look at an example:
