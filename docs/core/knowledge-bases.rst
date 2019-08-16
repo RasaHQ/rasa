@@ -9,7 +9,7 @@ Knowledge Base Actions
 .. edit-link::
 
 .. warning::
-   This feature is experimental.
+   This feature is experimental. We introduce experimental features to get feedback on implementations, so do please try it out. However, the functionality might be changed or removed in the future. If you have feedback (positive or negative) please comment in the `community forum <https://forum.rasa.com>`_
 
 .. contents::
    :local:
