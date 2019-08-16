@@ -157,7 +157,7 @@ class PikaProducer(EventChannel):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event: Dict, retries=60, retry_delay_in_seconds=5) -> None:
+    def publish(self, event: Dict, retries=60, retry_delay_in_seconds: int = 5) -> None:
         """Publish `event` into Pika queue.
 
         Perform `retries` publish attempts with `retry_delay_in_seconds` between them.
