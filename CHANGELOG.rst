@@ -6,23 +6,18 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.2.3] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.3] - `master`_
 
 Added
 -----
-
-Changed
--------
-- messages with multiple entities are now handled properly with e2e evaluation
-- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
-- `FallbackPolicy` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
-- throw error during training when triggers are defined in the domain without
-  ``MappingPolicy`` being present in the policy ensemble
+- bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
+- ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - experimental training data importer which supports training with data of multiple
   sub bots. Please see the
   `docs <https://rasa.com/docs/rasa/api/training-data-importers/>`_ for more
   information.
+- throw error during training when triggers are defined in the domain without
+  ``MappingPolicy`` being present in the policy ensemble
 - The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that 
   use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
 
@@ -30,17 +25,28 @@ Changed
 -------
 - added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
   into the ``supervised_embeddings`` NLU pipeline template
-- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 - NLU evaluations now also stores its output in the output directory like the core evaluation
 - show warning in case a default path is used instead of a provided, invalid path
+- compare mode of ``rasa train core`` allows the whole core config comparison,
+  naming style of models trained for comparison is changed (this is a breaking change)
 - Pika keeps a single connection open, instead of open and closing on each incoming event
-
-Removed
--------
 
 Fixed
 -----
 - ``rasa test nlu`` with a folder of configuration files
+
+[1.2.3] - 2019-08-15
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- messages with multiple entities are now handled properly with e2e evaluation
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
+
+Fixed
+-----
+- Free text input was not allowed in the Rasa shell when the response template contained buttons,
+  which has now been fixed.
 
 [1.2.2] - 2019-08-07
 ^^^^^^^^^^^^^^^^^^^^
