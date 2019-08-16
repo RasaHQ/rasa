@@ -473,6 +473,8 @@ EmbeddingIntentClassifier
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
+.. _tokenizers:
+
 Tokenizers
 ----------
 
@@ -770,3 +772,5 @@ DucklingHTTPExtractor
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
+
+
