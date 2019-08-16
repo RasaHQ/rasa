@@ -38,13 +38,13 @@
   <meta property="og:image" content="https://rasa.com/assets/img/facebook-og.png" />
   <meta property="og:url" content="https://rasa.com/docs/rasa/nlu/language-support" />
   
-    <meta name="description" content="Support any language like English, Spanish, German, Arabic or Chinese
+    <meta name="description" content="Support all languages via custom domain-trained embeddings or pre-trained embeddings
 with open source chatbot framework Rasa." />
-    <meta itemprop="description" content="Support any language like English, Spanish, German, Arabic or Chinese
+    <meta itemprop="description" content="Support all languages via custom domain-trained embeddings or pre-trained embeddings
 with open source chatbot framework Rasa.">
-    <meta name="twitter:description" content="Support any language like English, Spanish, German, Arabic or Chinese
+    <meta name="twitter:description" content="Support all languages via custom domain-trained embeddings or pre-trained embeddings
 with open source chatbot framework Rasa." />
-    <meta property="og:description" content="Support any language like English, Spanish, German, Arabic or Chinese
+    <meta property="og:description" content="Support all languages via custom domain-trained embeddings or pre-trained embeddings
 with open source chatbot framework Rasa." />
   
   <meta name="twitter:card" content="summary_large_image">
@@ -268,144 +268,72 @@ with open source chatbot framework Rasa." />
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/nlu/language-support.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
-  </div><p><strong>You can use Rasa NLU to build assistants in any language you want!</strong> The
-<code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline can be used for <strong>any language</strong> because
-it trains custom word embeddings for your domain. Read more about this
-pipeline in <a class="reference internal" href="../choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">Choosing a Pipeline</span></a>.</p>
-<p>Other backends have some restrictions and support those languages
-which have pre-trained word vectors available.</p>
+  </div><p>You can use Rasa to build assistants in any language you want! Rasa’s
+<code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline can be used on training data in <strong>any language</strong>.
+This pipeline creates word embeddings from scratch with the data you provide.</p>
+<p>In addition, we also support pre-trained word embeddings such as spaCy. For information on
+what pipeline is best for your use case, check out <a class="reference internal" href="../choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">Choosing a Pipeline</span></a>.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#training-a-model-in-any-language-using-the-supervised-embeddings-pipeline" id="id2">Training a model in any language using the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline</a></li>
-<li><a class="reference internal" href="#pre-trained-word-vectors" id="id3">Pre-trained Word Vectors</a></li>
-<li><a class="reference internal" href="#adding-a-new-language" id="id4">Adding a new language</a><ul>
-<li><a class="reference internal" href="#pretrained-embeddings" id="id5">Pretrained Embeddings</a></li>
+<li><a class="reference internal" href="#training-a-model-in-any-language" id="id3">Training a Model in Any Language</a></li>
+<li><a class="reference internal" href="#pre-trained-word-vectors" id="id4">Pre-trained Word Vectors</a><ul>
+<li><a class="reference internal" href="#spacy" id="id5">spaCy</a></li>
 <li><a class="reference internal" href="#mitie" id="id6">MITIE</a></li>
-<li><a class="reference internal" href="#jieba-mitie" id="id7">Jieba-MITIE</a></li>
 </ul>
 </li>
 </ul>
 </div>
-<div class="section" id="training-a-model-in-any-language-using-the-supervised-embeddings-pipeline">
-<h2><a class="toc-backref" href="#id2">Training a model in any language using the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline</a><a class="headerlink" href="#training-a-model-in-any-language-using-the-supervised-embeddings-pipeline" title="Permalink to this headline">¶</a></h2>
-<p>To train the Rasa NLU model in your preferred language you have to define the
-<code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline and save it as a yaml file inside your project directory.
-One way to define the pipeline configuration is to use a template configuration:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;supervised_embeddings&quot;</span>
+<div class="section" id="training-a-model-in-any-language">
+<h2><a class="toc-backref" href="#id3">Training a Model in Any Language</a><a class="headerlink" href="#training-a-model-in-any-language" title="Permalink to this headline">¶</a></h2>
+<p>Rasa’s <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline can be used to train models in any language, because
+it uses your own training data to create custom word embeddings. This means that the vector
+representation of any specific word will depend on its relationship with the other words in your
+training data. This customization also means that the pipeline is great for use cases that hinge
+on domain-specific data, such as those that require picking up on specific product names.</p>
+<p>To train a Rasa model in your preferred language, define the
+<code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline as your pipeline in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> or other configuration file
+via the instructions <a class="reference internal" href="../choosing-a-pipeline/#section-supervised-embeddings-pipeline"><span class="std std-ref">here</span></a>.</p>
+<p>After you define the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> processing pipeline and generate some <a class="reference internal" href="../training-data-format/#training-data-format"><span class="std std-ref">NLU training data</span></a>
+in your chosen language, train the model with <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">nlu</span></code>. Once the training is finished, you can test your model’s
+language skills. See how your model interprets different input messages via:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa shell nlu
 </pre></div>
 </div>
-<p>Another way is to define a custom configuration by listing all components you would like your pipeline to use.
-The <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline supports any language that can be tokenized. The default is to use a simple
-whitespace tokenizer:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
-</pre></div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Even more so when training word embeddings from scratch, more training data will lead to a
+better model! If you find your model is having trouble discerning your inputs, try training
+with more example sentences.</p>
 </div>
-<p>If your chosen language cannot be tokenized using the whitespace you can use your own custom tokenizer
-and use it instead of the whitespace tokenizer.</p>
-<p>After you define the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> processing pipeline you are good to generate some NLU training
-examples in your chosen language and train the model. For example, if you wanted to build an assistant
-in Norwegian, then your NLU data examples could look something like this:</p>
-<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:hallo
-<span class="k">-</span> Hallo!
-<span class="k">-</span> Hei
-<span class="k">-</span> Lenge siden sist.
-<span class="k">-</span> God morgen
-
-<span class="gu">##</span> intent:farvel
-<span class="k">-</span> Ha det!
-<span class="k">-</span> På Gjensyn
-<span class="k">-</span> Ses i morgen.
-</pre></div>
-</div>
-<p>Let’s say you saved training examples as <code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code> and one of the
-pipeline configuration examples mentioned above as <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>,
-then you can train the model by running:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train nlu <span class="se">\</span>
-  --config config.yml
-  --data data/nlu.md
-</pre></div>
-</div>
-<p>Once the training is finished, you can test your model’s Norwegian language skills.</p>
 </div>
 <div class="section" id="pre-trained-word-vectors">
-<h2><a class="toc-backref" href="#id3">Pre-trained Word Vectors</a><a class="headerlink" href="#pre-trained-word-vectors" title="Permalink to this headline">¶</a></h2>
-<p>With the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> pipeline you can also load fastText vectors, which are available
-for <a class="reference external" href="https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md">hundreds of languages</a>.</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="39%" />
-<col width="61%" />
-</colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">pretrained-embeddings</th>
-<th class="head">supported languages</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr class="row-even"><td>spacy</td>
-<td>english (<code class="docutils literal notranslate"><span class="pre">en</span></code>),
-german (<code class="docutils literal notranslate"><span class="pre">de</span></code>),
-spanish (<code class="docutils literal notranslate"><span class="pre">es</span></code>),
-portuguese (<code class="docutils literal notranslate"><span class="pre">pt</span></code>),
-italian (<code class="docutils literal notranslate"><span class="pre">it</span></code>),
-dutch (<code class="docutils literal notranslate"><span class="pre">nl</span></code>),
-french (<code class="docutils literal notranslate"><span class="pre">fr</span></code>)</td>
-</tr>
-<tr class="row-odd"><td>MITIE</td>
-<td>english (<code class="docutils literal notranslate"><span class="pre">en</span></code>)</td>
-</tr>
-<tr class="row-even"><td>Jieba-MITIE</td>
-<td>chinese (<code class="docutils literal notranslate"><span class="pre">zh</span></code>) <a class="reference internal" href="#jieba"><span class="std std-ref">*</span></a></td>
-</tr>
-</tbody>
-</table>
-<p>These languages can be set as part of defining your <a class="reference internal" href="../../user-guide/rasa-tutorial/#model-configuration"><span class="std std-ref">model configuration</span></a>.</p>
-</div>
-<div class="section" id="adding-a-new-language">
-<h2><a class="toc-backref" href="#id4">Adding a new language</a><a class="headerlink" href="#adding-a-new-language" title="Permalink to this headline">¶</a></h2>
-<p>We want to make the process of adding new languages as simple as possible to increase the number of
-supported languages. Nevertheless, to use a language you either need trained word representations or
-you need to train your own representations using a large corpus of text data in that language.</p>
-<div class="section" id="pretrained-embeddings">
-<h3><a class="toc-backref" href="#id5">Pretrained Embeddings</a><a class="headerlink" href="#pretrained-embeddings" title="Permalink to this headline">¶</a></h3>
-<p>spaCy already provides a really good documentation page about <a class="reference external" href="https://spacy.io/docs/usage/adding-languages">adding languages</a>.
-This will help you train a tokenizer and a vocabulary for a new language in spaCy.</p>
-<p>As described in the documentation, you need to register your language using <code class="docutils literal notranslate"><span class="pre">set_lang_class()</span></code> which will
-allow Rasa NLU to load and use your new language by passing in your language identifier as the <code class="docutils literal notranslate"><span class="pre">language</span></code> option.</p>
+<span id="pretrained-word-vectors"></span><h2><a class="toc-backref" href="#id4">Pre-trained Word Vectors</a><a class="headerlink" href="#pre-trained-word-vectors" title="Permalink to this headline">¶</a></h2>
+<p>If you can find them in your language, pre-trained word vectors are a great way to get started with less data,
+as the word vectors are trained on large amounts of data such as Wikipedia.</p>
+<div class="section" id="spacy">
+<h3><a class="toc-backref" href="#id5">spaCy</a><a class="headerlink" href="#spacy" title="Permalink to this headline">¶</a></h3>
+<p>With the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> <a class="reference internal" href="../choosing-a-pipeline/#section-pretrained-embeddings-spacy-pipeline"><span class="std std-ref">pipeline</span></a>, you can use spaCy’s
+<a class="reference external" href="https://spacy.io/usage/models#languages">pre-trained language models</a> or load fastText vectors, which are available
+for <a class="reference external" href="https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md">hundreds of languages</a>. If you want
+to incorporate a custom model you’ve found into spaCy, check out their page on
+<a class="reference external" href="https://spacy.io/docs/usage/adding-languages">adding languages</a>. As described in the documentation, you need to
+register your language model and link it to the language identifier, which will allow Rasa to load and use your new language
+by passing in your language identifier as the <code class="docutils literal notranslate"><span class="pre">language</span></code> option.</p>
 </div>
 <div class="section" id="mitie">
-<h3><a class="toc-backref" href="#id6">MITIE</a><a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
+<span id="id2"></span><h3><a class="toc-backref" href="#id6">MITIE</a><a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
+<p>You can also pre-train your own word vectors from a language corpus using <a class="reference internal" href="../choosing-a-pipeline/#section-mitie-pipeline"><span class="std std-ref">MITIE</span></a>. To do so:</p>
 <ol class="arabic simple">
 <li>Get a clean language corpus (a Wikipedia dump works) as a set of text files.</li>
 <li>Build and run <a class="reference external" href="https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep">MITIE Wordrep Tool</a> on your corpus.
 This can take several hours/days depending on your dataset and your workstation.
 You’ll need something like 128GB of RAM for wordrep to run – yes, that’s a lot: try to extend your swap.</li>
-<li>Set the path of your new <code class="docutils literal notranslate"><span class="pre">total_word_feature_extractor.dat</span></code> as value of the <em>mitie_file</em> parameter in <code class="docutils literal notranslate"><span class="pre">config_mitie.json</span></code>.</li>
+<li>Set the path of your new <code class="docutils literal notranslate"><span class="pre">total_word_feature_extractor.dat</span></code> as the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter in your
+<a class="reference internal" href="../choosing-a-pipeline/#section-mitie-pipeline"><span class="std std-ref">configuration</span></a>.</li>
 </ol>
-</div>
-<div class="section" id="jieba-mitie">
-<span id="jieba"></span><h3><a class="toc-backref" href="#id7">Jieba-MITIE</a><a class="headerlink" href="#jieba-mitie" title="Permalink to this headline">¶</a></h3>
-<p>Some notes about using the Jieba tokenizer together with MITIE on chinese
-language data: to use it, you need a proper MITIE feature extractor, e.g.
-<code class="docutils literal notranslate"><span class="pre">data/total_word_feature_extractor_zh.dat</span></code>. It should be trained
-from a Chinese corpus using the MITIE wordrep tools
-(takes 2-3 days for training).</p>
-<p>For training, build the <a class="reference external" href="https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep">MITIE Wordrep Tool</a>.
-Note that a Chinese corpus should be tokenized first before feeding
-into the tool for training. A close-domain corpus that best matches
-user case works best.</p>
-<p>See <a class="reference external" href="http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html">this blogpost</a>
-from <a class="reference external" href="https://github.com/crownpku">Baidu Baike</a> for detailed
-instructions on how to train a model from a Chinese Wikipedia dump.</p>
+<p>For a full example of how to train MITIE word vectors, check out
+<a class="reference external" href="http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html">this blogpost</a>
+of creating a MITIE model from a Chinese Wikipedia dump.</p>
 </div>
 </div>
 </div>

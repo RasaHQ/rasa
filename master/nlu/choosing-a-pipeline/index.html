@@ -283,13 +283,12 @@ it on your dataset.</p>
 <li><a class="reference internal" href="#component-lifecycle" id="id6">Component Lifecycle</a></li>
 <li><a class="reference internal" href="#the-entity-object-explained" id="id7">The “entity” object explained</a></li>
 <li><a class="reference internal" href="#pre-configured-pipelines" id="id8">Pre-configured Pipelines</a><ul>
-<li><a class="reference internal" href="#pretrained-embeddings-spacy" id="id9">pretrained_embeddings_spacy</a></li>
-<li><a class="reference internal" href="#supervised-embeddings" id="id10">supervised_embeddings</a></li>
-<li><a class="reference internal" href="#mitie" id="id11">mitie</a></li>
-<li><a class="reference internal" href="#mitie-2" id="id12">mitie 2</a></li>
+<li><a class="reference internal" href="#supervised-embeddings" id="id9">supervised_embeddings</a></li>
+<li><a class="reference internal" href="#pretrained-embeddings-spacy" id="id10">pretrained_embeddings_spacy</a></li>
+<li><a class="reference internal" href="#mitie" id="id11">MITIE</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#custom-pipelines" id="id13">Custom pipelines</a></li>
+<li><a class="reference internal" href="#custom-pipelines" id="id12">Custom pipelines</a></li>
 </ul>
 </div>
 <div class="section" id="the-short-answer">
@@ -327,7 +326,7 @@ so it will work with any language that you can tokenize (on whitespace or using 
 <p>You can read more about this topic <a class="reference external" href="https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8">here</a> .</p>
 <p>Rasa gives you the tools to compare the performance of both of these pipelines on your data directly,
 see <a class="reference internal" href="../../user-guide/evaluating-models/#comparing-nlu-pipelines"><span class="std std-ref">Comparing NLU Pipelines</span></a>.</p>
-<p>You can also use MITIE as a source of word vectors in your pipeline, see <a class="reference internal" href="#section-mitie-pipeline"><span class="std std-ref">mitie</span></a>.
+<p>You can also use MITIE as a source of word vectors in your pipeline, see <a class="reference internal" href="#section-mitie-pipeline"><span class="std std-ref">MITIE</span></a>.
 We do not recommend that you use these; mitie support is likely to be deprecated in a future release.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -462,40 +461,19 @@ a full list of components. For example, these two configurations are equivalent:
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
 </pre></div>
 </div>
-<p>Below is a list of all the pre-configured pipeline templates.</p>
-<div class="section" id="pretrained-embeddings-spacy">
-<span id="section-pretrained-embeddings-spacy-pipeline"></span><h3><a class="toc-backref" href="#id9">pretrained_embeddings_spacy</a><a class="headerlink" href="#pretrained-embeddings-spacy" title="Permalink to this headline">¶</a></h3>
-<p>To use the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> template:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;pretrained_embeddings_spacy&quot;</span>
-</pre></div>
-</div>
-<p>See <a class="reference internal" href="../language-support/#language-support"><span class="std std-ref">Language Support</span></a> for possible values for <code class="docutils literal notranslate"><span class="pre">language</span></code>. To use
-the components and configure them separately:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
-</pre></div>
-</div>
-</div>
+<p>Below is a list of all the pre-configured pipeline templates with customization information.</p>
 <div class="section" id="supervised-embeddings">
-<span id="section-supervised-embeddings-pipeline"></span><h3><a class="toc-backref" href="#id10">supervised_embeddings</a><a class="headerlink" href="#supervised-embeddings" title="Permalink to this headline">¶</a></h3>
-<p>To use it as a template:</p>
+<span id="section-supervised-embeddings-pipeline"></span><h3><a class="toc-backref" href="#id9">supervised_embeddings</a><a class="headerlink" href="#supervised-embeddings" title="Permalink to this headline">¶</a></h3>
+<p>To train a Rasa model in your preferred language, define the
+<code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline as your pipeline in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> or other configuration file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;supervised_embeddings&quot;</span>
 </pre></div>
 </div>
-<p>The supervised embeddings pipeline supports any language that can be tokenized. The
-default is to use a simple whitespace tokenizer:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline supports any language that can be tokenized.  By default it uses whitespace
+for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are the default
+components that make up the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
@@ -511,18 +489,42 @@ default is to use a simple whitespace tokenizer:</p>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
 </pre></div>
 </div>
+<p>So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
+can replace the <code class="docutils literal notranslate"><span class="pre">WhitespaceTokenizer</span></code> with your own tokenizer. We support a number of different <a class="reference internal" href="../components/#tokenizers"><span class="std std-ref">tokenizers</span></a>,
+or you can <a class="reference internal" href="../../api/custom-nlu-components/#custom-nlu-components"><span class="std std-ref">create your own</span></a>.</p>
 <p>The pipeline uses two instances of <code class="docutils literal notranslate"><span class="pre">CountVectorsFeaturizer</span></code>. The first one
 featurizes text based on words. The second one featurizes text based on character
 n-grams, preserving word boundaries. We empirically found the second featurizer
 to be more powerful, but we decided to keep the first featurizer as well to make
 featurization more robust.</p>
-<p>If you have a custom tokenizer for your language, you can replace the whitespace
-tokenizer with something more accurate.</p>
+</div>
+<div class="section" id="pretrained-embeddings-spacy">
+<span id="section-pretrained-embeddings-spacy-pipeline"></span><h3><a class="toc-backref" href="#id10">pretrained_embeddings_spacy</a><a class="headerlink" href="#pretrained-embeddings-spacy" title="Permalink to this headline">¶</a></h3>
+<p>To use the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> template:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;pretrained_embeddings_spacy&quot;</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="../language-support/#pretrained-word-vectors"><span class="std std-ref">Pre-trained Word Vectors</span></a> for more information about loading spacy language models.
+To use the components and configure them separately:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="mitie">
-<span id="section-mitie-pipeline"></span><h3><a class="toc-backref" href="#id11">mitie</a><a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
-<p>There is no pipeline template, as you need to configure the location
-of MITIE’s featurizer. To use the components and configure them separately:</p>
+<span id="section-mitie-pipeline"></span><h3><a class="toc-backref" href="#id11">MITIE</a><a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
+<p>To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
+<a class="reference internal" href="../language-support/#mitie"><span class="std std-ref">here</span></a>. This will give you the file path to pass to the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
@@ -536,13 +538,8 @@ of MITIE’s featurizer. To use the components and configure them separately:</p
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="mitie-2">
-<h3><a class="toc-backref" href="#id12">mitie 2</a><a class="headerlink" href="#mitie-2" title="Permalink to this headline">¶</a></h3>
-<p>This pipeline uses MITIE’s featurizer and also its multiclass classifier.
-Training can be quite slow, so this is not recommended for large datasets.
-There is no pipeline template, as you need to configure the location
-of MITIE’s featurizer. To use the components and configure them separately:</p>
+<p>Another version of this pipeline uses MITIE’s featurizer and also its multi-class classifier.
+Training can be quite slow, so this is not recommended for large datasets.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
@@ -558,7 +555,7 @@ of MITIE’s featurizer. To use the components and configure them separately:</p
 </div>
 </div>
 <div class="section" id="custom-pipelines">
-<h2><a class="toc-backref" href="#id13">Custom pipelines</a><a class="headerlink" href="#custom-pipelines" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id12">Custom pipelines</a><a class="headerlink" href="#custom-pipelines" title="Permalink to this headline">¶</a></h2>
 <p>You don’t have to use a template, you can also run a fully custom pipeline
 by listing the names of the components you want to use:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
