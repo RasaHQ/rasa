@@ -34,7 +34,7 @@ You can find a complete example in ``examples/knowledge_base_bot``.
    ``ActionQueryKnowledgeBase``.
 
 
-Create a KnowledgeBase
+Create a Knowledge Base
 ----------------------
 
 The data you will use to answer the user's request comes from a knowledge base.
