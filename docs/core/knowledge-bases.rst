@@ -134,8 +134,30 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
   similar to the primary key in a relation database. By default the name of the key attribute for every object type
   is set to "id". You can overwrite the name of the key attribute for a specific object type by calling
   ``set_key_attribute_of_object()``.
-- ``get_representation_function_of_object``: This methods returns a lambda function that maps an object from the
-  knowledge base to a string representation. This function is used whenever an object is outputted to the user.
+- ``get_representation_function_of_object``: Let's focus on the following restaurant:
+
+  .. code-block:: json
+
+      {
+          "id": 0,
+          "name": "Donath",
+          "cuisine": "Italian",
+          "outside-seating": true,
+          "price-range": "mid-range"
+      }
+
+  When the user is asking to list any Italian restaurant, you don't want to confront the user with all details of that
+  restaurant. You want to provide a meaningful name that identifies the restaurant. Most likely you would use
+  just the name of the restaurant to speak about it.
+  Thus, the function ``get_representation_function_of_object`` returns a lambda function that maps, for example, the
+  above restaurant object to its name.
+
+  .. code-block:: python
+
+      lambda obj: obj["name"]
+
+  This function is used whenever the bot is talking about a specific object, so that the user is given a meaningful
+  name and knows what exactly the bot is talking about.
   By default the lambda function is set to ``lambda obj: obj["name"]``. So, it returns the value of the attribute
   "name" of the object. If your object does not have an attribute "name", or the "name" of an object might be
   ambiguous, you should set a new lambda function for that object type by calling
