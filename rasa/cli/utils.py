@@ -172,7 +172,7 @@ def element_to_string(element: Dict[Text, Any], idx: int = 0) -> Text:
 
 def button_choices_from_message_data(
     message: Dict[Text, Any], allow_free_text_input: bool = True
-) -> Question:
+) -> "Question":
     """Return list of choices to present to the user.
 
     If allow_free_text_input is True, an additional option is added
@@ -188,7 +188,7 @@ def button_choices_from_message_data(
     return choices
 
 
-def payload_from_button_question(button_question: Question) -> Text:
+def payload_from_button_question(button_question: "Question") -> Text:
     """Prompt user with a button question and returns the nlu payload."""
     response = button_question.ask()
     if response != FREE_TEXT_INPUT_PROMPT:
@@ -235,11 +235,3 @@ def print_error(*args: Any):
 def signal_handler(sig, frame):
     print ("Goodbye 👋")
     sys.exit(0)
-
-
-def payload_from_button_question(button_question: "Question") -> Text:
-    """Prompts user with a button question and returns the nlu payload."""
-    response = button_question.ask()
-    payload = response[response.find("(") + 1 : response.find(")")]
-
-    return payload
