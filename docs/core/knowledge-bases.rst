@@ -123,7 +123,7 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
 
 - ``get_key_attribute_of_object``: To keep track of what object the user was talking about last, we store the value
   of the key attribute in a specific slot. Every object should have a key attribute that is unique, i.e.
-  similar to the primary key in a relation database. Per default the name of the key attribute for every object type
+  similar to the primary key in a relation database. By default the name of the key attribute for every object type
   is set to "id". You can overwrite the name of the key attribute for a specific object type by calling
   ``set_key_attribute_of_object()``.
 - ``get_representation_function_of_object``: This methods returns a lambda function that maps an object from the
