@@ -8,7 +8,6 @@ from rasa.importers.importer import TrainingDataImporter
 from rasa.importers.rasa import RasaFileImporter
 
 
-
 async def test_rasa_file_importer(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)

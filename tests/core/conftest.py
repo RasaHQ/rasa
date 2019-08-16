@@ -1,5 +1,6 @@
 import asyncio
 import os
+from typing import Text
 
 import matplotlib
 import pytest
@@ -20,6 +21,7 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
+from rasa.train import train_async
 
 matplotlib.use("Agg")
 
@@ -170,6 +172,7 @@ def default_nlg(default_domain):
 @pytest.fixture
 def default_tracker(default_domain):
     return DialogueStateTracker("my-sender", default_domain.slots)
+
 
 @pytest.fixture
 async def restaurantbot(tmpdir_factory) -> Text:

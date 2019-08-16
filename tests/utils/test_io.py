@@ -77,7 +77,7 @@ def test_read_yaml_string_with_env_var_not_exist():
 
 
 def test_environment_variable_not_existing():
-    content = "model: \n  test: ${variable}"
+    content = "model: \n  test: ${non-existing}"
     with pytest.raises(ValueError):
         io_utils.read_yaml(content)
 
