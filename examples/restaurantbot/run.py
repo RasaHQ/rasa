@@ -37,11 +37,11 @@ async def train_core(
         policies=[
             MemoizationPolicy(max_history=3),
             MappingPolicy(),
-            RestaurantPolicy(batch_size=100, epochs=400, validation_split=0.2),
+            RestaurantPolicy(batch_size=100, epochs=100, validation_split=0.2),
         ],
     )
 
-    training_data = await agent.load_data(training_data_file)
+    training_data = await agent.load_data(training_data_file, augmentation_factor=10)
     agent.train(training_data)
 
     # Attention: agent.persist stores the model and all meta data into a folder.
