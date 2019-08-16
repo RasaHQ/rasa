@@ -130,7 +130,7 @@ class MessageProcessor(object):
     ) -> Optional[DialogueStateTracker]:
         """Log `message` on tracker belonging to the message's conversation_id.
 
-        Optionally save the tracker if `should_save_tracker` is True. Tracker saving
+        Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
         can be skipped if the tracker returned by this method is used for further
         processing and saved at a later stage.
         """

@@ -260,7 +260,7 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
     )
 
 
-def lazyproperty(fn: Callable) -> Any:
+def lazy_property(function: Callable) -> Any:
     """Allows to avoid recomputing a property over and over.
 
     The result gets stored in a local var. Computation of the property
