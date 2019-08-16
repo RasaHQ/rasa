@@ -3,6 +3,8 @@ import logging
 import typing
 from typing import Any, Dict, Optional, Text, Union
 
+import time
+
 import rasa.utils.common as rasa_utils
 from rasa.utils.endpoints import EndpointConfig
 
@@ -97,7 +99,12 @@ def initialise_pika_connection(
 
 # noinspection PyUnresolvedReferences
 def initialise_pika_channel(
-    host: Text, queue: Text, username: Text, password: Text
+    host: Text,
+    queue: Text,
+    username: Text,
+    password: Text,
+    connection_attempts: int = 20,
+    retry_delay_in_seconds: Union[int, float] = 5,
 ) -> "BlockingChannel":
     """Initialise a Pika channel with a durable queue.
 
@@ -106,12 +113,16 @@ def initialise_pika_channel(
         queue: Pika queue to declare
         username: username for authentication with Pika host
         password: password for authentication with Pika host
+        connection_attempts: number of connection attempts before giving up
+        retry_delay_in_seconds: delay in seconds between connection attempts
 
     Returns:
         Pika `BlockingChannel` with declared queue
     """
 
-    connection = initialise_pika_connection(host, username, password)
+    connection = initialise_pika_connection(
+        host, username, password, connection_attempts, retry_delay_in_seconds
+    )
 
     return _declare_pika_channel_with_queue(connection, queue)
 
@@ -157,11 +168,20 @@ class PikaProducer(EventChannel):
         self.host = host
         self.username = username
         self.password = password
+        self.channel = None  # delay opening channel until first event
 
-    @rasa_utils.lazyproperty
-    def channel(self):
+    def _open_channel(
+        self,
+        connection_attempts: int = 20,
+        retry_delay_in_seconds: Union[int, float] = 5,
+    ) -> "BlockingChannel":
         return initialise_pika_channel(
-            self.host, self.queue, self.username, self.password
+            self.host,
+            self.queue,
+            self.username,
+            self.password,
+            connection_attempts,
+            retry_delay_in_seconds,
         )
 
     @classmethod
@@ -173,9 +193,40 @@ class PikaProducer(EventChannel):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event: Dict) -> None:
+    def publish(self, event: Dict, retries=60, retry_delay_in_seconds=5) -> None:
+        """Publish `event` into Pika queue.
+
+        Perform `retries` publish attempts with `retry_delay_in_seconds` between them.
+        """
+
         body = json.dumps(event)
+
+        while retries:
+            # noinspection PyBroadException
+            try:
+                self._publish(body)
+                return
+            except Exception as e:
+                logger.error(
+                    "Could not open Pika channel at host '{}'. Failed with error: "
+                    "{}".format(self.host, e)
+                )
+                self.channel = None
+
+            retries -= 1
+            time.sleep(retry_delay_in_seconds)
+
+        logger.error(
+            "Failed to publish Pika event to queue '{}' on host "
+            "'{}':\n{}".format(self.queue, self.host, body)
+        )
+
+    def _publish(self, body: Text) -> None:
+        if not self.channel:
+            self.channel = self._open_channel(connection_attempts=1)
+
         self.channel.basic_publish("", self.queue, body)
+
         logger.debug(
             "Published Pika events to queue '{}' on host "
             "'{}':\n{}".format(self.queue, self.host, body)
