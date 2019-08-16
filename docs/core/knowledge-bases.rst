@@ -1,7 +1,7 @@
 :desc: Leverage information from knowledge bases inside conversations using ActionQueryKnowledgeBase
        in open source bot framework Rasa.
 
-.. _knowledge_bases:
+.. _knowledge_base_actions:
 
 Knowledge Base Actions
 ======================
@@ -29,11 +29,14 @@ In order to answer those user requests domain knowledge is needed.
 Hard-coding the information would not help as the information are subject to change.
 Additionally, users do not only refer to objects by their names, but also use terms, such as "the first one" or "it",
 to refer to a specific restaurant.
-Restaurants need to be recognised and reused at a later point in the conversation.
+We need to keep track of what the user spoke about in order to resolve mentions, such "the first one" or "it", to
+the correct object.
 
-To handle the above challenges, we recommend that you create a custom action that inherits from ``ActionQueryKnowledgeBase``.
+To handle the above challenges, we recommend that you create a custom action that inherits from
+``ActionQueryKnowledgeBase``.
 This is a single actions which contains the logic to query a knowledge base for objects and their attributes.
-When a restaurant is mentioned indirectly, for example using a phrase like ``the first one`` or ``that restaurant``, this action is able to figure out which restaurant the user is referring to.
+When a restaurant is mentioned indirectly, for example using a phrase like ``the first one`` or ``that restaurant``,
+this action is able to figure out which restaurant the user is referring to.
 You can find a complete example in ``examples/knowledge_base_bot``.
 
 .. note::
@@ -42,12 +45,16 @@ You can find a complete example in ``examples/knowledge_base_bot``.
    ``ActionQueryKnowledgeBase``.
 
 
+.. _create_knowledge_base:
+
+
 Create a Knowledge Base
 -----------------------
 
 The data you will use to answer the user's request comes from a knowledge base.
 A knowledge base can be used to store complex data structures.
-We suggest you get started by using the ``InMemoryKnowledgeBase``. Once you want to start working with a large amount of data, you can switch to a :ref:`custom-knowledge-base` .
+We suggest you get started by using the ``InMemoryKnowledgeBase``.
+Once you want to start working with a large amount of data, you can switch to a :ref:`custom_knowledge_base`.
 To initialize an ``InMemoryKnowledgeBase`` you need to provide the data in a json file.
 
 Let's take a look at an example:
@@ -121,7 +128,14 @@ Once the data are defined in a json file, called, for example, ``data.json``, yo
 
 .. code-block:: python
 
-    knowledge_base = InMemoryKnowledgeBase.load("data.json")
+    knowledge_base = InMemoryKnowledgeBase("data.json")
+
+Every object in your knowledge base should have "name" and "id" field.
+If that is not the case, please read the following section :ref:`customize_in_memory_knowledge_base`.
+
+
+.. _customize_in_memory_knowledge_base:
+
 
 Customize your InMemoryKnowledgeBase
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -187,11 +201,34 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
   You can overwrite it by calling the function ``set_ordinal_mention_mapping``.
   If you want to learn more about the usage of the mapping, go to section :ref:`resolve_mentions`.
 
+
+Creating your own Knowledge Base Implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you have more data or if you want to use a more complex data structure that, for example, involves relations between
+different objects, you can create your own knowledge base implementation.
+Just inherit ``KnowledgeBase`` and implement the methods ``get_objects()``, ``get_object()``, and
+``get_attributes_of_object()``.
+You can also customize your knowledge base further, for example, by adapting the methods mentioned in the section
+:ref:`customize_in_memory_knowledge_base`.
+
+.. note::
+   We wrote a `blog post <https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/>`_
+   that explains how you can set up your own knowledge base.
+
+
 Defining the NLU Data
 ---------------------
 
+In this section
+
+- we are going to introduce a new intent, ``query_knowledge_base``.
+- we are going to annotate ``mention`` entities so that our model detects indirect mentions of objects like "the
+  first one".
+- we will use synonyms (:ref:`entity_synonyms`) extensively.
+
 To be able to understand that the user wants to retrieve some information from the knowledge base, you need to define
-a new intent, for example, ``query_knowledge_base``.
+a new intent, for example, called ``query_knowledge_base``.
 The intent should contain all kind of user requests.
 
 Let's look at an example:
@@ -213,7 +250,7 @@ Let's look at an example:
     - what is with [I due forni](restaurant)?
      ...
 
-The above examples just show examples related to the restaurant domain.
+The above example just shows examples related to the restaurant domain.
 You should add examples for every object type that exists in your knowledge base.
 
 All user requests can be divided into two categories:
@@ -229,22 +266,39 @@ If you want to use ``ActionQueryKnowledgeBase``, you need to specify the followi
   be marked as entity in our NLU data. Use :ref:`entity_synonyms` to map, for example, "restaurants" to the correct
   object type listed in the knowledge base, e.g. "restaurant".
 - ``mention``: If the user refers to an object via "the first one", "that one", or "it", you should mark those terms
-  as ``mention``. We also use :ref:`entity_synonyms` to map some of the mentions to symbols. More on that in
-  :ref:`resolve_mentions`.
-- ``attribute``: All attribute names defined in your knowledge base should be marked as ``attribute`` in the NLU data.
-  Again, use :ref:`entity_synonyms` to map variations of an attribute name to the one used in the knowledge base.
+  as ``mention``. We also use :ref:`entity_synonyms` to map some of the mentions to symbols. You can learn about that
+  in section :ref:`resolve_mentions`.
+- ``attribute``: All attribute names defined in your knowledge base should be identified as ``attribute`` in the
+  NLU data. Again, use :ref:`entity_synonyms` to map variations of an attribute name to the one used in the
+  knowledge base.
 
-Remember to add those entities to your domain file (as entities and slots).
+Remember to add those entities to your domain file (as entities and slots):
+
+.. code-block:: yaml
+
+    entities:
+      - object_type
+      - mention
+      - attribute
+
+    slots:
+      object_type:
+        type: text
+      mention:
+        type: text
+      attribute:
+        type: text
 
 
-.. _custom_knowledge_base:
+.. _create_action_query_knowledge_base:
 
 
-Create an ActionQueryKnowledgeBase
-----------------------------------
+Create an Action to query your Knowledge Base
+---------------------------------------------
 
 Whenever you create an ``ActionQueryKnowledgeBase``, you need to pass a ``KnowledgeBase`` to the constructor.
-It can be either an ``InMemoryKnowledgeBase`` or your own implementation of a ``KnowledgeBase``.
+It can be either an ``InMemoryKnowledgeBase`` or your own implementation of a ``KnowledgeBase``
+(see :ref:`create_knowledge_base`).
 However, you can just use one knowledge base.
 The usage of multiple knowledge bases at the same time is not supported.
 To create your own knowledge base action, you need to inherit ``ActionQueryKnowledgeBase`` and pass the knowledge
@@ -254,13 +308,18 @@ base to the constructor of ``ActionQueryKnowledgeBase``.
 
     class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         def __init__(self):
-            knowledge_base = InMemoryKnowledgeBase.load("data.json")
+            knowledge_base = InMemoryKnowledgeBase("data.json")
             super().__init__(knowledge_base)
 
 You don't need to do anything else.
 The action is already able to query the knowledge base.
 The name of the action is ``action_query_knowledge_base``.
 Don't forget to add it to your domain file.
+
+.. code-block:: yaml
+
+    actions:
+    - action_query_knowledge_base
 
 .. note::
    If you overwrite the default action name ``action_query_knowledge_base``, you need to add the following three
@@ -274,16 +333,18 @@ Query the Knowledge Base for Objects
 ------------------------------------
 
 In order to query the knowledge base for any kind of objects, the user's request needs to include the object type.
-Otherwise, the action does not know what objects the user is interested in and cannot formulate the query.
+For example, ``Can you please name some restaurants?``.
+The question includes the object type of interest: restaurant.
+If the request would not contain the type of interest, the action would not know what objects the user is interested in.
+The action would not be able to formulate a query.
 
-The user may restrict his request to a specific kind of object.
-For example, he could say ``What Italian restaurant options in Berlin do I have?``.
+What when the user says something like ``What Italian restaurant options in Berlin do I have?``.
 In this example the user want to obtain a list of restaurants that (1) have an Italian cuisine and (2) are located in
 Berlin.
 In order to filter the objects in the knowledge base, you need to mark "Italian" and "Berlin" as entities.
 E.g. ``What [Italian](cuisine) [restaurant](object_type) options in [Berlin](city) do I have?``.
 The names of the attributes, e.g. "cuisine" and "city", should be equal to the ones used in the knowledge base.
-You also need to add those entities as entities and slots in the domain file.
+You also need to add those entities as entities and slots to the domain file.
 If the NER detects those attributes in the request of the user, the action will use those for filter the
 restaurants found in the knowledge base.
 
@@ -300,40 +361,48 @@ Or if no entities could be found
 
 If you want to change the utterance of the bot, you can overwrite the method ``utter_objects()`` in your action.
 
+
 Query the Knowledge Base for an Attribute of an Object
 ------------------------------------------------------
 
-To obtain the value of an attribute for a specific object from the knowledge base, the action needs to know the object
-and attribute of interest.
-The user can either refer to the object of interest by its name, e.g. representation string of the object, or he
-refers to a previously listed object via a mention.
-See the next section on how we resolve mentions to the actual object.
+If the user asks ``What is the cuisine of Berlin Burrito Company``, the user wants to obtain a detail, e.g. "cuisine",
+about an object, e.g. "Berlin Burrito Company".
+In order to answer the question of the user, the actions needs to know the object and attribute of interest.
 
+The user can either refer to the object of interest by its name, e.g. "Berlin Burrito Company" (representation string
+of the object), or he refers to a previously listed object via a mention, e.g. ``What is the cuisine of the second
+restaurant you just mentioned?``.
+To learn more about how we resolve those mentions to the actual object in the knowledge base, go to section
+:ref:`resolve_mentions`.
 The attribute of interest should be included in the user's request.
-For example, ``What is the cuisine of PastaBar?``, contains the attribute of interest "cuisine" and the object of
-interest "PastaBar".
-Both should be marked as entities in the NLU training data, e.g.
-``What is the [cuisine](attribute) of [PastaBar](restaurant)?``.
+For example, ``What is the cuisine of Berlin Burrito Company``, contains the attribute of interest "cuisine".
 
+The attribute and object of interest should be marked as entities in the NLU training data, e.g.
+``What is the [cuisine](attribute) of [Berlin Burrito Company](restaurant)?``.
+
+Once the attribute and object of interest are known to the action, the action can query the knowledge base.
 If the attribute was found in the knowledge base, the bot will response with the following utterance:
 
-    `'PastaBar' has the value 'Italian' for attribute 'cuisine'.`
+    `'Berlin Burrito Company' has the value 'Mexican' for attribute 'cuisine'.`
 
 If no value for the requested attribute was found, the bot will response with
 
-    `Did not found a valid value for attribute 'cuisine' for object 'PastaBar'.`
+    `Did not found a valid value for attribute 'cuisine' for object 'Berlin Burrito Company'.`
 
 If you want to change the utterance of the bot, you can overwrite the method ``utter_attribute_value()``.
 
+
 .. _resolve_mentions:
+
 
 Resolve Mentions
 ----------------
 
-The user may refer to previously mentioned objects during the conversation.
-Users can refer to objects in many different ways.
-Our action is able to (1) resolve ordinal mentions, such as "the first one", to the actual object and (2) resolve any
-other mention, such as "it" or "that one" to the last mentioned object in the conversation.
+Looking at the example from the beginning, we saw that users refer to previously mentioned objects during a conversation
+in different ways.
+Our action is able to (1) resolve ordinal mentions, such as "the first one", to the actual object and (2) resolve
+mentions, such as "it" or "that one" to the last mentioned object in the conversation.
+Let's take a closer look.
 
 Ordinal Mentions
 ~~~~~~~~~~~~~~~~
@@ -355,15 +424,34 @@ Other ordinal mentions are, for example:
 Ordinal mentions are typically used when a list of objects was presented to the user.
 To resolve those mentions to the actual object, we use an ordinal mention mapping which is set in the
 ``KnowledgeBase`` class.
+The default mapping looks like the following:
+
+  .. code-block:: python
+
+      {
+          "1": lambda l: l[0],
+          "2": lambda l: l[1],
+          "3": lambda l: l[2],
+          "4": lambda l: l[3],
+          "5": lambda l: l[4],
+          "6": lambda l: l[5],
+          "7": lambda l: l[6],
+          "8": lambda l: l[7],
+          "9": lambda l: l[8],
+          "10": lambda l: l[9],
+          "ANY": lambda l: random.choice(list),
+          "LAST": lambda l: l[-1],
+      }
+
 The ordinal mention mapping maps a string, such as "1", to the object in a list, e.g. ``lambda l: l[0]``.
 You can overwrite the ordinal mention mapping by calling the function ``set_ordinal_mention_mapping()`` on your
 ``KnowledgeBase`` implementation.
-As the ordinal mention mapping does not, for example, include an entry for "the first one", it is important that
-you use :ref:`entity_synonyms` to map "the first one" in your NLU data to "1".
-For example `Does the [first one](mention:1) have [outside seating](attribute:outside-seating)?` maps "first one"
+As the ordinal mention mapping does not, for example, include an entry for "the first one".
+It is important that you use :ref:`entity_synonyms` to map "the first one" in your NLU data to "1".
+For example, `Does the [first one](mention:1) have [outside seating](attribute:outside-seating)?` maps "first one"
 via a synonym to "1".
-The NER detects first one as mention entity, but puts "1" into the mention slot.
-Thus, our action can take the mention slot together with the ordinal mention mapping to resolve "first one" to
+The NER detects "first one" as ``mention`` entity, but puts "1" into the ``mention`` slot.
+Thus, our action can take the ``mention`` slot together with the ordinal mention mapping to resolve "first one" to
 the actual object "I due forni".
 
 Other Mentions
@@ -387,19 +475,7 @@ mentioned object, e.g. "PastaBar".
 You can disable this behaviour by setting ``use_last_object_mention`` to ``False`` when initializing the action.
 
 
-Creating your own Knowledge Base Implementation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you have more data or if you want to use a more complex data structure that, for example, involves relations between
-different objects, you can also create your own knowledge base implementation.
-Just inherit ``KnowledgeBase`` and implement the methods ``get_objects()``, ``get_object()``, and
-``get_attributes_of_object()``.
-You can also customize your knowledge base further, for example, by adapting the methods mentioned in the previous
-section.
-
-.. note::
-   We wrote a `blog post <https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/>`_
-   that explains how you can set up your own knowledge base.
+.. _custom_knowledge_base:
 
 
 Limitations
@@ -412,6 +488,7 @@ However, the action can only handle two kind of user requests:
 - the user wants to get the value of an attribute for a specific object
 
 The action, for example, is not able to compare objects or consider relations between objects in your knowledge base.
+Furthermore, resolving any mention to the last mentioned object in the conversation, might not always be optimal.
 If you want to tackle more complex use cases, you can write your own custom action.
 We added some helper function to ``rasa_sdk.knowledge_base.utils`` that might help you when implementing your own
 solution.
