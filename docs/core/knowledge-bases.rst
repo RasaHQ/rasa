@@ -33,7 +33,7 @@ Restaurants need to be recognised and reused at a later point in the conversatio
 
 To handle the above challenges, we recommend that you create a custom action that inherits from ``ActionQueryKnowledgeBase``.
 This is a single actions which contains the logic to query a knowledge base for objects and their attributes.
-The action is also able to resolve certain mention of objects, such as ``the first one`` or ``that restaurant``.
+When a restaurant is mentioned indirectly, for example using a phrase like ``the first one`` or ``that restaurant``, this action is able to figure out which restaurant the user is referring to.
 You can find a complete example in ``examples/knowledge_base_bot``.
 
 .. note::
