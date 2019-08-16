@@ -6,6 +6,8 @@
 Rasa Tutorial
 =============
 
+.. edit-link::
+
 This page explains the basics of building an assistant with Rasa and
 shows the structure of a Rasa project. You can test it out right here without
 installing anything.

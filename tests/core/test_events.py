@@ -1,3 +1,5 @@
+import time
+
 import pytz
 from datetime import datetime
 import copy
@@ -78,6 +80,9 @@ def test_event_has_proper_implementation(one_event, another_event):
     "one_event",
     [
         UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
+        UserUttered(metadata={"type": "text"}),
+        UserUttered(metadata=None),
+        UserUttered(text="hi", message_id="1", metadata={"type": "text"}),
         SlotSet("name", "rasa"),
         Restarted(),
         AllSlotsReset(),
@@ -135,6 +140,7 @@ def test_json_parse_user():
             },
             "entities": []
           },
+          "metadata": {},
         }
     # DOCS END
     # fmt: on
@@ -143,6 +149,7 @@ def test_json_parse_user():
         intent={"name": "greet", "confidence": 0.9},
         entities=[],
         parse_data={"intent": {"name": "greet", "confidence": 0.9}, "entities": []},
+        metadata={},
     )
 
 
@@ -227,3 +234,36 @@ def test_json_parse_agent():
     evt = {"event": "agent", "text": "Hey, how are you?"}
     # DOCS END
     assert Event.from_parameters(evt) == AgentUttered("Hey, how are you?")
+
+
+@pytest.mark.parametrize(
+    "event_class",
+    [
+        UserUttered,
+        BotUttered,
+        ActionReverted,
+        Event,
+        Restarted,
+        AllSlotsReset,
+        ConversationResumed,
+        ConversationPaused,
+        StoryExported,
+        UserUtteranceReverted,
+        AgentUttered,
+    ],
+)
+def test_correct_timestamp_setting_for_events_with_no_required_params(event_class):
+    event = event_class()
+    time.sleep(0.01)
+    event2 = event_class()
+
+    assert event.timestamp < event2.timestamp
+
+
+@pytest.mark.parametrize("event_class", [SlotSet, ActionExecuted, FollowupAction])
+def test_correct_timestamp_setting(event_class):
+    event = event_class("test")
+    time.sleep(0.01)
+    event2 = event_class("test")
+
+    assert event.timestamp < event2.timestamp

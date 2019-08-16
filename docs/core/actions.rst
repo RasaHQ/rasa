@@ -7,6 +7,8 @@
 Actions
 =======
 
+.. edit-link::
+
 Actions are the things your bot runs in response to user input.
 There are three kinds of actions in Rasa:
 

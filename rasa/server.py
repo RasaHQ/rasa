@@ -496,6 +496,39 @@ def create_app(
                 "An unexpected error occurred. Error: {}".format(e),
             )
 
+    @app.get("/conversations/<conversation_id>/latest")
+    @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
+    async def retrieve_latest_chatbot_message(request: Request, conversation_id: Text):
+        """Get an end-to-end story corresponding to this conversation."""
+        if not app.agent.tracker_store:
+            raise ErrorResponse(
+                409,
+                "Conflict",
+                "No tracker store available. Make sure to "
+                "configure a tracker store when starting "
+                "the server.",
+            )
+
+        # retrieve tracker and set to requested state
+        tracker = obtain_tracker_store(app.agent, conversation_id)
+
+        until_time = rasa.utils.endpoints.float_arg(request, "until")
+
+        try:
+            if until_time is not None:
+                tracker = tracker.travel_back_in_time(until_time)
+
+            # dump and return tracker
+            return response.text(tracker.latest_bot_utterance)
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500,
+                "ConversationError",
+                "An unexpected error occurred. Error: {}".format(e),
+            )
+
     @app.post("/conversations/<conversation_id>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
@@ -930,7 +963,8 @@ def _get_output_channel(
     ):
         requested_output_channel = tracker.get_latest_input_channel()
 
-    registered_input_channels = request.app.input_channels or []
+    # Interactive training does not set `input_channels`, hence we have to be cautious
+    registered_input_channels = getattr(request.app, "input_channels", None) or []
     matching_channels = [
         channel
         for channel in registered_input_channels

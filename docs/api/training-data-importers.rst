@@ -6,6 +6,8 @@
 Training Data Importers
 =======================
 
+.. edit-link::
+
 By default, you can use command line arguments to specify where Rasa should look
 for training data on your disk. Rasa then loads any potential training files and uses
 them to train your assistant.
