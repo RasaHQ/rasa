@@ -235,7 +235,6 @@ def print_error(*args: Any):
 def signal_handler(sig, frame):
     print ("Goodbye 👋")
     sys.exit(0)
-<<<<<<< HEAD
 
 
 def payload_from_button_question(button_question: "Question") -> Text:
@@ -244,5 +243,3 @@ def payload_from_button_question(button_question: "Question") -> Text:
     payload = response[response.find("(") + 1 : response.find(")")]
 
     return payload
-=======
->>>>>>> master
