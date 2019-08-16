@@ -15,7 +15,7 @@ actions:
 
 templates:
   utter_greet:
-  - text: "Hey! How are you?"
+  - text: "Heyeesf! How are you?"
     buttons:
     - title: "great"
       payload: "/mood_great"
@@ -27,7 +27,7 @@ templates:
     image: "https://i.imgur.com/nGF1K8f.jpg"
 
   utter_did_that_help:
-  - text: "Did that help you?"
+  - text: "Did that heddlp you?"
 
   utter_happy:
   - text: "Great, carry on!"
