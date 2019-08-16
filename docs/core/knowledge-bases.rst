@@ -234,7 +234,7 @@ If you want to use ``ActionQueryKnowledgeBase``, you need to specify the followi
 - ``attribute``: All attribute names defined in your knowledge base should be marked as ``attribute`` in the NLU data.
   Again, use :ref:`entity_synonyms` to map variations of an attribute name to the one used in the knowledge base.
 
-Don't forget to add those entities to your domain file (as entities and slots).
+Remember to add those entities to your domain file (as entities and slots).
 
 
 .. _custom_knowledge_base:
