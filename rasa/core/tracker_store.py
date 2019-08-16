@@ -10,7 +10,7 @@ import itertools
 from time import sleep
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.broker import EventChannel
+from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.utils.common import class_from_module_path

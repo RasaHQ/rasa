@@ -113,7 +113,7 @@ def test_file_broker_properly_logs_newlines(tmpdir):
 
 
 def test_load_custom_broker_name():
-    config = EndpointConfig(**{"type": "rasa.core.brokers.file.FileProducer"})
+    config = EndpointConfig(**{"type": "rasa.core.brokers.file_producer.FileProducer"})
     assert broker_utils.from_endpoint_config(config)
 
 

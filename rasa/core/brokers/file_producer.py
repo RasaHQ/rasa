@@ -1,8 +1,12 @@
 import json
 import logging
+import typing
 from typing import Optional, Text, Dict
 
 from rasa.core.brokers.event_channel import EventChannel
+
+if typing.TYPE_CHECKING:
+    from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
