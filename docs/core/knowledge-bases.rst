@@ -24,7 +24,7 @@ Knowledge base actions enable you to handle the following kind of dialogues:
 
 As you can see users might want to obtain detailed information about certain objects, such as restaurants or hotels,
 during a conversation.
-They want to obtain details, such as, if an restaurant has outside seating or how expensive the restaurant is.
+They want to obtain details, such as, if a restaurant has outside seating or how expensive the restaurant is.
 In order to answer those user requests domain knowledge is needed.
 Hard-coding the information would not help as the information are subject to change.
 Additionally, users do not only refer to objects by their names, but also use terms, such as "the first one" or "it",
