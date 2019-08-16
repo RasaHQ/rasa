@@ -18,7 +18,7 @@ Knowledge Base Actions
    :local:
 
 
-Using knowledge base actions you are able to handle the following kind of dialogues:
+Knowledge base actions enable you to handle the following kind of dialogues:
 
 .. image:: ../_static/images/knowledge-base-example.png
 
@@ -185,51 +185,7 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
       }
 
   You can overwrite it by calling the function ``set_ordinal_mention_mapping``.
-  More on the usage can be found in section :ref:`resolve_mentions`.
-
-Creating your own Knowledge Base Implementation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you have more data or if you want to use a more complex data structure that, for example, involves relations between
-different objects, you can also create your own knowledge base implementation.
-Just inherit ``KnowledgeBase`` and implement the methods ``get_objects()``, ``get_object()``, and
-``get_attributes_of_object()``.
-You can also customize your knowledge base further, for example, by adapting the methods mentioned in the previous
-section.
-
-.. note::
-   We wrote a `blog post <https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/>`_
-   that explains how you can set up your own knowledge base.
-
-Create an ActionQueryKnowledgeBase
-----------------------------------
-
-Whenever you create an ``ActionQueryKnowledgeBase``, you need to pass a ``KnowledgeBase`` to the constructor.
-It can be either an ``InMemoryKnowledgeBase`` or your own implementation of a ``KnowledgeBase``.
-However, you can just use one knowledge base.
-The usage of multiple knowledge bases at the same time is not supported.
-To create your own knowledge base action, you need to inherit ``ActionQueryKnowledgeBase`` and pass the knowledge
-base to the constructor of ``ActionQueryKnowledgeBase``.
-
-.. code-block:: python
-
-    class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
-        def __init__(self):
-            knowledge_base = InMemoryKnowledgeBase.load("data.json")
-            super().__init__(knowledge_base)
-
-You don't need to do anything else.
-The action is already able to query the knowledge base.
-The name of the action is ``action_query_knowledge_base``.
-Don't forget to add it to your domain file.
-
-.. note::
-   If you overwrite the default action name ``action_query_knowledge_base``, you need to add the following three
-   slots to your domain file: ``knowledge_base_objects``, ``knowledge_base_last_object``, and
-   ``knowledge_base_last_object_type``.
-   The slots are used internally by ``ActionQueryKnowledgeBase``.
-   If you keep the default action name, those slots will be added automatically for you.
-
+  If you want to learn more about the usage of the mapping, go to section :ref:`resolve_mentions`.
 
 Defining the NLU Data
 ---------------------
@@ -279,6 +235,37 @@ If you want to use ``ActionQueryKnowledgeBase``, you need to specify the followi
   Again, use :ref:`entity_synonyms` to map variations of an attribute name to the one used in the knowledge base.
 
 Don't forget to add those entities to your domain file (as entities and slots).
+
+
+Create an ActionQueryKnowledgeBase
+----------------------------------
+
+Whenever you create an ``ActionQueryKnowledgeBase``, you need to pass a ``KnowledgeBase`` to the constructor.
+It can be either an ``InMemoryKnowledgeBase`` or your own implementation of a ``KnowledgeBase``.
+However, you can just use one knowledge base.
+The usage of multiple knowledge bases at the same time is not supported.
+To create your own knowledge base action, you need to inherit ``ActionQueryKnowledgeBase`` and pass the knowledge
+base to the constructor of ``ActionQueryKnowledgeBase``.
+
+.. code-block:: python
+
+    class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
+        def __init__(self):
+            knowledge_base = InMemoryKnowledgeBase.load("data.json")
+            super().__init__(knowledge_base)
+
+You don't need to do anything else.
+The action is already able to query the knowledge base.
+The name of the action is ``action_query_knowledge_base``.
+Don't forget to add it to your domain file.
+
+.. note::
+   If you overwrite the default action name ``action_query_knowledge_base``, you need to add the following three
+   slots to your domain file: ``knowledge_base_objects``, ``knowledge_base_last_object``, and
+   ``knowledge_base_last_object_type``.
+   The slots are used internally by ``ActionQueryKnowledgeBase``.
+   If you keep the default action name, those slots will be added automatically for you.
+
 
 Query the Knowledge Base for Objects
 ------------------------------------
@@ -395,6 +382,22 @@ The knowledge base action would detect that the user wants to obtain the value o
 If no mention or object could be detected by the NER, the action just assumes the user is talking about he last
 mentioned object, e.g. "PastaBar".
 You can disable this behaviour by setting ``use_last_object_mention`` to ``False`` when initializing the action.
+
+
+Creating your own Knowledge Base Implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you have more data or if you want to use a more complex data structure that, for example, involves relations between
+different objects, you can also create your own knowledge base implementation.
+Just inherit ``KnowledgeBase`` and implement the methods ``get_objects()``, ``get_object()``, and
+``get_attributes_of_object()``.
+You can also customize your knowledge base further, for example, by adapting the methods mentioned in the previous
+section.
+
+.. note::
+   We wrote a `blog post <https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/>`_
+   that explains how you can set up your own knowledge base.
+
 
 Limitations
 -----------
