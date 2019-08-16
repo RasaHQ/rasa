@@ -324,7 +324,7 @@ class SQLTrackerStore(TrackerStore):
             try:
                 self.engine = create_engine(engine_url)
 
-                # if `login_db` has been provided, use current connection with
+                # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
                 if login_db:
                     self._create_database_and_update_engine(db, engine_url)

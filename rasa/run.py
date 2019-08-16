@@ -2,8 +2,8 @@ import logging
 import typing
 from typing import Dict, Text
 
-from rasa.constants import DOCS_BASE_URL
 from rasa.cli.utils import print_warning
+from rasa.constants import DOCS_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +58,13 @@ def run(
 
 def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     from rasa.core.tracker_store import TrackerStore
-    from rasa.core import broker
+    import rasa.core.brokers.utils as broker_utils
     from rasa.core.utils import AvailableEndpoints
     from rasa.core.agent import Agent
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
-    _broker = broker.from_endpoint_config(_endpoints.event_broker)
+    _broker = broker_utils.from_endpoint_config(_endpoints.event_broker)
 
     _tracker_store = TrackerStore.find_tracker_store(
         None, _endpoints.tracker_store, _broker

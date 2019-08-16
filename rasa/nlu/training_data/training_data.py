@@ -9,10 +9,10 @@ from copy import deepcopy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
+import rasa.nlu.utils as nlu_utils
 import rasa.utils.common as rasa_utils
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
-import rasa.nlu.utils as nlu_utils
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -88,32 +88,32 @@ class TrainingData(object):
                 ex.set("intent", ex.get("intent").strip())
         return examples
 
-    @rasa_utils.lazyproperty
+    @rasa_utils.lazy_property
     def intent_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("intent")]
 
-    @rasa_utils.lazyproperty
+    @rasa_utils.lazy_property
     def entity_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("entities")]
 
-    @rasa_utils.lazyproperty
+    @rasa_utils.lazy_property
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
         return set([ex.get("intent") for ex in self.training_examples]) - {None}
 
-    @rasa_utils.lazyproperty
+    @rasa_utils.lazy_property
     def examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
         intents = [ex.get("intent") for ex in self.training_examples]
         return dict(Counter(intents))
 
-    @rasa_utils.lazyproperty
+    @rasa_utils.lazy_property
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
         return set(entity_types)
 
-    @rasa_utils.lazyproperty
+    @rasa_utils.lazy_property
     def examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
@@ -153,9 +153,9 @@ class TrainingData(object):
         data_file = os.path.join(dir_name, filename)
 
         if data_file.endswith("json"):
-            write_to_file(data_file, self.as_json(indent=2))
+            nlu_utils.write_to_file(data_file, self.as_json(indent=2))
         elif data_file.endswith("md"):
-            write_to_file(data_file, self.as_markdown())
+            nlu_utils.write_to_file(data_file, self.as_markdown())
         else:
             ValueError(
                 "Unsupported file format detected. Supported file formats are 'json' "
@@ -243,11 +243,11 @@ class TrainingData(object):
             + "\t- intent examples: {} ({} distinct intents)\n".format(
                 len(self.intent_examples), len(self.intents)
             )
-            + "\t- Found intents: {}\n".format(list_to_str(self.intents))
+            + "\t- Found intents: {}\n".format(nlu_utils.list_to_str(self.intents))
             + "\t- entity examples: {} ({} distinct entities)\n".format(
                 len(self.entity_examples), len(self.entities)
             )
-            + "\t- found entities: {}\n".format(list_to_str(self.entities))
+            + "\t- found entities: {}\n".format(nlu_utils.list_to_str(self.entities))
         )
 
     def is_empty(self) -> bool:
