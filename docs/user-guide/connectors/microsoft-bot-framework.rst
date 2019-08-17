@@ -5,6 +5,8 @@
 Microsoft Bot Framework
 =======================
 
+.. edit-link::
+
 You first have to create a Microsoft app to get credentials.
 Once you have them you can add these to your ``credentials.yml``.
 

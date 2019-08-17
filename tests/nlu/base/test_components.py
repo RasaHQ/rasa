@@ -27,7 +27,7 @@ def test_all_components_in_model_templates_exist(pipeline_template):
     components = registry.registered_pipeline_templates[pipeline_template]
     for component in components:
         assert (
-            component in registry.registered_components
+            component["name"] in registry.registered_components
         ), "Model template contains unknown component."
 
 

@@ -60,6 +60,24 @@ class PolicyEnsemble(object):
 
         return events_metadata
 
+    @staticmethod
+    def check_domain_ensemble_compatibility(
+        ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ) -> None:
+        """Check for elements that only work with certain policy/domain combinations."""
+
+        from rasa.core.policies.form_policy import FormPolicy
+        from rasa.core.policies.mapping_policy import MappingPolicy
+        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+
+        policies_needing_validation = [
+            FormPolicy,
+            MappingPolicy,
+            TwoStageFallbackPolicy,
+        ]
+        for policy in policies_needing_validation:
+            policy.validate_against_domain(ensemble, domain)
+
     def _check_priorities(self) -> None:
         """Checks for duplicate policy priorities within PolicyEnsemble."""
 
