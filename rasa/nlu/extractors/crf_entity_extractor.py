@@ -119,7 +119,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         features = self.component_config.get("features", [])
         fts = set(itertools.chain.from_iterable(features))
-        self.ner_features = "ner_features" in fts
+        self.use_ner_features = "ner_features" in fts
 
     def _validate_configuration(self):
         if len(self.component_config.get("features", [])) % 2 != 1:
@@ -574,19 +574,19 @@ class CRFEntityExtractor(EntityExtractor):
             return token.tag_
 
     @staticmethod
-    def __other_ner_features(message):
+    def __additional_ner_features(message: Message) -> List[Any]:
         features = message.get("ner_features", [])
         tokens = message.get("tokens", [])
         # perhaps an assertion here instead? following pattern above.
         if len(tokens) != len(features):
-            warn_string = "Number of tokens for custom NER features ({l_ft}) does not match len(tokens) ({l_to})".format(
-                l_ft=len(features), l_to=len(tokens)
+            warn_string = "Number of tokens for custom NER features ({}) does not match number of tokens ({})".format(
+                len(features), len(tokens)
             )
             raise Exception(warn_string)
         # convert to python-crfsuite feature format
         features_out = []
         for feature in features:
-            feature_dict = {str(i): feature[i] for i in range(0, len(feature))}
+            feature_dict = {str(ind): ft for ind, ft in enumerate(feature)}
             converted = {"custom_ner_ft": feature_dict}
             features_out.append(converted)
         return features_out
@@ -609,13 +609,13 @@ class CRFEntityExtractor(EntityExtractor):
             tokens = message.get("spacy_doc")
         else:
             tokens = message.get("tokens")
-        if self.ner_features:
-            ner_features = self.__other_ner_features(message)
+        if self.use_ner_features:
+            ner_features = self.__additional_ner_features(message)
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
             tag = self.__tag_of_token(token) if self.pos_features else None
-            custom_ner_features = ner_features[i] if self.ner_features else None
+            custom_ner_features = ner_features[i] if self.use_ner_features else None
             crf_format.append((token.text, tag, entity, pattern, custom_ner_features))
         return crf_format
 
