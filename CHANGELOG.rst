@@ -18,12 +18,14 @@ Added
   information.
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
-- The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that 
+- The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that
   use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
+- `CRFEntityExtractor` updated to accept arbitrary token-level features like word vectors (issues/4214)
+- `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
 
 Changed
 -------
-- added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters
   into the ``supervised_embeddings`` NLU pipeline template
 - NLU evaluations now also stores its output in the output directory like the core evaluation
 - show warning in case a default path is used instead of a provided, invalid path
@@ -185,7 +187,7 @@ Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
-- fixed PUT /model with model_server by deserializing the model_server to 
+- fixed PUT /model with model_server by deserializing the model_server to
   EndpointConfig.
 - ``x in AnySlotDict`` is now ``True`` for any ``x``, which fixes empty slot warnings in
   interactive learning
