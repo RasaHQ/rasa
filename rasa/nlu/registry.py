@@ -146,18 +146,14 @@ def get_component_class(component_name: Text) -> Type["Component"]:
             except ModuleNotFoundError as e:
                 # when component_name is a path to a class but that path is invalid
                 raise Exception(
-                    "Failed to find module '{}'. \n{}".format(
-                        component_name, e.msg
-                    )
+                    "Failed to find module '{}'. \n{}".format(component_name, e.msg)
                 )
             except AttributeError:
                 # when component_name is a path to a class but the path does not contain that class
                 module_name, _, class_name = component_name.rpartition(".")
                 raise Exception(
                     "Failed to find class '{}' in module '{}'.\n"
-                    "".format(
-                        component_name, class_name, module_name
-                    )
+                    "".format(component_name, class_name, module_name)
                 )
             except ImportError:
                 # when component_name is a class name and not part of old_style_names
