@@ -31,6 +31,7 @@ extensions = [
     "rasabaster.card",
     "rasabaster.chatbubble",
     "rasabaster.copyable",
+    "rasabaster.editlink",
     "rasabaster.runnable",
     "rasabaster.conversations",
 ]
@@ -86,7 +87,6 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     # ignore doc pages that we don't show to appease keep_warnings
-    "multi-skill-assistants.rst",
     "core/old-core-change-log.rst",
     "core/old-core-migration-guide.rst",
     "nlu/old-nlu-change-log.rst",
