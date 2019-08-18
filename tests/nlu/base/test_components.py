@@ -84,7 +84,7 @@ def test_builder_load_unknown(component_builder):
     with pytest.raises(Exception) as excinfo:
         component_meta = {"name": "my_made_up_componment"}
         component_builder.load_component(component_meta, "", Metadata({}, None))
-    assert "Unknown component name" in str(excinfo.value)
+    assert "Cannot import class" in str(excinfo.value)
 
 
 async def test_example_component(component_builder, tmpdir_factory):
