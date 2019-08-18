@@ -66,7 +66,7 @@ def test_builder_create_by_module_path(component_builder, default_config):
 @pytest.mark.parametrize(
     "test_input, expected_output",
     [
-        ("my_made_up_componment", "Cannot import class"),
+        ("my_made_up_component", "Cannot import class"),
         ("rasa.nlu.featurizers.regex_featurizer.MadeUpClass", "Failed to find class"),
         ("made.up.path.RegexFeaturizer", "No module named"),
     ],
