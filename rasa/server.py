@@ -2,6 +2,7 @@ import logging
 import os
 import tempfile
 import traceback
+import multiprocessing
 from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
@@ -358,6 +359,9 @@ def create_app(
         )
 
     app.agent = agent
+    # Initialize shared object of type unsigned int for tracking
+    # the number of active training processes
+    app.active_training_processes = multiprocessing.Value('I', 0)
 
     @app.exception(ErrorResponse)
     async def handle_error_response(request: Request, exception: ErrorResponse):
@@ -666,6 +670,9 @@ def create_app(
             dump_obj_as_str_to_file(domain_path, rjs["domain"])
 
         try:
+            with app.active_training_processes.get_lock():
+                app.active_training_processes.value += 1
+
             model_path = await train_async(
                 domain=domain_path,
                 config=config_path,
@@ -692,6 +699,20 @@ def create_app(
                 "TrainingError",
                 "An unexpected error occurred during training. Error: {}".format(e),
             )
+        finally:
+            with app.active_training_processes.get_lock():
+                app.active_training_processes.value -= 1
+
+    @app.get("/model/train/status")
+    @requires_auth(app, auth_token)
+    async def training_status(request: Request):
+        """Get status of ongoing training jobs."""
+
+        return response.json(
+            {
+                "n_jobs": app.active_training_processes.value
+            }
+        )
 
     def validate_request(rjs):
         if "config" not in rjs:
