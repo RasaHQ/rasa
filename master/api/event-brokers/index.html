@@ -349,7 +349,7 @@ example:</p>
     <span class="c1"># RabbitMQ credentials with username and password</span>
     <span class="n">credentials</span> <span class="o">=</span> <span class="n">pika</span><span class="o">.</span><span class="n">PlainCredentials</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="s1">&#39;password&#39;</span><span class="p">)</span>
 
-    <span class="c1"># pika connection to the RabbitMQ host - typically &#39;rabbit&#39; in a</span>
+    <span class="c1"># Pika connection to the RabbitMQ host - typically &#39;rabbit&#39; in a</span>
     <span class="c1"># docker environment, or &#39;localhost&#39; in a local environment</span>
     <span class="n">connection</span> <span class="o">=</span> <span class="n">pika</span><span class="o">.</span><span class="n">BlockingConnection</span><span class="p">(</span>
         <span class="n">pika</span><span class="o">.</span><span class="n">ConnectionParameters</span><span class="p">(</span><span class="s1">&#39;rabbit&#39;</span><span class="p">,</span> <span class="n">credentials</span><span class="o">=</span><span class="n">credentials</span><span class="p">))</span>
