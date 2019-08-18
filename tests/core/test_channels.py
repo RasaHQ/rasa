@@ -803,3 +803,19 @@ def test_extract_input_channel(test_input, expected):
     fake_request.json = test_input
 
     assert input_channel._extract_input_channel(fake_request) == expected
+
+
+async def test_rasa_chat_input():
+    from rasa.core.channels import RasaChatInput
+
+    rasa_x_api_url = "https://rasa-x.com:5002"
+    rasa_chat_input = RasaChatInput(rasa_x_api_url)
+
+    with aioresponses() as mocked:
+        mocked.get(
+            rasa_x_api_url + "/version",
+            payload={"keys": [{"key": "some", "alg": "RS256"}]},
+            repeat=True,
+            status=200,
+        )
+        await rasa_chat_input._fetch_public_key()
