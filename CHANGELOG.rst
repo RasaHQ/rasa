@@ -30,6 +30,8 @@ Changed
 - compare mode of ``rasa train core`` allows the whole core config comparison,
   naming style of models trained for comparison is changed (this is a breaking change)
 - Pika keeps a single connection open, instead of open and closing on each incoming event
+- more specific exception message from ``get_component_class()`` depending on whether component's path or
+  class name is invalid or can't be found in the global namespace
 
 Fixed
 -----
