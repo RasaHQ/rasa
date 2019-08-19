@@ -6,6 +6,7 @@ import logging
 from sanic.exceptions import abort
 import jwt
 
+from rasa.core import constants
 from rasa.core.channels.channel import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from sanic.request import Request
@@ -65,8 +66,9 @@ class RasaChatInput(RestInput):
                     )
 
     def _decode_jwt(self, bearer_token: Text) -> Dict:
-        bearer_token_prefix = "Bearer "
-        authorization_header_value = bearer_token.replace(bearer_token_prefix, "")
+        authorization_header_value = bearer_token.replace(
+            constants.BEARER_TOKEN_PREFIX, ""
+        )
         return jwt.decode(
             authorization_header_value, self.jwt_key, algorithms=self.jwt_algorithm
         )
