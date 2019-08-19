@@ -810,12 +810,15 @@ async def test_rasa_chat_input():
 
     rasa_x_api_url = "https://rasa-x.com:5002"
     rasa_chat_input = RasaChatInput(rasa_x_api_url)
-
+    public_key = "random_key123"
+    jwt_algorithm = "RS256"
     with aioresponses() as mocked:
         mocked.get(
             rasa_x_api_url + "/version",
-            payload={"keys": [{"key": "some", "alg": "RS256"}]},
+            payload={"keys": [{"key": public_key, "alg": jwt_algorithm}]},
             repeat=True,
             status=200,
         )
         await rasa_chat_input._fetch_public_key()
+        assert rasa_chat_input.jwt_key == public_key
+        assert rasa_chat_input.jwt_algorithm == jwt_algorithm
