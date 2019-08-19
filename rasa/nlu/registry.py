@@ -155,8 +155,8 @@ def get_component_class(component_name: Text) -> Type["Component"]:
             except ImportError:
                 # when component_name is a class name and not part of old_style_names
                 raise Exception(
-                    "Cannot import class '{0}' from  global namespace.\nCheck that you have not made a typo in the "
-                    "class name and that you have installed the correct package.".format(
+                    "Cannot find class '{0}' from global namespace. Please check that there is no typo in the class "
+                    "name and that you have imported the class into the global namespace.".format(
                         component_name
                     )
                 )
