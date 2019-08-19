@@ -41,6 +41,8 @@ E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
+RESTAURANTBOT_PATH = "examples/restaurantbot/"
+
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
 TEST_DIALOGUES = [
@@ -233,3 +235,16 @@ def train_model(project: Text, filename: Text = "test.tar.gz"):
 @pytest.fixture(scope="session")
 def trained_model(project) -> Text:
     return train_model(project)
+
+
+@pytest.fixture
+async def restaurantbot(tmpdir_factory) -> Text:
+    model_path = tmpdir_factory.mktemp("model").strpath
+    restaurant_domain = os.path.join(RESTAURANTBOT_PATH, "domain.yml")
+    restaurant_config = os.path.join(RESTAURANTBOT_PATH, "config.yml")
+    restaurant_data = os.path.join(RESTAURANTBOT_PATH, "data/")
+
+    agent = await train_async(
+        restaurant_domain, restaurant_config, restaurant_data, model_path
+    )
+    return agent
