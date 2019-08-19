@@ -81,7 +81,7 @@ def loop():
     loop.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def default_agent_path(default_agent, tmpdir_factory):
     path = tmpdir_factory.mktemp("agent").strpath
     default_agent.persist(path)
@@ -113,7 +113,7 @@ def default_domain():
     return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def default_agent(default_domain):
     agent = Agent(
         default_domain,

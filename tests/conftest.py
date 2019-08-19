@@ -48,7 +48,7 @@ def set_log_level_debug(caplog):
     caplog.set_level(logging.DEBUG)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def project() -> Text:
     import tempfile
     from rasa.cli.scaffold import create_initial_project
@@ -56,7 +56,9 @@ def project() -> Text:
     directory = tempfile.mkdtemp()
     create_initial_project(directory)
 
-    return directory
+    yield directory
+
+    shutil.rmtree(directory)
 
 
 ###############
@@ -214,7 +216,7 @@ async def trained_nlu_model(project) -> Text:
     return await train_model(project, model_type="nlu")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def trained_moodbot_path():
     return await train_async(
         domain="examples/moodbot/domain.yml",
@@ -224,7 +226,7 @@ async def trained_moodbot_path():
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def unpacked_trained_moodbot_path(trained_moodbot_path):
     return get_model(trained_moodbot_path)
 
