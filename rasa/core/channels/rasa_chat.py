@@ -43,6 +43,10 @@ class RasaChatInput(RestInput):
                 if "keys" in rjs:
                     self.jwt_key = rjs["keys"][0]["key"]
                     self.jwt_algorithm = rjs["keys"][0]["alg"]
+                    logger.debug(
+                        "Fetched JWT public key for algorithm '{}':\n{}"
+                        "".format(self.jwt_algorithm, self.jwt_key)
+                    )
                 else:
                     logger.info("Could not find JWT public key at `/version` endpoint.")
 
@@ -60,19 +64,23 @@ class RasaChatInput(RestInput):
         # noinspection PyBroadException
         try:
             return await self._decode_jwt(bearer_token)
-        except jwt.exceptions.InvalidSignatureError as e:
-            logger.error("Token invalid, fetching new one: {}".format(e))
+        except jwt.exceptions.InvalidSignatureError:
+            logger.error("JWT public key invalid, fetching new one.")
             await self._fetch_public_key()
             return await self._decode_jwt(bearer_token)
         except Exception:
-            logger.exception("Failed to decode bearer token: {}")
+            logger.exception("Failed to decode bearer token.")
 
-    async def _extract_sender(self, req: Request) -> Text:
+    async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API"""
 
         if req.headers.get("Authorization"):
             user = await self._decode_bearer_token(req.headers["Authorization"])
             if user:
                 return user["username"]
+
+        user = await self._decode_bearer_token(req.args.get("token", default=None))
+        if user:
+            return user["username"]
 
         abort(401)
