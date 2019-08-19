@@ -190,7 +190,7 @@ def load_component_by_meta(
 
 
 def create_component_by_config(
-    component_config: Dict[Text, Any], config: "RasaNLUModelConfig", **kwargs: Any
+    component_config: Dict[Text, Any], config: "RasaNLUModelConfig"
 ) -> Optional["Component"]:
     """Resolves a component and calls it's create method.
 

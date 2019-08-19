@@ -14,6 +14,8 @@ from rasa.core.constants import (
     REQUESTED_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
 )
+from rasa.constants import DEFAULT_OPEN_UTTERANCE_TYPE
+
 from rasa.core.events import (
     UserUtteranceReverted,
     UserUttered,
@@ -183,10 +185,13 @@ class ActionUtterTemplate(Action):
 
         message = None
         if domain.is_response_action(self.template_name):
-            query_keys = ['{0}_response'.format(self.template_name), '{0}_response'.format('utter_generic')]
+            logger.debug('Action needs to pick a response.')
+            query_keys = ['{0}_response'.format(self.template_name), '{0}{1}_response'.format(UTTER_PREFIX, DEFAULT_OPEN_UTTERANCE_TYPE)]
             for query_key in query_keys:
                 if query_key in tracker.latest_message.parse_data:
+                    logger.debug('Picking response of type {0}'.format(query_key))
                     message = {'text': tracker.latest_message.parse_data.get(query_key).get("name")}
+                    return [create_bot_utterance(message)]
 
         else:
             message = await nlg.generate(self.template_name, tracker, output_channel.name())

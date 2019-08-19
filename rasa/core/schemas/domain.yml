@@ -18,6 +18,11 @@ mapping:
   actions:
     type: "seq"
     sequence:
+    - type: "map"
+      mapping:
+        pick_response:
+          type: "bool"
+      allowempty: True
     - type: "str"
       required: True
   templates:

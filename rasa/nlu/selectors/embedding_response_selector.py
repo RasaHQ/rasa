@@ -325,10 +325,10 @@ class ResponseSelector(EmbeddingIntentClassifier):
     ) -> "train_utils.SessionData":
         """Prepare data for training"""
 
-        X = np.stack([e.get("text_features") for e in training_data.intent_examples])
+        X = np.stack([e.get("text_features") for e in training_data.intent_examples if e.get(attribute)])
 
         labels = np.array(
-            [label_dict[e.get(attribute)] for e in training_data.intent_examples]
+            [label_dict[e.get(attribute)] for e in training_data.intent_examples if e.get(attribute)]
         )
 
         Y = np.stack([self._encoded_all_labels[label] for label in labels])
@@ -471,8 +471,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
             os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "wb"
         ) as f:
             pickle.dump(self.inv_label_dict, f)
-
-        derived_meta = {'response_type': self.response_type}
 
         return {"file": file_name}
 
