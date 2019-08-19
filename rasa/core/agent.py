@@ -4,35 +4,30 @@ import shutil
 import tempfile
 import uuid
 from asyncio import CancelledError
-from sanic import Sanic
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
+from sanic import Sanic
 
 import rasa
 import rasa.utils.io
 from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
 from rasa.core import constants, jobs, training
-from rasa.core.channels.channel import (
-    InputChannel,
-    OutputChannel,
-    UserMessage,
-    CollectingOutputChannel,
-)
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.policies.policy import Policy
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
+from rasa.exceptions import ModelNotFound
+from rasa.importers.importer import TrainingDataImporter
 from rasa.model import (
     get_model_subdirectories,
     get_latest_model,
@@ -42,9 +37,6 @@ from rasa.model import (
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
-from rasa.exceptions import ModelNotFound
-
-from rasa.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -160,9 +152,10 @@ async def _pull_model_and_fingerprint(
                     return None
                 elif resp.status == 404:
                     logger.debug(
-                        "Model server didn't find a model for our request. "
-                        "Probably no one did train a model for the project "
-                        "and tag combination yet."
+                        "Model server could not find a model at the requested "
+                        "endpoint '{}'. It's possible that no model has been "
+                        "trained, or that the requested tag hasn't been "
+                        "assigned.".format(model_server.url)
                     )
                     return None
                 elif resp.status != 200:
