@@ -1,3 +1,4 @@
+import json
 from typing import Text, Optional, Dict
 
 import aiohttp
@@ -37,20 +38,33 @@ class RasaChatInput(RestInput):
             async with session.get(
                 public_key_url, timeout=DEFAULT_REQUEST_TIMEOUT
             ) as resp:
-                if resp.status != 200:
-                    logger.info("Failed to fetch ")
+                status_code = resp.status
+                if status_code != 200:
+                    logger.error(
+                        "Failed to fetch JWT public key from URL '{}' with "
+                        "status code {}: {}"
+                        "".format(public_key_url, status_code, await resp.text())
+                    )
+                    return
                 rjs = await resp.json()
-                if "keys" in rjs:
+                public_key_field = "keys"
+                if public_key_field in rjs:
                     self.jwt_key = rjs["keys"][0]["key"]
                     self.jwt_algorithm = rjs["keys"][0]["alg"]
                     logger.debug(
-                        "Fetched JWT public key for algorithm '{}':\n{}"
-                        "".format(self.jwt_algorithm, self.jwt_key)
+                        "Fetched JWT public key from URL '{}' for algorithm '{}':\n{}"
+                        "".format(public_key_url, self.jwt_algorithm, self.jwt_key)
                     )
                 else:
-                    logger.info("Could not find JWT public key at `/version` endpoint.")
+                    logger.error(
+                        "Retrieved json response from URL '{}' but could not find "
+                        "'{}' field containing the JWT public key. Please make sure "
+                        "you use an up-to-date version of Rasa X (>= 0.20.2). "
+                        "Response was: {}"
+                        "".format(public_key_url, public_key_field, json.dumps(rjs))
+                    )
 
-    async def _decode_jwt(self, bearer_token: Text) -> Dict:
+    def _decode_jwt(self, bearer_token: Text) -> Dict:
         bearer_token_prefix = "Bearer "
         authorization_header_value = bearer_token.replace(bearer_token_prefix, "")
         return jwt.decode(
@@ -63,11 +77,11 @@ class RasaChatInput(RestInput):
 
         # noinspection PyBroadException
         try:
-            return await self._decode_jwt(bearer_token)
+            return self._decode_jwt(bearer_token)
         except jwt.exceptions.InvalidSignatureError:
             logger.error("JWT public key invalid, fetching new one.")
             await self._fetch_public_key()
-            return await self._decode_jwt(bearer_token)
+            return self._decode_jwt(bearer_token)
         except Exception:
             logger.exception("Failed to decode bearer token.")
 

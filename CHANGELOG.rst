@@ -31,7 +31,8 @@ Changed
   naming style of models trained for comparison is changed (this is a breaking change)
 - Pika keeps a single connection open, instead of open and closing on each incoming event
 - ``RasaChatInput`` fetches the public key from the Rasa X API. The key is used to
-  decode the bearer token containing the conversation ID.
+  decode the bearer token containing the conversation ID. This requires
+  ``rasa-x>=0.20.2``.
 
 Fixed
 -----
