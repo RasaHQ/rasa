@@ -198,7 +198,7 @@ async def load_agent_on_start(
 
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments)."""
-    from rasa.core import broker
+    import rasa.core.brokers.utils as broker_utils
 
     try:
         with get_model(model_path) as unpacked_model:
@@ -208,7 +208,7 @@ async def load_agent_on_start(
         logger.debug("Could not load interpreter from '{}'.".format(model_path))
         _interpreter = None
 
-    _broker = broker.from_endpoint_config(endpoints.event_broker)
+    _broker = broker_utils.from_endpoint_config(endpoints.event_broker)
     _tracker_store = TrackerStore.find_tracker_store(
         None, endpoints.tracker_store, _broker
     )
