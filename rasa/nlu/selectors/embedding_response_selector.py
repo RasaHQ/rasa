@@ -12,6 +12,7 @@ from rasa.utils.common import is_logging_disabled
 from rasa.utils import train_utils
 
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from rasa.constants import DEFAULT_OPEN_UTTERANCE_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "summary_dir": os.path.join(os.getcwd(), 'tb_logs'),
 
         # selector config
-        "merge_all": False,
+        "response_type": None
 
     }
     # end default properties (DOC MARKER - don't remove)
@@ -135,22 +136,18 @@ class ResponseSelector(EmbeddingIntentClassifier):
             similarity_op: Optional['tf.Tensor'] = None,
             message_embed: Optional['tf.Tensor'] = None,
             label_embed: Optional['tf.Tensor'] = None,
-            all_labels_embed: Optional['tf.Tensor'] = None,
-            **kwargs: Any,
+            all_labels_embed: Optional['tf.Tensor'] = None
     ) -> None:
         super(ResponseSelector, self).__init__(component_config, inv_label_dict,  session, graph,
                                                message_placeholder, label_placeholder, sim_all, pred_confidence,
                                                similarity_op, message_embed, label_embed,
                                                all_labels_embed)
 
-        if "response_type" in kwargs:
-            self.response_type = kwargs['response_type']
-
     def _load_tb_params(self, config: Dict[Text, Any]) -> None:
         self.summary_dir = config["summary_dir"]
 
     def _load_selector_params(self, config: Dict[Text, Any]):
-        self.merge_all = config["merge_all"]
+        self.response_type = config["response_type"]
 
     def _load_params(self) -> None:
         super(ResponseSelector, self)._load_params()
@@ -192,7 +189,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
                     for label_idx, score in ranking
                 ]
 
-        key_placeholder = self.response_type if not self.merge_all else "generic"
+        key_placeholder = self.response_type if self.response_type else DEFAULT_OPEN_UTTERANCE_TYPE
         message.set("utter_{0}_response".format(key_placeholder), label, add_to_output=True)
         message.set("utter_{0}_response_ranking".format(key_placeholder), label_ranking, add_to_output=True)
 
@@ -347,7 +344,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
         tb_sum_dir = os.path.join(self.summary_dir, 'response_selector')
 
-        if not self.merge_all:
+        if self.response_type:
             training_data = training_data.filter_by_intent(self.response_type)
 
         label_dict = self._create_label_dict(training_data, attribute='response')
@@ -477,12 +474,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
         derived_meta = {'response_type': self.response_type}
 
-        # TODO: check if this is correct way. Maybe return the value from this function and add to model metadata
-        with io.open(
-            os.path.join(model_dir, file_name + "_derived_meta.pkl"), "wb"
-        ) as f:
-            pickle.dump(derived_meta, f)
-
         return {"file": file_name}
 
     @classmethod
@@ -521,11 +512,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
             ) as f:
                 inv_label_dict = pickle.load(f)
 
-            with io.open(
-                    os.path.join(model_dir, file_name + "_derived_meta.pkl"), "rb"
-            ) as f:
-                derived_metadata = pickle.load(f)
-
             return cls(
                 component_config=meta,
                 inv_label_dict=inv_label_dict,
@@ -539,7 +525,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
                 message_embed=message_embed,
                 label_embed=label_embed,
                 all_labels_embed=all_labels_embed,
-                response_type=derived_metadata['response_type'],
             )
 
         else:
