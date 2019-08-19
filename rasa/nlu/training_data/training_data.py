@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from collections import Counter
-
 import logging
 import os
 import random
 import warnings
+from collections import Counter
 from copy import deepcopy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
+from rasa.nlu.utils import list_to_str
+import rasa.nlu.utils
+import rasa.utils.common as rasa_utils
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
-from rasa.nlu.utils import lazyproperty, list_to_str, write_to_file
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -99,51 +100,50 @@ class TrainingData(object):
                 ex.set("response", ex.get("response").strip())
         return examples
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def intent_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("intent")]
 
-    @lazyproperty
+    @rasa.utils.lazyproperty
     def response_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("response")]
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def entity_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("entities")]
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
         return set([ex.get("intent") for ex in self.training_examples]) - {None}
 
-    @lazyproperty
+    @rasa.utils.lazyproperty
     def responses(self) -> Set[Text]:
         """Returns the set of responses in the training data."""
         return set([ex.get("response") for ex in self.training_examples]) - {None}
 
-    @lazyproperty
+    @rasa.utils.lazyproperty
     def response_types(self) -> Set[Text]:
         """Returns the total number of response types in the training data"""
         return set([ex.get("intent") for ex in self.training_examples if ex.get("response") is not None])
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
         intents = [ex.get("intent") for ex in self.training_examples]
         return dict(Counter(intents))
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def examples_per_response(self) -> Dict[Text, int]:
         """Calculates the number of examples per response."""
         return dict(Counter(self.responses))
 
-    @lazyproperty
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
         return set(entity_types)
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
@@ -183,9 +183,9 @@ class TrainingData(object):
         data_file = os.path.join(dir_name, filename)
 
         if data_file.endswith("json"):
-            write_to_file(data_file, self.as_json(indent=2))
+            rasa.nlu.utils.write_to_file(data_file, self.as_json(indent=2))
         elif data_file.endswith("md"):
-            write_to_file(data_file, self.as_markdown())
+            rasa.nlu.utils.write_to_file(data_file, self.as_markdown())
         else:
             ValueError(
                 "Unsupported file format detected. Supported file formats are 'json' "
@@ -289,8 +289,6 @@ class TrainingData(object):
                 len(self.entity_examples), len(self.entities)
             )
             + "\t- found entities: {}\n".format(list_to_str(self.entities))
-
-
         )
 
     def is_empty(self) -> bool:

@@ -233,7 +233,7 @@ class EmbeddingPolicy(Policy):
     def _label_features_for_Y(self, labels: "np.ndarray") -> "np.ndarray":
         """Prepare Y data for training: features for label labels."""
 
-        if len(labels.shape) == 2:
+        if len(labels.shape) == 2:  # max history featurizer is used
             return np.stack(
                 [
                     np.stack(
@@ -242,7 +242,7 @@ class EmbeddingPolicy(Policy):
                     for label_ids in labels
                 ]
             )
-        else:
+        else:  # full dialogue featurizer is used
             return np.stack(
                 [self._encoded_all_labels[label_idx] for label_idx in labels]
             )
@@ -418,9 +418,8 @@ class EmbeddingPolicy(Policy):
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
         # encode all labels with policies' featurizer
-        (
-            self._encoded_all_labels
-        ) = self.featurizer.state_featurizer.create_encoded_all_actions(domain)
+        state_featurizer = self.featurizer.state_featurizer
+        self._encoded_all_labels = state_featurizer.create_encoded_all_actions(domain)
 
         # check if number of negatives is less than number of labels
         logger.debug(
