@@ -66,7 +66,7 @@ def test_builder_create_by_module_path(component_builder, default_config):
 @pytest.mark.parametrize(
     "test_input, expected_output",
     [
-        ("my_made_up_component", "Cannot import class"),
+        ("my_made_up_component", "Cannot find class"),
         ("rasa.nlu.featurizers.regex_featurizer.MadeUpClass", "Failed to find class"),
         ("made.up.path.RegexFeaturizer", "No module named"),
     ],
@@ -84,7 +84,7 @@ def test_builder_load_unknown(component_builder):
     with pytest.raises(Exception) as excinfo:
         component_meta = {"name": "my_made_up_componment"}
         component_builder.load_component(component_meta, "", Metadata({}, None))
-    assert "Cannot import class" in str(excinfo.value)
+    assert "Cannot find class" in str(excinfo.value)
 
 
 async def test_example_component(component_builder, tmpdir_factory):
