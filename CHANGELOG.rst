@@ -29,6 +29,7 @@ Changed
 - show warning in case a default path is used instead of a provided, invalid path
 - compare mode of ``rasa train core`` allows the whole core config comparison,
   naming style of models trained for comparison is changed (this is a breaking change)
+- Pika keeps a single connection open, instead of open and closing on each incoming event
 
 Fixed
 -----
