@@ -7,8 +7,7 @@ import typing
 from tqdm import tqdm
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa.nlu.classifiers import INTENT_RANKING_LENGTH
-from rasa.nlu.components import Component
+from rasa.nlu.classifiers import INTENT_RANKING_LENGTH, Classifier
 from rasa.utils.common import is_logging_disabled
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ except ImportError:
     tf = None
 
 
-class EmbeddingIntentClassifier(Component):
+class EmbeddingIntentClassifier(Classifier):
     """Intent classifier using supervised embeddings.
 
     The embedding intent classifier embeds user inputs

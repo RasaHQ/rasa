@@ -59,7 +59,7 @@ class EndToEndReader(MarkdownReader):
         )
 
 
-class StoryStepBuilder(object):
+class StoryStepBuilder:
     def __init__(self, name):
         self.name = name
         self.story_steps = []
@@ -149,7 +149,7 @@ class StoryStepBuilder(object):
         return current_turns
 
 
-class StoryFileReader(object):
+class StoryFileReader:
     """Helper class to read a story file."""
 
     def __init__(

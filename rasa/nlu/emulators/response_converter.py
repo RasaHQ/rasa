@@ -1,7 +1,7 @@
 from typing import Any, Dict, Text
 
 
-class NoEmulator(object):
+class ResponseConverter:
     def __init__(self) -> None:
         self.name = None
 

@@ -18,7 +18,7 @@ from rasa.utils.common import is_logging_disabled
 logger = logging.getLogger(__name__)
 
 
-class SingleStateFeaturizer(object):
+class SingleStateFeaturizer:
     """Base class for mechanisms to transform the conversations state
     into machine learning formats.
 
@@ -257,7 +257,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         return encoded_all_actions
 
 
-class TrackerFeaturizer(object):
+class TrackerFeaturizer:
     """Base class for actual tracker featurizers"""
 
     def __init__(

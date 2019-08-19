@@ -4,7 +4,7 @@ from rasa.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
 
 
-class NaturalLanguageGenerator(object):
+class NaturalLanguageGenerator:
     """Generate bot utterances based on a dialogue state."""
 
     async def generate(self, template_name, tracker, output_channel, **kwargs):

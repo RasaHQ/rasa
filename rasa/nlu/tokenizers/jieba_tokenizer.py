@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 
-class JiebaTokenizer(Tokenizer, Component):
+class JiebaTokenizer(Tokenizer):
 
     provides = ["tokens"]
 

@@ -39,7 +39,7 @@ FORM_PREFIX = "form: "
 STEP_COUNT = 1
 
 
-class StoryStringHelper(object):
+class StoryStringHelper:
     """A helper class to mark story steps that are inside a form with `form: `
     """
 
@@ -63,7 +63,7 @@ class StoryStringHelper(object):
         self.no_form_prefix_string = no_form_prefix_string
 
 
-class Checkpoint(object):
+class Checkpoint:
     def __init__(
         self, name: Optional[Text], conditions: Optional[Dict[Text, Any]] = None
     ) -> None:
@@ -91,7 +91,7 @@ class Checkpoint(object):
         )
 
 
-class StoryStep(object):
+class StoryStep:
     """A StoryStep is a section of a story block between two checkpoints.
 
     NOTE: Checkpoints are not only limited to those manually written
@@ -344,7 +344,7 @@ class StoryStep(object):
         )
 
 
-class Story(object):
+class Story:
     def __init__(
         self, story_steps: List[StoryStep] = None, story_name: Optional[Text] = None
     ) -> None:
@@ -398,7 +398,7 @@ class Story(object):
             f.write(self.as_story_string(flat, e2e))
 
 
-class StoryGraph(object):
+class StoryGraph:
     """Graph of the story-steps pooled from all stories in the training data."""
 
     def __init__(

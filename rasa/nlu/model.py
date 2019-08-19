@@ -51,7 +51,7 @@ class UnsupportedModelError(Exception):
         return self.message
 
 
-class Metadata(object):
+class Metadata:
     """Captures all information about a model to load and prepare it."""
 
     @staticmethod
@@ -117,7 +117,7 @@ class Metadata(object):
         write_json_to_file(filename, metadata, indent=4)
 
 
-class Trainer(object):
+class Trainer:
     """Trainer will load the data and train all components.
 
     Requires a pipeline specification and configuration to use for
@@ -246,7 +246,7 @@ class Trainer(object):
         return dir_name
 
 
-class Interpreter(object):
+class Interpreter:
     """Use a trained pipeline of components to parse text messages."""
 
     # Defines all attributes (& default values)

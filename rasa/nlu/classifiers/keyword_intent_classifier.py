@@ -1,10 +1,10 @@
 from typing import Any, Optional, Text
 
-from rasa.nlu.components import Component
+from rasa.nlu.classifiers import Classifier
 from rasa.nlu.training_data import Message
 
 
-class KeywordIntentClassifier(Component):
+class KeywordIntentClassifier(Classifier):
 
     provides = ["intent"]
 

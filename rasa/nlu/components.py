@@ -360,7 +360,7 @@ class Component(object, metaclass=ComponentMetaclass):
         return language in cls.language_list
 
 
-class ComponentBuilder(object):
+class ComponentBuilder:
     """Creates trainers and interpreters based on configurations.
 
     Caches components for reuse.

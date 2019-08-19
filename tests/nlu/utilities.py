@@ -40,7 +40,7 @@ def temp_log_file_dir():
     return tempfile.mkdtemp(suffix="_rasa_nlu_logs")
 
 
-class ResponseTest(object):
+class ResponseTest:
     def __init__(self, endpoint, expected_response, payload=None):
         self.endpoint = endpoint
         self.expected_response = expected_response

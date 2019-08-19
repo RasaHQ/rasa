@@ -91,7 +91,7 @@ def loop():
 # Therefore, we are going to reverse this and train the policy within a class
 # and collect the tests in a base class.
 # noinspection PyMethodMayBeStatic
-class PolicyTestCollection(object):
+class PolicyTestCollection:
     """Tests every policy needs to fulfill.
 
     Each policy can declare further tests on its own."""

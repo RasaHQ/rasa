@@ -144,7 +144,7 @@ TrackerLookupDict = Dict[Optional[Text], List[TrackerWithCachedStates]]
 TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedStates]]
 
 
-class TrainingDataGenerator(object):
+class TrainingDataGenerator:
     def __init__(
         self,
         story_graph: StoryGraph,

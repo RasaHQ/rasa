@@ -2,13 +2,13 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Text
 
-from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.emulators.response_converter import ResponseConverter
 
 
-class DialogflowEmulator(NoEmulator):
+class DialogFlowConverter(ResponseConverter):
     def __init__(self) -> None:
 
-        super(DialogflowEmulator, self).__init__()
+        super(DialogFlowConverter, self).__init__()
         self.name = "api"
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:

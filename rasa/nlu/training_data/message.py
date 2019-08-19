@@ -3,7 +3,7 @@
 from rasa.nlu.utils import ordered
 
 
-class Message(object):
+class Message:
     def __init__(self, text, data=None, output_properties=None, time=None):
         self.text = text
         self.time = time

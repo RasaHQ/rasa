@@ -6,7 +6,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.events import Event
 
 
-class Dialogue(object):
+class Dialogue:
     """A dialogue comprises a list of Turn objects"""
 
     def __init__(self, name: Text, events: List["Event"]) -> None:

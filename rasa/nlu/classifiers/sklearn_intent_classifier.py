@@ -5,8 +5,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu import utils
-from rasa.nlu.classifiers import INTENT_RANKING_LENGTH
-from rasa.nlu.components import Component
+from rasa.nlu.classifiers import INTENT_RANKING_LENGTH, Classifier
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
@@ -17,7 +16,7 @@ if typing.TYPE_CHECKING:
     import sklearn
 
 
-class SklearnIntentClassifier(Component):
+class SklearnIntentClassifier(Classifier):
     """Intent classifier using the sklearn framework"""
 
     provides = ["intent", "intent_ranking"]

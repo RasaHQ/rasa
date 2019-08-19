@@ -2,7 +2,7 @@ from rasa_sdk import Action
 from rasa_sdk.events import SlotSet
 
 
-class RestaurantAPI(object):
+class RestaurantAPI:
     def search(self, info):
         return "papi's pizza place"
 

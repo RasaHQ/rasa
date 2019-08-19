@@ -17,7 +17,7 @@ from rasa.core.training.data import DialogueTrainingData
 logger = logging.getLogger(__name__)
 
 
-class Policy(object):
+class Policy:
     SUPPORTS_ONLINE_TRAINING = False
 
     @staticmethod

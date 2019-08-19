@@ -57,7 +57,7 @@ class AnySlotDict(dict):
         return True
 
 
-class DialogueStateTracker(object):
+class DialogueStateTracker:
     """Maintains the state of a conversation.
 
     The field max_event_history will only give you these last events,

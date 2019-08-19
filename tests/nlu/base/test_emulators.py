@@ -123,9 +123,9 @@ def test_dialogflow_response():
 
 
 def test_dummy_request():
-    from rasa.nlu.emulators.no_emulator import NoEmulator
+    from rasa.nlu.emulators.response_converter import ResponseConverter
 
-    em = NoEmulator()
+    em = ResponseConverter()
     norm = em.normalise_request_json({"text": ["arb text"]})
     assert norm == {"text": "arb text", "time": None}
 
@@ -134,9 +134,9 @@ def test_dummy_request():
 
 
 def test_dummy_response():
-    from rasa.nlu.emulators.no_emulator import NoEmulator
+    from rasa.nlu.emulators.response_converter import ResponseConverter
 
-    em = NoEmulator()
+    em = ResponseConverter()
     data = {"intent": "greet", "text": "hi", "entities": {}, "confidence": 1.0}
     assert em.normalise_response_json(data) == data
 

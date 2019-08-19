@@ -1,12 +1,12 @@
 from typing import Any, Dict, List, Text
 
-from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.emulators.response_converter import ResponseConverter
 
 
-class WitEmulator(NoEmulator):
+class WitConverter(ResponseConverter):
     def __init__(self) -> None:
 
-        super(WitEmulator, self).__init__()
+        super(WitConverter, self).__init__()
         self.name = "wit"
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> List[Dict[Text, Any]]:
