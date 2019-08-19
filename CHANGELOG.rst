@@ -33,7 +33,7 @@ Changed
 - ``RasaChatInput`` fetches the public key from the Rasa X API. The key is used to
   decode the bearer token containing the conversation ID. This requires
   ``rasa-x>=0.20.2``.
-- more specific exception message from ``get_component_class()`` depending on whether component's path or
+- more specific exception message when loading custom components depending on whether component's path or
   class name is invalid or can't be found in the global namespace
 
 Fixed
