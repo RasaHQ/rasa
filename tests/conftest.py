@@ -31,13 +31,13 @@ from rasa.train import train_async
 pytest_plugins = ["pytester"]
 
 
-DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
-DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
+DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
+DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 END_TO_END_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
-MOODBOT_MODEL_PATH = "examples/moodbot/models/"
+MOODBOT_MODEL_DIRECTORY = "examples/moodbot/"
 
 
 @pytest.fixture(autouse=True)
@@ -68,12 +68,12 @@ def project() -> Text:
 
 @pytest.fixture(scope="session")
 def default_domain_path_with_slots():
-    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    return DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture(scope="session")
 def default_domain_path_with_mapping():
-    return DEFAULT_DOMAIN_PATH_WITH_MAPPING
+    return DOMAIN_PATH_WITH_MAPPING
 
 
 @pytest.fixture(scope="session")
@@ -219,10 +219,10 @@ async def trained_nlu_model(project) -> Text:
 @pytest.fixture
 async def trained_moodbot_path():
     return await train_async(
-        domain="examples/moodbot/domain.yml",
-        config="examples/moodbot/config.yml",
-        training_files="examples/moodbot/data/",
-        output_path=MOODBOT_MODEL_PATH,
+        domain=os.path.join(MOODBOT_MODEL_DIRECTORY, DEFAULT_DOMAIN_PATH),
+        config=os.path.join(MOODBOT_MODEL_DIRECTORY, DEFAULT_CONFIG_PATH),
+        training_files=os.path.join(MOODBOT_MODEL_DIRECTORY, DEFAULT_DATA_PATH),
+        output_path=os.path.join(MOODBOT_MODEL_DIRECTORY, DEFAULT_MODELS_PATH),
     )
 
 
