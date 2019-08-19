@@ -24,3 +24,5 @@ USER_INTENT_BACK = "back"
 USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
 
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
+
+BEARER_TOKEN_PREFIX = "Bearer "
