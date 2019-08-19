@@ -48,7 +48,7 @@ def set_log_level_debug(caplog):
     caplog.set_level(logging.DEBUG)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def project() -> Text:
     import tempfile
     from rasa.cli.scaffold import create_initial_project
@@ -58,7 +58,8 @@ def project() -> Text:
 
     yield directory
 
-    shutil.rmtree(directory)
+    if os.path.exists(directory):
+        shutil.rmtree(directory)
 
 
 ###############
@@ -153,7 +154,10 @@ async def default_agent(
     agent.train(training_data)
     agent.persist(model_path)
 
-    return agent
+    yield agent
+
+    if os.path.exists(model_path):
+        shutil.rmtree(model_path)
 
 
 #############
@@ -203,32 +207,53 @@ async def rasa_server_without_api():
 
 @pytest.fixture
 async def trained_model(project) -> Text:
-    return await train_model(project)
+    yield await train_model(project)
+
+    model_dir = os.path.join(project, DEFAULT_MODELS_PATH)
+    if os.path.exists(model_dir):
+        shutil.rmtree(model_dir)
 
 
 @pytest.fixture
 async def trained_core_model(project) -> Text:
-    return await train_model(project, model_type="core")
+    yield await train_model(project, model_type="core")
+
+    model_dir = os.path.join(project, DEFAULT_MODELS_PATH)
+    if os.path.exists(model_dir):
+        shutil.rmtree(model_dir)
 
 
 @pytest.fixture
 async def trained_nlu_model(project) -> Text:
-    return await train_model(project, model_type="nlu")
+    yield await train_model(project, model_type="nlu")
+
+    model_dir = os.path.join(project, DEFAULT_MODELS_PATH)
+    if os.path.exists(model_dir):
+        shutil.rmtree(model_dir)
 
 
 @pytest.fixture
 async def trained_moodbot_path():
-    return await train_async(
+    yield await train_async(
         domain=os.path.join(MOODBOT_MODEL_DIRECTORY, DEFAULT_DOMAIN_PATH),
         config=os.path.join(MOODBOT_MODEL_DIRECTORY, DEFAULT_CONFIG_PATH),
         training_files=os.path.join(MOODBOT_MODEL_DIRECTORY, DEFAULT_DATA_PATH),
         output_path=os.path.join(MOODBOT_MODEL_DIRECTORY, DEFAULT_MODELS_PATH),
     )
 
+    model_dir = os.path.join(MOODBOT_MODEL_DIRECTORY, DEFAULT_MODELS_PATH)
+    if os.path.exists(model_dir):
+        shutil.rmtree(model_dir)
+
 
 @pytest.fixture
-async def unpacked_trained_moodbot_path(trained_moodbot_path):
-    return get_model(trained_moodbot_path)
+def unpacked_trained_moodbot_path(trained_moodbot_path):
+    model_dir = get_model(trained_moodbot_path)
+
+    yield model_dir
+
+    if os.path.exists(model_dir):
+        shutil.rmtree(model_dir)
 
 
 async def train_model(
