@@ -62,7 +62,7 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     return url + subpath
 
 
-class EndpointConfig(object):
+class EndpointConfig:
     """Configuration for an external HTTP endpoint."""
 
     def __init__(

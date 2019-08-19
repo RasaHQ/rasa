@@ -6,7 +6,7 @@ from rasa.utils.common import class_from_module_path
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
     type_name = None
 
     def __init__(

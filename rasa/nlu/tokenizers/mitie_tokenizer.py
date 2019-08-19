@@ -1,12 +1,11 @@
 from typing import Any, List, Text
 
-from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 
-class MitieTokenizer(Tokenizer, Component):
+class MitieTokenizer(Tokenizer):
 
     provides = ["tokens"]
 

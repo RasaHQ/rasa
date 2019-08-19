@@ -1,8 +1,11 @@
-class Tokenizer(object):
+from rasa.nlu.components import Component
+
+
+class Tokenizer(Component):
     pass
 
 
-class Token(object):
+class Token:
     def __init__(self, text, offset, data=None):
         self.offset = offset
         self.text = text

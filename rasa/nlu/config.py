@@ -76,7 +76,7 @@ def component_config_from_pipeline(
         return override_defaults(defaults, {})
 
 
-class RasaNLUModelConfig(object):
+class RasaNLUModelConfig:
     def __init__(self, configuration_values=None):
         """Create a model configuration, optionally overriding
         defaults with a dictionary ``configuration_values``.

@@ -24,7 +24,7 @@ TMP_NODE_ID = -2
 VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
 
 
-class UserMessageGenerator(object):
+class UserMessageGenerator:
     def __init__(self, nlu_training_data):
         self.nlu_training_data = nlu_training_data
         self.mapping = self._create_reverse_mapping(self.nlu_training_data)

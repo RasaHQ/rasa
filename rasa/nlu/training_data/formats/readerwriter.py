@@ -4,7 +4,7 @@ import rasa.utils.io
 from rasa.nlu import utils
 
 
-class TrainingDataReader(object):
+class TrainingDataReader:
     def read(self, filename, **kwargs):
         """Reads TrainingData from a file."""
         return self.reads(rasa.utils.io.read_file(filename), **kwargs)
@@ -14,7 +14,7 @@ class TrainingDataReader(object):
         raise NotImplementedError
 
 
-class TrainingDataWriter(object):
+class TrainingDataWriter:
     def dump(self, filename, training_data):
         """Writes a TrainingData object in markdown format to a file."""
         s = self.dumps(training_data)

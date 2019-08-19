@@ -31,7 +31,7 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
     return None
 
 
-class Persistor(object):
+class Persistor:
     """Store models in cloud and fetch them when needed"""
 
     def persist(self, model_directory: Text, model_name: Text) -> None:

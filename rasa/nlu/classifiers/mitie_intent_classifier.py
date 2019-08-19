@@ -2,7 +2,7 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.nlu.components import Component
+from rasa.nlu.classifiers import Classifier
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
@@ -11,7 +11,7 @@ if typing.TYPE_CHECKING:
     import mitie
 
 
-class MitieIntentClassifier(Component):
+class MitieIntentClassifier(Classifier):
 
     provides = ["intent"]
 

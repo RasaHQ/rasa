@@ -131,7 +131,7 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
     return bot_message
 
 
-class Action(object):
+class Action:
     """Next action to be taken in response to a dialogue state."""
 
     def name(self) -> Text:

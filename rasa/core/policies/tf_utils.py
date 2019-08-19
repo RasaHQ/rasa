@@ -4,7 +4,7 @@ import tensorflow as tf
 tf.contrib._warning = None  # avoid warning println on contrib import - remove for tf 2
 
 
-class TimedNTM(object):
+class TimedNTM:
     """Timed Neural Turing Machine
 
     Inspired by paper:

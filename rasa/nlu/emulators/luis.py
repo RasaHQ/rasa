@@ -1,12 +1,12 @@
 from typing import Any, Dict, Text
 
-from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.emulators.response_converter import ResponseConverter
 
 
-class LUISEmulator(NoEmulator):
+class LUISConverter(ResponseConverter):
     def __init__(self) -> None:
 
-        super(LUISEmulator, self).__init__()
+        super(LUISConverter, self).__init__()
         self.name = "luis"
 
     def _top_intent(self, data):

@@ -15,7 +15,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-class NaturalLanguageInterpreter(object):
+class NaturalLanguageInterpreter:
     async def parse(
         self,
         text: Text,

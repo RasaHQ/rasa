@@ -73,7 +73,7 @@ def first_key(d, default_key):
 
 
 # noinspection PyProtectedMember
-class Event(object):
+class Event:
     """Events describe everything that occurs in
     a conversation and tell the :class:`rasa.core.trackers.DialogueStateTracker`
     how to update its state."""
