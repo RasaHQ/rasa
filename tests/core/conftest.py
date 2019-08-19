@@ -151,13 +151,13 @@ async def default_processor(default_domain, default_nlg):
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def moodbot_domain(trained_moodbot_path):
     domain_path = os.path.join("examples", "moodbot", "domain.yml")
     return Domain.load(domain_path)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def moodbot_metadata(unpacked_trained_moodbot_path):
     return PolicyEnsemble.load_metadata(
         os.path.join(unpacked_trained_moodbot_path, "core")

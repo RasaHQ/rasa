@@ -8,7 +8,9 @@ def run(testdir):
         args = ["rasa"] + list(args)
         return testdir.run(*args)
 
-    return do_run
+    yield do_run
+
+    testdir.finalize()
 
 
 @pytest.fixture
@@ -20,4 +22,6 @@ def run_in_default_project(testdir):
         args = ["rasa"] + list(args)
         return testdir.run(*args)
 
-    return do_run
+    yield do_run
+
+    testdir.finalize()
