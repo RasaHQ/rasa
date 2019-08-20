@@ -68,7 +68,7 @@ component_classes = [
     KeywordIntentClassifier,
     EmbeddingIntentClassifier,
     # selectors
-    ResponseSelector
+    ResponseSelector,
 ]
 
 # Mapping from a components name to its class to allow name based lookup.

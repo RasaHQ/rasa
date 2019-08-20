@@ -193,9 +193,14 @@ class MarkdownReader(TrainingDataReader):
         self._add_synonyms(plain_text, entities)
 
         if self.current_subsection is not None:
-            message = Message(plain_text, {"intent": self.current_title, "response": self.current_subtitle})
+            message = Message(
+                plain_text,
+                {"intent": self.current_title, "response": self.current_subtitle},
+            )
         else:
-            message = Message(plain_text, {"intent": self.current_title, "response": None})
+            message = Message(
+                plain_text, {"intent": self.current_title, "response": None}
+            )
         if len(entities) > 0:
             message.set("entities", entities)
         return message
@@ -211,7 +216,9 @@ class MarkdownReader(TrainingDataReader):
                 "".format(section, ",".join(available_sections))
             )
 
-        self.current_section, self.current_title, self.current_subsection, self.current_subtitle = header
+        self.current_section, self.current_title, self.current_subsection, self.current_subtitle = (
+            header
+        )
 
 
 class MarkdownWriter(TrainingDataWriter):
@@ -229,14 +236,14 @@ class MarkdownWriter(TrainingDataWriter):
         """generates markdown training examples."""
         training_examples = sorted(
             [e.as_dict() for e in training_data.training_examples],
-            key=lambda k: k["intent"],
+            key=lambda k: (k["intent"], k["response"]),
         )
         md = ""
         for i, example in enumerate(training_examples):
             intent = training_examples[i - 1]["intent"]
             if i == 0 or intent != example["intent"]:
                 md += self._generate_section_header_md(
-                    INTENT, example["intent"], i != 0
+                    INTENT, example["intent"], RESPONSE, example["response"], i != 0
                 )
 
             md += self._generate_item_md(self._generate_message_md(example))
@@ -286,10 +293,15 @@ class MarkdownWriter(TrainingDataWriter):
         return md
 
     @staticmethod
-    def _generate_section_header_md(section_type, title, prepend_newline=True):
+    def _generate_section_header_md(
+        section_type, title, subsection_type=None, subtitle=None, prepend_newline=True
+    ):
         """generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
-        return prefix + "## {}:{}\n".format(section_type, encode_string(title))
+        subsection_text = ",{}:{}".format(subsection_type, subtitle) if subtitle else ""
+        return prefix + "## {}:{}{}\n".format(
+            section_type, encode_string(title), encode_string(subsection_text)
+        )
 
     @staticmethod
     def _generate_item_md(text):

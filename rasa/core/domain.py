@@ -101,9 +101,14 @@ class Domain(object):
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         intents = data.get("intents", {})
-        actions = data.get("actions",[])
+        actions = data.get("actions", [])
         if "action_properties" in data:
-            actions = [{action: data.get("action_properties",{}).get(action,{}) for action in data.get("actions",[])}]
+            actions = [
+                {
+                    action: data.get("action_properties", {}).get(action, {})
+                    for action in data.get("actions", [])
+                }
+            ]
 
         return cls(
             intents,
@@ -197,7 +202,7 @@ class Domain(object):
 
     @staticmethod
     def collect_action_properties(
-            actions: List[Union[Text, Dict[Text, Any]]]
+        actions: List[Union[Text, Dict[Text, Any]]]
     ) -> Dict[Text, Dict[Text, bool]]:
         action_properties = {}
         for action in actions:
@@ -329,7 +334,6 @@ class Domain(object):
 
     def is_response_action(self, action_name):
         return action_name in self.response_actions
-
 
     @common_utils.lazy_property
     def user_actions_and_forms(self):
@@ -661,7 +665,7 @@ class Domain(object):
             "templates": self.templates,
             "actions": self.user_actions,  # class names of the actions
             "forms": self.form_names,
-            "action_properties": self.action_properties
+            "action_properties": self.action_properties,
         }
 
     def persist(self, filename: Text) -> None:
@@ -900,7 +904,11 @@ class Domain(object):
 
         utterances = [a for a in self.action_names if a.startswith(action.UTTER_PREFIX)]
 
-        missing_templates = [t for t in utterances if t not in self.templates.keys() and t not in self.response_actions]
+        missing_templates = [
+            t
+            for t in utterances
+            if t not in self.templates.keys() and t not in self.response_actions
+        ]
 
         if missing_templates:
             for template in missing_templates:

@@ -185,16 +185,25 @@ class ActionUtterTemplate(Action):
 
         message = None
         if domain.is_response_action(self.template_name):
-            logger.debug('Action needs to pick a response.')
-            query_keys = ['{0}_response'.format(self.template_name), '{0}{1}_response'.format(UTTER_PREFIX, DEFAULT_OPEN_UTTERANCE_TYPE)]
+            logger.debug("Action needs to pick a response.")
+            query_keys = [
+                "{0}_response".format(self.template_name),
+                "{0}{1}_response".format(UTTER_PREFIX, DEFAULT_OPEN_UTTERANCE_TYPE),
+            ]
             for query_key in query_keys:
                 if query_key in tracker.latest_message.parse_data:
-                    logger.debug('Picking response of type {0}'.format(query_key))
-                    message = {'text': tracker.latest_message.parse_data.get(query_key).get("name")}
+                    logger.debug("Picking response of type {0}".format(query_key))
+                    message = {
+                        "text": tracker.latest_message.parse_data.get(query_key).get(
+                            "name"
+                        )
+                    }
                     return [create_bot_utterance(message)]
 
         else:
-            message = await nlg.generate(self.template_name, tracker, output_channel.name())
+            message = await nlg.generate(
+                self.template_name, tracker, output_channel.name()
+            )
         if message is None:
             if not self.silent_fail:
                 logger.error(

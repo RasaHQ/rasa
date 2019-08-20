@@ -33,6 +33,7 @@ try:
 except ImportError:
     tf = None
 
+
 class ResponseSelector(EmbeddingIntentClassifier):
     """Response selector using supervised embeddings.
 
@@ -56,7 +57,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     requires = ["text_features"]
 
-    name = 'ResponseSelector'
+    name = "ResponseSelector"
 
     defaults = {
         # nn architecture
@@ -113,35 +114,42 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 0,  # large values may hurt performance,
-
         # Tensorboard config
-        "summary_dir": os.path.join(os.getcwd(), 'tb_logs'),
-
+        "summary_dir": os.path.join(os.getcwd(), "tb_logs"),
         # selector config
-        "response_type": None
-
+        "response_type": None,
     }
     # end default properties (DOC MARKER - don't remove)
 
     def __init__(
-            self,
-            component_config: Optional[Dict[Text, Any]] = None,
-            inv_label_dict: Optional[Dict[int, Text]] = None,
-            session: Optional["tf.Session"] = None,
-            graph: Optional["tf.Graph"] = None,
-            message_placeholder: Optional['tf.Tensor'] = None,
-            label_placeholder: Optional['tf.Tensor'] = None,
-            sim_all: Optional['tf.Tensor'] = None,
-            pred_confidence: Optional["tf.Tensor"] = None,
-            similarity_op: Optional['tf.Tensor'] = None,
-            message_embed: Optional['tf.Tensor'] = None,
-            label_embed: Optional['tf.Tensor'] = None,
-            all_labels_embed: Optional['tf.Tensor'] = None
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        inv_label_dict: Optional[Dict[int, Text]] = None,
+        session: Optional["tf.Session"] = None,
+        graph: Optional["tf.Graph"] = None,
+        message_placeholder: Optional["tf.Tensor"] = None,
+        label_placeholder: Optional["tf.Tensor"] = None,
+        sim_all: Optional["tf.Tensor"] = None,
+        pred_confidence: Optional["tf.Tensor"] = None,
+        similarity_op: Optional["tf.Tensor"] = None,
+        message_embed: Optional["tf.Tensor"] = None,
+        label_embed: Optional["tf.Tensor"] = None,
+        all_labels_embed: Optional["tf.Tensor"] = None,
     ) -> None:
-        super(ResponseSelector, self).__init__(component_config, inv_label_dict,  session, graph,
-                                               message_placeholder, label_placeholder, sim_all, pred_confidence,
-                                               similarity_op, message_embed, label_embed,
-                                               all_labels_embed)
+        super(ResponseSelector, self).__init__(
+            component_config,
+            inv_label_dict,
+            session,
+            graph,
+            message_placeholder,
+            label_placeholder,
+            sim_all,
+            pred_confidence,
+            similarity_op,
+            message_embed,
+            label_embed,
+            all_labels_embed,
+        )
 
     def _load_tb_params(self, config: Dict[Text, Any]) -> None:
         self.summary_dir = config["summary_dir"]
@@ -189,9 +197,17 @@ class ResponseSelector(EmbeddingIntentClassifier):
                     for label_idx, score in ranking
                 ]
 
-        key_placeholder = self.response_type if self.response_type else DEFAULT_OPEN_UTTERANCE_TYPE
-        message.set("utter_{0}_response".format(key_placeholder), label, add_to_output=True)
-        message.set("utter_{0}_response_ranking".format(key_placeholder), label_ranking, add_to_output=True)
+        key_placeholder = (
+            self.response_type if self.response_type else DEFAULT_OPEN_UTTERANCE_TYPE
+        )
+        message.set(
+            "utter_{0}_response".format(key_placeholder), label, add_to_output=True
+        )
+        message.set(
+            "utter_{0}_response_ranking".format(key_placeholder),
+            label_ranking,
+            add_to_output=True,
+        )
 
     # # noinspection PyPep8Naming
     # def process(self, message: 'Message', **kwargs: Any) -> None:
@@ -277,11 +293,17 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     # training data helpers:
     @staticmethod
-    def _create_label_dict(training_data: "TrainingData", attribute: Text = 'intent') -> Dict[Text, int]:
+    def _create_label_dict(
+        training_data: "TrainingData", attribute: Text = "intent"
+    ) -> Dict[Text, int]:
         """Create intent dictionary"""
 
         distinct_labels = set(
-            [example.get(attribute) for example in training_data.intent_examples if example.get(attribute)]
+            [
+                example.get(attribute)
+                for example in training_data.intent_examples
+                if example.get(attribute)
+            ]
         )
         return {response: idx for idx, response in enumerate(sorted(distinct_labels))}
 
@@ -292,11 +314,13 @@ class ResponseSelector(EmbeddingIntentClassifier):
                 return ex
 
     # @staticmethod
-    def _create_encoded_labels(self,
-                               label_dict: Dict[Text, int],
-                               training_data: 'TrainingData',
-                               attribute: Text = "intent",
-                               attribute_feats: Text = "intent_features") -> np.ndarray:
+    def _create_encoded_labels(
+        self,
+        label_dict: Dict[Text, int],
+        training_data: "TrainingData",
+        attribute: Text = "intent",
+        attribute_feats: Text = "intent_features",
+    ) -> np.ndarray:
         """Create matrix with intents encoded in rows as bag of words.
 
         If intent_tokenization_flag is off, returns identity matrix.
@@ -309,10 +333,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
                 encoded_all_labels.insert(
                     idx,
                     self._find_example_for_label(
-                        key,
-                        training_data.intent_examples,
-                        attribute,
-                    ).get(attribute_feats)
+                        key, training_data.intent_examples, attribute
+                    ).get(attribute_feats),
                 )
 
             return np.array(encoded_all_labels)
@@ -321,43 +343,63 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     # noinspection PyPep8Naming
     def _create_session_data(
-            self, training_data: "TrainingData", label_dict: Dict[Text, int], attribute: Text = "intent",
+        self,
+        training_data: "TrainingData",
+        label_dict: Dict[Text, int],
+        attribute: Text = "intent",
     ) -> "train_utils.SessionData":
         """Prepare data for training"""
 
-        X = np.stack([e.get("text_features") for e in training_data.intent_examples if e.get(attribute)])
+        X = np.stack(
+            [
+                e.get("text_features")
+                for e in training_data.intent_examples
+                if e.get(attribute)
+            ]
+        )
 
         labels = np.array(
-            [label_dict[e.get(attribute)] for e in training_data.intent_examples if e.get(attribute)]
+            [
+                label_dict[e.get(attribute)]
+                for e in training_data.intent_examples
+                if e.get(attribute)
+            ]
         )
 
         Y = np.stack([self._encoded_all_labels[label] for label in labels])
 
         return train_utils.SessionData(X=X, Y=Y, labels=labels)
 
-
-    def train(self,
-              training_data: 'TrainingData',
-              cfg: Optional['RasaNLUModelConfig'] = None,
-              **kwargs: Any) -> None:
+    def train(
+        self,
+        training_data: "TrainingData",
+        cfg: Optional["RasaNLUModelConfig"] = None,
+        **kwargs: Any
+    ) -> None:
         """Train the embedding intent classifier on a data set."""
 
-        tb_sum_dir = os.path.join(self.summary_dir, 'response_selector')
+        tb_sum_dir = os.path.join(self.summary_dir, "response_selector")
 
         if self.response_type:
             training_data = training_data.filter_by_intent(self.response_type)
 
-        label_dict = self._create_label_dict(training_data, attribute='response')
+        label_dict = self._create_label_dict(training_data, attribute="response")
 
         if len(label_dict) < 2:
-            logger.error("Can not train a response selector. "
-                         "Need at least 2 different classes. "
-                         "Skipping training of response selector.")
+            logger.error(
+                "Can not train a response selector. "
+                "Need at least 2 different classes. "
+                "Skipping training of response selector."
+            )
             return
 
-        self.inv_label_dict = {v: k for k, v in label_dict.items()} # idx: response
+        self.inv_label_dict = {v: k for k, v in label_dict.items()}  # idx: response
         self._encoded_all_labels = self._create_encoded_labels(
-            label_dict, training_data, attribute="response", attribute_feats="response_features")
+            label_dict,
+            training_data,
+            attribute="response",
+            attribute_feats="response_features",
+        )
 
         # check if number of negatives is less than number of intents
         logger.debug(
@@ -370,7 +412,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # noinspection PyAttributeOutsideInit
         self.num_neg = min(self.num_neg, self._encoded_all_labels.shape[0] - 1)
 
-        session_data = self._create_session_data(training_data, label_dict, attribute="response")
+        session_data = self._create_session_data(
+            training_data, label_dict, attribute="response"
+        )
 
         if self.evaluate_on_num_examples:
             session_data, eval_session_data = train_utils.train_val_split(
@@ -429,10 +473,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
             # rebuild the graph for prediction
             self.pred_confidence = self._build_tf_pred_graph(session_data)
 
-
-    def persist(self,
-                file_name: Text,
-                model_dir: Text) -> Dict[Text, Any]:
+    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
@@ -476,12 +517,12 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     @classmethod
     def load(
-            cls,
-            meta: Dict[Text, Any],
-            model_dir: Text = None,
-            model_metadata: "Metadata" = None,
-            cached_component: Optional["ResponseSelector"] = None,
-            **kwargs: Any
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Text = None,
+        model_metadata: "Metadata" = None,
+        cached_component: Optional["ResponseSelector"] = None,
+        **kwargs: Any
     ) -> "ResponseSelector":
 
         if model_dir and meta.get("file"):
@@ -506,7 +547,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
                 all_labels_embed = train_utils.load_tensor("all_labels_embed")
 
             with io.open(
-                    os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "rb"
+                os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "rb"
             ) as f:
                 inv_label_dict = pickle.load(f)
 

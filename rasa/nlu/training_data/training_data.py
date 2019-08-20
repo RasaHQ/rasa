@@ -125,7 +125,13 @@ class TrainingData(object):
     @rasa.utils.lazyproperty
     def response_types(self) -> Set[Text]:
         """Returns the total number of response types in the training data"""
-        return set([ex.get("intent") for ex in self.training_examples if ex.get("response") is not None])
+        return set(
+            [
+                ex.get("intent")
+                for ex in self.training_examples
+                if ex.get("response") is not None
+            ]
+        )
 
     @rasa_utils.lazy_property
     def examples_per_intent(self) -> Dict[Text, int]:

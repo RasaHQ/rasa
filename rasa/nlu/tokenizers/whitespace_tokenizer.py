@@ -14,18 +14,17 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
     defaults = {
         # text will be tokenized with case sensitive as default
-        "intent_split_symbol": ' ',
-        "case_sensitive": True
+        "intent_split_symbol": " ",
+        "case_sensitive": True,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
         super(WhitespaceTokenizer, self).__init__(component_config)
-        self.section_split_symbol = self.component_config['intent_split_symbol']
+        self.section_split_symbol = self.component_config["intent_split_symbol"]
         self.case_sensitive = self.component_config["case_sensitive"]
         self.is_test_data_featurized = False
-
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -33,19 +32,21 @@ class WhitespaceTokenizer(Tokenizer, Component):
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
             if example.get("intent"):
-                example.set("intent_tokens",
-                            self.tokenize(example.get("intent"),
-                                          self.section_split_symbol))
+                example.set(
+                    "intent_tokens",
+                    self.tokenize(example.get("intent"), self.section_split_symbol),
+                )
 
             if example.get("response"):
-                example.set("response_tokens",
-                            self.tokenize(example.get("response"),
-                                          self.section_split_symbol))
+                example.set(
+                    "response_tokens",
+                    self.tokenize(example.get("response"), self.section_split_symbol),
+                )
 
     def process(self, message: Message, **kwargs: Any) -> None:
         message.set("tokens", self.tokenize(message.text))
 
-    def tokenize(self, text: Text, split=' ') -> List[Token]:
+    def tokenize(self, text: Text, split=" ") -> List[Token]:
         if not self.case_sensitive:
             text = text.lower()
         # remove 'not a word character' if
@@ -59,7 +60,8 @@ class WhitespaceTokenizer(Tokenizer, Component):
             # e.g. 10'000.00 or blabla@gmail.com
             # and not url characters
             r"(?<=[^0-9\s])[^\w._~:/?#\[\]()@!$&*+,;=-]+(?=[^0-9\s])",
-            split, text
+            split,
+            text,
         ).split(split)
 
         running_offset = 0
