@@ -11,7 +11,8 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
-from rasa.nlu.training_data.loading import guess_format, UNK, load_data
+from rasa.nlu.training_data.data_manager import DataManager
+from rasa.nlu.training_data.formats import SupportedFormats
 from rasa.nlu.training_data.util import get_file_format
 import rasa.utils.io as io_utils
 
@@ -50,7 +51,7 @@ def test_validation_is_throwing_exceptions(invalid_data):
 
 
 def test_luis_data():
-    td = training_data.load_data("data/examples/luis/demo-restaurants.json")
+    td = training_data.DataManager.load_data("data/examples/luis/demo-restaurants.json")
 
     assert not td.is_empty()
     assert len(td.entity_examples) == 8
@@ -62,7 +63,7 @@ def test_luis_data():
 
 
 def test_wit_data():
-    td = training_data.load_data("data/examples/wit/demo-flights.json")
+    td = training_data.DataManager.load_data("data/examples/wit/demo-flights.json")
     assert not td.is_empty()
     assert len(td.entity_examples) == 4
     assert len(td.intent_examples) == 1
@@ -73,7 +74,7 @@ def test_wit_data():
 
 
 def test_dialogflow_data():
-    td = training_data.load_data("data/examples/dialogflow/")
+    td = training_data.DataManager.load_data("data/examples/dialogflow/")
     assert not td.is_empty()
     assert len(td.entity_examples) == 5
     assert len(td.intent_examples) == 24
@@ -100,7 +101,7 @@ def test_dialogflow_data():
 
 def test_lookup_table_json():
     lookup_fname = "data/test/lookup_tables/plates.txt"
-    td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.json")
+    td_lookup = training_data.DataManager.load_data("data/test/lookup_tables/lookup_table.json")
     assert not td_lookup.is_empty()
     assert td_lookup.lookup_tables[0]["name"] == "plates"
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
@@ -116,7 +117,7 @@ def test_lookup_table_json():
 
 def test_lookup_table_md():
     lookup_fname = "data/test/lookup_tables/plates.txt"
-    td_lookup = training_data.load_data("data/test/lookup_tables/lookup_table.md")
+    td_lookup = training_data.DataManager.load_data("data/test/lookup_tables/lookup_table.md")
     assert not td_lookup.is_empty()
     assert td_lookup.lookup_tables[0]["name"] == "plates"
     assert td_lookup.lookup_tables[0]["elements"] == lookup_fname
@@ -134,7 +135,7 @@ def test_lookup_table_md():
     "filename", ["data/examples/rasa/demo-rasa.json", "data/examples/rasa/demo-rasa.md"]
 )
 def test_demo_data(filename):
-    td = training_data.load_data(filename)
+    td = training_data.DataManager.load_data(filename)
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
     assert td.entities == {"location", "cuisine"}
     assert len(td.training_examples) == 42
@@ -157,7 +158,7 @@ def test_demo_data(filename):
 
 @pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.md"])
 def test_train_test_split(filename):
-    td = training_data.load_data(filename)
+    td = training_data.DataManager.load_data(filename)
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
     assert td.entities == {"location", "cuisine"}
     assert len(td.training_examples) == 42
@@ -177,8 +178,8 @@ def test_train_test_split(filename):
     ],
 )
 def test_data_merging(files):
-    td_reference = training_data.load_data(files[0])
-    td = training_data.load_data(files[1])
+    td_reference = training_data.DataManager.load_data(files[0])
+    td = training_data.DataManager.load_data(files[1])
     assert len(td.entity_examples) == len(td_reference.entity_examples)
     assert len(td.intent_examples) == len(td_reference.intent_examples)
     assert len(td.training_examples) == len(td_reference.training_examples)
@@ -189,12 +190,12 @@ def test_data_merging(files):
 
 
 def test_markdown_single_sections():
-    td_regex_only = training_data.load_data(
+    td_regex_only = training_data.DataManager.load_data(
         "data/test/markdown_single_sections/regex_only.md"
     )
     assert td_regex_only.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
 
-    td_syn_only = training_data.load_data(
+    td_syn_only = training_data.DataManager.load_data(
         "data/test/markdown_single_sections/synonyms_only.md"
     )
     assert td_syn_only.entity_synonyms == {"Chines": "chinese", "Chinese": "chinese"}
@@ -223,7 +224,7 @@ def test_repeated_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = training_data.load_data(f.name)
+        td = training_data.DataManager.load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example.get("entities")
@@ -257,7 +258,7 @@ def test_multiword_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = training_data.load_data(f.name)
+        td = training_data.DataManager.load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example.get("entities")
@@ -289,7 +290,7 @@ def test_nonascii_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = training_data.load_data(f.name)
+        td = training_data.DataManager.load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example.get("entities")
@@ -342,7 +343,7 @@ def test_entities_synonyms():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = training_data.load_data(f.name)
+        td = training_data.DataManager.load_data(f.name)
         assert td.entity_synonyms["New York City"] == "nyc"
 
 
@@ -417,11 +418,11 @@ def test_training_data_conversion(
 ):
     out_path = tmpdir.join("rasa_nlu_data.json")
     convert_training_data(data_file, out_path.strpath, output_format, language)
-    td = training_data.load_data(out_path.strpath, language)
+    td = training_data.DataManager.load_data(out_path.strpath, language)
     assert td.entity_examples != []
     assert td.intent_examples != []
 
-    gold_standard = training_data.load_data(gold_standard_file, language)
+    gold_standard = training_data.DataManager.load_data(gold_standard_file, language)
     cmp_message_list(td.entity_examples, gold_standard.entity_examples)
     cmp_message_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
@@ -430,7 +431,7 @@ def test_training_data_conversion(
     # file format and performing the same tests
     rto_path = tmpdir.join("data_in_original_format.txt")
     convert_training_data(out_path.strpath, rto_path.strpath, "json", language)
-    rto = training_data.load_data(rto_path.strpath, language)
+    rto = training_data.DataManager.load_data(rto_path.strpath, language)
     cmp_message_list(gold_standard.entity_examples, rto.entity_examples)
     cmp_message_list(gold_standard.intent_examples, rto.intent_examples)
     assert gold_standard.entity_synonyms == rto.entity_synonyms
@@ -520,17 +521,17 @@ def test_markdown_entity_regex():
 
 
 def test_get_file_format():
-    fformat = get_file_format("data/examples/luis/demo-restaurants.json")
+    file_format = get_file_format("data/examples/luis/demo-restaurants.json")
 
-    assert fformat == "json"
+    assert file_format == "json"
 
-    fformat = get_file_format("data/examples")
+    file_format = get_file_format("data/examples")
 
-    assert fformat == "json"
+    assert file_format == "json"
 
-    fformat = get_file_format("examples/restaurantbot/data/nlu.md")
+    file_format = get_file_format("examples/restaurantbot/data/nlu.md")
 
-    assert fformat == "md"
+    assert file_format == "md"
 
     with pytest.raises(AttributeError):
         get_file_format("path-does-not-exists")
@@ -540,12 +541,12 @@ def test_get_file_format():
 
 
 def test_guess_format_from_non_existing_file_path():
-    assert guess_format("not existing path") == UNK
+    assert DataManager.guess_format("not existing path") == SupportedFormats.UNK
 
 
 def test_load_data_from_non_existing_file():
     with pytest.raises(ValueError):
-        load_data("some path")
+        DataManager.load_data("some path")
 
 
 def test_is_empty():

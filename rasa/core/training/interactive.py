@@ -57,7 +57,7 @@ from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 # noinspection PyProtectedMember
-from rasa.nlu.training_data import loading
+from rasa.nlu.training_data.data_manager import DataManager
 from rasa.nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library
@@ -814,7 +814,7 @@ async def _write_nlu_to_file(
 
     # noinspection PyBroadException
     try:
-        previous_examples = loading.load_data(export_nlu_path)
+        previous_examples = DataManager.load_data(export_nlu_path)
     except Exception as e:
         logger.debug(
             "An exception occurred while trying to load the NLU data. {}".format(str(e))
@@ -826,7 +826,7 @@ async def _write_nlu_to_file(
 
     # need to guess the format of the file before opening it to avoid a read
     # in a write
-    if loading.guess_format(export_nlu_path) in {"md", "unk"}:
+    if DataManager.guess_format(export_nlu_path) in {"md", "unk"}:
         fformat = "md"
     else:
         fformat = "json"

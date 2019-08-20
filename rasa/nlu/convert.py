@@ -19,10 +19,10 @@ def convert_training_data(
         return
 
     if output_format == "json":
-        td = training_data.load_data(data_file, language)
+        td = training_data.DataManager.load_data(data_file, language)
         output = td.as_json(indent=2)
     elif output_format == "md":
-        td = training_data.load_data(data_file, language)
+        td = training_data.DataManager.load_data(data_file, language)
         output = td.as_markdown()
     else:
         print_error(

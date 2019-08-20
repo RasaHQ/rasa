@@ -6,8 +6,7 @@ from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
-from rasa.nlu.training_data import load_data
-from rasa.nlu.training_data.loading import load_data_from_endpoint
+from rasa.nlu.training_data.data_manager import DataManager
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -67,13 +66,13 @@ async def train(
     trainer = Trainer(nlu_config, component_builder)
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
-        training_data = await load_data_from_endpoint(
+        training_data = await DataManager.load_data_from_endpoint(
             training_data_endpoint, nlu_config.language
         )
     elif isinstance(data, TrainingDataImporter):
         training_data = await data.get_nlu_data(nlu_config.data)
     else:
-        training_data = load_data(data, nlu_config.language)
+        training_data = DataManager.load_data(data, nlu_config.language)
 
     training_data.print_stats()
     interpreter = trainer.train(training_data, **kwargs)

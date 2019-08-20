@@ -155,7 +155,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
     # retrieves vectors. For compressed spacy models (e.g. models
     # ending in _sm) this test will most likely fail.
 
-    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    td = training_data.DataManager.load_data("data/examples/rasa/demo-rasa.json")
     for e in td.intent_examples:
         doc = spacy_nlp(e.text)
         doc_capitalized = spacy_nlp(e.text.capitalize())
