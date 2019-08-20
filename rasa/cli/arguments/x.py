@@ -34,7 +34,7 @@ def set_x_arguments(parser: argparse.ArgumentParser):
         type=str,
         help="Rasa X endpoint URL from which to pull the runtime config. This URL "
         "typically contains the Rasa X token for authentication. Example: "
-        "http://rasa-x.com/api/config?token=my_rasa_x_token",
+        "https://example.com/api/config?token=my_rasa_x_token",
     )
 
     add_server_arguments(parser)
