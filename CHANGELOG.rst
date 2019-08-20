@@ -33,6 +33,7 @@ Changed
 - ``RasaChatInput`` fetches the public key from the Rasa X API. The key is used to
   decode the bearer token containing the conversation ID. This requires
   ``rasa-x>=0.20.2``.
+- Exchange priorities for ``MappingPolicy`` (now 2) and ``MemoizationPolicy`` (now 3)
 
 Fixed
 -----
