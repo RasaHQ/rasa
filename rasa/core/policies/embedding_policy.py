@@ -138,8 +138,8 @@ class EmbeddingPolicy(Policy):
 
         self._load_params(**kwargs)
 
-        # encode all labels with numbers
-        self._encoded_all_labels = None
+        # encode all label_ids with numbers
+        self._encoded_all_label_ids = None
 
         # tf related instances
         self.graph = graph
@@ -224,27 +224,27 @@ class EmbeddingPolicy(Policy):
     # data helpers
     # noinspection PyPep8Naming
     @staticmethod
-    def _labels_for_Y(data_Y: "np.ndarray") -> "np.ndarray":
-        """Prepare Y data for training: extract labels indices."""
+    def _label_ids_for_Y(data_Y: "np.ndarray") -> "np.ndarray":
+        """Prepare Y data for training: extract label_ids."""
 
         return data_Y.argmax(axis=-1)
 
     # noinspection PyPep8Naming
-    def _label_features_for_Y(self, labels: "np.ndarray") -> "np.ndarray":
-        """Prepare Y data for training: features for label labels."""
+    def _label_features_for_Y(self, label_ids: "np.ndarray") -> "np.ndarray":
+        """Prepare Y data for training: features for label_ids."""
 
-        if len(labels.shape) == 2:  # max history featurizer is used
+        if len(label_ids.shape) == 2:  # max history featurizer is used
             return np.stack(
                 [
                     np.stack(
-                        [self._encoded_all_labels[label_idx] for label_idx in label_ids]
+                        [self._encoded_all_label_ids[label_idx] for label_idx in seq_label_ids]
                     )
-                    for label_ids in labels
+                    for seq_label_ids in label_ids
                 ]
             )
         else:  # full dialogue featurizer is used
             return np.stack(
-                [self._encoded_all_labels[label_idx] for label_idx in labels]
+                [self._encoded_all_label_ids[label_idx] for label_idx in label_ids]
             )
 
     # noinspection PyPep8Naming
@@ -255,20 +255,20 @@ class EmbeddingPolicy(Policy):
 
         if data_Y is not None:
             # training time
-            labels = self._labels_for_Y(data_Y)
-            Y = self._label_features_for_Y(labels)
+            label_ids = self._label_ids_for_Y(data_Y)
+            Y = self._label_id_features_for_Y(label_ids)
 
             # idea taken from sklearn's stratify split
-            if labels.ndim == 2:
+            if label_ids.ndim == 2:
                 # for multi-label y, map each distinct row to a string repr
                 # using join because str(row) uses an ellipsis if len(row) > 1000
-                labels = np.array([" ".join(row.astype("str")) for row in labels])
+                label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
         else:
             # prediction time
-            labels = None
+            label_ids = None
             Y = None
 
-        return train_utils.SessionData(X=data_X, Y=Y, labels=labels)
+        return train_utils.SessionData(X=data_X, Y=Y, label_ids=label_ids)
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
         """Create embedding bot vector."""
@@ -337,7 +337,7 @@ class EmbeddingPolicy(Policy):
             self.b_in = self.b_in[:, tf.newaxis, :]
 
         all_bot_raw = tf.constant(
-            self._encoded_all_labels, dtype=tf.float32, name="all_bot_raw"
+            self._encoded_all_label_ids, dtype=tf.float32, name="all_bot_raw"
         )
 
         self.dial_embed, mask = self._create_tf_dial(self.a_in)
@@ -417,15 +417,15 @@ class EmbeddingPolicy(Policy):
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
-        # encode all labels with policies' featurizer
+        # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        self._encoded_all_labels = state_featurizer.create_encoded_all_actions(domain)
+        self._encoded_all_label_ids = state_featurizer.create_encoded_all_actions(domain)
 
-        # check if number of negatives is less than number of labels
+        # check if number of negatives is less than number of label_ids
         logger.debug(
             "Check if num_neg {} is smaller "
-            "than number of labels {}, "
-            "else set num_neg to the number of labels - 1"
+            "than number of label_ids {}, "
+            "else set num_neg to the number of label_ids - 1"
             "".format(self.num_neg, domain.num_actions)
         )
         # noinspection PyAttributeOutsideInit

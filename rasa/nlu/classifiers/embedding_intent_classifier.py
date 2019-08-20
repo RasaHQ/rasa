@@ -128,8 +128,8 @@ class EmbeddingIntentClassifier(Component):
 
         # transform numbers to labels
         self.inv_label_dict = inv_label_dict
-        # encode all labels with numbers
-        self._encoded_all_labels = None
+        # encode all label_ids with numbers
+        self._encoded_all_label_ids = None
 
         # tf related instances
         self.session = session
@@ -218,70 +218,70 @@ class EmbeddingIntentClassifier(Component):
 
     # training data helpers:
     @staticmethod
-    def _create_label_dict(training_data: "TrainingData") -> Dict[Text, int]:
-        """Create label dictionary"""
+    def _create_label_id_dict(training_data: "TrainingData") -> Dict[Text, int]:
+        """Create label_id dictionary"""
 
-        distinct_labels = set(
+        distinct_label_ids = set(
             [example.get("intent") for example in training_data.intent_examples]
         )
-        return {label: idx for idx, label in enumerate(sorted(distinct_labels))}
+        return {label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))}
 
     @staticmethod
-    def _create_label_token_dict(
-        labels: List[Text], label_split_symbol: Text
+    def _create_label_id_token_dict(
+        label_ids: List[Text], label_split_symbol: Text
     ) -> Dict[Text, int]:
-        """Create label token dictionary"""
+        """Create label_id token dictionary"""
 
         distinct_tokens = set(
-            [token for label in labels for token in label.split(label_split_symbol)]
+            [token for label_id in label_ids for token in label_id.split(label_split_symbol)]
         )
         return {token: idx for idx, token in enumerate(sorted(distinct_tokens))}
 
-    def _create_encoded_labels(self, label_dict: Dict[Text, int]) -> np.ndarray:
-        """Create matrix with labels encoded in rows as bag of words.
+    def _create_encoded_label_ids(self, label_id_dict: Dict[Text, int]) -> np.ndarray:
+        """Create matrix with label_ids encoded in rows as bag of words.
 
         If label_tokenization_flag is off, returns identity matrix.
         """
 
         if self.label_tokenization_flag:
-            label_token_dict = self._create_label_token_dict(
-                list(label_dict.keys()), self.label_split_symbol
+            label_id_token_dict = self._create_label_id_token_dict(
+                list(label_id_dict.keys()), self.label_split_symbol
             )
 
-            encoded_all_labels = np.zeros((len(label_dict), len(label_token_dict)))
-            for key, idx in label_dict.items():
+            encoded_all_label_ids = np.zeros((len(label_id_dict), len(label_id_token_dict)))
+            for key, idx in label_id_dict.items():
                 for t in key.split(self.label_split_symbol):
-                    encoded_all_labels[idx, label_token_dict[t]] = 1
+                    encoded_all_label_ids[idx, label_id_token_dict[t]] = 1
 
-            return encoded_all_labels
+            return encoded_all_label_ids
         else:
-            return np.eye(len(label_dict))
+            return np.eye(len(label_id_dict))
 
     # noinspection PyPep8Naming
     def _create_all_Y(self, size: int) -> np.ndarray:
-        """Stack encoded_all_labels on top of each other
+        """Stack encoded_all_label_ids on top of each other
 
         to create candidates for training examples and
         to calculate training accuracy
         """
 
-        return np.stack([self._encoded_all_labels] * size)
+        return np.stack([self._encoded_all_label_ids] * size)
 
     # noinspection PyPep8Naming
     def _create_session_data(
-        self, training_data: "TrainingData", label_dict: Dict[Text, int]
+        self, training_data: "TrainingData", label_id_dict: Dict[Text, int]
     ) -> "train_utils.SessionData":
         """Prepare data for training"""
 
         X = np.stack([e.get("text_features") for e in training_data.intent_examples])
 
-        labels = np.array(
-            [label_dict[e.get("intent")] for e in training_data.intent_examples]
+        label_ids = np.array(
+            [label_id_dict[e.get("intent")] for e in training_data.intent_examples]
         )
 
-        Y = np.stack([self._encoded_all_labels[label_idx] for label_idx in labels])
+        Y = np.stack([self._encoded_all_label_ids[label_id_idx] for label_id_idx in label_ids])
 
-        return train_utils.SessionData(X=X, Y=Y, labels=labels)
+        return train_utils.SessionData(X=X, Y=Y, label_ids=label_ids)
 
     # tf helpers:
     def _create_tf_embed_fnn(
@@ -304,8 +304,8 @@ class EmbeddingIntentClassifier(Component):
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
         self.a_in, self.b_in = self._iterator.get_next()
 
-        all_labels = tf.constant(
-            self._encoded_all_labels, dtype=tf.float32, name="all_labels"
+        all_label_ids = tf.constant(
+            self._encoded_all_label_ids, dtype=tf.float32, name="all_label_ids"
         )
 
         self.message_embed = self._create_tf_embed_fnn(
@@ -316,7 +316,7 @@ class EmbeddingIntentClassifier(Component):
             self.b_in, self.hidden_layer_sizes["b"], name="b"
         )
         self.all_labels_embed = self._create_tf_embed_fnn(
-            all_labels, self.hidden_layer_sizes["b"], name="b"
+            all_label_ids, self.hidden_layer_sizes["b"], name="b"
         )
 
         return train_utils.calculate_loss_acc(
@@ -324,7 +324,7 @@ class EmbeddingIntentClassifier(Component):
             self.label_embed,
             self.b_in,
             self.all_labels_embed,
-            all_labels,
+            all_label_ids,
             self.num_neg,
             None,
             self.loss_type,
@@ -378,8 +378,8 @@ class EmbeddingIntentClassifier(Component):
         # set numpy random seed
         np.random.seed(self.random_seed)
 
-        label_dict = self._create_label_dict(training_data)
-        if len(label_dict) < 2:
+        label_id_dict = self._create_label_id_dict(training_data)
+        if len(label_id_dict) < 2:
             logger.error(
                 "Can not train an intent classifier. "
                 "Need at least 2 different classes. "
@@ -387,20 +387,20 @@ class EmbeddingIntentClassifier(Component):
             )
             return
 
-        self.inv_label_dict = {v: k for k, v in label_dict.items()}
-        self._encoded_all_labels = self._create_encoded_labels(label_dict)
+        self.inv_label_dict = {v: k for k, v in label_id_dict.items()}
+        self._encoded_all_label_ids = self._create_encoded_label_ids(label_id_dict)
 
-        # check if number of negatives is less than number of labels
+        # check if number of negatives is less than number of label_ids
         logger.debug(
             "Check if num_neg {} is smaller than "
-            "number of labels {}, "
-            "else set num_neg to the number of labels - 1"
-            "".format(self.num_neg, self._encoded_all_labels.shape[0])
+            "number of label_ids {}, "
+            "else set num_neg to the number of label_ids - 1"
+            "".format(self.num_neg, self._encoded_all_label_ids.shape[0])
         )
         # noinspection PyAttributeOutsideInit
-        self.num_neg = min(self.num_neg, self._encoded_all_labels.shape[0] - 1)
+        self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
-        session_data = self._create_session_data(training_data, label_dict)
+        session_data = self._create_session_data(training_data, label_id_dict)
 
         if self.evaluate_on_num_examples:
             session_data, eval_session_data = train_utils.train_val_split(
@@ -536,6 +536,7 @@ class EmbeddingIntentClassifier(Component):
 
             train_utils.persist_tensor("message_embed", self.message_embed, self.graph)
             train_utils.persist_tensor("label_embed", self.label_embed, self.graph)
+            train_utils.persist_tensor("all_labels_embed", self.all_labels_embed, self.graph)
 
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)

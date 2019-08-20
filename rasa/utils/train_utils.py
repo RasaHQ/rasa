@@ -22,7 +22,7 @@ tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
 # namedtuple for all tf session related data
-SessionData = namedtuple("SessionData", ("X", "Y", "labels"))
+SessionData = namedtuple("SessionData", ("X", "Y", "label_ids"))
 
 
 # noinspection PyPep8Naming
@@ -32,7 +32,7 @@ def train_val_split(
     """Create random hold out validation set using stratified split."""
 
     label_counts = dict(
-        zip(*np.unique(session_data.labels, return_counts=True, axis=0))
+        zip(*np.unique(session_data.label_ids, return_counts=True, axis=0))
     )
 
     if evaluate_on_num_examples >= len(session_data.X) - len(label_counts):
@@ -48,31 +48,31 @@ def train_val_split(
             "".format(evaluate_on_num_examples, len(label_counts))
         )
 
-    counts = np.array([label_counts[label] for label in session_data.labels])
+    counts = np.array([label_counts[label] for label in session_data.label_ids])
 
     multi_X = session_data.X[counts > 1]
     multi_Y = session_data.Y[counts > 1]
-    multi_labels = session_data.labels[counts > 1]
+    multi_label_ids = session_data.label_ids[counts > 1]
 
     solo_X = session_data.X[counts == 1]
     solo_Y = session_data.Y[counts == 1]
-    solo_labels = session_data.labels[counts == 1]
+    solo_label_ids = session_data.label_ids[counts == 1]
 
-    (X_train, X_val, Y_train, Y_val, labels_train, labels_val) = train_test_split(
+    (X_train, X_val, Y_train, Y_val, label_ids_train, label_ids_val) = train_test_split(
         multi_X,
         multi_Y,
-        multi_labels,
+        multi_label_ids,
         test_size=evaluate_on_num_examples,
         random_state=random_seed,
-        stratify=multi_labels,
+        stratify=multi_label_ids,
     )
     X_train = np.concatenate([X_train, solo_X])
     Y_train = np.concatenate([Y_train, solo_Y])
-    labels_train = np.concatenate([labels_train, solo_labels])
+    label_ids_train = np.concatenate([label_ids_train, solo_label_ids])
 
     return (
-        SessionData(X=X_train, Y=Y_train, labels=labels_train),
-        SessionData(X=X_val, Y=Y_val, labels=labels_val),
+        SessionData(X=X_train, Y=Y_train, label_ids=label_ids_train),
+        SessionData(X=X_val, Y=Y_val, label_ids=label_ids_val),
     )
 
 
@@ -81,7 +81,7 @@ def shuffle_session_data(session_data: "SessionData") -> "SessionData":
 
     ids = np.random.permutation(len(session_data.X))
     return SessionData(
-        X=session_data.X[ids], Y=session_data.Y[ids], labels=session_data.labels[ids]
+        X=session_data.X[ids], Y=session_data.Y[ids], label_ids=session_data.label_ids[ids]
     )
 
 
@@ -92,33 +92,33 @@ def balance_session_data(
     """Mix session data to account for class imbalance."""
 
     num_examples = len(session_data.X)
-    unique_labels, counts_labels = np.unique(
-        session_data.labels, return_counts=True, axis=0
+    unique_label_ids, counts_label_ids = np.unique(
+        session_data.label_ids, return_counts=True, axis=0
     )
-    num_labels = len(unique_labels)
+    num_label_ids = len(unique_label_ids)
 
     # need to call every time, so that the data is shuffled inside each class
-    label_data = []
-    for label in unique_labels:
-        label_data.append(
+    label_id_data = []
+    for label_id in unique_label_ids:
+        label_id_data.append(
             SessionData(
-                X=session_data.X[session_data.labels == label],
-                Y=session_data.Y[session_data.labels == label],
-                labels=session_data.labels[session_data.labels == label],
+                X=session_data.X[session_data.label_ids == label_id],
+                Y=session_data.Y[session_data.label_ids == label_id],
+                label_ids=session_data.label_ids[session_data.label_ids == label_id],
             )
         )
 
-    data_idx = [0] * num_labels
-    num_data_cycles = [0] * num_labels
-    skipped = [False] * num_labels
+    data_idx = [0] * num_label_ids
+    num_data_cycles = [0] * num_label_ids
+    skipped = [False] * num_label_ids
     new_X = []
     new_Y = []
-    new_labels = []
+    new_label_ids = []
     while min(num_data_cycles) == 0:
         if shuffle:
-            ids = np.random.permutation(num_labels)
+            ids = np.random.permutation(num_label_ids)
         else:
-            ids = range(num_labels)
+            ids = range(num_label_ids)
 
         for i in ids:
             if num_data_cycles[i] > 0 and not skipped[i]:
@@ -127,14 +127,14 @@ def balance_session_data(
             else:
                 skipped[i] = False
 
-            num_i = int(counts_labels[i] / num_examples * batch_size) + 1
+            num_i = int(counts_label_ids[i] / num_examples * batch_size) + 1
 
-            new_X.append(label_data[i].X[data_idx[i] : data_idx[i] + num_i])
-            new_Y.append(label_data[i].Y[data_idx[i] : data_idx[i] + num_i])
-            new_labels.append(label_data[i].labels[data_idx[i] : data_idx[i] + num_i])
+            new_X.append(label_id_data[i].X[data_idx[i] : data_idx[i] + num_i])
+            new_Y.append(label_id_data[i].Y[data_idx[i] : data_idx[i] + num_i])
+            new_label_ids.append(label_id_data[i].label_ids[data_idx[i] : data_idx[i] + num_i])
 
             data_idx[i] += num_i
-            if data_idx[i] >= counts_labels[i]:
+            if data_idx[i] >= counts_label_ids[i]:
                 num_data_cycles[i] += 1
                 data_idx[i] = 0
 
@@ -144,7 +144,7 @@ def balance_session_data(
     return SessionData(
         X=np.concatenate(new_X),
         Y=np.concatenate(new_Y),
-        labels=np.concatenate(new_labels),
+        label_ids=np.concatenate(new_label_ids),
     )
 
 
