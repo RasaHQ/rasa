@@ -101,29 +101,16 @@ class Domain(object):
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         intents = data.get("intents", {})
-        actions = data.get("actions", [])
-        actions = cls.merge_action_properties(actions, data)
 
         return cls(
             intents,
             data.get("entities", []),
             slots,
             utter_templates,
-            actions,
+            data.get("actions", []),
             data.get("forms", []),
             **additional_arguments
         )
-
-    @classmethod
-    def merge_action_properties(cls, actions, data):
-        if "action_properties" in data:
-            actions = [
-                {
-                    action: data.get("action_properties", {}).get(action, {})
-                    for action in actions
-                }
-            ]
-        return actions
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
@@ -187,7 +174,7 @@ class Domain(object):
         for key in ["entities", "actions", "forms"]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
-        for key in ["templates", "slots", "action_properties"]:
+        for key in ["templates", "slots"]:
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
@@ -204,18 +191,6 @@ class Domain(object):
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots
-
-    @staticmethod
-    def collect_action_properties(
-        actions: List[Union[Text, Dict[Text, Any]]]
-    ) -> Dict[Text, Dict[Text, bool]]:
-        action_properties = {}
-        for candidate_action in actions:
-            if isinstance(candidate_action, dict):
-                action_properties.update(candidate_action)
-            else:
-                action_properties.update({candidate_action: {"pick_response": False}})
-        return action_properties
 
     @staticmethod
     def collect_intent_properties(
@@ -292,25 +267,23 @@ class Domain(object):
         entities: List[Text],
         slots: List[Slot],
         templates: Dict[Text, Any],
-        actions: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
+        action_names: List[Text],
         form_names: List[Text],
         store_entities_as_slots: bool = True,
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents)
-        self.action_properties = self.collect_action_properties(actions)
         self.entities = entities
         self.form_names = form_names
         self.slots = slots
         self.templates = templates
 
         # only includes custom actions and utterance actions
-        self.user_actions = list(self.action_properties.keys())
+        self.user_actions = action_names
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(self.user_actions) + form_names
+            action.combine_user_with_default_actions(action_names) + form_names
         )
-        self.response_actions = self.collect_response_actions()
         self.store_entities_as_slots = store_entities_as_slots
 
         self._check_domain_sanity()
@@ -326,19 +299,6 @@ class Domain(object):
         text_hash = utils.get_text_hash(self_as_string)
 
         return int(text_hash, 16)
-
-    def collect_response_actions(self):
-        """Return names of those actions which query the tracker from response rather than pick from template"""
-
-        response_actions = []
-        for candidate_action, properties in self.action_properties.items():
-            if "pick_response" in properties and properties["pick_response"]:
-                response_actions.append(candidate_action)
-
-        return response_actions
-
-    def is_response_action(self, action_name):
-        return action_name in self.response_actions
 
     @common_utils.lazy_property
     def user_actions_and_forms(self):
@@ -670,7 +630,6 @@ class Domain(object):
             "templates": self.templates,
             "actions": self.user_actions,  # class names of the actions
             "forms": self.form_names,
-            "action_properties": self.action_properties,
         }
 
     def persist(self, filename: Text) -> None:
@@ -909,11 +868,7 @@ class Domain(object):
 
         utterances = [a for a in self.action_names if a.startswith(action.UTTER_PREFIX)]
 
-        missing_templates = [
-            t
-            for t in utterances
-            if t not in self.templates.keys() and t not in self.response_actions
-        ]
+        missing_templates = [t for t in utterances if t not in self.templates.keys()]
 
         if missing_templates:
             for template in missing_templates:

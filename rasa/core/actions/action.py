@@ -51,6 +51,8 @@ ACTION_BACK_NAME = "action_back"
 
 UTTER_PREFIX = "utter_"
 
+RESPOND_PREFIX = "respond_"
+
 
 def default_actions() -> List["Action"]:
     """List default actions."""
@@ -94,6 +96,8 @@ def action_from_name(
         return defaults[name]
     elif name.startswith(UTTER_PREFIX):
         return ActionUtterTemplate(name)
+    elif name.startswith(RESPOND_PREFIX):
+        return ActionUtterPredictedResponse(name)
     else:
         return RemoteAction(name, action_endpoint)
 
@@ -170,6 +174,48 @@ class Action(object):
         return "Action('{}')".format(self.name())
 
 
+class ActionUtterPredictedResponse(Action):
+    """
+    An action which queries the Response Selector for the appropriate response.
+    """
+
+    def __init__(self, name, silent_fail: Optional[bool] = False):
+        self.action_name = name
+        self.silent_fail = silent_fail
+
+    async def run(self, output_channel, nlg, tracker, domain):
+        """Query the appropriate response and create a bot utterance with that."""
+
+        message = None
+        query_keys = [
+            "{0}_response".format(self.action_name),
+            "{0}{1}_response".format(RESPOND_PREFIX, DEFAULT_OPEN_UTTERANCE_TYPE),
+        ]
+        for query_key in query_keys:
+            if query_key in tracker.latest_message.parse_data:
+                logger.debug("Picking response of type {0}".format(query_key))
+                message = {
+                    "text": tracker.latest_message.parse_data.get(query_key).get("name")
+                }
+                break
+
+        if message is None:
+            if not self.silent_fail:
+                logger.error(
+                    "Couldn't create message for response action '{}'."
+                    "".format(self.action_name)
+                )
+            return []
+
+        return [create_bot_utterance(message)]
+
+    def name(self) -> Text:
+        return self.action_name
+
+    def __str__(self) -> Text:
+        return "ActionUtterPredictedResponse('{}')".format(self.name())
+
+
 class ActionUtterTemplate(Action):
     """An action which only effect is to utter a template when it is run.
 
@@ -180,35 +226,10 @@ class ActionUtterTemplate(Action):
         self.template_name = name
         self.silent_fail = silent_fail
 
-    def pick_predicted_response(self, tracker):
-
-        query_keys = [
-            "{0}_response".format(self.template_name),
-            "{0}{1}_response".format(UTTER_PREFIX, DEFAULT_OPEN_UTTERANCE_TYPE),
-        ]
-        for query_key in query_keys:
-            if query_key in tracker.latest_message.parse_data:
-                logger.debug("Picking response of type {0}".format(query_key))
-                message = {
-                    "text": tracker.latest_message.parse_data.get(query_key).get("name")
-                }
-                return message
-        return None
-
     async def run(self, output_channel, nlg, tracker, domain):
         """Simple run implementation uttering a (hopefully defined) template."""
 
-        message = None
-        if domain.is_response_action(self.template_name):
-            logger.debug(
-                "Action needs to pick a response predicted by response selectors"
-            )
-            message = self.pick_predicted_response(tracker)
-
-        else:
-            message = await nlg.generate(
-                self.template_name, tracker, output_channel.name()
-            )
+        message = await nlg.generate(self.template_name, tracker, output_channel.name())
         if message is None:
             if not self.silent_fail:
                 logger.error(

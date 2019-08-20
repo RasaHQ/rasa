@@ -201,10 +201,10 @@ class ResponseSelector(EmbeddingIntentClassifier):
             self.response_type if self.response_type else DEFAULT_OPEN_UTTERANCE_TYPE
         )
         message.set(
-            "utter_{0}_response".format(key_placeholder), label, add_to_output=True
+            "respond_{0}_response".format(key_placeholder), label, add_to_output=True
         )
         message.set(
-            "utter_{0}_response_ranking".format(key_placeholder),
+            "respond_{0}_response_ranking".format(key_placeholder),
             label_ranking,
             add_to_output=True,
         )
@@ -377,8 +377,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
         **kwargs: Any
     ) -> None:
         """Train the embedding intent classifier on a data set."""
-
-        tb_sum_dir = os.path.join(self.summary_dir, "response_selector")
 
         if self.response_type:
             training_data = training_data.filter_by_intent(self.response_type)
