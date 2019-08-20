@@ -1,8 +1,9 @@
 import json
 import logging
-import time
 from collections import deque
 from typing import Text, Optional, Union, Deque, Dict, Any
+
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,13 @@ class Ticket:
 
 
 class TicketLock:
+    """Locking mechanism that issues tickets managing access to conversation IDs.
+
+    Tickets are issued in the order in which they are requested. A detailed
+    explanation of the ticket lock algorithm can be found here:
+    http://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks.pdf#page=13
+    """
+
     def __init__(
         self, conversation_id: Text, tickets: Optional[Deque[Ticket]] = None
     ) -> None:
@@ -60,6 +68,9 @@ class TicketLock:
              False if lock has expired. Otherwise returns True if `now_serving` is
              not equal to `ticket`.
         """
+
+        if self.has_lock_expired(ticket_number):
+            return False
 
         return self.now_serving != ticket_number
 
@@ -145,7 +156,6 @@ class TicketLock:
 
     def has_lock_expired(self, ticket_number: int) -> Optional[bool]:
         """Return whether ticket for `ticket_number` has expired.
-
         Returns:
              True if `Ticket` for `ticket_number` has expired, False otherwise. True if
              ticket was not found.

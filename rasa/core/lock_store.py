@@ -123,7 +123,10 @@ class LockStore:
             self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
-        self, conversation_id: Text, ticket: int, wait: Union[int, float]
+        self,
+        conversation_id: Text,
+        ticket: int,
+        wait_time_in_seconds: Union[int, float],
     ) -> TicketLock:
 
         while True:
@@ -144,7 +147,7 @@ class LockStore:
             )
 
             # sleep and update lock
-            await asyncio.sleep(wait)
+            await asyncio.sleep(wait_time_in_seconds)
             self.update_lock(conversation_id)
 
         raise LockError(

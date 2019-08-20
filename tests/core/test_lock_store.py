@@ -149,7 +149,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
     incoming_order_file = temp_path / "incoming_order_file"
 
     # We need to mock `Agent.handle_message()` so we can introduce an
-    # artificial holdup (`wait`). In the mocked method, we'll
+    # artificial holdup (`wait_time_in_seconds`). In the mocked method, we'll
     # record messages as they come and and as they're processed in files so we
     # can check the order later on. We don't need the return value of this method so
     # we'll just return None.
@@ -163,7 +163,6 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         async with self.lock_store.lock(
             message.sender_id, wait_time_in_seconds=lock_wait
         ):
-
             # hold up the message processing after the lock has been acquired
             await asyncio.sleep(wait)
 
@@ -203,44 +202,39 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
             assert results_order == expected_order
 
         # Every message after the first one will wait `lock_wait` seconds to acquire its
-        # lock (`wait` kwarg in `lock_store.lock()`). Let's make sure that this is not
-        # blocking and test that total test execution time is less than
-        # the sum of all wait times plus (n_messages - 1) * lock_wait
+        # lock (`wait_time_in_seconds` kwarg in `lock_store.lock()`).
+        # Let's make sure that this is not blocking and test that total test
+        # execution time is less than  the sum of all wait times plus
+        # (n_messages - 1) * lock_wait
         time_limit = np.sum(wait_times[1:])
         time_limit += (n_messages - 1) * lock_wait
         assert time.time() - start_time < time_limit
 
 
 async def test_lock_error(default_agent: Agent):
-    attempts = 10
-    wait_between_attempts = 0.001
+    wait_between_attempts = 0.01
+    holdup = 0.1
 
-    # Mock message handler again to limit the number of attempts to acquire the lock
-    # and reduce the wait time between acquisition attempts.
-    async def mocked_handle_message(
-        self, message: UserMessage, wait: Union[int, float]
-    ) -> None:
-
+    # Mock message handler again to reduce the wait time between acquisition attempts
+    async def mocked_handle_message(self, message: UserMessage) -> None:
         async with self.lock_store.lock(
             message.sender_id,
-            attempts=attempts,
             wait_time_in_seconds=wait_between_attempts,
+            lock_lifetime=holdup,
         ):
-
             # hold up the message processing after the lock has been acquired
-            await asyncio.sleep(wait)
+            await asyncio.sleep(holdup)
 
-            return None
+        return None
 
     with patch.object(Agent, "handle_message", mocked_handle_message):
-        # first message should block longer (attempts * wait_between_attempts),
+        # first message should block longer than `wait_between_attempts`,
         # meaning the second message will not be able to acquire a lock
-        wait_times = [0.03, 0]
         tasks = [
             default_agent.handle_message(
-                UserMessage("sender {0}".format(i), sender_id="some id"), wait=k
+                UserMessage("sender {0}".format(i), sender_id="some id")
             )
-            for i, k in enumerate(wait_times)
+            for i in range(2)
         ]
 
         with pytest.raises(LockError):
