@@ -104,7 +104,7 @@ class TrainingData(object):
     def intent_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("intent")]
 
-    @rasa_utils.lazyproperty
+    @rasa_utils.lazy_property
     def response_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("response")]
 
@@ -117,12 +117,12 @@ class TrainingData(object):
         """Returns the set of intents in the training data."""
         return set([ex.get("intent") for ex in self.training_examples]) - {None}
 
-    @rasa_utils.lazyproperty
+    @rasa_utils.lazy_property
     def responses(self) -> Set[Text]:
         """Returns the set of responses in the training data."""
         return set([ex.get("response") for ex in self.training_examples]) - {None}
 
-    @rasa_utils.lazyproperty
+    @rasa_utils.lazy_property
     def response_types(self) -> Set[Text]:
         """Returns the total number of response types in the training data"""
         return set(

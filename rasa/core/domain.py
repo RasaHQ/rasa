@@ -210,11 +210,11 @@ class Domain(object):
         actions: List[Union[Text, Dict[Text, Any]]]
     ) -> Dict[Text, Dict[Text, bool]]:
         action_properties = {}
-        for action in actions:
-            if isinstance(action, dict):
-                action_properties.update(action)
+        for candidate_action in actions:
+            if isinstance(candidate_action, dict):
+                action_properties.update(candidate_action)
             else:
-                action_properties.update({action: {"pick_response": False}})
+                action_properties.update({candidate_action: {"pick_response": False}})
         return action_properties
 
     @staticmethod
@@ -331,9 +331,9 @@ class Domain(object):
         """Return names of those actions which query the tracker from response rather than pick from template"""
 
         response_actions = []
-        for action, properties in self.action_properties.items():
+        for candidate_action, properties in self.action_properties.items():
             if "pick_response" in properties and properties["pick_response"]:
-                response_actions.append(action)
+                response_actions.append(candidate_action)
 
         return response_actions
 
