@@ -77,7 +77,6 @@ install_requires = [
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
-    "setuptools>=41.0.1",
 ]
 
 extras_requires = {
