@@ -78,11 +78,11 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs):
 
 
 async def test_pull_runtime_config_from_server():
-    config_url = "http://rasa-x.com/api/config?token=token"
-    credentials = "rasa: http://rasa-x.com:5002/api"
+    config_url = "http://example.com/api/config?token=token"
+    credentials = "rasa: http://example.com:5002/api"
     endpoint_config = """
     event_broker:
-        url: http://event-broker.com
+        url: http://example.com/event_broker
         username: some_username
         password: PASSWORD
         queue: broker_queue

@@ -185,7 +185,7 @@ def event_verbosity_parameter(
         )
 
 
-def obtain_tracker_store(agent: "Agent", conversation_id: Text) -> DialogueStateTracker:
+def get_tracker(agent: "Agent", conversation_id: Text) -> DialogueStateTracker:
     tracker = agent.tracker_store.get_or_create_tracker(conversation_id)
     if not tracker:
         raise ErrorResponse(
@@ -373,7 +373,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = obtain_tracker_store(app.agent, conversation_id)
+        tracker = get_tracker(app.agent, conversation_id)
 
         try:
             if until_time is not None:
@@ -423,13 +423,12 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = obtain_tracker_store(app.agent, conversation_id)
+                tracker = get_tracker(app.agent, conversation_id)
                 for event in events:
                     tracker.update(event, app.agent.domain)
-
                 app.agent.tracker_store.save(tracker)
 
-                return response.json(tracker.current_state(verbosity))
+            return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -459,7 +458,8 @@ def create_app(
 
                 # will override an existing tracker with the same id!
                 app.agent.tracker_store.save(tracker)
-                return response.json(tracker.current_state(verbosity))
+
+            return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -483,7 +483,7 @@ def create_app(
             )
 
         # retrieve tracker and set to requested state
-        tracker = obtain_tracker_store(app.agent, conversation_id)
+        tracker = get_tracker(app.agent, conversation_id)
 
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
@@ -524,7 +524,7 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = obtain_tracker_store(app.agent, conversation_id)
+                tracker = get_tracker(app.agent, conversation_id)
                 output_channel = _get_output_channel(request, tracker)
                 await app.agent.execute_action(
                     conversation_id,
@@ -542,7 +542,7 @@ def create_app(
                 "An unexpected error occurred. Error: {}".format(e),
             )
 
-        tracker = obtain_tracker_store(app.agent, conversation_id)
+        tracker = get_tracker(app.agent, conversation_id)
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -604,7 +604,7 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 tracker = await app.agent.log_message(user_message)
-                return response.json(tracker.current_state(verbosity))
+            return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(

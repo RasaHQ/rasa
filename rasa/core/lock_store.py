@@ -26,9 +26,6 @@ class LockError(Exception):
 
 
 class LockStore:
-    def __init__(self, lifetime: int = DEFAULT_LOCK_LIFETIME):
-        self.lifetime = lifetime
-
     @staticmethod
     def find_lock_store(store: EndpointConfig = None) -> "LockStore":
         if store is None or store.type is None or store.type == "in_memory":
@@ -86,7 +83,9 @@ class LockStore:
         raise NotImplementedError
 
     def issue_ticket(
-        self, conversation_id: Text, lifetime: Union[float, int] = DEFAULT_LOCK_LIFETIME
+        self,
+        conversation_id: Text,
+        lock_lifetime: Union[float, int] = DEFAULT_LOCK_LIFETIME,
     ) -> int:
         """Issue new ticket for lock associated with `conversation_id`.
 
@@ -94,11 +93,9 @@ class LockStore:
         """
 
         lock = self.get_or_create_lock(conversation_id)
-
-        lifetime = lifetime if lifetime is not None else self.lifetime
-        ticket = lock.issue_ticket(lifetime)
-
+        ticket = lock.issue_ticket(lock_lifetime)
         self.save_lock(lock)
+
         return ticket
 
     @asynccontextmanager
@@ -106,32 +103,30 @@ class LockStore:
     async def lock(
         self,
         conversation_id: Text,
-        attempts: int = DEFAULT_LOCK_LIFETIME,
+        lock_lifetime: int = DEFAULT_LOCK_LIFETIME,
         wait_time_in_seconds: Union[int, float] = 1,
     ) -> None:
-        """Acquire lock for `conversation_id` with `ticket`.
+        """Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
 
-        Perform `attempts` with a wait_time_in_seconds of `wait_time_in_seconds` seconds
-         between them before raising a `LockError`.
+        Try acquiring lock with a wait time of `wait_time_in_seconds` seconds
+        between attempts. Raise a `LockError` if lock has expired.
         """
 
-        ticket = self.issue_ticket(conversation_id)
+        ticket = self.issue_ticket(conversation_id, lock_lifetime)
 
         try:
             # have to use async_generator.yield_() for py 3.5 compatibility
             await yield_(
-                await self._acquire_lock(
-                    conversation_id, ticket, attempts, wait_time_in_seconds
-                )
+                await self._acquire_lock(conversation_id, ticket, wait_time_in_seconds)
             )
         finally:
             self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
-        self, conversation_id: Text, ticket: int, attempts: int, wait: Union[int, float]
+        self, conversation_id: Text, ticket: int, wait: Union[int, float]
     ) -> TicketLock:
 
-        while attempts > 0:
+        while True:
             # fetch lock in every iteration because lock might no longer exist
             lock = self.get_lock(conversation_id)
 
@@ -143,11 +138,14 @@ class LockStore:
             if not lock.is_locked(ticket):
                 return lock
 
+            logger.debug(
+                "Failed to acquire lock for conversation ID '{}'. Retrying..."
+                "".format(conversation_id)
+            )
+
             # sleep and update lock
             await asyncio.sleep(wait)
             self.update_lock(conversation_id)
-
-            attempts -= 1
 
         raise LockError(
             "Could not acquire lock for conversation_id '{}'."
@@ -220,14 +218,13 @@ class RedisLockStore(LockStore):
         port: int = 6379,
         db: int = 1,
         password: Optional[Text] = None,
-        lifetime: int = DEFAULT_LOCK_LIFETIME,
     ):
         import redis
 
         self.red = redis.StrictRedis(
             host=host, port=int(port), db=int(db), password=password
         )
-        super().__init__(lifetime)
+        super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         serialised_lock = self.red.get(conversation_id)
@@ -245,9 +242,9 @@ class RedisLockStore(LockStore):
 class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
-    def __init__(self, lifetime: int = DEFAULT_LOCK_LIFETIME):
+    def __init__(self):
         self.conversation_locks = {}  # type: Dict[Text, TicketLock]
-        super().__init__(lifetime)
+        super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         return self.conversation_locks.get(conversation_id)

@@ -115,10 +115,10 @@ class TicketLock:
 
         self.remove_expired_tickets()
 
-        if not self.tickets or len(self.tickets) < abs(ticket_index):
+        try:
+            return self.tickets[ticket_index].number
+        except IndexError:
             return None
-
-        return self.tickets[ticket_index].number
 
     def _ticket_for_ticket_number(self, ticket_number: int) -> Optional[Ticket]:
         """Return expiration time for `ticket_number`."""

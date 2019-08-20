@@ -193,8 +193,8 @@ class RedisTrackerStore(TrackerStore):
     def retrieve(self, sender_id):
         stored = self.red.get(sender_id)
         if stored is not None:
-            stored = rasa_core_utils.convert_bytes_to_string(stored)
-            return self.deserialise_tracker(sender_id, stored)
+            serialised = rasa_core_utils.convert_bytes_to_string(stored)
+            return self.deserialise_tracker(sender_id, serialised)
         else:
             return None
 
