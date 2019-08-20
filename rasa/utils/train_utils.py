@@ -87,11 +87,33 @@ def shuffle_session_data(session_data: "SessionData") -> "SessionData":
     )
 
 
+def split_session_data_by_label(
+    session_data: "SessionData", unique_label_ids: "np.ndarray"
+) -> List["SessionData"]:
+    """Reorganize session data into a list of session data with the same labels."""
+
+    label_data = []
+    for label_id in unique_label_ids:
+        label_data.append(
+            SessionData(
+                X=session_data.X[session_data.label_ids == label_id],
+                Y=session_data.Y[session_data.label_ids == label_id],
+                label_ids=session_data.label_ids[session_data.label_ids == label_id],
+            )
+        )
+    return label_data
+
+
 # noinspection PyPep8Naming
 def balance_session_data(
     session_data: "SessionData", batch_size: int, shuffle: bool
 ) -> "SessionData":
-    """Mix session data to account for class imbalance."""
+    """Mix session data to account for class imbalance.
+
+    This batching strategy puts rare classes approximately in every other batch,
+    by repeating them. Mimics stratified batching, but also takes into account
+    that more populated classes should appear more often.
+    """
 
     num_examples = len(session_data.X)
     unique_label_ids, counts_label_ids = np.unique(
@@ -100,15 +122,7 @@ def balance_session_data(
     num_label_ids = len(unique_label_ids)
 
     # need to call every time, so that the data is shuffled inside each class
-    label_id_data = []
-    for label_id in unique_label_ids:
-        label_id_data.append(
-            SessionData(
-                X=session_data.X[session_data.label_ids == label_id],
-                Y=session_data.Y[session_data.label_ids == label_id],
-                label_ids=session_data.label_ids[session_data.label_ids == label_id],
-            )
-        )
+    label_data = split_session_data_by_label(session_data, unique_label_ids)
 
     data_idx = [0] * num_label_ids
     num_data_cycles = [0] * num_label_ids
@@ -118,29 +132,41 @@ def balance_session_data(
     new_label_ids = []
     while min(num_data_cycles) == 0:
         if shuffle:
-            ids = np.random.permutation(num_label_ids)
+            indices_of_labels = np.random.permutation(num_label_ids)
         else:
-            ids = range(num_label_ids)
+            indices_of_labels = range(num_label_ids)
 
-        for i in ids:
-            if num_data_cycles[i] > 0 and not skipped[i]:
-                skipped[i] = True
+        for index in indices_of_labels:
+            if num_data_cycles[index] > 0 and not skipped[index]:
+                skipped[index] = True
                 continue
             else:
-                skipped[i] = False
+                skipped[index] = False
 
-            num_i = int(counts_label_ids[i] / num_examples * batch_size) + 1
-
-            new_X.append(label_id_data[i].X[data_idx[i] : data_idx[i] + num_i])
-            new_Y.append(label_id_data[i].Y[data_idx[i] : data_idx[i] + num_i])
-            new_label_ids.append(
-                label_id_data[i].label_ids[data_idx[i] : data_idx[i] + num_i]
+            index_batch_size = (
+                int(counts_label_ids[index] / num_examples * batch_size) + 1
             )
 
-            data_idx[i] += num_i
-            if data_idx[i] >= counts_label_ids[i]:
-                num_data_cycles[i] += 1
-                data_idx[i] = 0
+            new_X.append(
+                label_data[index].X[
+                    data_idx[index] : data_idx[index] + index_batch_size
+                ]
+            )
+            new_Y.append(
+                label_data[index].Y[
+                    data_idx[index] : data_idx[index] + index_batch_size
+                ]
+            )
+            new_label_ids.append(
+                label_data[index].label_ids[
+                    data_idx[index] : data_idx[index] + index_batch_size
+                ]
+            )
+
+            data_idx[index] += index_batch_size
+            if data_idx[index] >= counts_label_ids[index]:
+                num_data_cycles[index] += 1
+                data_idx[index] = 0
 
             if min(num_data_cycles) > 0:
                 break
