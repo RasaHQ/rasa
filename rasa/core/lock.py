@@ -8,14 +8,14 @@ logger = logging.getLogger(__name__)
 
 
 class Ticket:
-    def __init__(self, number: int, expires: float):
+    def __init__(self, number: int, expires: float) -> None:
         self.number = number
         self.expires = expires
 
     def has_expired(self) -> bool:
         return time.time() > self.expires
 
-    def as_dict(self):
+    def as_dict(self) -> Dict[Text, Any]:
         return dict(number=self.number, expires=self.expires)
 
     def dumps(self) -> Text:
