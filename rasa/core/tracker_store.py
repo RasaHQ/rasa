@@ -1,5 +1,6 @@
 import json
 import logging
+import pickle
 import typing
 from typing import Iterator, Optional, Text, Iterable, Union
 
@@ -9,16 +10,15 @@ import itertools
 from time import sleep
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.conversation import Dialogue
 from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
-import rasa.core.utils as rasa_core_utils
 from rasa.utils.common import class_from_module_path
 
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine import Engine
+
 
 logger = logging.getLogger(__name__)
 
@@ -118,14 +118,12 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     @staticmethod
-    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
+    def serialise_tracker(tracker):
         dialogue = tracker.as_dialogue()
-        return json.dumps(dialogue.as_dict())
+        return pickle.dumps(dialogue)
 
-    def deserialise_tracker(
-        self, sender_id: Text, _json: Text
-    ) -> Optional[DialogueStateTracker]:
-        dialogue = Dialogue.from_parameters(json.loads(_json))
+    def deserialise_tracker(self, sender_id, _json) -> Optional[DialogueStateTracker]:
+        dialogue = pickle.loads(_json)
         tracker = self.init_tracker(sender_id)
         if tracker:
             tracker.recreate_from_dialogue(dialogue)
@@ -193,8 +191,7 @@ class RedisTrackerStore(TrackerStore):
     def retrieve(self, sender_id):
         stored = self.red.get(sender_id)
         if stored is not None:
-            serialised = rasa_core_utils.convert_bytes_to_string(stored)
-            return self.deserialise_tracker(sender_id, serialised)
+            return self.deserialise_tracker(sender_id, stored)
         else:
             return None
 
