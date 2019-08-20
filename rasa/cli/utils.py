@@ -1,10 +1,11 @@
 import os
 import sys
 import json
-import re
-from typing import Any, Optional, Text, List, Dict
+from typing import Any, Optional, Text, List, Dict, TYPE_CHECKING
 import logging
-from questionary import Question
+
+if TYPE_CHECKING:
+    from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
@@ -170,7 +171,7 @@ def element_to_string(element: Dict[Text, Any], idx: int = 0) -> Text:
 
 def button_choices_from_message_data(
     message: Dict[Text, Any], allow_free_text_input: bool = True
-) -> Question:
+) -> "Question":
     """Return list of choices to present to the user.
 
     If allow_free_text_input is True, an additional option is added
@@ -186,7 +187,7 @@ def button_choices_from_message_data(
     return choices
 
 
-def payload_from_button_question(button_question: Question) -> Text:
+def payload_from_button_question(button_question: "Question") -> Text:
     """Prompt user with a button question and returns the nlu payload."""
     response = button_question.ask()
     if response != FREE_TEXT_INPUT_PROMPT:
