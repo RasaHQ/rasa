@@ -12,6 +12,7 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.core.constants import DEFAULT_POLICY_PRIORITIES
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ class Policy(object):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: Optional[int] = 1,
+        priority: Optional[int] = DEFAULT_POLICY_PRIORITIES["Default"],
     ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
