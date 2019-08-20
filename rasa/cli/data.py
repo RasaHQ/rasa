@@ -74,19 +74,19 @@ def add_subparser(
 
 
 def split_nlu_data(args):
-    from rasa.nlu.training_data.loading import load_data
+    from rasa.nlu.training_data.data_manager import DataManager
     from rasa.nlu.training_data.util import get_file_format
 
     data_path = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = data.get_nlu_directory(data_path)
 
-    nlu_data = load_data(data_path)
-    fformat = get_file_format(data_path)
+    nlu_data = DataManager.load_data(data_path)
+    file_format = get_file_format(data_path)
 
     train, test = nlu_data.train_test_split(args.training_fraction)
 
-    train.persist(args.out, filename="training_data.{}".format(fformat))
-    test.persist(args.out, filename="test_data.{}".format(fformat))
+    train.persist(args.out, filename="training_data.{}".format(file_format))
+    test.persist(args.out, filename="test_data.{}".format(file_format))
 
 
 def validate_files(args):

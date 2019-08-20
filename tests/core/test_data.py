@@ -6,7 +6,7 @@ import pytest
 
 import rasa.data as data
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
-from rasa.nlu.training_data import load_data
+from rasa.nlu.training_data.data_manager import DataManager
 from rasa.nlu.utils import json_to_string
 
 
@@ -35,8 +35,8 @@ def test_get_nlu_file(project):
 
     nlu_files = os.listdir(nlu_directory)
 
-    original = load_data(data_file)
-    copied = load_data(nlu_directory)
+    original = DataManager.load_data(data_file)
+    copied = DataManager.load_data(nlu_directory)
 
     assert nlu_files[0].endswith("nlu.md")
     assert original.intent_examples == copied.intent_examples

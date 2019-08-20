@@ -60,11 +60,11 @@ def train_nlu(
     model_name: Text = "current",
     training_data_file="data/nlu.md",
 ):
-    from rasa.nlu.training_data import load_data
+    from rasa.nlu.training_data.data_manager import DataManager
     from rasa.nlu import config
     from rasa.nlu.model import Trainer
 
-    training_data = load_data(training_data_file)
+    training_data = DataManager.load_data(training_data_file)
     trainer = Trainer(config.load(config_file))
     trainer.train(training_data)
 

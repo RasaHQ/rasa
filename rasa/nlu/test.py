@@ -718,7 +718,7 @@ def run_evaluation(
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-    test_data = training_data.load_data(data_path, interpreter.model_metadata.language)
+    test_data = training_data.DataManager.load_data(data_path, interpreter.model_metadata.language)
 
     result = {
         "intent_evaluation": None,

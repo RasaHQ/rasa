@@ -5,7 +5,8 @@ import tempfile
 import uuid
 import re
 from typing import Tuple, List, Text, Set, Union, Optional
-from rasa.nlu.training_data import loading
+from rasa.nlu.training_data.data_manager import DataManager
+from rasa.nlu.training_data.formats import SupportedFormats
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +133,7 @@ def is_nlu_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a nlu file, otherwise `False`.
     """
-    return loading.guess_format(file_path) != loading.UNK
+    return DataManager.guess_format(file_path) != SupportedFormats.UNK
 
 
 def is_story_file(file_path: Text) -> bool:

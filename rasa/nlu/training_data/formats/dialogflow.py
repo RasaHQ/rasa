@@ -21,29 +21,29 @@ DIALOGFLOW_ENTITIES = "dialogflow_entities"
 DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 
-class DialogflowReader(TrainingDataReader):
+class DialogFlowReader(TrainingDataReader):
     def read(self, fn: Text, **kwargs: Any) -> "TrainingData":
         """Loads training data stored in the Dialogflow data format."""
         from rasa.nlu.training_data import TrainingData
 
         language = kwargs["language"]
-        fformat = kwargs["fformat"]
+        file_format = kwargs["file_format"]
 
-        if fformat not in {DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES}:
+        if file_format not in {DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES}:
             raise ValueError(
-                "fformat must be either {}, or {}"
+                "file_format must be either {}, or {}"
                 "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES)
             )
 
         root_js = rasa.utils.io.read_json_file(fn)
-        examples_js = self._read_examples_js(fn, language, fformat)
+        examples_js = self._read_examples_js(fn, language, file_format)
 
         if not examples_js:
             logger.warning(
                 "No training examples found for dialogflow file {}!".format(fn)
             )
             return TrainingData()
-        elif fformat == DIALOGFLOW_INTENT:
+        elif file_format == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)
         else:  # path for DIALOGFLOW_ENTITIES
             return self._read_entities(root_js, examples_js)
@@ -97,7 +97,7 @@ class DialogflowReader(TrainingDataReader):
     def _extract_lookup_tables(name, examples):
         """Extract the lookup table from the entity synonyms"""
         synonyms = [e["synonyms"] for e in examples if "synonyms" in e]
-        synonyms = DialogflowReader._flatten(synonyms)
+        synonyms = DialogFlowReader._flatten(synonyms)
         elements = [synonym for synonym in synonyms if "@" not in synonym]
 
         if len(elements) == 0:
@@ -111,15 +111,15 @@ class DialogflowReader(TrainingDataReader):
         entity_synonyms = transform_entity_synonyms(examples_js)
 
         name = entity_js.get("name")
-        lookup_tables = DialogflowReader._extract_lookup_tables(name, examples_js)
+        lookup_tables = DialogFlowReader._extract_lookup_tables(name, examples_js)
         return TrainingData([], entity_synonyms, [], lookup_tables)
 
     @staticmethod
-    def _read_examples_js(fn: Text, language: Text, fformat: Text) -> Optional[Text]:
+    def _read_examples_js(fn: Text, language: Text, file_format: Text) -> Optional[Text]:
         """Infer and load the example file based on the root
         filename and root format."""
 
-        if fformat == DIALOGFLOW_INTENT:
+        if file_format == DIALOGFLOW_INTENT:
             examples_type = "usersays"
         else:
             examples_type = "entries"

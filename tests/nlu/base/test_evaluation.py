@@ -1,6 +1,5 @@
 # coding=utf-8
 import asyncio
-import logging
 
 import pytest
 
@@ -32,9 +31,9 @@ from rasa.nlu.test import determine_intersection
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers import Token
-from rasa.nlu import utils
 import json
 import os
+
 from rasa.nlu import training_data, config
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
@@ -238,7 +237,7 @@ def test_label_merging():
 
 
 def test_drop_intents_below_freq():
-    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    td = training_data.DataManager.load_data("data/examples/rasa/demo-rasa.json")
     clean_td = drop_intents_below_freq(td, 0)
     assert clean_td.intents == {"affirm", "goodbye", "greet", "restaurant_search"}
 
@@ -257,7 +256,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
 
 
 def test_run_cv_evaluation():
-    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    td = training_data.DataManager.load_data("data/examples/rasa/demo-rasa.json")
     nlu_config = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
 
     n_folds = 2
