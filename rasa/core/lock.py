@@ -65,12 +65,8 @@ class TicketLock:
         """Return whether `ticket_number` is locked.
 
         Returns:
-             False if lock has expired. Otherwise returns True if `now_serving` is
-             not equal to `ticket`.
+             True if `now_serving` is not equal to `ticket`.
         """
-
-        if self.has_lock_expired(ticket_number):
-            return False
 
         return self.now_serving != ticket_number
 
@@ -153,16 +149,3 @@ class TicketLock:
         ticket = self._ticket_for_ticket_number(ticket_number)
         if ticket:
             self.tickets.remove(ticket)
-
-    def has_lock_expired(self, ticket_number: int) -> Optional[bool]:
-        """Return whether ticket for `ticket_number` has expired.
-        Returns:
-             True if `Ticket` for `ticket_number` has expired, False otherwise. True if
-             ticket was not found.
-        """
-
-        ticket = self._ticket_for_ticket_number(ticket_number)
-        if ticket:
-            return ticket.has_expired()
-
-        return True

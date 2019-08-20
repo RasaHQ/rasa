@@ -112,13 +112,13 @@ def test_lock_expiration():
     # issue ticket with long lifetime
     ticket = lock.issue_ticket(10)
     assert ticket == 0
-    assert not lock.has_lock_expired(ticket)
+    assert not lock._ticket_for_ticket_number(ticket).has_expired()
 
     # issue ticket with short lifetime
     ticket = lock.issue_ticket(0.00001)
     time.sleep(0.00002)
     assert ticket == 1
-    assert lock.has_lock_expired(ticket)
+    assert lock._ticket_for_ticket_number(ticket) is None
 
     # newly assigned ticket should get number 1 again
     assert lock.issue_ticket(10) == 1
@@ -212,15 +212,17 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
 
 
 async def test_lock_error(default_agent: Agent):
-    wait_between_attempts = 0.01
+    lock_lifetime = 0.01
+    wait_time_in_seconds = 0.01
     holdup = 0.1
 
-    # Mock message handler again to reduce the wait time between acquisition attempts
+    # Mock message handler again to add a wait time holding up the lock
+    # after it's been acquired
     async def mocked_handle_message(self, message: UserMessage) -> None:
         async with self.lock_store.lock(
             message.sender_id,
-            wait_time_in_seconds=wait_between_attempts,
-            lock_lifetime=holdup,
+            wait_time_in_seconds=wait_time_in_seconds,
+            lock_lifetime=lock_lifetime,
         ):
             # hold up the message processing after the lock has been acquired
             await asyncio.sleep(holdup)
@@ -228,7 +230,7 @@ async def test_lock_error(default_agent: Agent):
         return None
 
     with patch.object(Agent, "handle_message", mocked_handle_message):
-        # first message should block longer than `wait_between_attempts`,
+        # first message blocks the lock for `holdup`,
         # meaning the second message will not be able to acquire a lock
         tasks = [
             default_agent.handle_message(
