@@ -224,7 +224,9 @@ class EmbeddingIntentClassifier(Component):
         distinct_label_ids = set(
             [example.get("intent") for example in training_data.intent_examples]
         )
-        return {label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))}
+        return {
+            label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
+        }
 
     @staticmethod
     def _create_label_id_token_dict(
@@ -233,7 +235,11 @@ class EmbeddingIntentClassifier(Component):
         """Create label_id token dictionary"""
 
         distinct_tokens = set(
-            [token for label_id in label_ids for token in label_id.split(label_split_symbol)]
+            [
+                token
+                for label_id in label_ids
+                for token in label_id.split(label_split_symbol)
+            ]
         )
         return {token: idx for idx, token in enumerate(sorted(distinct_tokens))}
 
@@ -248,7 +254,9 @@ class EmbeddingIntentClassifier(Component):
                 list(label_id_dict.keys()), self.label_split_symbol
             )
 
-            encoded_all_label_ids = np.zeros((len(label_id_dict), len(label_id_token_dict)))
+            encoded_all_label_ids = np.zeros(
+                (len(label_id_dict), len(label_id_token_dict))
+            )
             for key, idx in label_id_dict.items():
                 for t in key.split(self.label_split_symbol):
                     encoded_all_label_ids[idx, label_id_token_dict[t]] = 1
@@ -279,7 +287,9 @@ class EmbeddingIntentClassifier(Component):
             [label_id_dict[e.get("intent")] for e in training_data.intent_examples]
         )
 
-        Y = np.stack([self._encoded_all_label_ids[label_id_idx] for label_id_idx in label_ids])
+        Y = np.stack(
+            [self._encoded_all_label_ids[label_id_idx] for label_id_idx in label_ids]
+        )
 
         return train_utils.SessionData(X=X, Y=Y, label_ids=label_ids)
 
@@ -536,7 +546,9 @@ class EmbeddingIntentClassifier(Component):
 
             train_utils.persist_tensor("message_embed", self.message_embed, self.graph)
             train_utils.persist_tensor("label_embed", self.label_embed, self.graph)
-            train_utils.persist_tensor("all_labels_embed", self.all_labels_embed, self.graph)
+            train_utils.persist_tensor(
+                "all_labels_embed", self.all_labels_embed, self.graph
+            )
 
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)

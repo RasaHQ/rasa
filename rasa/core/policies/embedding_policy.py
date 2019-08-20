@@ -233,16 +233,19 @@ class EmbeddingPolicy(Policy):
     def _label_features_for_Y(self, label_ids: "np.ndarray") -> "np.ndarray":
         """Prepare Y data for training: features for label_ids."""
 
-        if len(label_ids.shape) == 2:  # max history featurizer is used
+        if len(label_ids.shape) == 2:  # full dialogue featurizer is used
             return np.stack(
                 [
                     np.stack(
-                        [self._encoded_all_label_ids[label_idx] for label_idx in seq_label_ids]
+                        [
+                            self._encoded_all_label_ids[label_idx]
+                            for label_idx in seq_label_ids
+                        ]
                     )
                     for seq_label_ids in label_ids
                 ]
             )
-        else:  # full dialogue featurizer is used
+        else:  # max history featurizer is used
             return np.stack(
                 [self._encoded_all_label_ids[label_idx] for label_idx in label_ids]
             )
@@ -256,7 +259,7 @@ class EmbeddingPolicy(Policy):
         if data_Y is not None:
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
-            Y = self._label_id_features_for_Y(label_ids)
+            Y = self._label_features_for_Y(label_ids)
 
             # idea taken from sklearn's stratify split
             if label_ids.ndim == 2:
@@ -419,7 +422,9 @@ class EmbeddingPolicy(Policy):
 
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        self._encoded_all_label_ids = state_featurizer.create_encoded_all_actions(domain)
+        self._encoded_all_label_ids = state_featurizer.create_encoded_all_actions(
+            domain
+        )
 
         # check if number of negatives is less than number of label_ids
         logger.debug(

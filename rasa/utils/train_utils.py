@@ -81,7 +81,9 @@ def shuffle_session_data(session_data: "SessionData") -> "SessionData":
 
     ids = np.random.permutation(len(session_data.X))
     return SessionData(
-        X=session_data.X[ids], Y=session_data.Y[ids], label_ids=session_data.label_ids[ids]
+        X=session_data.X[ids],
+        Y=session_data.Y[ids],
+        label_ids=session_data.label_ids[ids],
     )
 
 
@@ -131,7 +133,9 @@ def balance_session_data(
 
             new_X.append(label_id_data[i].X[data_idx[i] : data_idx[i] + num_i])
             new_Y.append(label_id_data[i].Y[data_idx[i] : data_idx[i] + num_i])
-            new_label_ids.append(label_id_data[i].label_ids[data_idx[i] : data_idx[i] + num_i])
+            new_label_ids.append(
+                label_id_data[i].label_ids[data_idx[i] : data_idx[i] + num_i]
+            )
 
             data_idx[i] += num_i
             if data_idx[i] >= counts_label_ids[i]:
