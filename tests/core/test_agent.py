@@ -7,7 +7,7 @@ from sanic import Sanic, response
 
 import rasa.utils.io
 import rasa.core
-from rasa.core import config, jobs, utils
+from rasa.core import jobs, utils
 from rasa.core.agent import Agent, load_agent
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.channels.channel import UserMessage
@@ -17,6 +17,15 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -111,6 +120,8 @@ async def test_agent_train(tmpdir, default_domain):
         ),
     ],
 )
+
+
 async def test_agent_parse_message_using_nlu_interpreter(
     default_agent, text_message_data, expected
 ):

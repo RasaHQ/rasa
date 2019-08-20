@@ -1,16 +1,33 @@
 import os
+import asyncio
+import pytest
+import rasa.utils.io
 
 from rasa.core.test import _generate_trackers, collect_story_predictions, test
-
-# we need this import to ignore the warning...
-# noinspection PyUnresolvedReferences
-from rasa.nlu.test import run_evaluation
 from rasa.core.agent import Agent
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
     E2E_STORY_FILE_UNKNOWN_ENTITY,
     END_TO_END_STORY_FILE,
 )
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="session")
+def loop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
+    yield loop
+    loop.close()
 
 
 async def test_evaluation_image_creation(tmpdir, default_agent):
