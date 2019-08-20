@@ -1,0 +1,75 @@
+# Docker images naming convention:
+# rasa-deps    - Deps image (only external dependencies. Doesn't contain any of the code from the repository)
+# rasa-venv    - Virtual enviroment image (rasa-deps + virtualenv)
+# rasa-dev     - Development image (rasa-venv + code)
+
+stages:
+- build_deps
+- build_venv
+- build_dev
+- test_rasa
+
+# Remember to always check for the latest build version if you plan to build your own with new tag
+variables:
+    SERVER: gitlab.devtechmo.pl:5000
+    DEPS_VER: v1
+
+.shared_pull_image: &pullimage  # This is an anchor (from: https://gitlab.com/gitlab-org/gitlab-ce/issues/15403)
+  before_script:
+    - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
+    - docker pull $SERVER/rasa-dev:$COMMIT_NAME
+
+# Rasa deps image building
+.build_rasa_deps_image:  # This is script declaration
+    stage: build_deps
+    script:
+        - docker login -u $DOCKER_REGISTRY_USER -p $DOCKER_REGISTRY_PASSWD $SERVER
+        - DEPS_VER=$DEPS_VER docker-compose build rasa-deps
+        - docker tag rasa-deps:$DEPS_VER $SERVER/rasa-deps:$DEPS_VER
+        - docker push $SERVER/rasa-deps:$DEPS_VER
+
+build_rasa_deps_image_manual:  # Manual triggered
+    extends: .build_rasa_deps_image
+    when: manual
+
+build_rasa_deps_image_master:  # Triggered when merge with master
+    extends: .build_rasa_deps_image
+    only:
+        refs:
+            - master
+
+# Rasa venv image building
+.build_rasa_venv_image:  # This is script declaration
+    stage: build_venv
+    script:
+        - docker login -u $DOCKER_REGISTRY_USER -p $DOCKER_REGISTRY_PASSWD $SERVER
+        - DEPS_VER=$DEPS_VER SERVER=$SERVER/ docker-compose build rasa-venv
+        - docker tag rasa-venv:$DEPS_VER $SERVER/rasa-venv:$DEPS_VER
+        - docker push $SERVER/rasa-venv:$DEPS_VER
+
+build_rasa_venv_image_manual:  # Manual triggered
+    extends: .build_rasa_venv_image
+    when: manual
+
+build_rasa_venv_image_master:  # Triggered when merge with master
+    extends: .build_rasa_venv_image
+    only:
+        refs:
+            - master
+
+# rasa dev image building
+build_rasa_dev_image:
+    stage: build_dev
+    script:
+        - docker login -u $DOCKER_REGISTRY_USER -p $DOCKER_REGISTRY_PASSWD $SERVER
+        - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
+        - DEPS_VER=$DEPS_VER SERVER=$SERVER/ DEV_VER=$COMMIT_NAME docker-compose build rasa-dev
+        - docker tag rasa-dev:$COMMIT_NAME $SERVER/rasa-dev:$COMMIT_NAME
+        - docker push $SERVER/rasa-dev:$COMMIT_NAME
+
+# Tests
+run_tests:
+    stage: test_rasa
+    script:
+        - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
+        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "./tests/run-tests.sh"

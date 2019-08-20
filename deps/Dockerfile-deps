@@ -1,0 +1,41 @@
+########################################################################################################################
+# Dockerfile to build chatbot container images
+# Based on Ubuntu 18.04
+########################################################################################################################
+FROM ubuntu:18.04 AS rasa-deps
+
+MAINTAINER Bartłomiej Kuśmirek <bartlomiej.kusmirek@techmo.pl>
+
+# Add deps scripts
+ADD ./install-python3.sh /RASA/deps/
+ADD ./install-docker-compose.sh /RASA/deps/
+
+# Install dependenties
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+    cmake \
+    curl \
+    docker.io \
+    g++ \
+    git \
+    gdb \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    locales \
+    make \
+    nano \
+    python3-dev \
+    python3-pip \
+    python3-tk \
+    sudo \
+    vim \
+    wget
+RUN /RASA/deps/install-python3.sh $jobs 3.6.8
+RUN pip3 install virtualenv==16.1.0 setuptools
+
+# Set the locale
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
