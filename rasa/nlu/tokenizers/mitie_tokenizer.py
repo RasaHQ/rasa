@@ -20,6 +20,10 @@ class MitieTokenizer(Tokenizer, Component):
 
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
+            if example.get("intent"):
+                example.set("intent_tokens", self.tokenize(example.get("intent")))
+            if example.get("response"):
+                example.set("response_tokens", self.tokenize(example.get("response")))
 
     def process(self, message: Message, **kwargs: Any) -> None:
 

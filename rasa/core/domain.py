@@ -102,13 +102,7 @@ class Domain(object):
         additional_arguments = data.get("config", {})
         intents = data.get("intents", {})
         actions = data.get("actions", [])
-        if "action_properties" in data:
-            actions = [
-                {
-                    action: data.get("action_properties", {}).get(action, {})
-                    for action in data.get("actions", [])
-                }
-            ]
+        actions = cls.merge_action_properties(actions, data)
 
         return cls(
             intents,
@@ -119,6 +113,17 @@ class Domain(object):
             data.get("forms", []),
             **additional_arguments
         )
+
+    @classmethod
+    def merge_action_properties(cls, actions, data):
+        if "action_properties" in data:
+            actions = [
+                {
+                    action: data.get("action_properties", {}).get(action, {})
+                    for action in actions
+                }
+            ]
+        return actions
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":

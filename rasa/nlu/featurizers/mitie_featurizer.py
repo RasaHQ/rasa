@@ -39,6 +39,21 @@ class MitieFeaturizer(Featurizer):
                 self._combine_with_existing_text_features(example, features),
             )
 
+            if example.get("intent_tokens"):
+                example.set(
+                    "intent_features",
+                    self.features_for_tokens(
+                        example.get("intent_tokens"), mitie_feature_extractor
+                    ),
+                )
+            if example.get("response_tokens"):
+                example.set(
+                    "response_features",
+                    self.features_for_tokens(
+                        example.get("response_tokens"), mitie_feature_extractor
+                    ),
+                )
+
     def process(self, message: Message, **kwargs: Any) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)

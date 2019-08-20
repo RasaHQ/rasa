@@ -54,6 +54,8 @@ class MarkdownReader(TrainingDataReader):
     def __init__(self) -> None:
         self.current_title = None
         self.current_section = None
+        self.current_subsection = None
+        self.current_subtitle = None
         self.training_examples = []
         self.entity_synonyms = {}
         self.regex_features = []
@@ -91,8 +93,6 @@ class MarkdownReader(TrainingDataReader):
         def make_regex(section_name):
             return re.compile(r"##\s*{}:(.+)".format(section_name))
 
-        # TODO: check if this can be improved somehow
-        # section_regexes = {RESPONSE: response_regex}
         section_regexes = {sn: make_regex(sn) for sn in section_names}
         return section_regexes
 
@@ -191,16 +191,11 @@ class MarkdownReader(TrainingDataReader):
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(ent_regex, lambda m: m.groupdict()["entity_text"], example)
         self._add_synonyms(plain_text, entities)
+        message = Message(
+            plain_text,
+            {"intent": self.current_title, "response": self.current_subtitle},
+        )
 
-        if self.current_subsection is not None:
-            message = Message(
-                plain_text,
-                {"intent": self.current_title, "response": self.current_subtitle},
-            )
-        else:
-            message = Message(
-                plain_text, {"intent": self.current_title, "response": None}
-            )
         if len(entities) > 0:
             message.set("entities", entities)
         return message

@@ -180,25 +180,30 @@ class ActionUtterTemplate(Action):
         self.template_name = name
         self.silent_fail = silent_fail
 
+    def pick_predicted_response(self, tracker):
+
+        query_keys = [
+            "{0}_response".format(self.template_name),
+            "{0}{1}_response".format(UTTER_PREFIX, DEFAULT_OPEN_UTTERANCE_TYPE),
+        ]
+        for query_key in query_keys:
+            if query_key in tracker.latest_message.parse_data:
+                logger.debug("Picking response of type {0}".format(query_key))
+                message = {
+                    "text": tracker.latest_message.parse_data.get(query_key).get("name")
+                }
+                return message
+        return None
+
     async def run(self, output_channel, nlg, tracker, domain):
         """Simple run implementation uttering a (hopefully defined) template."""
 
         message = None
         if domain.is_response_action(self.template_name):
-            logger.debug("Action needs to pick a response.")
-            query_keys = [
-                "{0}_response".format(self.template_name),
-                "{0}{1}_response".format(UTTER_PREFIX, DEFAULT_OPEN_UTTERANCE_TYPE),
-            ]
-            for query_key in query_keys:
-                if query_key in tracker.latest_message.parse_data:
-                    logger.debug("Picking response of type {0}".format(query_key))
-                    message = {
-                        "text": tracker.latest_message.parse_data.get(query_key).get(
-                            "name"
-                        )
-                    }
-                    return [create_bot_utterance(message)]
+            logger.debug(
+                "Action needs to pick a response predicted by response selectors"
+            )
+            message = self.pick_predicted_response(tracker)
 
         else:
             message = await nlg.generate(
