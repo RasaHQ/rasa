@@ -3,7 +3,7 @@ import json
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
-from core.constants import (
+from rasa.core.constants import (
     DEFAULT_KNOWLEDGE_BASE_ACTION,
     SLOT_LISTED_ITEMS,
     SLOT_LAST_ENTITY,
