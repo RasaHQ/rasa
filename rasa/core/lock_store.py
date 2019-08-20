@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-from multiprocessing import Manager
 from typing import Text, Optional, Union
 
 from async_generator import asynccontextmanager, async_generator, yield_
@@ -9,9 +8,6 @@ from async_generator import asynccontextmanager, async_generator, yield_
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
 from rasa.utils.endpoints import EndpointConfig
-
-# multiprocessing manager used for thread-safe conversation locks dict
-manager = Manager()
 
 logger = logging.getLogger(__name__)
 
@@ -250,7 +246,7 @@ class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
     def __init__(self):
-        self.conversation_locks = Manager().dict()
+        self.conversation_locks = {}
         super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
