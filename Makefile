@@ -47,7 +47,7 @@ prepare-tests-macos: prepare-tests-files
 	brew install graphviz
 
 prepare-tests-ubuntu: prepare-tests-files
-	sudo apt-get install graphviz graphviz-dev
+	sudo apt-get install -y graphviz graphviz-dev
 
 prepare-tests-files:
 	pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir -q
