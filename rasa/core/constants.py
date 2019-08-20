@@ -26,3 +26,11 @@ USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 BEARER_TOKEN_PREFIX = "Bearer "
+
+DEFAULT_POLICY_PRIORITIES = {
+    "Default": 1,
+    "Mapping": 2,
+    "Memoization": 3,
+    "Fallback": 4,
+    "Form": 5,
+}
