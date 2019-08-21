@@ -1,3 +1,5 @@
+#Old file : nlu/config.py
+
 import logging
 
 from rasa.nlu.config.exceptions import InvalidConfigError
