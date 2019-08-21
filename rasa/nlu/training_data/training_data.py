@@ -70,13 +70,19 @@ class TrainingData(object):
         )
 
     def filter_by_intent(self, intent: Text):
+        """Filter training examples """
 
         training_examples = []
         for ex in self.training_examples:
             if ex.get("intent") == intent:
                 training_examples.append(ex)
 
-        return TrainingData(training_examples)
+        return TrainingData(
+            training_examples,
+            self.entity_synonyms,
+            self.regex_features,
+            self.lookup_tables,
+        )
 
     def __hash__(self) -> int:
         from rasa.core import utils as core_utils
@@ -210,9 +216,11 @@ class TrainingData(object):
         return sorted(entity_examples, key=lambda e: e["entity"])
 
     def sorted_intent_examples(self) -> List[Message]:
-        """Sorts the intent examples by the name of the intent."""
+        """Sorts the intent examples by the name of the intent and then response"""
 
-        return sorted(self.intent_examples, key=lambda e: e.get("intent"))
+        return sorted(
+            self.intent_examples, key=lambda e: (e.get("intent"), e.get("response"))
+        )
 
     def validate(self) -> None:
         """Ensures that the loaded training data is valid.
@@ -260,7 +268,7 @@ class TrainingData(object):
         preserving the fraction of examples per intent."""
 
         train, test = [], []
-        # TODO: split on response type as well
+        # TODO: split on response type as well. Is it needed?
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
             random.shuffle(ex)
@@ -289,7 +297,7 @@ class TrainingData(object):
                 len(self.intent_examples), len(self.intents)
             )
             + "\t- Found intents: {}\n".format(list_to_str(self.intents))
-            + "\t- response examples: {} ({} distinct response)\n".format(
+            + "\t- Number of response examples: {} ({} distinct response)\n".format(
                 len(self.response_examples), len(self.responses)
             )
             + "\t- entity examples: {} ({} distinct entities)\n".format(

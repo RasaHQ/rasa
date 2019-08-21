@@ -48,7 +48,9 @@ class RasaReader(JsonTrainingDataReader):
         all_examples = common_examples + intent_examples + entity_examples
         training_examples = []
         for ex in all_examples:
-            msg = Message.build(ex["text"], ex.get("intent"), ex.get("entities"))
+            msg = Message.build(
+                ex["text"], ex.get("intent"), ex.get("entities"), ex.get("response")
+            )
             training_examples.append(msg)
 
         return TrainingData(
@@ -111,6 +113,7 @@ def _rasa_nlu_data_schema():
         "properties": {
             "text": {"type": "string", "minLength": 1},
             "intent": {"type": "string"},
+            "response": {"type": "string"},
             "entities": {
                 "type": "array",
                 "items": {

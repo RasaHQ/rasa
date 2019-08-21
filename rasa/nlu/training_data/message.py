@@ -43,10 +43,12 @@ class Message(object):
         return hash((self.text, str(ordered(self.data))))
 
     @classmethod
-    def build(cls, text, intent=None, entities=None):
+    def build(cls, text, intent=None, entities=None, response=None):
         data = {}
         if intent:
             data["intent"] = intent
         if entities:
             data["entities"] = entities
+        if response:
+            data["response"] = response
         return cls(text, data)
