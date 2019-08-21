@@ -90,6 +90,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/featurization
    migration-guide
    changelog
+   glossary
 
 .. toctree::
    :maxdepth: 1
