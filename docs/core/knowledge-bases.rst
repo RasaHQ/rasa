@@ -271,6 +271,9 @@ The action is now able to query the knowledge base.
 How it works
 ------------
 
+In general the ``ActionQueryKnowledgeBase`` looks at the entities that were picked up in the request and the
+previous set slots to decide what to query for.
+
 Query the Knowledge Base for Objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -420,6 +423,64 @@ You can disable this behaviour by setting ``use_last_object_mention`` to ``False
 Customization
 -------------
 
+Customize your `ActionQueryKnowledgeBase`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can overwrite the following two functions of `ActionQueryKnowledgeBase`:
+
+- ``utter_objects()``
+- ``utter_attribute_value()``
+
+``utter_objects()`` is used when the user requested the bot to list some objects.
+Once the bot retrieved some objects from the knowledge base, it will response to the user, for example, with
+
+    `Found the following objects of type 'restaurant':`
+    `1: I due forni`
+    `2: PastaBar`
+    `3: Berlin Burrito Company`
+
+Or if no entities could be found
+
+    `I could not find any objects of type 'restaurant'.`
+
+If you want to change the utterance of the bot, you can overwrite the method ``utter_objects()`` in your action.
+
+The function ``utter_attribute_value()`` determines what the bot utters when the user is asking for a detail of
+an object.
+If the attribute of interest was found in the knowledge base, the bot will response with the following utterance:
+
+    `'Berlin Burrito Company' has the value 'Mexican' for attribute 'cuisine'.`
+
+If no value for the requested attribute was found, the bot will response with
+
+    `Did not find a valid value for attribute 'cuisine' for object 'Berlin Burrito Company'.`
+
+If you want to change the utterance of the bot, you can overwrite the method ``utter_attribute_value()``.
+
+.. note::
+   There is a tutorial `here <https://blog.rasa.com/integrating-rasa-with-knowledge-bases/>`_ about how to use
+   knowledge bases in custom actions. The tutorial will explain in detail the implementation behind
+   ``ActionQueryKnowledgeBase``.
+
+
+Creating your own Knowledge Base Actions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``ActionQueryKnowledgeBase`` should allow you to get easily started with using a knowledge base for Rasa.
+However, the action can only handle two kind of user requests:
+
+- the user wants to get a list of objects from the knowledge base or
+- the user wants to get the value of an attribute for a specific object
+
+The action, for example, is not able to compare objects or consider relations between objects in your knowledge base.
+Furthermore, resolving any mention to the last mentioned object in the conversation, might not always be optimal.
+If you want to tackle more complex use cases, you can write your own custom action.
+We added some helper function to ``rasa_sdk.knowledge_base.utils`` that might help you when implementing your own
+solution.
+We recommend to use the ``KnowledgeBase`` interface, so that you can still use the ``ActionQueryKnowledgeBase``
+alongside your new custom action.
+
+
 .. _customize_in_memory_knowledge_base:
 
 Customize your `InMemoryKnowledgeBase`
@@ -490,47 +551,6 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
   If you want to learn more about the usage of the mapping, go to section :ref:`resolve_mentions`.
 
 
-
-Customize your `ActionQueryKnowledgeBase`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can overwrite the following two functions of `ActionQueryKnowledgeBase`:
-
-- ``utter_objects()``
-- ``utter_attribute_value()``
-
-``utter_objects()`` is used when the user requested the bot to list some objects.
-Once the bot retrieved some objects from the knowledge base, it will response to the user, for example, with
-
-    `Found the following objects of type 'restaurant':`
-    `1: I due forni`
-    `2: PastaBar`
-    `3: Berlin Burrito Company`
-
-Or if no entities could be found
-
-    `I could not find any objects of type 'restaurant'.`
-
-If you want to change the utterance of the bot, you can overwrite the method ``utter_objects()`` in your action.
-
-The function ``utter_attribute_value()`` determines what the bot utters when the user is asking for a detail of
-an object.
-If the attribute of interest was found in the knowledge base, the bot will response with the following utterance:
-
-    `'Berlin Burrito Company' has the value 'Mexican' for attribute 'cuisine'.`
-
-If no value for the requested attribute was found, the bot will response with
-
-    `Did not found a valid value for attribute 'cuisine' for object 'Berlin Burrito Company'.`
-
-If you want to change the utterance of the bot, you can overwrite the method ``utter_attribute_value()``.
-
-.. note::
-   There is a tutorial `here <https://blog.rasa.com/integrating-rasa-with-knowledge-bases/>`_ about how to use
-   knowledge bases in custom actions. The tutorial will explain in detail the implementation behind
-   ``ActionQueryKnowledgeBase``.
-
-
 .. _custom_knowledge_base:
 
 Creating your own Knowledge Base
@@ -546,21 +566,3 @@ You can also customize your knowledge base further, for example, by adapting the
 .. note::
    We wrote a `blog post <https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/>`_
    that explains how you can set up your own knowledge base.
-
-
-Creating your own Knowledge Base Actions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-``ActionQueryKnowledgeBase`` should allow you to get easily started with using a knowledge base for Rasa.
-However, the action can only handle two kind of user requests:
-
-- the user wants to get a list of objects from the knowledge base or
-- the user wants to get the value of an attribute for a specific object
-
-The action, for example, is not able to compare objects or consider relations between objects in your knowledge base.
-Furthermore, resolving any mention to the last mentioned object in the conversation, might not always be optimal.
-If you want to tackle more complex use cases, you can write your own custom action.
-We added some helper function to ``rasa_sdk.knowledge_base.utils`` that might help you when implementing your own
-solution.
-We recommend to use the ``KnowledgeBase`` interface, so that you can still use the ``ActionQueryKnowledgeBase``
-alongside your new custom action.
