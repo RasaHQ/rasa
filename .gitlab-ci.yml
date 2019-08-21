@@ -78,7 +78,7 @@ run_tests_core:
     stage: test_rasa
     script:
         - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
-        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "source env/bin/activate;pytest ./tests/importers/"
+        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "source env/bin/activate;pytest ./tests/core/"
 
 run_tests_importers:
     stage: test_rasa
