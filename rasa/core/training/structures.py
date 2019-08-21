@@ -224,7 +224,8 @@ class StoryStep(object):
                 else:
                     # form is active
                     if self.story_string_helper.form_rejected:
-                        if (self.story_string_helper.form_prefix_string
+                        if (
+                            self.story_string_helper.form_prefix_string
                             and self.story_string_helper.form_validation
                             and s.action_name == self.story_string_helper.active_form
                         ):
