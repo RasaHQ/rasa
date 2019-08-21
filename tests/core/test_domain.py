@@ -6,8 +6,8 @@ from _pytest.tmpdir import TempdirFactory
 from rasa.core.constants import (
     DEFAULT_KNOWLEDGE_BASE_ACTION,
     SLOT_LISTED_ITEMS,
-    SLOT_LAST_ENTITY,
-    SLOT_LAST_ENTITY_TYPE,
+    SLOT_LAST_OBJECT,
+    SLOT_LAST_OBJECT_TYPE,
 )
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain
@@ -544,18 +544,23 @@ def test_clean_domain():
 
 
 def test_add_knowledge_base_slots(default_domain):
-    default_domain.action_names.append(DEFAULT_KNOWLEDGE_BASE_ACTION)
+    import copy
 
-    slot_names = [s.name for s in default_domain.slots]
+    # don't modify default domain as it is used in other tests
+    test_domain = copy.deepcopy(default_domain)
+
+    test_domain.action_names.append(DEFAULT_KNOWLEDGE_BASE_ACTION)
+
+    slot_names = [s.name for s in test_domain.slots]
 
     assert SLOT_LISTED_ITEMS not in slot_names
-    assert SLOT_LAST_ENTITY not in slot_names
-    assert SLOT_LAST_ENTITY_TYPE not in slot_names
+    assert SLOT_LAST_OBJECT not in slot_names
+    assert SLOT_LAST_OBJECT_TYPE not in slot_names
 
-    default_domain.add_knowledge_base_slots()
+    test_domain.add_knowledge_base_slots()
 
-    slot_names = [s.name for s in default_domain.slots]
+    slot_names = [s.name for s in test_domain.slots]
 
     assert SLOT_LISTED_ITEMS in slot_names
-    assert SLOT_LAST_ENTITY in slot_names
-    assert SLOT_LAST_ENTITY_TYPE in slot_names
+    assert SLOT_LAST_OBJECT in slot_names
+    assert SLOT_LAST_OBJECT_TYPE in slot_names

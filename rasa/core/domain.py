@@ -16,8 +16,8 @@ from rasa.core.constants import (
     REQUESTED_SLOT,
     DEFAULT_KNOWLEDGE_BASE_ACTION,
     SLOT_LISTED_ITEMS,
-    SLOT_LAST_ENTITY_TYPE,
-    SLOT_LAST_ENTITY,
+    SLOT_LAST_OBJECT_TYPE,
+    SLOT_LAST_OBJECT,
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
@@ -352,8 +352,8 @@ class Domain(object):
             slot_names = [s.name for s in self.slots]
             knowledge_base_slots = [
                 SLOT_LISTED_ITEMS,
-                SLOT_LAST_ENTITY,
-                SLOT_LAST_ENTITY_TYPE,
+                SLOT_LAST_OBJECT,
+                SLOT_LAST_OBJECT_TYPE,
             ]
             for s in knowledge_base_slots:
                 if s not in slot_names:

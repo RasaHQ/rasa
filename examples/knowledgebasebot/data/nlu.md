@@ -25,6 +25,9 @@
 - does [Donath](restaurant) have [outside seating](attribute:outside-seating)?
 - what is the [price range](attribute:price-range) of [Berlin Burrito Company](restaurant)?
 - what is with [I due forni](restaurant)?
+- Do you also have any [Vietnamese](cuisine) [restaurants](object_type:restaurant)?
+- What about any [Mexican](cuisine) [restaurants](object_type:restaurant)?
+- Do you also know some [Italian](cuisine) [restaurants](object_type:restaurant)?
 - what [hotels](object_type:hotel) can you recommend?
 - please list some [hotels](object_type:hotel) in [Frankfurt am Main](city) for me
 - what [hotels](object_type:hotel) do you know in [Berlin](city)?
