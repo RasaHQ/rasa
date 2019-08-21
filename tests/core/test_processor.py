@@ -8,7 +8,6 @@ from aioresponses import aioresponses
 from unittest.mock import patch
 
 import rasa.utils.io
-from rasa.core import jobs
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
@@ -19,6 +18,7 @@ from rasa.core.events import (
     Restarted,
     UserUttered,
 )
+from rasa.core.schedule import ScheduleProvider
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.slots import Slot
 from rasa.core.processor import MessageProcessor
@@ -207,12 +207,12 @@ async def test_reminder_cancelled(
             tracker.events, tracker, default_channel, default_processor.nlg
         )
     # check that the jobs were added
-    assert len((await jobs.scheduler()).get_jobs()) == 2
+    assert len((await ScheduleProvider.get_scheduler()).get_jobs()) == 2
 
     for tracker in trackers:
         await default_processor._cancel_reminders(tracker.events, tracker)
     # check that only one job was removed
-    assert len((await jobs.scheduler()).get_jobs()) == 1
+    assert len((await ScheduleProvider.get_scheduler()).get_jobs()) == 1
 
     # execute the jobs
     await asyncio.sleep(3)

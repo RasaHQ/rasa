@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 import numpy as np
 import time
 
-from rasa.core import jobs
+from rasa.core.schedule import ScheduleProvider
 from rasa.core.actions.action import Action
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -419,7 +419,7 @@ class MessageProcessor:
             if not isinstance(e, ReminderScheduled):
                 continue
 
-            (await jobs.scheduler()).add_job(
+            (await ScheduleProvider.get_scheduler()).add_job(
                 self.handle_reminder,
                 "date",
                 run_date=e.trigger_date_time,
@@ -447,7 +447,7 @@ class MessageProcessor:
                     + ACTION_NAME_SENDER_ID_CONNECTOR_STR
                     + tracker.sender_id
                 )
-                scheduler = await jobs.scheduler()
+                scheduler = await ScheduleProvider.get_scheduler()
                 for j in scheduler.get_jobs():
                     if j.name == name_to_check:
                         scheduler.remove_job(j.id)
