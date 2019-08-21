@@ -23,6 +23,7 @@ Added
   use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
 - ``softmax`` starspace loss for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``balanced`` batching strategy for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
+- ``max_history`` parameter for ``EmbeddingPolicy``
 
 Changed
 -------

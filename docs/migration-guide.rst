@@ -14,7 +14,7 @@ how you can migrate from one version to another.
 .. _migration-to-rasa-1.3:
 
 Rasa 1.2 to Rasa 1.3
-------------------------------------------------
+--------------------
 .. warning::
 
   This is a release **breaking backwards compatibility**.
@@ -33,6 +33,12 @@ General
   The meaning of ``evaluate_on_num_examples`` is changed. If it is non zero, random examples will be
   picked by stratified split and used as **hold out** validation set, so they will be excluded from training data.
   We suggest to set it to zero (default) if data set contains a lot of unique examples of dialogue turns.
+- Default ``max_history`` for ``EmbeddingPolicy`` is ``None`` which means it'll use
+  the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
+  some finite value in order to use ``MaxHistoryTrackerFeaturizer``
+  for **faster training**. See :ref:`featurization` for details.
+  We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
+  (e.g. ``"batch_size": [32, 64]``)
 - **Compare** mode of ``rasa train core`` allows the whole core config comparison.
   Therefore, we changed the naming of trained models. They are named by config file
   name instead of policy name. Old naming style will not be read correctly when
