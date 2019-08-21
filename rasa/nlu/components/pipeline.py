@@ -2,23 +2,6 @@ from rasa.nlu.components.component import Component
 from typing import Any, Dict, Text, Optional, List
 
 
-class ComponentIterator:
-    """ Iterator class """
-
-    def __init__(self, pipeline: ComponentPipeline):
-        self._components = pipeline.get_all_components()
-        self._index = 0
-
-    def __next__(self):
-        """'Returns the next value from pipeline lists """
-        if self._index < (len(self._components)):
-            result = (self._components[self._index])
-            self._index += 1
-            return result
-
-        raise StopIteration
-
-
 class ComponentPipeline:
     def __init__(self, components: Optional[List[Component]] = None):
         if components is None:
@@ -34,6 +17,8 @@ class ComponentPipeline:
 
         if component is not None:
             self.__components.append(component)
+        else:
+            raise ValueError("Cannot add None value to pipeline object.")
 
     def validate(self, context: Dict[Text, Any], allow_empty_pipeline: bool = False, ) -> None:
         """Validates a pipeline before it is run. Ensures, that all
@@ -66,3 +51,20 @@ class ComponentPipeline:
 
     def get_component(self, index):
         return self.__components[index]
+
+
+class ComponentIterator:
+    """ Iterator class """
+
+    def __init__(self, pipeline: type(ComponentPipeline)):
+        self._components = pipeline.get_all_components()
+        self._index = 0
+
+    def __next__(self):
+        """'Returns the next value from pipeline lists """
+        if self._index < (len(self._components)):
+            result = (self._components[self._index])
+            self._index += 1
+            return result
+
+        raise StopIteration

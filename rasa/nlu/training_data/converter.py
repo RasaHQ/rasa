@@ -34,3 +34,7 @@ class TrainingDataConverter:
             return
 
         write_to_file(out_file, output)
+
+    @staticmethod
+    def main(args: argparse.Namespace):
+        TrainingDataConverter.convert(args.data, args.out, args.format, args.language)

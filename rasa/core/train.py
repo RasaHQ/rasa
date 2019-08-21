@@ -5,7 +5,7 @@ import tempfile
 import typing
 from typing import Dict, Optional, Text, Union, List
 
-from rasa.nlu.config.manager import ConfigManager
+from rasa.core.config import load
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
@@ -40,7 +40,7 @@ async def train(
     if not kwargs:
         kwargs = {}
 
-    policies = ConfigManager.load(policy_config)
+    policies = load(policy_config)
 
     agent = Agent(
         domain_file,
