@@ -17,7 +17,6 @@ Knowledge Base Actions
 .. contents::
    :local:
 
-
 Knowledge base actions enable you to handle the following kind of dialogues:
 
 .. image:: ../_static/images/knowledge-base-example.png
@@ -35,7 +34,7 @@ the correct object.
 To handle the above challenges, we recommend that you create a custom action that inherits from
 ``ActionQueryKnowledgeBase``.
 This is a single actions which contains the logic to query a knowledge base for objects and their attributes.
-When a restaurant is mentioned indirectly, for example using a phrase like ``the first one`` or ``that restaurant``,
+When a restaurant is mentioned indirectly, for example using a phrase like "the first one" or "that restaurant",
 this action is able to figure out which restaurant the user is referring to.
 You can find a complete example in ``examples/knowledgebasebot``.
 
@@ -51,7 +50,8 @@ Create a Knowledge Base
 The data you will use to answer the user's request comes from a knowledge base.
 A knowledge base can be used to store complex data structures.
 We suggest you get started by using the ``InMemoryKnowledgeBase``.
-Once you want to start working with a large amount of data, you can switch to a :ref:`custom_knowledge_base`.
+Once you want to start working with a large amount of data, you can switch to a custom knowledge base
+(see :ref:`custom_knowledge_base`).
 To initialize an ``InMemoryKnowledgeBase`` you need to provide the data in a json file.
 
 Let's take a look at an example:
@@ -226,8 +226,6 @@ base to the constructor of ``ActionQueryKnowledgeBase``.
             knowledge_base = InMemoryKnowledgeBase("data.json")
             super().__init__(knowledge_base)
 
-You don't need to do anything else.
-The action is already able to query the knowledge base.
 The name of the action is ``action_query_knowledge_base``.
 Don't forget to add it to your domain file.
 
@@ -241,10 +239,10 @@ Don't forget to add it to your domain file.
    unfeaturized slots to your domain file: ``knowledge_base_objects``, ``knowledge_base_last_object``, and
    ``knowledge_base_last_object_type``.
    The slots are used internally by ``ActionQueryKnowledgeBase``.
-   If you keep the default action name, those slots will be added automatically for you.
+   If you keep the default action name, those slots will be automatically added for you.
 
-You also need to make sure, to add a story to your stories file that includes the intent `query_knowledge_base` and
-the action `action_query_knowledge_base`. For example:
+You also need to make sure, to add a story to your stories file that includes the intent ``query_knowledge_base`` and
+the action ``action_query_knowledge_base``. For example:
 
 .. code-block:: md
 
@@ -256,7 +254,19 @@ the action `action_query_knowledge_base`. For example:
     * goodbye
       - utter_goodbye
 
+The last thing you need to do is to define the template ``utter_ask_rephrase`` in your domain file.
+If the action does not know how to handle the request of the user, it will use the template to tell the user, that
+it is lost and the user should rephrase its request.
+You could, for example, add the following to your domain file:
 
+.. code-block:: md
+
+  utter_ask_rephrase:
+  - text: "Sorry, I'm not sure I understand. Can you rephrase?"
+  - text: "Can you please rephrase? I did not got that."
+
+You don't need to do anything else.
+The action is now able to query the knowledge base.
 
 How it works
 ------------
@@ -265,64 +275,52 @@ Query the Knowledge Base for Objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In order to query the knowledge base for any kind of objects, the user's request needs to include the object type.
-For example, ``Can you please name some restaurants?``.
-The question includes the object type of interest: restaurant.
+Let's look at an example:
+    `Can you please name some restaurants?`
+The question includes the object type of interest: "restaurant".
 If the request would not contain the type of interest, the action would not know what objects the user is interested in.
 The action would not be able to formulate a query.
-
-What when the user says something like ``What Italian restaurant options in Berlin do I have?``.
+What when the user says something like:
+    `What Italian restaurant options in Berlin do I have?`
 In this example the user want to obtain a list of restaurants that (1) have an Italian cuisine and (2) are located in
 Berlin.
 In order to filter the objects in the knowledge base, you need to mark "Italian" and "Berlin" as entities.
-E.g. ``What [Italian](cuisine) [restaurant](object_type) options in [Berlin](city) do I have?``.
+E.g.
+
+.. code-block:: md
+
+    What [Italian](cuisine) [restaurant](object_type) options in [Berlin](city) do I have?.
+
 The names of the attributes, e.g. "cuisine" and "city", should be equal to the ones used in the knowledge base.
-You also need to add those entities as entities and slots to the domain file.
+You also need to add those as entities and slots to the domain file.
 If the NER detects those attributes in the request of the user, the action will use those for filter the
 restaurants found in the knowledge base.
-
-Once the bot retrieved some entities from the knowledge base, it will response to the user with
-
-    `Found the following objects of type 'restaurant':`
-    `1: I due forni`
-    `2: PastaBar`
-    `3: Berlin Burrito Company`
-
-Or if no entities could be found
-
-    `I could not find any objects of type 'restaurant'.`
-
-If you want to change the utterance of the bot, you can overwrite the method ``utter_objects()`` in your action.
 
 
 Query the Knowledge Base for an Attribute of an Object
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the user asks ``What is the cuisine of Berlin Burrito Company``, the user wants to obtain a detail, e.g. "cuisine",
-about an object, e.g. "Berlin Burrito Company".
-In order to answer the question of the user, the actions needs to know the object and attribute of interest.
+If the user wants to obtain a detail of a certain object, the request of the user should include the object and
+attribute of interest.
+For example, if the user asks something like
+    `What is the cuisine of Berlin Burrito Company?`
+the user wants to obtain the "cuisine" (attribute of interest) for the restaurant "Berlin Burrito Company" (object of
+interest).
 
-The user can either refer to the object of interest by its name, e.g. "Berlin Burrito Company" (representation string
-of the object), or he refers to a previously listed object via a mention, e.g. ``What is the cuisine of the second
-restaurant you just mentioned?``.
+However, users do not always refer to restaurants by their names.
+Users can either refer to the object of interest by its name, e.g. "Berlin Burrito Company" (representation string
+of the object), or they refer to a previously listed object via a mention, e.g.
+    `What is the cuisine of the second restaurant you just mentioned?`
 To learn more about how we resolve those mentions to the actual object in the knowledge base, go to section
 :ref:`resolve_mentions`.
-The attribute of interest should be included in the user's request.
-For example, ``What is the cuisine of Berlin Burrito Company``, contains the attribute of interest "cuisine".
 
 The attribute and object of interest should be marked as entities in the NLU training data, e.g.
-``What is the [cuisine](attribute) of [Berlin Burrito Company](restaurant)?``.
 
-Once the attribute and object of interest are known to the action, the action can query the knowledge base.
-If the attribute was found in the knowledge base, the bot will response with the following utterance:
+.. code-block:: md
 
-    `'Berlin Burrito Company' has the value 'Mexican' for attribute 'cuisine'.`
+    What is the [cuisine](attribute) of [Berlin Burrito Company](restaurant)?
 
-If no value for the requested attribute was found, the bot will response with
-
-    `Did not found a valid value for attribute 'cuisine' for object 'Berlin Burrito Company'.`
-
-If you want to change the utterance of the bot, you can overwrite the method ``utter_attribute_value()``.
-
+Make sure to add the object type, e.g. "restaurant", to the domain file as entity and slot.
 
 .. _resolve_mentions:
 
@@ -332,11 +330,11 @@ Resolve Mentions
 Looking at the example from the beginning, we saw that users refer to previously mentioned objects during a conversation
 in different ways.
 Our action is able to (1) resolve ordinal mentions, such as "the first one", to the actual object and (2) resolve
-mentions, such as "it" or "that one" to the last mentioned object in the conversation.
+mentions, such as "it" or "that one", to the last mentioned object in the conversation.
 Let's take a closer look.
 
-Ordinal Mentions
-~~~~~~~~~~~~~~~~
+**Ordinal Mentions**
+
 If the user refers to an object by its position in a list, we talk about ordinal mentions.
 Let's look at an example conversation:
 
@@ -376,11 +374,16 @@ The default mapping looks like the following:
 
 The ordinal mention mapping maps a string, such as "1", to the object in a list, e.g. ``lambda l: l[0]``.
 You can overwrite the ordinal mention mapping by calling the function ``set_ordinal_mention_mapping()`` on your
-``KnowledgeBase`` implementation.
+``KnowledgeBase`` implementation (see :ref:`customize_in_memory_knowledge_base`).
 As the ordinal mention mapping does not, for example, include an entry for "the first one".
 It is important that you use :ref:`entity_synonyms` to map "the first one" in your NLU data to "1".
-For example, `Does the [first one](mention:1) have [outside seating](attribute:outside-seating)?` maps "first one"
-via a synonym to "1".
+For example,
+
+.. code-block:: md
+
+    Does the [first one](mention:1) have [outside seating](attribute:outside-seating)?
+
+maps "first one" via a synonym to "1".
 The NER detects "first one" as ``mention`` entity, but puts "1" into the ``mention`` slot.
 Thus, our action can take the ``mention`` slot together with the ordinal mention mapping to resolve "first one" to
 the actual object "I due forni".
@@ -445,14 +448,15 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
       lambda obj: obj["name"]
 
   This function is used whenever the bot is talking about a specific object, so that the user is given a meaningful
-  name and knows what exactly the bot is talking about.
+  name and he knows what exactly the bot is talking about.
   By default the lambda function is set to ``lambda obj: obj["name"]``. So, it returns the value of the attribute
   "name" of the object. If your object does not have an attribute "name", or the "name" of an object might be
   ambiguous, you should set a new lambda function for that object type by calling
   ``set_representation_function_of_object()``.
 - ``set_ordinal_mention_mapping``: The ordinal mention mapping is needed to resolve an ordinal mention to an object
-  in a list. For example, if the bot listed a few restaurants in Berlin, and the user then asked "Does the second one
-  have outside seating?", you need to resolve "second one" to the correct object the bot listed before. Per
+  in a list. For example, if the bot listed a few restaurants in Berlin, and the user then asked
+    `Does the second one have outside seating?`
+  you need to resolve "second one" to the correct object the bot listed before. Per
   default the ordinal mention mapping looks like this:
 
   .. code-block:: python
@@ -480,12 +484,41 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
 Customize your `ActionQueryKnowledgeBase`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+You can overwrite the following two functions of `ActionQueryKnowledgeBase`:
+
+- ``utter_objects()``
+- ``utter_attribute_value()``
+
+``utter_objects()`` is used when the user requested the bot to list some objects.
+Once the bot retrieved some objects from the knowledge base, it will response to the user, for example, with
+
+    `Found the following objects of type 'restaurant':`
+    `1: I due forni`
+    `2: PastaBar`
+    `3: Berlin Burrito Company`
+
+Or if no entities could be found
+
+    `I could not find any objects of type 'restaurant'.`
+
+If you want to change the utterance of the bot, you can overwrite the method ``utter_objects()`` in your action.
+
+The function ``utter_attribute_value()`` determines what the bot utters when the user is asking for a detail of
+an object.
+If the attribute of interest was found in the knowledge base, the bot will response with the following utterance:
+
+    `'Berlin Burrito Company' has the value 'Mexican' for attribute 'cuisine'.`
+
+If no value for the requested attribute was found, the bot will response with
+
+    `Did not found a valid value for attribute 'cuisine' for object 'Berlin Burrito Company'.`
+
+If you want to change the utterance of the bot, you can overwrite the method ``utter_attribute_value()``.
 
 .. note::
    There is a tutorial `here <https://blog.rasa.com/integrating-rasa-with-knowledge-bases/>`_ about how to use
    knowledge bases in custom actions. The tutorial will explain in detail the implementation behind
    ``ActionQueryKnowledgeBase``.
-
 
 
 .. _custom_knowledge_base:
