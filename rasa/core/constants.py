@@ -29,7 +29,7 @@ BEARER_TOKEN_PREFIX = "Bearer "
 
 # the lowest priority intended to be used by machine learning policies
 DEFAULT_POLICY_PRIORITY = 1
-# the priority intended to be used by mapping policy
+# the priority intended to be used by mapping policies
 MAPPING_POLICY_PRIORITY = 2
 # the priority intended to be used by memoization policies
 # it is higher than default and mapping to prioritize training stories
