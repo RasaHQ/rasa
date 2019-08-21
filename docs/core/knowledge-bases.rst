@@ -37,19 +37,16 @@ To handle the above challenges, we recommend that you create a custom action tha
 This is a single actions which contains the logic to query a knowledge base for objects and their attributes.
 When a restaurant is mentioned indirectly, for example using a phrase like ``the first one`` or ``that restaurant``,
 this action is able to figure out which restaurant the user is referring to.
-You can find a complete example in ``examples/knowledge_base_bot``.
+You can find a complete example in ``examples/knowledgebasebot``.
 
-.. note::
-   There is a tutorial `here <https://blog.rasa.com/integrating-rasa-with-knowledge-bases/>`_ about how to use
-   knowledge bases in custom actions. The tutorial will explain in detail the implementation behind
-   ``ActionQueryKnowledgeBase``.
 
+Using `ActionQueryKnowledgeBase`
+--------------------------------
 
 .. _create_knowledge_base:
 
-
 Create a Knowledge Base
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 The data you will use to answer the user's request comes from a knowledge base.
 A knowledge base can be used to store complex data structures.
@@ -131,94 +128,11 @@ Once the data are defined in a json file, called, for example, ``data.json``, yo
     knowledge_base = InMemoryKnowledgeBase("data.json")
 
 Every object in your knowledge base should have "name" and "id" field.
-If that is not the case, please read the following section :ref:`customize_in_memory_knowledge_base`.
-
-
-.. _customize_in_memory_knowledge_base:
-
-
-Customize your InMemoryKnowledgeBase
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The class ``InMemoryKnowledgeBase`` inherits ``KnowledgeBase``.
-You can customize your ``InMemoryKnowledgeBase`` by overwriting the following functions:
-
-- ``get_key_attribute_of_object``: To keep track of what object the user was talking about last, we store the value
-  of the key attribute in a specific slot. Every object should have a key attribute that is unique, i.e.
-  similar to the primary key in a relation database. By default the name of the key attribute for every object type
-  is set to "id". You can overwrite the name of the key attribute for a specific object type by calling
-  ``set_key_attribute_of_object()``.
-- ``get_representation_function_of_object``: Let's focus on the following restaurant:
-
-  .. code-block:: json
-
-      {
-          "id": 0,
-          "name": "Donath",
-          "cuisine": "Italian",
-          "outside-seating": true,
-          "price-range": "mid-range"
-      }
-
-  When the user is asking to list any Italian restaurant, you don't want to confront the user with all details of that
-  restaurant. You want to provide a meaningful name that identifies the restaurant. Most likely you would use
-  just the name of the restaurant to speak about it.
-  Thus, the function ``get_representation_function_of_object`` returns a lambda function that maps, for example, the
-  above restaurant object to its name.
-
-  .. code-block:: python
-
-      lambda obj: obj["name"]
-
-  This function is used whenever the bot is talking about a specific object, so that the user is given a meaningful
-  name and knows what exactly the bot is talking about.
-  By default the lambda function is set to ``lambda obj: obj["name"]``. So, it returns the value of the attribute
-  "name" of the object. If your object does not have an attribute "name", or the "name" of an object might be
-  ambiguous, you should set a new lambda function for that object type by calling
-  ``set_representation_function_of_object()``.
-- ``set_ordinal_mention_mapping``: The ordinal mention mapping is needed to resolve an ordinal mention to an object
-  in a list. For example, if the bot listed a few restaurants in Berlin, and the user then asked "Does the second one
-  have outside seating?", you need to resolve "second one" to the correct object the bot listed before. Per
-  default the ordinal mention mapping looks like this:
-
-  .. code-block:: python
-
-      {
-          "1": lambda l: l[0],
-          "2": lambda l: l[1],
-          "3": lambda l: l[2],
-          "4": lambda l: l[3],
-          "5": lambda l: l[4],
-          "6": lambda l: l[5],
-          "7": lambda l: l[6],
-          "8": lambda l: l[7],
-          "9": lambda l: l[8],
-          "10": lambda l: l[9],
-          "ANY": lambda l: random.choice(list),
-          "LAST": lambda l: l[-1],
-      }
-
-  You can overwrite it by calling the function ``set_ordinal_mention_mapping``.
-  If you want to learn more about the usage of the mapping, go to section :ref:`resolve_mentions`.
-
-
-Creating your own Knowledge Base Implementation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you have more data or if you want to use a more complex data structure that, for example, involves relations between
-different objects, you can create your own knowledge base implementation.
-Just inherit ``KnowledgeBase`` and implement the methods ``get_objects()``, ``get_object()``, and
-``get_attributes_of_object()``.
-You can also customize your knowledge base further, for example, by adapting the methods mentioned in the section
-:ref:`customize_in_memory_knowledge_base`.
-
-.. note::
-   We wrote a `blog post <https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/>`_
-   that explains how you can set up your own knowledge base.
+If that is not the case, please read the section :ref:`customize_in_memory_knowledge_base`.
 
 
 Defining the NLU Data
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 In this section
 
@@ -233,7 +147,7 @@ The intent should contain all kind of user requests.
 
 Let's look at an example:
 
-.. code-block:: yaml
+.. code-block:: md
 
     ## intent:query_knowledge_base
     - what [restaurants](object_type:restaurant) can you recommend?
@@ -274,7 +188,7 @@ If you want to use ``ActionQueryKnowledgeBase``, you need to specify the followi
 
 Remember to add those entities to your domain file (as entities and slots):
 
-.. code-block:: yaml
+.. code-block:: md
 
     entities:
       - object_type
@@ -294,13 +208,14 @@ Remember to add those entities to your domain file (as entities and slots):
 
 
 Create an Action to query your Knowledge Base
----------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Whenever you create an ``ActionQueryKnowledgeBase``, you need to pass a ``KnowledgeBase`` to the constructor.
 It can be either an ``InMemoryKnowledgeBase`` or your own implementation of a ``KnowledgeBase``
 (see :ref:`create_knowledge_base`).
 However, you can just use one knowledge base.
 The usage of multiple knowledge bases at the same time is not supported.
+
 To create your own knowledge base action, you need to inherit ``ActionQueryKnowledgeBase`` and pass the knowledge
 base to the constructor of ``ActionQueryKnowledgeBase``.
 
@@ -316,21 +231,38 @@ The action is already able to query the knowledge base.
 The name of the action is ``action_query_knowledge_base``.
 Don't forget to add it to your domain file.
 
-.. code-block:: yaml
+.. code-block:: md
 
     actions:
     - action_query_knowledge_base
 
 .. note::
    If you overwrite the default action name ``action_query_knowledge_base``, you need to add the following three
-   slots to your domain file: ``knowledge_base_objects``, ``knowledge_base_last_object``, and
+   unfeaturized slots to your domain file: ``knowledge_base_objects``, ``knowledge_base_last_object``, and
    ``knowledge_base_last_object_type``.
    The slots are used internally by ``ActionQueryKnowledgeBase``.
    If you keep the default action name, those slots will be added automatically for you.
 
+You also need to make sure, to add a story to your stories file that includes the intent `query_knowledge_base` and
+the action `action_query_knowledge_base`. For example:
+
+.. code-block:: md
+
+    ## Happy Path
+    * greet
+      - utter_greet
+    * query_knowledge_base
+      - action_query_knowledge_base
+    * goodbye
+      - utter_goodbye
+
+
+
+How it works
+------------
 
 Query the Knowledge Base for Objects
-------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In order to query the knowledge base for any kind of objects, the user's request needs to include the object type.
 For example, ``Can you please name some restaurants?``.
@@ -363,7 +295,7 @@ If you want to change the utterance of the bot, you can overwrite the method ``u
 
 
 Query the Knowledge Base for an Attribute of an Object
-------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If the user asks ``What is the cuisine of Berlin Burrito Company``, the user wants to obtain a detail, e.g. "cuisine",
 about an object, e.g. "Berlin Burrito Company".
@@ -394,9 +326,8 @@ If you want to change the utterance of the bot, you can overwrite the method ``u
 
 .. _resolve_mentions:
 
-
 Resolve Mentions
-----------------
+~~~~~~~~~~~~~~~~
 
 Looking at the example from the beginning, we saw that users refer to previously mentioned objects during a conversation
 in different ways.
@@ -475,11 +406,107 @@ mentioned object, e.g. "PastaBar".
 You can disable this behaviour by setting ``use_last_object_mention`` to ``False`` when initializing the action.
 
 
+Customization
+-------------
+
+.. _customize_in_memory_knowledge_base:
+
+Customize your `InMemoryKnowledgeBase`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The class ``InMemoryKnowledgeBase`` inherits ``KnowledgeBase``.
+You can customize your ``InMemoryKnowledgeBase`` by overwriting the following functions:
+
+- ``get_key_attribute_of_object``: To keep track of what object the user was talking about last, we store the value
+  of the key attribute in a specific slot. Every object should have a key attribute that is unique, i.e.
+  similar to the primary key in a relation database. By default the name of the key attribute for every object type
+  is set to "id". You can overwrite the name of the key attribute for a specific object type by calling
+  ``set_key_attribute_of_object()``.
+- ``get_representation_function_of_object``: Let's focus on the following restaurant:
+
+  .. code-block:: json
+
+      {
+          "id": 0,
+          "name": "Donath",
+          "cuisine": "Italian",
+          "outside-seating": true,
+          "price-range": "mid-range"
+      }
+
+  When the user is asking to list any Italian restaurant, you don't want to confront the user with all details of that
+  restaurant. You want to provide a meaningful name that identifies the restaurant. Most likely you would use
+  just the name of the restaurant to speak about it.
+  Thus, the function ``get_representation_function_of_object`` returns a lambda function that maps, for example, the
+  above restaurant object to its name.
+
+  .. code-block:: python
+
+      lambda obj: obj["name"]
+
+  This function is used whenever the bot is talking about a specific object, so that the user is given a meaningful
+  name and knows what exactly the bot is talking about.
+  By default the lambda function is set to ``lambda obj: obj["name"]``. So, it returns the value of the attribute
+  "name" of the object. If your object does not have an attribute "name", or the "name" of an object might be
+  ambiguous, you should set a new lambda function for that object type by calling
+  ``set_representation_function_of_object()``.
+- ``set_ordinal_mention_mapping``: The ordinal mention mapping is needed to resolve an ordinal mention to an object
+  in a list. For example, if the bot listed a few restaurants in Berlin, and the user then asked "Does the second one
+  have outside seating?", you need to resolve "second one" to the correct object the bot listed before. Per
+  default the ordinal mention mapping looks like this:
+
+  .. code-block:: python
+
+      {
+          "1": lambda l: l[0],
+          "2": lambda l: l[1],
+          "3": lambda l: l[2],
+          "4": lambda l: l[3],
+          "5": lambda l: l[4],
+          "6": lambda l: l[5],
+          "7": lambda l: l[6],
+          "8": lambda l: l[7],
+          "9": lambda l: l[8],
+          "10": lambda l: l[9],
+          "ANY": lambda l: random.choice(list),
+          "LAST": lambda l: l[-1],
+      }
+
+  You can overwrite it by calling the function ``set_ordinal_mention_mapping``.
+  If you want to learn more about the usage of the mapping, go to section :ref:`resolve_mentions`.
+
+
+
+Customize your `ActionQueryKnowledgeBase`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. note::
+   There is a tutorial `here <https://blog.rasa.com/integrating-rasa-with-knowledge-bases/>`_ about how to use
+   knowledge bases in custom actions. The tutorial will explain in detail the implementation behind
+   ``ActionQueryKnowledgeBase``.
+
+
+
 .. _custom_knowledge_base:
 
+Creating your own Knowledge Base
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Limitations
------------
+If you have more data or if you want to use a more complex data structure that, for example, involves relations between
+different objects, you can create your own knowledge base implementation.
+Just inherit ``KnowledgeBase`` and implement the methods ``get_objects()``, ``get_object()``, and
+``get_attributes_of_object()``.
+You can also customize your knowledge base further, for example, by adapting the methods mentioned in the section
+:ref:`customize_in_memory_knowledge_base`.
+
+.. note::
+   We wrote a `blog post <https://blog.rasa.com/set-up-a-knowledge-base-to-encode-domain-knowledge-for-rasa/>`_
+   that explains how you can set up your own knowledge base.
+
+
+Creating your own Knowledge Base Actions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``ActionQueryKnowledgeBase`` should allow you to get easily started with using a knowledge base for Rasa.
 However, the action can only handle two kind of user requests:
