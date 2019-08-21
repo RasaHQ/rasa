@@ -4,7 +4,8 @@ from unittest.mock import patch
 
 from moto import mock_s3
 
-from rasa.nlu import persistor, train
+from rasa.nlu import train
+from rasa.nlu.model.storage import persistor
 from tests.nlu import utilities
 
 

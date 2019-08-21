@@ -3,11 +3,12 @@
 import os
 import pytest
 
-from rasa.nlu import registry, train
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Interpreter, Trainer
+from rasa.nlu import train
+from rasa.nlu.components import registry
+from rasa.nlu.config.nlu import RasaNLUModelConfig
+from rasa.nlu.model.interpreter import Interpreter
+from rasa.nlu.model.trainer import Trainer
 from rasa.nlu.train import create_persistor
-from rasa.nlu.training_data import TrainingData
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
@@ -193,19 +194,6 @@ async def test_handles_pipeline_with_non_existing_component(component_builder):
 def test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
     trainer = Trainer(_config, component_builder)
-    persistor = create_persistor(_config)
-    persisted_path = trainer.persist(tmpdir.strpath, persistor)
-    loaded = Interpreter.load(persisted_path, component_builder)
-    assert loaded.pipeline
-    assert loaded.parse("hello") is not None
-    assert loaded.parse("Hello today is Monday, again!") is not None
-
-
-@pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-def test_train_with_empty_data(language, pipeline, component_builder, tmpdir):
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
-    trainer = Trainer(_config, component_builder)
-    trainer.train(TrainingData())
     persistor = create_persistor(_config)
     persisted_path = trainer.persist(tmpdir.strpath, persistor)
     loaded = Interpreter.load(persisted_path, component_builder)

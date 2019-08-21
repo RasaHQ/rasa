@@ -931,7 +931,7 @@ class Agent:
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
     ) -> Optional["Agent"]:
-        from rasa.nlu.persistor import get_persistor
+        from rasa.nlu.model.storage.persistor import get_persistor
 
         persistor = get_persistor(remote_storage)
 

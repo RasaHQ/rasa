@@ -1,9 +1,9 @@
 import pytest
 
-from rasa.nlu import registry
-from rasa.nlu.components import find_unavailable_packages
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Metadata
+from rasa.nlu.components import registry
+from rasa.nlu.utils.package_manager import PackageManager
+from rasa.nlu.config.nlu import RasaNLUModelConfig
+from rasa.nlu.model.metadata import Metadata
 from tests.nlu import utilities
 
 
@@ -27,7 +27,7 @@ def test_all_components_in_model_templates_exist(pipeline_template):
     components = registry.registered_pipeline_templates[pipeline_template]
     for component in components:
         assert (
-            component["name"] in registry.registered_components
+                component["name"] in registry.registered_components
         ), "Model template contains unknown component."
 
 
@@ -48,7 +48,7 @@ def test_all_arguments_can_be_satisfied(component_class):
 
 
 def test_find_unavailable_packages():
-    unavailable = find_unavailable_packages(
+    unavailable = PackageManager.find_unavailable_packages(
         ["my_made_up_package_name", "io", "foo_bar", "foo_bar"]
     )
     assert unavailable == {"my_made_up_package_name", "foo_bar"}

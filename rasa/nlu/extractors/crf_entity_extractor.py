@@ -3,9 +3,10 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
+from rasa.nlu.config.exceptions import InvalidConfigError
+from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
-from rasa.nlu.model import Metadata
+from rasa.nlu.model.metadata import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 
 try:

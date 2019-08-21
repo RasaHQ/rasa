@@ -12,7 +12,7 @@ from rasa.constants import DEFAULT_DATA_PATH
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
-    import rasa.nlu.convert as convert
+    from rasa.nlu.training_data.converter import TrainingDataConverter
 
     data_parser = subparsers.add_parser(
         "data",
@@ -39,7 +39,7 @@ def add_subparser(
         parents=parents,
         help="Converts NLU data between Markdown and json formats.",
     )
-    convert_nlu_parser.set_defaults(func=convert.main)
+    convert_nlu_parser.set_defaults(func=TrainingDataConverter.main)
 
     arguments.set_convert_arguments(convert_nlu_parser)
 

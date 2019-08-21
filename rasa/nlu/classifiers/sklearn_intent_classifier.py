@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu import utils
 from rasa.nlu.classifiers import INTENT_RANKING_LENGTH, Classifier
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Metadata
+from rasa.nlu.config.nlu import RasaNLUModelConfig
+from rasa.nlu.model.metadata import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)

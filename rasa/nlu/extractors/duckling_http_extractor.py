@@ -5,9 +5,9 @@ import os
 import requests
 from typing import Any, List, Optional, Text, Dict
 
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
-from rasa.nlu.model import Metadata
+from rasa.nlu.model.metadata import Metadata
 from rasa.nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
