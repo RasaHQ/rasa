@@ -43,7 +43,7 @@ class Policy(object):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: Optional[int] = DEFAULT_POLICY_PRIORITY,
+        priority:int = DEFAULT_POLICY_PRIORITY,
     ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
