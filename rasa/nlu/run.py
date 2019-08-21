@@ -3,7 +3,7 @@ import logging
 
 from rasa.cli.utils import print_success
 
-from rasa.nlu.model import Interpreter
+from rasa.nlu.model.exceptions import Interpreter
 from rasa.nlu.utils import json_to_string
 from rasa.core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
 

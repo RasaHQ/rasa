@@ -1,11 +1,11 @@
-from rasa.nlu.components import Component
+from rasa.nlu.components.component import Component
 from typing import Any, Dict, Text, Optional, List
 
 
 class ComponentIterator:
     """ Iterator class """
 
-    def __init__(self, pipeline: "ComponentPipeline"):
+    def __init__(self, pipeline: ComponentPipeline):
         self._components = pipeline.get_all_components()
         self._index = 0
 
@@ -20,7 +20,7 @@ class ComponentIterator:
 
 
 class ComponentPipeline:
-    def __init__(self, components: Optional[List["Component"]] = None):
+    def __init__(self, components: Optional[List[Component]] = None):
         if components is None:
             self.__components = list()
         else:

@@ -23,11 +23,13 @@ from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
 from rasa.nlu.utils import write_to_file
-from rasa.nlu.components import ComponentBuilder
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.components.builder import ComponentBuilder
+from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.model import Interpreter, Trainer, TrainingData
-from rasa.nlu.component_pipeline import ComponentPipeline
+from rasa.nlu.model.interpreter import Interpreter
+from rasa.nlu.model.trainer import Trainer
+from rasa.nlu.training_data import TrainingData
+from rasa.nlu.components.pipeline import ComponentPipeline
 from rasa.nlu.tokenizers import Token
 
 logger = logging.getLogger(__name__)

@@ -22,7 +22,7 @@ from rasa.nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa.nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
 from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.model import Metadata
+from rasa.nlu.model.metadata import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
@@ -32,8 +32,8 @@ from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.components import Component
-    from rasa.nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
+    from rasa.nlu.components.component import Component
+    from rasa.nlu.config.nlu import RasaNLUModelConfig, RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 

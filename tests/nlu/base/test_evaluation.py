@@ -8,7 +8,7 @@ from rasa.test import compare_nlu_models
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.nlu.model import Interpreter
+from rasa.nlu.model.interpreter import Interpreter
 from rasa.nlu.test import (
     is_token_within_entity,
     do_entities_overlap,
@@ -29,12 +29,13 @@ from rasa.nlu.test import does_token_cross_borders
 from rasa.nlu.test import align_entity_predictions
 from rasa.nlu.test import determine_intersection
 from rasa.nlu.test import determine_token_labels
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.tokenizers import Token
 import json
 import os
 
-from rasa.nlu import training_data, config
+from rasa.nlu import training_data
+from rasa.nlu.config.manager import ConfigManager
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
 
@@ -257,7 +258,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
 
 def test_run_cv_evaluation():
     td = training_data.DataManager.load_data("data/examples/rasa/demo-rasa.json")
-    nlu_config = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
+    nlu_config = ConfigManager.load("sample_configs/config_pretrained_embeddings_spacy.yml")
 
     n_folds = 2
     intent_results, entity_results = cross_validate(td, n_folds, nlu_config)

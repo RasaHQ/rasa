@@ -20,7 +20,7 @@ class PackageManager:
     def validate_requirements(component_names: List[Text]) -> None:
         """Ensures that all required importable python packages are installed to
         instantiate and used the passed components."""
-        from rasa.nlu import registry
+        from rasa.nlu.components import registry
 
         # Validate that all required packages are installed
         failed_imports = set()

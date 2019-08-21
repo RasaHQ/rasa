@@ -2,7 +2,7 @@ import numpy as np
 import typing
 from typing import Any, List, Text
 
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.tokenizers import Token
 from rasa.nlu.training_data import Message, TrainingData

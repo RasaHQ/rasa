@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from tensorflow import Graph, Session, Tensor
-    from rasa.nlu.config import RasaNLUModelConfig
+    from rasa.nlu.config.nlu import RasaNLUModelConfig
     from rasa.nlu.training_data import TrainingData
-    from rasa.nlu.model import Metadata
+    from rasa.nlu.model.metadata import Metadata
     from rasa.nlu.training_data import Message
 
 try:

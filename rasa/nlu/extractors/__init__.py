@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Text
 
-from rasa.nlu.components import Component
+from rasa.nlu.components.component import Component
 from rasa.nlu.training_data import Message
 
 

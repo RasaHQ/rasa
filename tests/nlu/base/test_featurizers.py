@@ -8,7 +8,7 @@ from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.config.nlu import RasaNLUModelConfig
 
 
 @pytest.mark.parametrize(

@@ -1,50 +1,16 @@
 import logging
 import typing
-from typing import Any, Dict, Hashable, List, Optional, Text, Tuple
+from typing import Any, Dict, Hashable, List, Optional, Text
 
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.config.nlu import RasaNLUModelConfig
+from rasa.nlu.config.manager import ConfigManager
+from rasa.nlu.components.exceptions import UnsupportedLanguageError
 from rasa.nlu.training_data import TrainingData, Message
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Metadata
+    from rasa.nlu.model.metadata import Metadata
 
 logger = logging.getLogger(__name__)
-
-
-class MissingArgumentError(ValueError):
-    """Raised when a function is called and not all parameters can be
-    filled from the context / config.
-
-    Attributes:
-        message -- explanation of which parameter is missing
-    """
-
-    def __init__(self, message: Text) -> None:
-        super(MissingArgumentError, self).__init__(message)
-        self.message = message
-
-    def __str__(self) -> Text:
-        return self.message
-
-
-class UnsupportedLanguageError(Exception):
-    """Raised when a component is created but the language is not supported.
-
-    Attributes:
-        component -- component name
-        language -- language that component doesn't support
-    """
-
-    def __init__(self, component: Text, language: Text) -> None:
-        self.component = component
-        self.language = language
-
-        super(UnsupportedLanguageError, self).__init__(component, language)
-
-    def __str__(self) -> Text:
-        return "component {} does not support language {}".format(
-            self.component, self.language
-        )
 
 
 class ComponentMetaclass(type):
@@ -122,7 +88,7 @@ class Component(object, metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = override_defaults(self.defaults, component_config)
+        self.component_config = ConfigManager.override_defaults(self.defaults, component_config)
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
@@ -288,113 +254,3 @@ class Component(object, metaclass=ComponentMetaclass):
             return True
 
         return language in cls.language_list
-
-
-class ComponentBuilder:
-    """Creates trainers and interpreters based on configurations.
-
-    Caches components for reuse.
-    """
-
-    def __init__(self, use_cache: bool = True) -> None:
-        self.use_cache = use_cache
-        # Reuse nlp and featurizers where possible to save memory,
-        # every component that implements a cache-key will be cached
-        self.component_cache = {}
-
-    def __get_cached_component(
-        self, component_meta: Dict[Text, Any], model_metadata: "Metadata"
-    ) -> Tuple[Optional[Component], Optional[Text]]:
-        """Load a component from the cache, if it exists.
-
-        Returns the component, if found, and the cache key.
-        """
-
-        from rasa.nlu import registry
-
-        # try to get class name first, else create by name
-        component_name = component_meta.get("class", component_meta["name"])
-        component_class = registry.get_component_class(component_name)
-        cache_key = component_class.cache_key(component_meta, model_metadata)
-        if (
-            cache_key is not None
-            and self.use_cache
-            and cache_key in self.component_cache
-        ):
-            return self.component_cache[cache_key], cache_key
-        else:
-            return None, cache_key
-
-    def __add_to_cache(self, component: Component, cache_key: Optional[Text]) -> None:
-        """Add a component to the cache."""
-
-        if cache_key is not None and self.use_cache:
-            self.component_cache[cache_key] = component
-            logger.info(
-                "Added '{}' to component cache. Key '{}'."
-                "".format(component.name, cache_key)
-            )
-
-    def load_component(
-        self,
-        component_meta: Dict[Text, Any],
-        model_dir: Text,
-        model_metadata: "Metadata",
-        **context: Any
-    ) -> Component:
-        """Tries to retrieve a component from the cache, else calls
-        ``load`` to create a new component.
-
-        Args:
-            component_meta:
-                the metadata of the component to load in the pipeline
-            model_dir:
-                the directory to read the model from
-            model_metadata (Metadata):
-                the model's :class:`rasa.nlu.model.Metadata`
-
-        Returns:
-            Component: the loaded component.
-        """
-
-        from rasa.nlu import registry
-
-        try:
-            cached_component, cache_key = self.__get_cached_component(
-                component_meta, model_metadata
-            )
-            component = registry.load_component_by_meta(
-                component_meta, model_dir, model_metadata, cached_component, **context
-            )
-            if not cached_component:
-                # If the component wasn't in the cache,
-                # let us add it if possible
-                self.__add_to_cache(component, cache_key)
-            return component
-        except MissingArgumentError as e:  # pragma: no cover
-            raise Exception(
-                "Failed to load component from file `{}`. "
-                "{}".format(component_meta.get("file"), e)
-            )
-
-    def create_component(
-        self, component_config: Dict[Text, Any], cfg: RasaNLUModelConfig
-    ) -> Component:
-        """Tries to retrieve a component from the cache,
-        calls `create` to create a new component."""
-        from rasa.nlu import registry
-        from rasa.nlu.model import Metadata
-
-        try:
-            component, cache_key = self.__get_cached_component(
-                component_config, Metadata(cfg.as_dict(), None)
-            )
-            if component is None:
-                component = registry.create_component_by_config(component_config, cfg)
-                self.__add_to_cache(component, cache_key)
-            return component
-        except MissingArgumentError as e:  # pragma: no cover
-            raise Exception(
-                "Failed to create component `{}`. "
-                "{}".format(component_config["name"], e)
-            )

@@ -198,7 +198,7 @@ def perform_nlu_cross_validation(
 
     kwargs = kwargs or {}
     folds = int(kwargs.get("folds", 3))
-    nlu_config = rasa.nlu.config.load(config)
+    nlu_config = rasa.nlu.config.config.load(config)
     data = rasa.nlu.training_data.DataManager.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = utils.minimal_kwargs(kwargs, cross_validate)
