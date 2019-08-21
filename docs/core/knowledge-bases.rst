@@ -276,12 +276,16 @@ Query the Knowledge Base for Objects
 
 In order to query the knowledge base for any kind of objects, the user's request needs to include the object type.
 Let's look at an example:
+
     `Can you please name some restaurants?`
+
 The question includes the object type of interest: "restaurant".
 If the request would not contain the type of interest, the action would not know what objects the user is interested in.
 The action would not be able to formulate a query.
 What when the user says something like:
+
     `What Italian restaurant options in Berlin do I have?`
+
 In this example the user want to obtain a list of restaurants that (1) have an Italian cuisine and (2) are located in
 Berlin.
 In order to filter the objects in the knowledge base, you need to mark "Italian" and "Berlin" as entities.
@@ -303,14 +307,18 @@ Query the Knowledge Base for an Attribute of an Object
 If the user wants to obtain a detail of a certain object, the request of the user should include the object and
 attribute of interest.
 For example, if the user asks something like
+
     `What is the cuisine of Berlin Burrito Company?`
+
 the user wants to obtain the "cuisine" (attribute of interest) for the restaurant "Berlin Burrito Company" (object of
 interest).
 
 However, users do not always refer to restaurants by their names.
 Users can either refer to the object of interest by its name, e.g. "Berlin Burrito Company" (representation string
 of the object), or they refer to a previously listed object via a mention, e.g.
+
     `What is the cuisine of the second restaurant you just mentioned?`
+
 To learn more about how we resolve those mentions to the actual object in the knowledge base, go to section
 :ref:`resolve_mentions`.
 
@@ -455,7 +463,9 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
   ``set_representation_function_of_object()``.
 - ``set_ordinal_mention_mapping``: The ordinal mention mapping is needed to resolve an ordinal mention to an object
   in a list. For example, if the bot listed a few restaurants in Berlin, and the user then asked
+
     `Does the second one have outside seating?`
+
   you need to resolve "second one" to the correct object the bot listed before. Per
   default the ordinal mention mapping looks like this:
 
