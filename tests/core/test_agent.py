@@ -7,13 +7,14 @@ from sanic import Sanic, response
 
 import rasa.utils.io
 import rasa.core
-from rasa.core import jobs, utils
+from rasa.core import utils
 from rasa.core.agent import Agent, load_agent
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.channels.channel import UserMessage
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
+from rasa.core.schedule import ScheduleProvider
 from rasa.utils.endpoints import EndpointConfig
 
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
@@ -181,7 +182,7 @@ async def test_agent_with_model_server_in_thread(
     moodbot_policies = set(moodbot_metadata["policy_names"])
     assert agent_policies == moodbot_policies
     assert model_server.app.number_of_model_requests == 1
-    jobs.kill_scheduler()
+    ScheduleProvider.stop_scheduler()
 
 
 async def test_wait_time_between_pulls_without_interval(model_server, monkeypatch):
@@ -197,7 +198,7 @@ async def test_wait_time_between_pulls_without_interval(model_server, monkeypatc
     agent = Agent()
     # schould not call schedule_model_pulling, if it does, this will raise
     await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
-    jobs.kill_scheduler()
+    ScheduleProvider.stop_scheduler()
 
 
 async def test_load_agent(trained_model):

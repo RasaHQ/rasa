@@ -68,8 +68,44 @@ build_rasa_dev_image:
         - docker push $SERVER/rasa-dev:$COMMIT_NAME
 
 # Tests
-run_tests:
+run_tests_cli:
     stage: test_rasa
     script:
         - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
-        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "./tests/run-tests.sh"
+        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "source env/bin/activate;pytest ./tests/cli/"
+
+run_tests_core:
+    stage: test_rasa
+    script:
+        - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
+        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "source env/bin/activate;pytest ./tests/importers/"
+
+run_tests_importers:
+    stage: test_rasa
+    script:
+        - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
+        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "source env/bin/activate;pytest ./tests/importers/"
+
+run_tests_nlu:
+    stage: test_rasa
+    script:
+        - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
+        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "source env/bin/activate;pytest ./tests/nlu/"
+
+run_tests_utils:
+    stage: test_rasa
+    script:
+        - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
+        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "source env/bin/activate;pytest ./tests/utils/"
+
+run_tests_server:
+    stage: test_rasa
+    script:
+        - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
+        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "source env/bin/activate;pytest ./tests/test_server.py"
+
+run_tests_train:
+    stage: test_rasa
+    script:
+        - export COMMIT_NAME=`echo $CI_COMMIT_REF_SLUG | sed 's/-$//'`
+        - docker run -i --rm $SERVER/rasa-dev:$COMMIT_NAME bash -c "source env/bin/activate;pytest ./tests/test_train.py"

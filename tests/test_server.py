@@ -725,9 +725,9 @@ def test_load_model_from_model_server(rasa_app: SanicTestClient, trained_core_mo
 
             assert old_fingerprint != response.json["fingerprint"]
 
-    import rasa.core.jobs
+    from rasa.core.schedule import ScheduleProvider
 
-    rasa.core.jobs.__scheduler = None
+    ScheduleProvider.__scheduler = None
 
 
 def test_load_model_invalid_request_body(rasa_app: SanicTestClient):
