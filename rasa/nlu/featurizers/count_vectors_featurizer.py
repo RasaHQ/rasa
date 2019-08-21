@@ -306,8 +306,6 @@ class CountVectorsFeaturizer(Featurizer):
                     .toarray()
                 )
 
-                print (attribute, self.vectorizer[attribute].vocabulary_)
-
         except ValueError:
             self.vectorizer = None
             return
