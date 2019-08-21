@@ -6,8 +6,8 @@ import pytest
 
 import rasa.utils.io
 from rasa.nlu import config
-from rasa.nlu.registry import registered_pipeline_templates
 from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.registry import registered_pipeline_templates
 from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
 from tests.nlu.utilities import write_file_config
 
