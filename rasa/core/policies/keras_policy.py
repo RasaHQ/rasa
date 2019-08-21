@@ -20,7 +20,7 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import obtain_verbosity
-from rasa.core.constants import DEFAULT_POLICY_PRIORITIES
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
 # pytype: disable=import-error
@@ -56,7 +56,7 @@ class KerasPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = DEFAULT_POLICY_PRIORITIES["Default"],
+        priority: int = DEFAULT_POLICY_PRIORITY,
         model: Optional[tf.keras.models.Sequential] = None,
         graph: Optional[tf.Graph] = None,
         session: Optional[tf.Session] = None,
