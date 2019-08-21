@@ -14,19 +14,19 @@ entities:
 
 slots:
   object_type:
-    type: text
+    type: unfeaturized
   mention:
-    type: text
+    type: unfeaturized
   attribute:
-    type: text
+    type: unfeaturized
   hotel:
-    type: text
+    type: unfeaturized
   restaurant:
-    type: text
+    type: unfeaturized
   city:
-    type: text
+    type: unfeaturized
   cuisine:
-    type: text
+    type: unfeaturized
 
 actions:
 - utter_greet

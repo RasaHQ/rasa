@@ -23,9 +23,6 @@
 ## Query Knowlege Base
 * query_knowledge_base
 - action_query_knowledge_base
-- slot{"attribute": null}
-- slot{"object_type": null}
-- slot{"mention": null}
 
 ## Bye
 * goodbye

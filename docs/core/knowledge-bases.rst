@@ -200,11 +200,11 @@ Remember to add those entities to your domain file (as entities and slots):
 
     slots:
       object_type:
-        type: text
+        type: unfeaturized
       mention:
-        type: text
+        type: unfeaturized
       attribute:
-        type: text
+        type: unfeaturized
 
 
 .. _create_action_query_knowledge_base:
