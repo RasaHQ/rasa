@@ -1,7 +1,7 @@
 import os
 import sys
 import json
-from typing import Any, Optional, Text, List, Dict
+from typing import Any, Optional, Text, List, Dict, TYPE_CHECKING
 import logging
 
 if TYPE_CHECKING:
