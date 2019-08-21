@@ -15,8 +15,11 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 
+from rasa.nlu.constants import MESSAGE_ATTRIBUTES, MESSAGE_TEXT_ATTRIBUTE
+
+
 class SpacyNLP(Component):
-    provides = ["spacy_doc", "spacy_nlp"]
+    provides = ["spacy_doc", "spacy_nlp", "intent_spacy_doc", "response_spacy_doc"]
 
     defaults = {
         # name of the language model to load - if it is not set
@@ -96,30 +99,58 @@ class SpacyNLP(Component):
         return {"spacy_nlp": self.nlp}
 
     def doc_for_text(self, text: Text) -> "Doc":
+
+        return self.nlp(self.preprocess_text(text))
+
+    def preprocess_text(self, text):
+
+        if text is None:
+            text = ""
         if self.component_config.get("case_sensitive"):
-            return self.nlp(text)
+            return text
         else:
-            return self.nlp(text.lower())
+            return text.lower()
 
-    def docs_for_training_data(self, training_data: TrainingData) -> List[Any]:
+    def get_text(self, example, attribute):
 
-        texts = [
-            e.text if self.component_config.get("case_sensitive") else e.text.lower()
-            for e in training_data.intent_examples
-        ]
+        if attribute == MESSAGE_TEXT_ATTRIBUTE:
+            return self.preprocess_text(example.text)
+        else:
+            return self.preprocess_text(attribute)
 
-        docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
+    def docs_for_training_data(
+        self, training_data: TrainingData
+    ) -> Dict[Text, List[Any]]:
 
-        return docs
+        attribute_docs = {}
+        for attribute in MESSAGE_ATTRIBUTES:
+
+            texts = [e.get_text(e, attribute) for e in training_data.intent_examples]
+
+            docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
+
+            attribute_docs[attribute] = docs
+        return attribute_docs
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
 
-        docs = self.docs_for_training_data(training_data)
+        attribute_docs = self.docs_for_training_data(training_data)
 
-        for idx, example in enumerate(training_data.training_examples):
-            example.set("spacy_doc", docs[idx])
+        for attribute in MESSAGE_ATTRIBUTES:
+
+            attribute_feature_name = (
+                "spacy_doc"
+                if attribute == MESSAGE_TEXT_ATTRIBUTE
+                else "{0}_spacy_doc".format(attribute)
+            )
+            for idx, example in enumerate(training_data.training_examples):
+                example_attribute_doc = attribute_docs[attribute][idx]
+                if len(example_attribute_doc):
+                    # If length is 0, that means the initial text feature was None and was replaced by ''
+                    # in preprocess method
+                    example.set(attribute_feature_name, example_attribute_doc)
 
     def process(self, message: Message, **kwargs: Any) -> None:
 

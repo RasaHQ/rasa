@@ -10,10 +10,17 @@ from rasa.nlu.training_data import Message, TrainingData
 if typing.TYPE_CHECKING:
     import mitie
 
+from rasa.nlu.constants import (
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+)
+
 
 class MitieFeaturizer(Featurizer):
 
-    provides = ["text_features"]
+    provides = ["text_features", "intent_features", "response_features"]
 
     requires = ["tokens", "mitie_feature_extractor"]
 
@@ -25,33 +32,33 @@ class MitieFeaturizer(Featurizer):
 
         return feature_extractor.num_dimensions
 
+    def get_tokens_by_attribute(self, example, attribute):
+
+        # remove 'text' from prefix since features for text do not have the prefix. All other attributes have a prefix
+        attribute = "_" if attribute == MESSAGE_TEXT_ATTRIBUTE else attribute + "_"
+        return example.get("{0}{1}".format(attribute, "tokens"))
+
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.intent_examples:
-            features = self.features_for_tokens(
-                example.get("tokens"), mitie_feature_extractor
-            )
-            example.set(
-                "text_features", self._combine_with_existing_features(example, features)
-            )
 
-            if example.get("intent_tokens"):
-                example.set(
-                    "intent_features",
-                    self.features_for_tokens(
-                        example.get("intent_tokens"), mitie_feature_extractor
-                    ),
-                )
-            if example.get("response_tokens"):
-                example.set(
-                    "response_features",
-                    self.features_for_tokens(
-                        example.get("response_tokens"), mitie_feature_extractor
-                    ),
-                )
+            for attribute in MESSAGE_ATTRIBUTES:
+
+                attribute_tokens = self.get_tokens_by_attribute(example, attribute)
+                if attribute_tokens:
+
+                    features = self.features_for_tokens(
+                        attribute_tokens, mitie_feature_extractor
+                    )
+                    example.set(
+                        "{0}_features".format(attribute),
+                        self._combine_with_existing_features(
+                            example, features, attribute
+                        ),
+                    )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 

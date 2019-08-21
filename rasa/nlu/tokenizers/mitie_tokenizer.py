@@ -8,7 +8,7 @@ from rasa.nlu.training_data import Message, TrainingData
 
 class MitieTokenizer(Tokenizer, Component):
 
-    provides = ["tokens"]
+    provides = ["tokens", "intent_tokens", "response_tokens"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:

@@ -34,7 +34,7 @@ class CountVectorsFeaturizer(Featurizer):
     from https://arxiv.org/abs/1810.07150.
     """
 
-    provides = ["text_features"]
+    provides = ["text_features", "intent_features", "response_features"]
 
     requires = []
 
@@ -321,6 +321,8 @@ class CountVectorsFeaturizer(Featurizer):
                             example, featurized_attributes[attribute][i], attribute
                         ),
                     )
+                else:
+                    example.set("{0}_features".format(attribute), None)
 
     def process(self, message: Message, **kwargs: Any) -> None:
 

@@ -4,11 +4,9 @@ import numpy as np
 import os
 import pickle
 import typing
-from tqdm import tqdm
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, Optional, Text
 
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.utils.common import is_logging_disabled
 from rasa.utils import train_utils
 
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
@@ -22,8 +20,6 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
     from rasa.nlu.model import Metadata
     from rasa.nlu.training_data import Message
-    from collections import Counter
-    import pandas as pd
 
 try:
     import tensorflow as tf
@@ -207,88 +203,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
             add_to_output=True,
         )
 
-    # # noinspection PyPep8Naming
-    # def process(self, message: 'Message', **kwargs: Any) -> None:
-    #     """Return the most likely intent and its similarity to the input."""
-    #
-    #     response = {"name": None, "confidence": 0.0}
-    #     response_ranking = []
-    #
-    #     if self.session is None:
-    #         logger.error("There is no trained tf.session: "
-    #                      "component is either not trained or "
-    #                      "didn't receive enough training data")
-    #
-    #     else:
-    #         # get features (bag of words) for a message
-    #         X = message.get("text_features")
-    #
-    #         # Add test responses to existing responses
-    #         if "test_data" in kwargs:
-    #
-    #             response_target = message.get("response_target")
-    #
-    #             if message.get("response_target") is None:
-    #                 message.set("response", response, add_to_output=True)
-    #                 message.set("response_ranking", response_ranking, add_to_output=True)
-    #                 return
-    #
-    #             test_data = kwargs["test_data"]
-    #
-    #             if not self.is_test_data_featurized:
-    #
-    #                 logger.info("Embedding test responses and adding to response list for the first time")
-    #
-    #                 new_test_intents = list(set([example.get("response")
-    #                                              for example in test_data.intent_examples
-    #                                              if example.get("response") is not None and example.get("response") not in self.inv_intent_dict.keys()]))
-    #
-    #                 self.test_intent_dict = {intent: idx + len(self.inv_intent_dict)
-    #                                          for idx, intent in enumerate(sorted(new_test_intents))}
-    #
-    #                 self.test_inv_intent_dict = {v: k for k, v in self.test_intent_dict.items()}
-    #
-    #                 encoded_new_intents = self._create_encoded_labels(self.test_intent_dict, test_data)
-    #
-    #                 # Reindex the intents from 0
-    #                 self.test_inv_intent_dict = {i: val for i, (key, val) in
-    #                                              enumerate(self.test_inv_intent_dict.items())}
-    #
-    #                 self.inv_intent_dict = self.test_inv_intent_dict
-    #
-    #                 self.test_intent_dict = {v: k for k, v in self.inv_intent_dict.items()}
-    #
-    #                 self.encoded_all_intents = np.append(self.encoded_all_intents, encoded_new_intents, axis=0)
-    #
-    #                 new_intents_embed_values = self._create_all_intents_embed(encoded_new_intents)
-    #                 self.all_intents_embed_values = new_intents_embed_values
-    #
-    #                 self.is_test_data_featurized = True
-    #                 intent_target_id = self.test_intent_dict[response_target]
-    #
-    #             else:
-    #                 intent_target_id = self.test_intent_dict[response_target]
-    #
-    #         else:
-    #             self.test_intent_dict = self.inv_intent_dict
-    #             intent_target_id = None
-    #
-    #         intent_ids, message_sim = self._calculate_message_sim_all(X, intent_target_id)
-    #
-    #         # if X contains all zeros do not predict some label
-    #         if X.any() and intent_ids.size > 0:
-    #             response = {"name": self.inv_intent_dict[intent_ids[0]],
-    #                       "confidence": message_sim[0]}
-    #
-    #             ranking = list(zip(list(intent_ids), message_sim))
-    #             ranking = ranking[:INTENT_RANKING_LENGTH]
-    #             response_ranking = [{"name": self.inv_intent_dict[intent_idx],
-    #                                "confidence": score}
-    #                               for intent_idx, score in ranking]
-    #
-    #     message.set("response", response, add_to_output=True)
-    #     message.set("response_ranking", response_ranking, add_to_output=True)
-
     # training data helpers:
     @staticmethod
     def _create_label_dict(
@@ -320,8 +234,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
         attribute_feats: Text = "intent_features",
     ) -> np.ndarray:
         """Create matrix with intents encoded in rows as bag of words.
-
-        If intent_tokenization_flag is off, returns identity matrix.
         """
 
         encoded_all_labels = []

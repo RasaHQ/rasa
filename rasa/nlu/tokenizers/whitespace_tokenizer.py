@@ -7,10 +7,9 @@ from rasa.nlu.tokenizers import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 
-# TODO: Remove "split token" from Whitespace tokenizer
 class WhitespaceTokenizer(Tokenizer, Component):
 
-    provides = ["tokens"]
+    provides = ["tokens", "intent_tokens", "response_tokens"]
 
     defaults = {
         # text will be tokenized with case sensitive as default
