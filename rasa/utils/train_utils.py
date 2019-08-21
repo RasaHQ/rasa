@@ -12,7 +12,7 @@ from tensor2tensor.models.transformer import (
 from tensor2tensor.layers.common_attention import large_compatible_negative
 from rasa.utils.common import is_logging_disabled
 import typing
-from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable
+from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
@@ -23,6 +23,14 @@ logger = logging.getLogger(__name__)
 
 # namedtuple for all tf session related data
 SessionData = namedtuple("SessionData", ("X", "Y", "label_ids"))
+
+
+def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
+    """Prepare tf.ConfigProto for training"""
+    if config.get("tf_config") is not None:
+        return tf.ConfigProto(**config.pop("tf_config"))
+    else:
+        return None
 
 
 # noinspection PyPep8Naming

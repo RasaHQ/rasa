@@ -215,7 +215,7 @@ class EmbeddingPolicy(Policy):
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
-        self._tf_config = self._load_tf_config(config)
+        self._tf_config = train_utils.load_tf_config(config)
         self._load_nn_architecture_params(config)
         self._load_embedding_params(config)
         self._load_regularization_params(config)
@@ -603,8 +603,7 @@ class EmbeddingPolicy(Policy):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-        tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
-        with open(tf_config_file, "wb") as f:
+        with open(os.path.join(path, file_name + ".tf_config.pkl"), "wb") as f:
             pickle.dump(self._tf_config, f)
 
     @classmethod
@@ -631,9 +630,7 @@ class EmbeddingPolicy(Policy):
         meta_file = os.path.join(path, "embedding_policy.json")
         meta = json.loads(rasa.utils.io.read_file(meta_file))
 
-        tf_config_file = os.path.join(path, "{}.tf_config.pkl".format(file_name))
-
-        with open(tf_config_file, "rb") as f:
+        with open(os.path.join(path, file_name + ".tf_config.pkl"), "rb") as f:
             _tf_config = pickle.load(f)
 
         graph = tf.Graph()

@@ -205,6 +205,7 @@ class EmbeddingIntentClassifier(Component):
 
     def _load_params(self) -> None:
 
+        self._tf_config = train_utils.load_tf_config(self.component_config)
         self._load_nn_architecture_params(self.component_config)
         self._load_embedding_params(self.component_config)
         self._load_regularization_params(self.component_config)
@@ -443,7 +444,7 @@ class EmbeddingIntentClassifier(Component):
             self._train_op = tf.train.AdamOptimizer().minimize(loss)
 
             # train tensorflow graph
-            self.session = tf.Session()
+            self.session = tf.Session(config=self._tf_config)
             train_utils.train_tf_dataset(
                 train_init_op,
                 eval_init_op,
@@ -554,9 +555,12 @@ class EmbeddingIntentClassifier(Component):
             saver.save(self.session, checkpoint)
 
         with io.open(
-            os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "wb"
+            os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "wb"
         ) as f:
             pickle.dump(self.inv_label_dict, f)
+
+        with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
+            pickle.dump(self._tf_config, f)
 
         return {"file": file_name}
 
@@ -573,12 +577,16 @@ class EmbeddingIntentClassifier(Component):
         if model_dir and meta.get("file"):
             file_name = meta.get("file")
             checkpoint = os.path.join(model_dir, file_name + ".ckpt")
+
+            with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
+                _tf_config = pickle.load(f)
+
             graph = tf.Graph()
             with graph.as_default():
-                sess = tf.Session()
+                session = tf.Session(config=_tf_config)
                 saver = tf.train.import_meta_graph(checkpoint + ".meta")
 
-                saver.restore(sess, checkpoint)
+                saver.restore(session, checkpoint)
 
                 a_in = train_utils.load_tensor("message_placeholder")
                 b_in = train_utils.load_tensor("label_placeholder")
@@ -592,14 +600,14 @@ class EmbeddingIntentClassifier(Component):
                 all_labels_embed = train_utils.load_tensor("all_labels_embed")
 
             with io.open(
-                os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "rb"
+                os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "rb"
             ) as f:
                 inv_label_dict = pickle.load(f)
 
             return cls(
                 component_config=meta,
                 inv_label_dict=inv_label_dict,
-                session=sess,
+                session=session,
                 graph=graph,
                 message_placeholder=a_in,
                 label_placeholder=b_in,
