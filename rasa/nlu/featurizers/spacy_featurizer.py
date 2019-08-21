@@ -27,6 +27,14 @@ class SpacyFeaturizer(Featurizer):
 
     requires = ["spacy_doc"]
 
+    defaults = {"ner_feature_vectors": False}
+
+    def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
+
+        super(SpacyFeaturizer, self).__init__(component_config)
+
+        self.ner_feature_vectors = self.component_config["ner_feature_vectors"]
+
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
@@ -44,6 +52,10 @@ class SpacyFeaturizer(Featurizer):
         fs = features_for_doc(doc)
         features = self._combine_with_existing_text_features(message, fs)
         message.set("text_features", features)
-        ner_features = [t.vector for t in doc]
+        # if we want to use spacy as an NER featurizer, set token vectors
+        if self.ner_feature_vectors:
+            ner_features = [t.vector for t in doc]
+        else:
+            ner_features = [[] for t in doc]
         ner_features = self._combine_with_existing_ner_features(message, ner_features)
         message.set("ner_features", ner_features)
