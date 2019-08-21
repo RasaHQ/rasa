@@ -1,4 +1,4 @@
-from rasa.nlu.components import Component
+from rasa.nlu.components.component import Component
 
 
 class Tokenizer(Component):

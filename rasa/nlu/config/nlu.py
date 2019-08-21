@@ -1,79 +1,11 @@
-import copy
-import logging
-import os
-import ruamel.yaml as yaml
-from typing import Any, Dict, List, Optional, Text, Union
+#Old file : nlu/config.py
 
-import rasa.utils.io
-from rasa.constants import DEFAULT_CONFIG_PATH
+import logging
+
+from rasa.nlu.config.exceptions import InvalidConfigError
 from rasa.nlu.utils import json_to_string
 
 logger = logging.getLogger(__name__)
-
-
-class InvalidConfigError(ValueError):
-    """Raised if an invalid configuration is encountered."""
-
-    def __init__(self, message: Text) -> None:
-        super(InvalidConfigError, self).__init__(message)
-
-
-def load(
-    config: Optional[Union[Text, Dict]] = None, **kwargs: Any
-) -> "RasaNLUModelConfig":
-    if isinstance(config, Dict):
-        return _load_from_dict(config, **kwargs)
-
-    file_config = {}
-    if config is None and os.path.isfile(DEFAULT_CONFIG_PATH):
-        config = DEFAULT_CONFIG_PATH
-
-    if config is not None:
-        try:
-            file_config = rasa.utils.io.read_config_file(config)
-        except yaml.parser.ParserError as e:
-            raise InvalidConfigError(
-                "Failed to read configuration file '{}'. Error: {}".format(config, e)
-            )
-
-    return _load_from_dict(file_config, **kwargs)
-
-
-def _load_from_dict(config: Dict, **kwargs: Any) -> "RasaNLUModelConfig":
-    if kwargs:
-        config.update(kwargs)
-    return RasaNLUModelConfig(config)
-
-
-def override_defaults(
-    defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
-) -> Dict[Text, Any]:
-    if defaults:
-        cfg = copy.deepcopy(defaults)
-    else:
-        cfg = {}
-
-    if custom:
-        cfg.update(custom)
-    return cfg
-
-
-def component_config_from_pipeline(
-    index: int,
-    pipeline: List[Dict[Text, Any]],
-    defaults: Optional[Dict[Text, Any]] = None,
-) -> Dict[Text, Any]:
-    try:
-        c = pipeline[index]
-        return override_defaults(defaults, c)
-    except IndexError:
-        logger.warning(
-            "Tried to get configuration value for component "
-            "number {} which is not part of the pipeline. "
-            "Returning `defaults`."
-            "".format(index)
-        )
-        return override_defaults(defaults, {})
 
 
 class RasaNLUModelConfig:
@@ -94,7 +26,7 @@ class RasaNLUModelConfig:
             # replaces None with empty list
             self.__dict__["pipeline"] = []
         elif isinstance(self.__dict__["pipeline"], str):
-            from rasa.nlu import registry
+            from rasa.nlu.components import registry
 
             template_name = self.__dict__["pipeline"]
             new_names = {
@@ -165,7 +97,8 @@ class RasaNLUModelConfig:
         return json_to_string(self.__dict__, indent=4)
 
     def for_component(self, index, defaults=None):
-        return component_config_from_pipeline(index, self.pipeline, defaults)
+        from rasa.nlu.config.manager import ConfigManager
+        return ConfigManager.component_config_from_pipeline(index, self.pipeline, defaults)
 
     @property
     def component_names(self):

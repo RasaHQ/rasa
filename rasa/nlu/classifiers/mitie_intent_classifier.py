@@ -3,8 +3,8 @@ import typing
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.classifiers import Classifier
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Metadata
+from rasa.nlu.config.nlu import RasaNLUModelConfig
+from rasa.nlu.model.metadata import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:

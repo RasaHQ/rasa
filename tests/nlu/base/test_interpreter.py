@@ -9,8 +9,10 @@ from rasa.core.interpreter import (
     RegexInterpreter,
 )
 from rasa.model import get_model_subdirectories, get_model
-from rasa.nlu import registry, training_data
-from rasa.nlu.model import Interpreter
+from rasa.nlu import training_data
+from rasa.nlu.components import registry
+from rasa.nlu.model.interpreter import Interpreter
+from rasa.nlu.model.exceptions import UnsupportedModelError
 from rasa.utils.endpoints import EndpointConfig
 from tests.nlu import utilities
 
@@ -64,7 +66,7 @@ async def test_interpreter(pipeline_template, component_builder, tmpdir):
     ],
 )
 def test_model_not_compatible(metadata):
-    with pytest.raises(rasa.nlu.model.UnsupportedModelError):
+    with pytest.raises(UnsupportedModelError):
         Interpreter.ensure_model_compatibility(metadata)
 
 

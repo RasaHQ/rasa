@@ -1,7 +1,7 @@
 # coding=utf-8
 import responses
 
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
 

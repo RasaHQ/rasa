@@ -6,9 +6,9 @@ from typing import Any, Dict, List, Optional, Text
 from sklearn.feature_extraction.text import CountVectorizer
 
 from rasa.nlu import utils
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
-from rasa.nlu.model import Metadata
+from rasa.nlu.model.metadata import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)

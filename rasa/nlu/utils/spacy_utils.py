@@ -2,17 +2,18 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.components.component import Component
+from rasa.nlu.config.nlu import RasaNLUModelConfig
+from rasa.nlu.config.manager import ConfigManager
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.model import InvalidModelError
+from rasa.nlu.model.exceptions import InvalidModelError
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
-    from rasa.nlu.model import Metadata
+    from rasa.nlu.model.metadata import Metadata
 
 
 class SpacyNLP(Component):
@@ -63,7 +64,7 @@ class SpacyNLP(Component):
         cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
     ) -> "SpacyNLP":
 
-        component_config = override_defaults(cls.defaults, component_config)
+        component_config = ConfigManager.override_defaults(cls.defaults, component_config)
 
         spacy_model_name = component_config.get("model")
 

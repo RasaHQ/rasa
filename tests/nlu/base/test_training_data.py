@@ -5,7 +5,7 @@ import tempfile
 from jsonschema import ValidationError
 
 from rasa.nlu import training_data
-from rasa.nlu.convert import convert_training_data
+from rasa.nlu.training_data.converter import TrainingDataConverter
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
@@ -417,7 +417,7 @@ def test_training_data_conversion(
     tmpdir, data_file, gold_standard_file, output_format, language
 ):
     out_path = tmpdir.join("rasa_nlu_data.json")
-    convert_training_data(data_file, out_path.strpath, output_format, language)
+    TrainingDataConverter.convert(data_file, out_path.strpath, output_format, language)
     td = training_data.DataManager.load_data(out_path.strpath, language)
     assert td.entity_examples != []
     assert td.intent_examples != []
@@ -430,7 +430,7 @@ def test_training_data_conversion(
     # converting the converted file back to original
     # file format and performing the same tests
     rto_path = tmpdir.join("data_in_original_format.txt")
-    convert_training_data(out_path.strpath, rto_path.strpath, "json", language)
+    TrainingDataConverter.convert(out_path.strpath, rto_path.strpath, "json", language)
     rto = training_data.DataManager.load_data(rto_path.strpath, language)
     cmp_message_list(gold_standard.entity_examples, rto.entity_examples)
     cmp_message_list(gold_standard.intent_examples, rto.intent_examples)

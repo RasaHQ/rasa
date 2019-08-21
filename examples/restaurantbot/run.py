@@ -61,11 +61,11 @@ def train_nlu(
     training_data_file="data/nlu.md",
 ):
     from rasa.nlu.training_data.data_manager import DataManager
-    from rasa.nlu import config
-    from rasa.nlu.model import Trainer
+    from rasa.nlu.config.manager import ConfigManager
+    from rasa.nlu.model.trainer import Trainer
 
     training_data = DataManager.load_data(training_data_file)
-    trainer = Trainer(config.load(config_file))
+    trainer = Trainer(ConfigManager.load(config_file))
     trainer.train(training_data)
 
     # Attention: trainer.persist stores the model and all meta data into a folder.

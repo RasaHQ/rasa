@@ -2,10 +2,11 @@ import logging
 import typing
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
-from rasa.nlu import config
-from rasa.nlu.components import ComponentBuilder
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Interpreter, Trainer
+from rasa.nlu.components.builder import ComponentBuilder
+from rasa.nlu.config.nlu import RasaNLUModelConfig
+from rasa.nlu.config.manager import ConfigManager
+from rasa.nlu.model.trainer import Trainer
+from rasa.nlu.model.interpreter import Interpreter
 from rasa.nlu.training_data.data_manager import DataManager
 from rasa.utils.endpoints import EndpointConfig
 
@@ -37,7 +38,7 @@ def create_persistor(persistor: Optional[Text]):
     """Create a remote persistor to store the model if configured."""
 
     if persistor is not None:
-        from rasa.nlu.persistor import get_persistor
+        from rasa.nlu.model.storage.persistor import get_persistor
 
         return get_persistor(persistor)
     else:
@@ -58,7 +59,7 @@ async def train(
     from rasa.importers.importer import TrainingDataImporter
 
     if not isinstance(nlu_config, RasaNLUModelConfig):
-        nlu_config = config.load(nlu_config)
+        nlu_config = ConfigManager.load(nlu_config)
 
     # Ensure we are training a model that we can save in the end
     # WARN: there is still a race condition if a model with the same name is
