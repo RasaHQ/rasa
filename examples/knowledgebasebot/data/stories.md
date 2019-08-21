@@ -20,7 +20,7 @@
 * greet
 - utter_greet
 
-## Query Knowlege Base
+## Query Knowledge Base
 * query_knowledge_base
 - action_query_knowledge_base
 
