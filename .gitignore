@@ -14,7 +14,10 @@
 # Directories
 bower_components/
 *build/
-build/lib/
+dist/
+server/
+scala/
+mongodb/
 .cache/
 dist/
 /env/
@@ -70,7 +73,6 @@ graph.png
 *log.json
 *npy
 pip-wheel-metadata
-pip-wheel-metadata/*
 profile.*
 *pyc
 .pytest_cache

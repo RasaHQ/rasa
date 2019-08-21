@@ -12,7 +12,7 @@ from sanic import Sanic
 import rasa
 import rasa.utils.io
 from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
-from rasa.core import constants, jobs, training
+from rasa.core import constants, training
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain
@@ -23,6 +23,7 @@ from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
+from rasa.core.schedule import ScheduleProvider
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
@@ -203,7 +204,7 @@ async def _run_model_pulling_worker(
 async def schedule_model_pulling(
     model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
 ):
-    (await jobs.scheduler()).add_job(
+    (await ScheduleProvider.get_scheduler()).add_job(
         _run_model_pulling_worker,
         "interval",
         seconds=wait_time_between_pulls,
