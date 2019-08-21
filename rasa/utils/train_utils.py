@@ -16,6 +16,7 @@ from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
+from sklearn.feature_extraction.text import CountVectorizer
 
 # avoid warning println on contrib import - remove for tf 2
 tf.contrib._warning = None
@@ -23,6 +24,33 @@ logger = logging.getLogger(__name__)
 
 # namedtuple for all tf session related data
 SessionData = namedtuple("SessionData", ("X", "Y", "labels"))
+
+
+def create_vectorizer(
+    token_pattern,
+    strip_accents,
+    lowercase,
+    stop_words,
+    ngram_range,
+    max_df,
+    min_df,
+    max_features,
+    analyzer,
+    vocabulary=None,
+):
+    vectorizer = CountVectorizer(
+        token_pattern=token_pattern,
+        strip_accents=strip_accents,
+        lowercase=lowercase,
+        stop_words=stop_words,
+        ngram_range=ngram_range,
+        max_df=max_df,
+        min_df=min_df,
+        max_features=max_features,
+        analyzer=analyzer,
+        vocabulary=vocabulary,
+    )
+    return vectorizer
 
 
 # noinspection PyPep8Naming

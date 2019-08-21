@@ -83,7 +83,7 @@ class NGramFeaturizer(Featurizer):
 
         if ngrams_to_use is not None:
             extras = np.array(self._ngrams_in_sentence(message, ngrams_to_use))
-            return self._combine_with_existing_text_features(message, extras)
+            return self._combine_with_existing_features(message, extras)
         else:
             return message.get("text_features")
 

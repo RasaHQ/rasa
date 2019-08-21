@@ -42,5 +42,5 @@ class SpacyFeaturizer(Featurizer):
         """Adds the spacy word vectors to the messages text features."""
 
         fs = features_for_doc(message.get("spacy_doc"))
-        features = self._combine_with_existing_text_features(message, fs)
+        features = self._combine_with_existing_features(message, fs)
         message.set("text_features", features)

@@ -104,10 +104,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "C_emb": 0.8,
         # dropout rate for rnn
         "droprate": 0.2,
-        # flag: if true, the algorithm will split the intent labels into tokens
-        #       and use bag-of-words representations for them
         "label_tokenization_flag": False,
-        # delimiter string to split the intent labels
+        # delimiter string to split the labels
         "label_split_symbol": "_",
         # visualization of accuracy
         # how often to calculate training accuracy
@@ -326,20 +324,17 @@ class ResponseSelector(EmbeddingIntentClassifier):
         If intent_tokenization_flag is off, returns identity matrix.
         """
 
-        if self.label_tokenization_flag:
-            encoded_all_labels = []
+        encoded_all_labels = []
 
-            for key, idx in label_dict.items():
-                encoded_all_labels.insert(
-                    idx,
-                    self._find_example_for_label(
-                        key, training_data.intent_examples, attribute
-                    ).get(attribute_feats),
-                )
+        for key, idx in label_dict.items():
+            encoded_all_labels.insert(
+                idx,
+                self._find_example_for_label(
+                    key, training_data.intent_examples, attribute
+                ).get(attribute_feats),
+            )
 
-            return np.array(encoded_all_labels)
-        else:
-            return np.eye(len(label_dict))
+        return np.array(encoded_all_labels)
 
     # noinspection PyPep8Naming
     def _create_session_data(
