@@ -12,7 +12,9 @@ import rasa.nlu
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
+from rasa.nlu.component_pipeline import ComponentPipeline
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
+from rasa.nlu.package_manager import PackageManager
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.utils import write_json_to_file
@@ -145,23 +147,24 @@ class Trainer:
         # Before instantiating the component classes, lets check if all
         # required packages are available
         if not self.skip_validation:
-            components.validate_requirements(cfg.component_names)
+            PackageManager.validate_requirements(cfg.component_names)
 
         # build pipeline
         self.pipeline = self._build_pipeline(cfg, component_builder)
+        print("cool")
 
     @staticmethod
     def _build_pipeline(
         cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
-    ) -> List[Component]:
+    ) -> ComponentPipeline:
         """Transform the passed names of the pipeline components into classes"""
-        pipeline = []
+        pipeline = ComponentPipeline()
 
         # Transform the passed names of the pipeline components into classes
         for i in range(len(cfg.pipeline)):
             component_cfg = cfg.for_component(i)
             component = component_builder.create_component(component_cfg, cfg)
-            pipeline.append(component)
+            pipeline.add_component(component)
 
         return pipeline
 
@@ -181,14 +184,14 @@ class Trainer:
 
         # Before the training starts: check that all arguments are provided
         if not self.skip_validation:
-            components.validate_arguments(self.pipeline, context)
+            self.pipeline.validate(context)
 
         # data gets modified internally during the training - hence the copy
         working_data = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
             logger.info("Starting to train component {}".format(component.name))
-            component.prepare_partial_processing(self.pipeline[:i], context)
+            component.prepare_partial_processing(self.pipeline.get_component(i), context)
             updates = component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
             if updates:
@@ -315,12 +318,12 @@ class Interpreter:
             # in a new builder. hence, no components are reused.
             component_builder = components.ComponentBuilder()
 
-        pipeline = []
+        pipeline = ComponentPipeline()
 
         # Before instantiating the component classes,
         # lets check if all required packages are available
         if not skip_validation:
-            components.validate_requirements(model_metadata.component_classes)
+            PackageManager.validate_requirements(model_metadata.component_classes)
 
         for i in range(model_metadata.number_of_components):
             component_meta = model_metadata.for_component(i)
@@ -331,7 +334,7 @@ class Interpreter:
                 updates = component.provide_context()
                 if updates:
                     context.update(updates)
-                pipeline.append(component)
+                pipeline.add_component(component)
             except components.MissingArgumentError as e:
                 raise Exception(
                     "Failed to initialize component '{}'. "
@@ -342,7 +345,7 @@ class Interpreter:
 
     def __init__(
         self,
-        pipeline: List[Component],
+        pipeline: "ComponentPipeline",
         context: Optional[Dict[Text, Any]],
         model_metadata: Optional[Metadata] = None,
     ) -> None:

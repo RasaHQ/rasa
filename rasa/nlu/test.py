@@ -27,7 +27,7 @@ from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
-from rasa.nlu.components import Component
+from rasa.nlu.component_pipeline import ComponentPipeline
 from rasa.nlu.tokenizers import Token
 
 logger = logging.getLogger(__name__)
@@ -680,10 +680,11 @@ def is_intent_classifier_present(interpreter: Interpreter) -> bool:
     return intent_classifiers != []
 
 
-def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
+def remove_pretrained_extractors(pipeline: ComponentPipeline) -> ComponentPipeline:
     """Removes pretrained extractors from the pipeline so that entities
        from pre-trained extractors are not predicted upon parsing"""
-    pipeline = [c for c in pipeline if c.name not in PRETRAINED_EXTRACTORS]
+    components = [component for component in pipeline if component.name not in PRETRAINED_EXTRACTORS]
+    pipeline = ComponentPipeline(components=components)
     return pipeline
 
 

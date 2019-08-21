@@ -1,7 +1,7 @@
 import pytest
 
 from rasa.nlu import registry
-from rasa.nlu.components import find_unavailable_packages
+from rasa.nlu.package_manager import PackageManager
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from tests.nlu import utilities
@@ -48,7 +48,7 @@ def test_all_arguments_can_be_satisfied(component_class):
 
 
 def test_find_unavailable_packages():
-    unavailable = find_unavailable_packages(
+    unavailable = PackageManager.find_unavailable_packages(
         ["my_made_up_package_name", "io", "foo_bar", "foo_bar"]
     )
     assert unavailable == {"my_made_up_package_name", "foo_bar"}
