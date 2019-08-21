@@ -20,7 +20,7 @@
 - list [German](cuisine) [restaurants](object_type:restaurant)
 - do you have any [mexican](cuisine) [restaurants](object_type:restaurant)?
 - do you know the [price range](attribute:price-range) of [that one](mention)?
-- what [cuisine](attribute) is it?
+- what [cuisine](attribute) is [it](mention)?
 - do you know what [cuisine](attribute) the [last one](mention:LAST) has?
 - does [Donath](restaurant) have [outside seating](attribute:outside-seating)?
 - what is the [price range](attribute:price-range) of [Berlin Burrito Company](restaurant)?
@@ -28,6 +28,8 @@
 - Do you also have any [Vietnamese](cuisine) [restaurants](object_type:restaurant)?
 - What about any [Mexican](cuisine) [restaurants](object_type:restaurant)?
 - Do you also know some [Italian](cuisine) [restaurants](object_type:restaurant)?
+- can you tell me the [price range](attribute) of [that restaurant](mention)?
+- what [cuisine](attribute) do [they](mention) have?
 - what [hotels](object_type:hotel) can you recommend?
 - please list some [hotels](object_type:hotel) in [Frankfurt am Main](city) for me
 - what [hotels](object_type:hotel) do you know in [Berlin](city)?

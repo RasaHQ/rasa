@@ -36,7 +36,8 @@ To handle the above challenges, we recommend that you create a custom action tha
 This is a single actions which contains the logic to query a knowledge base for objects and their attributes.
 When a restaurant is mentioned indirectly, for example using a phrase like "the first one" or "that restaurant",
 this action is able to figure out which restaurant the user is referring to.
-You can find a complete example in ``examples/knowledgebasebot``.
+You can find a complete example in ``examples/knowledgebasebot``
+(`knowledge base bot <https://github.com/RasaHQ/rasa/blob/master/examples/knowledgebasebot/>`_).
 
 
 Using `ActionQueryKnowledgeBase`
@@ -157,11 +158,13 @@ Let's look at an example:
     - list [German](cuisine) [restaurants](object_type:restaurant)
     - do you have any [mexican](cuisine) [restaurants](object_type:restaurant)?
     - do you know the [price range](attribute:price-range) of [that one](mention)?
-    - what [cuisine](attribute) is it?
+    - what [cuisine](attribute) is [it](mention)?
     - do you know what [cuisine](attribute) the [last one](mention:LAST) has?
     - does the [first one](mention:1) have [outside seating](attribute:outside-seating)?
     - what is the [price range](attribute:price-range) of [Berlin Burrito Company](restaurant)?
     - what is with [I due forni](restaurant)?
+    - can you tell me the [price range](attribute) of [that restaurant](mention)?
+    - what [cuisine](attribute) do [they](mention) have?
      ...
 
 The above example just shows examples related to the restaurant domain.
@@ -399,8 +402,8 @@ The NER detects "first one" as ``mention`` entity, but puts "1" into the ``menti
 Thus, our action can take the ``mention`` slot together with the ordinal mention mapping to resolve "first one" to
 the actual object "I due forni".
 
-Other Mentions
-~~~~~~~~~~~~~~
+**Other Mentions**
+
 Take a look at the following conversation:
 
 - User: `What is the cuisine of PastaBar?`
@@ -475,8 +478,9 @@ However, the action can only handle two kind of user requests:
 The action, for example, is not able to compare objects or consider relations between objects in your knowledge base.
 Furthermore, resolving any mention to the last mentioned object in the conversation, might not always be optimal.
 If you want to tackle more complex use cases, you can write your own custom action.
-We added some helper function to ``rasa_sdk.knowledge_base.utils`` that might help you when implementing your own
-solution.
+We added some helper function to ``rasa_sdk.knowledge_base.utils``
+(`link to code <https://github.com/RasaHQ/rasa-sdk/tree/master/rasa_sdk/knowledge_base/>`_ )
+that might help you when implementing your own solution.
 We recommend to use the ``KnowledgeBase`` interface, so that you can still use the ``ActionQueryKnowledgeBase``
 alongside your new custom action.
 
@@ -551,6 +555,13 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
   If you want to learn more about the usage of the mapping, go to section :ref:`resolve_mentions`.
 
 
+See the `example bot <https://github.com/RasaHQ/rasa/blob/master/examples/knowledgebasebot/actions.py>`_ for an
+example implementation of the ``InMemoryKnowledgeBase`` that uses the method ``set_representation_function_of_object``
+to overwrite the default representation of the object type "hotel".
+The implementation of the ``InMemoryKnowledgeBase`` itself can be found in the
+`rasa-sdk <https://github.com/RasaHQ/rasa-sdk/tree/master/rasa_sdk/knowledge_base/>`_ package.
+
+
 .. _custom_knowledge_base:
 
 Creating your own Knowledge Base
@@ -560,6 +571,8 @@ If you have more data or if you want to use a more complex data structure that, 
 different objects, you can create your own knowledge base implementation.
 Just inherit ``KnowledgeBase`` and implement the methods ``get_objects()``, ``get_object()``, and
 ``get_attributes_of_object()``.
+Please, check out the `code <https://github.com/RasaHQ/rasa-sdk/tree/master/rasa_sdk/knowledge_base/>`_ to get more
+information on what those methods should do.
 You can also customize your knowledge base further, for example, by adapting the methods mentioned in the section
 :ref:`customize_in_memory_knowledge_base`.
 
