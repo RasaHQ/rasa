@@ -14,7 +14,7 @@ how you can migrate from one version to another.
 .. _migration-to-rasa-1.3:
 
 Rasa 1.2 to Rasa 1.3
-------------------------------------------------
+--------------------
 .. warning::
 
   This is a release **breaking backwards compatibility**.
@@ -23,9 +23,22 @@ Rasa 1.2 to Rasa 1.3
 
 General
 ~~~~~~~
-- Default parameters and architectures for both ``EmbeddingPolicy`` and
-  ``EmbeddingIntentClassifier`` are changed. **Old trained models cannot be loaded**.
-  You need to retrain your models if you used these algorithms.
+- Default parameters of ``EmbeddingIntentClassifier`` are changed. See :ref:`components` for details.
+  Architecture implementation is changed as well, so **old trained models cannot be loaded**.
+  Default parameters and architecture for ``EmbeddingPolicy`` are changed. See :ref:`policies` for details.
+  It uses transformer instead of lstm. **Old trained models cannot be loaded**.
+  They use ``inner`` similarity and ``softmax`` loss by default instead of
+  ``cosine`` similarity and ``margin`` loss (can be set in config file).
+  They use ``balanced`` batching strategy by default to counteract class imbalance problem.
+  The meaning of ``evaluate_on_num_examples`` is changed. If it is non zero, random examples will be
+  picked by stratified split and used as **hold out** validation set, so they will be excluded from training data.
+  We suggest to set it to zero (default) if data set contains a lot of unique examples of dialogue turns.
+- Default ``max_history`` for ``EmbeddingPolicy`` is ``None`` which means it'll use
+  the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
+  some finite value in order to use ``MaxHistoryTrackerFeaturizer``
+  for **faster training**. See :ref:`featurization` for details.
+  We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
+  (e.g. ``"batch_size": [32, 64]``)
 - **Compare** mode of ``rasa train core`` allows the whole core config comparison.
   Therefore, we changed the naming of trained models. They are named by config file
   name instead of policy name. Old naming style will not be read correctly when
@@ -62,7 +75,7 @@ General
   ``rasa_core.dispatcher``, these are now to be imported from ``rasa_sdk.utils``.
 
 - Rasa NLU and Core previously used `separate configuration files 
-  <https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1>`.
+  <https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1>`_.
   These two files should be merged into a single file either named ``config.yml``, or passed via the ``--config`` parameter.
 
 Script parameters
@@ -86,4 +99,4 @@ Script parameters
 
 HTTP API
 ~~~~~~~~
-- There are numerous HTTP API endpoint changes which can be found `here <http://rasa.com/docs/rasa/api/http-api/>`.
+- There are numerous HTTP API endpoint changes which can be found `here <http://rasa.com/docs/rasa/api/http-api/>`_.

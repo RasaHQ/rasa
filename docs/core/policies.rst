@@ -197,7 +197,7 @@ It is recommended to use
     Configuration parameters can be passed as parameters to the
     ``EmbeddingPolicy`` within the policy configuration file.
 
-    .. note::
+    .. warning::
 
         Pass an appropriate number of ``epochs`` to the ``EmbeddingPolicy``,
         otherwise the policy will be trained only for ``1``
@@ -277,7 +277,16 @@ It is recommended to use
 
     .. warning::
 
-        if ``evaluate_on_num_examples`` is non zero, random examples will be
+        Default ``max_history`` for this policy is ``None`` which means it'll use
+        the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
+        some finite value in order to use ``MaxHistoryTrackerFeaturizer``
+        for **faster training**. See :ref:`featurization` for details.
+        We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
+        (e.g. ``"batch_size": [32, 64]``)
+
+    .. warning::
+
+        If ``evaluate_on_num_examples`` is non zero, random examples will be
         picked by stratified split and used as **hold out** validation set,
         so they will be excluded from training data.
         We suggest to set it to zero if data set contains a lot of unique examples
