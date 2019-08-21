@@ -32,7 +32,7 @@ Glossary
         Built-in actions that carry a special meaning to Rasa.
 
     Domain
-        A domain 
+        A domain lists all the intents, entities, and actions of an assistant.
 
     Entities
         Structured information that can be extracted from a user message (e.g. telephone number).
