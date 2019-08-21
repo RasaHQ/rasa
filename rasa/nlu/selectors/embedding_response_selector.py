@@ -265,7 +265,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
             ]
         )
 
-        labels = np.array(
+        label_ids = np.array(
             [
                 label_dict[e.get(attribute)]
                 for e in training_data.intent_examples
@@ -273,9 +273,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
             ]
         )
 
-        Y = np.stack([self._encoded_all_labels[label] for label in labels])
+        Y = np.stack([self._encoded_all_label_ids[label] for label in label_ids])
 
-        return train_utils.SessionData(X=X, Y=Y, labels=labels)
+        return train_utils.SessionData(X=X, Y=Y, label_ids=label_ids)
 
     def train(
         self,
@@ -299,7 +299,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
             return
 
         self.inv_label_dict = {v: k for k, v in label_dict.items()}  # idx: response
-        self._encoded_all_labels = self._create_encoded_labels(
+        self._encoded_all_label_ids = self._create_encoded_labels(
             label_dict,
             training_data,
             attribute="response",
@@ -311,11 +311,11 @@ class ResponseSelector(EmbeddingIntentClassifier):
             "Check if num_neg {} is smaller than "
             "number of intents {}, "
             "else set num_neg to the number of intents - 1"
-            "".format(self.num_neg, self._encoded_all_labels.shape[0])
+            "".format(self.num_neg, self._encoded_all_label_ids.shape[0])
         )
 
         # noinspection PyAttributeOutsideInit
-        self.num_neg = min(self.num_neg, self._encoded_all_labels.shape[0] - 1)
+        self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
         session_data = self._create_session_data(
             training_data, label_dict, attribute="response"

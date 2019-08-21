@@ -112,8 +112,8 @@ class CountVectorsFeaturizer(Featurizer):
         # if convert all characters to lowercase
         self.lowercase = self.component_config["lowercase"]
 
-        # Flag to check if test data has been featurized or not.
-        self.is_test_data_featurized = False
+        # Flag to check if corresponding count vectorizers for each attribute of a message is trainable or not
+        self.is_trained = {attribute: False for attribute in MESSAGE_ATTRIBUTES}
 
     # noinspection PyPep8Naming
     def _load_OOV_params(self):
@@ -293,22 +293,28 @@ class CountVectorsFeaturizer(Featurizer):
 
         featurized_attributes = {}
         # noinspection PyPep8Naming
-        try:
-            for attribute in MESSAGE_ATTRIBUTES:
+
+        for attribute in MESSAGE_ATTRIBUTES:
+
+            try:
                 if self.use_shared_vocab:
                     self.vectorizer[attribute].fit(combined_cleaned_texts)
                 else:
                     self.vectorizer[attribute].fit(cleaned_attribute_texts[attribute])
-
-                featurized_attributes[attribute] = (
-                    self.vectorizer[attribute]
-                    .transform(cleaned_attribute_texts[attribute])
-                    .toarray()
+            except ValueError as e:
+                logger.warning(
+                    "Unable to train CountVectorizer for message attribute {0}. "
+                    "Returning with untrained CountVectorizer".format(attribute)
                 )
+                continue
 
-        except ValueError:
-            self.vectorizer = None
-            return
+            self.is_trained[attribute] = True
+
+            featurized_attributes[attribute] = (
+                self.vectorizer[attribute]
+                .transform(cleaned_attribute_texts[attribute])
+                .toarray()
+            )
 
         for i, example in enumerate(training_data.intent_examples):
             # create bag for each example
@@ -366,6 +372,8 @@ class CountVectorsFeaturizer(Featurizer):
                     featurizer_file,
                     [
                         self.vectorizer[attribute].vocabulary_
+                        if self.is_trained[attribute]
+                        else None
                         for attribute in MESSAGE_ATTRIBUTES
                     ],
                 )
