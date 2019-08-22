@@ -165,6 +165,7 @@ source natural language processing." />
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Conversation Design</span></p>
 <ul>
@@ -270,30 +271,30 @@ source natural language processing." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/nlu/training-data-format.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#data-formats" id="id3">Data Formats</a><ul>
-<li><a class="reference internal" href="#markdown-format" id="id4">Markdown Format</a></li>
-<li><a class="reference internal" href="#json-format" id="id5">JSON Format</a></li>
+<li><a class="reference internal" href="#data-formats" id="id4">Data Formats</a><ul>
+<li><a class="reference internal" href="#markdown-format" id="id5">Markdown Format</a></li>
+<li><a class="reference internal" href="#json-format" id="id6">JSON Format</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#improving-intent-classification-and-entity-recognition" id="id6">Improving Intent Classification and Entity Recognition</a><ul>
-<li><a class="reference internal" href="#common-examples" id="id7">Common Examples</a></li>
-<li><a class="reference internal" href="#regular-expression-features" id="id8">Regular Expression Features</a></li>
-<li><a class="reference internal" href="#lookup-tables" id="id9">Lookup Tables</a></li>
+<li><a class="reference internal" href="#improving-intent-classification-and-entity-recognition" id="id7">Improving Intent Classification and Entity Recognition</a><ul>
+<li><a class="reference internal" href="#common-examples" id="id8">Common Examples</a></li>
+<li><a class="reference internal" href="#regular-expression-features" id="id9">Regular Expression Features</a></li>
+<li><a class="reference internal" href="#lookup-tables" id="id10">Lookup Tables</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#normalizing-data" id="id10">Normalizing Data</a><ul>
-<li><a class="reference internal" href="#entity-synonyms" id="id11">Entity Synonyms</a></li>
+<li><a class="reference internal" href="#normalizing-data" id="id11">Normalizing Data</a><ul>
+<li><a class="reference internal" href="#entity-synonyms" id="id12">Entity Synonyms</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#generating-more-entity-examples" id="id12">Generating More Entity Examples</a></li>
+<li><a class="reference internal" href="#generating-more-entity-examples" id="id13">Generating More Entity Examples</a></li>
 </ul>
 </div>
 <div class="section" id="data-formats">
-<h2><a class="toc-backref" href="#id3">Data Formats</a><a class="headerlink" href="#data-formats" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4">Data Formats</a><a class="headerlink" href="#data-formats" title="Permalink to this headline">¶</a></h2>
 <p>You can provide training data as Markdown or as JSON, as a single file or as a directory containing multiple files.
 Note that Markdown is usually easier to work with.</p>
 <div class="section" id="markdown-format">
-<h3><a class="toc-backref" href="#id4">Markdown Format</a><a class="headerlink" href="#markdown-format" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5">Markdown Format</a><a class="headerlink" href="#markdown-format" title="Permalink to this headline">¶</a></h3>
 <p>Markdown is the easiest Rasa NLU format for humans to read and write.
 Examples are listed using the unordered
 list syntax, e.g. minus <code class="docutils literal notranslate"><span class="pre">-</span></code>, asterisk <code class="docutils literal notranslate"><span class="pre">*</span></code>, or plus <code class="docutils literal notranslate"><span class="pre">+</span></code>.
@@ -342,7 +343,7 @@ However, this only happens <em>after</em> the entities have been extracted, so y
 </div>
 </div>
 <div class="section" id="json-format">
-<h3><a class="toc-backref" href="#id5">JSON Format</a><a class="headerlink" href="#json-format" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6">JSON Format</a><a class="headerlink" href="#json-format" title="Permalink to this headline">¶</a></h3>
 <p>The JSON format consists of a top-level object called <code class="docutils literal notranslate"><span class="pre">rasa_nlu_data</span></code>, with the keys
 <code class="docutils literal notranslate"><span class="pre">common_examples</span></code>, <code class="docutils literal notranslate"><span class="pre">entity_synonyms</span></code> and <code class="docutils literal notranslate"><span class="pre">regex_features</span></code>.
 The most important one is <code class="docutils literal notranslate"><span class="pre">common_examples</span></code>.</p>
@@ -362,9 +363,9 @@ Regex features are a tool to help the classifier detect entities or intents and 
 </div>
 </div>
 <div class="section" id="improving-intent-classification-and-entity-recognition">
-<h2><a class="toc-backref" href="#id6">Improving Intent Classification and Entity Recognition</a><a class="headerlink" href="#improving-intent-classification-and-entity-recognition" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Improving Intent Classification and Entity Recognition</a><a class="headerlink" href="#improving-intent-classification-and-entity-recognition" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="common-examples">
-<h3><a class="toc-backref" href="#id7">Common Examples</a><a class="headerlink" href="#common-examples" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8">Common Examples</a><a class="headerlink" href="#common-examples" title="Permalink to this headline">¶</a></h3>
 <p>Common examples have three components: <code class="docutils literal notranslate"><span class="pre">text</span></code>, <code class="docutils literal notranslate"><span class="pre">intent</span></code>, and <code class="docutils literal notranslate"><span class="pre">entities</span></code>. The first two are strings while the last one is an array.</p>
 <blockquote>
 <div><ul class="simple">
@@ -384,7 +385,7 @@ That way you can map synonyms, or misspellings, to the same <code class="docutil
 </div>
 </div>
 <div class="section" id="regular-expression-features">
-<h3><a class="toc-backref" href="#id8">Regular Expression Features</a><a class="headerlink" href="#regular-expression-features" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9">Regular Expression Features</a><a class="headerlink" href="#regular-expression-features" title="Permalink to this headline">¶</a></h3>
 <p>Regular expressions can be used to support the intent classification and entity extraction. For example, if your entity has a deterministic structure (like a zipcode or an email address), you can use a regular expression to ease detection of that entity. For the zipcode example it might look like this:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> regex:zipcode
 <span class="k">-</span> [0-9]{5}
@@ -409,7 +410,7 @@ training data!</p>
 </div>
 </div>
 <div class="section" id="lookup-tables">
-<span id="id2"></span><h3><a class="toc-backref" href="#id9">Lookup Tables</a><a class="headerlink" href="#lookup-tables" title="Permalink to this headline">¶</a></h3>
+<span id="id2"></span><h3><a class="toc-backref" href="#id10">Lookup Tables</a><a class="headerlink" href="#lookup-tables" title="Permalink to this headline">¶</a></h3>
 <p>Lookup tables in the form of external files or lists of elements may also be specified in the training data.
 The externally supplied lookup tables must be in a newline-separated format.
 For example, <code class="docutils literal notranslate"><span class="pre">data/test/lookup_tables/plates.txt</span></code> may contain:</p>
@@ -453,9 +454,9 @@ clean data.</p>
 </div>
 </div>
 <div class="section" id="normalizing-data">
-<h2><a class="toc-backref" href="#id10">Normalizing Data</a><a class="headerlink" href="#normalizing-data" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id11">Normalizing Data</a><a class="headerlink" href="#normalizing-data" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="entity-synonyms">
-<h3><a class="toc-backref" href="#id11">Entity Synonyms</a><a class="headerlink" href="#entity-synonyms" title="Permalink to this headline">¶</a></h3>
+<span id="id3"></span><h3><a class="toc-backref" href="#id12">Entity Synonyms</a><a class="headerlink" href="#entity-synonyms" title="Permalink to this headline">¶</a></h3>
 <p>If you define entities as having the same value they will be treated as synonyms. Here is an example of that:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:search
 <span class="k">-</span> in the center of [<span class="nt">NYC</span>](<span class="na">city:New York City</span>)
@@ -483,7 +484,7 @@ component (see <a class="reference internal" href="../components/#components"><s
 </div>
 </div>
 <div class="section" id="generating-more-entity-examples">
-<h2><a class="toc-backref" href="#id12">Generating More Entity Examples</a><a class="headerlink" href="#generating-more-entity-examples" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id13">Generating More Entity Examples</a><a class="headerlink" href="#generating-more-entity-examples" title="Permalink to this headline">¶</a></h2>
 <p>It is sometimes helpful to generate a bunch of entity examples, for
 example if you have a database of restaurant names. There are a couple
 of tools built by the community to help with that.</p>

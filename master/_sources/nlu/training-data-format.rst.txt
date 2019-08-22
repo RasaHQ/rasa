@@ -195,6 +195,8 @@ directly specified in the training data.
 Normalizing Data
 ~~~~~~~~~~~~~~~~
 
+.. _entity_synonyms:
+
 Entity Synonyms
 ---------------
 If you define entities as having the same value they will be treated as synonyms. Here is an example of that:
