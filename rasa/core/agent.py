@@ -23,7 +23,7 @@ from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
-from rasa.core.schedule import ScheduleProvider
+from rasa.core.schedule import get_scheduler
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
@@ -204,7 +204,7 @@ async def _run_model_pulling_worker(
 async def schedule_model_pulling(
     model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
 ):
-    (await ScheduleProvider.get_scheduler()).add_job(
+    (await get_scheduler()).add_job(
         _run_model_pulling_worker,
         "interval",
         seconds=wait_time_between_pulls,
