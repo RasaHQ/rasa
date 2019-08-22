@@ -1,5 +1,3 @@
-#Old file : nlu/registry.py
-
 """This is a somewhat delicate package. It contains all registered components
 and preconfigured templates.
 

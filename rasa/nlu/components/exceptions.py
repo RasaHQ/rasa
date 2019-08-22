@@ -1,5 +1,3 @@
-#Old file : nlu/components.py
-
 from typing import Text
 
 

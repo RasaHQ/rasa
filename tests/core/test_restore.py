@@ -5,7 +5,6 @@ import pytest
 import rasa.utils.io
 from rasa.core import restore
 from rasa.core.agent import Agent
-from rasa.model import get_model
 
 
 @pytest.fixture(scope="session")
@@ -24,7 +23,6 @@ def loop():
     loop = rasa.utils.io.enable_async_loop_debugging(loop)
     yield loop
     loop.close()
-
 
 
 async def test_restoring_tracker(trained_moodbot_path, recwarn):

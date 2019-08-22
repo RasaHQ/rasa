@@ -1,5 +1,3 @@
-#Old file : nlu/components.py
-
 import logging
 
 from rasa.nlu.components.component import Component
