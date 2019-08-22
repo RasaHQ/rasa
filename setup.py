@@ -38,6 +38,9 @@ install_requires = [
     "numpy~=1.16",
     "scipy~=1.2",
     "tensorflow~=1.14.0",
+    # setuptools comes from tensorboard requirement:
+    # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
+    "setuptools >= 41.0.0",
     "tensorflow-probability~=0.7.0",
     "tensor2tensor~=1.13.4",
     "apscheduler~=3.0",
@@ -128,8 +131,8 @@ setup(
     },
 )
 
-print ("\nWelcome to Rasa!")
-print (
+print("\nWelcome to Rasa!")
+print(
     "If you have any questions, please visit our documentation page: https://rasa.com/docs/"
 )
-print ("or join the community discussions on https://forum.rasa.com/")
+print("or join the community discussions on https://forum.rasa.com/")
