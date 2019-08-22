@@ -42,7 +42,6 @@
 
 ## intent:mood_great
 - perfect
-- very good
 - great
 - amazing
 - feeling like a king
@@ -51,7 +50,7 @@
 - I am great
 - I am amazing
 - I am going to save the world
-- super
+- super stoked
 - extremely good
 - so so perfect
 - so good
@@ -67,7 +66,7 @@
 - sad
 - very sad
 - unhappy
-- not so good
+- not good
 - not very good
 - extremly sad
 - so saad
