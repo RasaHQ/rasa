@@ -42,7 +42,7 @@ install_requires = [
     # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
     "setuptools >= 41.0.0",
     "tensorflow-probability~=0.7.0",
-    "tensor2tensor~=1.13.4",
+    "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
     "networkx~=2.3",
