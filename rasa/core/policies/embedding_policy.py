@@ -19,6 +19,7 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.policies.policy import Policy
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
 
@@ -115,7 +116,7 @@ class EmbeddingPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional["TrackerFeaturizer"] = None,
-        priority: int = 1,
+        priority: int = DEFAULT_POLICY_PRIORITY,
         graph: Optional["tf.Graph"] = None,
         session: Optional["tf.Session"] = None,
         user_placeholder: Optional["tf.Tensor"] = None,
