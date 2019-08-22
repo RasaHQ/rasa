@@ -1,10 +1,12 @@
-:desc: Read more how to define assistant utterances or use a service to generate the
+:desc: Read how to define assistant utterances or use a service to generate the
        responses using Rasa as an open source chat assistant platform.
 
 .. _responses:
 
 Responses
 =========
+
+.. edit-link::
 
 If you want your assistant to respond to user messages, you need to manage
 these responses. In the training data for your bot,

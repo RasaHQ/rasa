@@ -1,6 +1,6 @@
 import json
 import logging
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 import responses
@@ -784,3 +784,41 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     routes_list = utils.list_routes(app)
     assert routes_list.get("custom_webhook_RestInput.health").startswith(test_route)
     assert ignored_base_route not in routes_list.get("custom_webhook_RestInput.health")
+
+
+@pytest.mark.parametrize(
+    "test_input, expected",
+    [
+        ({}, "rest"),
+        ({"input_channel": None}, "rest"),
+        ({"input_channel": "custom"}, "custom"),
+    ],
+)
+def test_extract_input_channel(test_input, expected):
+    from rasa.core.channels.channel import RestInput
+
+    input_channel = RestInput()
+
+    fake_request = MagicMock()
+    fake_request.json = test_input
+
+    assert input_channel._extract_input_channel(fake_request) == expected
+
+
+async def test_rasa_chat_input():
+    from rasa.core.channels import RasaChatInput
+
+    rasa_x_api_url = "https://rasa-x.com:5002"
+    rasa_chat_input = RasaChatInput(rasa_x_api_url)
+    public_key = "random_key123"
+    jwt_algorithm = "RS256"
+    with aioresponses() as mocked:
+        mocked.get(
+            rasa_x_api_url + "/version",
+            payload={"keys": [{"key": public_key, "alg": jwt_algorithm}]},
+            repeat=True,
+            status=200,
+        )
+        await rasa_chat_input._fetch_public_key()
+        assert rasa_chat_input.jwt_key == public_key
+        assert rasa_chat_input.jwt_algorithm == jwt_algorithm

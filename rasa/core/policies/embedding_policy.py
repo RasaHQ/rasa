@@ -19,6 +19,7 @@ from rasa.core.featurizers import (
     LabelTokenizerSingleStateFeaturizer,
 )
 from rasa.core.policies.policy import Policy
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 import tensorflow as tf
 from rasa.core.policies.tf_utils import (

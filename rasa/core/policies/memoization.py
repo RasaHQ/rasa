@@ -16,6 +16,7 @@ from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import is_logging_disabled
+from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class MemoizationPolicy(Policy):
 
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
-    defaults = {"priority": 2, "max_history": None, "lookup": {}}
+    defaults = {"priority": MEMOIZATION_POLICY_PRIORITY, "max_history": None, "lookup": {}}
 
     @staticmethod
     def _standard_featurizer(max_history=None):
@@ -63,6 +64,7 @@ class MemoizationPolicy(Policy):
         self,
         config: Optional[Dict[Text, Any]] = None,
         featurizer: Optional[TrackerFeaturizer] = None,
+        lookup: Optional[Dict] = None,
         **kwargs
     ) -> None:
 

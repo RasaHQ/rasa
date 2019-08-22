@@ -2,7 +2,7 @@ import logging
 import os
 import tempfile
 import traceback
-from functools import wraps
+from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
 
@@ -12,30 +12,37 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
+import rasa.core.brokers.utils as broker_utils
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
-from rasa.core.domain import InvalidDomain
-from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DEFAULT_MODELS_PATH,
     DEFAULT_DOMAIN_PATH,
     DOCS_BASE_URL,
 )
-from rasa.core import broker
 from rasa.core.agent import load_agent, Agent
-from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
+from rasa.core.channels.channel import (
+    UserMessage,
+    CollectingOutputChannel,
+    OutputChannel,
+)
+from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
 from rasa.core.test import test
+from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file, AvailableEndpoints
 from rasa.model import get_model_subdirectories, fingerprint_from_path
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
-from rasa.core.tracker_store import TrackerStore
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
+
+OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
+USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
 
 
 class ErrorResponse(Exception):
@@ -242,7 +249,7 @@ async def _load_agent(
         action_endpoint = None
 
         if endpoints:
-            _broker = broker.from_endpoint_config(endpoints.event_broker)
+            _broker = broker_utils.from_endpoint_config(endpoints.event_broker)
             tracker_store = TrackerStore.find_tracker_store(
                 None, endpoints.tracker_store, _broker
             )
@@ -272,6 +279,13 @@ async def _load_agent(
         )
 
     return loaded_agent
+
+
+def add_root_route(app: Sanic):
+    @app.get("/")
+    async def hello(request: Request):
+        """Check if the server is running and responds with the version."""
+        return response.text("Hello from Rasa: " + rasa.__version__)
 
 
 def create_app(
@@ -311,10 +325,7 @@ def create_app(
     async def handle_error_response(request: Request, exception: ErrorResponse):
         return response.json(exception.error_info, status=exception.status)
 
-    @app.get("/")
-    async def hello(request: Request):
-        """Check if the server is running and responds with the version."""
-        return response.text("Hello from Rasa: " + rasa.__version__)
+    add_root_route(app)
 
     @app.get("/version")
     async def version(request: Request):
@@ -502,13 +513,13 @@ def create_app(
 
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
-
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            out = CollectingOutputChannel()
+            tracker = obtain_tracker_store(app.agent, conversation_id)
+            output_channel = _get_output_channel(request, tracker)
             await app.agent.execute_action(
-                conversation_id, action_to_execute, out, policy, confidence
+                conversation_id, action_to_execute, output_channel, policy, confidence
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -520,7 +531,13 @@ def create_app(
 
         tracker = obtain_tracker_store(app.agent, conversation_id)
         state = tracker.current_state(verbosity)
-        return response.json({"tracker": state, "messages": out.messages})
+
+        response_body = {"tracker": state}
+
+        if isinstance(output_channel, CollectingOutputChannel):
+            response_body["messages"] = output_channel.messages
+
+        return response.json(response_body)
 
     @app.post("/conversations/<conversation_id>/predict")
     @requires_auth(app, auth_token)
@@ -804,10 +821,18 @@ def create_app(
 
         try:
             data = emulator.normalise_request_json(request.json)
-            parse_data = await app.agent.interpreter.parse(
-                data.get("text"), data.get("message_id")
-            )
-            response_data = emulator.normalise_response_json(parse_data)
+            try:
+                parsed_data = await app.agent.parse_message_using_nlu_interpreter(
+                    data.get("text")
+                )
+            except Exception as e:
+                logger.debug(traceback.format_exc())
+                raise ErrorResponse(
+                    400,
+                    "ParsingError",
+                    "An unexpected error occurred. Error: {}".format(e),
+                )
+            response_data = emulator.normalise_response_json(parsed_data)
 
             return response.json(response_data)
 
@@ -881,3 +906,43 @@ def create_app(
             )
 
     return app
+
+
+def _get_output_channel(
+    request: Request, tracker: Optional[DialogueStateTracker]
+) -> OutputChannel:
+    """Returns the `OutputChannel` which should be used for the bot's responses.
+
+    Args:
+        request: HTTP request whose query parameters can specify which `OutputChannel`
+                 should be used.
+        tracker: Tracker for the conversation. Used to get the latest input channel.
+
+    Returns:
+        `OutputChannel` which should be used to return the bot's responses to.
+    """
+    requested_output_channel = request.args.get(OUTPUT_CHANNEL_QUERY_KEY)
+
+    if (
+        requested_output_channel == USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL
+        and tracker
+    ):
+        requested_output_channel = tracker.get_latest_input_channel()
+
+    # Interactive training does not set `input_channels`, hence we have to be cautious
+    registered_input_channels = getattr(request.app, "input_channels", None) or []
+    matching_channels = [
+        channel
+        for channel in registered_input_channels
+        if channel.name() == requested_output_channel
+    ]
+
+    # Check if matching channels can provide a valid output channel,
+    # otherwise use `CollectingOutputChannel`
+    return reduce(
+        lambda output_channel_created_so_far, input_channel: (
+            input_channel.get_output_channel() or output_channel_created_so_far
+        ),
+        matching_channels,
+        CollectingOutputChannel(),
+    )

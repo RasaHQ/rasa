@@ -4,38 +4,41 @@ import json
 import logging
 import questionary
 from typing import Text, Optional
+
+from aiohttp import ClientTimeout
 from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
-import rasa.cli.utils
+from rasa.cli import utils as cli_utils
+
 from rasa.core import utils
 from rasa.core.channels.channel import UserMessage
-from rasa.core.channels.channel import RestInput, button_to_string, element_to_string
+from rasa.core.channels.channel import RestInput
 from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
 
 
+DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
+
+
 def print_bot_output(
-    message, color=rasa.cli.utils.bcolors.OKBLUE
+    message, color=cli_utils.bcolors.OKBLUE
 ) -> Optional[questionary.Question]:
     if ("text" in message) and not ("buttons" in message):
-        rasa.cli.utils.print_color(message.get("text"), color=color)
+        cli_utils.print_color(message.get("text"), color=color)
 
     if "image" in message:
-        rasa.cli.utils.print_color("Image: " + message.get("image"), color=color)
+        cli_utils.print_color("Image: " + message.get("image"), color=color)
 
     if "attachment" in message:
-        rasa.cli.utils.print_color(
-            "Attachment: " + message.get("attachment"), color=color
-        )
+        cli_utils.print_color("Attachment: " + message.get("attachment"), color=color)
 
     if "buttons" in message:
-        choices = [
-            button_to_string(button, idx)
-            for idx, button in enumerate(message.get("buttons"))
-        ]
+        choices = cli_utils.button_choices_from_message_data(
+            message, allow_free_text_input=True
+        )
 
         question = questionary.select(
             message.get("text"),
@@ -45,32 +48,34 @@ def print_bot_output(
         return question
 
     if "elements" in message:
-        rasa.cli.utils.print_color("Elements:", color=color)
+        cli_utils.print_color("Elements:", color=color)
         for idx, element in enumerate(message.get("elements")):
-            rasa.cli.utils.print_color(element_to_string(element, idx), color=color)
+            cli_utils.print_color(
+                cli_utils.element_to_string(element, idx), color=color
+            )
 
     if "quick_replies" in message:
-        rasa.cli.utils.print_color("Quick Replies:", color=color)
+        cli_utils.print_color("Quick Replies:", color=color)
         for idx, element in enumerate(message.get("quick_replies")):
-            rasa.cli.utils.print_color(button_to_string(element, idx), color=color)
+            cli_utils.print_color(cli_utils.button_to_string(element, idx), color=color)
 
     if "custom" in message:
-        rasa.cli.utils.print_color("Custom json:", color=color)
-        rasa.cli.utils.print_color(
-            json.dumps(message.get("custom"), indent=2), color=color
-        )
+        cli_utils.print_color("Custom json:", color=color)
+        cli_utils.print_color(json.dumps(message.get("custom"), indent=2), color=color)
 
 
-def get_cmd_input(button_question: questionary.Question) -> Optional[Text]:
+def get_user_input(button_question: questionary.Question) -> Optional[Text]:
     if button_question is not None:
-        response = rasa.cli.utils.payload_from_button_question(button_question)
+        response = cli_utils.payload_from_button_question(button_question)
+        if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
+            # Re-prompt user with a free text input
+            response = get_user_input(None)
     else:
         response = questionary.text(
             "",
             qmark="Your input ->",
             style=Style([("qmark", "#b373d6"), ("", "#b373d6")]),
         ).ask()
-
     return response.strip() if response is not None else None
 
 
@@ -89,8 +94,10 @@ async def send_message_receive_stream(server_url, auth_token, sender_id, message
 
     url = "{}/webhooks/rest/webhook?stream=true&token={}".format(server_url, auth_token)
 
+    # Define timeout to not keep reading in case the server crashed in between
+    timeout = ClientTimeout(DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS)
     # TODO: check if this properly receives UTF-8 data
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(url, json=payload, raise_for_status=True) as resp:
 
             async for line in resp.content:
@@ -111,7 +118,7 @@ async def record_messages(
 
     exit_text = INTENT_MESSAGE_PREFIX + "stop"
 
-    rasa.cli.utils.print_success(
+    cli_utils.print_success(
         "Bot loaded. Type a message and press enter "
         "(use '{}' to exit): ".format(exit_text)
     )
@@ -119,7 +126,7 @@ async def record_messages(
     num_messages = 0
     button_question = None
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = get_cmd_input(button_question)
+        text = get_user_input(button_question)
 
         if text == exit_text or text is None:
             break

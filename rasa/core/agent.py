@@ -4,34 +4,30 @@ import shutil
 import tempfile
 import uuid
 from asyncio import CancelledError
-from sanic import Sanic
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
+from sanic import Sanic
 
 import rasa
 import rasa.utils.io
 from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
 from rasa.core import constants, jobs, training
-from rasa.core.channels.channel import (
-    InputChannel,
-    OutputChannel,
-    UserMessage,
-    CollectingOutputChannel,
-)
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.policies.policy import Policy
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
+from rasa.exceptions import ModelNotFound
+from rasa.importers.importer import TrainingDataImporter
 from rasa.model import (
     get_model_subdirectories,
     get_latest_model,
@@ -41,7 +37,6 @@ from rasa.model import (
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
-from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +70,7 @@ def _load_and_set_updated_model(
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    if os.path.exists(nlu_path):
+    if nlu_path:
         from rasa.core.interpreter import RasaNLUInterpreter
 
         interpreter = RasaNLUInterpreter(model_directory=nlu_path)
@@ -85,13 +80,13 @@ def _load_and_set_updated_model(
         )
 
     domain = None
-    if os.path.exists(core_path):
+    if core_path:
         domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
         domain = Domain.load(domain_path)
 
     try:
         policy_ensemble = None
-        if os.path.exists(core_path):
+        if core_path:
             policy_ensemble = PolicyEnsemble.load(core_path)
         agent.update_model(
             domain, policy_ensemble, fingerprint, interpreter, model_directory
@@ -157,9 +152,10 @@ async def _pull_model_and_fingerprint(
                     return None
                 elif resp.status == 404:
                     logger.debug(
-                        "Model server didn't find a model for our request. "
-                        "Probably no one did train a model for the project "
-                        "and tag combination yet."
+                        "Model server could not find a model at the requested "
+                        "endpoint '{}'. It's possible that no model has been "
+                        "trained, or that the requested tag hasn't been "
+                        "assigned.".format(model_server.url)
                     )
                     return None
                 elif resp.status != 200:
@@ -280,7 +276,7 @@ class Agent(object):
 
     def __init__(
         self,
-        domain: Union[Text, Domain] = None,
+        domain: Union[Text, Domain, None] = None,
         policies: Union[PolicyEnsemble, List[Policy], None] = None,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
@@ -293,14 +289,15 @@ class Agent(object):
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
-        if self.domain:
-            self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
-        if not self._is_form_policy_present():
-            raise InvalidDomain(
-                "You have defined a form action, but haven't added the "
-                "FormPolicy to your policy ensemble."
-            )
+
+        if self.domain is not None:
+            self.domain.add_requested_slot()
+            self.domain.add_knowledge_base_slots()
+
+        PolicyEnsemble.check_domain_ensemble_compatibility(
+            self.policy_ensemble, self.domain
+        )
 
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
@@ -316,8 +313,8 @@ class Agent(object):
 
     def update_model(
         self,
-        domain: Domain,
-        policy_ensemble: PolicyEnsemble,
+        domain: Optional[Domain],
+        policy_ensemble: Optional[PolicyEnsemble],
         fingerprint: Optional[Text],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         model_directory: Optional[Text] = None,
@@ -333,7 +330,7 @@ class Agent(object):
         # update domain on all instances
         self.tracker_store.domain = domain
         if hasattr(self.nlg, "templates"):
-            self.nlg.templates = domain.templates or []
+            self.nlg.templates = domain.templates if domain else {}
 
         self.model_directory = model_directory
 
@@ -367,13 +364,13 @@ class Agent(object):
 
         core_model, nlu_model = get_model_subdirectories(model_path)
 
-        if not interpreter and os.path.exists(nlu_model):
+        if not interpreter and nlu_model:
             interpreter = NaturalLanguageInterpreter.create(nlu_model)
 
         domain = None
         ensemble = None
 
-        if os.path.exists(core_model):
+        if core_model:
             domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
             ensemble = PolicyEnsemble.load(core_model) if core_model else None
 
@@ -392,13 +389,53 @@ class Agent(object):
             remote_storage=remote_storage,
         )
 
-    def is_ready(self):
-        """Check if all necessary components are instantiated to use agent."""
-        return (
-            self.tracker_store is not None
-            and self.policy_ensemble is not None
-            and self.interpreter is not None
+    def is_ready(self, allow_nlu_only: bool = False):
+        """Check if all necessary components are instantiated to use agent.
+
+        Args:
+            allow_nlu_only: If `True`, consider the agent ready event if no policy
+                ensemble is present.
+
+        """
+        return all(
+            [
+                self.tracker_store,
+                self.interpreter,
+                self.policy_ensemble or allow_nlu_only,
+            ]
         )
+
+    async def parse_message_using_nlu_interpreter(
+        self, message_data: Text, tracker: DialogueStateTracker = None
+    ) -> Dict[Text, Any]:
+        """Handles message text and intent payload input messages.
+
+        The return value of this function is parsed_data.
+
+        Args:
+            message_data (Text): Contain the received message in text or\
+            intent payload format.
+            tracker (DialogueStateTracker): Contains the tracker to be\
+            used by the interpreter.
+
+        Returns:
+            The parsed message.
+
+            Example:
+
+                {\
+                    "text": '/greet{"name":"Rasa"}',\
+                    "intent": {"name": "greet", "confidence": 1.0},\
+                    "intent_ranking": [{"name": "greet", "confidence": 1.0}],\
+                    "entities": [{"entity": "name", "start": 6,\
+                                  "end": 21, "value": "Rasa"}],\
+                }
+
+        """
+
+        processor = self.create_processor()
+        message = UserMessage(message_data)
+        return await processor._parse_message(message, tracker)
 
     async def handle_message(
         self,
@@ -422,7 +459,7 @@ class Agent(object):
             logger.info("Ignoring message as there is no agent to handle it.")
             return None
 
-        if not self.is_ready():
+        if not self.is_ready(allow_nlu_only=True):
             return noop(message)
 
         processor = self.create_processor(message_preprocessor)
@@ -479,7 +516,7 @@ class Agent(object):
         self,
         sender_id: Text,
         action: Text,
-        output_channel: CollectingOutputChannel,
+        output_channel: OutputChannel,
         policy: Text,
         confidence: float,
     ) -> DialogueStateTracker:
@@ -579,7 +616,7 @@ class Agent(object):
 
     async def load_data(
         self,
-        resource_name: Text,
+        training_resource: Union[Text, TrainingDataImporter],
         remove_duplicates: bool = True,
         unique_last_num_states: Optional[int] = None,
         augmentation_factor: int = 20,
@@ -612,7 +649,7 @@ class Agent(object):
             )
 
         return await training.load_data(
-            resource_name,
+            training_resource,
             self.domain,
             remove_duplicates,
             unique_last_num_states,
@@ -786,26 +823,18 @@ class Agent(object):
             fontsize,
         )
 
-    def _ensure_agent_is_ready(self) -> None:
-        """Checks that an interpreter and a tracker store are set.
-
-        Necessary before a processor can be instantiated from this agent.
-        Raises an exception if any argument is missing."""
-
-        if not self.is_ready():
-            raise AgentNotReady(
-                "Agent needs to be prepared before usage. "
-                "You need to set an interpreter, a policy "
-                "ensemble as well as a tracker store."
-            )
-
     def create_processor(
         self, preprocessor: Optional[Callable[[Text], Text]] = None
     ) -> MessageProcessor:
         """Instantiates a processor based on the set state of the agent."""
         # Checks that the interpreter and tracker store are set and
         # creates a processor
-        self._ensure_agent_is_ready()
+        if not self.is_ready(allow_nlu_only=True):
+            raise AgentNotReady(
+                "Agent needs to be prepared before usage. You need to set an "
+                "interpreter and a tracker store."
+            )
+
         return MessageProcessor(
             self.interpreter,
             self.policy_ensemble,
@@ -921,11 +950,3 @@ class Agent(object):
             )
 
         return None
-
-    def _is_form_policy_present(self) -> bool:
-        """Check whether form policy is present and used."""
-
-        has_form_policy = self.policy_ensemble is not None and any(
-            isinstance(p, FormPolicy) for p in self.policy_ensemble.policies
-        )
-        return not self.domain or not self.domain.form_names or has_form_policy

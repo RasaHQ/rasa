@@ -27,7 +27,7 @@ def test_all_components_in_model_templates_exist(pipeline_template):
     components = registry.registered_pipeline_templates[pipeline_template]
     for component in components:
         assert (
-            component in registry.registered_components
+            component["name"] in registry.registered_components
         ), "Model template contains unknown component."
 
 
@@ -77,12 +77,12 @@ def test_builder_load_unknown(component_builder):
     assert "Unknown component name" in str(excinfo.value)
 
 
-def test_example_component(component_builder, tmpdir_factory):
+async def test_example_component(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
     )
 
-    interpreter = utilities.interpreter_for(
+    interpreter = await utilities.interpreter_for(
         component_builder,
         data="./data/examples/rasa/demo-rasa.json",
         path=tmpdir_factory.mktemp("projects").strpath,

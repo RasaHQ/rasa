@@ -6,5 +6,8 @@ policies:
   - name: MemoizationPolicy
   - name: KerasPolicy
 
+importers:
+  - name: MultiProjectImporter
+
 imports:
-- data/MoodBot
+  - data/MoodBot

@@ -1,7 +1,12 @@
+:desc: Dialogue elements are an abstraction layer for your conversational AI platform 
+       which describe common, recurring patterns in chatbot conversations.
+
 .. _dialogue-elements:
 
 Dialogue Elements
 =================
+
+.. edit-link::
 
 Dialogue elements are common conversation patterns.
 We use three different levels of abstraction to discuss AI assistants.

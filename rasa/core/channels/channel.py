@@ -9,6 +9,7 @@ from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 
 import rasa.utils.endpoints
+from rasa.cli import utils as cli_utils
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 
@@ -33,9 +34,23 @@ class UserMessage(object):
         output_channel: Optional["OutputChannel"] = None,
         sender_id: Optional[Text] = None,
         parse_data: Dict[Text, Any] = None,
-        input_channel: Text = None,
-        message_id: Text = None,
+        input_channel: Optional[Text] = None,
+        message_id: Optional[Text] = None,
+        metadata: Optional[Dict] = None,
     ) -> None:
+        """Creates a ``UserMessage`` object.
+
+        Args:
+            text: the message text content.
+            output_channel: the output channel which should be used to send
+                bot responses back to the user.
+            sender_id: the message owner ID.
+            parse_data: rasa data about the message.
+            input_channel: the name of the channel which received this message.
+            message_id: ID of the message.
+            metadata: additional metadata for this message.
+
+        """
         self.text = text.strip() if text else text
 
         if message_id is not None:
@@ -56,6 +71,7 @@ class UserMessage(object):
         self.input_channel = input_channel
 
         self.parse_data = parse_data
+        self.metadata = metadata
 
 
 def register(
@@ -71,40 +87,7 @@ def register(
             p = None
         app.blueprint(channel.blueprint(handler), url_prefix=p)
 
-
-def button_to_string(button, idx=0):
-    """Create a string representation of a button."""
-
-    title = button.pop("title", "")
-
-    if "payload" in button:
-        payload = " ({})".format(button.pop("payload"))
-    else:
-        payload = ""
-
-    # if there are any additional attributes, we append them to the output
-    if button:
-        details = " - {}".format(json.dumps(button, sort_keys=True))
-    else:
-        details = ""
-
-    button_string = "{idx}: {title}{payload}{details}".format(
-        idx=idx + 1, title=title, payload=payload, details=details
-    )
-
-    return button_string
-
-
-def element_to_string(element, idx=0):
-    """Create a string representation of an element."""
-
-    title = element.pop("title", "")
-
-    element_string = "{idx}: {title} - {element}".format(
-        idx=idx + 1, title=title, element=json.dumps(element, sort_keys=True)
-    )
-
-    return element_string
+    app.input_channels = input_channels
 
 
 class InputChannel(object):
@@ -141,6 +124,20 @@ class InputChannel(object):
                 cls.name(), cls.name(), DOCS_BASE_URL
             )
         )
+
+    def get_output_channel(self) -> Optional["OutputChannel"]:
+        """Create ``OutputChannel`` based on information provided by the input channel.
+
+        Implementing this function is not required. If this function returns a valid
+        ``OutputChannel`` this can be used by Rasa to send bot responses to the user
+        without the user initiating an interaction.
+
+        Returns:
+            ``OutputChannel`` instance or ``None`` in case creating an output channel
+             only based on the information present in the ``InputChannel`` is not
+             possible.
+        """
+        pass
 
 
 class OutputChannel(object):
@@ -224,7 +221,7 @@ class OutputChannel(object):
 
         await self.send_text_message(recipient_id, text, **kwargs)
         for idx, button in enumerate(buttons):
-            button_msg = button_to_string(button, idx)
+            button_msg = cli_utils.button_to_string(button, idx)
             await self.send_text_message(recipient_id, button_msg, **kwargs)
 
     async def send_quick_replies(
@@ -379,36 +376,42 @@ class RestInput(InputChannel):
         text: Text,
         queue: Queue,
         sender_id: Text,
+        input_channel: Text,
     ) -> None:
         collector = QueueOutputChannel(queue)
 
-        message = UserMessage(
-            text, collector, sender_id, input_channel=RestInput.name()
-        )
+        message = UserMessage(text, collector, sender_id, input_channel=input_channel)
         await on_new_message(message)
 
         await queue.put("DONE")  # pytype: disable=bad-return-type
 
-    async def _extract_sender(self, req) -> Optional[Text]:
+    async def _extract_sender(self, req: Request) -> Optional[Text]:
         return req.json.get("sender", None)
 
     # noinspection PyMethodMayBeStatic
-    def _extract_message(self, req):
+    def _extract_message(self, req: Request) -> Optional[Text]:
         return req.json.get("message", None)
+
+    def _extract_input_channel(self, req: Request) -> Text:
+        return req.json.get("input_channel") or self.name()
 
     def stream_response(
         self,
         on_new_message: Callable[[UserMessage], Awaitable[None]],
         text: Text,
         sender_id: Text,
+        input_channel: Text,
     ) -> Callable[[Any], Awaitable[None]]:
         async def stream(resp: Any) -> None:
             q = Queue()
             task = asyncio.ensure_future(
-                self.on_message_wrapper(on_new_message, text, q, sender_id)
+                self.on_message_wrapper(
+                    on_new_message, text, q, sender_id, input_channel
+                )
             )
+            result = None  # declare variable up front to avoid pytype error
             while True:
-                result = await q.get()  # pytype: disable=bad-return-type
+                result = await q.get()
                 if result == "DONE":
                     break
                 else:
@@ -435,10 +438,13 @@ class RestInput(InputChannel):
             should_use_stream = rasa.utils.endpoints.bool_arg(
                 request, "stream", default=False
             )
+            input_channel = self._extract_input_channel(request)
 
             if should_use_stream:
                 return response.stream(
-                    self.stream_response(on_new_message, text, sender_id),
+                    self.stream_response(
+                        on_new_message, text, sender_id, input_channel
+                    ),
                     content_type="text/event-stream",
                 )
             else:
@@ -447,7 +453,7 @@ class RestInput(InputChannel):
                 try:
                     await on_new_message(
                         UserMessage(
-                            text, collector, sender_id, input_channel=self.name()
+                            text, collector, sender_id, input_channel=input_channel
                         )
                     )
                 except CancelledError:

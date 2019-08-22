@@ -1,10 +1,12 @@
-:desc: Configure the custom components of your ML model to optimise the
-       processes performed on the user input of your contextual assistant.
+:desc: Customize the components and parameters of Rasa's Machine Learning based
+       Natural Language Understanding pipeline
 
 .. _components:
 
 Components
 ==========
+
+.. edit-link::
 
 .. note::
    For clarity, we have renamed the pre-defined pipelines to reflect
@@ -454,6 +456,8 @@ EmbeddingIntentClassifier
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
+.. _tokenizers:
+
 Tokenizers
 ----------
 
@@ -466,6 +470,14 @@ WhitespaceTokenizer
 :Description:
     Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
     extractor.
+:Configuration:
+    Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "WhitespaceTokenizer"
+          case_sensitive: false
 
 JiebaTokenizer
 ~~~~~~~~~~~~~~
@@ -663,7 +675,7 @@ CRFEntityExtractor
           # Available features are:
           # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
           # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
-          # ``bias``, ``upper`` and ``digit``
+          # ``bias``, ``upper``, ``digit`` and ``pattern``
           features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
           # The flag determines whether to use BILOU tagging or not. BILOU
@@ -743,3 +755,5 @@ DucklingHTTPExtractor
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
+
+

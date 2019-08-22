@@ -28,8 +28,10 @@ def write_file_config(file_config):
         return f
 
 
-def interpreter_for(component_builder, data, path, config):
-    (trained, _, path) = train(config, data, path, component_builder=component_builder)
+async def interpreter_for(component_builder, data, path, config):
+    (trained, _, path) = await train(
+        config, data, path, component_builder=component_builder
+    )
     interpreter = Interpreter.load(path, component_builder)
     return interpreter
 

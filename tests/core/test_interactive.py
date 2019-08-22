@@ -8,6 +8,7 @@ from rasa.core.events import BotUttered
 from rasa.core.training import interactive
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.actions.action import default_actions
+from rasa.core.domain import Domain
 from tests.utilities import latest_request, json_of_latest_request
 
 
@@ -94,6 +95,7 @@ def test_bot_output_format():
         "Buttons:\n"
         "1: yes (/yes)\n"
         '2: no (/no) - {"extra": "extra"}\n'
+        "Type out your own message...\n"
         "Elements:\n"
         '1: element1 - {"buttons": '
         '[{"payload": "/button1", "title": "button1"}]'
@@ -311,7 +313,10 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
     with aioresponses() as mocked:
         mocked.get(url, payload={})
 
-        await interactive._write_domain_to_file(domain_path, events, mock_endpoint)
+        serialised_domain = await interactive.retrieve_domain(mock_endpoint)
+        old_domain = Domain.from_dict(serialised_domain)
+
+        await interactive._write_domain_to_file(domain_path, events, old_domain)
 
     saved_domain = rasa.utils.io.read_config_file(domain_path)
 

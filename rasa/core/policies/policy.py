@@ -13,6 +13,7 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 
 logger = logging.getLogger(__name__)
@@ -41,13 +42,12 @@ class Policy(object):
             return None
 
     # Defines the default configuration parameters of a policy.
-    defaults = {"priority": 1}
+    defaults = {"priority": DEFAULT_POLICY_PRIORITY}
 
     def __init__(
         self,
         config: Optional[Dict[Text, Any]] = None,
         featurizer: Optional[TrackerFeaturizer] = None,
-        **kwargs: Any
     ) -> None:
 
         if config is None:

@@ -1,12 +1,18 @@
 import logging
-from typing import List, Optional, Dict, Text, Any
+import typing
+from typing import List, Optional, Dict, Text, Optional
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
+from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
 from rasa.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import FORM_POLICY_PRIORITY
+
+if typing.TYPE_CHECKING:
+    from rasa.core.policies.ensemble import PolicyEnsemble
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +30,7 @@ class FormPolicy(MemoizationPolicy):
         self,
         config: Optional[Dict[Text, Any]] = None,
         featurizer: Optional[TrackerFeaturizer] = None,
+        lookup: Optional[Dict] = None,
         **kwargs
     ) -> None:
 
@@ -32,6 +39,24 @@ class FormPolicy(MemoizationPolicy):
         config.update(kwargs)
 
         super(FormPolicy, self).__init__(config=config, featurizer=featurizer)
+
+    @classmethod
+    def validate_against_domain(
+        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ) -> None:
+        if not domain:
+            return
+
+        has_form_policy = ensemble is not None and any(
+            isinstance(p, cls) for p in ensemble.policies
+        )
+        if domain.form_names and not has_form_policy:
+            raise InvalidDomain(
+                "You have defined a form action, but haven't added the "
+                "FormPolicy to your policy ensemble. Either remove all "
+                "forms from your domain or exclude the FormPolicy from your "
+                "policy configuration."
+            )
 
     @staticmethod
     def _get_active_form_name(state):

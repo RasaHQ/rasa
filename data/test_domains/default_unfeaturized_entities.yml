@@ -1,9 +1,11 @@
 intents:
  - greet: {use_entities: [name]}
  - default: {ignore_entities : [unrelated_recognized_entity]}
- - goodbye: {use_entities: None}
+ - goodbye: {use_entities: null}
  - thank: {use_entities: False}
  - ask: {use_entities: True}
+ - why: {use_entities: []}
+ - pure_intent
 
 entities:
  - name

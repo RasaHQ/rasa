@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 
-from collections import Counter
-
 import logging
 import os
 import random
 import warnings
+from collections import Counter
 from copy import deepcopy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
+import rasa.nlu.utils
+import rasa.utils.common as rasa_utils
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
-from rasa.nlu.utils import lazyproperty, list_to_str, write_to_file
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -43,8 +43,6 @@ class TrainingData(object):
         self.sort_regex_features()
         self.lookup_tables = lookup_tables if lookup_tables else []
 
-        self.print_stats()
-
     def merge(self, *others: "TrainingData") -> "TrainingData":
         """Return merged instance of this data with other training data."""
 
@@ -52,6 +50,7 @@ class TrainingData(object):
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
         lookup_tables = deepcopy(self.lookup_tables)
+        others = [other for other in others if other]
 
         for o in others:
             training_examples.extend(deepcopy(o.training_examples))
@@ -69,6 +68,15 @@ class TrainingData(object):
             training_examples, entity_synonyms, regex_features, lookup_tables
         )
 
+    def __hash__(self) -> int:
+        from rasa.core import utils as core_utils
+
+        # Sort keys to ensure dictionary order in Python 3.5
+        stringified = self.as_json(sort_keys=True)
+        text_hash = core_utils.get_text_hash(stringified)
+
+        return int(text_hash, 16)
+
     @staticmethod
     def sanitize_examples(examples: List[Message]) -> List[Message]:
         """Makes sure the training data is clean.
@@ -80,32 +88,32 @@ class TrainingData(object):
                 ex.set("intent", ex.get("intent").strip())
         return examples
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def intent_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("intent")]
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def entity_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("entities")]
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
         return set([ex.get("intent") for ex in self.training_examples]) - {None}
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
         intents = [ex.get("intent") for ex in self.training_examples]
         return dict(Counter(intents))
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
         return set(entity_types)
 
-    @lazyproperty
+    @rasa_utils.lazy_property
     def examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
@@ -123,7 +131,7 @@ class TrainingData(object):
             RasaWriter,
         )
 
-        return RasaWriter().dumps(self)
+        return RasaWriter().dumps(self, **kwargs)
 
     def as_markdown(self) -> Text:
         """Generates the markdown representation of the TrainingData."""
@@ -145,9 +153,9 @@ class TrainingData(object):
         data_file = os.path.join(dir_name, filename)
 
         if data_file.endswith("json"):
-            write_to_file(data_file, self.as_json(indent=2))
+            rasa.nlu.utils.write_to_file(data_file, self.as_json(indent=2))
         elif data_file.endswith("md"):
-            write_to_file(data_file, self.as_markdown())
+            rasa.nlu.utils.write_to_file(data_file, self.as_markdown())
         else:
             ValueError(
                 "Unsupported file format detected. Supported file formats are 'json' "
@@ -235,9 +243,22 @@ class TrainingData(object):
             + "\t- intent examples: {} ({} distinct intents)\n".format(
                 len(self.intent_examples), len(self.intents)
             )
-            + "\t- Found intents: {}\n".format(list_to_str(self.intents))
+            + "\t- Found intents: {}\n".format(rasa.nlu.utils.list_to_str(self.intents))
             + "\t- entity examples: {} ({} distinct entities)\n".format(
                 len(self.entity_examples), len(self.entities)
             )
-            + "\t- found entities: {}\n".format(list_to_str(self.entities))
+            + "\t- found entities: {}\n".format(
+                rasa.nlu.utils.list_to_str(self.entities)
+            )
         )
+
+    def is_empty(self) -> bool:
+        """Checks if any training data was loaded."""
+
+        lists_to_check = [
+            self.training_examples,
+            self.entity_synonyms,
+            self.regex_features,
+            self.lookup_tables,
+        ]
+        return not any([len(l) > 0 for l in lists_to_check])

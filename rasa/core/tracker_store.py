@@ -10,7 +10,7 @@ import itertools
 from time import sleep
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.broker import EventChannel
+from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.utils.common import class_from_module_path
@@ -77,12 +77,11 @@ class TrackerStore(object):
         return tracker
 
     def init_tracker(self, sender_id):
-        if self.domain:
-            return DialogueStateTracker(
-                sender_id, self.domain.slots, max_event_history=self.max_event_history
-            )
-        else:
-            return None
+        return DialogueStateTracker(
+            sender_id,
+            self.domain.slots if self.domain else None,
+            max_event_history=self.max_event_history,
+        )
 
     def create_tracker(self, sender_id, append_action_listen=True):
         """Creates a new tracker for the sender_id.
@@ -313,7 +312,7 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy import create_engine
 
-        engine_url = self._get_db_url(
+        engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db
         )
         logger.debug(
@@ -325,7 +324,7 @@ class SQLTrackerStore(TrackerStore):
             try:
                 self.engine = create_engine(engine_url)
 
-                # if `login_db` has been provided, use current connection with
+                # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
                 if login_db:
                     self._create_database_and_update_engine(db, engine_url)
@@ -356,7 +355,7 @@ class SQLTrackerStore(TrackerStore):
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
     @staticmethod
-    def _get_db_url(
+    def get_db_url(
         dialect: Text = "sqlite",
         host: Optional[Text] = None,
         port: Optional[int] = None,
@@ -365,6 +364,23 @@ class SQLTrackerStore(TrackerStore):
         password: Text = None,
         login_db: Optional[Text] = None,
     ) -> Union[Text, "URL"]:
+        """Builds an SQLAlchemy `URL` object representing the parameters needed
+        to connect to an SQL database.
+
+        Args:
+            dialect: SQL database type.
+            host: Database network host.
+            port: Database network port.
+            db: Database name.
+            username: User name to use when connecting to the database.
+            password: Password for database user.
+            login_db: Alternative database name to which initially connect, and create
+                the database specified by `db` (PostgreSQL only).
+
+        Returns:
+            URL ready to be used with an SQLAlchemy `Engine` object.
+
+        """
         from urllib.parse import urlsplit
         from sqlalchemy.engine.url import URL
 
@@ -431,7 +447,9 @@ class SQLTrackerStore(TrackerStore):
         """Create a tracker from all previously stored events."""
 
         query = self.session.query(self.SQLEvent)
-        result = query.filter_by(sender_id=sender_id).all()
+        result = (
+            query.filter_by(sender_id=sender_id).order_by(self.SQLEvent.timestamp).all()
+        )
         events = [json.loads(event.data) for event in result]
 
         if self.domain and len(events) > 0:

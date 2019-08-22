@@ -1,6 +1,7 @@
 import pytest
 import logging
 
+from rasa.core.run import _create_app_without_api
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
@@ -8,10 +9,10 @@ from rasa.core.channels.channel import RestInput
 from rasa.core.channels import channel
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.model import get_model
-from rasa.train import train_async, train
+from rasa.train import train_async
 from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
-    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STACK_CONFIG,
     DEFAULT_NLU_DATA,
     END_TO_END_STORY_FILE,
@@ -80,7 +81,7 @@ async def nlu_agent(trained_nlu_model) -> Agent:
 
 @pytest.fixture(scope="session")
 def default_domain_path():
-    return DEFAULT_DOMAIN_PATH
+    return DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture(scope="session")
@@ -172,6 +173,13 @@ async def rasa_nlu_server(nlu_agent):
 @pytest.fixture
 async def rasa_server_secured(default_agent):
     app = server.create_app(agent=default_agent, auth_token="rasa", jwt_secret="core")
+    channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
+async def rasa_server_without_api():
+    app = _create_app_without_api()
     channel.register([RestInput()], app, "/webhooks/")
     return app
 

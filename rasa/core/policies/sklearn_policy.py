@@ -20,6 +20,7 @@ from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class SklearnPolicy(Policy):
     """Use an sklearn classifier to train a policy."""
 
     defaults = {
-        "priority": 1,
+        "priority": DEFAULT_POLICY_PRIORITY,
         "param_grid": None,
         "cv": None,
         "scoring": "accuracy",

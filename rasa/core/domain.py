@@ -5,16 +5,22 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
+import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.cli.utils import bcolors
 from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
-from rasa.core.constants import REQUESTED_SLOT
+from rasa.core.constants import (
+    REQUESTED_SLOT,
+    DEFAULT_KNOWLEDGE_BASE_ACTION,
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_OBJECT_TYPE,
+    SLOT_LAST_OBJECT,
+)
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
-from rasa.skill import SkillSelector
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
@@ -49,16 +55,7 @@ class Domain(object):
         return cls([], [], [], {}, [], [])
 
     @classmethod
-    def load(
-        cls,
-        paths: Union[List[Text], Text],
-        skill_imports: Optional[SkillSelector] = None,
-    ) -> "Domain":
-        skill_imports = skill_imports or SkillSelector.all_skills()
-
-        if not skill_imports.no_skills_selected():
-            paths = skill_imports.training_paths()
-
+    def load(cls, paths: Union[List[Text], Text]) -> "Domain":
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -69,25 +66,21 @@ class Domain(object):
 
         domain = Domain.empty()
         for path in paths:
-            other = cls.from_path(path, skill_imports)
+            other = cls.from_path(path)
             domain = domain.merge(other)
 
         return domain
 
     @classmethod
-    def from_path(cls, path: Text, skill_imports: SkillSelector) -> "Domain":
+    def from_path(cls, path: Text) -> "Domain":
         path = os.path.abspath(path)
-
-        # If skills were imported search the whole directory tree for domain files
-        if os.path.isfile(path) and not skill_imports.no_skills_selected():
-            path = os.path.dirname(path)
 
         if os.path.isfile(path):
             domain = cls.from_file(path)
         elif os.path.isdir(path):
-            domain = cls.from_directory(path, skill_imports)
+            domain = cls.from_directory(path)
         else:
-            raise Exception(
+            raise InvalidDomain(
                 "Failed to load domain specification from '{}'. "
                 "File not found!".format(os.path.abspath(path))
             )
@@ -126,19 +119,12 @@ class Domain(object):
         )
 
     @classmethod
-    def from_directory(
-        cls, path: Text, skill_imports: Optional[SkillSelector] = None
-    ) -> "Domain":
+    def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
         from rasa import data
 
         domain = Domain.empty()
-        skill_imports = skill_imports or SkillSelector.all_skills()
-
         for root, _, files in os.walk(path):
-            if not skill_imports.is_imported(root):
-                continue
-
             for file in files:
                 full_path = os.path.join(root, file)
                 if data.is_domain_file(full_path):
@@ -147,12 +133,15 @@ class Domain(object):
 
         return domain
 
-    def merge(self, domain: "Domain", override: bool = False) -> "Domain":
+    def merge(self, domain: Optional["Domain"], override: bool = False) -> "Domain":
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
         and merged. Single attributes will be taken from ``self`` unless
         override is `True`, in which case they are taken from ``domain``."""
+
+        if not domain:
+            return self
 
         domain_dict = domain.as_dict()
         combined = self.as_dict()
@@ -317,28 +306,58 @@ class Domain(object):
 
         return int(text_hash, 16)
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def user_actions_and_forms(self):
         """Returns combination of user actions and forms"""
 
         return self.user_actions + self.form_names
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def num_actions(self):
         """Returns the number of available actions."""
 
         # noinspection PyTypeChecker
         return len(self.action_names)
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def num_states(self):
         """Number of used input states for the action prediction."""
 
         return len(self.input_states)
 
-    def add_requested_slot(self):
+    def add_requested_slot(self) -> None:
+        """Add a slot called `requested_slot` to the list of slots.
+
+        The value of this slot will hold the name of the slot which the user
+        needs to fill in next (either explicitly or implicitly) as part of a form.
+        """
         if self.form_names and REQUESTED_SLOT not in [s.name for s in self.slots]:
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
+
+    def add_knowledge_base_slots(self):
+        """
+        Add slots for the knowledge base action to the list of slots, if the
+        default knowledge base action name is present.
+
+        As soon as the knowledge base action is not experimental anymore, we should
+        consider creating a new section in the domain file dedicated to knowledge
+        base slots.
+        """
+        if DEFAULT_KNOWLEDGE_BASE_ACTION in self.action_names:
+            logger.warning(
+                "You are using an experiential feature: Action '{}'!".format(
+                    DEFAULT_KNOWLEDGE_BASE_ACTION
+                )
+            )
+            slot_names = [s.name for s in self.slots]
+            knowledge_base_slots = [
+                SLOT_LISTED_ITEMS,
+                SLOT_LAST_OBJECT,
+                SLOT_LAST_OBJECT_TYPE,
+            ]
+            for s in knowledge_base_slots:
+                if s not in slot_names:
+                    self.slots.append(UnfeaturizedSlot(s))
 
     def action_for_name(
         self, action_name: Text, action_endpoint: Optional[EndpointConfig]
@@ -400,7 +419,7 @@ class Domain(object):
             return None
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
 
@@ -411,28 +430,28 @@ class Domain(object):
         ]
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def prev_action_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [PREV_PREFIX + a for a in self.action_names]
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return ["intent_{0}".format(i) for i in self.intents]
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return ["entity_{0}".format(e) for e in self.entities]
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def form_states(self) -> List[Text]:
         return ["active_form_{0}".format(f) for f in self.form_names]
 
@@ -441,12 +460,12 @@ class Domain(object):
 
         return self.input_state_map.get(state_name)
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def input_state_map(self) -> Dict[Text, int]:
         """Provides a mapping from state names to indices."""
         return {f: i for i, f in enumerate(self.input_states)}
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def input_states(self) -> List[Text]:
         """Returns all available states."""
 
@@ -614,7 +633,7 @@ class Domain(object):
         loaded_domain_spec = self.load_specification(path)
         states = loaded_domain_spec["states"]
 
-        if states != self.input_states:
+        if set(states) != set(self.input_states):
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
             raise InvalidDomain(
@@ -656,10 +675,10 @@ class Domain(object):
         domain_data = self.as_dict()
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
-                if intent.get("use_entities"):
+                if intent.get("use_entities") is True:
                     intent.pop("use_entities")
                 if not intent.get("ignore_entities"):
-                    intent.pop("ignore_entities")
+                    intent.pop("ignore_entities", None)
                 if len(intent) == 0:
                     domain_data["intents"][idx] = name
 
@@ -699,7 +718,7 @@ class Domain(object):
         """Return the configuration for an intent."""
         return self.intent_properties.get(intent_name, {})
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def intents(self):
         return sorted(self.intent_properties.keys())
 
@@ -890,6 +909,11 @@ class Domain(object):
                     "no matching utterance template. Please "
                     "check your domain.".format(template)
                 )
+
+    def is_empty(self) -> bool:
+        """Checks whether the domain is empty."""
+
+        return self.as_dict() == Domain.empty().as_dict()
 
 
 class TemplateDomain(Domain):

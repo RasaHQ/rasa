@@ -10,14 +10,14 @@ import rasa.utils.io
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
-from tests.core.conftest import DEFAULT_DOMAIN_PATH
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
     dialogue = read_dialogue_file(filename)
 
     if not domain:
-        domain = Domain.load(DEFAULT_DOMAIN_PATH)
+        domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
     tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
@@ -52,18 +52,18 @@ def mocked_cmd_input(package, text):
         text = [text]
 
     text_generator = itertools.cycle(text)
-    i = package.get_cmd_input
+    i = package.get_user_input
 
     def mocked_input(*args, **kwargs):
         value = next(text_generator)
         print ("wrote '{}' to input".format(value))
         return value
 
-    package.get_cmd_input = mocked_input
+    package.get_user_input = mocked_input
     try:
         yield
     finally:
-        package.get_cmd_input = i
+        package.get_user_input = i
 
 
 def user_uttered(text: Text, confidence: float) -> UserUttered:
