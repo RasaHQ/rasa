@@ -1,5 +1,3 @@
-#Old file : nlu/components.py
-
 import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Text
