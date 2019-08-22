@@ -1,72 +1,3 @@
-## intent:affirm
-- yeah a cheap restaurant serving international food
-- correct
-- ye
-- uh yes
-- let's do it
-- yeah
-- uh yes
-- um yes
-- yes knocking
-- that's correct
-- yes yes
-- right
-- yea
-- yes
-- yes right
-- yes and i dont care
-- right on
-- i love that
-
-## intent:chitchat
-- can you share your boss with me?
-- i want to get to know your owner
-- i want to know the company which designed you
-- i want to know the company which generated you
-- i want to know the company which invented you
-- i want to know who invented you
-- May I ask who invented you?
-- please tell me the company who created you
-- please tell me who created you
-- tell me more about your creators
-- tell me more about your founders
-- Ahoy matey how are you?
-- are you alright
-- are you having a good day
-- Are you ok?
-- are you okay
-- Do you feel good?
-- how are things going
-- how are things with you?
-- How are things?
-- how are you
-- how are you doing
-- how are you doing this morning
-- how are you feeling
-- how are you today
-- How are you?
-- How is the weather today?
-- What's the weather like?
-- How is the weather?
-- What is the weather at your place?
-- Do you have good weather?
-- Is it raining?
-- What's it like out there?
-- Is it hot or cold?
-- Beautiful day, isn't it?
-- What's the weather forecast?
-- Is it quite breezy outside?
-
-## intent:deny
-- no
-- no new selection
-- no thanks
-- no thank you
-- uh no
-- breath no
-- do you have something else
-- no this does not work for me
-
 ## intent:greet
 - Hi
 - Hey
@@ -96,7 +27,58 @@
 - hi?
 - hey bot!
 - hello friend
-- /greet
+
+## intent:request_restaurant
+- im looking for a restaurant
+- can i get [swedish](cuisine) food in any area
+- a restaurant that serves [caribbean](cuisine) food
+- id like a restaurant
+- im looking for a restaurant that serves [mediterranean](cuisine) food
+- can i find a restaurant that serves [chinese](cuisine)
+- i am looking for any place that serves [indonesian](cuisine) food for [three](num_people:3)
+- i need to find a restaurant
+- uh im looking for a restaurant that serves [kosher](cuisine) food
+- uh can i find a restaurant and it should serve [brazilian](cuisine) food
+- im looking for a restaurant serving [italian](cuisine) food
+- restaurant please
+- i'd like to book a table for [two](num_people:2) with [spanish](cuisine) cuisine
+- i need a table for [4](num_people)
+- book me a table for [three](num_people:3) at the [italian](cuisine) restaurant
+- can you please book a table for [5](num_people)?
+- I would like to book a table for [2](num_people)
+- looking for a table at the [mexican](cuisine) restaurant for [five](num_people:5)
+- find me a table for [7](num_people) people
+- Can I get a table for [four](num_people:4) at the place which server [greek](cuisine) food?
+
+## intent:affirm
+- yeah a cheap restaurant serving international food
+- correct
+- ye
+- uh yes
+- let's do it
+- yeah
+- uh yes
+- um yes
+- yes knocking
+- that's correct
+- yes yes
+- right
+- yea
+- yes
+- yes right
+- yes and i dont care
+- right on
+- i love that
+
+## intent:deny
+- no
+- no new selection
+- no thanks
+- no thank you
+- uh no
+- breath no
+- do you have something else
+- no this does not work for me
 
 ## intent:inform
 - [afghan](cuisine) food
@@ -114,7 +96,7 @@
 - um what about [italian](cuisine) food
 - im looking for [corsica](cuisine) food
 - im looking for [world](cuisine) food
-- serves [french](cuisine) food
+-  serves [french](cuisine) food
 - how about [indian](cuisine) food
 - can i get [chinese](cuisine) food
 - [irish](cuisine) food
@@ -124,7 +106,7 @@
 - [german](cuisine)
 - [korean](cuisine) food
 - im looking for [romanian](cuisine) food
-- serves [canapes](cuisine) food
+-  serves [canapes](cuisine) food
 - [gastropub](cuisine)
 - i want [french](cuisine) food
 - how about [modern european](cuisine) type of food
@@ -227,52 +209,6 @@
 - book for [seven](num_people:7) people
 - 2[num_people] please
 - [nine](num_people:9) people
-- /inform[{"cuisine":"mexican"}](cuisine:mexican)
-
-## intent:request_restaurant
-- im looking for a restaurant
-- can i get [swedish](cuisine) food in any area
-- a restaurant that serves [caribbean](cuisine) food
-- id like a restaurant
-- im looking for a restaurant that serves [mediterranean](cuisine) food
-- can i find a restaurant that serves [chinese](cuisine)
-- i am looking for any place that serves [indonesian](cuisine) food for [three](num_people:3)
-- i need to find a restaurant
-- uh im looking for a restaurant that serves [kosher](cuisine) food
-- uh can i find a restaurant and it should serve [brazilian](cuisine) food
-- im looking for a restaurant serving [italian](cuisine) food
-- restaurant please
-- i'd like to book a table for [two](num_people:2) with [spanish](cuisine) cuisine
-- i need a table for [4](num_people)
-- book me a table for [three](num_people:3) at the [italian](cuisine) restaurant
-- can you please book a table for [5](num_people)?
-- I would like to book a table for [2](num_people)
-- looking for a table at the [mexican](cuisine) restaurant for [five](num_people:5)
-- find me a table for [7](num_people) people
-- Can I get a table for [four](num_people:4) at the place which server [greek](cuisine) food?
-- restaurant
-
-## intent:stop
-- ok then you cant help me
-- that was shit, you're not helping
-- you can't help me
-- you can't help me with what i need
-- i guess you can't help me then
-- ok i guess you can't help me
-- that's not what i want
-- ok, but that doesnt help me
-- this is leading to nothing
-- this conversation is not really helpful
-- you cannot help me with what I want
-- I think you cant help me
-- hm i don't think you can do what i want
-- stop
-- stop go back
-- do you get anything?
-- and you call yourself bot company? pff
-- and that's it?
-- nothing else?
-- stop
 
 ## intent:thankyou
 - um thank you good bye
@@ -303,33 +239,62 @@
 - thank you bye
 - um okay thank you good bye
 
-## synonym:1
-- one
+## intent:chitchat
+- can you share your boss with me?
+- i want to get to know your owner
+- i want to know the company which designed you
+- i want to know the company which generated you
+- i want to know the company which invented you
+- i want to know who invented you
+- May I ask who invented you?
+- please tell me the company who created you
+- please tell me who created you
+- tell me more about your creators
+- tell me more about your founders
+- Ahoy matey how are you?
+- are you alright
+- are you having a good day
+- Are you ok?
+- are you okay
+- Do you feel good?
+- how are things going
+- how are things with you?
+- How are things?
+- how are you
+- how are you doing
+- how are you doing this morning
+- how are you feeling
+- how are you today
+- How are you?
+- How is the weather today?
+- What's the weather like?
+- How is the weather?
+- What is the weather at your place?
+- Do you have good weather?
+- Is it raining?
+- What's it like out there?
+- Is it hot or cold?
+- Beautiful day, isn't it?
+- What's the weather forecast?
+- Is it quite breezy outside?
 
-## synonym:10
-- ten
-
-## synonym:2
-- two
-
-## synonym:3
-- three
-
-## synonym:4
-- four
-
-## synonym:5
-- five
-
-## synonym:7
-- seven
-
-## synonym:9
-- nine
-
-## synonym:asian
-- pan asian
-- asian oriental
-
-## synonym:gastropub
-- gastro pub
+## intent:stop
+- ok then you cant help me
+- that was shit, you're not helping
+- you can't help me
+- you can't help me with what i need
+- i guess you can't help me then
+- ok i guess you can't help me
+- that's not what i want
+- ok, but that doesnt help me
+- this is leading to nothing
+- this conversation is not really helpful
+- you cannot help me with what I want
+- I think you cant help me
+- hm i don't think you can do what i want
+- stop
+- stop go back
+- do you get anything?
+- and you call yourself bot company? pff
+- and that's it?
+- nothing else?
