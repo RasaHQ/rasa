@@ -57,18 +57,23 @@ class KeywordIntentClassifier(Component):
 
     def _validate_keyword_map(self):
         re_flags = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
-        for i, (intent1, ex1s) in enumerate(self.intent_keyword_map.items()):
-            for j, (intent2, ex2s) in enumerate(self.intent_keyword_map.items()):
-                if j != i:
-                    for ex1 in ex1s:
-                        for ex2 in ex2s:
-                            if re.search(r"\b" + ex1 + r"\b", ex2, flags=re_flags):
-                                logger.warning(
-                                    "Keyword '{}' is an example of intent '{}',"
-                                    "but also a substring of '{}', which is an "
-                                    "example of intent '{}"
-                                    "".format(ex1, intent1, ex2, intent2)
-                                )
+        inverted_map = {ex:intent for intent, examples in self.intent_keyword_map.items() for ex in examples}
+        ambiguous_mappings = []
+        for ex1, intent1 in inverted_map.items():
+            for ex2, intent2 in inverted_map.items():
+                if re.search(r"\b" + ex1 + r"\b", ex2, flags=re_flags) and intent1 != intent2:
+                    logger.warning(
+                        "Keyword '{}' is an example of intent '{}',"
+                        "but also a substring of '{}', which is an "
+                        "example of intent '{}.\n"
+                        "'{}' will be removed from the list of keywords."
+                        "".format(ex1, intent1, ex2, intent2, ex1)
+                    )
+                    ambiguous_mappings.append((intent1, ex1))
+        for intent, example in ambiguous_mappings:
+            self.intent_keyword_map[intent].remove(example)
+            logger.debug("Removed keyword '{}' from intent '{}' because it matched"
+                         " another intent.".format(example, intent))
 
     def process(self, message: Message, **kwargs: Any) -> None:
         intent_name = self._map_keyword_to_intent(message.text)
