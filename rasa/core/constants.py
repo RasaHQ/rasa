@@ -32,3 +32,17 @@ USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 BEARER_TOKEN_PREFIX = "Bearer "
+
+# the lowest priority intended to be used by machine learning policies
+DEFAULT_POLICY_PRIORITY = 1
+# the priority intended to be used by mapping policies
+MAPPING_POLICY_PRIORITY = 2
+# the priority intended to be used by memoization policies
+# it is higher than default and mapping to prioritize training stories
+MEMOIZATION_POLICY_PRIORITY = 3
+# the priority intended to be used by fallback policies
+# it is higher than memoization to prioritize fallback
+FALLBACK_POLICY_PRIORITY = 4
+# the priority intended to be used by form policies
+# it is the highest to prioritize form to the rest of the policies
+FORM_POLICY_PRIORITY = 5
