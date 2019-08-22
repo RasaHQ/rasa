@@ -1,5 +1,6 @@
 :desc: Rasa Changelog
 
+
 Rasa Change Log
 ===============
 
@@ -18,12 +19,13 @@ Added
   information.
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
-- The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that 
+- The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that
   use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
+- Add example bot ``knowledgebasebot`` to showcase the usage of ``ActionQueryKnowledgeBase``
 
 Changed
 -------
-- added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters
   into the ``supervised_embeddings`` NLU pipeline template
 - NLU evaluations now also stores its output in the output directory like the core evaluation
 - show warning in case a default path is used instead of a provided, invalid path
@@ -38,6 +40,7 @@ Changed
 Fixed
 -----
 - ``rasa test nlu`` with a folder of configuration files
+
 
 [1.2.3] - 2019-08-15
 ^^^^^^^^^^^^^^^^^^^^
