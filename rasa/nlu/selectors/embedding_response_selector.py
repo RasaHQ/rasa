@@ -15,6 +15,7 @@ from rasa.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE_KEY_RANKING,
 )
 from rasa.core.actions.action import RESPOND_PREFIX
+from rasa.nlu.constants import MESSAGE_TEXT_ATTRIBUTE, MESSAGE_RESPONSE_ATTRIBUTE
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_b": [],
+        # Whether to share the embedding between input words and intent labels
+        "share_embedding": False,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -112,8 +115,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 0,  # large values may hurt performance,
-        # Tensorboard config
-        "summary_dir": os.path.join(os.getcwd(), "tb_logs"),
         # selector config
         "response_type": None,
     }
@@ -127,9 +128,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
         graph: Optional["tf.Graph"] = None,
         message_placeholder: Optional["tf.Tensor"] = None,
         label_placeholder: Optional["tf.Tensor"] = None,
-        sim_all: Optional["tf.Tensor"] = None,
+        similarity_all: Optional["tf.Tensor"] = None,
         pred_confidence: Optional["tf.Tensor"] = None,
-        similarity_op: Optional["tf.Tensor"] = None,
+        similarity: Optional["tf.Tensor"] = None,
         message_embed: Optional["tf.Tensor"] = None,
         label_embed: Optional["tf.Tensor"] = None,
         all_labels_embed: Optional["tf.Tensor"] = None,
@@ -141,23 +142,19 @@ class ResponseSelector(EmbeddingIntentClassifier):
             graph,
             message_placeholder,
             label_placeholder,
-            sim_all,
+            similarity_all,
             pred_confidence,
-            similarity_op,
+            similarity,
             message_embed,
             label_embed,
             all_labels_embed,
         )
-
-    def _load_tb_params(self, config: Dict[Text, Any]) -> None:
-        self.summary_dir = config["summary_dir"]
 
     def _load_selector_params(self, config: Dict[Text, Any]):
         self.response_type = config["response_type"]
 
     def _load_params(self) -> None:
         super(ResponseSelector, self)._load_params()
-        self._load_tb_params(self.component_config)
         self._load_selector_params(self.component_config)
 
     def process(self, message: "Message", **kwargs: Any) -> None:
@@ -209,277 +206,38 @@ class ResponseSelector(EmbeddingIntentClassifier):
         message.set(response_key_for_tracker, label, add_to_output=True)
         message.set(response_ranking_key_for_tracker, label_ranking, add_to_output=True)
 
-    # training data helpers:
-    @staticmethod
-    def _create_label_dict(
-        training_data: "TrainingData", attribute: Text = "intent"
-    ) -> Dict[Text, int]:
-        """Create intent dictionary"""
-
-        distinct_labels = set(
-            [
-                example.get(attribute)
-                for example in training_data.intent_examples
-                if example.get(attribute)
-            ]
-        )
-        return {response: idx for idx, response in enumerate(sorted(distinct_labels))}
-
-    @staticmethod
-    def _find_example_for_label(label, examples, label_type="intent"):
-        for ex in examples:
-            if ex.get(label_type) == label:
-                return ex
-
-    # @staticmethod
-    def _create_encoded_labels(
-        self,
-        label_dict: Dict[Text, int],
-        training_data: "TrainingData",
-        attribute: Text = "intent",
-        attribute_features: Text = "intent_features",
-    ) -> np.ndarray:
-        """Create matrix with intents encoded in rows as bag of words.
-        """
-
-        encoded_all_labels = []
-
-        for label_name, idx in label_dict.items():
-            encoded_all_labels.insert(
-                idx,
-                self._find_example_for_label(
-                    label_name, training_data.intent_examples, attribute
-                ).get(attribute_features),
-            )
-
-        return np.array(encoded_all_labels)
-
-    # noinspection PyPep8Naming
-    def _create_session_data(
-        self,
-        training_data: "TrainingData",
-        label_dict: Dict[Text, int],
-        attribute: Text = "intent",
-    ) -> "train_utils.SessionData":
-        """Prepare data for training"""
-
-        X = np.stack(
-            [
-                e.get("text_features")
-                for e in training_data.intent_examples
-                if e.get(attribute)
-            ]
-        )
-
-        label_ids = np.array(
-            [
-                label_dict[e.get(attribute)]
-                for e in training_data.intent_examples
-                if e.get(attribute)
-            ]
-        )
-
-        Y = np.stack([self._encoded_all_label_ids[label] for label in label_ids])
-
-        return train_utils.SessionData(X=X, Y=Y, label_ids=label_ids)
-
-    def train(
-        self,
-        training_data: "TrainingData",
-        config: Optional["RasaNLUModelConfig"] = None,
-        **kwargs: Any
-    ) -> None:
-        """Train the embedding intent classifier on a data set."""
+    def preprocess_data(self, training_data):
+        """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
 
         if self.response_type:
             training_data = training_data.filter_by_intent(self.response_type)
 
-        label_dict = self._create_label_dict(training_data, attribute="response")
-
-        if len(label_dict) < 2:
-            logger.error(
-                "Can not train a response selector. "
-                "Need at least 2 different classes. "
-                "Skipping training of response selector."
-            )
-            return
-
-        self.inverted_label_dict = {
-            v: k for k, v in label_dict.items()
-        }  # idx: response
-        self._encoded_all_label_ids = self._create_encoded_labels(
-            label_dict,
-            training_data,
-            attribute="response",
-            attribute_features="response_features",
+        label_id_dict = self._create_label_id_dict(
+            training_data, attribute=MESSAGE_RESPONSE_ATTRIBUTE
         )
 
-        # check if number of negatives is less than number of intents
+        self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
+        self._encoded_all_label_ids = self._create_encoded_label_ids(
+            training_data,
+            label_id_dict,
+            attribute=MESSAGE_RESPONSE_ATTRIBUTE,
+            attribute_feature_name="response_features",
+        )
+
+        # check if number of negatives is less than number of label_ids
         logger.debug(
             "Check if num_neg {} is smaller than "
-            "number of intents {}, "
-            "else set num_neg to the number of intents - 1"
+            "number of label_ids {}, "
+            "else set num_neg to the number of label_ids - 1"
             "".format(self.num_neg, self._encoded_all_label_ids.shape[0])
         )
-
         # noinspection PyAttributeOutsideInit
         self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
         session_data = self._create_session_data(
-            training_data, label_dict, attribute="response"
+            training_data, label_id_dict, attribute=MESSAGE_RESPONSE_ATTRIBUTE
         )
 
-        if self.evaluate_on_num_examples:
-            session_data, eval_session_data = train_utils.train_val_split(
-                session_data, self.evaluate_on_num_examples, self.random_seed
-            )
-        else:
-            eval_session_data = None
+        self.check_input_dimension_consistency(session_data)
 
-        # if self.share_embedding:
-        #     if X[0].shape[-1] != Y[0].shape[-1]:
-        #         raise ValueError("If embeddings are shared "
-        #                          "text features and intent features "
-        #                          "must coincide")
-
-        self.graph = tf.Graph()
-        with self.graph.as_default():
-
-            # set random seed
-            tf.set_random_seed(self.random_seed)
-
-            # allows increasing batch size
-            batch_size_in = tf.placeholder(tf.int64)
-
-            (
-                self._iterator,
-                train_init_op,
-                eval_init_op,
-            ) = train_utils.create_iterator_init_datasets(
-                session_data, eval_session_data, batch_size_in, self.batch_strategy
-            )
-
-            self._is_training = tf.placeholder_with_default(False, shape=())
-
-            loss, acc = self._build_tf_train_graph()
-
-            # define which optimizer to use
-            self._train_op = tf.train.AdamOptimizer().minimize(loss)
-
-            # train tensorflow graph
-            self.session = tf.Session()
-            train_utils.train_tf_dataset(
-                train_init_op,
-                eval_init_op,
-                batch_size_in,
-                loss,
-                acc,
-                self._train_op,
-                self.session,
-                self._is_training,
-                self.epochs,
-                self.batch_size,
-                self.evaluate_on_num_examples,
-                self.evaluate_every_num_epochs,
-            )
-
-            # rebuild the graph for prediction
-            self.pred_confidence = self._build_tf_pred_graph(session_data)
-
-    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
-        """Persist this model into the passed directory.Return the metadata necessary to load the model again."""
-
-        if self.session is None:
-            return {"file": None}
-
-        checkpoint = os.path.join(model_dir, file_name + ".ckpt")
-
-        try:
-            os.makedirs(os.path.dirname(checkpoint))
-        except OSError as e:
-            # be happy if someone already created the path
-            import errno
-
-            if e.errno != errno.EEXIST:
-                raise
-        with self.graph.as_default():
-            train_utils.persist_tensor("message_placeholder", self.a_in, self.graph)
-            train_utils.persist_tensor("label_placeholder", self.b_in, self.graph)
-
-            train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
-            train_utils.persist_tensor(
-                "pred_confidence", self.pred_confidence, self.graph
-            )
-            train_utils.persist_tensor("similarity", self.sim, self.graph)
-
-            train_utils.persist_tensor("message_embed", self.message_embed, self.graph)
-            train_utils.persist_tensor("label_embed", self.label_embed, self.graph)
-
-            saver = tf.train.Saver()
-            saver.save(self.session, checkpoint)
-
-        with io.open(
-            os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.inverted_label_dict, f)
-
-        return {"file": file_name}
-
-    @classmethod
-    def load(
-        cls,
-        meta: Dict[Text, Any],
-        model_dir: Text = None,
-        model_metadata: "Metadata" = None,
-        cached_component: Optional["ResponseSelector"] = None,
-        **kwargs: Any
-    ) -> "ResponseSelector":
-
-        if model_dir and meta.get("file"):
-            file_name = meta.get("file")
-            checkpoint = os.path.join(model_dir, file_name + ".ckpt")
-            graph = tf.Graph()
-            with graph.as_default():
-                sess = tf.Session()
-                saver = tf.train.import_meta_graph(checkpoint + ".meta")
-
-                saver.restore(sess, checkpoint)
-
-                a_in = train_utils.load_tensor("message_placeholder")
-                b_in = train_utils.load_tensor("label_placeholder")
-
-                sim_all = train_utils.load_tensor("similarity_all")
-                pred_confidence = train_utils.load_tensor("pred_confidence")
-                sim = train_utils.load_tensor("similarity")
-
-                message_embed = train_utils.load_tensor("message_embed")
-                label_embed = train_utils.load_tensor("label_embed")
-                all_labels_embed = train_utils.load_tensor("all_labels_embed")
-
-            with io.open(
-                os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "rb"
-            ) as f:
-                inv_label_dict = pickle.load(f)
-
-            return cls(
-                component_config=meta,
-                inv_label_dict=inv_label_dict,
-                session=sess,
-                graph=graph,
-                message_placeholder=a_in,
-                label_placeholder=b_in,
-                sim_all=sim_all,
-                pred_confidence=pred_confidence,
-                similarity_op=sim,
-                message_embed=message_embed,
-                label_embed=label_embed,
-                all_labels_embed=all_labels_embed,
-            )
-
-        else:
-            logger.warning(
-                "Failed to load model. Maybe path {} "
-                "doesn't exist"
-                "".format(os.path.abspath(model_dir))
-            )
-            return cls(component_config=meta)
+        return session_data, label_id_dict
