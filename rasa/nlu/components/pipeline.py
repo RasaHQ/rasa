@@ -67,4 +67,4 @@ class ComponentIterator:
             self._index += 1
             return result
 
-        raise StopIteration
+        raise StopIteration()
