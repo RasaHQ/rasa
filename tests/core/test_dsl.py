@@ -123,7 +123,7 @@ async def test_persist_and_read_test_story(tmpdir, default_domain):
         existing_stories.discard(story_str)
 
 
-async def test_persist_and_read_test_story_form(tmpdir):
+async def test_persist_form_story(tmpdir):
     domain = Domain.load("data/test_domains/form.yml")
 
     tracker = DialogueStateTracker("", domain.slots)
