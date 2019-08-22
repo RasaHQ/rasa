@@ -10,7 +10,11 @@ from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
-from rasa.constants import DEFAULT_OPEN_UTTERANCE_TYPE
+from rasa.constants import (
+    DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
+    DEFAULT_OPEN_UTTERANCE_TYPE_KEY_RANKING,
+)
+from rasa.core.actions.action import RESPOND_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -180,28 +184,30 @@ class ResponseSelector(EmbeddingIntentClassifier):
             # if X contains all zeros do not predict some label
             if X.any() and label_ids.size > 0:
                 label = {
-                    "name": self.inv_label_dict[label_ids[0]],
+                    "name": self.inverted_label_dict[label_ids[0]],
                     "confidence": message_sim[0],
                 }
 
                 ranking = list(zip(list(label_ids), message_sim))
                 ranking = ranking[:LABEL_RANKING_LENGTH]
                 label_ranking = [
-                    {"name": self.inv_label_dict[label_idx], "confidence": score}
+                    {"name": self.inverted_label_dict[label_idx], "confidence": score}
                     for label_idx, score in ranking
                 ]
 
-        key_placeholder = (
-            self.response_type if self.response_type else DEFAULT_OPEN_UTTERANCE_TYPE
-        )
-        message.set(
-            "respond_{0}_response".format(key_placeholder), label, add_to_output=True
-        )
-        message.set(
-            "respond_{0}_response_ranking".format(key_placeholder),
-            label_ranking,
-            add_to_output=True,
-        )
+        if self.response_type:
+            response_key_for_tracker = "{0}{1}_response".format(
+                RESPOND_PREFIX, self.response_type
+            )
+            response_ranking_key_for_tracker = "{0}{1}_response_ranking".format(
+                RESPOND_PREFIX, self.response_type
+            )
+        else:
+            response_key_for_tracker = DEFAULT_OPEN_UTTERANCE_TYPE_KEY
+            response_ranking_key_for_tracker = DEFAULT_OPEN_UTTERANCE_TYPE_KEY_RANKING
+
+        message.set(response_key_for_tracker, label, add_to_output=True)
+        message.set(response_ranking_key_for_tracker, label_ranking, add_to_output=True)
 
     # training data helpers:
     @staticmethod
@@ -231,19 +237,19 @@ class ResponseSelector(EmbeddingIntentClassifier):
         label_dict: Dict[Text, int],
         training_data: "TrainingData",
         attribute: Text = "intent",
-        attribute_feats: Text = "intent_features",
+        attribute_features: Text = "intent_features",
     ) -> np.ndarray:
         """Create matrix with intents encoded in rows as bag of words.
         """
 
         encoded_all_labels = []
 
-        for key, idx in label_dict.items():
+        for label_name, idx in label_dict.items():
             encoded_all_labels.insert(
                 idx,
                 self._find_example_for_label(
-                    key, training_data.intent_examples, attribute
-                ).get(attribute_feats),
+                    label_name, training_data.intent_examples, attribute
+                ).get(attribute_features),
             )
 
         return np.array(encoded_all_labels)
@@ -280,7 +286,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
     def train(
         self,
         training_data: "TrainingData",
-        cfg: Optional["RasaNLUModelConfig"] = None,
+        config: Optional["RasaNLUModelConfig"] = None,
         **kwargs: Any
     ) -> None:
         """Train the embedding intent classifier on a data set."""
@@ -298,12 +304,14 @@ class ResponseSelector(EmbeddingIntentClassifier):
             )
             return
 
-        self.inv_label_dict = {v: k for k, v in label_dict.items()}  # idx: response
+        self.inverted_label_dict = {
+            v: k for k, v in label_dict.items()
+        }  # idx: response
         self._encoded_all_label_ids = self._create_encoded_labels(
             label_dict,
             training_data,
             attribute="response",
-            attribute_feats="response_features",
+            attribute_features="response_features",
         )
 
         # check if number of negatives is less than number of intents
@@ -379,10 +387,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
             self.pred_confidence = self._build_tf_pred_graph(session_data)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
-        """Persist this model into the passed directory.
-
-        Return the metadata necessary to load the model again.
-        """
+        """Persist this model into the passed directory.Return the metadata necessary to load the model again."""
 
         if self.session is None:
             return {"file": None}
@@ -416,7 +421,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         with io.open(
             os.path.join(model_dir, file_name + "_inv_label_dict.pkl"), "wb"
         ) as f:
-            pickle.dump(self.inv_label_dict, f)
+            pickle.dump(self.inverted_label_dict, f)
 
         return {"file": file_name}
 

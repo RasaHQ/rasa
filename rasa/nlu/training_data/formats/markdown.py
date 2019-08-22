@@ -192,8 +192,7 @@ class MarkdownReader(TrainingDataReader):
         plain_text = re.sub(ent_regex, lambda m: m.groupdict()["entity_text"], example)
         self._add_synonyms(plain_text, entities)
         message = Message(
-            plain_text,
-            {"intent": self.current_title, "response": self.current_subtitle},
+            plain_text, {INTENT: self.current_title, RESPONSE: self.current_subtitle}
         )
 
         if len(entities) > 0:

@@ -127,7 +127,7 @@ class EmbeddingIntentClassifier(Component):
         self._load_params()
 
         # transform numbers to labels
-        self.inv_label_dict = inv_label_dict
+        self.inverted_label_dict = inv_label_dict
         # encode all label_ids with numbers
         self._encoded_all_label_ids = None
 
@@ -398,7 +398,7 @@ class EmbeddingIntentClassifier(Component):
             )
             return
 
-        self.inv_label_dict = {v: k for k, v in label_id_dict.items()}
+        self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
         self._encoded_all_label_ids = self._create_encoded_label_ids(label_id_dict)
 
         # check if number of negatives is less than number of label_ids
@@ -502,14 +502,14 @@ class EmbeddingIntentClassifier(Component):
             # if X contains all zeros do not predict some label
             if X.any() and label_ids.size > 0:
                 intent = {
-                    "name": self.inv_label_dict[label_ids[0]],
+                    "name": self.inverted_label_dict[label_ids[0]],
                     "confidence": message_sim[0],
                 }
 
                 ranking = list(zip(list(label_ids), message_sim))
                 ranking = ranking[:LABEL_RANKING_LENGTH]
                 intent_ranking = [
-                    {"name": self.inv_label_dict[label_idx], "confidence": score}
+                    {"name": self.inverted_label_dict[label_idx], "confidence": score}
                     for label_idx, score in ranking
                 ]
 
@@ -557,7 +557,7 @@ class EmbeddingIntentClassifier(Component):
         with io.open(
             os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "wb"
         ) as f:
-            pickle.dump(self.inv_label_dict, f)
+            pickle.dump(self.inverted_label_dict, f)
 
         with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
             pickle.dump(self._tf_config, f)

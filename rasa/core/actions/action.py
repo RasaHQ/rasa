@@ -14,7 +14,7 @@ from rasa.core.constants import (
     REQUESTED_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
 )
-from rasa.constants import DEFAULT_OPEN_UTTERANCE_TYPE
+from rasa.constants import DEFAULT_OPEN_UTTERANCE_TYPE_KEY
 
 from rasa.core.events import (
     UserUtteranceReverted,
@@ -179,19 +179,26 @@ class ActionUtterPredictedResponse(Action):
     An action which queries the Response Selector for the appropriate response.
     """
 
-    def __init__(self, name, silent_fail: Optional[bool] = False):
+    def __init__(self, name: Text, silent_fail: Optional[bool] = False):
         self.action_name = name
         self.silent_fail = silent_fail
 
-    async def run(self, output_channel, nlg, tracker, domain):
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ):
         """Query the appropriate response and create a bot utterance with that."""
 
         message = None
         query_keys = [
             "{0}_response".format(self.action_name),
-            "{0}{1}_response".format(RESPOND_PREFIX, DEFAULT_OPEN_UTTERANCE_TYPE),
+            DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
         ]
         for query_key in query_keys:
+            logger.debug("Looking for response with query_key {0}".format(query_key))
             if query_key in tracker.latest_message.parse_data:
                 logger.debug("Picking response of type {0}".format(query_key))
                 message = {
@@ -199,7 +206,7 @@ class ActionUtterPredictedResponse(Action):
                 }
                 break
 
-        if message is None:
+        if not message:
             if not self.silent_fail:
                 logger.error(
                     "Couldn't create message for response action '{}'."

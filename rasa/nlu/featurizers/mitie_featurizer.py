@@ -22,7 +22,7 @@ class MitieFeaturizer(Featurizer):
 
     provides = ["text_features", "intent_features", "response_features"]
 
-    requires = ["tokens", "mitie_feature_extractor"]
+    requires = ["tokens", "mitie_feature_extractor", "intent_tokens", "response_tokens"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:

@@ -9,7 +9,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.train_utils import create_vectorizer
 
 logger = logging.getLogger(__name__)
 
@@ -175,9 +174,9 @@ class CountVectorsFeaturizer(Featurizer):
         # declare class instance for CountVectorizer
         self.vectorizer = vectorizer
 
-    def _get_message_text_by_attribute(self, message, attribute="text"):
+    def _get_message_text_by_attribute(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE):
 
-        attribute = "" if attribute == "text" else attribute + "_"
+        attribute = "" if attribute == MESSAGE_TEXT_ATTRIBUTE else attribute + "_"
         if message.get("{0}spacy_doc".format(attribute)):  # if lemmatize is possible
             tokens = [t.lemma_ for t in message.get("{0}spacy_doc".format(attribute))]
         elif message.get(
@@ -231,6 +230,63 @@ class CountVectorsFeaturizer(Featurizer):
                 "".format(self.OOV_token)
             )
 
+    @staticmethod
+    def create_vectorizers(
+        token_pattern,
+        strip_accents,
+        lowercase,
+        stop_words,
+        ngram_range,
+        max_df,
+        min_df,
+        max_features,
+        analyzer,
+        shared=False,
+        vocabulary=None,
+    ):
+
+        attribute_vectorizers = {}
+        shared_vectorizer = None
+        if shared:
+            shared_vectorizer = CountVectorizer(
+                token_pattern=token_pattern,
+                strip_accents=strip_accents,
+                lowercase=lowercase,
+                stop_words=stop_words,
+                ngram_range=ngram_range,
+                max_df=max_df,
+                min_df=min_df,
+                max_features=max_features,
+                analyzer=analyzer,
+                vocabulary=vocabulary,
+            )
+
+        for index, attribute in enumerate(MESSAGE_ATTRIBUTES):
+
+            attribute_vocabulary = (
+                vocabulary[index] if isinstance(vocabulary, list) else vocabulary
+            )
+
+            if not shared:
+                new_vectorizer = CountVectorizer(
+                    token_pattern=token_pattern,
+                    strip_accents=strip_accents,
+                    lowercase=lowercase,
+                    stop_words=stop_words,
+                    ngram_range=ngram_range,
+                    max_df=max_df,
+                    min_df=min_df,
+                    max_features=max_features,
+                    analyzer=analyzer,
+                    vocabulary=attribute_vocabulary,
+                )
+            else:
+                new_vectorizer = shared_vectorizer
+
+            attribute_vectorizers[attribute] = new_vectorizer
+
+        return attribute_vectorizers
+
     def train(
         self, training_data: TrainingData, cfg: RasaNLUModelConfig = None, **kwargs: Any
     ) -> None:
@@ -245,36 +301,18 @@ class CountVectorsFeaturizer(Featurizer):
             # create spacy lemma_ for OOV_words
             self.OOV_words = [t.lemma_ for w in self.OOV_words for t in spacy_nlp(w)]
 
-        if self.use_shared_vocab:
-            shared_vectorizer = create_vectorizer(
-                self.token_pattern,
-                self.strip_accents,
-                self.lowercase,
-                self.stop_words,
-                (self.min_ngram, self.max_ngram),
-                self.max_df,
-                self.min_df,
-                self.max_features,
-                self.analyzer,
-            )
-            self.vectorizer = {
-                attribute: shared_vectorizer for attribute in MESSAGE_ATTRIBUTES
-            }
-        else:
-            self.vectorizer = {
-                attribute: create_vectorizer(
-                    self.token_pattern,
-                    self.strip_accents,
-                    self.lowercase,
-                    self.stop_words,
-                    (self.min_ngram, self.max_ngram),
-                    self.max_df,
-                    self.min_df,
-                    self.max_features,
-                    self.analyzer,
-                )
-                for attribute in MESSAGE_ATTRIBUTES
-            }
+        self.vectorizer = self.create_vectorizers(
+            self.token_pattern,
+            self.strip_accents,
+            self.lowercase,
+            self.stop_words,
+            (self.min_ngram, self.max_ngram),
+            self.max_df,
+            self.min_df,
+            self.max_features,
+            self.analyzer,
+            shared=self.use_shared_vocab,
+        )
 
         cleaned_attribute_texts = {}
 
@@ -320,7 +358,9 @@ class CountVectorsFeaturizer(Featurizer):
             # create bag for each example
 
             for attribute in MESSAGE_ATTRIBUTES:
-                if len(cleaned_attribute_texts[attribute][i]):
+
+                # Proxy method to check if the text for the attribute was not None.
+                if cleaned_attribute_texts[attribute][i]:
                     example.set(
                         "{0}_features".format(attribute),
                         self._combine_with_existing_features(
@@ -331,8 +371,6 @@ class CountVectorsFeaturizer(Featurizer):
                     example.set("{0}_features".format(attribute), None)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
-        # TODO: add featurization of test data
 
         if self.vectorizer is None:
             logger.error(
@@ -399,40 +437,21 @@ class CountVectorsFeaturizer(Featurizer):
         if os.path.exists(featurizer_file):
             vocabulary = utils.json_unpickle(featurizer_file)
 
-            if isinstance(vocabulary, list):
-                vectorizer = {
-                    attribute: create_vectorizer(
-                        token_pattern=meta["token_pattern"],
-                        strip_accents=meta["strip_accents"],
-                        lowercase=meta["lowercase"],
-                        stop_words=meta["stop_words"],
-                        ngram_range=(meta["min_ngram"], meta["max_ngram"]),
-                        max_df=meta["max_df"],
-                        min_df=meta["min_df"],
-                        max_features=meta["max_features"],
-                        analyzer=meta["analyzer"],
-                        vocabulary=vocabulary[index],
-                    )
-                    for index, attribute in enumerate(MESSAGE_ATTRIBUTES)
-                }
+            share_vocabulary = not isinstance(vocabulary, list)
 
-            else:
-                shared_vectorizer = create_vectorizer(
-                    token_pattern=meta["token_pattern"],
-                    strip_accents=meta["strip_accents"],
-                    lowercase=meta["lowercase"],
-                    stop_words=meta["stop_words"],
-                    ngram_range=(meta["min_ngram"], meta["max_ngram"]),
-                    max_df=meta["max_df"],
-                    min_df=meta["min_df"],
-                    max_features=meta["max_features"],
-                    analyzer=meta["analyzer"],
-                    vocabulary=vocabulary,
-                )
-
-                vectorizer = {
-                    attribute: shared_vectorizer for attribute in MESSAGE_ATTRIBUTES
-                }
+            vectorizer = cls.create_vectorizers(
+                token_pattern=meta["token_pattern"],
+                strip_accents=meta["strip_accents"],
+                lowercase=meta["lowercase"],
+                stop_words=meta["stop_words"],
+                ngram_range=(meta["min_ngram"], meta["max_ngram"]),
+                max_df=meta["max_df"],
+                min_df=meta["min_df"],
+                max_features=meta["max_features"],
+                analyzer=meta["analyzer"],
+                vocabulary=vocabulary,
+                shared=share_vocabulary,
+            )
 
             return cls(meta, vectorizer)
         else:

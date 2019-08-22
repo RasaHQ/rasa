@@ -16,7 +16,6 @@ from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
-from sklearn.feature_extraction.text import CountVectorizer
 
 # avoid warning println on contrib import - remove for tf 2
 tf.contrib._warning = None
@@ -32,33 +31,6 @@ def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
         return tf.ConfigProto(**config.pop("tf_config"))
     else:
         return None
-
-
-def create_vectorizer(
-    token_pattern,
-    strip_accents,
-    lowercase,
-    stop_words,
-    ngram_range,
-    max_df,
-    min_df,
-    max_features,
-    analyzer,
-    vocabulary=None,
-):
-    vectorizer = CountVectorizer(
-        token_pattern=token_pattern,
-        strip_accents=strip_accents,
-        lowercase=lowercase,
-        stop_words=stop_words,
-        ngram_range=ngram_range,
-        max_df=max_df,
-        min_df=min_df,
-        max_features=max_features,
-        analyzer=analyzer,
-        vocabulary=vocabulary,
-    )
-    return vectorizer
 
 
 # noinspection PyPep8Naming
