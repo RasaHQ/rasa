@@ -7,7 +7,7 @@ policies:
   - name: KerasPolicy
 
 importers:
-  - name: SkillSelector
+  - name: MultiProjectImporter
 
 imports:
   - data/MoodBot
