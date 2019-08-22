@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class FormPolicy(MemoizationPolicy):
     """Policy which handles prediction of Forms"""
 
-    ENABLE_FEATURE_STRING_COMPRESSION = True
+    ENABLE_FEATURE_STRING_COMPRESSION = False
 
     def __init__(
         self,

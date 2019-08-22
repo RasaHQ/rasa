@@ -578,6 +578,12 @@ class TestFormPolicy(PolicyTestCollection):
                         "prev_utter_ask_continue" in states[0].keys()
                         and "intent_deny" in states[-1].keys()
                     )
+                    # comes from the fact that intent_inform after utter_ask_continue
+                    # is not read from stories
+                    or (
+                        "prev_utter_ask_continue" in states[0].keys()
+                        and "intent_stop" in states[-1].keys()
+                    )
                 )
                 # @formatter:on
             else:

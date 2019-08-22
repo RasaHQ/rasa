@@ -186,3 +186,18 @@
     - utter_slots_values
 * thankyou
     - utter_noworries
+
+## interactive_story_1
+* greet
+    - utter_greet
+* request_restaurant
+    - restaurant_form
+    - form{"name": "restaurant_form"}
+    - slot{"requested_slot": "cuisine"}
+* stop
+    - utter_ask_continue
+    - action_listen
+* form: inform{"cuisine": "mexican"}
+    - restaurant_form
+    - slot{"cuisine": "mexican"}
+    - slot{"requested_slot": "num_people"}
