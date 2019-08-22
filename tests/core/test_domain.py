@@ -3,6 +3,12 @@ import json
 import pytest
 from _pytest.tmpdir import TempdirFactory
 
+from rasa.core.constants import (
+    DEFAULT_KNOWLEDGE_BASE_ACTION,
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_OBJECT,
+    SLOT_LAST_OBJECT_TYPE,
+)
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -535,3 +541,26 @@ def test_clean_domain():
     actual = Domain.from_dict(cleaned)
 
     assert hash(actual) == hash(expected)
+
+
+def test_add_knowledge_base_slots(default_domain):
+    import copy
+
+    # don't modify default domain as it is used in other tests
+    test_domain = copy.deepcopy(default_domain)
+
+    test_domain.action_names.append(DEFAULT_KNOWLEDGE_BASE_ACTION)
+
+    slot_names = [s.name for s in test_domain.slots]
+
+    assert SLOT_LISTED_ITEMS not in slot_names
+    assert SLOT_LAST_OBJECT not in slot_names
+    assert SLOT_LAST_OBJECT_TYPE not in slot_names
+
+    test_domain.add_knowledge_base_slots()
+
+    slot_names = [s.name for s in test_domain.slots]
+
+    assert SLOT_LISTED_ITEMS in slot_names
+    assert SLOT_LAST_OBJECT in slot_names
+    assert SLOT_LAST_OBJECT_TYPE in slot_names
