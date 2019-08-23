@@ -6,7 +6,8 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.2.4] - `master`_
+
+[Unreleased 1.2.5] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -20,6 +21,23 @@ Removed
 
 Fixed
 -----
+
+
+[1.2.4] - 2019-08-23
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+- the ``SocketIO`` input channel now allows accesses from other origins (fixes ``SocketIO`` channel on Rasa X)
 
 [1.2.3] - 2019-08-15
 ^^^^^^^^^^^^^^^^^^^^
@@ -172,7 +190,7 @@ Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
-- fixed PUT /model with model_server by deserializing the model_server to 
+- fixed PUT /model with model_server by deserializing the model_server to
   EndpointConfig.
 - ``x in AnySlotDict`` is now ``True`` for any ``x``, which fixes empty slot warnings in
   interactive learning
