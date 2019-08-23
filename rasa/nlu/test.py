@@ -37,6 +37,8 @@ ENTITY_PROCESSORS = {"EntitySynonymMapper"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
+NO_ENTITY = "no_entity"
+
 IntentEvaluationResult = namedtuple(
     "IntentEvaluationResult",
     "intent_target " "intent_prediction " "message " "confidence",
@@ -170,8 +172,8 @@ def get_evaluation_metrics(
 
 def get_label_set(targets: Iterable[Any]):
     labels = set(targets)
-    if "no_entity" in labels:
-        labels.remove("no_entity")
+    if NO_ENTITY in labels:
+        labels.remove(NO_ENTITY)
     return list(labels)
 
 
@@ -422,13 +424,13 @@ def evaluate_entities(
 
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
     merged_targets = merge_labels(aligned_predictions)
-    merged_targets = substitute_labels(merged_targets, "O", "no_entity")
+    merged_targets = substitute_labels(merged_targets, "O", NO_ENTITY)
 
     result = {}
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
+        merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         if report_folder:
             report, precision, f1, accuracy = get_evaluation_metrics(
@@ -1065,11 +1067,11 @@ def _compute_entity_metrics(
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
 
     merged_targets = merge_labels(aligned_predictions)
-    merged_targets = substitute_labels(merged_targets, "O", "no_entity")
+    merged_targets = substitute_labels(merged_targets, "O", NO_ENTITY)
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
+        merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
         _, precision, f1, accuracy = get_evaluation_metrics(
             merged_targets, merged_predictions
         )

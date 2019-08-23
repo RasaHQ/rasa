@@ -25,6 +25,9 @@ from rasa.nlu.test import (
     EntityEvaluationResult,
     evaluate_intents,
     evaluate_entities,
+    get_label_set,
+    get_evaluation_metrics,
+    NO_ENTITY,
 )
 from rasa.nlu.test import does_token_cross_borders
 from rasa.nlu.test import align_entity_predictions
@@ -442,6 +445,53 @@ def test_label_replacement():
     original_labels = ["O", "location"]
     target_labels = ["no_entity", "location"]
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
+
+
+@pytest.mark.parametrize(
+    "targets,expected",
+    [
+        (
+            ["no_entity", "location", "location", "location", "person"],
+            ["location", "person"],
+        ),
+        (["no_entity"], []),
+        (["location", "location", "location"], ["location"]),
+        ([], []),
+    ],
+)
+def test_get_label_set(targets, expected):
+    actual = get_label_set(targets)
+    assert expected == actual
+
+
+@pytest.mark.parametrize(
+    "targets,predictions,expected_precision,expected_fscore,expected_accuracy",
+    [
+        (
+            ["no_entity", "location", "no_entity", "location", "no_entity"],
+            ["no_entity", "location", "no_entity", "no_entity", "person"],
+            1.0,
+            0.6666666666666666,
+            3 / 5,
+        ),
+        (
+            ["no_entity", "no_entity", "no_entity", "no_entity", "person"],
+            ["no_entity", "no_entity", "no_entity", "no_entity", "no_entity"],
+            0.0,
+            0.0,
+            4 / 5,
+        ),
+    ],
+)
+def test_get_evaluation_metrics(
+    targets, predictions, expected_precision, expected_fscore, expected_accuracy
+):
+    report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions, True)
+
+    assert f1 == expected_fscore
+    assert precision == expected_precision
+    assert accuracy == expected_accuracy
+    assert NO_ENTITY in report
 
 
 def test_nlu_comparison(tmpdir):
