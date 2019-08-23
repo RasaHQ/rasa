@@ -148,7 +148,10 @@ def log_evaluation_table(
 
 
 def get_evaluation_metrics(
-    targets: Iterable[Any], predictions: Iterable[Any], output_dict: bool = False
+    targets: Iterable[Any],
+    predictions: Iterable[Any],
+    output_dict: bool = False,
+    include_no_entity: bool = True,
 ) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]:
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
@@ -156,10 +159,10 @@ def get_evaluation_metrics(
     targets = clean_labels(targets)
     predictions = clean_labels(predictions)
 
-    labels = get_label_set(targets)
+    labels = get_label_set(targets, include_no_entity)
 
     report = metrics.classification_report(
-        targets, predictions, output_dict=output_dict
+        targets, predictions, labels=labels, output_dict=output_dict
     )
     precision = metrics.precision_score(
         targets, predictions, labels=labels, average="weighted"
@@ -170,9 +173,9 @@ def get_evaluation_metrics(
     return report, precision, f1, accuracy
 
 
-def get_label_set(targets: Iterable[Any]):
+def get_label_set(targets: Iterable[Any], include_no_entity: bool):
     labels = set(targets)
-    if NO_ENTITY in labels:
+    if not include_no_entity and NO_ENTITY in labels:
         labels.remove(NO_ENTITY)
     return list(labels)
 
@@ -433,14 +436,17 @@ def evaluate_entities(
         merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         if report_folder:
-            report, precision, f1, accuracy = get_evaluation_metrics(
-                merged_targets, merged_predictions, output_dict=True
-            )
-
             report_filename = extractor + "_report.json"
             extractor_report_filename = os.path.join(report_folder, report_filename)
 
+            report, precision, f1, accuracy = get_evaluation_metrics(
+                merged_targets,
+                merged_predictions,
+                output_dict=True,
+                include_no_entity=False,
+            )
             utils.write_json_to_file(extractor_report_filename, report)
+
             logger.info(
                 "Classification report for '{}' saved to '{}'."
                 "".format(extractor, extractor_report_filename)
@@ -448,7 +454,7 @@ def evaluate_entities(
 
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
-                merged_targets, merged_predictions
+                merged_targets, merged_predictions, include_no_entity=False
             )
             if isinstance(report, str):
                 log_evaluation_table(report, precision, f1, accuracy)

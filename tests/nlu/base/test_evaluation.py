@@ -448,19 +448,25 @@ def test_label_replacement():
 
 
 @pytest.mark.parametrize(
-    "targets,expected",
+    "targets,include_no_entity,expected",
     [
         (
             ["no_entity", "location", "location", "location", "person"],
+            False,
             ["location", "person"],
         ),
-        (["no_entity"], []),
-        (["location", "location", "location"], ["location"]),
-        ([], []),
+        (
+            ["no_entity", "location", "location", "location", "person"],
+            True,
+            ["no_entity", "location", "person"],
+        ),
+        (["no_entity"], False, []),
+        (["location", "location", "location"], False, ["location"]),
+        ([], False, []),
     ],
 )
-def test_get_label_set(targets, expected):
-    actual = get_label_set(targets)
+def test_get_label_set(targets, include_no_entity, expected):
+    actual = get_label_set(targets, include_no_entity)
     assert expected == actual
 
 
@@ -486,12 +492,14 @@ def test_get_label_set(targets, expected):
 def test_get_evaluation_metrics(
     targets, predictions, expected_precision, expected_fscore, expected_accuracy
 ):
-    report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions, True)
+    report, precision, f1, accuracy = get_evaluation_metrics(
+        targets, predictions, True, include_no_entity=False
+    )
 
     assert f1 == expected_fscore
     assert precision == expected_precision
     assert accuracy == expected_accuracy
-    assert NO_ENTITY in report
+    assert NO_ENTITY not in report
 
 
 def test_nlu_comparison(tmpdir):
