@@ -12,7 +12,13 @@ from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
-from rasa.core.constants import REQUESTED_SLOT
+from rasa.core.constants import (
+    REQUESTED_SLOT,
+    DEFAULT_KNOWLEDGE_BASE_ACTION,
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_OBJECT_TYPE,
+    SLOT_LAST_OBJECT,
+)
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.utils.endpoints import EndpointConfig
@@ -327,6 +333,31 @@ class Domain(object):
         """
         if self.form_names and REQUESTED_SLOT not in [s.name for s in self.slots]:
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
+
+    def add_knowledge_base_slots(self):
+        """
+        Add slots for the knowledge base action to the list of slots, if the
+        default knowledge base action name is present.
+
+        As soon as the knowledge base action is not experimental anymore, we should
+        consider creating a new section in the domain file dedicated to knowledge
+        base slots.
+        """
+        if DEFAULT_KNOWLEDGE_BASE_ACTION in self.action_names:
+            logger.warning(
+                "You are using an experiential feature: Action '{}'!".format(
+                    DEFAULT_KNOWLEDGE_BASE_ACTION
+                )
+            )
+            slot_names = [s.name for s in self.slots]
+            knowledge_base_slots = [
+                SLOT_LISTED_ITEMS,
+                SLOT_LAST_OBJECT,
+                SLOT_LAST_OBJECT_TYPE,
+            ]
+            for s in knowledge_base_slots:
+                if s not in slot_names:
+                    self.slots.append(UnfeaturizedSlot(s))
 
     def action_for_name(
         self, action_name: Text, action_endpoint: Optional[EndpointConfig]
