@@ -283,11 +283,27 @@ model before trying to use it with this improved version.</p>
 <div class="section" id="general">
 <h3>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
+<li>Default parameters of <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> are changed. See <a class="reference internal" href="../nlu/components/#components"><span class="std std-ref">Components</span></a> for details.
+Architecture implementation is changed as well, so <strong>old trained models cannot be loaded</strong>.
+Default parameters and architecture for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> are changed. See <a class="reference internal" href="../core/policies/#policies"><span class="std std-ref">Policies</span></a> for details.
+It uses transformer instead of lstm. <strong>Old trained models cannot be loaded</strong>.
+They use <code class="docutils literal notranslate"><span class="pre">inner</span></code> similarity and <code class="docutils literal notranslate"><span class="pre">softmax</span></code> loss by default instead of
+<code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity and <code class="docutils literal notranslate"><span class="pre">margin</span></code> loss (can be set in config file).
+They use <code class="docutils literal notranslate"><span class="pre">balanced</span></code> batching strategy by default to counteract class imbalance problem.
+The meaning of <code class="docutils literal notranslate"><span class="pre">evaluate_on_num_examples</span></code> is changed. If it is non zero, random examples will be
+picked by stratified split and used as <strong>hold out</strong> validation set, so they will be excluded from training data.
+We suggest to set it to zero (default) if data set contains a lot of unique examples of dialogue turns.</li>
+<li>Default <code class="docutils literal notranslate"><span class="pre">max_history</span></code> for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> which means it’ll use
+the <code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code>. We recommend to set <code class="docutils literal notranslate"><span class="pre">max_history</span></code> to
+some finite value in order to use <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code>
+for <strong>faster training</strong>. See <a class="reference internal" href="../api/featurization/#featurization"><span class="std std-ref">Featurization</span></a> for details.
+We recommend to increase <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> for <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code>
+(e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[32,</span> <span class="pre">64]</span></code>)</li>
 <li><strong>Compare</strong> mode of <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> allows the whole core config comparison.
 Therefore, we changed the naming of trained models. They are named by config file
 name instead of policy name. Old naming style will not be read correctly when
-creating <strong>compare</strong> plots (<code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code>). Please remove old trained models in comparison folder
-and retrain. Normal core training is unaffected.</li>
+creating <strong>compare</strong> plots (<code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code>). Please remove old trained models
+in comparison folder and retrain. Normal core training is unaffected.</li>
 </ul>
 </div>
 </div>

@@ -783,10 +783,11 @@ that will get tried</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">The embedding intent classifier embeds user inputs and intent labels into the same space. Supervised embeddings are
-trained by maximizing similarity between them. This algorithm is based on
-<a class="reference external" href="https://arxiv.org/abs/1709.03856">StarSpace</a>. However, in this implementation
-the <code class="docutils literal notranslate"><span class="pre">mu</span></code> parameter is treated differently and additional hidden layers are added together with dropout.
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">The embedding intent classifier embeds user inputs and intent labels into the same space.
+Supervised embeddings are trained by maximizing similarity between them.
+This algorithm is based on <a class="reference external" href="https://arxiv.org/abs/1709.03856">StarSpace</a>.
+However, in this implementation the loss function is slightly different and
+additional hidden layers are added together with dropout.
 This algorithm also provides similarity rankings of the labels that did not “win”.</p>
 <p>The embedding intent classifier needs to be preceded by a featurizer in the pipeline.
 This featurizer creates the features used for the embeddings.
@@ -796,7 +797,7 @@ by <code class="docutils literal notranslate"><span class="pre">SpacyNLP</span><
 <p class="first admonition-title">Note</p>
 <p class="last">If during prediction time a message contains <strong>only</strong> words unseen during training,
 and no Out-Of-Vacabulary preprocessor was used,
-empty intent <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> is predicted with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
+empty intent <code class="docutils literal notranslate"><span class="pre">None</span></code> is predicted with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
 </div>
 </td>
 </tr>
@@ -813,54 +814,79 @@ modeling hierarchical intent structure, use these flags:</p>
 </dl>
 </li>
 </ul>
-<dl class="docutils">
-<dt>The algorithm also has hyperparameters to control:</dt>
-<dd><ul class="first last simple">
-<li><dl class="first docutils">
-<dt>neural network’s architecture:</dt>
-<dd><ul class="first last">
-<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes_a</span></code> sets a list of hidden layer sizes before the embedding layer for user inputs, the number of hidden layers is equal to the length of the list</li>
-<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes_b</span></code> sets a list of hidden layer sizes before the embedding layer for intent labels, the number of hidden layers is equal to the length of the list</li>
+<p>The algorithm also has hyperparameters to control:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">neural network’s architecture:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes_a</span></code> sets a list of hidden layer sizes before
+the embedding layer for user inputs, the number of hidden layers
+is equal to the length of the list</li>
+<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes_b</span></code> sets a list of hidden layer sizes before
+the embedding layer for intent labels, the number of hidden layers
+is equal to the length of the list</li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 </li>
-<li><dl class="first docutils">
-<dt>training:</dt>
-<dd><ul class="first last">
-<li><code class="docutils literal notranslate"><span class="pre">batch_size</span></code> sets the number of training examples in one forward/backward pass, the higher the batch size, the more memory space you’ll need;</li>
-<li><code class="docutils literal notranslate"><span class="pre">epochs</span></code> sets the number of times the algorithm will see training data, where <code class="docutils literal notranslate"><span class="pre">one</span> <span class="pre">epoch</span></code> = one forward pass and one backward pass of all the training examples;</li>
+<li><p class="first">training:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">batch_size</span></code> sets the number of training examples in one
+forward/backward pass, the higher the batch size, the more
+memory space you’ll need;</li>
+<li><code class="docutils literal notranslate"><span class="pre">batch_strategy</span></code> sets the type of batching strategy,
+it should be either <code class="docutils literal notranslate"><span class="pre">sequence</span></code> or <code class="docutils literal notranslate"><span class="pre">balanced</span></code>;</li>
+<li><code class="docutils literal notranslate"><span class="pre">epochs</span></code> sets the number of times the algorithm will see
+training data, where one <code class="docutils literal notranslate"><span class="pre">epoch</span></code> equals one forward pass and
+one backward pass of all the training examples;</li>
+<li><code class="docutils literal notranslate"><span class="pre">random_seed</span></code> if set to any int will get reproducible
+training results for the same inputs;</li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 </li>
-<li><dl class="first docutils">
-<dt>embedding:</dt>
-<dd><ul class="first last">
+<li><p class="first">embedding:</p>
+<blockquote>
+<div><ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">embed_dim</span></code> sets the dimension of embedding space;</li>
-<li><code class="docutils literal notranslate"><span class="pre">mu_pos</span></code> controls how similar the algorithm should try to make embedding vectors for correct intent labels;</li>
-<li><code class="docutils literal notranslate"><span class="pre">mu_neg</span></code> controls maximum negative similarity for incorrect intents;</li>
-<li><code class="docutils literal notranslate"><span class="pre">similarity_type</span></code> sets the type of the similarity, it should be either <code class="docutils literal notranslate"><span class="pre">cosine</span></code> or <code class="docutils literal notranslate"><span class="pre">inner</span></code>;</li>
-<li><code class="docutils literal notranslate"><span class="pre">num_neg</span></code> sets the number of incorrect intent labels, the algorithm will minimize their similarity to the user input during training;</li>
-<li><code class="docutils literal notranslate"><span class="pre">use_max_sim_neg</span></code> if <code class="docutils literal notranslate"><span class="pre">true</span></code> the algorithm only minimizes maximum similarity over incorrect intent labels;</li>
-<li><code class="docutils literal notranslate"><span class="pre">random_seed</span></code> (None or int) An integer sets the random seed for numpy and tensorflow, so that the random initialisation is always the same and produces the same training result</li>
+<li><code class="docutils literal notranslate"><span class="pre">num_neg</span></code> sets the number of incorrect intent labels,
+the algorithm will minimize their similarity to the user
+input during training;</li>
+<li><code class="docutils literal notranslate"><span class="pre">similarity_type</span></code> sets the type of the similarity,
+it should be either <code class="docutils literal notranslate"><span class="pre">auto</span></code>, <code class="docutils literal notranslate"><span class="pre">cosine</span></code> or <code class="docutils literal notranslate"><span class="pre">inner</span></code>,
+if <code class="docutils literal notranslate"><span class="pre">auto</span></code>, it will be set depending on <code class="docutils literal notranslate"><span class="pre">loss_type</span></code>,
+<code class="docutils literal notranslate"><span class="pre">inner</span></code> for <code class="docutils literal notranslate"><span class="pre">softmax</span></code>, <code class="docutils literal notranslate"><span class="pre">cosine</span></code> for <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
+<li><code class="docutils literal notranslate"><span class="pre">loss_type</span></code> sets the type of the loss function,
+it should be either <code class="docutils literal notranslate"><span class="pre">softmax</span></code> or <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
+<li><code class="docutils literal notranslate"><span class="pre">mu_pos</span></code> controls how similar the algorithm should try
+to make embedding vectors for correct intent labels,
+used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
+<li><code class="docutils literal notranslate"><span class="pre">mu_neg</span></code> controls maximum negative similarity for
+incorrect intents,
+used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
+<li><code class="docutils literal notranslate"><span class="pre">use_max_sim_neg</span></code> if <code class="docutils literal notranslate"><span class="pre">true</span></code> the algorithm only
+minimizes maximum similarity over incorrect intent labels,
+used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
+<li><code class="docutils literal notranslate"><span class="pre">scale_loss</span></code> if <code class="docutils literal notranslate"><span class="pre">true</span></code> the algorithm will downscale the loss
+for examples where correct label is predicted with high confidence,
+used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">softmax</span></code>;</li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 </li>
-<li><dl class="first docutils">
-<dt>regularization:</dt>
-<dd><ul class="first last">
+<li><p class="first">regularization:</p>
+<blockquote>
+<div><ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">C2</span></code> sets the scale of L2 regularization</li>
-<li><code class="docutils literal notranslate"><span class="pre">C_emb</span></code> sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;</li>
-<li><code class="docutils literal notranslate"><span class="pre">droprate</span></code> sets the dropout rate, it should be between <code class="docutils literal notranslate"><span class="pre">0</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">droprate=0.1</span></code> would drop out <code class="docutils literal notranslate"><span class="pre">10%</span></code> of input units;</li>
+<li><code class="docutils literal notranslate"><span class="pre">C_emb</span></code> sets the scale of how important is to minimize
+the maximum similarity between embeddings of different intent labels;</li>
+<li><code class="docutils literal notranslate"><span class="pre">droprate</span></code> sets the dropout rate, it should be
+between <code class="docutils literal notranslate"><span class="pre">0</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">droprate=0.1</span></code>
+would drop out <code class="docutils literal notranslate"><span class="pre">10%</span></code> of input units;</li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 </li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">mu_pos</span></code> and <code class="docutils literal notranslate"><span class="pre">mu_neg</span></code> should be between <code class="docutils literal notranslate"><span class="pre">-1</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
@@ -871,32 +897,63 @@ modeling hierarchical intent structure, use these flags:</p>
 In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behaviour).
 If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">64</span></code>.</p>
 </div>
-<p>In the config, you can specify these parameters:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
-  <span class="c1"># nn architecture</span>
-  <span class="s">&quot;hidden_layers_sizes_a&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span> <span class="nv">128</span><span class="p p-Indicator">]</span>
-  <span class="s">&quot;hidden_layers_sizes_b&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[]</span>
-  <span class="s">&quot;batch_size&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">64</span><span class="p p-Indicator">,</span> <span class="nv">256</span><span class="p p-Indicator">]</span>
-  <span class="s">&quot;epochs&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">300</span>
-  <span class="c1"># embedding parameters</span>
-  <span class="s">&quot;embed_dim&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">20</span>
-  <span class="s">&quot;mu_pos&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.8</span>  <span class="c1"># should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
-  <span class="s">&quot;mu_neg&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">-0.4</span>  <span class="c1"># should be -1.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
-  <span class="s">&quot;similarity_type&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;cosine&quot;</span>  <span class="c1"># string &#39;cosine&#39; or &#39;inner&#39;</span>
-  <span class="s">&quot;num_neg&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">20</span>
-  <span class="s">&quot;use_max_sim_neg&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>  <span class="c1"># flag which loss function to use</span>
-  <span class="s">&quot;random_seed&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span> <span class="c1"># set to any int to generate a reproducible training result</span>
-  <span class="c1"># regularization</span>
-  <span class="s">&quot;C2&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.002</span>
-  <span class="s">&quot;C_emb&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.8</span>
-  <span class="s">&quot;droprate&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.2</span>
-  <span class="c1"># flag for tokenizing intents</span>
-  <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
-  <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
-  <span class="c1"># visualization of accuracy</span>
-  <span class="s">&quot;evaluate_every_num_epochs&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>  <span class="c1"># small values may hurt performance</span>
-  <span class="s">&quot;evaluate_on_num_examples&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>  <span class="c1"># large values may hurt performance</span>
+<p>In the config, you can specify these parameters.
+The default values are defined in <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier.defaults</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1"># nn architecture</span>
+    <span class="c1"># sizes of hidden layers before the embedding layer for input words</span>
+    <span class="c1"># the number of hidden layers is thus equal to the length of this list</span>
+    <span class="s2">&quot;hidden_layers_sizes_a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">256</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span>
+    <span class="c1"># sizes of hidden layers before the embedding layer for intent labels</span>
+    <span class="c1"># the number of hidden layers is thus equal to the length of this list</span>
+    <span class="s2">&quot;hidden_layers_sizes_b&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="c1"># training parameters</span>
+    <span class="c1"># initial and final batch sizes - batch size will be</span>
+    <span class="c1"># linearly increased for each epoch</span>
+    <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">64</span><span class="p">,</span> <span class="mi">256</span><span class="p">],</span>
+    <span class="c1"># how to create batches</span>
+    <span class="s2">&quot;batch_strategy&quot;</span><span class="p">:</span> <span class="s2">&quot;balanced&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;sequence&#39; or &#39;balanced&#39;</span>
+    <span class="c1"># number of epochs</span>
+    <span class="s2">&quot;epochs&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+    <span class="c1"># set random seed to any int to get reproducible results</span>
+    <span class="s2">&quot;random_seed&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="c1"># embedding parameters</span>
+    <span class="c1"># dimension size of embedding vectors</span>
+    <span class="s2">&quot;embed_dim&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="c1"># the type of the similarity</span>
+    <span class="s2">&quot;num_neg&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="c1"># flag if minimize only maximum similarity over incorrect actions</span>
+    <span class="s2">&quot;similarity_type&quot;</span><span class="p">:</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;auto&#39; or &#39;cosine&#39; or &#39;inner&#39;</span>
+    <span class="c1"># the type of the loss function</span>
+    <span class="s2">&quot;loss_type&quot;</span><span class="p">:</span> <span class="s2">&quot;softmax&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;softmax&#39; or &#39;margin&#39;</span>
+    <span class="c1"># how similar the algorithm should try</span>
+    <span class="c1"># to make embedding vectors for correct labels</span>
+    <span class="s2">&quot;mu_pos&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
+    <span class="c1"># maximum negative similarity for incorrect labels</span>
+    <span class="s2">&quot;mu_neg&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span>  <span class="c1"># should be -1.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
+    <span class="c1"># flag: if true, only minimize the maximum similarity for incorrect labels</span>
+    <span class="s2">&quot;use_max_sim_neg&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># scale loss inverse proportionally to confidence of correct prediction</span>
+    <span class="s2">&quot;scale_loss&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># regularization parameters</span>
+    <span class="c1"># the scale of L2 regularization</span>
+    <span class="s2">&quot;C2&quot;</span><span class="p">:</span> <span class="mf">0.002</span><span class="p">,</span>
+    <span class="c1"># the scale of how critical the algorithm should be of minimizing the</span>
+    <span class="c1"># maximum similarity between embeddings of different labels</span>
+    <span class="s2">&quot;C_emb&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
+    <span class="c1"># dropout rate for rnn</span>
+    <span class="s2">&quot;droprate&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+    <span class="c1"># flag: if true, the algorithm will split the labels into tokens</span>
+    <span class="c1">#       and use bag-of-words representations for them</span>
+    <span class="s2">&quot;label_tokenization_flag&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="c1"># delimiter string to split the labels</span>
+    <span class="s2">&quot;label_split_symbol&quot;</span><span class="p">:</span> <span class="s2">&quot;_&quot;</span><span class="p">,</span>
+    <span class="c1"># visualization of accuracy</span>
+    <span class="c1"># how often to calculate training accuracy</span>
+    <span class="s2">&quot;evaluate_every_num_epochs&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>  <span class="c1"># small values may hurt performance</span>
+    <span class="c1"># how many examples to use for calculation of training accuracy</span>
+    <span class="s2">&quot;evaluate_on_num_examples&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>  <span class="c1"># large values may hurt performance</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <div class="last admonition note">

@@ -265,9 +265,10 @@
 <h1>Rasa Change Log<a class="headerlink" href="#rasa-change-log" title="Permalink to this headline">¶</a></h1>
 <p>All notable changes to this project will be documented in this file.
 This project adheres to <a class="reference external" href="http://semver.org/">Semantic Versioning</a> starting with version 1.0.</p>
-<p>[Unreleased 1.3] - <a class="reference external" href="https://github.com/RasaHQ/rasa/">master</a></p>
+<div class="section" id="unreleased-1-3-master">
+<h2>[Unreleased 1.3] - <a class="reference external" href="https://github.com/RasaHQ/rasa/">master</a><a class="headerlink" href="#unreleased-1-3-master" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="added">
-<h2>Added<a class="headerlink" href="#added" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#added" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>bot messages contain the <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> of the <code class="docutils literal notranslate"><span class="pre">BotUttered</span></code> event, which can be used in channels</li>
 <li><code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> can now be configured to trigger when the difference between confidences of two predicted intents is too narrow</li>
@@ -277,13 +278,16 @@ sub bots. Please see the
 information.</li>
 <li>throw error during training when triggers are defined in the domain without
 <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> being present in the policy ensemble</li>
-<li>The tracker is now available within the interpreter’s <code class="docutils literal notranslate"><span class="pre">parse</span></code> method, giving the ability to create interpreter classes that
+<li>the tracker is now available within the interpreter’s <code class="docutils literal notranslate"><span class="pre">parse</span></code> method, giving the ability to create interpreter classes that
 use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015</li>
-<li>Add example bot <code class="docutils literal notranslate"><span class="pre">knowledgebasebot</span></code> to showcase the usage of <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code></li>
+<li>add example bot <code class="docutils literal notranslate"><span class="pre">knowledgebasebot</span></code> to showcase the usage of <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">softmax</span></code> starspace loss for both <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">balanced</span></code> batching strategy for both <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">max_history</span></code> parameter for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code></li>
 </ul>
 </div>
 <div class="section" id="changed">
-<h2>Changed<a class="headerlink" href="#changed" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#changed" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>added character-level <code class="docutils literal notranslate"><span class="pre">CountVectorsFeaturizer</span></code> with empirically found parameters
 into the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> NLU pipeline template</li>
@@ -291,66 +295,74 @@ into the <code class="docutils literal notranslate"><span class="pre">supervised
 <li>show warning in case a default path is used instead of a provided, invalid path</li>
 <li>compare mode of <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> allows the whole core config comparison,
 naming style of models trained for comparison is changed (this is a breaking change)</li>
-<li>Pika keeps a single connection open, instead of open and closing on each incoming event</li>
+<li>pika keeps a single connection open, instead of open and closing on each incoming event</li>
 <li><code class="docutils literal notranslate"><span class="pre">RasaChatInput</span></code> fetches the public key from the Rasa X API. The key is used to
 decode the bearer token containing the conversation ID. This requires
-<code class="docutils literal notranslate"><span class="pre">rasa-x&gt;=0.20.2</span></code>.</li>
+<code class="docutils literal notranslate"><span class="pre">rasa-x&gt;=0.20.2</span></code></li>
 <li>change priorities so that the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> has higher priority than the <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code></li>
+<li>substitute LSTM with Transformer in <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> can now use <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code></li>
+<li>non zero <code class="docutils literal notranslate"><span class="pre">evaluate_on_num_examples</span></code> in <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>
+and <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> is the size of
+hold out validation set that is excluded from training data</li>
+<li>defaults parameters and architectures for both <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> and
+<code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> are changed (this is a breaking change)</li>
 </ul>
 </div>
 <div class="section" id="fixed">
-<h2>Fixed<a class="headerlink" href="#fixed" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#fixed" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code> with a folder of configuration files</li>
+<li><code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> standard featurizer is set to <code class="docutils literal notranslate"><span class="pre">None</span></code></li>
 </ul>
+</div>
+</div>
 <div class="section" id="id1">
-<h3>[1.2.3] - 2019-08-15<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.2.3] - 2019-08-15<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id2">
-<h2>Changed<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>messages with multiple entities are now handled properly with e2e evaluation</li>
 <li><code class="docutils literal notranslate"><span class="pre">data/test_evaluations/end_to_end_story.md</span></code> was re-written in the restaurantbot domain</li>
 </ul>
 </div>
 <div class="section" id="id3">
-<h2>Fixed<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Free text input was not allowed in the Rasa shell when the response template contained buttons,
 which has now been fixed.</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id4">
-<h3>[1.2.2] - 2019-08-07<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.2.2] - 2019-08-07<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id5">
-<h2>Fixed<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">UserUttered</span></code> events always got the same timestamp</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id6">
-<h3>[1.2.1] - 2019-08-06<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.2.1] - 2019-08-06<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id7">
-<h2>Added<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Docs now have an <code class="docutils literal notranslate"><span class="pre">EDIT</span> <span class="pre">THIS</span> <span class="pre">PAGE</span></code> button</li>
 </ul>
 </div>
 <div class="section" id="id8">
-<h2>Fixed<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">Flood</span> <span class="pre">control</span> <span class="pre">exceeded</span></code> error in Telegram connector which happened because the
 webhook was set twice</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id9">
-<h3>[1.2.0] - 2019-08-01<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.2.0] - 2019-08-01<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id10">
-<h2>Added<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>add root route to server started without <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> parameter</li>
 <li>add <code class="docutils literal notranslate"><span class="pre">--evaluate-model-directory</span></code> to <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> to evaluate models from <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span> <span class="pre">-c</span> <span class="pre">&lt;config-1&gt;</span> <span class="pre">&lt;config-2&gt;</span></code></li>
@@ -359,7 +371,7 @@ webhook was set twice</li>
 </ul>
 </div>
 <div class="section" id="id11">
-<h2>Changed<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">Agent.update_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">Agent.handle_message()</span></code> now work without needing to set a domain
 or a policy ensemble</li>
@@ -373,18 +385,18 @@ old behavior)</li>
 </ul>
 </div>
 <div class="section" id="id12">
-<h2>Fixed<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> can handle compressed model files</li>
-<li>Rasa can handle story files containing multi line comments</li>
-<li>Template will retain <cite>{</cite> if escaped with <cite>{</cite>. e.g. <cite>{{“foo”: {bar}}}</cite> will result in <cite>{“foo”: “replaced value”}</cite></li>
+<li>rasa can handle story files containing multi line comments</li>
+<li>template will retain <cite>{</cite> if escaped with <cite>{</cite>. e.g. <cite>{{“foo”: {bar}}}</cite> will result in <cite>{“foo”: “replaced value”}</cite></li>
 </ul>
+</div>
+</div>
 <div class="section" id="id13">
-<h3>[1.1.8] - 2019-07-25<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.1.8] - 2019-07-25<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id14">
-<h2>Added<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">TrainingFileImporter</span></code> interface to support customizing the process of loading
 training data</li>
@@ -392,7 +404,7 @@ training data</li>
 </ul>
 </div>
 <div class="section" id="id15">
-<h2>Changed<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">Agent.update_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">Agent.handle_message()</span></code> now work without needing to set a domain
 or a policy ensemble</li>
@@ -400,7 +412,7 @@ or a policy ensemble</li>
 </ul>
 </div>
 <div class="section" id="id16">
-<h2>Fixed<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>interactive learning bug where reverted user utterances were dumped to training data</li>
 <li>added timeout to terminal input channel to avoid freezing input in case of server
@@ -409,19 +421,19 @@ errors</li>
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code> in comparison mode stores the model files compressed (<code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> files)</li>
 <li>slot setting in interactive learning with the TwoStageFallbackPolicy</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id17">
-<h3>[1.1.7] - 2019-07-18<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.1.7] - 2019-07-18<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id18">
-<h2>Added<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>added optional pymongo dependencies <code class="docutils literal notranslate"><span class="pre">[tls,</span> <span class="pre">srv]</span></code> to <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> for better mongodb support</li>
 <li><code class="docutils literal notranslate"><span class="pre">case_sensitive</span></code> option added to <code class="docutils literal notranslate"><span class="pre">WhiteSpaceTokenizer</span></code> with <code class="docutils literal notranslate"><span class="pre">true</span></code> as default.</li>
 </ul>
 </div>
 <div class="section" id="id19">
-<h2>Fixed<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>validation no longer throws an error during interactive learning</li>
 <li>fixed wrong cleaning of <code class="docutils literal notranslate"><span class="pre">use_entities</span></code> in case it was a list and not <code class="docutils literal notranslate"><span class="pre">True</span></code></li>
@@ -429,38 +441,38 @@ errors</li>
 <li>fixed bug where “No model found” message appeared after successfully running the bot</li>
 <li>debug logs now print to <code class="docutils literal notranslate"><span class="pre">rasa_core.log</span></code> when running <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span> <span class="pre">-vv</span></code> or <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span> <span class="pre">-vv</span></code></li>
 </ul>
+</div>
+</div>
 <div class="section" id="id20">
-<h3>[1.1.6] - 2019-07-12<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.1.6] - 2019-07-12<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id21">
-<h2>Added<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>rest channel supports setting a message’s input_channel through a field
 <code class="docutils literal notranslate"><span class="pre">input_channel</span></code> in the request body</li>
 </ul>
 </div>
 <div class="section" id="id22">
-<h2>Changed<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>recommended syntax for empty <code class="docutils literal notranslate"><span class="pre">use_entities</span></code> and <code class="docutils literal notranslate"><span class="pre">ignore_entities</span></code> in the domain file
 has been updated from <code class="docutils literal notranslate"><span class="pre">False</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> to an empty list (<code class="docutils literal notranslate"><span class="pre">[]</span></code>)</li>
 </ul>
 </div>
 <div class="section" id="id23">
-<h2>Fixed<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> without <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> does not require a local model anymore</li>
 <li>using <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> with <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> to run a server now prints
 “running Rasa server” instead of “running Rasa Core server”</li>
 <li>actions, intents, and utterances created in <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> can no longer be empty</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id24">
-<h3>[1.1.5] - 2019-07-10<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.1.5] - 2019-07-10<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id25">
-<h2>Added<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>debug logging now tells you which tracker store is connected</li>
 <li>the response of <code class="docutils literal notranslate"><span class="pre">/model/train</span></code> now includes a response header for the trained model filename</li>
@@ -472,7 +484,7 @@ has been updated from <code class="docutils literal notranslate"><span class="pr
 </ul>
 </div>
 <div class="section" id="id26">
-<h2>Changed<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>deprecate <code class="docutils literal notranslate"><span class="pre">rasa.core.agent.handle_channels(...)`.</span> <span class="pre">Please</span> <span class="pre">use</span> <span class="pre">``rasa.run(...)</span></code>
 or <code class="docutils literal notranslate"><span class="pre">rasa.core.run.configure_app</span></code> instead.</li>
@@ -480,7 +492,7 @@ or <code class="docutils literal notranslate"><span class="pre">rasa.core.run.co
 </ul>
 </div>
 <div class="section" id="removed">
-<h2>Removed<a class="headerlink" href="#removed" title="Permalink to this headline">¶</a></h2>
+<h3>Removed<a class="headerlink" href="#removed" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>revert the stripping of trailing slashes in endpoint URLs since this can lead to
 problems in case the trailing slash is actually wanted</li>
@@ -488,7 +500,7 @@ problems in case the trailing slash is actually wanted</li>
 </ul>
 </div>
 <div class="section" id="id27">
-<h2>Fixed<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>all temporal model files are now deleted after stopping the Rasa server</li>
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span> <span class="pre">nlu</span></code> now outputs unicode characters instead of <code class="docutils literal notranslate"><span class="pre">\uxxxx</span></code> codes</li>
@@ -503,72 +515,72 @@ interactive learning</li>
 the command line interface</li>
 <li><code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> now works correctly when used as part of a PolicyEnsemble</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id28">
-<h3>[1.1.4] - 2019-06-18<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.1.4] - 2019-06-18<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id29">
-<h2>Added<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>unfeaturize single entities</li>
 <li>added agent readiness check to the <code class="docutils literal notranslate"><span class="pre">/status</span></code> resource</li>
 </ul>
 </div>
 <div class="section" id="id30">
-<h2>Changed<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>removed leading underscore from name of ‘_create_initial_project’ function.</li>
 </ul>
 </div>
 <div class="section" id="id31">
-<h2>Fixed<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed bug where facebook quick replies were not rendering</li>
 <li>take FB quick reply payload rather than text as input</li>
 <li>fixed bug where <cite>training_data</cite> path in <cite>metadata.json</cite> was an absolute path</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id32">
-<h3>[1.1.3] - 2019-06-14<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.1.3] - 2019-06-14<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id33">
-<h2>Fixed<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed any inconsistent type annotations in code and some bugs revealed by
 type checker</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id34">
-<h3>[1.1.2] - 2019-06-13<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.1.2] - 2019-06-13<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id35">
-<h2>Fixed<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed duplicate events appearing in tracker when using a PostgreSQL tracker store</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id36">
-<h3>[1.1.1] - 2019-06-13<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.1.1] - 2019-06-13<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id37">
-<h2>Fixed<a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed compatibility with Rasa SDK</li>
 <li>bot responses can contain <code class="docutils literal notranslate"><span class="pre">custom</span></code> messages besides other message types</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id38">
-<h3>[1.1.0] - 2019-06-13<a class="headerlink" href="#id38" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.1.0] - 2019-06-13<a class="headerlink" href="#id38" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id39">
-<h2>Added<a class="headerlink" href="#id39" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id39" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>nlu configs can now be directly compared for performance on a dataset
 in <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code></li>
 </ul>
 </div>
 <div class="section" id="id40">
-<h2>Changed<a class="headerlink" href="#id40" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id40" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>update the tracker in interactive learning through reverting and appending events
 instead of replacing the tracker</li>
@@ -576,7 +588,7 @@ instead of replacing the tracker</li>
 </ul>
 </div>
 <div class="section" id="id41">
-<h2>Fixed<a class="headerlink" href="#id41" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id41" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed creation of <code class="docutils literal notranslate"><span class="pre">RasaNLUHttpInterpreter</span></code></li>
 <li>form actions are included in domain warnings</li>
@@ -585,22 +597,22 @@ domain are excluded from domain warnings</li>
 <li>SQL <code class="docutils literal notranslate"><span class="pre">data</span></code> column type to <code class="docutils literal notranslate"><span class="pre">Text</span></code> for compatibility with MySQL</li>
 <li>non-featurizer training parameters don’t break <cite>SklearnPolicy</cite> anymore</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id42">
-<h3>[1.0.9] - 2019-06-10<a class="headerlink" href="#id42" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.9] - 2019-06-10<a class="headerlink" href="#id42" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id43">
-<h2>Changed<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>revert PR #3739 (as this is a breaking change): set <code class="docutils literal notranslate"><span class="pre">PikaProducer</span></code> and
 <code class="docutils literal notranslate"><span class="pre">KafkaProducer</span></code> default queues back to <code class="docutils literal notranslate"><span class="pre">rasa_core_events</span></code></li>
 </ul>
+</div>
+</div>
 <div class="section" id="id44">
-<h3>[1.0.8] - 2019-06-10<a class="headerlink" href="#id44" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.8] - 2019-06-10<a class="headerlink" href="#id44" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id45">
-<h2>Added<a class="headerlink" href="#id45" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id45" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>support for specifying full database urls in the <code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> configuration</li>
 <li>maximum number of predictions can be set via the environment variable
@@ -608,59 +620,59 @@ domain are excluded from domain warnings</li>
 </ul>
 </div>
 <div class="section" id="id46">
-<h2>Changed<a class="headerlink" href="#id46" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id46" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>default <code class="docutils literal notranslate"><span class="pre">PikaProducer</span></code> and <code class="docutils literal notranslate"><span class="pre">KafkaProducer</span></code> queues to <code class="docutils literal notranslate"><span class="pre">rasa_production_events</span></code></li>
 <li>exclude unfeaturized slots from domain warnings</li>
 </ul>
 </div>
 <div class="section" id="id47">
-<h2>Fixed<a class="headerlink" href="#id47" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id47" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>loading of additional training data with the <code class="docutils literal notranslate"><span class="pre">SkillSelector</span></code></li>
 <li>strip trailing slashes in endpoint URLs</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id48">
-<h3>[1.0.7] - 2019-06-06<a class="headerlink" href="#id48" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.7] - 2019-06-06<a class="headerlink" href="#id48" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id49">
-<h2>Added<a class="headerlink" href="#id49" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id49" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>added argument <code class="docutils literal notranslate"><span class="pre">--rasa-x-port</span></code> to specify the port of Rasa X when running Rasa X locally via <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code></li>
 </ul>
 </div>
 <div class="section" id="id50">
-<h2>Fixed<a class="headerlink" href="#id50" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id50" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>slack notifications from bots correctly render text</li>
 <li>fixed usage of <code class="docutils literal notranslate"><span class="pre">--log-file</span></code> argument for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code></li>
 <li>check if correct tracker store is configured in local mode</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id51">
-<h3>[1.0.6] - 2019-06-03<a class="headerlink" href="#id51" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.6] - 2019-06-03<a class="headerlink" href="#id51" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id52">
-<h2>Fixed<a class="headerlink" href="#id52" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id52" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed backwards incompatible utils changes</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id53">
-<h3>[1.0.5] - 2019-06-03<a class="headerlink" href="#id53" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.5] - 2019-06-03<a class="headerlink" href="#id53" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id54">
-<h2>Fixed<a class="headerlink" href="#id54" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id54" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fixed spacy being a required dependency (regression)</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id55">
-<h3>[1.0.4] - 2019-06-03<a class="headerlink" href="#id55" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.4] - 2019-06-03<a class="headerlink" href="#id55" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id56">
-<h2>Added<a class="headerlink" href="#id56" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id56" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>automatic creation of index on the <code class="docutils literal notranslate"><span class="pre">sender_id</span></code> column when using an SQL
 tracker store. If you have an existing data and you are running into performance
@@ -669,28 +681,28 @@ issues, please make sure to add an index manually using
 </ul>
 </div>
 <div class="section" id="id57">
-<h2>Changed<a class="headerlink" href="#id57" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id57" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>NLU evaluation in cross-validation mode now also provides intent/entity reports,
 confusion matrix, etc.</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id58">
-<h3>[1.0.3] - 2019-05-30<a class="headerlink" href="#id58" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.3] - 2019-05-30<a class="headerlink" href="#id58" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id59">
-<h2>Fixed<a class="headerlink" href="#id59" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id59" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>non-ascii characters render correctly in stories generated from interactive learning</li>
 <li>validate domain file before usage, e.g. print proper error messages if domain file
 is invalid instead of raising errors</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id60">
-<h3>[1.0.2] - 2019-05-29<a class="headerlink" href="#id60" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.2] - 2019-05-29<a class="headerlink" href="#id60" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id61">
-<h2>Added<a class="headerlink" href="#id61" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id61" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>added <code class="docutils literal notranslate"><span class="pre">domain_warnings()</span></code> method to <code class="docutils literal notranslate"><span class="pre">Domain</span></code> which returns a dict containing the
 diff between supplied {actions, intents, entities, slots} and what’s contained in the
@@ -698,7 +710,7 @@ domain</li>
 </ul>
 </div>
 <div class="section" id="id62">
-<h2>Fixed<a class="headerlink" href="#id62" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id62" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>fix lookup table files failed to load issues/3622</li>
 <li>buttons can now be properly selected during cmdline chat or when in interactive learning</li>
@@ -706,21 +718,21 @@ domain</li>
 <li>mapping policy no longer ignores NLU threshold</li>
 <li>mapping policy priority is correctly persisted</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id63">
-<h3>[1.0.1] - 2019-05-21<a class="headerlink" href="#id63" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.1] - 2019-05-21<a class="headerlink" href="#id63" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id64">
-<h2>Fixed<a class="headerlink" href="#id64" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id64" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>updated installation command in docs for Rasa X</li>
 </ul>
+</div>
+</div>
 <div class="section" id="id65">
-<h3>[1.0.0] - 2019-05-21<a class="headerlink" href="#id65" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
+<h2>[1.0.0] - 2019-05-21<a class="headerlink" href="#id65" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id66">
-<h2>Added<a class="headerlink" href="#id66" title="Permalink to this headline">¶</a></h2>
+<h3>Added<a class="headerlink" href="#id66" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>added arguments to set the file paths for interactive training</li>
 <li>added quick reply representation for command-line output</li>
@@ -754,7 +766,7 @@ is now raised with instructions for linking one</li>
 </ul>
 </div>
 <div class="section" id="id67">
-<h2>Changed<a class="headerlink" href="#id67" title="Permalink to this headline">¶</a></h2>
+<h3>Changed<a class="headerlink" href="#id67" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>renamed all CLI parameters containing any <code class="docutils literal notranslate"><span class="pre">_</span></code> to use dashes <code class="docutils literal notranslate"><span class="pre">-</span></code> instead (GNU standard)</li>
 <li>renamed <code class="docutils literal notranslate"><span class="pre">rasa_core</span></code> package to <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code></li>
@@ -781,7 +793,7 @@ that were not used at all (e.g. <code class="docutils literal notranslate"><span
 </ul>
 </div>
 <div class="section" id="id68">
-<h2>Removed<a class="headerlink" href="#id68" title="Permalink to this headline">¶</a></h2>
+<h3>Removed<a class="headerlink" href="#id68" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>removed possibility to execute <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">rasa_core.train</span></code> etc. (e.g. scripts in <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa.nlu</span></code>).
 Use the CLI for rasa instead, e.g. <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span></code>.</li>
@@ -791,7 +803,7 @@ Use the CLI for rasa instead, e.g. <code class="docutils literal notranslate"><s
 </ul>
 </div>
 <div class="section" id="id69">
-<h2>Fixed<a class="headerlink" href="#id69" title="Permalink to this headline">¶</a></h2>
+<h3>Fixed<a class="headerlink" href="#id69" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>evaluating core stories with two stage fallback gave an error, trying to handle None for a policy</li>
 <li>the <code class="docutils literal notranslate"><span class="pre">/evaluate</span></code> route for the Rasa NLU server now runs evaluation
@@ -804,6 +816,7 @@ Store</li>
 <li>utterance templates defined in actions are checked for existence upon training a new agent, and a warning
 is thrown before training if one is missing</li>
 </ul>
+</div>
 </div>
 </div>
 
