@@ -230,14 +230,18 @@ class MarkdownWriter(TrainingDataWriter):
         """generates markdown training examples."""
         training_examples = sorted(
             [e.as_dict() for e in training_data.training_examples],
-            key=lambda k: (k["intent"], k["response"]),
+            key=lambda k: (k["intent"], k.get("response", None)),
         )
         md = ""
         for i, example in enumerate(training_examples):
             intent = training_examples[i - 1]["intent"]
             if i == 0 or intent != example["intent"]:
                 md += self._generate_section_header_md(
-                    INTENT, example["intent"], RESPONSE, example["response"], i != 0
+                    INTENT,
+                    example["intent"],
+                    RESPONSE,
+                    example.get("response", None),
+                    i != 0,
                 )
 
             md += self._generate_item_md(self._generate_message_md(example))

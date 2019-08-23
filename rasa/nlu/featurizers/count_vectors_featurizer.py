@@ -176,15 +176,21 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _get_message_text_by_attribute(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE):
 
-        attribute = "" if attribute == MESSAGE_TEXT_ATTRIBUTE else attribute + "_"
-        if message.get("{0}spacy_doc".format(attribute)):  # if lemmatize is possible
-            tokens = [t.lemma_ for t in message.get("{0}spacy_doc".format(attribute))]
+        attribute_prefix = (
+            "" if attribute == MESSAGE_TEXT_ATTRIBUTE else attribute + "_"
+        )
+        if message.get(
+            "{0}spacy_doc".format(attribute_prefix)
+        ):  # if lemmatize is possible
+            tokens = [
+                t.lemma_ for t in message.get("{0}spacy_doc".format(attribute_prefix))
+            ]
         elif message.get(
-            "{0}tokens".format(attribute)
+            "{0}tokens".format(attribute_prefix)
         ):  # if directly tokens is provided
-            tokens = [t.text for t in message.get("{0}tokens".format(attribute))]
+            tokens = [t.text for t in message.get("{0}tokens".format(attribute_prefix))]
         else:
-            return ""
+            tokens = message.get(attribute).split()
 
         text = re.sub(r"\b[0-9]+\b", "__NUMBER__", " ".join(tokens))
         if self.lowercase:
@@ -317,12 +323,14 @@ class CountVectorsFeaturizer(Featurizer):
         cleaned_attribute_texts = {}
 
         for attribute in MESSAGE_ATTRIBUTES:
-            lem = [
+            attribute_texts = [
                 self._get_message_text_by_attribute(example, attribute)
+                if not example.get(attribute) is None
+                else ""
                 for example in training_data.intent_examples
             ]
-            self._check_OOV_present(lem)
-            cleaned_attribute_texts[attribute] = lem
+            self._check_OOV_present(attribute_texts)
+            cleaned_attribute_texts[attribute] = attribute_texts
 
         combined_cleaned_texts = []
         if self.use_shared_vocab:
@@ -332,17 +340,25 @@ class CountVectorsFeaturizer(Featurizer):
         featurized_attributes = {}
         # noinspection PyPep8Naming
 
-        for attribute in MESSAGE_ATTRIBUTES:
-
+        for index, attribute in enumerate(MESSAGE_ATTRIBUTES):
             try:
                 if self.use_shared_vocab:
-                    self.vectorizer[attribute].fit(combined_cleaned_texts)
+                    if index == 0:
+                        # Only train a model for first attribute
+                        self.vectorizer[attribute].fit(combined_cleaned_texts)
+                    else:
+                        # Copy the first model for this attribute
+                        self.vectorizer[attribute] = self.vectorizer[
+                            MESSAGE_ATTRIBUTES[0]
+                        ]
                 else:
                     self.vectorizer[attribute].fit(cleaned_attribute_texts[attribute])
             except ValueError as e:
                 logger.warning(
                     "Unable to train CountVectorizer for message attribute {0}. "
-                    "Returning with untrained CountVectorizer".format(attribute)
+                    "Returning with an untrained CountVectorizer for that attribute".format(
+                        attribute
+                    )
                 )
                 continue
 
@@ -403,7 +419,11 @@ class CountVectorsFeaturizer(Featurizer):
         """
 
         file_name = file_name + ".pkl"
-        if self.vectorizer:
+        any_model_trained = False
+        for attribute in MESSAGE_ATTRIBUTES:
+            any_model_trained = self.is_trained[attribute] or any_model_trained
+
+        if any_model_trained:
             featurizer_file = os.path.join(model_dir, file_name)
             if not self.use_shared_vocab:
                 utils.json_pickle(

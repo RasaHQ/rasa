@@ -490,12 +490,13 @@ def test_markdown_entity_regex():
 
     assert len(result.training_examples) == 4
     first = result.training_examples[0]
-    assert first.data == {"intent": "restaurant_search"}
+    assert first.data == {"intent": "restaurant_search", "response": None}
     assert first.text == "i'm looking for a place to eat"
 
     second = result.training_examples[1]
     assert second.data == {
         "intent": "restaurant_search",
+        "response": None,
         "entities": [
             {"start": 31, "end": 36, "value": "north", "entity": "loc-direction"}
         ],
@@ -505,6 +506,7 @@ def test_markdown_entity_regex():
     third = result.training_examples[2]
     assert third.data == {
         "intent": "restaurant_search",
+        "response": None,
         "entities": [{"start": 8, "end": 14, "value": "chinese", "entity": "cuisine"}],
     }
     assert third.text == "show me chines restaurants"
@@ -512,6 +514,7 @@ def test_markdown_entity_regex():
     fourth = result.training_examples[3]
     assert fourth.data == {
         "intent": "restaurant_search",
+        "response": None,
         "entities": [
             {"start": 8, "end": 14, "value": "43er*+?df", "entity": "22_ab-34*3.A"}
         ],

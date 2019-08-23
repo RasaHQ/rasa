@@ -237,6 +237,7 @@ class EmbeddingIntentClassifier(Component):
         distinct_label_ids = set(
             [example.get(attribute) for example in training_data.intent_examples]
         ) - {None}
+        print (distinct_label_ids)
         return {
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
         }
@@ -246,6 +247,7 @@ class EmbeddingIntentClassifier(Component):
         for ex in examples:
             if ex.get(attribute) == label:
                 return ex
+        return None
 
     def _create_encoded_label_ids(
         self,
@@ -254,32 +256,24 @@ class EmbeddingIntentClassifier(Component):
         attribute: Text,
         attribute_feature_name: Text,
     ) -> np.ndarray:
-        """Create matrix with label_ids encoded in rows as bag of words.
-
-        If label_tokenization_flag is off, returns identity matrix.
-        """
+        """Create matrix with label_ids encoded in rows as bag of words."""
 
         encoded_all_labels = []
+        single_encoding_shape = None
 
         for label_name, idx in label_id_dict.items():
-            encoded_all_labels.insert(
-                idx,
-                self._find_example_for_label(
-                    label_name, training_data.intent_examples, attribute
-                ).get(attribute_feature_name),
+            label_example = self._find_example_for_label(
+                label_name, training_data.intent_examples, attribute
             )
+            if label_example:
+                encoded_all_labels.insert(
+                    idx, label_example.get(attribute_feature_name)
+                )
+                single_encoding_shape = label_example.get(attribute_feature_name).shape
+            else:
+                encoded_all_labels.insert(idx, np.zeros_like(single_encoding_shape))
 
         return np.array(encoded_all_labels)
-
-    # noinspection PyPep8Naming
-    def _create_all_Y(self, size: int) -> np.ndarray:
-        """Stack encoded_all_label_ids on top of each other
-
-        to create candidates for training examples and
-        to calculate training accuracy
-        """
-
-        return np.stack([self._encoded_all_label_ids] * size)
 
     # noinspection PyPep8Naming
     def _create_session_data(
@@ -290,27 +284,44 @@ class EmbeddingIntentClassifier(Component):
     ) -> "train_utils.SessionData":
         """Prepare data for training"""
 
-        X = np.stack(
-            [
-                e.get("text_features")
-                for e in training_data.intent_examples
-                if e.get(attribute)
-            ]
-        )
+        X = []
+        label_ids = []
+        Y = []
+        for e in training_data.intent_examples:
+            if e.get(attribute):
+                X.append(e.get("text_features"))
+                label_ids.append(label_id_dict[e.get(attribute)])
 
-        label_ids = np.array(
-            [
-                label_id_dict[e.get(attribute)]
-                for e in training_data.intent_examples
-                if e.get(attribute)
-            ]
-        )
+        X = np.array(X)
+        label_ids = np.array(label_ids)
 
-        Y = np.stack(
-            [self._encoded_all_label_ids[label_id_idx] for label_id_idx in label_ids]
-        )
+        for label_id_idx in label_ids:
+            Y.append(self._encoded_all_label_ids[label_id_idx])
+
+        Y = np.array(Y)
 
         return train_utils.SessionData(X=X, Y=Y, label_ids=label_ids)
+        # X = np.stack(
+        #     [
+        #         e.get("text_features")
+        #         for e in training_data.intent_examples
+        #         if e.get(attribute)
+        #     ]
+        # )
+        #
+        # label_ids = np.array(
+        #     [
+        #         label_id_dict[e.get(attribute)]
+        #         for e in training_data.intent_examples
+        #         if e.get(attribute)
+        #     ]
+        # )
+        #
+        # Y = np.stack(
+        #     [self._encoded_all_label_ids[label_id_idx] for label_id_idx in label_ids]
+        # )
+        #
+        # return train_utils.SessionData(X=X, Y=Y, label_ids=label_ids)
 
     # tf helpers:
     def _create_tf_embed_fnn(

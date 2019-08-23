@@ -2,6 +2,13 @@
 
 from rasa.nlu.utils import ordered
 
+from rasa.nlu.constants import (
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_ENTITIES_ATTRIBUTE,
+)
+
 
 class Message(object):
     def __init__(self, text, data=None, output_properties=None, time=None):
@@ -20,6 +27,8 @@ class Message(object):
             self.output_properties.add(prop)
 
     def get(self, prop, default=None):
+        if prop == MESSAGE_TEXT_ATTRIBUTE:
+            return self.text
         return self.data.get(prop, default)
 
     def as_dict(self, only_output_properties=False):
@@ -31,6 +40,10 @@ class Message(object):
             }
         else:
             d = self.data
+
+        # Filter all keys with None value. These could have come while building the Message object in markdown format
+        d = {key: value for key, value in d.items() if value is not None}
+
         return dict(d, text=self.text)
 
     def __eq__(self, other):
@@ -46,9 +59,9 @@ class Message(object):
     def build(cls, text, intent=None, entities=None, response=None):
         data = {}
         if intent:
-            data["intent"] = intent
+            data[MESSAGE_INTENT_ATTRIBUTE] = intent
         if entities:
-            data["entities"] = entities
+            data[MESSAGE_ENTITIES_ATTRIBUTE] = entities
         if response:
-            data["response"] = response
+            data[MESSAGE_RESPONSE_ATTRIBUTE] = response
         return cls(text, data)

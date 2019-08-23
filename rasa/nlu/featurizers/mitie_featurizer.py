@@ -35,7 +35,7 @@ class MitieFeaturizer(Featurizer):
     def get_tokens_by_attribute(self, example, attribute):
 
         # remove 'text' from prefix since features for text do not have the prefix. All other attributes have a prefix
-        attribute = "_" if attribute == MESSAGE_TEXT_ATTRIBUTE else attribute + "_"
+        attribute = "" if attribute == MESSAGE_TEXT_ATTRIBUTE else attribute + "_"
         return example.get("{0}{1}".format(attribute, "tokens"))
 
     def train(

@@ -125,7 +125,7 @@ class SpacyNLP(Component):
         attribute_docs = {}
         for attribute in MESSAGE_ATTRIBUTES:
 
-            texts = [e.get_text(e, attribute) for e in training_data.intent_examples]
+            texts = [self.get_text(e, attribute) for e in training_data.intent_examples]
 
             docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
 

@@ -46,6 +46,7 @@ def pipelines_for_tests():
                 "SklearnIntentClassifier",
                 "MitieIntentClassifier",
                 "EmbeddingIntentClassifier",
+                "ResponseSelector",
             ),
         ),
         (
