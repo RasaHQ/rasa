@@ -151,17 +151,28 @@ def get_evaluation_metrics(
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
-    targets = clean_intent_labels(targets)
-    predictions = clean_intent_labels(predictions)
+    targets = clean_labels(targets)
+    predictions = clean_labels(predictions)
+
+    labels = get_label_set(targets)
 
     report = metrics.classification_report(
         targets, predictions, output_dict=output_dict
     )
-    precision = metrics.precision_score(targets, predictions, average="weighted")
-    f1 = metrics.f1_score(targets, predictions, average="weighted")
+    precision = metrics.precision_score(
+        targets, predictions, labels=labels, average="weighted"
+    )
+    f1 = metrics.f1_score(targets, predictions, labels=labels, average="weighted")
     accuracy = metrics.accuracy_score(targets, predictions)
 
     return report, precision, f1, accuracy
+
+
+def get_label_set(targets: Iterable[Any]):
+    labels = set(targets)
+    if "no_entity" in labels:
+        labels.remove("no_entity")
+    return list(labels)
 
 
 def remove_empty_intent_examples(
@@ -182,7 +193,7 @@ def remove_empty_intent_examples(
     return filtered
 
 
-def clean_intent_labels(labels: Iterable[Any]) -> List[Text]:
+def clean_labels(labels: Iterable[Any]) -> List[Text]:
     """Get rid of `None` intents. sklearn metrics do not support them."""
     return [l if l is not None else "" for l in labels]
 
