@@ -26,15 +26,6 @@ Fixed
 [1.2.4] - 2019-08-23
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
-
-Changed
--------
-
-Removed
--------
-
 Fixed
 -----
 - the ``SocketIO`` input channel now allows accesses from other origins (fixes ``SocketIO`` channel on Rasa X)
