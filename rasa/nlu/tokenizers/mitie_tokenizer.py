@@ -2,7 +2,8 @@ from typing import Any, List, Text
 
 from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.tokenizers import Token, Tokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
+from rasa.nlu.training_data.message import Message
 
 
 class MitieTokenizer(Tokenizer):

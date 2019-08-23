@@ -7,7 +7,7 @@ from tests.core.conftest import (
     DEFAULT_NLU_DATA,
 )
 from rasa.core.domain import Domain
-from rasa.nlu.training_data import TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture

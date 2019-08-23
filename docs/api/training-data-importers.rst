@@ -151,7 +151,7 @@ If you are writing a custom importer, this importer has to implement the interfa
     from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
     from rasa.core.training.structures import StoryGraph
     from rasa.importers.importer import TrainingDataImporter
-    from rasa.nlu.training_data import TrainingData
+    from rasa.nlu.training_data.training_data import TrainingData
 
 
     class MyImporter(TrainingDataImporter):

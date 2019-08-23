@@ -26,7 +26,7 @@ from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.core.domain import Domain
 
 if TYPE_CHECKING:
-    from rasa.nlu.training_data import Message
+    from rasa.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 

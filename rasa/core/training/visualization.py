@@ -12,7 +12,7 @@ from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph, StoryStep
 
 if TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData, Message
+    from rasa.nlu.training_data.training_data import TrainingData, Message
     import networkx
 
 EDGE_NONE_LABEL = "NONE"
@@ -398,7 +398,7 @@ async def visualize_neighborhood(
     output_file: Optional[Text] = None,
     max_history: int = 2,
     interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
-    nlu_training_data: Optional["TrainingData"] = None,
+    nlu_training_data: Optional[TrainingData] = None,
     should_merge_nodes: bool = True,
     max_distance: int = 1,
     fontsize: int = 12,
@@ -526,7 +526,7 @@ async def visualize_stories(
     output_file: Optional[Text],
     max_history: int,
     interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
-    nlu_training_data: Optional["TrainingData"] = None,
+    nlu_training_data: Optional[TrainingData] = None,
     should_merge_nodes: bool = True,
     fontsize: int = 12,
 ):

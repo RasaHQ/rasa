@@ -5,7 +5,8 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.classifiers import Classifier
 from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.model.metadata import Metadata
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
+from rasa.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
     import mitie

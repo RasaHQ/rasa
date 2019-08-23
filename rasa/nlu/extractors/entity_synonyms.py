@@ -6,7 +6,8 @@ from rasa.nlu import utils
 from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model.metadata import Metadata
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
+from rasa.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
 

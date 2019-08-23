@@ -8,7 +8,8 @@ from rasa.nlu import utils
 from rasa.nlu.classifiers import INTENT_RANKING_LENGTH, Classifier
 from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.model.metadata import Metadata
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
+from rasa.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 

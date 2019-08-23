@@ -12,7 +12,8 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu import utils
 from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
+from rasa.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
 

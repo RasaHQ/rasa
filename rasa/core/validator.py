@@ -3,7 +3,7 @@ import asyncio
 from typing import List
 from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
-from rasa.nlu.training_data import TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
 from rasa.core.training.dsl import StoryStep
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted

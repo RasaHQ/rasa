@@ -5,7 +5,8 @@ from typing import Any, Dict, Text
 from rasa.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import Message, TrainingData
+    from rasa.nlu.training_data.training_data import TrainingData
+    from rasa.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,8 @@ logger = logging.getLogger(__name__)
 class WitReader(JsonTrainingDataReader):
     def read_from_json(self, js: Dict[Text, Any], **kwargs: Any):
         """Loads training data stored in the WIT.ai data format."""
-        from rasa.nlu.training_data import Message, TrainingData
+        from rasa.nlu.training_data.training_data import TrainingData
+        from rasa.nlu.training_data.message import Message
 
         training_examples = []
 

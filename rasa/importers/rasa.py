@@ -9,7 +9,7 @@ from rasa.core.training.structures import StoryGraph
 from rasa.core.training.dsl import StoryFileReader
 from rasa.importers import utils
 from rasa.importers.importer import TrainingDataImporter
-from rasa.nlu.training_data import TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
 from rasa.utils import io as io_utils
 
 logger = logging.getLogger(__name__)

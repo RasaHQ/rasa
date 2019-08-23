@@ -28,7 +28,7 @@ from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.model.interpreter import Interpreter
 from rasa.nlu.model.trainer import Trainer
-from rasa.nlu.training_data import TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
 from rasa.nlu.components.pipeline import ComponentPipeline
 from rasa.nlu.tokenizers import Token
 

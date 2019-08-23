@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from unittest.mock import patch
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.training_data.training_data import TrainingData, Message
 from tests.nlu import utilities
 
 
