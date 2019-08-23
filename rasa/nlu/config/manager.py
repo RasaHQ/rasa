@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ConfigManager:
     @staticmethod
     def override_defaults(
-            defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
+        defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
     ) -> Dict[Text, Any]:
         if defaults:
             cfg = copy.deepcopy(defaults)
@@ -28,9 +28,9 @@ class ConfigManager:
 
     @staticmethod
     def component_config_from_pipeline(
-            index: int,
-            pipeline: List[Dict[Text, Any]],
-            defaults: Optional[Dict[Text, Any]] = None,
+        index: int,
+        pipeline: List[Dict[Text, Any]],
+        defaults: Optional[Dict[Text, Any]] = None,
     ) -> Dict[Text, Any]:
         try:
             c = pipeline[index]
@@ -45,8 +45,9 @@ class ConfigManager:
             return ConfigManager.override_defaults(defaults, {})
 
     @staticmethod
-    def load(config: Optional[Union[Text, Dict]] = None,
-             **kwargs: Any) -> RasaNLUModelConfig:
+    def load(
+        config: Optional[Union[Text, Dict]] = None, **kwargs: Any
+    ) -> RasaNLUModelConfig:
         if isinstance(config, Dict):
             return ConfigManager.__load_from_dict(config, **kwargs)
 
@@ -59,7 +60,9 @@ class ConfigManager:
                 file_config = rasa.utils.io.read_config_file(config)
             except yaml.parser.ParserError as e:
                 raise InvalidConfigError(
-                    "Failed to read configuration file '{}'. Error: {}".format(config, e)
+                    "Failed to read configuration file '{}'. Error: {}".format(
+                        config, e
+                    )
                 )
 
         return ConfigManager.__load_from_dict(file_config, **kwargs)

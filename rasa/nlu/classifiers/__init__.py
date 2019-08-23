@@ -7,4 +7,5 @@ INTENT_RANKING_LENGTH = 10
 
 class Classifier(Component):
     """ Abstract class for Classifier objects."""
+
     pass

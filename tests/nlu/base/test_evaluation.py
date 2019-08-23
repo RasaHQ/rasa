@@ -258,7 +258,9 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
 
 def test_run_cv_evaluation():
     td = training_data.DataManager.load_data("data/examples/rasa/demo-rasa.json")
-    nlu_config = ConfigManager.load("sample_configs/config_pretrained_embeddings_spacy.yml")
+    nlu_config = ConfigManager.load(
+        "sample_configs/config_pretrained_embeddings_spacy.yml"
+    )
 
     n_folds = 2
     intent_results, entity_results = cross_validate(td, n_folds, nlu_config)

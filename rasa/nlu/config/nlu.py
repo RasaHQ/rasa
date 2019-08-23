@@ -24,7 +24,7 @@ class RasaNLUModelConfig:
             # replaces None with empty list
             self.__dict__["pipeline"] = []
         elif isinstance(self.__dict__["pipeline"], str):
-            from rasa.nlu.components import registry
+            from rasa.nlu.components import registry  # pytype: disable=pyi-error
 
             template_name = self.__dict__["pipeline"]
             new_names = {
@@ -95,8 +95,11 @@ class RasaNLUModelConfig:
         return json_to_string(self.__dict__, indent=4)
 
     def for_component(self, index, defaults=None):
-        from rasa.nlu.config.manager import ConfigManager
-        return ConfigManager.component_config_from_pipeline(index, self.pipeline, defaults)
+        from rasa.nlu.config.manager import ConfigManager  # pytype: disable=pyi-error
+
+        return ConfigManager.component_config_from_pipeline(
+            index, self.pipeline, defaults
+        )
 
     @property
     def component_names(self):

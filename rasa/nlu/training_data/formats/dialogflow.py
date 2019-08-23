@@ -116,7 +116,9 @@ class DialogFlowReader(TrainingDataReader):
         return TrainingData([], entity_synonyms, [], lookup_tables)
 
     @staticmethod
-    def _read_examples_js(fn: Text, language: Text, file_format: Text) -> Optional[Text]:
+    def _read_examples_js(
+        fn: Text, language: Text, file_format: Text
+    ) -> Optional[Text]:
         """Infer and load the example file based on the root
         filename and root format."""
 

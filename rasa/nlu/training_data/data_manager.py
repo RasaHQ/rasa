@@ -29,7 +29,8 @@ logger = logging.getLogger(__name__)
 
 markdown_section_markers = ["## {}:".format(s) for s in markdown.available_sections]
 json_format_heuristics = {
-    SupportedFormats.WIT: lambda js, fn: "data" in js and isinstance(js.get("data"), list),
+    SupportedFormats.WIT: lambda js, fn: "data" in js
+    and isinstance(js.get("data"), list),
     SupportedFormats.LUIS: lambda js, fn: "luis_schema_version" in js,
     SupportedFormats.RASA: lambda js, fn: "rasa_nlu_data" in js,
     DIALOGFLOW_AGENT: lambda js, fn: "supportedLanguages" in js,
@@ -43,7 +44,9 @@ json_format_heuristics = {
 
 class DataManager:
     @staticmethod
-    def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
+    def load_data(
+        resource_name: Text, language: Optional[Text] = "en"
+    ) -> "TrainingData":
         """Load training data from disk.
 
         Merges them if loaded from disk and multiple files are found."""
@@ -65,8 +68,9 @@ class DataManager:
         return training_data
 
     @staticmethod
-    async def load_data_from_endpoint(data_endpoint: EndpointConfig,
-                                      language: Optional[Text] = "en") -> Optional["TrainingData"]:
+    async def load_data_from_endpoint(
+        data_endpoint: EndpointConfig, language: Optional[Text] = "en"
+    ) -> Optional["TrainingData"]:
         """Load training data from a URL."""
 
         if not utils.is_url(data_endpoint.url):
@@ -74,7 +78,9 @@ class DataManager:
         try:
             response = await data_endpoint.request("get")
             response.raise_for_status()
-            temp_data_file = io_utils.create_temporary_file(response.content, mode="w+b")
+            temp_data_file = io_utils.create_temporary_file(
+                response.content, mode="w+b"
+            )
             training_data = DataManager.__load(temp_data_file, language)
 
             return training_data
@@ -109,14 +115,18 @@ class DataManager:
         return guess
 
     @staticmethod
-    def __load(filename: Text, language: Optional[Text] = "en") -> Optional["TrainingData"]:
+    def __load(
+        filename: Text, language: Optional[Text] = "en"
+    ) -> Optional["TrainingData"]:
         """ Helper method for loading file from disk."""
 
         file_format = DataManager.guess_format(filename)
         if file_format == SupportedFormats.UNK:
             raise ValueError("Unknown data format for file '{}'.".format(filename))
 
-        logger.debug("Training data format of '{}' is '{}'.".format(filename, file_format))
+        logger.debug(
+            "Training data format of '{}' is '{}'.".format(filename, file_format)
+        )
         reader = ReaderFactory.get_reader(file_format)
 
         if reader:

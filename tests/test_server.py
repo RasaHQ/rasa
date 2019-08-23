@@ -630,7 +630,7 @@ def test_list_routes(default_agent):
         "predict",
         "add_message",
         "train",
-        'retrieve_latest_chatbot_message',
+        "retrieve_latest_chatbot_message",
         "evaluate_stories",
         "evaluate_intents",
         "tracker_predict",

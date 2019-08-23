@@ -65,7 +65,9 @@ class SpacyNLP(Component):
         cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
     ) -> "SpacyNLP":
 
-        component_config = ConfigManager.override_defaults(cls.defaults, component_config)
+        component_config = ConfigManager.override_defaults(
+            cls.defaults, component_config
+        )
 
         spacy_model_name = component_config.get("model")
 

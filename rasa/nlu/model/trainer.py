@@ -51,7 +51,7 @@ class Trainer:
 
         # build pipeline
         self.pipeline = self._build_pipeline(cfg, component_builder)
-        print("cool")
+        print ("cool")
 
     @staticmethod
     def _build_pipeline(
@@ -89,9 +89,11 @@ class Trainer:
         # data gets modified internally during the training - hence the copy
         working_data = copy.deepcopy(data)
 
-        for i, component in enumerate(self.pipeline):
+        for i, component in enumerate(self.pipeline):  # pytype: disable=wrong-arg-types
             logger.info("Starting to train component {}".format(component.name))
-            component.prepare_partial_processing(self.pipeline.get_component(i), context)
+            component.prepare_partial_processing(
+                self.pipeline.get_component(i), context
+            )
             updates = component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
             if updates:
@@ -129,7 +131,7 @@ class Trainer:
         if self.training_data:
             metadata.update(self.training_data.persist(dir_name))
 
-        for i, component in enumerate(self.pipeline):
+        for i, component in enumerate(self.pipeline):  # pytype: disable=wrong-arg-types
             file_name = self._file_name(i, component.name)
             update = component.persist(file_name, dir_name)
             component_meta = component.component_config

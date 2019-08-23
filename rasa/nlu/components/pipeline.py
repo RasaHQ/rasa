@@ -20,7 +20,9 @@ class ComponentPipeline:
         else:
             raise ValueError("Cannot add None value to pipeline object.")
 
-    def validate(self, context: Dict[Text, Any], allow_empty_pipeline: bool = False, ) -> None:
+    def validate(
+        self, context: Dict[Text, Any], allow_empty_pipeline: bool = False
+    ) -> None:
         """Validates a pipeline before it is run. Ensures, that all
            arguments are present to train the pipeline."""
 
@@ -31,7 +33,7 @@ class ComponentPipeline:
                 "Make sure to specify a proper pipeline in "
                 "the configuration using the `pipeline` key."
                 + "The `backend` configuration key is "
-                  "NOT supported anymore."
+                "NOT supported anymore."
             )
 
         provided_properties = set(context.keys())
@@ -63,7 +65,7 @@ class ComponentIterator:
     def __next__(self):
         """'Returns the next value from pipeline lists """
         if self._index < (len(self._components)):
-            result = (self._components[self._index])
+            result = self._components[self._index]
             self._index += 1
             return result
 

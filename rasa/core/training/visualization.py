@@ -10,9 +10,10 @@ from rasa.core.events import UserUttered, ActionExecuted, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph, StoryStep
+from rasa.nlu.training_data.training_data import TrainingData
 
 if TYPE_CHECKING:
-    from rasa.nlu.training_data.training_data import TrainingData, Message
+    from rasa.nlu.training_data.training_data import Message
     import networkx
 
 EDGE_NONE_LABEL = "NONE"

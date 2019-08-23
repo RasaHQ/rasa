@@ -40,7 +40,9 @@ class MitieNLP(Component):
     ) -> "MitieNLP":
         import mitie
 
-        component_config = ConfigManager.override_defaults(cls.defaults, component_config)
+        component_config = ConfigManager.override_defaults(
+            cls.defaults, component_config
+        )
 
         model_file = component_config.get("model")
         if not model_file:

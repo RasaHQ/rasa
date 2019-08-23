@@ -54,7 +54,9 @@ class Metadata:
         return len(self.get("pipeline", []))
 
     def for_component(self, index, defaults=None):
-        return ConfigManager.component_config_from_pipeline(index, self.get("pipeline", []), defaults)
+        return ConfigManager.component_config_from_pipeline(
+            index, self.get("pipeline", []), defaults
+        )
 
     @property
     def language(self) -> Optional[Text]:
