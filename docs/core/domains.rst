@@ -277,6 +277,8 @@ multiple responses and Rasa will randomly pick one of them, e.g.:
     - text: "Hey, {name}. How are you?"
     - text: "Hey, {name}. How is your day going?"
 
+.. _use_entities:
+
 Ignoring entities for certain intents
 -------------------------------------
 
@@ -297,12 +299,12 @@ into account you can use this syntax:
 
   intents:
   - greet:
-    use_entities: 
-      - name
-      - first_name
-    ignore_entities:
-      - location
-      - age
+      use_entities: 
+        - name
+        - first_name
+      ignore_entities:
+        - location
+        - age
 
 This means that excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
