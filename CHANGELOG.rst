@@ -21,6 +21,8 @@ Removed
 
 Fixed
 -----
+- the ``SocketIO`` input channel now allows accesses from other origins
+
 
 
 [1.2.4] - 2019-08-23
