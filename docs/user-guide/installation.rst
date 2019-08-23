@@ -9,6 +9,9 @@ Installation
 
 .. edit-link::
 
+.. contents::
+   :local:
+
 Quick Installation
 ~~~~~~~~~~~~~~~~~~
 
@@ -32,7 +35,8 @@ Once you're done with this, you can head over to the tutorial!
 
 **For a more detailed guide on setting up, follow along the** :ref:`installation guide <installation_guide>`.
 
-
+**If you have a specific pipeline in mind and want to install dependencies for that,
+head over to the section on** :ref:`pipeline dependencies <pipeline_dependencies>`.
 
 .. _installation_guide:
 
@@ -188,6 +192,7 @@ If you want to use the development version of Rasa, you can get it from GitHub:
     $ pip install -r requirements.txt
     $ pip install -e .
 
+.. _pipeline_dependencies:
 
 NLU Pipeline Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -234,13 +239,16 @@ default small ``en_core_web_sm`` model. Small models require less
 memory to run, but will somewhat reduce intent classification performance.
 
 
-First Alternative: Tensorflow
+First Alternative: TensorFlow
 -----------------------------
 
 The ``supervised_embeddings`` pipeline uses TensorFlow and the sklearn-crfsuite
 library as dependencies. However, these are installed automatically along
-with a standard Rasa installation, so you do not have to install anything
-separately.
+with a standard Rasa installation that you get from doing:
+
+.. code-block:: bash
+    
+    $ pip install rasa
 
 
 .. _install-mitie:
