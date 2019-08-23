@@ -49,8 +49,8 @@ class DialogueFileLogger:
 
 
 atexit.register(DialogueFileLogger.save_all)
-signal.signal(signal.SIGTERM, DialogueFileLogger.save_all)
-signal.signal(signal.SIGINT, DialogueFileLogger.save_all)
+signal.signal(signal.SIGTERM, DialogueFileLogger.save_all)  # pytype: disable=wrong-arg-types
+signal.signal(signal.SIGINT, DialogueFileLogger.save_all)  # pytype: disable=wrong-arg-types
 
 
 class SingleDialogueFileLogger:
@@ -59,7 +59,7 @@ class SingleDialogueFileLogger:
         self.conversation = dict()
         self.conversation["version"] = '1'
         self.conversation["date"] = str(date.today())
-        self.conversation["statements"] = []
+        self.conversation["statements"] = list()
 
     def add_user_statement(self, text: str, intent: str, entities: str):
         statement = dict()
@@ -68,7 +68,7 @@ class SingleDialogueFileLogger:
         statement["text"] = str(text)
         statement["intent"] = json.loads(str(intent).replace('\'', '\"'))
         statement["entities"] = str(entities)
-        self.conversation["statements"].append(statement)
+        self.conversation["statements"].append(statement)  # pytype: disable=attribute-error
     
     def add_bot_statement(self, utterance: str, action: str):
         text = re.search(r'BotUttered\(text\: (.*?)\,', str(utterance))
@@ -78,7 +78,7 @@ class SingleDialogueFileLogger:
             statement["time"] = self._get_time()
             statement["action"] = str(action)
             statement["text"] = text.group(1)
-            self.conversation["statements"].append(statement)
+            self.conversation["statements"].append(statement)  # pytype: disable=attribute-error
 
     def _get_time(self) -> str:
         now = datetime.now()
