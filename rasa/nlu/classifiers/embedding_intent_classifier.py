@@ -554,7 +554,7 @@ class EmbeddingIntentClassifier(Component):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-        with io.open(
+        with open(
             os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "wb"
         ) as f:
             pickle.dump(self.inv_label_dict, f)
