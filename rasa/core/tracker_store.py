@@ -171,28 +171,27 @@ class RedisTrackerStore(TrackerStore):
         event_broker=None,
         record_exp=None,
         is_sentinel=False,
-        sentinel_name="mymaster",
-        sentinel_port=26379,
-        sentinel_socket_timeout=0.1,
+        sentinel_data=None,
     ):
 
         import redis
 
-        self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
-        self.record_exp = record_exp
-        super(RedisTrackerStore, self).__init__(domain, event_broker)
         self.is_sentinel = is_sentinel
-        if self.is_sentinel:
+        if not self.is_sentinel:
+            self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
+            self.record_exp = record_exp
+            super(RedisTrackerStore, self).__init__(domain, event_broker)
+        else:
             from redis import sentinel  # pytype: disable=import-error
 
             redis_sentinel = sentinel.Sentinel(
-                [(host, sentinel_port)], socket_timeout=sentinel_socket_timeout
+                [(host, sentinel_data[0]['sentinel_port'])], socket_timeout=sentinel_data[0]['socket_timeout']
             )
             master = redis_sentinel.master_for(
-                sentinel_name, socket_timeout=sentinel_socket_timeout
+                sentinel_data[0]['sentinel_name'], socket_timeout=sentinel_data[0]['socket_timeout']
             )
             slave = redis_sentinel.slave_for(
-                sentinel_name, socket_timeout=sentinel_socket_timeout
+                sentinel_data[0]['sentinel_name'], socket_timeout=sentinel_data[0]['socket_timeout']
             )
             self.sentinel = master, slave
 
@@ -215,10 +214,11 @@ class RedisTrackerStore(TrackerStore):
 
     def redis_writer(self, sender_id, serialised_tracker, timeout):
         if not self.is_sentinel:
-            self.red.set(sender_id, serialised_tracker, ex=timeout)
+            redis = self.red
         else:
-            master, _ = self.sentinel
-            master.set(sender_id, serialised_tracker, ex=timeout)
+            redis, _ = self.sentinel
+        redis.set(sender_id, serialised_tracker, ex=timeout)
+        pass
 
     def redis_reader(self, sender_id):
         if not self.is_sentinel:
@@ -227,6 +227,7 @@ class RedisTrackerStore(TrackerStore):
             _, slave = self.sentinel
             stored = slave.get(sender_id)
         return stored
+        pass
 
 
 class MongoTrackerStore(TrackerStore):
