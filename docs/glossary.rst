@@ -19,9 +19,6 @@ Glossary
     CMS
         Content Management System (CMS) can be used to store responses externally instead of hardcoding it as part of the domain.
 
-    Command Line Interface
-        Easy-to-remember commands for common tasks
-
     Conversation
         Actual user-bot messages - a back and forth between a user and a bot (so usually just messages - unlabeled conversation).
 
