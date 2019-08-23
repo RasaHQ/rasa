@@ -69,8 +69,8 @@ class ClassifierTestCollection:
     def test_persist_and_load(
         self, training_data, trained_classifier, filename, tmpdir
     ):
-        meta = trained_classifier.persist(filename, tmpdir)
-        loaded = trained_classifier.__class__.load(meta, tmpdir)
+        meta = trained_classifier.persist(filename, tmpdir.strpath)
+        loaded = trained_classifier.__class__.load(meta, tmpdir.strpath)
         predicted = copy.copy(training_data)
         actual = copy.copy(training_data)
         for m1, m2 in zip(predicted.training_examples, actual.training_examples):
@@ -78,8 +78,14 @@ class ClassifierTestCollection:
             trained_classifier.process(m2)
             assert m1.get("intent") == m2.get("intent")
 
+
+class TestKeywordClassifier(ClassifierTestCollection):
+    @pytest.fixture(scope="module")
+    def classifier_class(self):
+        return KeywordIntentClassifier
+
     @pytest.mark.parametrize(
-        "input, intent",
+        "message, intent",
         [
             ("hey there joe", "greet"),
             ("hello weiouaosdhalkh", "greet"),
@@ -92,31 +98,51 @@ class ClassifierTestCollection:
             ("eet", None),
         ],
     )
-    def test_classification(self, trained_classifier, input, intent):
-        text = Message(input)
+    def test_classification(self, trained_classifier, message, intent):
+        text = Message(message)
         trained_classifier.process(text)
-        assert text.get("intent").get("name", "NO_INTENT") == intent
+        assert text.get("intent").get("name", "NOT_CLASSIFIED") == intent
 
+    def test_valid_data(
+        self, caplog, classifier_class, training_data, component_config, **kwargs
+    ):
+        json_data = {
+            "rasa_nlu_data": {
+                "common_examples": [
+                    {"text": "good", "intent": "affirm", "entities": []},
+                    {"text": "bye", "intent": "goodbye", "entities": []},
+                    {"text": "see ya", "intent": "goodbye", "entities": []},
+                    {"text": "yes", "intent": "affirm", "entities": []},
+                    {"text": "ciao", "intent": "goodbye", "entities": []},
+                ]
+            }
+        }
+        rasa_reader = RasaReader()
+        data = rasa_reader.read_from_json(json_data)
 
-class TestKeywordClassifier(ClassifierTestCollection):
-    @pytest.fixture(scope="module")
-    def classifier_class(self):
-        return KeywordIntentClassifier
-
-    @pytest.mark.parametrize(
-        "input, intents",
-        [
-            ("hey there ok", ["greet", "affirm"]),
-            ("ok hey there stop", ["affirm", "greet", "goodbye"]),
-        ],
-    )
-    def test_multiple_matches(self, caplog, trained_classifier, input, intents):
-        text = Message(input)
         with caplog.at_level(logging.DEBUG):
-            trained_classifier.process(text)
-        assert len(caplog.records) == 1
-        for intent in intents:
-            assert intent in caplog.records[0].getMessage()
+            classifier = self._train_classifier(
+                classifier_class, data, component_config, **kwargs
+            )
+        assert len(caplog.records) == 0
+
+    def test_identical_data(
+        self, caplog, classifier_class, training_data, component_config, **kwargs
+    ):
+        json_data = {
+            "rasa_nlu_data": {
+                "common_examples": [
+                    {"text": "good", "intent": "affirm", "entities": []},
+                    {"text": "good", "intent": "goodbye", "entities": []},
+                ]
+            }
+        }
+        rasa_reader = RasaReader()
+        data = rasa_reader.read_from_json(json_data)
+
+        with caplog.at_level(logging.DEBUG):
+            self._train_classifier(classifier_class, data, component_config, **kwargs)
+        assert len(caplog.records) == 3
 
     def test_ambiguous_data(
         self, caplog, classifier_class, training_data, component_config, **kwargs
@@ -134,6 +160,6 @@ class TestKeywordClassifier(ClassifierTestCollection):
         rasa_reader = RasaReader()
         data = rasa_reader.read_from_json(json_data)
 
-        with caplog.at_level(logging.WARNING):
+        with caplog.at_level(logging.DEBUG):
             self._train_classifier(classifier_class, data, component_config, **kwargs)
-        assert len(caplog.records) == 2
+        assert len(caplog.records) == 4

@@ -40,6 +40,10 @@ class KeywordIntentClassifier(Component):
 
         self.intent_keyword_map = intent_keyword_map or {}
 
+        self.re_case_flag = (
+            0 if self.component_config["case_sensitive"] else re.IGNORECASE
+        )
+
     def train(
         self,
         training_data: "TrainingData",
@@ -47,38 +51,39 @@ class KeywordIntentClassifier(Component):
         **kwargs: Any
     ) -> None:
 
-        for intent in training_data.intents:
-            self.intent_keyword_map[intent] = [
-                ex.text
-                for ex in training_data.training_examples
-                if ex.get("intent") == intent
-            ]
+        self.intent_keyword_map = {
+            ex.text: ex.get("intent") for ex in training_data.training_examples
+        }
+
         self._validate_keyword_map()
 
     def _validate_keyword_map(self):
-        re_flags = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
-        inverted_map = {
-            ex: intent
-            for intent, examples in self.intent_keyword_map.items()
-            for ex in examples
-        }
         ambiguous_mappings = []
-        for ex1, intent1 in inverted_map.items():
-            for ex2, intent2 in inverted_map.items():
-                if (
-                    re.search(r"\b" + ex1 + r"\b", ex2, flags=re_flags)
+        for ex1, intent1 in self.intent_keyword_map.items():
+            for ex2, intent2 in self.intent_keyword_map.items():
+                if ex1 == ex2 and intent1 != intent2:
+                    ambiguous_mappings.append((intent1, ex1))
+                    ambiguous_mappings.append((intent2, ex2))
+                    logger.warning(
+                        "Keyword '{}' is an example of intent '{}' and"
+                        " intent '{}',"
+                        " it will be removed from both."
+                        "".format(ex1, intent1, intent2)
+                    )
+                elif (
+                    re.search(r"\b" + ex1 + r"\b", ex2, flags=self.re_case_flag)
                     and intent1 != intent2
                 ):
+                    ambiguous_mappings.append((intent1, ex1))
                     logger.warning(
                         "Keyword '{}' is an example of intent '{}',"
                         "but also a substring of '{}', which is an "
                         "example of intent '{}.\n"
-                        "'{}' will be removed from the list of keywords."
+                        " '{}' will be removed from the list of keywords."
                         "".format(ex1, intent1, ex2, intent2, ex1)
                     )
-                    ambiguous_mappings.append((intent1, ex1))
         for intent, example in ambiguous_mappings:
-            self.intent_keyword_map[intent].remove(example)
+            self.intent_keyword_map.pop(example)
             logger.debug(
                 "Removed keyword '{}' from intent '{}' because it matched"
                 " another intent.".format(example, intent)
@@ -91,24 +96,18 @@ class KeywordIntentClassifier(Component):
         message.set("intent", intent, add_to_output=True)
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
-        re_flags = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
-        found_intents = {}
-        for intent, examples in self.intent_keyword_map.items():
-            for example in examples:
-                if re.search(r"\b" + example + r"\b", text, flags=re_flags):
-                    found_intents.update({intent: example})
-        if len(found_intents) == 0:
-            logger.debug("KeywordClassifier did not find any keywords in the message.")
-            return None
-        elif len(found_intents) == 1:
-            return list(found_intents.keys())[0]
-        else:
-            logger.debug(
-                "KeywordClassifier found intent with keywords: '{}',"
-                "the message will not be classified."
-                "".format(found_intents.items(), list(found_intents.keys())[0])
-            )
-            return None
+        for example, intent in self.intent_keyword_map.items():
+            if re.search(r"\b" + example + r"\b", text, flags=self.re_case_flag):
+                logger.debug(
+                    "KeywordClassifier matched keyword '{}' to"
+                    " intent '{}'.".format(example, intent)
+                )
+                return intent
+            else:
+                logger.debug(
+                    "KeywordClassifier did not find any keywords in " "the message."
+                )
+                return None
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
