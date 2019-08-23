@@ -5,12 +5,12 @@ import json
 import logging
 import re
 import sys
-from pathlib import Path
-from typing import Union
 from asyncio import Future
 from hashlib import md5, sha1
 from io import StringIO
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
+from typing import Union
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -18,12 +18,11 @@ from sanic import Sanic
 from sanic.views import CompositionView
 
 import rasa.utils.io as io_utils
-from rasa.utils.endpoints import read_endpoint_config
-
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.endpoints import concat_url
+from rasa.utils.endpoints import read_endpoint_config
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text])
         return
 
     formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(log_file)
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setLevel(logger_obj.level)
     file_handler.setFormatter(formatter)
     logger_obj.addHandler(file_handler)
@@ -89,24 +88,6 @@ def is_int(value: Any) -> bool:
         return value == int(value)
     except Exception:
         return False
-
-
-def lazyproperty(fn):
-    """Allows to avoid recomputing a property over and over.
-
-    Instead the result gets stored in a local var. Computation of the property
-    will happen once, on the first call of the property. All succeeding calls
-    will use the value stored in the private property."""
-
-    attr_name = "_lazy_" + fn.__name__
-
-    @property
-    def _lazyprop(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
-        return getattr(self, attr_name)
-
-    return _lazyprop
 
 
 def one_hot(hot_idx, length, dtype=None):
@@ -379,9 +360,19 @@ def remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]:
     return {k: v for k, v in obj.items() if v is not None}
 
 
-def pad_list_to_size(_list, size, padding_value=None):
-    """Pads _list with padding_value up to size"""
-    return _list + [padding_value] * (size - len(_list))
+def pad_lists_to_size(
+    list_x: List, list_y: List, padding_value: Optional[Any] = None
+) -> Tuple[List, List]:
+    """Compares list sizes and pads them to equal length."""
+
+    difference = len(list_x) - len(list_y)
+
+    if difference > 0:
+        return list_x, list_y + [padding_value] * difference
+    elif difference < 0:
+        return list_x + [padding_value] * (-difference), list_y
+    else:
+        return list_x, list_y
 
 
 class AvailableEndpoints(object):

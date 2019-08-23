@@ -2,7 +2,6 @@ import json
 import logging
 import os
 
-import requests
 import typing
 from typing import Optional, Text
 
@@ -73,6 +72,7 @@ async def load_data_from_endpoint(
     data_endpoint: EndpointConfig, language: Optional[Text] = "en"
 ) -> "TrainingData":
     """Load training data from a URL."""
+    import requests
 
     if not utils.is_url(data_endpoint.url):
         raise requests.exceptions.InvalidURL(data_endpoint.url)
