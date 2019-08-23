@@ -41,9 +41,6 @@ Fixed
 -----
 - ``rasa test nlu`` with a folder of configuration files
 
-Fixed
------
-
 
 [1.2.4] - 2019-08-23
 ^^^^^^^^^^^^^^^^^^^^
