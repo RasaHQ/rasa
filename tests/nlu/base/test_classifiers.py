@@ -89,7 +89,7 @@ class TestKeywordClassifier(ClassifierTestCollection):
         [
             ("hey there joe", "greet"),
             ("hello weiouaosdhalkh", "greet"),
-            ("show me chines restaurants in the north of town", "restaurant_search"),
+            ("show me chinese restaurants in the north of town", "restaurant_search"),
             ("great", "affirm"),
             ("bye bye birdie", "goodbye"),
             ("show me a mexican place", None),

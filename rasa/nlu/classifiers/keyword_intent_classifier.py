@@ -51,9 +51,24 @@ class KeywordIntentClassifier(Component):
         **kwargs: Any
     ) -> None:
 
-        self.intent_keyword_map = {
-            ex.text: ex.get("intent") for ex in training_data.training_examples
-        }
+        duplicate_examples = set()
+        for ex in training_data.training_examples:
+            if (ex.text in self.intent_keyword_map.keys()
+                and ex.get("intent") != self.intent_keyword_map[ex.text]
+            ):
+                duplicate_examples.add(ex.text)
+                logger.warning("Keyword '{}' is an example of intent '{}' and of "
+                               "intent '{}', it will be removed from the list of "
+                               "keyword.\n"
+                               "Remove (one of) the duplicates from the training data."
+                               "".format(ex.text, self.intent_keyword_map[ex.text],
+                                         ex.get("intent"))
+            else:
+                self.intent_keyword_map[ex.text] = ex.get("intent")
+        for keyword in duplicate_examples:
+            self.intent_keyword_map.pop(keyword)
+            logger.debug("Removed '{}' from the list of keywords because it was "
+                         "a keyword for more than one intent.".format(keyword))
 
         self._validate_keyword_map()
 
@@ -61,23 +76,13 @@ class KeywordIntentClassifier(Component):
         ambiguous_mappings = []
         for ex1, intent1 in self.intent_keyword_map.items():
             for ex2, intent2 in self.intent_keyword_map.items():
-                if ex1 == ex2 and intent1 != intent2:
-                    ambiguous_mappings.append((intent1, ex1))
-                    ambiguous_mappings.append((intent2, ex2))
-                    logger.warning(
-                        "Keyword '{}' is an example of intent '{}' and"
-                        " intent '{}', it will be removed from both.\n"
-                        "Remove (one of) the conflicting examples for the"
-                        " training data."
-                        "".format(ex1, intent1, intent2)
-                    )
-                elif (
+                if (
                     re.search(r"\b" + ex1 + r"\b", ex2, flags=self.re_case_flag)
                     and intent1 != intent2
                 ):
                     ambiguous_mappings.append((intent1, ex1))
                     logger.warning(
-                        "Keyword '{}' is an example of intent '{}',"
+                        "Keyword '{}' is an example of intent '{}', "
                         "but also a substring of '{}', which is an "
                         "example of intent '{}."
                         " '{}' will be removed from the list of keywords.\n"
@@ -88,8 +93,8 @@ class KeywordIntentClassifier(Component):
         for intent, example in ambiguous_mappings:
             self.intent_keyword_map.pop(example)
             logger.debug(
-                "Removed keyword '{}' from intent '{}' because it matched"
-                " another intent.".format(example, intent)
+                "Removed keyword '{}' from intent '{}' because it matched a "
+                "keyword of another intent.".format(example, intent)
             )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -107,11 +112,10 @@ class KeywordIntentClassifier(Component):
                     " intent '{}'.".format(example, intent)
                 )
                 return intent
-            else:
-                logger.debug(
-                    "KeywordClassifier did not find any keywords in " "the message."
-                )
-                return None
+        logger.debug(
+            "KeywordClassifier did not find any keywords in the message."
+        )
+        return None
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
