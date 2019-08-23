@@ -151,7 +151,7 @@ def get_evaluation_metrics(
     targets: Iterable[Any],
     predictions: Iterable[Any],
     output_dict: bool = False,
-    include_no_entity: bool = True,
+    exclude_label: Text = None,
 ) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]:
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
@@ -159,7 +159,7 @@ def get_evaluation_metrics(
     targets = clean_labels(targets)
     predictions = clean_labels(predictions)
 
-    labels = get_label_set(targets, include_no_entity)
+    labels = get_label_set(targets, exclude_label)
 
     report = metrics.classification_report(
         targets, predictions, labels=labels, output_dict=output_dict
@@ -173,10 +173,11 @@ def get_evaluation_metrics(
     return report, precision, f1, accuracy
 
 
-def get_label_set(targets: Iterable[Any], include_no_entity: bool):
+def get_label_set(targets: Iterable[Any], exclude_label: Optional[Text]):
+    """Get unique labels. Exclude 'exclude_label' if specified."""
     labels = set(targets)
-    if not include_no_entity and NO_ENTITY in labels:
-        labels.remove(NO_ENTITY)
+    if exclude_label and exclude_label in labels:
+        labels.remove(exclude_label)
     return list(labels)
 
 
@@ -443,7 +444,7 @@ def evaluate_entities(
                 merged_targets,
                 merged_predictions,
                 output_dict=True,
-                include_no_entity=False,
+                exclude_label=NO_ENTITY,
             )
             utils.write_json_to_file(extractor_report_filename, report)
 
@@ -454,7 +455,10 @@ def evaluate_entities(
 
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
-                merged_targets, merged_predictions, include_no_entity=False
+                merged_targets,
+                merged_predictions,
+                output_dict=False,
+                exclude_label=NO_ENTITY,
             )
             if isinstance(report, str):
                 log_evaluation_table(report, precision, f1, accuracy)
@@ -1079,7 +1083,7 @@ def _compute_entity_metrics(
         merged_predictions = merge_labels(aligned_predictions, extractor)
         merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
         _, precision, f1, accuracy = get_evaluation_metrics(
-            merged_targets, merged_predictions
+            merged_targets, merged_predictions, exclude_label=NO_ENTITY
         )
         entity_metric_results[extractor]["Accuracy"].append(accuracy)
         entity_metric_results[extractor]["F1-score"].append(f1)

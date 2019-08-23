@@ -448,25 +448,25 @@ def test_label_replacement():
 
 
 @pytest.mark.parametrize(
-    "targets,include_no_entity,expected",
+    "targets,exclude_label,expected",
     [
         (
             ["no_entity", "location", "location", "location", "person"],
-            False,
+            NO_ENTITY,
             ["location", "person"],
         ),
         (
             ["no_entity", "location", "location", "location", "person"],
-            True,
+            None,
             ["no_entity", "location", "person"],
         ),
-        (["no_entity"], False, []),
-        (["location", "location", "location"], False, ["location"]),
-        ([], False, []),
+        (["no_entity"], NO_ENTITY, []),
+        (["location", "location", "location"], NO_ENTITY, ["location"]),
+        ([], None, []),
     ],
 )
-def test_get_label_set(targets, include_no_entity, expected):
-    actual = get_label_set(targets, include_no_entity)
+def test_get_label_set(targets, exclude_label, expected):
+    actual = get_label_set(targets, exclude_label)
     assert expected == actual
 
 
@@ -493,7 +493,7 @@ def test_get_evaluation_metrics(
     targets, predictions, expected_precision, expected_fscore, expected_accuracy
 ):
     report, precision, f1, accuracy = get_evaluation_metrics(
-        targets, predictions, True, include_no_entity=False
+        targets, predictions, True, exclude_label=NO_ENTITY
     )
 
     assert f1 == expected_fscore
