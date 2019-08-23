@@ -11,10 +11,13 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 from rasa.nlu.constants import (
-    MESSAGE_ATTRIBUTES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
 
@@ -44,8 +47,7 @@ class SpacyFeaturizer(Featurizer):
 
     def get_doc(self, message, attribute):
 
-        attribute = "" if attribute == MESSAGE_TEXT_ATTRIBUTE else attribute + "_"
-        return message.get("{0}spacy_doc".format(attribute))
+        return message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
@@ -55,7 +57,7 @@ class SpacyFeaturizer(Featurizer):
         """Adds the spacy word vectors to the messages features."""
 
         message_attribute_doc = self.get_doc(message, attribute)
-        if message_attribute_doc:
+        if message_attribute_doc is not None:
             fs = features_for_doc(message_attribute_doc)
             features = self._combine_with_existing_features(message, fs, attribute)
-            message.set("{0}_features".format(attribute), features)
+            message.set(MESSAGE_VECTOR_FEATURE_NAMES[attribute], features)

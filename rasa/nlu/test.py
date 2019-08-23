@@ -19,7 +19,11 @@ from typing import (
 
 import rasa.utils.io as io_utils
 
-from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
+from rasa.constants import (
+    TEST_DATA_FILE,
+    TRAIN_DATA_FILE,
+    DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
+)
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
 from rasa.nlu.utils import write_to_file
@@ -28,6 +32,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers import Token
+from rasa.core.actions.action import RESPOND_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +45,11 @@ CVEvaluationResult = namedtuple("Results", "train test")
 IntentEvaluationResult = namedtuple(
     "IntentEvaluationResult",
     "intent_target " "intent_prediction " "message " "confidence",
+)
+
+ResponseSelectionEvaluationResult = namedtuple(
+    "ResponseSelectionEvaluationResult",
+    "intent_target " "response_target " "response_prediction " "message " "confidence",
 )
 
 EntityEvaluationResult = namedtuple(
@@ -151,8 +161,8 @@ def get_evaluation_metrics(
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
-    targets = clean_intent_labels(targets)
-    predictions = clean_intent_labels(predictions)
+    targets = clean_labels(targets)
+    predictions = clean_labels(predictions)
 
     report = metrics.classification_report(
         targets, predictions, output_dict=output_dict
@@ -182,7 +192,25 @@ def remove_empty_intent_examples(
     return filtered
 
 
-def clean_intent_labels(labels: Iterable[Any]) -> List[Text]:
+def remove_empty_response_examples(
+    response_results: List[ResponseSelectionEvaluationResult]
+) -> List[ResponseSelectionEvaluationResult]:
+    """Remove those examples without a response."""
+
+    filtered = []
+    for r in response_results:
+        # substitute None values with empty string
+        # to enable sklearn evaluation
+        if r.response_prediction is None:
+            r = r._replace(response_prediction="")
+
+        if r.response_target != "" and r.response_target is not None:
+            filtered.append(r)
+
+    return filtered
+
+
+def clean_labels(labels: Iterable[Any]) -> List[Text]:
     """Get rid of `None` intents. sklearn metrics do not support them."""
     return [l if l is not None else "" for l in labels]
 
@@ -260,22 +288,93 @@ def collect_nlu_errors(
         logger.info("Your model made no errors")
 
 
-def plot_intent_confidences(
-    intent_results: List[IntentEvaluationResult], intent_hist_filename: Optional[Text]
+def plot_attribute_confidences(
+    results: Union[
+        List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]
+    ],
+    hist_filename: Optional[Text],
+    target_key: Text,
+    prediction_key: Text,
 ) -> None:
     import matplotlib.pyplot as plt
 
     # create histogram of confidence distribution, save to file and display
     plt.gcf().clear()
     pos_hist = [
-        r.confidence for r in intent_results if r.intent_target == r.intent_prediction
+        r.confidence
+        for r in results
+        if getattr(r, target_key) == getattr(r, prediction_key)
     ]
 
     neg_hist = [
-        r.confidence for r in intent_results if r.intent_target != r.intent_prediction
+        r.confidence
+        for r in results
+        if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
-    plot_histogram([pos_hist, neg_hist], intent_hist_filename)
+    plot_histogram([pos_hist, neg_hist], hist_filename)
+
+
+def evaluate_response_selections(
+    response_selection_results: List[ResponseSelectionEvaluationResult],
+    report_folder: Optional[Text],
+) -> Dict:  # pragma: no cover
+    """Creates summary statistics for response selection.
+    Only considers those examples with a set response.
+    Others are filtered out. Returns a dictionary of containing the
+    evaluation result."""
+
+    # remove empty intent targets
+    num_examples = len(response_selection_results)
+    response_selection_results = remove_empty_response_examples(
+        response_selection_results
+    )
+
+    logger.info(
+        "Response Selection Evaluation: Only considering those "
+        "{} examples that have a defined response out "
+        "of {} examples".format(len(response_selection_results), num_examples)
+    )
+
+    target_responses, predicted_responses = _targets_predictions_from(
+        response_selection_results, "response_target", "response_prediction"
+    )
+
+    if report_folder:
+        report, precision, f1, accuracy = get_evaluation_metrics(
+            target_responses, predicted_responses, output_dict=True
+        )
+
+        report_filename = os.path.join(report_folder, "response_selection_report.json")
+
+        utils.write_json_to_file(report_filename, report)
+        logger.info("Classification report saved to {}.".format(report_filename))
+
+    else:
+        report, precision, f1, accuracy = get_evaluation_metrics(
+            target_responses, predicted_responses
+        )
+        if isinstance(report, str):
+            log_evaluation_table(report, precision, f1, accuracy)
+
+    predictions = [
+        {
+            "text": res.message,
+            "intent_target": res.intent_target,
+            "response_target": res.response_target,
+            "response_predicted": res.response_prediction,
+            "confidence": res.confidence,
+        }
+        for res in response_selection_results
+    ]
+
+    return {
+        "predictions": predictions,
+        "report": report,
+        "precision": precision,
+        "f1_score": f1,
+        "accuracy": accuracy,
+    }
 
 
 def evaluate_intents(
@@ -306,7 +405,9 @@ def evaluate_intents(
         "of {} examples".format(len(intent_results), num_examples)
     )
 
-    target_intents, predicted_intents = _targets_predictions_from(intent_results)
+    target_intents, predicted_intents = _targets_predictions_from(
+        intent_results, "intent_target", "intent_prediction"
+    )
 
     if report_folder:
         report, precision, f1, accuracy = get_evaluation_metrics(
@@ -356,7 +457,9 @@ def evaluate_intents(
         )
         plt.show(block=False)
 
-        plot_intent_confidences(intent_results, intent_hist_filename)
+        plot_attribute_confidences(
+            intent_results, intent_hist_filename, "intent_target", "intent_prediction"
+        )
 
         plt.show(block=False)
 
@@ -613,7 +716,9 @@ def align_all_entity_predictions(
 def get_eval_data(
     interpreter: Interpreter, test_data: TrainingData
 ) -> Tuple[
-    List[IntentEvaluationResult], List[EntityEvaluationResult]
+    List[IntentEvaluationResult],
+    List[ResponseSelectionEvaluationResult],
+    List[EntityEvaluationResult],
 ]:  # pragma: no cover
     """Runs the model for the test set and extracts targets and predictions.
 
@@ -623,12 +728,24 @@ def get_eval_data(
 
     logger.info("Running model for predictions:")
 
-    intent_results, entity_results = [], []
+    intent_results, entity_results, response_selection_results = [], [], []
 
+    response_labels = [
+        e.get("response")
+        for e in test_data.intent_examples
+        if e.get("response") is not None
+    ]
     intent_labels = [e.get("intent") for e in test_data.intent_examples]
     should_eval_intents = (
         is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
     )
+    should_eval_response_selection = (
+        is_response_selector_present(interpreter) and len(set(response_labels)) >= 2
+    )
+    available_response_selector_types = get_available_response_selector_types(
+        interpreter
+    )
+
     should_eval_entities = is_entity_extractor_present(interpreter)
 
     for example in tqdm(test_data.training_examples):
@@ -645,6 +762,27 @@ def get_eval_data(
                 )
             )
 
+        if should_eval_response_selection:
+            intent_target = example.get("intent", "")
+            if intent_target in available_response_selector_types:
+                response_prediction_key = "{0}{1}_response".format(
+                    RESPOND_PREFIX, intent_target
+                )
+            else:
+                response_prediction_key = DEFAULT_OPEN_UTTERANCE_TYPE_KEY
+
+            response_prediction = result.get(response_prediction_key, {}) or {}
+            response_target = example.get("response", "")
+            response_selection_results.append(
+                ResponseSelectionEvaluationResult(
+                    intent_target,
+                    response_target,
+                    response_prediction.get("name"),
+                    result.get("text", {}),
+                    response_prediction.get("confidence"),
+                )
+            )
+
         if should_eval_entities:
             entity_results.append(
                 EntityEvaluationResult(
@@ -654,7 +792,7 @@ def get_eval_data(
                 )
             )
 
-    return intent_results, entity_results
+    return intent_results, response_selection_results, entity_results
 
 
 def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
@@ -680,6 +818,25 @@ def is_intent_classifier_present(interpreter: Interpreter) -> bool:
         c.name for c in interpreter.pipeline if "intent" in c.provides
     ]
     return intent_classifiers != []
+
+
+def is_response_selector_present(interpreter: Interpreter) -> bool:
+    """Checks whether response selector is present"""
+
+    response_selectors = [
+        c.name for c in interpreter.pipeline if "response" in c.provides
+    ]
+    return response_selectors != []
+
+
+def get_available_response_selector_types(interpreter: Interpreter) -> List[Text]:
+    """Gets all available response selector types"""
+
+    response_selector_types = [
+        c.response_type for c in interpreter.pipeline if "response" in c.provides
+    ]
+
+    return response_selector_types
 
 
 def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
@@ -725,6 +882,7 @@ def run_evaluation(
     result = {
         "intent_evaluation": None,
         "entity_evaluation": None,
+        "response_selection_evaluation": None,
     }  # type: Dict[Text, Optional[Dict]]
 
     if report:
@@ -732,12 +890,20 @@ def run_evaluation(
             report = os.path.join(out_directory, report)
         io_utils.create_directory(report)
 
-    intent_results, entity_results = get_eval_data(interpreter, test_data)
+    intent_results, response_selection_results, entity_results, = get_eval_data(
+        interpreter, test_data
+    )
 
     if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
             intent_results, report, successes, errors, confmat, histogram, out_directory
+        )
+
+    if response_selection_results:
+        logger.info("Response selection evaluation results:")
+        result["response_selection_evaluation"] = evaluate_response_selections(
+            response_selection_results, report
         )
 
     if entity_results:
@@ -901,9 +1067,13 @@ def cross_validate(
 
 
 def _targets_predictions_from(
-    intent_results: List[IntentEvaluationResult]
+    results: Union[
+        List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]
+    ],
+    target_key: Text,
+    prediction_key: Text,
 ) -> Iterator[Iterable[Optional[Text]]]:
-    return zip(*[(r.intent_target, r.intent_prediction) for r in intent_results])
+    return zip(*[(getattr(r, target_key), getattr(r, prediction_key)) for r in results])
 
 
 def compute_metrics(
@@ -918,11 +1088,15 @@ def compute_metrics(
     Returns intent and entity metrics, and prediction results.
     """
 
-    intent_results, entity_results = get_eval_data(interpreter, corpus)
+    intent_results, response_selection_results, entity_results = get_eval_data(
+        interpreter, corpus
+    )
 
     intent_results = remove_empty_intent_examples(intent_results)
 
-    intent_metrics = _compute_intent_metrics(intent_results)
+    intent_metrics = _compute_metrics(
+        intent_results, "intent_target", "intent_prediction"
+    )
     entity_metrics = _compute_entity_metrics(entity_results, interpreter)
 
     return (intent_metrics, entity_metrics, intent_results, entity_results)
@@ -1025,14 +1199,20 @@ def compare_nlu(
     return training_examples_per_run
 
 
-def _compute_intent_metrics(
-    intent_results: List[IntentEvaluationResult]
+def _compute_metrics(
+    results: Union[
+        List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]
+    ],
+    target_key: Text,
+    target_prediction: Text,
 ) -> IntentMetrics:
-    """Computes intent evaluation metrics for a given corpus and
+    """Computes evaluation metrics for a given corpus and
     returns the results
     """
     # compute fold metrics
-    targets, predictions = _targets_predictions_from(intent_results)
+    targets, predictions = _targets_predictions_from(
+        results, target_key, target_prediction
+    )
     _, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
 
     return {"Accuracy": [accuracy], "F1-score": [f1], "Precision": [precision]}

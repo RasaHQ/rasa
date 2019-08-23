@@ -14,8 +14,15 @@ if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
     from rasa.nlu.model import Metadata
 
-
-from rasa.nlu.constants import MESSAGE_ATTRIBUTES, MESSAGE_TEXT_ATTRIBUTE
+from rasa.nlu.constants import (
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+)
 
 
 class SpacyNLP(Component):
@@ -113,10 +120,7 @@ class SpacyNLP(Component):
 
     def get_text(self, example, attribute):
 
-        if attribute == MESSAGE_TEXT_ATTRIBUTE:
-            return self.preprocess_text(example.text)
-        else:
-            return self.preprocess_text(attribute)
+        return self.preprocess_text(example.get(attribute))
 
     def docs_for_training_data(
         self, training_data: TrainingData
@@ -140,21 +144,21 @@ class SpacyNLP(Component):
 
         for attribute in MESSAGE_ATTRIBUTES:
 
-            attribute_feature_name = (
-                "spacy_doc"
-                if attribute == MESSAGE_TEXT_ATTRIBUTE
-                else "{0}_spacy_doc".format(attribute)
-            )
             for idx, example in enumerate(training_data.training_examples):
                 example_attribute_doc = attribute_docs[attribute][idx]
                 if len(example_attribute_doc):
                     # If length is 0, that means the initial text feature was None and was replaced by ''
                     # in preprocess method
-                    example.set(attribute_feature_name, example_attribute_doc)
+                    example.set(
+                        MESSAGE_SPACY_FEATURES_NAMES[attribute], example_attribute_doc
+                    )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        message.set("spacy_doc", self.doc_for_text(message.text))
+        message.set(
+            MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self.doc_for_text(message.text),
+        )
 
     @classmethod
     def load(

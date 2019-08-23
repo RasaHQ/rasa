@@ -13,10 +13,13 @@ from rasa.nlu.training_data import Message, TrainingData
 logger = logging.getLogger(__name__)
 
 from rasa.nlu.constants import (
-    MESSAGE_ATTRIBUTES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
 
@@ -176,19 +179,16 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _get_message_text_by_attribute(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE):
 
-        attribute_prefix = (
-            "" if attribute == MESSAGE_TEXT_ATTRIBUTE else attribute + "_"
-        )
         if message.get(
-            "{0}spacy_doc".format(attribute_prefix)
+            MESSAGE_SPACY_FEATURES_NAMES[attribute]
         ):  # if lemmatize is possible
             tokens = [
-                t.lemma_ for t in message.get("{0}spacy_doc".format(attribute_prefix))
+                t.lemma_ for t in message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
             ]
         elif message.get(
-            "{0}tokens".format(attribute_prefix)
+            MESSAGE_TOKENS_NAMES[attribute]
         ):  # if directly tokens is provided
-            tokens = [t.text for t in message.get("{0}tokens".format(attribute_prefix))]
+            tokens = [t.text for t in message.get(MESSAGE_TOKENS_NAMES[attribute])]
         else:
             tokens = message.get(attribute).split()
 
@@ -325,7 +325,7 @@ class CountVectorsFeaturizer(Featurizer):
         for attribute in MESSAGE_ATTRIBUTES:
             attribute_texts = [
                 self._get_message_text_by_attribute(example, attribute)
-                if not example.get(attribute) is None
+                if example.get(attribute) is not None
                 else ""
                 for example in training_data.intent_examples
             ]
@@ -353,7 +353,7 @@ class CountVectorsFeaturizer(Featurizer):
                         ]
                 else:
                     self.vectorizer[attribute].fit(cleaned_attribute_texts[attribute])
-            except ValueError as e:
+            except ValueError:
                 logger.warning(
                     "Unable to train CountVectorizer for message attribute {0}. "
                     "Returning with an untrained CountVectorizer for that attribute".format(
@@ -378,13 +378,13 @@ class CountVectorsFeaturizer(Featurizer):
                 # Proxy method to check if the text for the attribute was not None.
                 if cleaned_attribute_texts[attribute][i]:
                     example.set(
-                        "{0}_features".format(attribute),
+                        MESSAGE_VECTOR_FEATURE_NAMES[attribute],
                         self._combine_with_existing_features(
                             example, featurized_attributes[attribute][i], attribute
                         ),
                     )
                 else:
-                    example.set("{0}_features".format(attribute), None)
+                    example.set(MESSAGE_VECTOR_FEATURE_NAMES[attribute], None)
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
@@ -406,7 +406,7 @@ class CountVectorsFeaturizer(Featurizer):
                 .squeeze()
             )
             message.set(
-                "{0}_features".format(MESSAGE_TEXT_ATTRIBUTE),
+                MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
                 self._combine_with_existing_features(
                     message, bag, attribute=MESSAGE_TEXT_ATTRIBUTE
                 ),

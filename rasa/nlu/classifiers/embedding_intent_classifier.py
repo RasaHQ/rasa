@@ -9,7 +9,15 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
-from rasa.nlu.constants import MESSAGE_TEXT_ATTRIBUTE, MESSAGE_INTENT_ATTRIBUTE
+from rasa.nlu.constants import (
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+)
 
 import tensorflow as tf
 
@@ -237,7 +245,6 @@ class EmbeddingIntentClassifier(Component):
         distinct_label_ids = set(
             [example.get(attribute) for example in training_data.intent_examples]
         ) - {None}
-        print (distinct_label_ids)
         return {
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
         }
@@ -289,7 +296,7 @@ class EmbeddingIntentClassifier(Component):
         Y = []
         for e in training_data.intent_examples:
             if e.get(attribute):
-                X.append(e.get("text_features"))
+                X.append(e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]))
                 label_ids.append(label_id_dict[e.get(attribute)])
 
         X = np.array(X)
@@ -450,7 +457,9 @@ class EmbeddingIntentClassifier(Component):
             training_data,
             label_id_dict,
             attribute=MESSAGE_INTENT_ATTRIBUTE,
-            attribute_feature_name="intent_features",
+            attribute_feature_name=MESSAGE_VECTOR_FEATURE_NAMES[
+                MESSAGE_INTENT_ATTRIBUTE
+            ],
         )
 
         # check if number of negatives is less than number of label_ids
@@ -575,7 +584,9 @@ class EmbeddingIntentClassifier(Component):
         else:
             # get features (bag of words) for a message
             # noinspection PyPep8Naming
-            X = message.get("text_features").reshape(1, -1)
+            X = message.get(
+                MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            ).reshape(1, -1)
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)

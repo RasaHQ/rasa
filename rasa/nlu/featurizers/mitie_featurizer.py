@@ -11,10 +11,13 @@ if typing.TYPE_CHECKING:
     import mitie
 
 from rasa.nlu.constants import (
-    MESSAGE_ATTRIBUTES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
 
@@ -34,9 +37,7 @@ class MitieFeaturizer(Featurizer):
 
     def get_tokens_by_attribute(self, example, attribute):
 
-        # remove 'text' from prefix since features for text do not have the prefix. All other attributes have a prefix
-        attribute = "" if attribute == MESSAGE_TEXT_ATTRIBUTE else attribute + "_"
-        return example.get("{0}{1}".format(attribute, "tokens"))
+        return example.get(MESSAGE_TOKENS_NAMES[attribute])
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -48,13 +49,13 @@ class MitieFeaturizer(Featurizer):
             for attribute in MESSAGE_ATTRIBUTES:
 
                 attribute_tokens = self.get_tokens_by_attribute(example, attribute)
-                if attribute_tokens:
+                if attribute_tokens is not None:
 
                     features = self.features_for_tokens(
                         attribute_tokens, mitie_feature_extractor
                     )
                     example.set(
-                        "{0}_features".format(attribute),
+                        MESSAGE_VECTOR_FEATURE_NAMES[attribute],
                         self._combine_with_existing_features(
                             example, features, attribute
                         ),
@@ -64,10 +65,12 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(
-            message.get("tokens"), mitie_feature_extractor
+            message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]),
+            mitie_feature_extractor,
         )
         message.set(
-            "text_features", self._combine_with_existing_features(message, features)
+            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self._combine_with_existing_features(message, features),
         )
 
     def _mitie_feature_extractor(self, **kwargs):

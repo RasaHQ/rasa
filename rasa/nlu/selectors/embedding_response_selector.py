@@ -15,7 +15,15 @@ from rasa.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE_KEY_RANKING,
 )
 from rasa.core.actions.action import RESPOND_PREFIX
-from rasa.nlu.constants import MESSAGE_TEXT_ATTRIBUTE, MESSAGE_RESPONSE_ATTRIBUTE
+from rasa.nlu.constants import (
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +181,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
         else:
             # get features (bag of words) for a message
             # noinspection PyPep8Naming
-            X = message.get("text_features").reshape(1, -1)
+            X = message.get(
+                MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            ).reshape(1, -1)
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)
@@ -221,7 +231,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
             training_data,
             label_id_dict,
             attribute=MESSAGE_RESPONSE_ATTRIBUTE,
-            attribute_feature_name="response_features",
+            attribute_feature_name=MESSAGE_VECTOR_FEATURE_NAMES[
+                MESSAGE_RESPONSE_ATTRIBUTE
+            ],
         )
 
         # check if number of negatives is less than number of label_ids
