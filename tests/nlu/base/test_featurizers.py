@@ -300,7 +300,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
         ("abc", [1, 1, 1, 1, 1]),
     ],
 )
-def test_count_vector_featurizer(sentence, expected):
+def test_count_vector_featurizer_char(sentence, expected):
     from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
 
     ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char"})

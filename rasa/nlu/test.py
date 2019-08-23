@@ -25,7 +25,6 @@ from rasa.nlu import config, training_data, utils
 from rasa.nlu.utils import write_to_file
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers import Token
@@ -554,6 +553,9 @@ def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
     """Checks if extractors support overlapping entities"""
     if extractors is None:
         return False
+
+    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+
     return CRFEntityExtractor.name not in extractors
 
 
