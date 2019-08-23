@@ -43,7 +43,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
                         MESSAGE_TOKENS_NAMES[attribute],
                         self.tokenize(
                             example.get(attribute),
-                            clean_text=attribute != MESSAGE_TEXT_ATTRIBUTE,
+                            clean_text=attribute == MESSAGE_TEXT_ATTRIBUTE,
                         ),
                     )
 
@@ -54,6 +54,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
         )
 
     def tokenize(self, text: Text, clean_text: bool = True) -> List[Token]:
+
         if not self.case_sensitive:
             text = text.lower()
         # remove 'not a word character' if
