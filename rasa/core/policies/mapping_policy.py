@@ -33,6 +33,10 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
+    @staticmethod
+    def _standard_featurizer():
+        return None
+
     def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
         """Create a new Mapping policy."""
 
