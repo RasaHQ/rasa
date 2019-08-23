@@ -42,7 +42,7 @@ install_requires = [
     # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
     "setuptools >= 41.0.0",
     "tensorflow-probability~=0.7.0",
-    "tensor2tensor~=1.13.4",
+    "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
     "networkx~=2.3",
@@ -65,7 +65,7 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.1.0",
+    "rasa-sdk~=1.3.0a1",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=19.3.1",
@@ -131,8 +131,8 @@ setup(
     },
 )
 
-print("\nWelcome to Rasa!")
-print(
+print ("\nWelcome to Rasa!")
+print (
     "If you have any questions, please visit our documentation page: https://rasa.com/docs/"
 )
-print("or join the community discussions on https://forum.rasa.com/")
+print ("or join the community discussions on https://forum.rasa.com/")

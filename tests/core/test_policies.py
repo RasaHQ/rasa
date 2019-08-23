@@ -18,7 +18,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.constants import USER_INTENT_RESTART, USER_INTENT_BACK
 from rasa.core.channels.channel import UserMessage
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import (
     BinarySingleStateFeaturizer,
@@ -577,6 +577,12 @@ class TestFormPolicy(TestMemoizationPolicy):
                     or (
                         "prev_utter_ask_continue" in states[0].keys()
                         and "intent_deny" in states[-1].keys()
+                    )
+                    # comes from the fact that intent_inform after utter_ask_continue
+                    # is not read from stories
+                    or (
+                        "prev_utter_ask_continue" in states[0].keys()
+                        and "intent_stop" in states[-1].keys()
                     )
                 )
                 # @formatter:on
