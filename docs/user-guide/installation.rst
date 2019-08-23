@@ -14,27 +14,33 @@ Quick Installation
 
 You can get started using ``pip`` with the following command.
 
-
 .. code-block:: bash
 
     $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
 
+.. note::
 
-| This will install both Rasa and Rasa X on your system.
-| Once you're done with this, you can head over to the tutorial!
+    You'll need a minimum Python version of 3.5.4 to install Rasa.
 
-For a more detailed guide on setting up, scroll down to the section below.
+This will install both Rasa and Rasa X on your system.
+
+Once you're done with this, you can head over to the tutorial!
 
 .. button::
    :text: Next Step: Tutorial
    :link: ../rasa-tutorial/
 
+**For a more detailed guide on setting up, follow along the** :ref:`installation guide <installation_guide>`.
+
+
+
+.. _installation_guide:
 
 Installation Guide with pip
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Install the Python development environment
-#############################################
+---------------------------------------------
 
 Check if your Python environment is already configured:
 
@@ -44,11 +50,16 @@ Check if your Python environment is already configured:
     $ pip3 --version
     $ virtualenv --version
 
-If these packages are already installed, skip to the next step.
+If these packages are already installed, these commands should display version
+numbers for each step, and you can skip to the next step.
+
+Otherwise, proceed with the instructions below to install them.
 
 .. tabs::
 
     .. tab:: Ubuntu
+
+        Fetch the relevant packages using ``apt``, and install virtualenv using ``pip``.
 
         .. code-block:: bash
 
@@ -56,13 +67,19 @@ If these packages are already installed, skip to the next step.
             $ sudo apt install python3-dev python3-pip
             $ sudo pip3 install -U virtualenv
 
-    .. tab:: mac OS
+    .. tab:: macOS
 
-        Install the Homebrew package manager if you haven't already.
+        Install the `Homebrew <https://brew.sh>`_ package manager if you haven't already using
+        the command below.
 
         .. code-block:: bash
 
             $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+        Once you're done, you can install Python and virtualenv.
+
+        .. code-block:: bash
+
             $ export PATH="/usr/local/bin:/usr/local/sbin:$PATH"
             $ brew update
             $ brew install python  # Python 3
@@ -78,19 +95,21 @@ If these packages are already installed, skip to the next step.
             target="_blank">Visual Studio</a>. Download the installer and select
             VC++ Build tools in the list.
 
+        Install `Python 3 <https://www.python.org/downloads/windows/>`_ (64-bit version) for Windows.
+
         .. code-block:: bat
 
             C:\> pip3 install -U pip virtualenv
 
 
 2. Create a virtual environment (strongly recommended)
-######################################################
+------------------------------------------------------
 
-Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_ provide isolated Python environments, which are more practical than installing packages systemwide. They also let you install packages without root privileges.
+Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_ provide isolated Python environments, which are cleaner than installing packages systemwide. They also let you install packages without root privileges.
 
 .. tabs::
 
-    .. tab:: Ubuntu / mac OS
+    .. tab:: Ubuntu / macOS
 
         Create a new virtual environment by choosing a Python interpreter and making a ``./venv`` directory to hold it:
 
@@ -120,7 +139,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
 
 3. Install Rasa and Rasa X
-##########################
+--------------------------
 
 .. tabs::
 
@@ -152,9 +171,9 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
             $ pip3 install --user rasa
 
-.. note::
+.. admonition:: Congratulations! You have successfully installed Rasa!
 
-    That's it! Rasa is now installed.
+    You can now head over to the :ref:`tutorial <rasa-tutorial>`.
 
 
 Building from Source
@@ -185,12 +204,11 @@ will help you pick which pipeline to use.
     If you want to make sure you have the dependencies
     installed for any component you might ever need, and you
     don't mind the additional dependencies lying around, you can use
+    this to install everything:
 
     .. code-block:: bash
 
-        pip install -r alt_requirements/requirements_full.txt
-
-    to install everything.
+        $ pip install -r alt_requirements/requirements_full.txt
 
 
 Great for getting started: pretrained embeddings from spaCy
@@ -205,9 +223,9 @@ You can install it with the following commands:
 
 .. code-block:: bash
 
-    pip install rasa[spacy]
-    python -m spacy download en_core_web_md
-    python -m spacy link en_core_web_md en
+    $ pip install rasa[spacy]
+    $ python -m spacy download en_core_web_md
+    $ python -m spacy link en_core_web_md en
 
 This will install Rasa NLU as well as spacy and its language model
 for the English language. We recommend using at least the
@@ -216,17 +234,13 @@ default small ``en_core_web_sm`` model. Small models require less
 memory to run, but will somewhat reduce intent classification performance.
 
 
-
 First Alternative: Tensorflow
 -----------------------------
 
-To use the ``supervised_embeddings`` pipeline you will need to install
-Tensorflow and, for entity recognition, the sklearn-crfsuite library.
-To do this, simply run the following command:
-
-.. code-block:: bash
-
-    pip install rasa
+The ``supervised_embeddings`` pipeline uses TensorFlow and the sklearn-crfsuite
+library as dependencies. However, these are installed automatically along
+with a standard Rasa installation, so you do not have to install anything
+separately.
 
 
 .. _install-mitie:
@@ -242,8 +256,8 @@ First, run
 
 .. code-block:: bash
 
-    pip install git+https://github.com/mit-nlp/MITIE.git
-    pip install rasa[mitie]
+    $ pip install git+https://github.com/mit-nlp/MITIE.git
+    $ pip install rasa[mitie]
 
 and then download the
 `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_.
@@ -252,21 +266,9 @@ anywhere. If you want to use MITIE, you need to
 tell it where to find this file (in this example it was saved in the
 ``data`` folder of the project directory).
 
-The complete pipeline for MITIE can be found here
-
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie.yml
-    :language: yaml
-
-Using MITIE alone can be quite slow to train, but you can use it with this configuration.
-
-
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie_2.yml
-    :language: yaml
-
-
 
 Next Step
----------
+~~~~~~~~~
 
 Now that you have everything installed, head over to the tutorial!
 
