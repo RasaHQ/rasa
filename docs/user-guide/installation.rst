@@ -9,11 +9,8 @@ Installation
 
 .. edit-link::
 
-.. contents::
-   :local:
-
 Quick Installation
-~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^
 
 You can get started using ``pip`` with the following command.
 
@@ -40,8 +37,15 @@ head over to the section on** :ref:`pipeline dependencies <pipeline_dependencies
 
 .. _installation_guide:
 
+Installation Guide
+^^^^^^^^^^^^^^^^^^
+
+.. contents::
+   :local:
+
 Installation Guide with pip
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 1. Install the Python development environment
 ---------------------------------------------
