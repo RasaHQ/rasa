@@ -31,6 +31,12 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path
 
+import platform
+
+major, minor, _ = platform.python_version_tuple()
+if major == "3" and minor == "5":
+    from rasa.exceptions35 import ModuleNotFoundError
+
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
     from rasa.nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
