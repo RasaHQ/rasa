@@ -599,7 +599,7 @@ class EmbeddingIntentClassifier(Component):
                 label_embed = train_utils.load_tensor("label_embed")
                 all_labels_embed = train_utils.load_tensor("all_labels_embed")
 
-            with io.open(
+            with open(
                 os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "rb"
             ) as f:
                 inv_label_dict = pickle.load(f)
