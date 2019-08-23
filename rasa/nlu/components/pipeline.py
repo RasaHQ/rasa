@@ -56,7 +56,7 @@ class ComponentPipeline:
 class ComponentIterator:
     """ Iterator class """
 
-    def __init__(self, pipeline: type(ComponentPipeline)):
+    def __init__(self, pipeline: ComponentPipeline):
         self._components = pipeline.get_all_components()
         self._index = 0
 

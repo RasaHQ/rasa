@@ -14,7 +14,7 @@ from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io as io_utils
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import TrainingData
+    from rasa.nlu.training_data.training_data import TrainingData
 
 from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
@@ -47,7 +47,7 @@ class DataManager:
         """Load training data from disk.
 
         Merges them if loaded from disk and multiple files are found."""
-        from rasa.nlu.training_data import TrainingData
+        from rasa.nlu.training_data.training_data import TrainingData
 
         if not os.path.exists(resource_name):
             raise ValueError("File '{}' does not exist.".format(resource_name))
@@ -66,7 +66,7 @@ class DataManager:
 
     @staticmethod
     async def load_data_from_endpoint(data_endpoint: EndpointConfig,
-                                      language: Optional[Text] = "en") -> "TrainingData":
+                                      language: Optional[Text] = "en") -> Optional["TrainingData"]:
         """Load training data from a URL."""
 
         if not utils.is_url(data_endpoint.url):

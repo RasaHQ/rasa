@@ -183,7 +183,7 @@ async def test_create_fingerprint_from_paths(project):
     "project_files", [["invalid", "invalid", "invalid"], [None, None, None]]
 )
 async def test_create_fingerprint_from_invalid_paths(project, project_files):
-    from rasa.nlu.training_data import TrainingData
+    from rasa.nlu.training_data.training_data import TrainingData
     from rasa.core.training.structures import StoryGraph
 
     project_files = _project_files(project, *project_files)

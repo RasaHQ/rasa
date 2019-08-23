@@ -14,7 +14,7 @@ from rasa.nlu.utils.package_manager import PackageManager
 from rasa.nlu.model.storage.persistor import Persistor
 from rasa.nlu.model.interpreter import Interpreter
 from rasa.nlu.model.metadata import Metadata
-from rasa.nlu.training_data import TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

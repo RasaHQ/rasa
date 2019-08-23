@@ -8,7 +8,7 @@ from rasa.nlu import training_data
 from rasa.nlu.training_data.converter import TrainingDataConverter
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.training_data import TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
 from rasa.nlu.training_data.data_manager import DataManager

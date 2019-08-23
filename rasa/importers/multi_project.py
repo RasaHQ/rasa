@@ -10,7 +10,7 @@ from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.dsl import StoryFileReader
 from rasa.importers.importer import TrainingDataImporter
 from rasa.importers import utils
-from rasa.nlu.training_data import TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
 import rasa.utils.common
 

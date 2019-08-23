@@ -10,7 +10,8 @@ from rasa.nlu.training_data.formats.readerwriter import (
 from rasa.nlu.utils import build_entity
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import Message, TrainingData
+    from rasa.nlu.training_data.training_data import TrainingData
+    from rasa.nlu.training_data.message import Message
 
 INTENT = "intent"
 SYNONYM = "synonym"
@@ -60,7 +61,7 @@ class MarkdownReader(TrainingDataReader):
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
-        from rasa.nlu.training_data import TrainingData
+        from rasa.nlu.training_data.training_data import TrainingData
 
         self.__init__()
         s = self._strip_comments(s)
@@ -176,7 +177,7 @@ class MarkdownReader(TrainingDataReader):
 
     def _parse_training_example(self, example):
         """Extract entities and synonyms, and convert to plain text."""
-        from rasa.nlu.training_data import Message
+        from rasa.nlu.training_data.message import Message
 
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(ent_regex, lambda m: m.groupdict()["entity_text"], example)

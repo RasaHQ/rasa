@@ -1,7 +1,7 @@
 from typing import Any, Optional, Text
 
 from rasa.nlu.classifiers import Classifier
-from rasa.nlu.training_data import Message
+from rasa.nlu.training_data.message import Message
 
 
 class KeywordIntentClassifier(Classifier):

@@ -10,7 +10,7 @@ from rasa.nlu.components.pipeline import ComponentPipeline
 from rasa.nlu.model.exceptions import UnsupportedModelError
 from rasa.nlu.utils.package_manager import PackageManager
 from rasa.nlu.model.metadata import Metadata
-from rasa.nlu.training_data import Message
+from rasa.nlu.training_data.message import Message
 from rasa.nlu.components.exceptions import MissingArgumentError
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class Interpreter:
                 before loading them.
             model_dir: The path of the model to load
             component_builder: The
-                :class:`rasa.nlu.components.ComponentBuilder` to use.
+                :class:`rasa.nlu.components.component.ComponentBuilder` to use.
 
         Returns:
             An interpreter that uses the loaded model.

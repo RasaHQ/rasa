@@ -375,7 +375,7 @@ nitpick_ignore = [
     ("py:class", "rasa.core.events.SlotSet"),
     ("py:class", "rasa.core.processor.MessageProcessor"),
     ("py:class", "rasa.core.training.structures.StoryGraph"),
-    ("py:class", "rasa.nlu.components.Component"),
+    ("py:class", "rasa.nlu.components.component.Component"),
     ("py:class", "rasa.nlu.training_data.message.Message"),
     ("py:class", "rasa.nlu.training_data.training_data.TrainingData"),
 ]

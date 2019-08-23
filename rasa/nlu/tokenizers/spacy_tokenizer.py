@@ -3,7 +3,8 @@ from typing import Any
 
 from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.tokenizers import Token, Tokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data.training_data import TrainingData
+from rasa.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error

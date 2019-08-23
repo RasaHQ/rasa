@@ -2,7 +2,7 @@
 import responses
 
 from rasa.nlu.config.nlu import RasaNLUModelConfig
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.training_data.training_data import TrainingData, Message
 from tests.nlu import utilities
 
 

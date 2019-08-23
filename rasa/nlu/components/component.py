@@ -5,7 +5,7 @@ from typing import Any, Dict, Hashable, List, Optional, Text
 from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.config.manager import ConfigManager
 from rasa.nlu.components.exceptions import UnsupportedLanguageError
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.training_data.training_data import TrainingData, Message
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model.metadata import Metadata
@@ -165,10 +165,10 @@ class Component(object, metaclass=ComponentMetaclass):
         This is the components chance to train itself provided
         with the training data. The component can rely on
         any context attribute to be present, that gets created
-        by a call to :meth:`rasa.nlu.components.Component.create`
+        by a call to :meth:`rasa.nlu.components.component.Component.create`
         of ANY component and
         on any context attributes created by a call to
-        :meth:`rasa.nlu.components.Component.train`
+        :meth:`rasa.nlu.components.component.Component.train`
         of components previous to this one."""
         pass
 
@@ -178,10 +178,10 @@ class Component(object, metaclass=ComponentMetaclass):
         This is the components chance to process an incoming
         message. The component can rely on
         any context attribute to be present, that gets created
-        by a call to :meth:`rasa.nlu.components.Component.create`
+        by a call to :meth:`rasa.nlu.components.component.Component.create`
         of ANY component and
         on any context attributes created by a call to
-        :meth:`rasa.nlu.components.Component.process`
+        :meth:`rasa.nlu.components.component.Component.process`
         of components previous to this one."""
         pass
 

@@ -8,7 +8,7 @@ from typing import Any, List, Optional, Text, Dict
 from rasa.nlu.config.nlu import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model.metadata import Metadata
-from rasa.nlu.training_data import Message
+from rasa.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 

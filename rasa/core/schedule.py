@@ -60,4 +60,3 @@ def kill_scheduler():
     if __scheduler:
         __scheduler.shutdown()
         __scheduler = None
-
