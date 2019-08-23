@@ -142,7 +142,7 @@ class TestKeywordClassifier(ClassifierTestCollection):
 
         with caplog.at_level(logging.DEBUG):
             self._train_classifier(classifier_class, data, component_config, **kwargs)
-        assert len(caplog.records) == 3
+        assert len(caplog.records) == 2
 
     def test_ambiguous_data(
         self, caplog, classifier_class, training_data, component_config, **kwargs

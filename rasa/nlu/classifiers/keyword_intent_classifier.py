@@ -53,22 +53,28 @@ class KeywordIntentClassifier(Component):
 
         duplicate_examples = set()
         for ex in training_data.training_examples:
-            if (ex.text in self.intent_keyword_map.keys()
+            if (
+                ex.text in self.intent_keyword_map.keys()
                 and ex.get("intent") != self.intent_keyword_map[ex.text]
             ):
                 duplicate_examples.add(ex.text)
-                logger.warning("Keyword '{}' is an example of intent '{}' and of "
-                               "intent '{}', it will be removed from the list of "
-                               "keyword.\n"
-                               "Remove (one of) the duplicates from the training data."
-                               "".format(ex.text, self.intent_keyword_map[ex.text],
-                                         ex.get("intent"))
+                logger.warning(
+                    "Keyword '{}' is an example of intent '{}' and of "
+                    "intent '{}', it will be removed from the list of "
+                    "keyword.\n"
+                    "Remove (one of) the duplicates from the training data."
+                    "".format(
+                        ex.text, self.intent_keyword_map[ex.text], ex.get("intent")
+                    )
+                )
             else:
                 self.intent_keyword_map[ex.text] = ex.get("intent")
         for keyword in duplicate_examples:
             self.intent_keyword_map.pop(keyword)
-            logger.debug("Removed '{}' from the list of keywords because it was "
-                         "a keyword for more than one intent.".format(keyword))
+            logger.debug(
+                "Removed '{}' from the list of keywords because it was "
+                "a keyword for more than one intent.".format(keyword)
+            )
 
         self._validate_keyword_map()
 
@@ -112,9 +118,7 @@ class KeywordIntentClassifier(Component):
                     " intent '{}'.".format(example, intent)
                 )
                 return intent
-        logger.debug(
-            "KeywordClassifier did not find any keywords in the message."
-        )
+        logger.debug("KeywordClassifier did not find any keywords in the message.")
         return None
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
