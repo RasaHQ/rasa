@@ -20,6 +20,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
+from rasa.utils.logger import DialogueFileLogger
 
 logger = logging.getLogger(__name__)
 
