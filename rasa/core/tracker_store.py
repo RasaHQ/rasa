@@ -14,6 +14,8 @@ from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.utils.common import class_from_module_path
+import contextlib
+
 
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
@@ -340,7 +342,7 @@ class SQLTrackerStore(TrackerStore):
                     # the first services finishes the table creation.
                     logger.error("Could not create tables: {}".format(e))
 
-                self.session = sessionmaker(bind=self.engine)()
+                self.sessionmaker = sessionmaker(bind=self.engine)
                 break
             except (
                 sqlalchemy.exc.OperationalError,
@@ -439,30 +441,41 @@ class SQLTrackerStore(TrackerStore):
         cursor.close()
         conn.close()
 
+    @contextlib.contextmanager
+    def session_scope(self):
+        """Provide a transactional scope around a series of operations."""
+        session = self.sessionmaker()
+        try:
+            yield session
+        finally:
+            session.close()
+
     def keys(self) -> Iterable[Text]:
-        sender_ids = self.session.query(self.SQLEvent.sender_id).distinct().all()
-        return [sender_id for (sender_id,) in sender_ids]
+        with self.session_scope() as session:
+            sender_ids = session.query(self.SQLEvent.sender_id).distinct().all()
+            return [sender_id for (sender_id,) in sender_ids]
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
-        query = self.session.query(self.SQLEvent)
-        result = (
-            query.filter_by(sender_id=sender_id).order_by(self.SQLEvent.timestamp).all()
-        )
-        events = [json.loads(event.data) for event in result]
+        with self.session_scope() as session:
+            query = session.query(self.SQLEvent)
+            result = query.filter_by(sender_id=sender_id).all()
+            events = [json.loads(event.data) for event in result]
 
-        if self.domain and len(events) > 0:
-            logger.debug("Recreating tracker from sender id '{}'".format(sender_id))
+            if self.domain and len(events) > 0:
+                logger.debug("Recreating tracker from sender id '{}'".format(sender_id))
 
-            return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
-        else:
-            logger.debug(
-                "Can't retrieve tracker matching"
-                "sender id '{}' from SQL storage.  "
-                "Returning `None` instead.".format(sender_id)
-            )
-            return None
+                return DialogueStateTracker.from_dict(
+                    sender_id, events, self.domain.slots
+                )
+            else:
+                logger.debug(
+                    "Can't retrieve tracker matching"
+                    "sender id '{}' from SQL storage.  "
+                    "Returning `None` instead.".format(sender_id)
+                )
+                return None
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
@@ -472,25 +485,26 @@ class SQLTrackerStore(TrackerStore):
 
         events = self._additional_events(tracker)  # only store recent events
 
-        for event in events:
-            data = event.as_dict()
+        with self.session_scope() as session:
+            for event in events:
+                data = event.as_dict()
 
-            intent = data.get("parse_data", {}).get("intent", {}).get("name")
-            action = data.get("name")
-            timestamp = data.get("timestamp")
+                intent = data.get("parse_data", {}).get("intent", {}).get("name")
+                action = data.get("name")
+                timestamp = data.get("timestamp")
 
-            # noinspection PyArgumentList
-            self.session.add(
-                self.SQLEvent(
-                    sender_id=tracker.sender_id,
-                    type_name=event.type_name,
-                    timestamp=timestamp,
-                    intent_name=intent,
-                    action_name=action,
-                    data=json.dumps(data),
+                # noinspection PyArgumentList
+                session.add(
+                    self.SQLEvent(
+                        sender_id=tracker.sender_id,
+                        type_name=event.type_name,
+                        timestamp=timestamp,
+                        intent_name=intent,
+                        action_name=action,
+                        data=json.dumps(data),
+                    )
                 )
-            )
-        self.session.commit()
+            session.commit()
 
         logger.debug(
             "Tracker with sender_id '{}' "
@@ -500,8 +514,9 @@ class SQLTrackerStore(TrackerStore):
     def number_of_existing_events(self, sender_id: Text) -> int:
         """Return number of stored events for a given sender id."""
 
-        query = self.session.query(self.SQLEvent.sender_id)
-        return query.filter_by(sender_id=sender_id).count() or 0
+        with self.session_scope() as session:
+            query = session.query(self.SQLEvent.sender_id)
+            return query.filter_by(sender_id=sender_id).count() or 0
 
     def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
