@@ -25,6 +25,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
+    "sphinx_tabs.tabs",
     "sphinxcontrib.programoutput",
     "sphinxcontrib.httpdomain",
     "rasabaster.button",
@@ -87,7 +88,6 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     # ignore doc pages that we don't show to appease keep_warnings
-    "multi-skill-assistants.rst",
     "core/old-core-change-log.rst",
     "core/old-core-migration-guide.rst",
     "nlu/old-nlu-change-log.rst",

@@ -9,41 +9,165 @@ Installation
 
 .. edit-link::
 
-The recommended way to get started with Rasa is via ``pip``:
+Quick Installation
+~~~~~~~~~~~~~~~~~~
 
-.. copyable::
+You can get started using ``pip`` with the following command.
 
-    pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
 
-This will install both Rasa and Rasa X.
-If you don't want to use Rasa X, run ``pip install rasa`` instead.
+.. code-block:: bash
 
-.. raw:: html
+    $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
 
-     Unless you've already got numpy & scipy installed, we highly recommend
-     that you install and use
-     <a class="reference external" href="https://www.anaconda.com/download/"
-     target="_blank">Anaconda</a>.
+
+| This will install both Rasa and Rasa X on your system.
+| Once you're done with this, you can head over to the tutorial!
+
+For a more detailed guide on setting up, scroll down to the section below.
+
+.. button::
+   :text: Next Step: Tutorial
+   :link: ../rasa-tutorial/
+
+
+Installation Guide with pip
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Install the Python development environment
+#############################################
+
+Check if your Python environment is already configured:
+
+.. code-block:: bash
+
+    $ python3 --version
+    $ pip3 --version
+    $ virtualenv --version
+
+If these packages are already installed, skip to the next step.
+
+.. tabs::
+
+    .. tab:: Ubuntu
+
+        .. code-block:: bash
+
+            $ sudo apt update
+            $ sudo apt install python3-dev python3-pip
+            $ sudo pip3 install -U virtualenv
+
+    .. tab:: mac OS
+
+        Install the Homebrew package manager if you haven't already.
+
+        .. code-block:: bash
+
+            $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+            $ export PATH="/usr/local/bin:/usr/local/sbin:$PATH"
+            $ brew update
+            $ brew install python  # Python 3
+            $ sudo pip3 install -U virtualenv  # system-wide install
+
+    .. tab:: Windows
+
+        .. raw:: html
+
+            Make sure the Microsoft VC++ Compiler is installed, so python can compile
+            any dependencies. You can get the compiler from <a class="reference external"
+            href="https://visualstudio.microsoft.com/visual-cpp-build-tools/"
+            target="_blank">Visual Studio</a>. Download the installer and select
+            VC++ Build tools in the list.
+
+        .. code-block:: bat
+
+            C:\> pip3 install -U pip virtualenv
+
+
+2. Create a virtual environment (strongly recommended)
+######################################################
+
+Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_ provide isolated Python environments, which are more practical than installing packages systemwide. They also let you install packages without root privileges.
+
+.. tabs::
+
+    .. tab:: Ubuntu / mac OS
+
+        Create a new virtual environment by choosing a Python interpreter and making a ``./venv`` directory to hold it:
+
+        .. code-block:: bash
+
+            $ virtualenv --system-site-packages -p python3 ./venv
+
+        Activate the virtual environment:
+
+        .. code-block:: bash
+
+            $ source ./venv/bin/activate
+
+    .. tab:: Windows
+
+        Create a new virtual environment by choosing a Python interpreter and making a ``.\venv`` directory to hold it:
+
+        .. code-block:: bat
+
+            C:\> virtualenv --system-site-packages -p python3 ./venv
+
+        Activate the virtual environment:
+
+        .. code-block:: bat
+
+            C:\> .\venv\Scripts\activate
+
+
+3. Install Rasa and Rasa X
+##########################
+
+.. tabs::
+
+    .. tab:: Inside a virtualenv
+
+        To install both Rasa and Rasa X in one go:
+
+        .. code-block:: bash
+
+            (venv) $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
+
+        If you just want to install Rasa without Rasa X:
+
+        .. code-block:: bash
+
+            (venv) $ pip install rasa
+
+    .. tab:: System-wide install
+
+        To install both Rasa and Rasa X in one go:
+
+        .. code-block:: bash
+
+            $ pip3 install --user rasa-x --extra-index-url https://pypi.rasa.com/simple
+
+        If you just want to install Rasa without Rasa X:
+
+        .. code-block:: bash
+
+            $ pip3 install --user rasa
+
+.. note::
+
+    That's it! Rasa is now installed.
+
+
+Building from Source
+~~~~~~~~~~~~~~~~~~~~
 
 If you want to use the development version of Rasa, you can get it from GitHub:
 
 .. code-block:: bash
 
-    git clone https://github.com/RasaHQ/rasa.git
-    cd rasa
-    pip install -r requirements.txt
-    pip install -e .
-
-Windows Prerequisites
-~~~~~~~~~~~~~~~~~~~~~
-
-.. raw:: html
-
-     Make sure the Microsoft VC++ Compiler is installed, so python can compile
-     any dependencies. You can get the compiler from <a class="reference external"
-     href="https://visualstudio.microsoft.com/visual-cpp-build-tools/"
-     target="_blank">Visual Studio</a>. Download the installer and select
-     VC++ Build tools in the list.
+    $ git clone https://github.com/RasaHQ/rasa.git
+    $ cd rasa
+    $ pip install -r requirements.txt
+    $ pip install -e .
 
 
 NLU Pipeline Dependencies
