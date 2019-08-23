@@ -88,7 +88,9 @@ class Component(object, metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = ConfigManager.override_defaults(self.defaults, component_config)
+        self.component_config = ConfigManager.override_defaults(
+            self.defaults, component_config
+        )
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None

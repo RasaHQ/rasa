@@ -9,7 +9,6 @@ import threading
 
 
 class DialogueFileLogger:
-
     conversations = dict()
     lock = threading.Lock()
     counter = 1
@@ -17,22 +16,28 @@ class DialogueFileLogger:
     @staticmethod
     def add_user_statement(user_id: str, text: str, intent: str, entities: str):
         if str(user_id) not in DialogueFileLogger.conversations:
-            DialogueFileLogger.conversations[str(user_id)] =\
-                    SingleDialogueFileLogger(DialogueFileLogger._generate_file_name())
-        DialogueFileLogger.conversations[str(user_id)].add_user_statement(text, intent, entities)
+            DialogueFileLogger.conversations[str(user_id)] = SingleDialogueFileLogger(
+                DialogueFileLogger._generate_file_name()
+            )
+        DialogueFileLogger.conversations[str(user_id)].add_user_statement(
+            text, intent, entities
+        )
 
     @staticmethod
     def add_bot_statements(user_id: str, utterances: list, action: str):
         if str(user_id) not in DialogueFileLogger.conversations:
-            DialogueFileLogger.conversations[str(user_id)] =\
-                    SingleDialogueFileLogger(DialogueFileLogger._generate_file_name())
+            DialogueFileLogger.conversations[str(user_id)] = SingleDialogueFileLogger(
+                DialogueFileLogger._generate_file_name()
+            )
         for utterance in utterances:
-            DialogueFileLogger.conversations[str(user_id)].add_bot_statement(utterance, action)
+            DialogueFileLogger.conversations[str(user_id)].add_bot_statement(
+                utterance, action
+            )
 
     @staticmethod
     def _generate_file_name():
         with DialogueFileLogger.lock:
-            name = str(datetime.now()) + '-' + str(DialogueFileLogger.counter)
+            name = str(datetime.now()) + "-" + str(DialogueFileLogger.counter)
             DialogueFileLogger.counter = (DialogueFileLogger.counter + 1) % 10000
             return name
 
@@ -49,15 +54,19 @@ class DialogueFileLogger:
 
 
 atexit.register(DialogueFileLogger.save_all)
-signal.signal(signal.SIGTERM, DialogueFileLogger.save_all)  # pytype: disable=wrong-arg-types
-signal.signal(signal.SIGINT, DialogueFileLogger.save_all)  # pytype: disable=wrong-arg-types
+signal.signal(
+    signal.SIGTERM, DialogueFileLogger.save_all  # pytype: disable=wrong-arg-types
+)
+signal.signal(
+    signal.SIGINT, DialogueFileLogger.save_all  # pytype: disable=wrong-arg-types
+)
 
 
 class SingleDialogueFileLogger:
     def __init__(self, filename):
         self.filename = filename
         self.conversation = dict()
-        self.conversation["version"] = '1'
+        self.conversation["version"] = "1"
         self.conversation["date"] = str(date.today())
         self.conversation["statements"] = list()
 
@@ -66,19 +75,23 @@ class SingleDialogueFileLogger:
         statement["speaker"] = "User"
         statement["time"] = self._get_time()
         statement["text"] = str(text)
-        statement["intent"] = json.loads(str(intent).replace('\'', '\"'))
+        statement["intent"] = json.loads(str(intent).replace("'", '"'))
         statement["entities"] = str(entities)
-        self.conversation["statements"].append(statement)  # pytype: disable=attribute-error
-    
+        self.conversation["statements"].append(  # pytype: disable=attribute-error
+            statement
+        )
+
     def add_bot_statement(self, utterance: str, action: str):
-        text = re.search(r'BotUttered\(text\: (.*?)\,', str(utterance))
+        text = re.search(r"BotUttered\(text\: (.*?)\,", str(utterance))
         if text is not None:  # Ignore empty bot messages
             statement = dict()
             statement["speaker"] = "Bot"
             statement["time"] = self._get_time()
             statement["action"] = str(action)
             statement["text"] = text.group(1)
-            self.conversation["statements"].append(statement)  # pytype: disable=attribute-error
+            self.conversation["statements"].append(  # pytype: disable=attribute-error
+                statement
+            )
 
     def _get_time(self) -> str:
         now = datetime.now()

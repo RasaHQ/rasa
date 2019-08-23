@@ -10,9 +10,7 @@ from rasa.nlu.utils import write_to_file
 
 class TrainingDataConverter:
     @staticmethod
-    def convert(
-        data_file: Text, out_file: Text, output_format: Text, language: Text
-    ):
+    def convert(data_file: Text, out_file: Text, output_format: Text, language: Text):
         if not os.path.exists(data_file):
             print_error(
                 "Data file '{}' does not exist. Provide a valid NLU data file using "

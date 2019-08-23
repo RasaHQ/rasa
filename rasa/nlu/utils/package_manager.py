@@ -27,7 +27,9 @@ class PackageManager:
         for component_name in component_names:
             component_class = registry.get_component_class(component_name)
             failed_imports.update(
-                PackageManager.find_unavailable_packages(component_class.required_packages())
+                PackageManager.find_unavailable_packages(
+                    component_class.required_packages()
+                )
             )
         if failed_imports:  # pragma: no cover
             # if available, use the development file to figure out the correct
@@ -35,7 +37,7 @@ class PackageManager:
             raise Exception(
                 "Not all required importable packages are installed. "
                 + "To use this pipeline, you need to install the "
-                  "missing dependencies. "
+                "missing dependencies. "
                 + "Please install the package(s) that contain the module(s): {}".format(
                     ", ".join(failed_imports)
                 )

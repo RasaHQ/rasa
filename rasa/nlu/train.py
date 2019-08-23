@@ -75,7 +75,7 @@ async def train(
     else:
         training_data = DataManager.load_data(data, nlu_config.language)
 
-    training_data.print_stats()
+    training_data.print_stats()  # pytype: disable=attribute-error
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:

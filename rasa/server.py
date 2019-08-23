@@ -218,14 +218,17 @@ def _create_emulator(mode: Optional[Text]) -> ResponseConverter:
 
     elif mode.lower() == "wit":
         from rasa.nlu.emulators.wit import WitConverter
+
         return WitConverter()
 
     elif mode.lower() == "luis":
         from rasa.nlu.emulators.luis import LUISConverter
+
         return LUISConverter()
 
     elif mode.lower() == "dialogflow":
         from rasa.nlu.emulators.dialogflow import DialogFlowConverter
+
         return DialogFlowConverter()
 
     else:

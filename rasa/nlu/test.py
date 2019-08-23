@@ -688,7 +688,11 @@ def is_intent_classifier_present(interpreter: Interpreter) -> bool:
 def remove_pretrained_extractors(pipeline: ComponentPipeline) -> ComponentPipeline:
     """Removes pretrained extractors from the pipeline so that entities
        from pre-trained extractors are not predicted upon parsing"""
-    components = [component for component in pipeline if component.name not in PRETRAINED_EXTRACTORS]
+    components = [
+        component
+        for component in pipeline
+        if component.name not in PRETRAINED_EXTRACTORS
+    ]
     pipeline = ComponentPipeline(components=components)
     return pipeline
 
@@ -724,7 +728,9 @@ def run_evaluation(
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
-    test_data = training_data.DataManager.load_data(data_path, interpreter.model_metadata.language)
+    test_data = training_data.DataManager.load_data(
+        data_path, interpreter.model_metadata.language
+    )
 
     result = {
         "intent_evaluation": None,

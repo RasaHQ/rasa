@@ -302,7 +302,12 @@ class MessageProcessor:
                 message.text, message.message_id, tracker
             )
 
-        self.dialogue_file_logger.add_user_statement(message.sender_id, message.text, parse_data["intent"], parse_data["entities"])
+        self.dialogue_file_logger.add_user_statement(
+            message.sender_id,
+            message.text,
+            parse_data["intent"],
+            parse_data["entities"],
+        )
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
@@ -525,7 +530,9 @@ class MessageProcessor:
         if events is None:
             events = []
 
-        self.dialogue_file_logger.add_bot_statements(tracker.sender_id, ["{}".format(e) for e in events], action_name)
+        self.dialogue_file_logger.add_bot_statements(
+            tracker.sender_id, ["{}".format(e) for e in events], action_name
+        )
 
         logger.debug(
             "Action '{}' ended with events '{}'".format(
