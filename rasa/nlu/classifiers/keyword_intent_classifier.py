@@ -66,8 +66,9 @@ class KeywordIntentClassifier(Component):
                     ambiguous_mappings.append((intent2, ex2))
                     logger.warning(
                         "Keyword '{}' is an example of intent '{}' and"
-                        " intent '{}',"
-                        " it will be removed from both."
+                        " intent '{}', it will be removed from both.\n"
+                        "Remove (one of) the conflicting examples for the"
+                        " training data."
                         "".format(ex1, intent1, intent2)
                     )
                 elif (
@@ -78,8 +79,10 @@ class KeywordIntentClassifier(Component):
                     logger.warning(
                         "Keyword '{}' is an example of intent '{}',"
                         "but also a substring of '{}', which is an "
-                        "example of intent '{}.\n"
-                        " '{}' will be removed from the list of keywords."
+                        "example of intent '{}."
+                        " '{}' will be removed from the list of keywords.\n"
+                        "Remove (one of) the conflicting examples for the"
+                        " training data."
                         "".format(ex1, intent1, ex2, intent2, ex1)
                     )
         for intent, example in ambiguous_mappings:
@@ -93,7 +96,8 @@ class KeywordIntentClassifier(Component):
         intent_name = self._map_keyword_to_intent(message.text)
         confidence = 0.0 if intent_name is None else 1.0
         intent = {"name": intent_name, "confidence": confidence}
-        message.set("intent", intent, add_to_output=True)
+        if message.get("intent") is None or intent is not None:
+            message.set("intent", intent, add_to_output=True)
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
         for example, intent in self.intent_keyword_map.items():

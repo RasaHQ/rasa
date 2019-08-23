@@ -463,8 +463,7 @@ KeywordIntentClassifier
     The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user message.
     The keywords for an intent are the examples of that intent in the NLU training data.
     This means the entire example is the keyword, not the individual words in the example.
-    In the case of multiple keywords being found the message will not be classified.
-    .. note:: This classifier is intended only for small projects or to get started.
+    .. note:: This classifier is intended only for small projects or to get started. If you have few training data you can use the ``pretrained_embeddings_spacy`` pipeline to get started.
 
 :Configuration:
 
