@@ -1,3 +1,2 @@
 pipeline:
-  - name: "CountVectorsFeaturizer"
   - name: "KeywordIntentClassifier"

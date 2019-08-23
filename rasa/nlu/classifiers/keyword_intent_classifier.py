@@ -79,11 +79,13 @@ class KeywordIntentClassifier(Component):
         self._validate_keyword_map()
 
     def _validate_keyword_map(self):
+        re_flag = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
+
         ambiguous_mappings = []
         for ex1, intent1 in self.intent_keyword_map.items():
             for ex2, intent2 in self.intent_keyword_map.items():
                 if (
-                    re.search(r"\b" + ex1 + r"\b", ex2, flags=self.re_case_flag)
+                    re.search(r"\b" + ex1 + r"\b", ex2, flags=re_flag)
                     and intent1 != intent2
                 ):
                     ambiguous_mappings.append((intent1, ex1))
@@ -111,8 +113,9 @@ class KeywordIntentClassifier(Component):
             message.set("intent", intent, add_to_output=True)
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
+        re_flag = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
         for example, intent in self.intent_keyword_map.items():
-            if re.search(r"\b" + example + r"\b", text, flags=self.re_case_flag):
+            if re.search(r"\b" + example + r"\b", text, flags=re_flag):
                 logger.debug(
                     "KeywordClassifier matched keyword '{}' to"
                     " intent '{}'.".format(example, intent)
