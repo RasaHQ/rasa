@@ -41,6 +41,7 @@ from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.logger import DialogueFileLogger
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,8 @@ class MessageProcessor:
         self.message_preprocessor = message_preprocessor
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
+
+        self.dialogue_file_logger = DialogueFileLogger()
 
     async def handle_message(
         self, message: UserMessage
@@ -299,6 +302,8 @@ class MessageProcessor:
                 message.text, message.message_id, tracker
             )
 
+        self.dialogue_file_logger.add_user_statement(message.sender_id, message.text, parse_data["intent"], parse_data["entities"])
+
         logger.debug(
             "Received user message '{}' with intent '{}' "
             "and entities '{}'".format(
@@ -519,6 +524,8 @@ class MessageProcessor:
         # returns `None` for some other reason.
         if events is None:
             events = []
+
+        self.dialogue_file_logger.add_bot_statements(tracker.sender_id, ["{}".format(e) for e in events], action_name)
 
         logger.debug(
             "Action '{}' ended with events '{}'".format(
