@@ -135,6 +135,9 @@ class MappingPolicy(Policy):
                         action, intent, latest_action.policy
                     )
                 )
+        elif action == ACTION_RESTART_NAME:
+            idx = domain.index_for_action(ACTION_RESTART_NAME)
+            prediction[idx] = 1
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "
