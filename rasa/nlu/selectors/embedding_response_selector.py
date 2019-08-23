@@ -115,9 +115,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "C_emb": 0.8,
         # dropout rate for rnn
         "droprate": 0.2,
-        "label_tokenization_flag": False,
-        # delimiter string to split the labels
-        "label_split_symbol": "_",
         # visualization of accuracy
         # how often to calculate training accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance

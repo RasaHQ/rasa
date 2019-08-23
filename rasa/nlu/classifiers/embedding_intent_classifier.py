@@ -102,11 +102,6 @@ class EmbeddingIntentClassifier(Component):
         "C_emb": 0.8,
         # dropout rate for rnn
         "droprate": 0.2,
-        # flag: if true, the algorithm will split the labels into tokens
-        #       and use bag-of-words representations for them
-        "label_tokenization_flag": False,
-        # delimiter string to split the labels
-        "label_split_symbol": "_",
         # visualization of accuracy
         # how often to calculate training accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
@@ -204,16 +199,6 @@ class EmbeddingIntentClassifier(Component):
         self.C_emb = config["C_emb"]
         self.droprate = config["droprate"]
 
-    def _load_flag_if_tokenize_labels(self, config: Dict[Text, Any]) -> None:
-        self.label_tokenization_flag = config["label_tokenization_flag"]
-        self.label_split_symbol = config["label_split_symbol"]
-        if self.label_tokenization_flag and not self.label_split_symbol:
-            logger.warning(
-                "label_split_symbol was not specified, "
-                "so label tokenization will be ignored"
-            )
-            self.label_tokenization_flag = False
-
     def _load_visual_params(self, config: Dict[Text, Any]) -> None:
         self.evaluate_every_num_epochs = config["evaluate_every_num_epochs"]
         if self.evaluate_every_num_epochs < 1:
@@ -226,7 +211,6 @@ class EmbeddingIntentClassifier(Component):
         self._load_nn_architecture_params(self.component_config)
         self._load_embedding_params(self.component_config)
         self._load_regularization_params(self.component_config)
-        self._load_flag_if_tokenize_labels(self.component_config)
         self._load_visual_params(self.component_config)
 
     # package safety checks
@@ -307,27 +291,6 @@ class EmbeddingIntentClassifier(Component):
         Y = np.array(Y)
 
         return train_utils.SessionData(X=X, Y=Y, label_ids=label_ids)
-        # X = np.stack(
-        #     [
-        #         e.get("text_features")
-        #         for e in training_data.intent_examples
-        #         if e.get(attribute)
-        #     ]
-        # )
-        #
-        # label_ids = np.array(
-        #     [
-        #         label_id_dict[e.get(attribute)]
-        #         for e in training_data.intent_examples
-        #         if e.get(attribute)
-        #     ]
-        # )
-        #
-        # Y = np.stack(
-        #     [self._encoded_all_label_ids[label_id_idx] for label_id_idx in label_ids]
-        # )
-        #
-        # return train_utils.SessionData(X=X, Y=Y, label_ids=label_ids)
 
     # tf helpers:
     def _create_tf_embed_fnn(
