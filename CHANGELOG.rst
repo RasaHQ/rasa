@@ -47,6 +47,7 @@ Changed
   hold out validation set that is excluded from training data
 - defaults parameters and architectures for both ``EmbeddingPolicy`` and
   ``EmbeddingIntentClassifier`` are changed (this is a breaking change)
+- evaluation of NER does not include 'no-entity' anymore
 
 Fixed
 -----
