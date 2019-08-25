@@ -458,6 +458,7 @@ class SQLTrackerStore(TrackerStore):
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
+        return DialogueStateTracker(sender_id, [])
         with self.session_scope() as session:
             query = session.query(self.SQLEvent)
             result = query.filter_by(sender_id=sender_id).all()
@@ -484,7 +485,7 @@ class SQLTrackerStore(TrackerStore):
             self.stream_events(tracker)
 
         events = self._additional_events(tracker)  # only store recent events
-
+        return
         with self.session_scope() as session:
             for event in events:
                 data = event.as_dict()
@@ -514,6 +515,7 @@ class SQLTrackerStore(TrackerStore):
     def number_of_existing_events(self, sender_id: Text) -> int:
         """Return number of stored events for a given sender id."""
 
+        return 0
         with self.session_scope() as session:
             query = session.query(self.SQLEvent.sender_id)
             return query.filter_by(sender_id=sender_id).count() or 0
