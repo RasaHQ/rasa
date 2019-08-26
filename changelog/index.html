@@ -198,12 +198,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.2.4
+          viewing: 1.2.5
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href=".././1.2.5/changelog/">1.2.5</a>
               <a href=".././1.2.4/changelog/">1.2.4</a>
               <a href=".././1.2.3/changelog/">1.2.3</a>
               <a href=".././1.2.2/changelog/">1.2.2</a>
@@ -231,6 +232,7 @@
           </div>
           <p>branches</p>
           <div class="dropdown-content">
+              <a href=".././1.2-master-merge/changelog/">1.2-master-merge</a>
               <a href=".././master/changelog/">master</a>
           </div>
       </div>
@@ -261,8 +263,8 @@
 <h1>Rasa Change Log<a class="headerlink" href="#rasa-change-log" title="Permalink to this headline">¶</a></h1>
 <p>All notable changes to this project will be documented in this file.
 This project adheres to <a class="reference external" href="http://semver.org/">Semantic Versioning</a> starting with version 1.0.</p>
-<div class="section" id="unreleased-1-2-5-master">
-<h2>[Unreleased 1.2.5] - <a class="reference external" href="https://github.com/RasaHQ/rasa/">master</a><a class="headerlink" href="#unreleased-1-2-5-master" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="unreleased-1-2-6-master">
+<h2>[Unreleased 1.2.6] - <a class="reference external" href="https://github.com/RasaHQ/rasa/">master</a><a class="headerlink" href="#unreleased-1-2-6-master" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="added">
 <h3>Added<a class="headerlink" href="#added" title="Permalink to this headline">¶</a></h3>
 </div>
@@ -277,20 +279,28 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 </div>
 </div>
 <div class="section" id="id1">
-<h2>[1.2.4] - 2019-08-23<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<h2>[1.2.5] - 2019-08-26<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id2">
 <h3>Added<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>SSL support for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> command. Certificate can be specified using
+<code class="docutils literal notranslate"><span class="pre">--ssl-certificate</span></code> and <code class="docutils literal notranslate"><span class="pre">--ssl-keyfile</span></code>.</li>
+</ul>
 </div>
 <div class="section" id="id3">
-<h3>Changed<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<h3>Fixed<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">'/restart'</span></code> will now also restart the bot if the tracker is paused</li>
+</ul>
+</div>
 </div>
 <div class="section" id="id4">
-<h3>Removed<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
-</div>
+<h2>[1.2.4] - 2019-08-23<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="id5">
 <h3>Fixed<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>the <code class="docutils literal notranslate"><span class="pre">SocketIO</span></code> input channel now allows accesses from other origins (fixes <code class="docutils literal notranslate"><span class="pre">SocketIO</span></code> channel on Rasa X)</li>
+<li>the <code class="docutils literal notranslate"><span class="pre">SocketIO</span></code> input channel now allows accesses from other origins
+(fixes <code class="docutils literal notranslate"><span class="pre">SocketIO</span></code> channel on Rasa X)</li>
 </ul>
 </div>
 </div>
@@ -300,14 +310,15 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <h3>Changed<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>messages with multiple entities are now handled properly with e2e evaluation</li>
-<li><code class="docutils literal notranslate"><span class="pre">data/test_evaluations/end_to_end_story.md</span></code> was re-written in the restaurantbot domain</li>
+<li><code class="docutils literal notranslate"><span class="pre">data/test_evaluations/end_to_end_story.md</span></code> was re-written in the
+restaurantbot domain</li>
 </ul>
 </div>
 <div class="section" id="id8">
 <h3>Fixed<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Free text input was not allowed in the Rasa shell when the response template contained buttons,
-which has now been fixed.</li>
+<li>Free text input was not allowed in the Rasa shell when the response template
+contained buttons, which has now been fixed.</li>
 </ul>
 </div>
 </div>
@@ -342,7 +353,8 @@ webhook was set twice</li>
 <h3>Added<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>add root route to server started without <code class="docutils literal notranslate"><span class="pre">--enable-api</span></code> parameter</li>
-<li>add <code class="docutils literal notranslate"><span class="pre">--evaluate-model-directory</span></code> to <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> to evaluate models from <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span> <span class="pre">-c</span> <span class="pre">&lt;config-1&gt;</span> <span class="pre">&lt;config-2&gt;</span></code></li>
+<li>add <code class="docutils literal notranslate"><span class="pre">--evaluate-model-directory</span></code> to <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">core</span></code> to evaluate models
+from <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">train</span> <span class="pre">core</span> <span class="pre">-c</span> <span class="pre">&lt;config-1&gt;</span> <span class="pre">&lt;config-2&gt;</span></code></li>
 <li>option to send messages to the user by calling
 <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/conversations/{conversation_id}/execute</span></code></li>
 </ul>
