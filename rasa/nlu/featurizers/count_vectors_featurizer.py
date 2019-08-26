@@ -408,7 +408,7 @@ class CountVectorsFeaturizer(Featurizer):
             message.set(
                 MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
                 self._combine_with_existing_features(
-                    message, bag, attribute=MESSAGE_TEXT_ATTRIBUTE
+                    message, bag, feature_name=MESSAGE_TEXT_ATTRIBUTE
                 ),
             )
 
