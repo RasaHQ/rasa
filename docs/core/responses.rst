@@ -14,10 +14,11 @@ your stories, you specify the actions your bot
 should execute. These actions
 can use utterances to send messages back to the user.
 
-There are two ways to manage these utterances:
+There are three ways to manage these utterances:
 
 1. Include your assistant utterances in your domain file, or
-2. Use an external service to generate the responses.
+2. Include responses to open domain intents directly in NLU training file, or
+3. Use an external service to generate the responses.
 
 Including the utterances in the domain
 --------------------------------------
@@ -37,6 +38,32 @@ you need to retrain the assistant before these changes will be picked up.
 
 More details about the format of these responses can be found in the
 documentation about the domain file format: :ref:`utter_templates`.
+
+.. _open-domain-utterances:
+
+Managing responses to open domain intents
+-------------------------------------------
+
+All assistant utterances which should be used as a reply to open domain intents can be included as part of ``common examples`` in
+the NLU training data file.
+
+For example -
+
+.. code-block:: md
+
+    ## intent: faq, response: The supported Python versions are: 2.7,3.5,3.6. The recommended version is 3.6.
+    - which python version should i install
+    - what version of python
+    - which python do you support?
+
+    ## intent: faq, response: Yes [here](https://blog.rasa.com/tag/tutorials/) are some tutorials that can help you get started and learn more about Rasa.
+    - are there some tutorials i could look at?
+    - do you have tutorials?
+    - I need a tutorial on how to use Rasa.
+
+It is recommended that all open domain intents are mapped to a ``respond_`` type action and that action queries the
+tracker to pick the predicted response which would already be stored by the ``ResponseSelector`` component inside the
+NLU pipeline.
 
 
 Managing assistant utterances using an external CMS

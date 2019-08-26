@@ -64,8 +64,8 @@ class EmbeddingIntentClassifier(Component):
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_b": [],
-        # Whether to share the embedding between input words and intent labels
-        "share_embedding": False,
+        # Whether to share the hidden layers between input words and labels
+        "share_hidden": False,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -161,8 +161,8 @@ class EmbeddingIntentClassifier(Component):
             "a": config["hidden_layers_sizes_a"],
             "b": config["hidden_layers_sizes_b"],
         }
-        self.share_embedding = config["share_embedding"]
-        if self.share_embedding:
+        self.share_hidden = config["share_hidden"]
+        if self.share_hidden:
             if self.hidden_layer_sizes["a"] != self.hidden_layer_sizes["b"]:
                 raise ValueError(
                     "If embeddings are shared,"
@@ -328,20 +328,20 @@ class EmbeddingIntentClassifier(Component):
         self.message_embed = self._create_tf_embed_fnn(
             self.a_in,
             self.hidden_layer_sizes["a"],
-            fnn_name="a_b" if self.share_embedding else "a",
+            fnn_name="a_b" if self.share_hidden else "a",
             embed_name="a",
         )
 
         self.label_embed = self._create_tf_embed_fnn(
             self.b_in,
             self.hidden_layer_sizes["b"],
-            fnn_name="a_b" if self.share_embedding else "b",
+            fnn_name="a_b" if self.share_hidden else "b",
             embed_name="b",
         )
         self.all_labels_embed = self._create_tf_embed_fnn(
             all_label_ids,
             self.hidden_layer_sizes["b"],
-            fnn_name="a_b" if self.share_embedding else "b",
+            fnn_name="a_b" if self.share_hidden else "b",
             embed_name="b",
         )
 
@@ -374,7 +374,7 @@ class EmbeddingIntentClassifier(Component):
         self.message_embed = self._create_tf_embed_fnn(
             self.a_in,
             self.hidden_layer_sizes["a"],
-            fnn_name="a_b" if self.share_embedding else "a",
+            fnn_name="a_b" if self.share_hidden else "a",
             embed_name="a",
         )
 
@@ -387,7 +387,7 @@ class EmbeddingIntentClassifier(Component):
         self.label_embed = self._create_tf_embed_fnn(
             self.b_in,
             self.hidden_layer_sizes["b"],
-            fnn_name="a_b" if self.share_embedding else "b",
+            fnn_name="a_b" if self.share_hidden else "b",
             embed_name="b",
         )
 
@@ -399,7 +399,7 @@ class EmbeddingIntentClassifier(Component):
 
     def check_input_dimension_consistency(self, session_data):
 
-        if self.share_embedding:
+        if self.share_hidden:
             if session_data.X[0].shape[-1] != session_data.Y[0].shape[-1]:
                 raise ValueError(
                     "If embeddings are shared "

@@ -10,12 +10,13 @@ Actions
 .. edit-link::
 
 Actions are the things your bot runs in response to user input.
-There are three kinds of actions in Rasa:
+There are four kinds of actions in Rasa:
 
  1. **Utterance actions**: start with ``utter_``, just send a message
     to the user
- 2. **Custom actions**: any other action, these actions can run arbitrary code
- 3. **Default actions**: e.g. ``action_listen``, ``action_restart``,
+ 2. **Open Domain response actions**: start with ``respond_``, send a selected message from different candidates
+ 3. **Custom actions**: any other action, these actions can run arbitrary code
+ 4. **Default actions**: e.g. ``action_listen``, ``action_restart``,
     ``action_default_fallback``
 
 .. contents::
@@ -41,6 +42,24 @@ See :ref:`responses` for more details.
 If you use an external NLG service, you don't need to specify the
 templates in the domain, but you still need to add the utterance names
 to the actions list of the domain.
+
+.. _open-domain-response-actions:
+
+Open Domain Utterance Actions
+-----------------------------
+
+To respond to open domain intents, it is highly recommended to `map` all such intents to a action of this type using
+:ref:`mapping-policy`.
+The naming convention of this type of action is kept strict due to tight coupling of the action to the model which predicts the
+actual sentence for the assistant's utterance. The template to be followed is ``respond_<open-domain-intent>``.
+So, if you have a open domain intent named ``faq`` then the corresponding action name will be named ``respond_faq``
+
+All such actions are served by ``ActionUtterPredictedResponse`` which queries the tracker for the response predicted by
+``ResponseSelector`` inside the NLU pipeline. See :ref:`open-domain-utterances` for more details on how to specify response
+utterances of this type.
+
+In addition to these actions being `mapped` to their corresponding intents, you can still include them in training data stories
+to specify a follow up action, if any, after the open domain utterance action is triggered.
 
 .. _custom-actions:
 

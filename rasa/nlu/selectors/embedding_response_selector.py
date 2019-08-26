@@ -68,6 +68,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     name = "ResponseSelector"
 
+    # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words

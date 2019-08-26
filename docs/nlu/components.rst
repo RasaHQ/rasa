@@ -160,14 +160,14 @@ RegexFeaturizer
 CountVectorsFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Creates bag-of-words representation of intent features
+:Short: Creates bag-of-words representation of user message and label(intent and response) features
 :Outputs:
    nothing, used as an input to intent classifiers that
    need bag-of-words representation of intent features
    (e.g. ``EmbeddingIntentClassifier``)
 :Requires: nothing
 :Description:
-    Creates bag-of-words representation of intent features using
+    Creates bag-of-words representation of user message and label features using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
@@ -219,10 +219,18 @@ CountVectorsFeaturizer
             Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom additional preprocessor.
             Unseen words will be substituted with ``OOV_token`` **only** if this token is present in the training data or ``OOV_words`` list is provided.
 
+    Sharing Vocabulary between user message and labels:
+
+        .. note:: Enabled only if ``use_shared_vocab`` is ``True``
+
+        Build a common vocabulary set between tokens in labels and user message.
+
     .. code-block:: yaml
 
         pipeline:
         - name: "CountVectorsFeaturizer"
+          # whether to use a shared vocab
+          "use_shared_vocab": False,
           # whether to use word or character n-grams
           # 'char_wb' creates character n-grams only inside word boundaries
           # n-grams at the edges of words are padded with space.
@@ -389,13 +397,6 @@ EmbeddingIntentClassifier
               empty intent ``None`` is predicted with confidence ``0.0``.
 
 :Configuration:
-    If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-    modeling hierarchical intent structure, use these flags:
-
-    - tokenization of intent labels:
-        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them, default ``false``;
-        - ``intent_split_symbol`` sets the delimiter string to split the intent labels, default ``_``.
-
 
     The algorithm also has hyperparameters to control:
 
@@ -407,6 +408,7 @@ EmbeddingIntentClassifier
             - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before
               the embedding layer for intent labels, the number of hidden layers
               is equal to the length of the list
+            - ``share_hidden`` if set to True, shares the hidden layers between user inputs and intent label
 
         - training:
 
@@ -473,6 +475,58 @@ EmbeddingIntentClassifier
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
+
+.. _response-selector:
+
+Selectors
+---------
+
+Response Selector
+^^^^^^^^^^^^^^^^^^
+
+:Short: Response Selector
+:Outputs: ``respond_<intent>_response`` and ``respond_<intent>_response_ranking``
+:Requires: A featurizer
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "respond_faq_response: {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+            "respond_faq_response_ranking": [
+                {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+                {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
+            ]
+        }
+
+:Description:
+    The response selector embeds user inputs and response labels into the same space. It follows exactly the same
+    neural network architecture and optimization as the ``EmbeddingIntentClassifier``.
+
+    The response selector needs to be preceded by a featurizer in the pipeline.
+    This featurizer creates the features used for the embeddings.
+    It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
+    by ``SpacyNLP`` and ``SpacyTokenizer``.
+
+    .. note:: If during prediction time a message contains **only** words unseen during training,
+              and no Out-Of-Vacabulary preprocessor was used,
+              empty response ``None`` is predicted with confidence ``0.0``.
+
+:Configuration:
+
+    The algorithm includes all the hyperparameters that ``EmbeddingIntentClassifier`` uses.
+    In addition, the component can also be configured to train a response selector for a particular open domain intent.
+
+        - ``response_type``: sets the name of the open domain intent for which this response selector model is trained. Default ``None``
+
+    In the config, you can specify these parameters.
+    The default values are defined in ``ResponseSelector.defaults``:
+
+    .. literalinclude:: ../../rasa/nlu/selectors/embedding_response_selector.py
+       :dedent: 4
+       :start-after: # default properties (DOC MARKER - don't remove)
+       :end-before: # end default properties (DOC MARKER - don't remove)
+
 .. _tokenizers:
 
 Tokenizers
@@ -488,6 +542,13 @@ WhitespaceTokenizer
     Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
     extractor.
 :Configuration:
+
+    If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+    modeling hierarchical intent structure, or use a different delimiter than whitespace for ``response`` key, use these flags:
+
+    - tokenization of intent and response labels:
+        - ``label_split_symbol`` sets the delimiter string to split the intent and response labels, default is whitespace.
+
     Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
 
     .. code-block:: yaml

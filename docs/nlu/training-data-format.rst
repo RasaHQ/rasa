@@ -25,7 +25,7 @@ Markdown Format
 Markdown is the easiest Rasa NLU format for humans to read and write.
 Examples are listed using the unordered
 list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
-Examples are grouped by intent, and entities are annotated as Markdown links,
+Examples are grouped by intent and an optional response and entities are annotated as Markdown links,
 e.g. ``[entity](entity name)``.
 
 .. code-block:: md
@@ -39,6 +39,11 @@ e.g. ``[entity](entity name)``.
     ## intent:greet
     - hey
     - hello
+
+    ## intent: chitchat, response: I am usually called the bank bot, but you could give me a name too. <!-- open domain conversation -->
+    - What's your name?
+    - What can I call you?
+    - May I ask your name please?
 
     ## synonym:savings   <!-- synonyms, method 2 -->
     - pink pig
@@ -95,16 +100,17 @@ examples in the ``common_examples`` array.
 Regex features are a tool to help the classifier detect entities or intents and improve the performance.
 
 
-Improving Intent Classification and Entity Recognition
+Improving Intent Classification, Open domain Conversation and Entity Recognition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Common Examples
 ---------------
 
-Common examples have three components: ``text``, ``intent``, and ``entities``. The first two are strings while the last one is an array.
+Common examples have four components: ``text``, ``intent``, ``response`` and ``entities``. The first three are strings while the last one is an array.
 
  - The *text* is the user message [required]
  - The *intent* is the intent that should be associated with the text [optional]
+ - The *response* is the reply you want your bot to utter to any open domain conversation.
  - The *entities* are specific parts of the text which need to be identified [optional]
 
 Entities are specified with a ``start`` and  an ``end`` value, which together make a python
@@ -190,6 +196,39 @@ directly specified in the training data.
     For example if there are false positives or other noise in the table,
     this can hurt performance. So make sure your lookup tables contain
     clean data.
+
+
+.. _open-domain:
+
+Open Domain Conversations
+-------------
+Open domain conversations can include small talk conversations, commonly known as chitchat, or generic FAQ questions that
+user may ask your bot. It may be tough to assign an intent to each of these type of questions and hence you might want to
+`respond` with pre-defined or generic responses.
+
+Ability to handle open domain conversations can be integrated by adding training data examples for the ``ResponseSelector`` component in
+your NLU pipeline. These examples are optional and are added together with examples for intent classification.
+
+.. code-block:: md
+
+    ## intent: faq, response: The supported Python versions are: 2.7,3.5,3.6. The recommended version is 3.6.
+    - which python version should i install
+    - what version of python
+    - which python do you support?
+
+    ## intent: faq, response: Yes [here](https://blog.rasa.com/tag/tutorials/) are some tutorials that can help you get started and learn more about Rasa.
+    - are there some tutorials i could look at?
+    - do you have tutorials?
+    - I need a tutorial on how to use Rasa.
+
+All such intents which have a set response defined in the training data like the example above are called open domain intents.
+Each open domain intent can have its own model for picking an appropriate response for any
+user utterance classified under it or it can share one common model across all open domain intents. For more details, check the
+documentation for :ref:`response-selector`
+
+.. warning::
+    Each open domain intent must necessarily have a response added to all of its training examples. If there are training examples
+    for which ``response`` key is missing, this will be caught in the data validation stage.
 
 
 Normalizing Data

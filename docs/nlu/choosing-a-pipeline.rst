@@ -74,10 +74,9 @@ Multiple Intents
 If you want to split intents into multiple labels,
 e.g. for predicting multiple intents or for modeling hierarchical intent structure,
 you can only do this with the supervised embeddings pipeline.
-To do this, use these flags:
+To do this, use these flags in ``Whitespace Tokenizer``:
 
-    - ``intent_tokenization_flag``: If ``true`` the algorithm will split the intent labels into tokens and use a bag-of-words representations for them
-    - ``intent_split_symbol``: sets the delimiter string to split the intent labels. Default ``_``
+    - ``label_split_symbol``: sets the delimiter string to split the intent labels and response labels. Default ``_``
 
 `Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__ is a tutorial on how to use multiple intents in Rasa Core and NLU.
 
@@ -88,10 +87,34 @@ Here's an example configuration:
     language: "en"
 
     pipeline:
+    - name: "WhitespaceTokenizer"
+      label_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
     - name: "EmbeddingIntentClassifier"
-      intent_tokenization_flag: true
-      intent_split_symbol: "+"
+
+
+Open Domain Intents
+-------------------
+
+To accommodate open domain intents, you should include ``ResponseSelector`` component in your NLU pipeline. The component needs
+a tokenizer, a featurizer and an intent classifier to operate on the user message before it can predict a response and hence these
+components should be placed before ``ResponseSelector`` in the NLU configuration. The configuration for ``ResponseSelector``
+should mention the name of the open domain intent for which that corresponding response selector should be trained. If that
+parameter is left empty a shared model will be trained picking training examples across all open domain intents.
+
+    - ``response_type``: sets the name of the open domain intent for which this response selector model is trained. Default ``None``
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "WhitespaceTokenizer"
+      label_split_symbol: "_"
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
+    - name: "ResponseSelector"
+      response_type: faq
 
 
 
@@ -100,7 +123,7 @@ Understanding the Rasa NLU Pipeline
 
 In Rasa NLU, incoming messages are processed by a sequence of components.
 These components are executed one after another
-in a so-called processing pipeline. There are components for entity extraction, for intent classification,
+in a so-called processing pipeline. There are components for entity extraction, for intent classification, response selection,
 pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
 do sentiment analysis, check out :ref:`custom-nlu-components`.
 
@@ -153,7 +176,6 @@ context. After all components are trained and persisted, the
 final context dictionary is used to persist the model's metadata.
 
 
-
 The "entity" object explained
 -----------------------------
 After parsing, the entity is returned as a dictionary.  There are two fields that show information
@@ -190,6 +212,31 @@ exactly. Instead it will return the trained synonym.
     ``1``. The ``SpacyEntityExtractor`` extractor does not provide this information and
     returns ``null``.
 
+
+Result for Response Selection explained
+------------------------
+If your NLU pipeline contains a response selector component, the resultant parsed output of NLU will have two additional keys -
+    - ``respond_<open domain intent>_response``: Similar to ``intent`` key but contains the predicted response instead of intent. This key could be replaced by ``respond_default`` in case ``response_type`` is not specified in component configuration.
+    - ``respond_<open domain intent>_response_ranking``: Ranking with confidences of top 10 candidate responses.
+
+Example result:
+
+.. code-block:: json
+
+    {
+        "text": "What is the recommend python version to install?",
+        "entities": [],
+        "intent": {"confidence": 0.6485910906220309, "name": "faq"},
+        "intent_ranking": [
+            {"confidence": 0.6485910906220309, "name": "faq"},
+            {"confidence": 0.1416153159565678, "name": "greet"}
+        ],
+        "respond_faq_response: {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+        "respond_faq_response_ranking": [
+            {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+            {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
+        ]
+    }
 
 Pre-configured Pipelines
 ------------------------
