@@ -21,7 +21,7 @@ Removed
 
 Fixed
 -----
-
+- fixed bug that occurred when sending ``elements:`` through a channel that doesn't support them
 
 [1.2.4] - 2019-08-23
 ^^^^^^^^^^^^^^^^^^^^
