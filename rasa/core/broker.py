@@ -59,11 +59,11 @@ class EventChannel(object):
 class PikaProducer(EventChannel):
     def __init__(
         self,
-        host,
-        username,
-        password,
-        queue="rasa_core_events",
-        loglevel=logging.WARNING,
+        host: Text,
+        username: Optional[Text],
+        password: Optional[Text],
+        queue: Text = "rasa_core_events",
+        loglevel: Text = logging.WARNING,
     ):
         import pika
 
@@ -73,7 +73,10 @@ class PikaProducer(EventChannel):
         self.host = host
         self.connection = None
         self.channel = None
-        self.credentials = pika.PlainCredentials(username, password)
+        if username and password:
+            self.credentials = pika.PlainCredentials(username, password)
+        else:
+            self.credentials = None
 
     @classmethod
     def from_endpoint_config(
@@ -92,12 +95,21 @@ class PikaProducer(EventChannel):
     def _open_connection(self):
         import pika
 
-        parameters = pika.ConnectionParameters(
-            self.host,
-            credentials=self.credentials,
-            connection_attempts=20,
-            retry_delay=5,
-        )
+        if self.host.startswith("amqp"):
+            # user supplied a amqp url containing all the info
+            parameters = pika.URLParameters(self.host)
+            parameters.connection_attempts = 20
+            parameters.retry_delay = 5
+            if self.credentials:
+                parameters = self.credentials
+        else:
+            # host seems to be just the host, so we use our parameters
+            parameters = pika.ConnectionParameters(
+                self.host,
+                credentials=self.credentials,
+                connection_attempts=20,
+                retry_delay=5,
+            )
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
         self.channel.queue_declare(self.queue, durable=True)
