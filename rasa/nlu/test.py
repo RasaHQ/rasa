@@ -160,6 +160,9 @@ def get_evaluation_metrics(
     predictions = clean_labels(predictions)
 
     labels = get_label_set(targets, exclude_label)
+    if not labels:
+        logger.warning("No labels to evaluate. Skip evaluation.")
+        return {}, 0.0, 0.0, 0.0
 
     report = metrics.classification_report(
         targets, predictions, labels=labels, output_dict=output_dict
@@ -173,7 +176,7 @@ def get_evaluation_metrics(
     return report, precision, f1, accuracy
 
 
-def get_label_set(targets: Iterable[Any], exclude_label: Optional[Text]):
+def get_label_set(targets: Iterable[Any], exclude_label: Optional[Text]) -> List[Text]:
     """Get unique labels. Exclude 'exclude_label' if specified."""
     labels = set(targets)
     if exclude_label and exclude_label in labels:
