@@ -1,0 +1,48 @@
+intents:
+  - greet
+  - goodbye
+  - query_knowledge_base
+
+entities:
+  - object_type
+  - mention
+  - attribute
+  - hotel
+  - restaurant
+  - cuisine
+  - city
+
+slots:
+  object_type:
+    type: unfeaturized
+  mention:
+    type: unfeaturized
+  attribute:
+    type: unfeaturized
+  hotel:
+    type: unfeaturized
+  restaurant:
+    type: unfeaturized
+  city:
+    type: unfeaturized
+  cuisine:
+    type: unfeaturized
+
+actions:
+- utter_greet
+- utter_goodbye
+- utter_ask_rephrase
+- action_query_knowledge_base
+
+templates:
+  utter_greet:
+  - text: "Hey!"
+  - text: "Hello! How can I help you?"
+
+  utter_goodbye:
+  - text: "Bye"
+  - text: "Goodbye. See you soon."
+
+  utter_ask_rephrase:
+  - text: "Sorry, I'm not sure I understand. Can you rephrase?"
+  - text: "Can you please rephrase? I did not got that."

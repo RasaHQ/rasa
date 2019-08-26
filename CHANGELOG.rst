@@ -1,5 +1,6 @@
 :desc: Rasa Changelog
 
+
 Rasa Change Log
 ===============
 
@@ -20,28 +21,41 @@ Added
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
 - The tracker is now avaialble within the interpreter's ``parse`` method, giving the ability to create interpreter classes that use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
+- add example bot ``knowledgebasebot`` to showcase the usage of ``ActionQueryKnowledgeBase``
+- ``softmax`` starspace loss for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
+- ``balanced`` batching strategy for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
+- ``max_history`` parameter for ``EmbeddingPolicy``
 - argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
   the runtime configuration (endpoints and credentials)
 - ``LockStore`` class storing instances of ``TicketLock`` for every ``conversation_id``
 
 Changed
 -------
-- added character-level ``CountVectorsFeaturizer`` with empirically found parameters 
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters
   into the ``supervised_embeddings`` NLU pipeline template
 - bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 - NLU evaluations now also stores its output in the output directory like the core evaluation
 - show warning in case a default path is used instead of a provided, invalid path
 - compare mode of ``rasa train core`` allows the whole core config comparison,
   naming style of models trained for comparison is changed (this is a breaking change)
-- Pika keeps a single connection open, instead of open and closing on each incoming event
+- pika keeps a single connection open, instead of open and closing on each incoming event
 - ``RasaChatInput`` fetches the public key from the Rasa X API. The key is used to
   decode the bearer token containing the conversation ID. This requires
-  ``rasa-x>=0.20.2``.
+  ``rasa-x>=0.20.2``
 - change priorities so that the ``MemoizationPolicy`` has higher priority than the ``MappingPolicy``
+- substitute LSTM with Transformer in ``EmbeddingPolicy``
+- ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
+- non zero ``evaluate_on_num_examples`` in ``EmbeddingPolicy``
+  and ``EmbeddingIntentClassifier`` is the size of
+  hold out validation set that is excluded from training data
+- defaults parameters and architectures for both ``EmbeddingPolicy`` and
+  ``EmbeddingIntentClassifier`` are changed (this is a breaking change)
 
 Fixed
 -----
 - ``rasa test nlu`` with a folder of configuration files
+- ``MappingPolicy`` standard featurizer is set to ``None``
+
 
 [1.2.3] - 2019-08-15
 ^^^^^^^^^^^^^^^^^^^^
@@ -100,8 +114,8 @@ Changed
 Fixed
 -----
 - ``rasa test core`` can handle compressed model files
-- Rasa can handle story files containing multi line comments
-- Template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
+- rasa can handle story files containing multi line comments
+- template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
 
 [1.1.8] - 2019-07-25
 ^^^^^^^^^^^^^^^^^^^^
