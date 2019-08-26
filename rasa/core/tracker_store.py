@@ -1,5 +1,7 @@
+import contextlib
 import json
 import logging
+import os
 import pickle
 import typing
 from typing import Iterator, Optional, Text, Iterable, Union
@@ -14,13 +16,11 @@ from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.utils.common import class_from_module_path
-import contextlib
-
 
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine import Engine
-
+    from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -310,9 +310,9 @@ class SQLTrackerStore(TrackerStore):
         event_broker: Optional[EventChannel] = None,
         login_db: Optional[Text] = None,
     ) -> None:
-        import sqlalchemy
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy import create_engine
+        import sqlalchemy.exc
 
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db
@@ -324,7 +324,17 @@ class SQLTrackerStore(TrackerStore):
         # Database might take a while to come up
         while True:
             try:
-                self.engine = create_engine(engine_url)
+                # pool_size and max_overflow can be set to control the number of
+                # connections that are kept in the connection pool. these parameters
+                # are not available for SQLite
+                if dialect != "sqlite":
+                    self.engine = create_engine(
+                        engine_url,
+                        pool_size=int(os.environ.get("SQL_POOL_SIZE", "50")),
+                        max_overflow=int(os.environ.get("SQL_MAX_OVERFLOW", "100")),
+                    )
+                else:
+                    self.engine = create_engine(engine_url)
 
                 # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
@@ -483,9 +493,10 @@ class SQLTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        events = self._additional_events(tracker)  # only store recent events
-
         with self.session_scope() as session:
+            # only store recent events
+            events = self._additional_events(session, tracker)
+
             for event in events:
                 data = event.as_dict()
 
@@ -511,14 +522,16 @@ class SQLTrackerStore(TrackerStore):
             "stored to database".format(tracker.sender_id)
         )
 
-    def number_of_existing_events(self, sender_id: Text) -> int:
-        """Return number of stored events for a given sender id."""
-
-        with self.session_scope() as session:
-            query = session.query(self.SQLEvent.sender_id)
-            return query.filter_by(sender_id=sender_id).count() or 0
-
-    def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
+    def _additional_events(
+        self, session: "Session", tracker: DialogueStateTracker
+    ) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
-        n_events = self.number_of_existing_events(tracker.sender_id)
+
+        n_events = (
+            session.query(self.SQLEvent.sender_id)
+            .filter_by(sender_id=tracker.sender_id)
+            .count()
+            or 0
+        )
+
         return itertools.islice(tracker.events, n_events, len(tracker.events))
