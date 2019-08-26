@@ -59,7 +59,7 @@ class KeywordIntentClassifier(Component):
             ):
                 duplicate_examples.add(ex.text)
                 logger.warning(
-                    "Keyword '{}' is an example of intent '{}' and of "
+                    "Keyword '{}' is a keyword of intent '{}' and of "
                     "intent '{}', it will be removed from the list of "
                     "keyword.\n"
                     "Remove (one of) the duplicates from the training data."
@@ -90,11 +90,11 @@ class KeywordIntentClassifier(Component):
                 ):
                     ambiguous_mappings.append((intent1, keyword1))
                     logger.warning(
-                        "Keyword '{}' is an keywordample of intent '{}', "
-                        "but also a substring of '{}', which is an "
-                        "keywordample of intent '{}."
+                        "Keyword '{}' is a keyword of intent '{}', "
+                        "but also a substring of '{}', which is a "
+                        "keyword of intent '{}."
                         " '{}' will be removed from the list of keywords.\n"
-                        "Remove (one of) the conflicting keywordamples for the"
+                        "Remove (one of) the conflicting keywords for the"
                         " training data."
                         "".format(keyword1, intent1, keyword2, intent2, keyword1)
                     )
