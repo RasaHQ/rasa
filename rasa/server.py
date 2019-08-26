@@ -210,6 +210,25 @@ async def authenticate(request: Request):
     )
 
 
+def create_ssl_context(
+    ssl_certificate: Optional[Text],
+    ssl_keyfile: Optional[Text],
+    ssl_password: Optional[Text],
+) -> Optional["SSLContext"]:
+    """Create a SSL context (for the sanic server) if a proper certificate is passed."""
+
+    if ssl_certificate:
+        import ssl
+
+        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ssl_context.load_cert_chain(
+            ssl_certificate, keyfile=ssl_keyfile, password=ssl_password
+        )
+        return ssl_context
+    else:
+        return None
+
+
 def _create_emulator(mode: Optional[Text]) -> NoEmulator:
     """Create emulator for specified mode.
     If no emulator is specified, we will use the Rasa NLU format."""

@@ -74,25 +74,6 @@ def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
     return app
 
 
-def create_ssl_context(
-    ssl_certificate: Optional[Text],
-    ssl_keyfile: Optional[Text],
-    ssl_password: Optional[Text],
-) -> Optional["SSLContext"]:
-    """Create a SSL context (for the sanic server) if a proper certificate is passed."""
-
-    if ssl_certificate:
-        import ssl
-
-        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
-        ssl_context.load_cert_chain(
-            ssl_certificate, keyfile=ssl_keyfile, password=ssl_password
-        )
-        return ssl_context
-    else:
-        return None
-
-
 def configure_app(
     input_channels: Optional[List["InputChannel"]] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
@@ -170,6 +151,8 @@ def serve_application(
     ssl_keyfile: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
 ):
+    from rasa import server
+
     if not channel and not credentials:
         channel = "cmdline"
 
@@ -187,7 +170,7 @@ def serve_application(
         log_file=log_file,
     )
 
-    ssl_context = create_ssl_context(ssl_certificate, ssl_keyfile, ssl_password)
+    ssl_context = server.create_ssl_context(ssl_certificate, ssl_keyfile, ssl_password)
     protocol = "https" if ssl_context else "http"
 
     logger.info(
