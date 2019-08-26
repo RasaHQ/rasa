@@ -158,7 +158,7 @@ class CRFEntityExtractor(EntityExtractor):
                 "message {}\n"
                 "POS features require a pipeline component "
                 "that provides `spacy_doc` attributes, i.e. `SpacyNLP`. "
-                "See https://nlu.rasa.com/pipeline.html#nlp-spacy "
+                "See https://rasa.com/docs/rasa/nlu/choosing-a-pipeline/#pretrained-embeddings-spacy "
                 "for details".format(message.text)
             )
 
