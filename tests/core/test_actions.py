@@ -127,7 +127,13 @@ async def test_remote_action_runs(
             "sender_id": "my-sender",
             "version": rasa.__version__,
             "tracker": {
-                "latest_message": {"entities": [], "intent": {}, "text": None},
+                "latest_message": {
+                    "entities": [],
+                    "intent": {},
+                    "text": None,
+                    "message_id": None,
+                    "metadata": None,
+                },
                 "active_form": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
@@ -171,7 +177,13 @@ async def test_remote_action_logs_events(
             "sender_id": "my-sender",
             "version": rasa.__version__,
             "tracker": {
-                "latest_message": {"entities": [], "intent": {}, "text": None},
+                "latest_message": {
+                    "entities": [],
+                    "intent": {},
+                    "text": None,
+                    "message_id": None,
+                    "metadata": None,
+                },
                 "active_form": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",

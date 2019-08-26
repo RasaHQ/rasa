@@ -100,36 +100,37 @@ old_style_names = {
 # the preexisting `backends`.
 registered_pipeline_templates = {
     "pretrained_embeddings_spacy": [
-        "SpacyNLP",
-        "SpacyTokenizer",
-        "SpacyFeaturizer",
-        "RegexFeaturizer",
-        "CRFEntityExtractor",
-        "EntitySynonymMapper",
-        "SklearnIntentClassifier",
+        {"name": "SpacyNLP"},
+        {"name": "SpacyTokenizer"},
+        {"name": "SpacyFeaturizer"},
+        {"name": "RegexFeaturizer"},
+        {"name": "CRFEntityExtractor"},
+        {"name": "EntitySynonymMapper"},
+        {"name": "SklearnIntentClassifier"},
     ],
-    "keyword": ["KeywordIntentClassifier"],
+    "keyword": [{"name": "KeywordIntentClassifier"}],
     "supervised_embeddings": [
-        "WhitespaceTokenizer",
-        "RegexFeaturizer",
-        "CRFEntityExtractor",
-        "EntitySynonymMapper",
-        "CountVectorsFeaturizer",
-        "EmbeddingIntentClassifier",
+        {"name": "WhitespaceTokenizer"},
+        {"name": "RegexFeaturizer"},
+        {"name": "CRFEntityExtractor"},
+        {"name": "EntitySynonymMapper"},
+        {"name": "CountVectorsFeaturizer"},
+        {
+            "name": "CountVectorsFeaturizer",
+            "analyzer": "char_wb",
+            "min_ngram": 1,
+            "max_ngram": 4,
+        },
+        {"name": "EmbeddingIntentClassifier"},
     ],
 }
 
 
-def pipeline_template(s: Text) -> Optional[List[Dict[Text, Text]]]:
-    components = registered_pipeline_templates.get(s)
+def pipeline_template(s: Text) -> Optional[List[Dict[Text, Any]]]:
+    import copy
 
-    if components:
-        # converts the list of components in the configuration
-        # format expected (one json object per component)
-        return [{"name": c} for c in components]
-
-    else:
-        return None
+    # do a deepcopy to avoid changing the template configurations
+    return copy.deepcopy(registered_pipeline_templates.get(s))
 
 
 def get_component_class(component_name: Text) -> Type["Component"]:

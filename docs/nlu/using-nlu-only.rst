@@ -5,6 +5,8 @@
 Using NLU Only
 ==============
 
+.. edit-link::
+
 
 If you want to use Rasa only as an NLU component, you can!
 

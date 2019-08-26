@@ -12,6 +12,7 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 
 logger = logging.getLogger(__name__)
@@ -31,18 +32,10 @@ class Policy(object):
         else:
             return cls._standard_featurizer()
 
-    @staticmethod
-    def _load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
-        """Prepare tf.ConfigProto for training"""
-        if config.get("tf_config") is not None:
-            return tf.ConfigProto(**config.pop("tf_config"))
-        else:
-            return None
-
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: Optional[int] = 1,
+        priority: int = DEFAULT_POLICY_PRIORITY,
     ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority

@@ -330,9 +330,12 @@ def list_directory(path: Text) -> List[Text]:
         for base, dirs, files in os.walk(path):
             # sort files for same order
             files = sorted(files, key=cmp_items)
-            # remove hidden files
-            goodfiles = filter(lambda x: not x.startswith("."), files)
-            results.extend(os.path.join(base, f) for f in goodfiles)
+            # add not hidden files
+            good_files = filter(lambda x: not x.startswith("."), files)
+            results.extend(os.path.join(base, f) for f in good_files)
+            # add not hidden directories
+            good_directories = filter(lambda x: not x.startswith("."), dirs)
+            results.extend(os.path.join(base, f) for f in good_directories)
         return results
     else:
         raise ValueError(

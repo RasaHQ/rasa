@@ -20,6 +20,7 @@ from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class SklearnPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
-        priority: int = 1,
+        priority: int = DEFAULT_POLICY_PRIORITY,
         model: Optional["sklearn.base.BaseEstimator"] = None,
         param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
         cv: Optional[int] = None,

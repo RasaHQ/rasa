@@ -1,4 +1,3 @@
-
 :desc: Open source alternative to IBM Watson for conversational bots and NLP
 
 .. _ibm-watson-to-rasa:
@@ -6,9 +5,13 @@
 Rasa as open source alternative to IBM Watson - Migration Tips
 ==============================================================
 
+.. edit-link::
+
+
+
 .. raw:: html
 
-     There is no support for IBM Watson yet. However, a group of community members is working on a way to use <a class="reference external" href="https://developer.ibm.com/tutorials/learn-how-to-export-import-a-watson-assistant-workspace/" target="_blank">exported IBM Watson workspaces</a> in Rasa. If you're interested in that, check out our <a class="reference external" href="https://forum.rasa.com/" target="_blank">Community Forum</a>.
+     <br> There is no support for IBM Watson yet. However, a group of community members is working on a way to use <a class="reference external" href="https://developer.ibm.com/tutorials/learn-how-to-export-import-a-watson-assistant-workspace/" target="_blank">exported IBM Watson workspaces</a> in Rasa. If you're interested in that, check out our <a class="reference external" href="https://forum.rasa.com/" target="_blank">Community Forum</a>.
 
 
 At Rasa, we hear a few different reasons why developers switch from cloud-based tools like IBM Watson:

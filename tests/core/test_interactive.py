@@ -95,6 +95,7 @@ def test_bot_output_format():
         "Buttons:\n"
         "1: yes (/yes)\n"
         '2: no (/no) - {"extra": "extra"}\n'
+        "Type out your own message...\n"
         "Elements:\n"
         '1: element1 - {"buttons": '
         '[{"payload": "/button1", "title": "button1"}]'
