@@ -142,9 +142,11 @@ EN_predicted = [
     },
 ]
 
-EN_entity_result = EntityEvaluationResult(EN_targets, EN_predicted, EN_tokens)
+EN_entity_result = EntityEvaluationResult(
+    EN_targets, EN_predicted, EN_tokens, " ".join([t.text for t in EN_tokens])
+)
 
-EN_entity_result_no_tokens = EntityEvaluationResult(EN_targets, EN_predicted, [])
+EN_entity_result_no_tokens = EntityEvaluationResult(EN_targets, EN_predicted, [], "")
 
 
 def test_token_entity_intersection():
