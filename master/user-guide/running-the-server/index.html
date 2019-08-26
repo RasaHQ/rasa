@@ -279,10 +279,11 @@ with your backend components." />
 <li><a class="reference internal" href="#fetching-models-from-a-remote-storage" id="id4">Fetching Models from a Remote Storage</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#security-considerations" id="id5">Security Considerations</a></li>
-<li><a class="reference internal" href="#endpoint-configuration" id="id6">Endpoint Configuration</a><ul>
-<li><a class="reference internal" href="#connecting-a-tracker-store" id="id7">Connecting a Tracker Store</a></li>
-<li><a class="reference internal" href="#connecting-an-event-broker" id="id8">Connecting an Event Broker</a></li>
+<li><a class="reference internal" href="#configuring-ssl-https" id="id5">Configuring SSL / HTTPS</a></li>
+<li><a class="reference internal" href="#security-considerations" id="id6">Security Considerations</a></li>
+<li><a class="reference internal" href="#endpoint-configuration" id="id7">Endpoint Configuration</a><ul>
+<li><a class="reference internal" href="#connecting-a-tracker-store" id="id8">Connecting a Tracker Store</a></li>
+<li><a class="reference internal" href="#connecting-an-event-broker" id="id9">Connecting an Event Broker</a></li>
 </ul>
 </li>
 </ul>
@@ -372,8 +373,23 @@ expects an empty response with a <code class="docutils literal notranslate"><spa
 For more information see <a class="reference internal" href="../cloud-storage/#cloud-storage"><span class="std std-ref">Cloud Storage</span></a>.</p>
 </div>
 </div>
+<div class="section" id="configuring-ssl-https">
+<span id="server-ssl"></span><h2><a class="toc-backref" href="#id5">Configuring SSL / HTTPS</a><a class="headerlink" href="#configuring-ssl-https" title="Permalink to this headline">¶</a></h2>
+<p>By default the Rasa server is using HTTP for its communication. To secure the
+communication with SSL, you need to provide a valid certificate and the corresponding
+private key file.</p>
+<p>You can specify these files as part of the <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">run</span></code> command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key
+</pre></div>
+</div>
+<p>If you encrypted your keyfile with a password during creation, you need to add
+this password to the command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key --ssl-password mypassword
+</pre></div>
+</div>
+</div>
 <div class="section" id="security-considerations">
-<span id="server-security"></span><h2><a class="toc-backref" href="#id5">Security Considerations</a><a class="headerlink" href="#security-considerations" title="Permalink to this headline">¶</a></h2>
+<span id="server-security"></span><h2><a class="toc-backref" href="#id6">Security Considerations</a><a class="headerlink" href="#security-considerations" title="Permalink to this headline">¶</a></h2>
 <p>We recommend to not expose the Rasa Server to the outside world, but
 rather connect to it from your backend over a private connection (e.g.
 between docker containers).</p>
@@ -418,7 +434,7 @@ if the <code class="docutils literal notranslate"><span class="pre">sender_id</s
 </div>
 </div>
 <div class="section" id="endpoint-configuration">
-<h2><a class="toc-backref" href="#id6">Endpoint Configuration</a><a class="headerlink" href="#endpoint-configuration" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Endpoint Configuration</a><a class="headerlink" href="#endpoint-configuration" title="Permalink to this headline">¶</a></h2>
 <p>To connect Rasa to other endpoints, you can specify an endpoint
 configuration within a YAML file.
 Then run Rasa with the flag
@@ -435,12 +451,12 @@ Then run Rasa with the flag
 These placeholders are then replaced by the value of the environment variable.</p>
 </div>
 <div class="section" id="connecting-a-tracker-store">
-<h3><a class="toc-backref" href="#id7">Connecting a Tracker Store</a><a class="headerlink" href="#connecting-a-tracker-store" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8">Connecting a Tracker Store</a><a class="headerlink" href="#connecting-a-tracker-store" title="Permalink to this headline">¶</a></h3>
 <p>To configure a tracker store within your endpoint configuration,
 see <a class="reference internal" href="../../api/tracker-stores/#tracker-stores"><span class="std std-ref">Tracker Stores</span></a>.</p>
 </div>
 <div class="section" id="connecting-an-event-broker">
-<h3><a class="toc-backref" href="#id8">Connecting an Event Broker</a><a class="headerlink" href="#connecting-an-event-broker" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9">Connecting an Event Broker</a><a class="headerlink" href="#connecting-an-event-broker" title="Permalink to this headline">¶</a></h3>
 <p>To configure an event broker within your endpoint configuration,
 see <a class="reference internal" href="../../api/event-brokers/#event-brokers"><span class="std std-ref">Event Brokers</span></a>.</p>
 </div>
