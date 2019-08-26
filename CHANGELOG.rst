@@ -12,8 +12,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- SSL support for Rasa ``run`` command. Certificate can be specified using
-  ``--ssl-certificate`` and ``ssl-keyfile``.
+- SSL support for ``rasa run`` command. Certificate can be specified using
+  ``--ssl-certificate`` and ``--ssl-keyfile``.
 
 Changed
 -------
