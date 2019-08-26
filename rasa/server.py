@@ -5,6 +5,7 @@ import traceback
 from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
+from ssl import SSLContext
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -214,7 +215,7 @@ def create_ssl_context(
     ssl_certificate: Optional[Text],
     ssl_keyfile: Optional[Text],
     ssl_password: Optional[Text],
-) -> Optional["SSLContext"]:
+) -> Optional[SSLContext]:
     """Create a SSL context (for the sanic server) if a proper certificate is passed."""
 
     if ssl_certificate:
