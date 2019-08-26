@@ -74,7 +74,7 @@ def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
     return app
 
 
-def _create_ssl_context(
+def create_ssl_context(
     ssl_certificate: Optional[Text],
     ssl_keyfile: Optional[Text],
     ssl_password: Optional[Text],
@@ -187,7 +187,7 @@ def serve_application(
         log_file=log_file,
     )
 
-    ssl_context = _create_ssl_context(ssl_certificate, ssl_keyfile, ssl_password)
+    ssl_context = create_ssl_context(ssl_certificate, ssl_keyfile, ssl_password)
     protocol = "https" if ssl_context else "http"
 
     logger.info(
