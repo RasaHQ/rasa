@@ -897,7 +897,8 @@ any other port.</p>
 </div>
 <p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code>:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
-              [--production] [--rasa-x-port RASA_X_PORT] [--log-file LOG_FILE]
+              [--production] [--rasa-x-port RASA_X_PORT]
+              [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
               [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
@@ -918,6 +919,12 @@ optional arguments:
                         False)
   --rasa-x-port RASA_X_PORT
                         Port to run the Rasa X server at. (default: 5002)
+  --config-endpoint CONFIG_ENDPOINT
+                        Rasa X endpoint URL from which to pull the runtime
+                        config. This URL typically contains the Rasa X token
+                        for authentication. Example:
+                        https://example.com/api/config?token=my_rasa_x_token
+                        (default: None)
   --log-file LOG_FILE   Store logs in specified file. (default: None)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
