@@ -25,7 +25,7 @@ from rasa.nlu.test import (
     EntityEvaluationResult,
     evaluate_intents,
     evaluate_entities,
-    get_label_set,
+    get_unique_labels,
     get_evaluation_metrics,
     NO_ENTITY,
 )
@@ -467,7 +467,7 @@ def test_label_replacement():
     ],
 )
 def test_get_label_set(targets, exclude_label, expected):
-    actual = get_label_set(targets, exclude_label)
+    actual = get_unique_labels(targets, exclude_label)
     assert set(expected) == set(actual)
 
 
