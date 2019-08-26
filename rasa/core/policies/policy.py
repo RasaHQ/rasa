@@ -32,14 +32,6 @@ class Policy(object):
         else:
             return cls._standard_featurizer()
 
-    @staticmethod
-    def _load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
-        """Prepare tf.ConfigProto for training"""
-        if config.get("tf_config") is not None:
-            return tf.ConfigProto(**config.pop("tf_config"))
-        else:
-            return None
-
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
