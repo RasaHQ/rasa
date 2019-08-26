@@ -82,27 +82,27 @@ class KeywordIntentClassifier(Component):
         re_flag = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
 
         ambiguous_mappings = []
-        for ex1, intent1 in self.intent_keyword_map.items():
-            for ex2, intent2 in self.intent_keyword_map.items():
+        for keyword1, intent1 in self.intent_keyword_map.items():
+            for keyword2, intent2 in self.intent_keyword_map.items():
                 if (
-                    re.search(r"\b" + ex1 + r"\b", ex2, flags=re_flag)
+                    re.search(r"\b" + keyword1 + r"\b", keyword2, flags=re_flag)
                     and intent1 != intent2
                 ):
-                    ambiguous_mappings.append((intent1, ex1))
+                    ambiguous_mappings.append((intent1, keyword1))
                     logger.warning(
-                        "Keyword '{}' is an example of intent '{}', "
+                        "Keyword '{}' is an keywordample of intent '{}', "
                         "but also a substring of '{}', which is an "
-                        "example of intent '{}."
+                        "keywordample of intent '{}."
                         " '{}' will be removed from the list of keywords.\n"
-                        "Remove (one of) the conflicting examples for the"
+                        "Remove (one of) the conflicting keywordamples for the"
                         " training data."
-                        "".format(ex1, intent1, ex2, intent2, ex1)
+                        "".format(keyword1, intent1, keyword2, intent2, keyword1)
                     )
-        for intent, example in ambiguous_mappings:
-            self.intent_keyword_map.pop(example)
+        for intent, keyword in ambiguous_mappings:
+            self.intent_keyword_map.pop(keyword)
             logger.debug(
                 "Removed keyword '{}' from intent '{}' because it matched a "
-                "keyword of another intent.".format(example, intent)
+                "keyword of another intent.".format(keyword, intent)
             )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -114,11 +114,11 @@ class KeywordIntentClassifier(Component):
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
         re_flag = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
-        for example, intent in self.intent_keyword_map.items():
-            if re.search(r"\b" + example + r"\b", text, flags=re_flag):
+        for keyword, intent in self.intent_keyword_map.items():
+            if re.search(r"\b" + keyword + r"\b", text, flags=re_flag):
                 logger.debug(
                     "KeywordClassifier matched keyword '{}' to"
-                    " intent '{}'.".format(example, intent)
+                    " intent '{}'.".format(keyword, intent)
                 )
                 return intent
         logger.debug("KeywordClassifier did not find any keywords in the message.")
