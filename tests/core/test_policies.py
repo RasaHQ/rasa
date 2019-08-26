@@ -19,7 +19,7 @@ from rasa.core.actions.action import (
 from rasa.core.constants import USER_INTENT_RESTART, USER_INTENT_BACK
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted
+from rasa.core.events import ActionExecuted, ConversationPaused
 from rasa.core.featurizers import (
     BinarySingleStateFeaturizer,
     LabelTokenizerSingleStateFeaturizer,
@@ -648,6 +648,15 @@ class TestMappingPolicy(PolicyTestCollection):
         assert (
             self._get_next_action(policy, events, domain_with_mapping)
             == intent_mapping[1]
+        )
+
+    def test_restart_if_paused(self, priority, domain_with_mapping):
+        policy = self.create_policy(None, priority)
+        events = [ConversationPaused(), user_uttered(USER_INTENT_RESTART, 1)]
+
+        assert (
+            self._get_next_action(policy, events, domain_with_mapping)
+            == ACTION_RESTART_NAME
         )
 
     def test_predict_action_listen(self, priority, domain_with_mapping, intent_mapping):
