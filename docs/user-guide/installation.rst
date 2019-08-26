@@ -25,6 +25,7 @@ Once you're done with this, you can head over to the tutorial!
    :link: ../rasa-tutorial/
 
 |
+
 -------------------------------------------
 
 For a more detailed guide on setting up Rasa with pip, follow along the :ref:`installation guide <installation_guide>`. You can also :ref:`build Rasa from source <build_from_source>`.
@@ -169,6 +170,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
     You can now head over to the :ref:`tutorial <rasa-tutorial>`.
 
 |
+
 -------------------------------------------
 
 .. _build_from_source:
