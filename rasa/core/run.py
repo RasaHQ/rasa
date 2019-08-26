@@ -75,7 +75,9 @@ def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
 
 
 def _create_ssl_context(
-    ssl_certificate: Optional[Text], ssl_keyfile: Optional[Text], ssl_password: Text
+    ssl_certificate: Optional[Text],
+    ssl_keyfile: Optional[Text],
+    ssl_password: Optional[Text],
 ) -> Optional["SSLContext"]:
     """Create a SSL context (for the sanic server) if a proper certificate is passed."""
 
@@ -166,7 +168,7 @@ def serve_application(
     log_file: Optional[Text] = None,
     ssl_certificate: Optional[Text] = None,
     ssl_keyfile: Optional[Text] = None,
-    ssl_password: Text = "",
+    ssl_password: Optional[Text] = None,
 ):
     if not channel and not credentials:
         channel = "cmdline"
