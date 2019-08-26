@@ -306,7 +306,6 @@ def evaluate_intents(
     errors_filename: Optional[Text],
     confmat_filename: Optional[Text],
     intent_hist_filename: Optional[Text],
-    output_folder: Optional[Text] = None,
 ) -> Dict:  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
     Log samples which could not be classified correctly and save them to file.
@@ -347,14 +346,14 @@ def evaluate_intents(
             log_evaluation_table(report, precision, f1, accuracy)
 
     if successes_filename:
-        if output_folder:
-            successes_filename = os.path.join(output_folder, successes_filename)
+        if report_folder:
+            successes_filename = os.path.join(report_folder, successes_filename)
         # save classified samples to file for debugging
         collect_nlu_successes(intent_results, successes_filename)
 
     if errors_filename:
-        if output_folder:
-            errors_filename = os.path.join(output_folder, errors_filename)
+        if report_folder:
+            errors_filename = os.path.join(report_folder, errors_filename)
         # log and save misclassified samples to file for debugging
         collect_nlu_errors(intent_results, errors_filename)
 
@@ -363,9 +362,9 @@ def evaluate_intents(
         from sklearn.utils.multiclass import unique_labels
         import matplotlib.pyplot as plt
 
-        if output_folder:
-            confmat_filename = os.path.join(output_folder, confmat_filename)
-            intent_hist_filename = os.path.join(output_folder, intent_hist_filename)
+        if report_folder:
+            confmat_filename = os.path.join(report_folder, confmat_filename)
+            intent_hist_filename = os.path.join(report_folder, intent_hist_filename)
 
         cnf_matrix = confusion_matrix(target_intents, predicted_intents)
         labels = unique_labels(target_intents, predicted_intents)
@@ -499,7 +498,6 @@ def evaluate_entities(
     entity_results: List[EntityEvaluationResult],
     extractors: Set[Text],
     report_folder: Optional[Text],
-    output_folder: Optional[Text],
     successes_filename: Optional[Text] = None,
     errors_filename: Optional[Text] = None,
 ) -> Dict:  # pragma: no cover
@@ -551,16 +549,16 @@ def evaluate_entities(
         }
 
         if successes_filename:
-            if output_folder:
-                successes_filename = os.path.join(output_folder, successes_filename)
+            if report_folder:
+                successes_filename = os.path.join(report_folder, successes_filename)
             # save classified samples to file for debugging
             collect_entity_successes(
                 entity_results, merged_targets, merged_predictions, successes_filename
             )
 
         if errors_filename:
-            if output_folder:
-                errors_filename = os.path.join(output_folder, errors_filename)
+            if report_folder:
+                errors_filename = os.path.join(report_folder, errors_filename)
             # log and save misclassified samples to file for debugging
             collect_entity_errors(
                 entity_results, merged_targets, merged_predictions, errors_filename
@@ -1007,7 +1005,7 @@ def cross_validate(
     if intent_classifier_present:
         logger.info("Accumulated test folds intent evaluation results:")
         evaluate_intents(
-            intent_test_results, report, successes, errors, confmat, histogram, output
+            intent_test_results, report, successes, errors, confmat, histogram
         )
 
     if extractors:
