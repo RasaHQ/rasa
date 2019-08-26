@@ -492,7 +492,7 @@ Response Selector
     .. code-block:: json
 
         {
-            "respond_faq_response: {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+            "respond_faq_response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
             "respond_faq_response_ranking": [
                 {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
                 {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
