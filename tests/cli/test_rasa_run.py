@@ -18,6 +18,8 @@ def test_run_help(run):
     help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
                 [--cors [CORS [CORS ...]]] [--enable-api]
+                [--ssl-certificate SSL_CERTIFICATE]
+                [--ssl-keyfile SSL_KEYFILE] [--ssl-password SSL_PASSWORD]
                 [--remote-storage REMOTE_STORAGE] [--credentials CREDENTIALS]
                 [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
                 [--jwt-method JWT_METHOD]
