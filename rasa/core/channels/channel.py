@@ -249,7 +249,7 @@ class OutputChannel(object):
                 title=element.get("title", ""), subtitle=element.get("subtitle", "")
             )
             await self.send_text_with_buttons(
-                recipient_id, element_msg, element.get("buttons", [], **kwargs)
+                recipient_id, element_msg, element.get("buttons", []), **kwargs
             )
 
     async def send_custom_json(
