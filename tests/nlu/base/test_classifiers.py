@@ -121,9 +121,7 @@ class TestKeywordClassifier(ClassifierTestCollection):
         data = rasa_reader.read_from_json(json_data)
 
         with caplog.at_level(logging.DEBUG):
-            classifier = self._train_classifier(
-                classifier_class, data, component_config, **kwargs
-            )
+            self._train_classifier(classifier_class, data, component_config, **kwargs)
         assert len(caplog.records) == 0
 
     def test_identical_data(
