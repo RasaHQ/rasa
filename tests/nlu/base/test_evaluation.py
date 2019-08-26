@@ -345,9 +345,10 @@ def test_entity_evaluation_report(tmpdir_factory):
     report_a = json.loads(rasa.utils.io.read_file(report_filename_a))
     report_b = json.loads(rasa.utils.io.read_file(report_filename_b))
 
-    assert len(report_a) == 8
+    assert len(report_a) == 6
     assert report_a["datetime"]["support"] == 1.0
-    assert report_b["macro avg"]["recall"] == 0.2
+    assert report_b["macro avg"]["recall"] == 0.0
+    assert report_a["macro avg"]["recall"] == 0.5
     assert result["EntityExtractorA"]["accuracy"] == 0.75
 
 
@@ -467,7 +468,7 @@ def test_label_replacement():
 )
 def test_get_label_set(targets, exclude_label, expected):
     actual = get_label_set(targets, exclude_label)
-    assert expected == actual
+    assert set(expected) == set(actual)
 
 
 @pytest.mark.parametrize(
