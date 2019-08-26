@@ -12,17 +12,11 @@ Installation
 Quick Installation
 ~~~~~~~~~~~~~~~~~~
 
-You can get started using ``pip`` with the following command.
+You can install both Rasa and Rasa X using pip with the following command (requires Python >= 3.5.4).
 
 .. code-block:: bash
 
     $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
-
-.. note::
-
-    You'll need a minimum Python version of 3.5.4 to install Rasa.
-
-This will install both Rasa and Rasa X on your system.
 
 Once you're done with this, you can head over to the tutorial!
 
@@ -30,10 +24,14 @@ Once you're done with this, you can head over to the tutorial!
    :text: Next Step: Tutorial
    :link: ../rasa-tutorial/
 
-**For a more detailed guide on setting up, follow along the** :ref:`installation guide <installation_guide>`.
+|
+-------------------------------------------
 
-**If you have a specific pipeline in mind and want to install dependencies for that,
-head over to the section on** :ref:`pipeline dependencies <pipeline_dependencies>`.
+For a more detailed guide on setting up Rasa with pip, follow along the :ref:`installation guide <installation_guide>`. You can also :ref:`build Rasa from source <build_from_source>`.
+
+If you have a specific pipeline in mind and want to install dependencies for that,
+head over to the section on :ref:`pipeline dependencies <pipeline_dependencies>`.
+
 
 .. _installation_guide:
 
@@ -70,18 +68,12 @@ Otherwise, proceed with the instructions below to install them.
 
     .. tab:: macOS
 
-        Install the `Homebrew <https://brew.sh>`_ package manager if you haven't already using
-        the command below.
-
-        .. code-block:: bash
-
-            $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        Install the `Homebrew <https://brew.sh>`_ package manager if you haven't already.
 
         Once you're done, you can install Python and virtualenv.
 
         .. code-block:: bash
 
-            $ export PATH="/usr/local/bin:/usr/local/sbin:$PATH"
             $ brew update
             $ brew install python  # Python 3
             $ sudo pip3 install -U virtualenv  # system-wide install
@@ -176,6 +168,10 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
     You can now head over to the :ref:`tutorial <rasa-tutorial>`.
 
+|
+-------------------------------------------
+
+.. _build_from_source:
 
 Building from Source
 ~~~~~~~~~~~~~~~~~~~~
