@@ -102,17 +102,17 @@ def add_test_nlu_argument_group(
     )
     parser.add_argument(
         "--successes",
-        required=False,
-        nargs="?",
-        const="successes.json",
-        default=None,
-        help="Output path to save successful predictions.",
+        action="store_true",
+        default=False,
+        help="If set successful predictions (intent and entities) will be written "
+        "to a file.",
     )
     parser.add_argument(
         "--errors",
-        required=False,
-        default="errors.json",
-        help="Output path to save model errors.",
+        action="store_true",
+        default=False,
+        help="If set incorrect predictions (intent and entities) will be written "
+        "to a file.",
     )
     parser.add_argument(
         "--histogram",

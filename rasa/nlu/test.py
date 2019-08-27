@@ -302,8 +302,8 @@ def plot_intent_confidences(
 def evaluate_intents(
     intent_results: List[IntentEvaluationResult],
     report_folder: Optional[Text],
-    successes_filename: Optional[Text],
-    errors_filename: Optional[Text],
+    successes: bool,
+    errors: bool,
     confmat_filename: Optional[Text],
     intent_hist_filename: Optional[Text],
 ) -> Dict:  # pragma: no cover
@@ -345,15 +345,17 @@ def evaluate_intents(
         if isinstance(report, str):
             log_evaluation_table(report, precision, f1, accuracy)
 
-    if successes_filename:
+    if successes:
+        successes_filename = "intent_successes.json"
         if report_folder:
-            successes_filename = os.path.join(report_folder, successes_filename)
+            successes_filename = os.path.join(report_folder, "intent_successes.json")
         # save classified samples to file for debugging
         collect_nlu_successes(intent_results, successes_filename)
 
-    if errors_filename:
+    if errors:
+        errors_filename = "intent_errors.json"
         if report_folder:
-            errors_filename = os.path.join(report_folder, errors_filename)
+            errors_filename = os.path.join(report_folder, "intent_errors.json")
         # log and save misclassified samples to file for debugging
         collect_nlu_errors(intent_results, errors_filename)
 
@@ -469,7 +471,10 @@ def collect_entity_successes(
     for entity_result in entity_results:
         success = False
         for i in range(offset, offset + len(entity_result.tokens)):
-            if merged_targets[i] == merged_predictions[i]:
+            if (
+                merged_targets[i] == merged_predictions[i]
+                and merged_targets[i] != NO_ENTITY
+            ):
                 success = True
                 break
 
@@ -498,8 +503,8 @@ def evaluate_entities(
     entity_results: List[EntityEvaluationResult],
     extractors: Set[Text],
     report_folder: Optional[Text],
-    successes_filename: Optional[Text] = None,
-    errors_filename: Optional[Text] = None,
+    successes: bool = False,
+    errors: bool = False,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for each entity extractor.
     Logs precision, recall, and F1 per entity type for each extractor."""
@@ -548,7 +553,8 @@ def evaluate_entities(
             "accuracy": accuracy,
         }
 
-        if successes_filename:
+        if successes:
+            successes_filename = "{}_successes.json".format(extractor)
             if report_folder:
                 successes_filename = os.path.join(report_folder, successes_filename)
             # save classified samples to file for debugging
@@ -556,7 +562,8 @@ def evaluate_entities(
                 entity_results, merged_targets, merged_predictions, successes_filename
             )
 
-        if errors_filename:
+        if errors:
+            errors_filename = "{}_errors.json".format(extractor)
             if report_folder:
                 errors_filename = os.path.join(report_folder, errors_filename)
             # log and save misclassified samples to file for debugging
@@ -812,8 +819,8 @@ def run_evaluation(
     model_path: Text,
     out_directory: Optional[Text] = None,
     report: Optional[Text] = None,
-    successes: Optional[Text] = None,
-    errors: Optional[Text] = "errors.json",
+    successes: bool = False,
+    errors: bool = False,
     confmat: Optional[Text] = None,
     histogram: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
@@ -825,8 +832,8 @@ def run_evaluation(
     :param model_path: path to the model
     :param out_directory: path to folder where all output will be stored
     :param report: path to folder where reports are stored
-    :param successes: path to file that will contain success cases
-    :param errors: path to file that will contain error cases
+    :param successes: if true successful predictions are written to a file
+    :param errors: if true incorrect predictions are written to a file
     :param confmat: path to file that will show the confusion matrix
     :param histogram: path fo file that will show a histogram
     :param component_builder: component builder
@@ -845,24 +852,26 @@ def run_evaluation(
         "entity_evaluation": None,
     }  # type: Dict[Text, Optional[Dict]]
 
-    if report:
-        if out_directory:
-            report = os.path.join(out_directory, report)
-        io_utils.create_directory(report)
+    if report and out_directory:
+        report = os.path.join(out_directory, report)
+    if not report and out_directory:
+        report = out_directory
+
+    io_utils.create_directory(report)
 
     intent_results, entity_results = get_eval_data(interpreter, test_data)
 
     if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results, report, successes, errors, confmat, histogram, out_directory
+            intent_results, report, successes, errors, confmat, histogram
         )
 
     if entity_results:
         logger.info("Entity evaluation results:")
         extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(
-            entity_results, extractors, report, out_directory, successes, errors
+            entity_results, extractors, report, successes, errors
         )
 
     return result
@@ -939,8 +948,8 @@ def cross_validate(
     nlu_config: Union[RasaNLUModelConfig, Text],
     output: Optional[Text] = None,
     report: Optional[Text] = None,
-    successes: Optional[Text] = None,
-    errors: Optional[Text] = "errors.json",
+    successes: bool = False,
+    errors: bool = False,
     confmat: Optional[Text] = None,
     histogram: Optional[Text] = None,
 ) -> Tuple[CVEvaluationResult, CVEvaluationResult]:
@@ -951,8 +960,8 @@ def cross_validate(
         n_folds: integer, number of cv folds
         nlu_config: nlu config file
         report: path to folder where reports are stored
-        successes: path to file that will contain success cases
-        errors: path to file that will contain error cases
+        successes: if true successful predictions are written to a file
+        errors: if true incorrect predictions are written to a file
         confmat: path to file that will show the confusion matrix
         histogram: path fo file that will show a histogram
 
@@ -965,8 +974,12 @@ def cross_validate(
     if isinstance(nlu_config, str):
         nlu_config = config.load(nlu_config)
 
-    if report:
-        io_utils.create_directory(report)
+    if report and output:
+        report = os.path.join(output, report)
+    elif not report and output:
+        report = output
+
+    io_utils.create_directory(report)
 
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
@@ -1010,7 +1023,7 @@ def cross_validate(
 
     if extractors:
         logger.info("Accumulated test folds entity evaluation results:")
-        evaluate_entities(entity_test_results, extractors, report, output)
+        evaluate_entities(entity_test_results, extractors, report, successes, errors)
 
     return (
         CVEvaluationResult(dict(intent_train_metrics), dict(intent_test_metrics)),

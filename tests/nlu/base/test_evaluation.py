@@ -288,8 +288,8 @@ def test_intent_evaluation_report(tmpdir_factory):
     result = evaluate_intents(
         intent_results,
         report_folder,
-        successes_filename=None,
-        errors_filename=None,
+        successes=False,
+        errors=False,
         confmat_filename=None,
         intent_hist_filename=None,
     )
