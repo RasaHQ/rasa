@@ -223,6 +223,42 @@ def test_count_vector_featurizer_attribute_featurization(
 
 
 @pytest.mark.parametrize(
+    "sentence, intent, response, text_features, intent_features, response_features",
+    [
+        ("hello hello greet ", "greet", "hello", [1, 2], [1, 0], [0, 1]),
+        (
+            "I am fine",
+            "acknowledge",
+            "good",
+            [0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0],
+        ),
+    ],
+)
+def test_count_vector_featurizer_shared_vocab(
+    sentence, intent, response, text_features, intent_features, response_features
+):
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer(
+        {"token_pattern": r"(?u)\b\w+\b", "use_shared_vocab": True}
+    )
+    train_message = Message(sentence)
+
+    # this is needed for a valid training example
+    train_message.set("intent", intent)
+    train_message.set("response", response)
+
+    data = TrainingData([train_message])
+    ftr.train(data)
+
+    assert np.all(train_message.get("text_features") == text_features)
+    assert np.all(train_message.get("intent_features") == intent_features)
+    assert np.all(train_message.get("response_features") == response_features)
+
+
+@pytest.mark.parametrize(
     "sentence, expected",
     [
         ("hello hello hello hello hello __OOV__", [1, 5]),

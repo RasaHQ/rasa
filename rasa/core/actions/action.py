@@ -198,11 +198,11 @@ class ActionUtterPredictedResponse(Action):
         # 1. a specific response selector of this open domain intent type
         # 2. a generic response selector built for all open domain intent types in the training data.
         # We check in both
-        tracker_query_keys = [
+        response_selector_keys = [
             "{0}{1}".format(self.action_name, OPEN_UTTERANCE_KEY_SUFFIX),
             DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
         ]
-        for query_key in tracker_query_keys:
+        for query_key in response_selector_keys:
             logger.debug("Looking for response with query_key {}".format(query_key))
             if query_key in tracker.latest_message.parse_data:
                 logger.debug("Picking response of type {}".format(query_key))

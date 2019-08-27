@@ -134,6 +134,13 @@ class CountVectorsFeaturizer(Featurizer):
             if self.OOV_words:
                 self.OOV_words = [w.lower() for w in self.OOV_words]
 
+    def _check_attribute_vocabulary(self, attribute: Text) -> bool:
+        """Get trained vocabulary from attribute's count vectorizer"""
+        if self.vectorizer:
+            if hasattr(self.vectorizer[attribute], "vocabulary_"):
+                return True
+        return False
+
     def _check_analyzer(self):
         if self.analyzer != "word":
             if self.OOV_token is not None:
@@ -196,7 +203,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         if self.OOV_token and self.analyzer == "word":
             text_tokens = text.split()
-            if hasattr(self.vectorizer[attribute], "vocabulary_"):
+            if self._check_attribute_vocabulary(attribute):
                 # CountVectorizer is trained, process for prediction
                 if self.OOV_token in self.vectorizer[attribute].vocabulary_:
                     text_tokens = [
@@ -232,6 +239,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     @staticmethod
     def create_vectorizers(
+        shared,
         token_pattern,
         strip_accents,
         lowercase,
@@ -241,7 +249,6 @@ class CountVectorsFeaturizer(Featurizer):
         min_df,
         max_features,
         analyzer,
-        shared,
         vocabulary=None,
     ):
         """Create a dictionary of CountVectorizer objects for all attributes of Message object"""
@@ -265,8 +272,9 @@ class CountVectorsFeaturizer(Featurizer):
         for attribute in MESSAGE_ATTRIBUTES:
 
             if not shared:
-
-                attribute_vocabulary = vocabulary[attribute]
+                attribute_vocabulary = (
+                    vocabulary[attribute] if vocabulary else vocabulary
+                )
                 new_vectorizer = CountVectorizer(
                     token_pattern=token_pattern,
                     strip_accents=strip_accents,
@@ -301,6 +309,7 @@ class CountVectorsFeaturizer(Featurizer):
             self.OOV_words = [t.lemma_ for w in self.OOV_words for t in spacy_nlp(w)]
 
         self.vectorizer = self.create_vectorizers(
+            self.use_shared_vocab,
             self.token_pattern,
             self.strip_accents,
             self.lowercase,
@@ -310,7 +319,6 @@ class CountVectorsFeaturizer(Featurizer):
             self.min_df,
             self.max_features,
             self.analyzer,
-            shared=self.use_shared_vocab,
         )
 
         cleaned_attribute_texts = {}
@@ -408,8 +416,7 @@ class CountVectorsFeaturizer(Featurizer):
             any_model_trained = False
             for attribute in MESSAGE_ATTRIBUTES:
                 any_model_trained = (
-                    hasattr(self.vectorizer[attribute], "vocabulary_")
-                    or any_model_trained
+                    self._check_attribute_vocabulary(attribute) or any_model_trained
                 )
 
             if any_model_trained:
@@ -419,7 +426,7 @@ class CountVectorsFeaturizer(Featurizer):
                         featurizer_file,
                         {
                             attribute: self.vectorizer[attribute].vocabulary_
-                            if hasattr(self.vectorizer[attribute], "vocabulary_")
+                            if self._check_attribute_vocabulary(attribute)
                             else None
                             for attribute in MESSAGE_ATTRIBUTES
                         },
@@ -451,6 +458,7 @@ class CountVectorsFeaturizer(Featurizer):
             share_vocabulary = meta["use_shared_vocab"]
 
             vectorizer = cls.create_vectorizers(
+                shared=share_vocabulary,
                 token_pattern=meta["token_pattern"],
                 strip_accents=meta["strip_accents"],
                 lowercase=meta["lowercase"],
@@ -461,7 +469,6 @@ class CountVectorsFeaturizer(Featurizer):
                 max_features=meta["max_features"],
                 analyzer=meta["analyzer"],
                 vocabulary=vocabulary,
-                shared=share_vocabulary,
             )
 
             return cls(meta, vectorizer)
