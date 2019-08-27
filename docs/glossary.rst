@@ -81,7 +81,7 @@ Glossary
         For the different types of slots, see :ref:`here <slot-classes>`.
 
     Story
-        A template of a conversation between a user and a bot annotated with the intent / entities of the users' messages as well as the sequence of actions to be performed by the bot
+        A conversation between a user and a bot annotated with the intent / entities of the users' messages as well as the sequence of actions to be performed by the bot
 
     Template / Response / Utterance
         A message template that is used to respond to a user. This can include text, buttons, images, and other attachments.
