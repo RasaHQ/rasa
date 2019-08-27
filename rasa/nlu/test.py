@@ -243,13 +243,13 @@ def collect_nlu_successes(
     if successes:
         utils.write_json_to_file(successes_filename, successes)
         logger.info(
-            "Model prediction successes saved to {}.".format(successes_filename)
+            "Successful intent predictions saved to {}.".format(successes_filename)
         )
         logger.debug(
             "\n\nSuccessfully predicted the following intents: \n{}".format(successes)
         )
     else:
-        logger.info("Your model made no successful predictions")
+        logger.info("No successful intent predictions found.")
 
 
 def collect_nlu_errors(
@@ -272,13 +272,13 @@ def collect_nlu_errors(
 
     if errors:
         utils.write_json_to_file(errors_filename, errors)
-        logger.info("Model prediction errors saved to {}.".format(errors_filename))
+        logger.info("Incorrect intent predictions saved to {}.".format(errors_filename))
         logger.debug(
             "\n\nThese intent examples could not be classified "
             "correctly: \n{}".format(errors)
         )
     else:
-        logger.info("Your model made no errors")
+        logger.info("No incorrect intent predictions found.")
 
 
 def plot_intent_confidences(
@@ -301,7 +301,7 @@ def plot_intent_confidences(
 
 def evaluate_intents(
     intent_results: List[IntentEvaluationResult],
-    report_folder: Optional[Text],
+    output_directory: Optional[Text],
     successes: bool,
     errors: bool,
     confmat_filename: Optional[Text],
@@ -328,12 +328,12 @@ def evaluate_intents(
 
     target_intents, predicted_intents = _targets_predictions_from(intent_results)
 
-    if report_folder:
+    if output_directory:
         report, precision, f1, accuracy = get_evaluation_metrics(
             target_intents, predicted_intents, output_dict=True
         )
 
-        report_filename = os.path.join(report_folder, "intent_report.json")
+        report_filename = os.path.join(output_directory, "intent_report.json")
 
         utils.write_json_to_file(report_filename, report)
         logger.info("Classification report saved to {}.".format(report_filename))
@@ -347,15 +347,15 @@ def evaluate_intents(
 
     if successes:
         successes_filename = "intent_successes.json"
-        if report_folder:
-            successes_filename = os.path.join(report_folder, "intent_successes.json")
+        if output_directory:
+            successes_filename = os.path.join(output_directory, "intent_successes.json")
         # save classified samples to file for debugging
         collect_nlu_successes(intent_results, successes_filename)
 
     if errors:
         errors_filename = "intent_errors.json"
-        if report_folder:
-            errors_filename = os.path.join(report_folder, "intent_errors.json")
+        if output_directory:
+            errors_filename = os.path.join(output_directory, "intent_errors.json")
         # log and save misclassified samples to file for debugging
         collect_nlu_errors(intent_results, errors_filename)
 
@@ -364,9 +364,9 @@ def evaluate_intents(
         from sklearn.utils.multiclass import unique_labels
         import matplotlib.pyplot as plt
 
-        if report_folder:
-            confmat_filename = os.path.join(report_folder, confmat_filename)
-            intent_hist_filename = os.path.join(report_folder, intent_hist_filename)
+        if output_directory:
+            confmat_filename = os.path.join(output_directory, confmat_filename)
+            intent_hist_filename = os.path.join(output_directory, intent_hist_filename)
 
         cnf_matrix = confusion_matrix(target_intents, predicted_intents)
         labels = unique_labels(target_intents, predicted_intents)
@@ -450,13 +450,13 @@ def collect_entity_errors(
 
     if errors:
         utils.write_json_to_file(error_filename, errors)
-        logger.info("Model prediction errors saved to {}.".format(error_filename))
+        logger.info("Incorrect enntity predictions saved to {}.".format(error_filename))
         logger.debug(
             "\n\nThese intent examples could not be classified "
             "correctly: \n{}".format(errors)
         )
     else:
-        logger.info("Your model made no error predictions.")
+        logger.info("No incorrect entity prediction found.")
 
 
 def collect_entity_successes(
@@ -490,19 +490,19 @@ def collect_entity_successes(
     if successes:
         utils.write_json_to_file(successes_filename, successes)
         logger.info(
-            "Model prediction successes saved to {}.".format(successes_filename)
+            "Successful entity predictions saved to {}.".format(successes_filename)
         )
         logger.debug(
             "\n\nSuccessfully predicted the following entities: \n{}".format(successes)
         )
     else:
-        logger.info("Your model made no successful predictions.")
+        logger.info("No successful entity prediction found.")
 
 
 def evaluate_entities(
     entity_results: List[EntityEvaluationResult],
     extractors: Set[Text],
-    report_folder: Optional[Text],
+    output_directory: Optional[Text],
     successes: bool = False,
     errors: bool = False,
 ) -> Dict:  # pragma: no cover
@@ -519,9 +519,9 @@ def evaluate_entities(
         merged_predictions = merge_labels(aligned_predictions, extractor)
         merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
-        if report_folder:
-            report_filename = extractor + "_report.json"
-            extractor_report_filename = os.path.join(report_folder, report_filename)
+        if output_directory:
+            report_filename = "{}_report.json".format(extractor)
+            extractor_report_filename = os.path.join(output_directory, report_filename)
 
             report, precision, f1, accuracy = get_evaluation_metrics(
                 merged_targets,
@@ -546,17 +546,10 @@ def evaluate_entities(
             if isinstance(report, str):
                 log_evaluation_table(report, precision, f1, accuracy)
 
-        result[extractor] = {
-            "report": report,
-            "precision": precision,
-            "f1_score": f1,
-            "accuracy": accuracy,
-        }
-
         if successes:
             successes_filename = "{}_successes.json".format(extractor)
-            if report_folder:
-                successes_filename = os.path.join(report_folder, successes_filename)
+            if output_directory:
+                successes_filename = os.path.join(output_directory, successes_filename)
             # save classified samples to file for debugging
             collect_entity_successes(
                 entity_results, merged_targets, merged_predictions, successes_filename
@@ -564,12 +557,19 @@ def evaluate_entities(
 
         if errors:
             errors_filename = "{}_errors.json".format(extractor)
-            if report_folder:
-                errors_filename = os.path.join(report_folder, errors_filename)
+            if output_directory:
+                errors_filename = os.path.join(output_directory, errors_filename)
             # log and save misclassified samples to file for debugging
             collect_entity_errors(
                 entity_results, merged_targets, merged_predictions, errors_filename
             )
+
+        result[extractor] = {
+            "report": report,
+            "precision": precision,
+            "f1_score": f1,
+            "accuracy": accuracy,
+        }
 
     return result
 
@@ -817,8 +817,7 @@ def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
 def run_evaluation(
     data_path: Text,
     model_path: Text,
-    out_directory: Optional[Text] = None,
-    report: Optional[Text] = None,
+    output_directory: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,
     confmat: Optional[Text] = None,
@@ -830,8 +829,7 @@ def run_evaluation(
 
     :param data_path: path to the test data
     :param model_path: path to the model
-    :param out_directory: path to folder where all output will be stored
-    :param report: path to folder where reports are stored
+    :param output_directory: path to folder where all output will be stored
     :param successes: if true successful predictions are written to a file
     :param errors: if true incorrect predictions are written to a file
     :param confmat: path to file that will show the confusion matrix
@@ -852,26 +850,22 @@ def run_evaluation(
         "entity_evaluation": None,
     }  # type: Dict[Text, Optional[Dict]]
 
-    if report and out_directory:
-        report = os.path.join(out_directory, report)
-    if not report and out_directory:
-        report = out_directory
-
-    io_utils.create_directory(report)
+    if output_directory:
+        io_utils.create_directory(output_directory)
 
     intent_results, entity_results = get_eval_data(interpreter, test_data)
 
     if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results, report, successes, errors, confmat, histogram
+            intent_results, output_directory, successes, errors, confmat, histogram
         )
 
     if entity_results:
         logger.info("Entity evaluation results:")
         extractors = get_entity_extractors(interpreter)
         result["entity_evaluation"] = evaluate_entities(
-            entity_results, extractors, report, successes, errors
+            entity_results, extractors, output_directory, successes, errors
         )
 
     return result
@@ -947,7 +941,6 @@ def cross_validate(
     n_folds: int,
     nlu_config: Union[RasaNLUModelConfig, Text],
     output: Optional[Text] = None,
-    report: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,
     confmat: Optional[Text] = None,
@@ -974,12 +967,8 @@ def cross_validate(
     if isinstance(nlu_config, str):
         nlu_config = config.load(nlu_config)
 
-    if report and output:
-        report = os.path.join(output, report)
-    elif not report and output:
-        report = output
-
-    io_utils.create_directory(report)
+    if output:
+        io_utils.create_directory(output)
 
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
@@ -1018,12 +1007,12 @@ def cross_validate(
     if intent_classifier_present:
         logger.info("Accumulated test folds intent evaluation results:")
         evaluate_intents(
-            intent_test_results, report, successes, errors, confmat, histogram
+            intent_test_results, output, successes, errors, confmat, histogram
         )
 
     if extractors:
         logger.info("Accumulated test folds entity evaluation results:")
-        evaluate_entities(entity_test_results, extractors, report, successes, errors)
+        evaluate_entities(entity_test_results, extractors, output, successes, errors)
 
     return (
         CVEvaluationResult(dict(intent_train_metrics), dict(intent_test_metrics)),
@@ -1142,12 +1131,11 @@ def compare_nlu(
 
                 model_path = os.path.join(get_model(model_path), "nlu")
 
-                report_path = os.path.join(
+                output_path = os.path.join(
                     model_output_path, "{}_report".format(model_name)
                 )
-                errors_path = os.path.join(report_path, "errors.json")
                 result = run_evaluation(
-                    test_path, model_path, report=report_path, errors=errors_path
+                    test_path, model_path, output_directory=output_path, errors=True
                 )
 
                 f1 = result["intent_evaluation"]["f1_score"]

@@ -93,14 +93,6 @@ def add_test_nlu_argument_group(
     )
 
     parser.add_argument(
-        "--report",
-        required=False,
-        nargs="?",
-        const="reports",
-        default=None,
-        help="Output path to save the intent/entity metrics report.",
-    )
-    parser.add_argument(
         "--successes",
         action="store_true",
         default=False,
