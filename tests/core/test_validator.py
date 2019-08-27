@@ -16,7 +16,7 @@ async def validator():
         domain_path=DEFAULT_DOMAIN_PATH,
         training_data_paths=[DEFAULT_NLU_DATA, DEFAULT_STORIES_FILE],
     )
-    return await Validator.from_importer(importer, out="log.out")
+    return await Validator.from_importer(importer)
 
 
 def test_validator_creation(validator: Validator):
