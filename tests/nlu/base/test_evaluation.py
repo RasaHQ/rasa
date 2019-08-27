@@ -25,6 +25,9 @@ from rasa.nlu.test import (
     EntityEvaluationResult,
     evaluate_intents,
     evaluate_entities,
+    get_unique_labels,
+    get_evaluation_metrics,
+    NO_ENTITY,
 )
 from rasa.nlu.test import does_token_cross_borders
 from rasa.nlu.test import align_entity_predictions
@@ -342,9 +345,10 @@ def test_entity_evaluation_report(tmpdir_factory):
     report_a = json.loads(rasa.utils.io.read_file(report_filename_a))
     report_b = json.loads(rasa.utils.io.read_file(report_filename_b))
 
-    assert len(report_a) == 8
+    assert len(report_a) == 6
     assert report_a["datetime"]["support"] == 1.0
-    assert report_b["macro avg"]["recall"] == 0.2
+    assert report_b["macro avg"]["recall"] == 0.0
+    assert report_a["macro avg"]["recall"] == 0.5
     assert result["EntityExtractorA"]["accuracy"] == 0.75
 
 
@@ -442,6 +446,61 @@ def test_label_replacement():
     original_labels = ["O", "location"]
     target_labels = ["no_entity", "location"]
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
+
+
+@pytest.mark.parametrize(
+    "targets,exclude_label,expected",
+    [
+        (
+            ["no_entity", "location", "location", "location", "person"],
+            NO_ENTITY,
+            ["location", "person"],
+        ),
+        (
+            ["no_entity", "location", "location", "location", "person"],
+            None,
+            ["no_entity", "location", "person"],
+        ),
+        (["no_entity"], NO_ENTITY, []),
+        (["location", "location", "location"], NO_ENTITY, ["location"]),
+        ([], None, []),
+    ],
+)
+def test_get_label_set(targets, exclude_label, expected):
+    actual = get_unique_labels(targets, exclude_label)
+    assert set(expected) == set(actual)
+
+
+@pytest.mark.parametrize(
+    "targets,predictions,expected_precision,expected_fscore,expected_accuracy",
+    [
+        (
+            ["no_entity", "location", "no_entity", "location", "no_entity"],
+            ["no_entity", "location", "no_entity", "no_entity", "person"],
+            1.0,
+            0.6666666666666666,
+            3 / 5,
+        ),
+        (
+            ["no_entity", "no_entity", "no_entity", "no_entity", "person"],
+            ["no_entity", "no_entity", "no_entity", "no_entity", "no_entity"],
+            0.0,
+            0.0,
+            4 / 5,
+        ),
+    ],
+)
+def test_get_evaluation_metrics(
+    targets, predictions, expected_precision, expected_fscore, expected_accuracy
+):
+    report, precision, f1, accuracy = get_evaluation_metrics(
+        targets, predictions, True, exclude_label=NO_ENTITY
+    )
+
+    assert f1 == expected_fscore
+    assert precision == expected_precision
+    assert accuracy == expected_accuracy
+    assert NO_ENTITY not in report
 
 
 def test_nlu_comparison(tmpdir):

@@ -47,12 +47,45 @@ Changed
   hold out validation set that is excluded from training data
 - defaults parameters and architectures for both ``EmbeddingPolicy`` and
   ``EmbeddingIntentClassifier`` are changed (this is a breaking change)
+- evaluation of NER does not include 'no-entity' anymore
 
 Fixed
 -----
 - ``rasa test nlu`` with a folder of configuration files
 - ``MappingPolicy`` standard featurizer is set to ``None``
 
+Fixed
+-----
+
+[1.2.5] - 2019-08-26
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- SSL support for ``rasa run`` command. Certificate can be specified using
+  ``--ssl-certificate`` and ``--ssl-keyfile``.
+
+Fixed
+-----
+- ``'/restart'`` will now also restart the bot if the tracker is paused
+
+
+[1.2.4] - 2019-08-23
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- the ``SocketIO`` input channel now allows accesses from other origins
+  (fixes ``SocketIO`` channel on Rasa X)
+
+[1.2.3] - 2019-08-15
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- messages with multiple entities are now handled properly with e2e evaluation
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the
+  restaurantbot domain
 
 [1.2.3] - 2019-08-15
 ^^^^^^^^^^^^^^^^^^^^
@@ -64,8 +97,8 @@ Changed
 
 Fixed
 -----
-- Free text input was not allowed in the Rasa shell when the response template contained buttons,
-  which has now been fixed.
+- Free text input was not allowed in the Rasa shell when the response template
+  contained buttons, which has now been fixed.
 
 [1.2.2] - 2019-08-07
 ^^^^^^^^^^^^^^^^^^^^
@@ -92,7 +125,8 @@ Fixed
 Added
 -----
 - add root route to server started without ``--enable-api`` parameter
-- add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
+- add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models
+  from ``rasa train core -c <config-1> <config-2>``
 - option to send messages to the user by calling
   ``POST /conversations/{conversation_id}/execute``
 
@@ -205,7 +239,7 @@ Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
-- fixed PUT /model with model_server by deserializing the model_server to 
+- fixed PUT /model with model_server by deserializing the model_server to
   EndpointConfig.
 - ``x in AnySlotDict`` is now ``True`` for any ``x``, which fixes empty slot warnings in
   interactive learning
