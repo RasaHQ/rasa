@@ -26,6 +26,8 @@ Added
 - ``softmax`` starspace loss for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``balanced`` batching strategy for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``max_history`` parameter for ``EmbeddingPolicy``
+- Successful and incorrect predictions of the NER are written to a file if ``--errors`` and/or ``--successes`` are set
+  when running ``rasa test nlu``
 
 Changed
 -------
@@ -48,14 +50,17 @@ Changed
 - defaults parameters and architectures for both ``EmbeddingPolicy`` and
   ``EmbeddingIntentClassifier`` are changed (this is a breaking change)
 - evaluation of NER does not include 'no-entity' anymore
+- ``--errors`` and ``--successes`` for ``rasa test nlu`` are now boolean values. If set incorrect/successful predictions
+  are saved in a file.
 
 Fixed
 -----
 - ``rasa test nlu`` with a folder of configuration files
 - ``MappingPolicy`` standard featurizer is set to ``None``
 
-Fixed
------
+Removed
+-------
+- Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
 [1.2.5] - 2019-08-26
 ^^^^^^^^^^^^^^^^^^^^
