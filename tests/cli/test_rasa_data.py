@@ -64,5 +64,5 @@ def test_data_validate_help(run):
 
 
 def test_data_validate_log_output(run):
-    output = run("data", "validate", "--log-file", "log.out")
+    run("data", "validate", "--log-file", "log.out")
     assert os.path.isfile("log.out")

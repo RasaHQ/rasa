@@ -99,7 +99,7 @@ def validate_files(args):
     file_importer = RasaFileImporter(
         domain_path=args.domain, training_data_paths=args.data
     )
-    if args.log_file != None:
+    if args.log_file is not None:
         configure_file_logging(logging.root, args.log_file)
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
