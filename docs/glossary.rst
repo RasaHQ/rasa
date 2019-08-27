@@ -8,103 +8,92 @@ Glossary
 .. glossary::
 
     Action
-        a single step a bot takes in a conversation (e.g. call an API or send a response back to the user)
+        A single step that a bot takes in a conversation (e.g. calling an API or sending a response back to the user).
 
     Annotation
-        could either refer to the process of labelling data or the label itself
+        Adding labels to messages and conversations so that they can be used to train a model.
 
     CMS
-        A Content Management System (CMS) can be used to store responses externally instead of hardcoding it as part of the domain.
-
-    Conversation
-        a back and forth between a user and a bot (so usually just messages - unlabeled conversation)
+        A Content Management System (CMS) can be used to store bot responses externally instead of directly including it as part of the domain.  This provides more flexibility in changing them as they are not tightly-coupled with the training data.
 
     Custom Action
-        an action written by a Rasa developer that can run arbitrary code mainly to interact with the outside world
+        An action written by a Rasa developer that can run arbitrary code mainly to interact with the outside world.
 
-    Default Actions
-        built-in actions that carry a special meaning to Rasa
+    Default Action
+        A built-in action that comes with predefined functionality.
 
     Domain
-        outlines the capabilities of a conversational assistant
+        Defines the inputs and outputs of an assistant.
 
-        While this primarily includes the intents that it can recognize and the actions it can perform, it also encompasses entities, slots, forms, and templates for the bot.
+        It includes a list of all the intents, entities, slots, actions, and forms that the assistant knows about.
 
-    Entities
-        structured information that can be extracted from a user message (e.g. a telephone number)
+    Entity
+        Structured information that can be extracted from a user message.
+
+        For example a telephone number, a person's name, a location, the name of a product
 
     Event
-        All conversations in Rasa are represented as a sequence of events. For instance, a ``UserUttered`` represents a user entering a message, and ``SlotSet`` represents the act of setting a slot to a certain value. You can learn more about them :ref:`here <events>`.
+        All conversations in Rasa are represented as a sequence of events. For instance, a ``UserUttered`` represents a user entering a message, and an ``ActionExecuted`` represents the assistant executing an action. You can learn more about them :ref:`here <events>`.
 
-    Forms
-        One of the most common conversation patterns is slot filling - that is, collecting a few pieces of information from a user in order to do something (book a restaurant, call an API, search a database, etc.). A Rasa form enables bot developers to declaratively define the fields and validation rules for each of them.
+    Form
+        A type of custom action that asks the user for multiple pieces of information.
+
+        For example, if you need a city, a cuisine, and a price range to recommend a restaurant, you can create  a restaurant form to do that. You can describe any business logic inside a form. For example, if you want to ask for a particular neighbourhood if a user mentions a large city like Los Angeles, you can write that logic inside the form.
 
     Happy / Unhappy Paths
-        Happy paths refer to conversations where everything proceeds smoothly as intended, and there are no deviations. Unhappy paths involve things like the user changing the topic of conversation, correcting a previous input, etc.
+        If your assistant asks a user for some information and the user provides it, we call that a happy path. Unhappy paths are all the possible edge cases of a bot. For example, the user refusing to give some input, changing the topic of conversation, or correcting something they said earlier.
 
     Intent
-        meaning of a user's message selected as one of a set of predefined meanings (e.g. greeting).
+        Something that a user is trying to convey or accomplish (e,g., greeting, specifying a location).
 
     Interactive Learning
-        a mode of training the bot where the user provides feedback to the bot while talking to it
+        A mode of training the bot where the user provides feedback to the bot while talking to it.
 
-        This is a powerful way to explore what a bot can do, and the easiest way to fix any mistakes it make.
+        This is a powerful way to write complicated stories by enabling users to explore what a bot can do and easily fix any mistakes it makes.
 
     NLG
-        Natural Language Generation (NLG) is the component that generates natural language output from structured data.
+        Natural Language Generation (NLG) is the process of generating natural language messages to send to a user.
 
-    NLU
-        Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format. Rasa NLU is the part of Rasa that performs intent classification and entity extraction.
+        Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.
+
+    Rasa NLU
+        Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.
+
+        Rasa NLU is the part of Rasa that performs intent classification and entity extraction.
 
     Pipeline
-        A Rasa bot's NLU system is defined by a pipeline, which is a list of NLU components in a particular order. A user input is processed by each component one by one before finally giving out the structured output.
+        A Rasa bot's NLU system is defined by a pipeline, which is a list of NLU components (see "Rasa NLU Component") in a particular order. A user input is processed by each component one by one before finally giving out the structured output.
 
     Policy
-        Policies make decisions on how conversation flow should proceed. A Core model can have multiple policies included, and the policy whose prediction has the highest confidence decides the next action to be taken.
+        Policies make decisions on how conversation flow should proceed. At every turn, the policy which predicts the next action with the highest confidence will be used.  A Core model can have multiple policies included, and the policy whose prediction has the highest confidence decides the next action to be taken.
 
     Rasa Core
-        the dialogue engine that decides on what to do next in a conversation
+        The dialogue engine that decides on what to do next in a conversation based on the context.
 
-    Rasa Core policy
-        decides which action to take at every step in the conversation
+    Rasa NLU Component
+        An element in the Rasa NLU pipeline (see "Pipeline").
 
-        There are different policies to choose from, and multiple policies can be included in a single agent. At every turn, the policy which predicts the next action with the highest confidence will be used. If two policies predict with equal confidence, the policy with the higher priority will be used.
+        Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
 
-    Rasa NLU component
-        an element in the Rasa NLU pipeline
+    Slot
+        A key-value store that Rasa uses to track information over the course of a conversation.
 
-        Incoming messages are processed by a sequence of components called a pipeline. These components are executed one after another in a so-called processing pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
-
-    Slots
-        memory of the bot where structured information is stores (e.g. extracted entities or results from API calls)
-
-    spaCy
-        a free, open-source library for advanced Natural Language Processing (NLP) in Python
+        For the different types of slots, see :ref:`here <slot-classes>`.
 
     Story
-        a user/bot conversation annotated with the intent / entities of the users' messages as well as the sequence of actions performed by the bot
+        A template of a conversation between a user and a bot annotated with the intent / entities of the users' messages as well as the sequence of actions to be performed by the bot
 
-    Template / Response
-        a message a bot can respond back to the user with
-
-        This is not just limited to text, which means it can include buttons, images, and other attachments.
-
-    Training
-        using labeled data to train a model
+    Template / Response / Utterance
+        A message template that is used to respond to a user. This can include text, buttons, images, and other attachments.
 
     User Goal
-        small reusable parts of stories (e.g. setting a reminder, filling out a form, answering FAQs)
+        A goal that a user wants to achieve.
 
-    User goal
-        a goal that a user wants to achieve
-
-        This can also be ambiguous / unclear in the beginning (e.g. buying an insurance policy). You might need multiple skills to achieve a user goal.
+        For example, a user may have the goal of booking a table at a restaurant. Another user may just want to make small talk.  Sometimes, the user expresses their goal with a single message, e.g. "I want to book a table at a restaurant". Other times the assistant may have to ask a few questions to understand how to help the user.  Note: Many other places refer to the user goal as the "intent", but in Rasa terminology, an intent is associated with every user message.
 
     Utterance
-        a type of bot action that only involves sending a pre-defined message back to the user (without running any other code)
+        A type of bot action that only involves sending a pre-defined message back to the user (without running any other code)
 
-    Word embedding
-        numeric representations of natural language words in a high-dimensional space
-
-        They are often used as an input to machine learning algorithms.
+    Word embedding / Word vector
+        A vector of floating point numbers which represent the meaning of a word. Words which have similar meanings should have vectors which point in almost the same direction.  Word embeddings are often used as an input to machine learning algorithms.
 
