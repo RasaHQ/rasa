@@ -237,7 +237,13 @@ def test_label_merging():
 def test_drop_intents_below_freq():
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
     clean_td = drop_intents_below_freq(td, 0)
-    assert clean_td.intents == {"affirm", "goodbye", "greet", "restaurant_search"}
+    assert clean_td.intents == {
+        "affirm",
+        "goodbye",
+        "greet",
+        "restaurant_search",
+        "chitchat",
+    }
 
     clean_td = drop_intents_below_freq(td, 10)
     assert clean_td.intents == {"affirm", "restaurant_search"}

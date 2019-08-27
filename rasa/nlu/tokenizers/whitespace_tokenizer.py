@@ -22,7 +22,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
     defaults = {
         # text will be tokenized with case sensitive as default
-        "intent_split_symbol": " ",
+        "intent_split_symbol": "_",
         "case_sensitive": True,
     }
 
@@ -41,11 +41,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
                 if example.get(attribute) is not None:
                     example.set(
                         MESSAGE_TOKENS_NAMES[attribute],
-                        self.tokenize(
-                            example.get(attribute),
-                            clean_text=attribute == MESSAGE_TEXT_ATTRIBUTE
-                            or attribute == MESSAGE_RESPONSE_ATTRIBUTE,
-                        ),
+                        self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -54,12 +50,14 @@ class WhitespaceTokenizer(Tokenizer, Component):
             MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], self.tokenize(message.text)
         )
 
-    def tokenize(self, text: Text, clean_text: bool = True) -> List[Token]:
+    def tokenize(
+        self, text: Text, attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+    ) -> List[Token]:
 
         if not self.case_sensitive:
             text = text.lower()
         # remove 'not a word character' if
-        if clean_text:
+        if attribute != MESSAGE_INTENT_ATTRIBUTE:
             words = re.sub(
                 # there is a space or an end of a string after it
                 r"[^\w#@&]+(?=\s|$)|"
