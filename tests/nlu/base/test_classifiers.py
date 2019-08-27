@@ -67,9 +67,8 @@ class ClassifierTestCollection:
         classifier = classifier_class(component_config, **kwargs)
         return classifier
 
-    @staticmethod
     def test_persist_and_load(
-            training_data, trained_classifier, filename, tmpdir
+        self, training_data, trained_classifier, filename, tmpdir
     ):
         meta = trained_classifier.persist(filename, tmpdir.strpath)
         loaded = trained_classifier.__class__.load(meta, tmpdir.strpath)
@@ -122,8 +121,9 @@ class TestKeywordClassifier(ClassifierTestCollection):
         rasa_reader = RasaReader()
         data = rasa_reader.read_from_json(json_data)
 
-        with caplog.at_level(logging.DEBUG,
-                             logger="rasa.nlu.classifiers.keyword__intent_classifer"):
+        with caplog.at_level(
+            logging.DEBUG, logger="rasa.nlu.classifiers.keyword__intent_classifer"
+        ):
             self._train_classifier(classifier_class, data, component_config, **kwargs)
         assert len(caplog.records) == 0
 
@@ -141,8 +141,9 @@ class TestKeywordClassifier(ClassifierTestCollection):
         rasa_reader = RasaReader()
         data = rasa_reader.read_from_json(json_data)
 
-        with caplog.at_level(logging.DEBUG,
-                             logger="rasa.nlu.classifiers.keyword__intent_classifer"):
+        with caplog.at_level(
+            logging.DEBUG, logger="rasa.nlu.classifiers.keyword__intent_classifer"
+        ):
             self._train_classifier(classifier_class, data, component_config, **kwargs)
         assert len(caplog.records) == 2
 
@@ -162,7 +163,8 @@ class TestKeywordClassifier(ClassifierTestCollection):
         rasa_reader = RasaReader()
         data = rasa_reader.read_from_json(json_data)
 
-        with caplog.at_level(logging.DEBUG,
-                             logger="rasa.nlu.classifiers.keyword__intent_classifer"):
+        with caplog.at_level(
+            logging.DEBUG, logger="rasa.nlu.classifiers.keyword__intent_classifer"
+        ):
             self._train_classifier(classifier_class, data, component_config, **kwargs)
         assert len(caplog.records) == 4
