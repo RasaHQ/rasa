@@ -102,7 +102,5 @@ def validate_files(args):
     if args.log_file != None:
         configure_file_logging(logging.root, args.log_file)
 
-    validator = loop.run_until_complete(
-        Validator.from_importer(file_importer)
-    )
+    validator = loop.run_until_complete(Validator.from_importer(file_importer))
     validator.verify_all()

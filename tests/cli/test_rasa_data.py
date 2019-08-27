@@ -62,7 +62,7 @@ def test_data_validate_help(run):
     for i, line in enumerate(lines):
         assert output.outlines[i] == line
 
+
 def test_data_validate_log_output(run):
     output = run("data", "validate", "--log-file", "log.out")
     assert os.path.isfile("log.out")
-

@@ -24,7 +24,7 @@ the script:
 You can also run these validations through the Python API by importing the `Validator` class,
 which has the following methods:
 
-**from_files():** Creates the instance from string paths to the necessary files.
+**from_importer():** Creates the instance from Rasa File Importer.
 
 **verify_intents():** Checks if intents listed in domain file are consistent with the NLU data.
 
@@ -42,15 +42,21 @@ To use these functions it is necessary to create a `Validator` object and initia
 .. code-block:: python
 
   import logging
-  from rasa import utils
+  import asyncio
+  from rasa.utils.io import configure_colored_logging
   from rasa.core.validator import Validator
+  from rasa.importers.rasa import RasaFileImporter
+
+  configure_colored_logging('DEBUG')
 
   logger = logging.getLogger(__name__)
+  loop = asyncio.get_event_loop()
 
-  utils.configure_colored_logging('DEBUG')
+  importer = RasaFileImporter(
+    domain_path="domain.yml",
+    training_data_paths=["data/nlu_data.md", "data/stories.md"],
+  )
 
-  validator = Validator.from_files(domain_file='domain.yml',
-                                   nlu_data='data/nlu_data.md',
-                                   stories='data/stories.md')
+  validator = loop.run_until_complete(Validator.from_importer(importer))
 
   validator.verify_all()
