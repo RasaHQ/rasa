@@ -137,33 +137,21 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
 .. tabs::
 
-    .. tab:: Inside a virtualenv
+    .. tab:: Rasa and Rasa X
 
         To install both Rasa and Rasa X in one go:
 
         .. code-block:: bash
 
-            (venv) $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
+            $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
+
+    .. tab:: Rasa only
 
         If you just want to install Rasa without Rasa X:
 
         .. code-block:: bash
 
-            (venv) $ pip install rasa
-
-    .. tab:: System-wide install
-
-        To install both Rasa and Rasa X in one go:
-
-        .. code-block:: bash
-
-            $ pip3 install --user rasa-x --extra-index-url https://pypi.rasa.com/simple
-
-        If you just want to install Rasa without Rasa X:
-
-        .. code-block:: bash
-
-            $ pip3 install --user rasa
+            $ pip3 install rasa
 
 .. admonition:: Congratulations! You have successfully installed Rasa!
 
@@ -204,7 +192,10 @@ will help you pick which pipeline to use.
     If you want to make sure you have the dependencies
     installed for any component you might ever need, and you
     don't mind the additional dependencies lying around, you can use
-    this to install everything:
+    this to install everything.
+
+    You'll first need to clone the repository and then run the following
+    command to install all the packages:
 
     .. code-block:: bash
 
