@@ -63,7 +63,7 @@ class EmbeddingIntentClassifier(Component):
         "hidden_layers_sizes_a": [256, 128],
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_b": [],
+        "hidden_layers_sizes_b": [256, 128],
         # Whether to share the hidden layers between input words and labels
         "share_hidden": False,
         # training parameters
@@ -246,10 +246,10 @@ class EmbeddingIntentClassifier(Component):
         attribute: Text,
         attribute_feature_name: Text,
     ) -> np.ndarray:
-        """Create matrix with label_ids encoded in rows as bag of words."""
+        """Create matrix with label_ids encoded in rows as bag of words. The features are already computed.
+        Find a training example for each label and get the encoded features from the corresponding Message object"""
 
         encoded_all_labels = []
-        single_encoding_shape = None
 
         for label_name, idx in label_id_dict.items():
             label_example = self._find_example_for_label(
@@ -259,9 +259,6 @@ class EmbeddingIntentClassifier(Component):
                 encoded_all_labels.insert(
                     idx, label_example.get(attribute_feature_name)
                 )
-                single_encoding_shape = label_example.get(attribute_feature_name).shape
-            else:
-                encoded_all_labels.insert(idx, np.zeros_like(single_encoding_shape))
 
         return np.array(encoded_all_labels)
 
@@ -272,11 +269,12 @@ class EmbeddingIntentClassifier(Component):
         label_id_dict: Dict[Text, int],
         attribute: Text,
     ) -> "train_utils.SessionData":
-        """Prepare data for training"""
+        """Prepare data for training and create a SessionData object"""
 
         X = []
         label_ids = []
         Y = []
+
         for e in training_data.intent_examples:
             if e.get(attribute):
                 X.append(e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]))
@@ -530,12 +528,10 @@ class EmbeddingIntentClassifier(Component):
         # transform sim to python list for JSON serializing
         return label_ids, message_sim.tolist()
 
-    def process(self, message: "Message", **kwargs: Any) -> None:
-        """Return the most likely label and its similarity to the input."""
+    def predict_label(self, message):
 
-        intent = {"name": None, "confidence": 0.0}
-        intent_ranking = []
-
+        label = {"name": None, "confidence": 0.0}
+        label_ranking = []
         if self.session is None:
             logger.error(
                 "There is no trained tf.session: "
@@ -555,20 +551,26 @@ class EmbeddingIntentClassifier(Component):
 
             # if X contains all zeros do not predict some label
             if X.any() and label_ids.size > 0:
-                intent = {
+                label = {
                     "name": self.inverted_label_dict[label_ids[0]],
                     "confidence": message_sim[0],
                 }
 
                 ranking = list(zip(list(label_ids), message_sim))
                 ranking = ranking[:LABEL_RANKING_LENGTH]
-                intent_ranking = [
+                label_ranking = [
                     {"name": self.inverted_label_dict[label_idx], "confidence": score}
                     for label_idx, score in ranking
                 ]
+        return label, label_ranking
 
-        message.set("intent", intent, add_to_output=True)
-        message.set("intent_ranking", intent_ranking, add_to_output=True)
+    def process(self, message: "Message", **kwargs: Any) -> None:
+        """Return the most likely label and its similarity to the input."""
+
+        label, label_ranking = self.predict_label(message)
+
+        message.set("intent", label, add_to_output=True)
+        message.set("intent_ranking", label_ranking, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.

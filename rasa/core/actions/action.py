@@ -13,8 +13,13 @@ from rasa.core.constants import (
     DEFAULT_REQUEST_TIMEOUT,
     REQUESTED_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
+    UTTER_PREFIX,
+    RESPOND_PREFIX,
 )
-from rasa.constants import DEFAULT_OPEN_UTTERANCE_TYPE_KEY
+from rasa.nlu.constants import (
+    DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
+    OPEN_UTTERANCE_KEY_SUFFIX,
+)
 
 from rasa.core.events import (
     UserUtteranceReverted,
@@ -48,10 +53,6 @@ ACTION_DEFAULT_ASK_AFFIRMATION_NAME = "action_default_ask_affirmation"
 ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
 
 ACTION_BACK_NAME = "action_back"
-
-UTTER_PREFIX = "utter_"
-
-RESPOND_PREFIX = "respond_"
 
 
 def default_actions() -> List["Action"]:
@@ -175,9 +176,7 @@ class Action(object):
 
 
 class ActionUtterPredictedResponse(Action):
-    """
-    An action which queries the Response Selector for the appropriate response.
-    """
+    """An action which queries the Response Selector for the appropriate response."""
 
     def __init__(self, name: Text, silent_fail: Optional[bool] = False):
         self.action_name = name
@@ -193,14 +192,20 @@ class ActionUtterPredictedResponse(Action):
         """Query the appropriate response and create a bot utterance with that."""
 
         message = None
-        query_keys = [
-            "{0}_response".format(self.action_name),
+
+        # Build query keys for tracker. This is a list because response for the action can be
+        # predicted by one of the two -
+        # 1. a specific response selector of this open domain intent type
+        # 2. a generic response selector built for all open domain intent types in the training data.
+        # We check in both
+        tracker_query_keys = [
+            "{0}{1}".format(self.action_name, OPEN_UTTERANCE_KEY_SUFFIX),
             DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
         ]
-        for query_key in query_keys:
-            logger.debug("Looking for response with query_key {0}".format(query_key))
+        for query_key in tracker_query_keys:
+            logger.debug("Looking for response with query_key {}".format(query_key))
             if query_key in tracker.latest_message.parse_data:
-                logger.debug("Picking response of type {0}".format(query_key))
+                logger.debug("Picking response of type {}".format(query_key))
                 message = {
                     "text": tracker.latest_message.parse_data.get(query_key).get("name")
                 }

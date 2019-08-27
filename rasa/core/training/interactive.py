@@ -21,17 +21,14 @@ from questionary import Choice, Form, Question
 
 from rasa.cli import utils as cliutils
 from rasa.core import constants, run, train, utils
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    default_action_names,
-    UTTER_PREFIX,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,
     DEFAULT_SERVER_PORT,
     DEFAULT_SERVER_URL,
     REQUESTED_SLOT,
+    UTTER_PREFIX,
 )
 from rasa.core.domain import Domain
 import rasa.core.events

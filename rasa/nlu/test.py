@@ -19,11 +19,8 @@ from typing import (
 
 import rasa.utils.io as io_utils
 
-from rasa.constants import (
-    TEST_DATA_FILE,
-    TRAIN_DATA_FILE,
-    DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
-)
+from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
+from rasa.nlu.constants import DEFAULT_OPEN_UTTERANCE_TYPE_KEY
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
 from rasa.nlu.utils import write_to_file
@@ -32,7 +29,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers import Token
-from rasa.core.actions.action import RESPOND_PREFIX
+from rasa.core.constants import RESPOND_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -342,9 +339,12 @@ def evaluate_response_selections(
     report_folder: Optional[Text],
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for response selection.
+
     Only considers those examples with a set response.
     Others are filtered out. Returns a dictionary of containing the
-    evaluation result."""
+    evaluation result.
+
+    """
 
     # remove empty intent targets
     num_examples = len(response_selection_results)
@@ -409,13 +409,15 @@ def evaluate_intents(
     output_folder: Optional[Text] = None,
 ) -> Dict:  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
+
     Log samples which could not be classified correctly and save them to file.
     Creates a confidence histogram which is saved to file.
     Wrong and correct prediction confidences will be
     plotted in separate bars of the same histogram plot.
     Only considers those examples with a set intent.
     Others are filtered out. Returns a dictionary of containing the
-    evaluation result."""
+    evaluation result.
+    """
 
     # remove empty intent targets
     num_examples = len(intent_results)

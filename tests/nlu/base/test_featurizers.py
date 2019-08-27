@@ -352,7 +352,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     }
     # add trained vocabulary to vectorizer params
     for attribute, attribute_vect_params in train_vect_params.items():
-        if train_ftr.is_trained[attribute]:
+        if hasattr(train_ftr.vectorizer[attribute], "vocabulary_"):
             train_vect_params[attribute].update(
                 {"vocabulary": train_ftr.vectorizer[attribute].vocabulary_}
             )

@@ -22,7 +22,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
     defaults = {
         # text will be tokenized with case sensitive as default
-        "label_split_symbol": " ",
+        "intent_split_symbol": " ",
         "case_sensitive": True,
     }
 
@@ -30,7 +30,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
         super(WhitespaceTokenizer, self).__init__(component_config)
-        self.label_split_symbol = self.component_config["label_split_symbol"]
+        self.intent_split_symbol = self.component_config["intent_split_symbol"]
         self.case_sensitive = self.component_config["case_sensitive"]
 
     def train(
@@ -43,7 +43,8 @@ class WhitespaceTokenizer(Tokenizer, Component):
                         MESSAGE_TOKENS_NAMES[attribute],
                         self.tokenize(
                             example.get(attribute),
-                            clean_text=attribute == MESSAGE_TEXT_ATTRIBUTE,
+                            clean_text=attribute == MESSAGE_TEXT_ATTRIBUTE
+                            or attribute == MESSAGE_RESPONSE_ATTRIBUTE,
                         ),
                     )
 
@@ -73,7 +74,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
                 text,
             ).split()
         else:
-            words = text.split(self.label_split_symbol)
+            words = text.split(self.intent_split_symbol)
 
         running_offset = 0
         tokens = []

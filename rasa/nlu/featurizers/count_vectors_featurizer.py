@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Union
 
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
@@ -83,6 +83,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _load_count_vect_params(self):
 
+        # Use shared vocabulary between text and all other attributes of Message
         self.use_shared_vocab = self.component_config["use_shared_vocab"]
 
         # set analyzer
@@ -113,9 +114,6 @@ class CountVectorsFeaturizer(Featurizer):
 
         # if convert all characters to lowercase
         self.lowercase = self.component_config["lowercase"]
-
-        # Flag to check if corresponding count vectorizers for each attribute of a message is trainable or not
-        self.is_trained = {attribute: False for attribute in MESSAGE_ATTRIBUTES}
 
     # noinspection PyPep8Naming
     def _load_OOV_params(self):
@@ -216,10 +214,6 @@ class CountVectorsFeaturizer(Featurizer):
 
         return text
 
-    @staticmethod
-    def _get_text_sequence(text):
-        return text.split()
-
     # noinspection PyPep8Naming
     def _check_OOV_present(self, examples):
         if self.OOV_token and not self.OOV_words:
@@ -247,9 +241,10 @@ class CountVectorsFeaturizer(Featurizer):
         min_df,
         max_features,
         analyzer,
-        shared=False,
+        shared,
         vocabulary=None,
     ):
+        """Create a dictionary of CountVectorizer objects for all attributes of Message object"""
 
         attribute_vectorizers = {}
         shared_vectorizer = None
@@ -338,19 +333,14 @@ class CountVectorsFeaturizer(Featurizer):
                 combined_cleaned_texts += cleaned_attribute_texts[attribute]
 
         featurized_attributes = {}
-        # noinspection PyPep8Naming
 
         for index, attribute in enumerate(MESSAGE_ATTRIBUTES):
             try:
                 if self.use_shared_vocab:
                     if index == 0:
-                        # Only train a model for first attribute
+                        # Only train a model for first attribute, since we share the same object for all other
+                        # attributes, we don't need to separately train them.
                         self.vectorizer[attribute].fit(combined_cleaned_texts)
-                    else:
-                        # Copy the first model for this attribute
-                        self.vectorizer[attribute] = self.vectorizer[
-                            MESSAGE_ATTRIBUTES[0]
-                        ]
                 else:
                     self.vectorizer[attribute].fit(cleaned_attribute_texts[attribute])
             except ValueError:
@@ -361,8 +351,6 @@ class CountVectorsFeaturizer(Featurizer):
                     )
                 )
                 continue
-
-            self.is_trained[attribute] = True
 
             featurized_attributes[attribute] = (
                 self.vectorizer[attribute]
@@ -419,26 +407,32 @@ class CountVectorsFeaturizer(Featurizer):
         """
 
         file_name = file_name + ".pkl"
-        any_model_trained = False
-        for attribute in MESSAGE_ATTRIBUTES:
-            any_model_trained = self.is_trained[attribute] or any_model_trained
 
-        if any_model_trained:
-            featurizer_file = os.path.join(model_dir, file_name)
-            if not self.use_shared_vocab:
-                utils.json_pickle(
-                    featurizer_file,
-                    [
-                        self.vectorizer[attribute].vocabulary_
-                        if self.is_trained[attribute]
-                        else None
-                        for attribute in MESSAGE_ATTRIBUTES
-                    ],
+        if self.vectorizer:
+            any_model_trained = False
+            for attribute in MESSAGE_ATTRIBUTES:
+                any_model_trained = (
+                    hasattr(self.vectorizer[attribute], "vocabulary_")
+                    or any_model_trained
                 )
-            else:
-                utils.json_pickle(
-                    featurizer_file, self.vectorizer[MESSAGE_TEXT_ATTRIBUTE].vocabulary_
-                )
+
+            if any_model_trained:
+                featurizer_file = os.path.join(model_dir, file_name)
+                if not self.use_shared_vocab:
+                    utils.json_pickle(
+                        featurizer_file,
+                        [
+                            self.vectorizer[attribute].vocabulary_
+                            if hasattr(self.vectorizer[attribute], "vocabulary_")
+                            else None
+                            for attribute in MESSAGE_ATTRIBUTES
+                        ],
+                    )
+                else:
+                    utils.json_pickle(
+                        featurizer_file,
+                        self.vectorizer[MESSAGE_TEXT_ATTRIBUTE].vocabulary_,
+                    )
         return {"file": file_name}
 
     @classmethod
@@ -457,6 +451,7 @@ class CountVectorsFeaturizer(Featurizer):
         if os.path.exists(featurizer_file):
             vocabulary = utils.json_unpickle(featurizer_file)
 
+            # If the retrieved object is not a list then a single vocabulary was persisted.
             share_vocabulary = not isinstance(vocabulary, list)
 
             vectorizer = cls.create_vectorizers(
