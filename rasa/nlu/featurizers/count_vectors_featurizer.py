@@ -262,13 +262,11 @@ class CountVectorsFeaturizer(Featurizer):
                 vocabulary=vocabulary,
             )
 
-        for index, attribute in enumerate(MESSAGE_ATTRIBUTES):
-
-            attribute_vocabulary = (
-                vocabulary[index] if isinstance(vocabulary, list) else vocabulary
-            )
+        for attribute in MESSAGE_ATTRIBUTES:
 
             if not shared:
+
+                attribute_vocabulary = vocabulary[attribute]
                 new_vectorizer = CountVectorizer(
                     token_pattern=token_pattern,
                     strip_accents=strip_accents,
@@ -345,10 +343,8 @@ class CountVectorsFeaturizer(Featurizer):
                     self.vectorizer[attribute].fit(cleaned_attribute_texts[attribute])
             except ValueError:
                 logger.warning(
-                    "Unable to train CountVectorizer for message attribute {0}. "
-                    "Returning with an untrained CountVectorizer for that attribute".format(
-                        attribute
-                    )
+                    "Unable to train CountVectorizer for message attribute {}. "
+                    "Leaving an untrained CountVectorizer for it".format(attribute)
                 )
                 continue
 
@@ -421,12 +417,12 @@ class CountVectorsFeaturizer(Featurizer):
                 if not self.use_shared_vocab:
                     utils.json_pickle(
                         featurizer_file,
-                        [
-                            self.vectorizer[attribute].vocabulary_
+                        {
+                            attribute: self.vectorizer[attribute].vocabulary_
                             if hasattr(self.vectorizer[attribute], "vocabulary_")
                             else None
                             for attribute in MESSAGE_ATTRIBUTES
-                        ],
+                        },
                     )
                 else:
                     utils.json_pickle(
@@ -452,7 +448,7 @@ class CountVectorsFeaturizer(Featurizer):
             vocabulary = utils.json_unpickle(featurizer_file)
 
             # If the retrieved object is not a list then a single vocabulary was persisted.
-            share_vocabulary = not isinstance(vocabulary, list)
+            share_vocabulary = meta["use_shared_vocab"]
 
             vectorizer = cls.create_vectorizers(
                 token_pattern=meta["token_pattern"],

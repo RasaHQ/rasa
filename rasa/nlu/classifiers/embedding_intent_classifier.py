@@ -63,7 +63,7 @@ class EmbeddingIntentClassifier(Component):
         "hidden_layers_sizes_a": [256, 128],
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_b": [256, 128],
+        "hidden_layers_sizes_b": [],
         # Whether to share the hidden layers between input words and labels
         "share_hidden": False,
         # training parameters

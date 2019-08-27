@@ -196,6 +196,33 @@ def test_count_vector_featurizer(sentence, expected):
 
 
 @pytest.mark.parametrize(
+    "sentence, intent, response, intent_features, response_features",
+    [
+        ("hello hello hello hello hello ", "greet", None, [1], None),
+        ("hello goodbye hello", "greet", None, [1], None),
+        ("a 1 2", "char", "char char", [1], [2]),
+    ],
+)
+def test_count_vector_featurizer_attribute_featurization(
+    sentence, intent, response, intent_features, response_features
+):
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    train_message = Message(sentence)
+
+    # this is needed for a valid training example
+    train_message.set("intent", intent)
+    train_message.set("response", response)
+
+    data = TrainingData([train_message])
+    ftr.train(data)
+
+    assert train_message.get("intent_features") == intent_features
+    assert train_message.get("response_features") == response_features
+
+
+@pytest.mark.parametrize(
     "sentence, expected",
     [
         ("hello hello hello hello hello __OOV__", [1, 5]),
