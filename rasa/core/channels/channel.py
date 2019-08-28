@@ -153,6 +153,7 @@ class OutputChannel(object):
 
     async def send_response(self, recipient_id: Text, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
+        print ("message: {}".format(message))
 
         if message.get("quick_replies"):
             await self.send_quick_replies(
@@ -243,6 +244,9 @@ class OutputChannel(object):
         """Sends elements to the output.
 
         Default implementation will just post the elements as a string."""
+
+        # we can't pass the empty "buttons" key of the message through to send_text_with_buttons()
+        kwargs.pop("buttons", None)
 
         for element in elements:
             element_msg = "{title} : {subtitle}".format(
