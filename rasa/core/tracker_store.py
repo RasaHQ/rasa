@@ -2,7 +2,7 @@ import json
 import logging
 import pickle
 import typing
-from typing import Iterator, Optional, Text, Iterable, Union
+from typing import Iterator, Optional, Text, Iterable, Union, Dict
 
 import itertools
 
@@ -170,17 +170,16 @@ class RedisTrackerStore(TrackerStore):
         password=None,
         event_broker=None,
         record_exp=None,
-        is_sentinel=False,
-        sentinel_name=None,
-        socket_timeout=None,
-        sentinel_data=None,
+        sentinel_name: Optional[Text] = None,
+        socket_timeout: Optional[float] = None,
+        sentinel_data: Optional[Dict] = None,
     ):
 
         import redis
 
         self.record_exp = record_exp
-        self.is_sentinel = is_sentinel
-        if not self.is_sentinel:
+        self.sentinel_name = sentinel_name
+        if self.sentinel_name is None:
             self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
         else:
             from redis import sentinel  # pytype: disable=import-error
@@ -212,7 +211,7 @@ class RedisTrackerStore(TrackerStore):
         self.redis_writer(tracker.sender_id, serialised_tracker, timeout)
 
     def redis_writer(self, sender_id, serialised_tracker, timeout):
-        if not self.is_sentinel:
+        if self.sentinel_name is None:
             redis = self.red
         else:
             redis, _ = self.sentinel
@@ -226,7 +225,7 @@ class RedisTrackerStore(TrackerStore):
             return None
 
     def redis_reader(self, sender_id):
-        if not self.is_sentinel:
+        if self.sentinel_name is None:
             stored = self.red.get(sender_id)
         else:
             _, slave = self.sentinel
