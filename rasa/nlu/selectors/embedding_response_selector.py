@@ -108,12 +108,13 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 0,  # large values may hurt performance,
         # selector config
-        "response_type": None,
+        # name of open domain intent for which this response selector is to be trained
+        "open_domain_intent_name": None,
     }
     # end default properties (DOC MARKER - don't remove)
 
     def _load_selector_params(self, config: Dict[Text, Any]):
-        self.response_type = config["response_type"]
+        self.open_domain_intent_name = config["open_domain_intent_name"]
 
     def _load_params(self) -> None:
         super(ResponseSelector, self)._load_params()
@@ -124,16 +125,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
         label, label_ranking = self.predict_label(message)
 
-        if self.response_type:
-            response_key_for_tracker = "{0}{1}{2}".format(
-                RESPOND_PREFIX, self.response_type, OPEN_UTTERANCE_KEY_SUFFIX
-            )
-            response_ranking_key_for_tracker = "{0}{1}{2}".format(
-                RESPOND_PREFIX, self.response_type, OPEN_UTTERANCE_RANKING_KEY_SUFFIX
-            )
-        else:
-            response_key_for_tracker = DEFAULT_OPEN_UTTERANCE_TYPE_KEY
-            response_ranking_key_for_tracker = DEFAULT_OPEN_UTTERANCE_TYPE_KEY_RANKING
+        response_key_for_tracker, response_ranking_key_for_tracker = (
+            self._get_response_keys()
+        )
 
         logger.debug(
             "Adding following keys to the tracker: {0}, {1}".format(
@@ -144,11 +138,27 @@ class ResponseSelector(EmbeddingIntentClassifier):
         message.set(response_key_for_tracker, label, add_to_output=True)
         message.set(response_ranking_key_for_tracker, label_ranking, add_to_output=True)
 
+    def _get_response_keys(self):
+
+        if self.open_domain_intent_name:
+            response_key_for_tracker = "{0}{1}{2}".format(
+                RESPOND_PREFIX, self.open_domain_intent_name, OPEN_UTTERANCE_KEY_SUFFIX
+            )
+            response_ranking_key_for_tracker = "{0}{1}{2}".format(
+                RESPOND_PREFIX,
+                self.open_domain_intent_name,
+                OPEN_UTTERANCE_RANKING_KEY_SUFFIX,
+            )
+        else:
+            response_key_for_tracker = DEFAULT_OPEN_UTTERANCE_TYPE_KEY
+            response_ranking_key_for_tracker = DEFAULT_OPEN_UTTERANCE_TYPE_KEY_RANKING
+        return response_key_for_tracker, response_ranking_key_for_tracker
+
     def preprocess_data(self, training_data):
         """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
 
-        if self.response_type:
-            training_data = training_data.filter_by_intent(self.response_type)
+        if self.open_domain_intent_name:
+            training_data = training_data.filter_by_intent(self.open_domain_intent_name)
 
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_RESPONSE_ATTRIBUTE
