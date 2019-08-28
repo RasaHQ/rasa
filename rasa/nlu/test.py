@@ -422,31 +422,15 @@ def substitute_labels(labels: List[Text], old: Text, new: Text) -> List[Text]:
     return [new if label == old else label for label in labels]
 
 
-def collect_entity_errors(
+def write_incorrect_entity_predictions(
     entity_results: List[EntityEvaluationResult],
     merged_targets: List[Text],
     merged_predictions: List[Text],
     error_filename: Text,
 ):
-    errors = []
-
-    offset = 0
-    for entity_result in entity_results:
-        error = False
-        for i in range(offset, offset + len(entity_result.tokens)):
-            if merged_targets[i] != merged_predictions[i]:
-                error = True
-                break
-
-        if error:
-            errors.append(
-                {
-                    "text": entity_result.message,
-                    "entities": entity_result.entity_targets,
-                    "predicted_entities": entity_result.entity_predictions,
-                }
-            )
-        offset += len(entity_result.tokens)
+    errors = collect_incorrect_entity_predictions(
+        entity_results, merged_predictions, merged_targets
+    )
 
     if errors:
         utils.write_json_to_file(error_filename, errors)
@@ -459,33 +443,37 @@ def collect_entity_errors(
         logger.info("Your model predicted all entities successfully.")
 
 
-def collect_entity_successes(
+def collect_incorrect_entity_predictions(
+    entity_results: List[EntityEvaluationResult],
+    merged_predictions: List[Text],
+    merged_targets: List[Text],
+):
+    errors = []
+    offset = 0
+    for entity_result in entity_results:
+        for i in range(offset, offset + len(entity_result.tokens)):
+            if merged_targets[i] != merged_predictions[i]:
+                errors.append(
+                    {
+                        "text": entity_result.message,
+                        "entities": entity_result.entity_targets,
+                        "predicted_entities": entity_result.entity_predictions,
+                    }
+                )
+                break
+        offset += len(entity_result.tokens)
+    return errors
+
+
+def write_successful_entity_predictions(
     entity_results: List[EntityEvaluationResult],
     merged_targets: List[Text],
     merged_predictions: List[Text],
     successes_filename: Text,
 ):
-    successes = []
-
-    offset = 0
-    for entity_result in entity_results:
-        success = False
-        for i in range(offset, offset + len(entity_result.tokens)):
-            if (
-                merged_targets[i] == merged_predictions[i]
-                and merged_targets[i] != NO_ENTITY
-            ):
-                success = True
-                break
-
-        if success:
-            successes.append(
-                {
-                    "text": entity_result.message,
-                    "entities": entity_result.entity_targets,
-                    "predicted_entities": entity_result.entity_predictions,
-                }
-            )
+    successes = collect_successful_entity_predictions(
+        entity_results, merged_predictions, merged_targets
+    )
 
     if successes:
         utils.write_json_to_file(successes_filename, successes)
@@ -497,6 +485,31 @@ def collect_entity_successes(
         )
     else:
         logger.info("No successful entity prediction found.")
+
+
+def collect_successful_entity_predictions(
+    entity_results: List[EntityEvaluationResult],
+    merged_predictions: List[Text],
+    merged_targets: List[Text],
+):
+    successes = []
+    offset = 0
+    for entity_result in entity_results:
+        for i in range(offset, offset + len(entity_result.tokens)):
+            if (
+                merged_targets[i] == merged_predictions[i]
+                and merged_targets[i] != NO_ENTITY
+            ):
+                successes.append(
+                    {
+                        "text": entity_result.message,
+                        "entities": entity_result.entity_targets,
+                        "predicted_entities": entity_result.entity_predictions,
+                    }
+                )
+                break
+        offset += len(entity_result.tokens)
+    return successes
 
 
 def evaluate_entities(
@@ -551,7 +564,7 @@ def evaluate_entities(
             if output_directory:
                 successes_filename = os.path.join(output_directory, successes_filename)
             # save classified samples to file for debugging
-            collect_entity_successes(
+            write_successful_entity_predictions(
                 entity_results, merged_targets, merged_predictions, successes_filename
             )
 
@@ -560,7 +573,7 @@ def evaluate_entities(
             if output_directory:
                 errors_filename = os.path.join(output_directory, errors_filename)
             # log and save misclassified samples to file for debugging
-            collect_entity_errors(
+            write_incorrect_entity_predictions(
                 entity_results, merged_targets, merged_predictions, errors_filename
             )
 

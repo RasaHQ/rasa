@@ -28,6 +28,8 @@ from rasa.nlu.test import (
     get_unique_labels,
     get_evaluation_metrics,
     NO_ENTITY,
+    collect_successful_entity_predictions,
+    collect_incorrect_entity_predictions,
 )
 from rasa.nlu.test import does_token_cross_borders
 from rasa.nlu.test import align_entity_predictions
@@ -525,3 +527,160 @@ def test_nlu_comparison(tmpdir):
 
     run_1_path = os.path.join(output, "run_1")
     assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.md"}
+
+
+@pytest.mark.parametrize(
+    "entity_results,targets,predictions,successes,errors",
+    [
+        (
+            [
+                EntityEvaluationResult(
+                    entity_targets=[
+                        {
+                            "start": 17,
+                            "end": 24,
+                            "value": "Italian",
+                            "entity": "cuisine",
+                        }
+                    ],
+                    entity_predictions=[
+                        {
+                            "start": 17,
+                            "end": 24,
+                            "value": "Italian",
+                            "entity": "cuisine",
+                        }
+                    ],
+                    tokens=[
+                        "I",
+                        "want",
+                        "to",
+                        "book",
+                        "an",
+                        "Italian",
+                        "restaurant",
+                        ".",
+                    ],
+                    message="I want to book an Italian restaurant.",
+                ),
+                EntityEvaluationResult(
+                    entity_targets=[
+                        {
+                            "start": 8,
+                            "end": 15,
+                            "value": "Mexican",
+                            "entity": "cuisine",
+                        },
+                        {
+                            "start": 31,
+                            "end": 32,
+                            "value": "4",
+                            "entity": "number_people",
+                        },
+                    ],
+                    entity_predictions=[],
+                    tokens=[
+                        "Book",
+                        "an",
+                        "Mexican",
+                        "restaurant",
+                        "for",
+                        "4",
+                        "people",
+                        ".",
+                    ],
+                    message="Book an Mexican restaurant for 4 people.",
+                ),
+            ],
+            [
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                "cuisine",
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                "cuisine",
+                NO_ENTITY,
+                NO_ENTITY,
+                "number_people",
+                NO_ENTITY,
+                NO_ENTITY,
+            ],
+            [
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                "cuisine",
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+            ],
+            [
+                {
+                    "text": "I want to book an Italian restaurant.",
+                    "entities": [
+                        {
+                            "start": 17,
+                            "end": 24,
+                            "value": "Italian",
+                            "entity": "cuisine",
+                        }
+                    ],
+                    "predicted_entities": [
+                        {
+                            "start": 17,
+                            "end": 24,
+                            "value": "Italian",
+                            "entity": "cuisine",
+                        }
+                    ],
+                }
+            ],
+            [
+                {
+                    "text": "Book an Mexican restaurant for 4 people.",
+                    "entities": [
+                        {
+                            "start": 8,
+                            "end": 15,
+                            "value": "Mexican",
+                            "entity": "cuisine",
+                        },
+                        {
+                            "start": 31,
+                            "end": 32,
+                            "value": "4",
+                            "entity": "number_people",
+                        },
+                    ],
+                    "predicted_entities": [],
+                }
+            ],
+        )
+    ],
+)
+def test_collect_entity_predictions(
+    entity_results, targets, predictions, successes, errors
+):
+    actual = collect_successful_entity_predictions(entity_results, targets, predictions)
+
+    assert len(successes) == len(actual)
+    assert successes == actual
+
+    actual = collect_incorrect_entity_predictions(entity_results, targets, predictions)
+
+    assert len(errors) == len(actual)
+    assert errors == actual
