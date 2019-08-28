@@ -320,14 +320,14 @@ class EmbeddingPolicy(Policy):
             a, mask, self.attention_weights, hparams, self.C2, self._is_training
         )
 
+        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
+            # pick last label if max history featurizer is used
+            a = a[:, -1:, :]
+            mask = mask[:, -1:]
+
         dial_embed = train_utils.create_tf_embed(
             a, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="dial"
         )
-
-        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
-            # pick last label if max history featurizer is used
-            dial_embed = dial_embed[:, -1:, :]
-            mask = mask[:, -1:]
 
         return dial_embed, mask
 
