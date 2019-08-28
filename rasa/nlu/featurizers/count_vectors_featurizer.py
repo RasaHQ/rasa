@@ -141,10 +141,18 @@ class CountVectorsFeaturizer(Featurizer):
                 return True
         return False
 
-    def _get_attribute_vocabulary(self, attribute) -> Dict[Text, int]:
+    def _get_attribute_vocabulary(self, attribute) -> Optional[Dict[Text, int]]:
         if self._check_attribute_vocabulary(attribute):
             return self.vectorizer[attribute].vocabulary_
-        return {}
+        return None
+
+    def _get_attribute_vocabulary_tokens(self, attribute) -> Optional[List[Text]]:
+
+        attribute_vocabulary = self._get_attribute_vocabulary(attribute)
+        if attribute_vocabulary:
+            return list(attribute_vocabulary.keys())
+        else:
+            return None
 
     def _check_analyzer(self):
         if self.analyzer != "word":
@@ -214,7 +222,7 @@ class CountVectorsFeaturizer(Featurizer):
                 if self.OOV_token in self._get_attribute_vocabulary(attribute):
                     text_tokens = [
                         t
-                        if t in self._get_attribute_vocabulary(attribute).keys()
+                        if t in self._get_attribute_vocabulary_tokens(attribute)
                         else self.OOV_token
                         for t in text_tokens
                     ]
@@ -259,7 +267,6 @@ class CountVectorsFeaturizer(Featurizer):
     ) -> Dict[Text, "CountVectorizer"]:
         """Create a dictionary of CountVectorizer objects for all attributes of Message object"""
 
-        # attribute_vectorizers = {attribute: None for attribute in MESSAGE_ATTRIBUTES}
         attribute_vectorizers = {}
         shared_vectorizer = None
         if shared:
@@ -433,8 +440,6 @@ class CountVectorsFeaturizer(Featurizer):
                         featurizer_file,
                         {
                             attribute: self._get_attribute_vocabulary(attribute)
-                            if self._check_attribute_vocabulary(attribute)
-                            else None
                             for attribute in MESSAGE_ATTRIBUTES
                         },
                     )

@@ -155,6 +155,21 @@ class EmbeddingIntentClassifier(Component):
         self._train_op = None
         self._is_training = None
 
+    # config migration warning
+    def _check_old_config_variables(self, config: Dict[Text, Any]) -> None:
+
+        deprecated_tokenization_params = [
+            "intent_tokenization_flag",
+            "intent_split_symbol",
+        ]
+        for deprecated_param in deprecated_tokenization_params:
+            if deprecated_param in config:
+                logger.warning(
+                    "Intent tokenization has been moved to WhitespaceTokenizer. "
+                    "Your config still mentions '{}'. Tokenization will fail if you specify the parameter here and "
+                    "ignore it in Whitespace Tokenizer.".format(deprecated_param)
+                )
+
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layer_sizes = {
@@ -207,6 +222,7 @@ class EmbeddingIntentClassifier(Component):
 
     def _load_params(self) -> None:
 
+        self._check_old_config_variables(self.component_config)
         self._tf_config = train_utils.load_tf_config(self.component_config)
         self._load_nn_architecture_params(self.component_config)
         self._load_embedding_params(self.component_config)
