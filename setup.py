@@ -26,7 +26,7 @@ tests_requires = [
 ]
 
 install_requires = [
-    "requests~=2.22",
+    "requests>=2.20",
     "boto3~=1.9",
     "matplotlib~=3.0",
     "simplejson~=3.16",
@@ -37,7 +37,12 @@ install_requires = [
     "pymongo~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
-    "tensorflow~=1.13.0",
+    "tensorflow~=1.14.0",
+    # setuptools comes from tensorboard requirement:
+    # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
+    "setuptools >= 41.0.0",
+    "tensorflow-probability~=0.7.0",
+    "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
     "networkx~=2.3",

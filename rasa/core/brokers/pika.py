@@ -36,15 +36,24 @@ def initialise_pika_connection(
 
     import pika
 
-    parameters = pika.ConnectionParameters(
-        host,
-        credentials=pika.PlainCredentials(username, password),
-        connection_attempts=connection_attempts,
-        # Wait between retries since
-        # it can take some time until
-        # RabbitMQ comes up.
-        retry_delay=retry_delay_in_seconds,
-    )
+    if host.startswith("amqp"):
+        # user supplied a amqp url containing all the info
+        parameters = pika.URLParameters(host)
+        parameters.connection_attempts = connection_attempts
+        parameters.retry_delay = retry_delay_in_seconds
+        if username:
+            parameters.credentials = pika.PlainCredentials(username, password)
+    else:
+        # host seems to be just the host, so we use our parameters
+        parameters = pika.ConnectionParameters(
+            host,
+            credentials=pika.PlainCredentials(username, password),
+            connection_attempts=connection_attempts,
+            # Wait between retries since
+            # it can take some time until
+            # RabbitMQ comes up.
+            retry_delay=retry_delay_in_seconds,
+        )
     return pika.BlockingConnection(parameters)
 
 

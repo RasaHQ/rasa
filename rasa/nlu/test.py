@@ -37,6 +37,8 @@ ENTITY_PROCESSORS = {"EntitySynonymMapper"}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
+NO_ENTITY = "no_entity"
+
 IntentEvaluationResult = namedtuple(
     "IntentEvaluationResult",
     "intent_target " "intent_prediction " "message " "confidence",
@@ -146,22 +148,42 @@ def log_evaluation_table(
 
 
 def get_evaluation_metrics(
-    targets: Iterable[Any], predictions: Iterable[Any], output_dict: bool = False
+    targets: Iterable[Any],
+    predictions: Iterable[Any],
+    output_dict: bool = False,
+    exclude_label: Text = None,
 ) -> Tuple[Union[Text, Dict[Text, Dict[Text, float]]], float, float, float]:
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
-    targets = clean_intent_labels(targets)
-    predictions = clean_intent_labels(predictions)
+    targets = clean_labels(targets)
+    predictions = clean_labels(predictions)
+
+    labels = get_unique_labels(targets, exclude_label)
+    if not labels:
+        logger.warning("No labels to evaluate. Skip evaluation.")
+        return {}, 0.0, 0.0, 0.0
 
     report = metrics.classification_report(
-        targets, predictions, output_dict=output_dict
+        targets, predictions, labels=labels, output_dict=output_dict
     )
-    precision = metrics.precision_score(targets, predictions, average="weighted")
-    f1 = metrics.f1_score(targets, predictions, average="weighted")
+    precision = metrics.precision_score(
+        targets, predictions, labels=labels, average="weighted"
+    )
+    f1 = metrics.f1_score(targets, predictions, labels=labels, average="weighted")
     accuracy = metrics.accuracy_score(targets, predictions)
 
     return report, precision, f1, accuracy
+
+
+def get_unique_labels(
+    targets: Iterable[Any], exclude_label: Optional[Text]
+) -> List[Text]:
+    """Get unique labels. Exclude 'exclude_label' if specified."""
+    labels = set(targets)
+    if exclude_label and exclude_label in labels:
+        labels.remove(exclude_label)
+    return list(labels)
 
 
 def remove_empty_intent_examples(
@@ -182,7 +204,7 @@ def remove_empty_intent_examples(
     return filtered
 
 
-def clean_intent_labels(labels: Iterable[Any]) -> List[Text]:
+def clean_labels(labels: Iterable[Any]) -> List[Text]:
     """Get rid of `None` intents. sklearn metrics do not support them."""
     return [l if l is not None else "" for l in labels]
 
@@ -411,23 +433,26 @@ def evaluate_entities(
 
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
     merged_targets = merge_labels(aligned_predictions)
-    merged_targets = substitute_labels(merged_targets, "O", "no_entity")
+    merged_targets = substitute_labels(merged_targets, "O", NO_ENTITY)
 
     result = {}
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
+        merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         if report_folder:
-            report, precision, f1, accuracy = get_evaluation_metrics(
-                merged_targets, merged_predictions, output_dict=True
-            )
-
             report_filename = extractor + "_report.json"
             extractor_report_filename = os.path.join(report_folder, report_filename)
 
+            report, precision, f1, accuracy = get_evaluation_metrics(
+                merged_targets,
+                merged_predictions,
+                output_dict=True,
+                exclude_label=NO_ENTITY,
+            )
             utils.write_json_to_file(extractor_report_filename, report)
+
             logger.info(
                 "Classification report for '{}' saved to '{}'."
                 "".format(extractor, extractor_report_filename)
@@ -435,7 +460,10 @@ def evaluate_entities(
 
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
-                merged_targets, merged_predictions
+                merged_targets,
+                merged_predictions,
+                output_dict=False,
+                exclude_label=NO_ENTITY,
             )
             if isinstance(report, str):
                 log_evaluation_table(report, precision, f1, accuracy)
@@ -1054,13 +1082,13 @@ def _compute_entity_metrics(
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
 
     merged_targets = merge_labels(aligned_predictions)
-    merged_targets = substitute_labels(merged_targets, "O", "no_entity")
+    merged_targets = substitute_labels(merged_targets, "O", NO_ENTITY)
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
+        merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
         _, precision, f1, accuracy = get_evaluation_metrics(
-            merged_targets, merged_predictions
+            merged_targets, merged_predictions, exclude_label=NO_ENTITY
         )
         entity_metric_results[extractor]["Accuracy"].append(accuracy)
         entity_metric_results[extractor]["F1-score"].append(f1)
