@@ -26,7 +26,7 @@ tests_requires = [
 ]
 
 install_requires = [
-    "requests~=2.22",
+    "requests>=2.20",
     "boto3~=1.9",
     "matplotlib~=3.0",
     "simplejson~=3.16",

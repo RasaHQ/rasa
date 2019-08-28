@@ -5,6 +5,7 @@ import traceback
 from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
+from ssl import SSLContext
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -208,6 +209,25 @@ async def authenticate(request: Request):
         "a valid JWT from an authentication provider, Rasa will just make "
         "sure that the token is valid, but not issue new tokens."
     )
+
+
+def create_ssl_context(
+    ssl_certificate: Optional[Text],
+    ssl_keyfile: Optional[Text],
+    ssl_password: Optional[Text],
+) -> Optional[SSLContext]:
+    """Create a SSL context (for the sanic server) if a proper certificate is passed."""
+
+    if ssl_certificate:
+        import ssl
+
+        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ssl_context.load_cert_chain(
+            ssl_certificate, keyfile=ssl_keyfile, password=ssl_password
+        )
+        return ssl_context
+    else:
+        return None
 
 
 def _create_emulator(mode: Optional[Text]) -> NoEmulator:
