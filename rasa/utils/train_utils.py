@@ -967,6 +967,7 @@ def extract_attention(attention_weights) -> Optional["tf.Tensor"]:
     attention = [
         tf.expand_dims(t, 0)
         for name, t in attention_weights.items()
+        # the strings come from t2t library
         if "multihead_attention/dot_product" in name and not name.endswith("/logits")
     ]
 
