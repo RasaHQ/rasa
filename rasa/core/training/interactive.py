@@ -1329,7 +1329,9 @@ def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
 
     if not skip_visualization:
-        visualization_url = DEFAULT_SERVER_FORMAT.format(DEFAULT_SERVER_PORT + 1)
+        visualization_url = DEFAULT_SERVER_FORMAT.format(
+            "http", DEFAULT_SERVER_PORT + 1
+        )
         visualization_help = "Visualisation at {}/visualization.html.".format(
             visualization_url
         )

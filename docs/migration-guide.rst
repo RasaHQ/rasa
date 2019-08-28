@@ -44,6 +44,11 @@ General
   name instead of policy name. Old naming style will not be read correctly when
   creating **compare** plots (``rasa test core``). Please remove old trained models
   in comparison folder and retrain. Normal core training is unaffected.
+- We updated the **evaluation metric** for our **NER**. We report the weighted precision and f1-score.
+  So far we included ``no-entity`` in this report. However, as most of the tokens actually don't have
+  an entity set, this will influence the weighted precision and f1-score quite a bit. From now on we
+  exclude ``no-entity`` from the evaluation. The overall metrics now only include proper entities. You
+  might see a drop in the performance scores when running the evaluation again.
 
 .. _migration-to-rasa-1.0:
 

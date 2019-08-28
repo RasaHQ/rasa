@@ -132,7 +132,9 @@ class SocketIOInput(InputChannel):
         self.socketio_path = socketio_path
 
     def blueprint(self, on_new_message):
-        sio = AsyncServer(async_mode="sanic")
+        # Workaround so that socketio works with requests from other origins.
+        # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
+        sio = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
         socketio_webhook = SocketBlueprint(
             sio, self.socketio_path, "socketio_webhook", __name__
         )
