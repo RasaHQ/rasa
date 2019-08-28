@@ -76,7 +76,7 @@ e.g. for predicting multiple intents or for modeling hierarchical intent structu
 you can only do this with the supervised embeddings pipeline.
 To do this, use these flags in ``Whitespace Tokenizer``:
 
-    - ``label_split_symbol``: sets the delimiter string to split the intent labels and response labels. Default ``_``
+    - ``intent_split_symbol``: sets the delimiter string to split the intent labels. Default ``_``
 
 `Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__ is a tutorial on how to use multiple intents in Rasa Core and NLU.
 
@@ -88,7 +88,7 @@ Here's an example configuration:
 
     pipeline:
     - name: "WhitespaceTokenizer"
-      label_split_symbol: "_"
+      intent_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
     - name: "EmbeddingIntentClassifier"
 
@@ -96,6 +96,7 @@ Here's an example configuration:
 Open Domain Intents
 -------------------
 
+Open domain intents are those intents which are not directly related to the specific task of your assistant, for e.g. - chitchat/small talk.
 To accommodate open domain intents, you should include ``ResponseSelector`` component in your NLU pipeline. The component needs
 a tokenizer, a featurizer and an intent classifier to operate on the user message before it can predict a response and hence these
 components should be placed before ``ResponseSelector`` in the NLU configuration. The configuration for ``ResponseSelector``
@@ -110,11 +111,11 @@ parameter is left empty a shared model will be trained picking training examples
 
     pipeline:
     - name: "WhitespaceTokenizer"
-      label_split_symbol: "_"
+      intent_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
     - name: "EmbeddingIntentClassifier"
     - name: "ResponseSelector"
-      response_type: faq
+      response_type: chitchat
 
 
 
@@ -216,7 +217,7 @@ exactly. Instead it will return the trained synonym.
 Result for Response Selection explained
 ------------------------
 If your NLU pipeline contains a response selector component, the resultant parsed output of NLU will have two additional keys -
-    - ``respond_<open domain intent>_response``: Similar to ``intent`` key but contains the predicted response instead of intent. This key could be replaced by ``respond_default`` in case ``response_type`` is not specified in component configuration.
+    - ``respond_<open domain intent>_response``: Similar to ``intent`` key but contains the predicted response instead of intent. This key could be replaced by ``respond_default_response`` in case ``response_type`` parameters is left unspecified in component configuration.
     - ``respond_<open domain intent>_response_ranking``: Ranking with confidences of top 10 candidate responses.
 
 Example result:

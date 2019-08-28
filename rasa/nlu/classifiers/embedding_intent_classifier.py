@@ -177,12 +177,14 @@ class EmbeddingIntentClassifier(Component):
             "b": config["hidden_layers_sizes_b"],
         }
         self.share_hidden = config["share_hidden"]
-        if self.share_hidden:
-            if self.hidden_layer_sizes["a"] != self.hidden_layer_sizes["b"]:
-                raise ValueError(
-                    "If embeddings are shared,"
-                    "hidden_layer_sizes for a and b must coincide"
-                )
+        if (
+            self.share_hidden
+            and self.hidden_layer_sizes["a"] != self.hidden_layer_sizes["b"]
+        ):
+            raise ValueError(
+                "If embeddings are shared,"
+                "hidden_layer_sizes for a and b must coincide"
+            )
 
         self.batch_size = config["batch_size"]
         self.batch_strategy = config["batch_strategy"]

@@ -9,9 +9,9 @@ class Featurizer(Component):
     def _combine_with_existing_features(
         message, additional_features, feature_name=MESSAGE_TEXT_ATTRIBUTE
     ):
-        if message.get("{0}_features".format(feature_name)) is not None:
+        if message.get("{}_features".format(feature_name)) is not None:
             return np.hstack(
-                (message.get("{0}_features".format(feature_name)), additional_features)
+                (message.get("{}_features".format(feature_name)), additional_features)
             )
         else:
             return additional_features
