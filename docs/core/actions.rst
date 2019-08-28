@@ -53,7 +53,7 @@ These utterances would most likely have just one bot reply to the incoming utter
 ``ResponseSelector`` component inside the NLU pipeline to predict that reply. See :ref:`open-domain-utterances` for more details on how to specify response
 utterances of this type.
 
-It is highly recommended to `map` all such open domain intents to a action of this type using :ref:`mapping-policy`.
+It is highly recommended to `map` all such open domain intents to an action of this type using :ref:`mapping-policy`.
 The naming convention of this type of action is kept strict due to tight coupling of the action to the
 ``ResponseSelector`` model which predicts the actual sentence for the assistant's reply. The template to be
 followed is ``respond_<open-domain-intent>``.
