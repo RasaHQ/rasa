@@ -100,10 +100,10 @@ def add_test_nlu_argument_group(
         "to a file.",
     )
     parser.add_argument(
-        "--errors",
+        "--no-errors",
         action="store_true",
         default=False,
-        help="If set incorrect predictions (intent and entities) will be written "
+        help="If set incorrect predictions (intent and entities) will NOT be written "
         "to a file.",
     )
     parser.add_argument(

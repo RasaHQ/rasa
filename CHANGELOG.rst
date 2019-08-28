@@ -26,8 +26,8 @@ Added
 - ``softmax`` starspace loss for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``balanced`` batching strategy for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``max_history`` parameter for ``EmbeddingPolicy``
-- Successful and incorrect predictions of the NER are written to a file if ``--errors`` and/or ``--successes`` are set
-  when running ``rasa test nlu``
+- Successful predictions of the NER are written to a file if ``--successes`` is set when running ``rasa test nlu``
+- Incorrect predictions of the NER are written to a file by default. You can disable it via ``--no-errors``.
 
 Changed
 -------
@@ -50,8 +50,10 @@ Changed
 - defaults parameters and architectures for both ``EmbeddingPolicy`` and
   ``EmbeddingIntentClassifier`` are changed (this is a breaking change)
 - evaluation of NER does not include 'no-entity' anymore
-- ``--errors`` and ``--successes`` for ``rasa test nlu`` are now boolean values. If set incorrect/successful predictions
+- ``--successes`` for ``rasa test nlu`` is now boolean values. If set incorrect/successful predictions
   are saved in a file.
+- ``--errors`` is renamed to ``--no-errors`` and is now a boolean value. By default incorrect predictions are saved
+  in a file. If ``--no-errors`` is set predictions are not written to a file.
 
 Fixed
 -----
