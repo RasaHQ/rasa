@@ -1,13 +1,6 @@
-import io
 import logging
-import numpy as np
-import os
-import pickle
 import typing
 from typing import Any, Dict, Optional, Text
-
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.utils import train_utils
 
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.core.actions.action import RESPOND_PREFIX
@@ -28,10 +21,6 @@ from rasa.nlu.constants import (
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from tensorflow import Graph, Session, Tensor
-    from rasa.nlu.config import RasaNLUModelConfig
-    from rasa.nlu.training_data import TrainingData
-    from rasa.nlu.model import Metadata
     from rasa.nlu.training_data import Message
 
 import tensorflow as tf

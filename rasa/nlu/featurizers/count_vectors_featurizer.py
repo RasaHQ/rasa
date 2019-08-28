@@ -141,6 +141,11 @@ class CountVectorsFeaturizer(Featurizer):
                 return True
         return False
 
+    def _get_attribute_vocabulary(self, attribute) -> Dict[Text, int]:
+        if self._check_attribute_vocabulary(attribute):
+            return self.vectorizer[attribute].vocabulary_
+        return {}
+
     def _check_analyzer(self):
         if self.analyzer != "word":
             if self.OOV_token is not None:
@@ -180,7 +185,8 @@ class CountVectorsFeaturizer(Featurizer):
         self._check_analyzer()
 
         # declare class instance for CountVectorizer
-        self.vectorizer = vectorizer
+        if vectorizer:
+            self.vectorizer = vectorizer
 
     def _get_message_text_by_attribute(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE):
 
@@ -205,10 +211,10 @@ class CountVectorsFeaturizer(Featurizer):
             text_tokens = text.split()
             if self._check_attribute_vocabulary(attribute):
                 # CountVectorizer is trained, process for prediction
-                if self.OOV_token in self.vectorizer[attribute].vocabulary_:
+                if self.OOV_token in self._get_attribute_vocabulary(attribute):
                     text_tokens = [
                         t
-                        if t in self.vectorizer[attribute].vocabulary_.keys()
+                        if t in self._get_attribute_vocabulary(attribute).keys()
                         else self.OOV_token
                         for t in text_tokens
                     ]
@@ -250,9 +256,10 @@ class CountVectorsFeaturizer(Featurizer):
         max_features,
         analyzer,
         vocabulary=None,
-    ):
+    ) -> Dict[Text, "CountVectorizer"]:
         """Create a dictionary of CountVectorizer objects for all attributes of Message object"""
 
+        # attribute_vectorizers = {attribute: None for attribute in MESSAGE_ATTRIBUTES}
         attribute_vectorizers = {}
         shared_vectorizer = None
         if shared:
@@ -425,7 +432,7 @@ class CountVectorsFeaturizer(Featurizer):
                     utils.json_pickle(
                         featurizer_file,
                         {
-                            attribute: self.vectorizer[attribute].vocabulary_
+                            attribute: self._get_attribute_vocabulary(attribute)
                             if self._check_attribute_vocabulary(attribute)
                             else None
                             for attribute in MESSAGE_ATTRIBUTES
@@ -434,7 +441,7 @@ class CountVectorsFeaturizer(Featurizer):
                 else:
                     utils.json_pickle(
                         featurizer_file,
-                        self.vectorizer[MESSAGE_TEXT_ATTRIBUTE].vocabulary_,
+                        self._get_attribute_vocabulary(MESSAGE_TEXT_ATTRIBUTE),
                     )
         return {"file": file_name}
 
