@@ -278,7 +278,7 @@ def collect_nlu_errors(
             "correctly: \n{}".format(errors)
         )
     else:
-        logger.info("No incorrect intent predictions found.")
+        logger.info("Your model predicted all intents successfully.")
 
 
 def plot_intent_confidences(
@@ -450,13 +450,13 @@ def collect_entity_errors(
 
     if errors:
         utils.write_json_to_file(error_filename, errors)
-        logger.info("Incorrect enntity predictions saved to {}.".format(error_filename))
+        logger.info("Incorrect entity predictions saved to {}.".format(error_filename))
         logger.debug(
             "\n\nThese intent examples could not be classified "
             "correctly: \n{}".format(errors)
         )
     else:
-        logger.info("No incorrect entity prediction found.")
+        logger.info("Your model predicted all entities successfully.")
 
 
 def collect_entity_successes(
