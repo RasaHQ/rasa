@@ -777,10 +777,10 @@ Check out more details in <a class="reference internal" href="../evaluating-mode
                  [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU] [--out OUT]
-                 [--successes] [--errors] [--histogram HISTOGRAM]
-                 [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
-                 [--cross-validation] [-f FOLDS] [-r RUNS]
-                 [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--report [REPORT]] [--successes [SUCCESSES]]
+                 [--errors ERRORS] [--histogram HISTOGRAM] [--confmat CONFMAT]
+                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
+                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  {core,nlu} ...
 
 positional arguments:
@@ -833,10 +833,13 @@ NLU Test Arguments:
                         data)
   --out OUT             Output path for any files created during the
                         evaluation. (default: results)
-  --successes           If set successful predictions (intent and entities)
-                        will be written to a file. (default: False)
-  --errors              If set incorrect predictions (intent and entities)
-                        will be written to a file. (default: False)
+  --report [REPORT]     Output path to save the intent/entity metrics report.
+                        (default: None)
+  --successes [SUCCESSES]
+                        Output path to save successful predictions. (default:
+                        None)
+  --errors ERRORS       Output path to save model errors. (default:
+                        errors.json)
   --histogram HISTOGRAM
                         Output path for the confidence histogram. (default:
                         hist.png)
@@ -931,7 +934,8 @@ any other port.</p>
 </div>
 <p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code>:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
-              [--production] [--rasa-x-port RASA_X_PORT] [--log-file LOG_FILE]
+              [--production] [--rasa-x-port RASA_X_PORT]
+              [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
               [--remote-storage REMOTE_STORAGE]
@@ -954,6 +958,12 @@ optional arguments:
                         False)
   --rasa-x-port RASA_X_PORT
                         Port to run the Rasa X server at. (default: 5002)
+  --config-endpoint CONFIG_ENDPOINT
+                        Rasa X endpoint URL from which to pull the runtime
+                        config. This URL typically contains the Rasa X token
+                        for authentication. Example:
+                        https://example.com/api/config?token=my_rasa_x_token
+                        (default: None)
   --log-file LOG_FILE   Store logs in specified file. (default: None)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
