@@ -37,7 +37,6 @@ Fixed
 - ``'/restart'`` will now also restart the bot if the tracker is paused
 
 
-
 [1.2.4] - 2019-08-23
 ^^^^^^^^^^^^^^^^^^^^
 
