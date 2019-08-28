@@ -268,7 +268,6 @@ class TrainingData(object):
         preserving the fraction of examples per intent."""
 
         train, test = [], []
-        # TODO: split on response type as well. Is it needed?
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
             random.shuffle(ex)

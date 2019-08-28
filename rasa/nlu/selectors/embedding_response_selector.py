@@ -12,10 +12,10 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
-    DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
-    DEFAULT_OPEN_UTTERANCE_TYPE_KEY_RANKING,
-    OPEN_UTTERANCE_KEY_SUFFIX,
-    OPEN_UTTERANCE_RANKING_KEY_SUFFIX,
+    OPEN_UTTERANCE_PREDICTION_KEY,
+    OPEN_UTTERANCE_RANKING_KEY,
+    MESSAGE_SELECTOR_PROPERTY_NAME,
+    DEFAULT_OPEN_UTTERANCE_TYPE,
 )
 
 logger = logging.getLogger(__name__)
@@ -125,34 +125,39 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
         label, label_ranking = self.predict_label(message)
 
-        response_key_for_tracker, response_ranking_key_for_tracker = (
-            self._get_response_keys()
+        selector_key = (
+            self.open_domain_intent_name
+            if self.open_domain_intent_name
+            else DEFAULT_OPEN_UTTERANCE_TYPE
         )
 
         logger.debug(
-            "Adding following keys to the tracker: {0}, {1}".format(
-                response_key_for_tracker, response_ranking_key_for_tracker
-            )
+            "Adding following selector key to message property: {}".format(selector_key)
         )
 
-        message.set(response_key_for_tracker, label, add_to_output=True)
-        message.set(response_ranking_key_for_tracker, label_ranking, add_to_output=True)
+        prediction_dict = {"response": label, "ranking": label_ranking}
 
-    def _get_response_keys(self):
+        self._set_message_property(message, prediction_dict, selector_key)
 
-        if self.open_domain_intent_name:
-            response_key_for_tracker = "{0}{1}{2}".format(
-                RESPOND_PREFIX, self.open_domain_intent_name, OPEN_UTTERANCE_KEY_SUFFIX
-            )
-            response_ranking_key_for_tracker = "{0}{1}{2}".format(
-                RESPOND_PREFIX,
-                self.open_domain_intent_name,
-                OPEN_UTTERANCE_RANKING_KEY_SUFFIX,
+    @staticmethod
+    def _set_message_property(
+        message: "Message", prediction_dict: Dict[Text, Any], selector_key: Text
+    ):
+        if message.get(MESSAGE_SELECTOR_PROPERTY_NAME):
+            message_selector_properties = message.get(MESSAGE_SELECTOR_PROPERTY_NAME)
+            message_selector_properties[selector_key] = prediction_dict
+            message.set(
+                MESSAGE_SELECTOR_PROPERTY_NAME,
+                message_selector_properties,
+                add_to_output=True,
             )
         else:
-            response_key_for_tracker = DEFAULT_OPEN_UTTERANCE_TYPE_KEY
-            response_ranking_key_for_tracker = DEFAULT_OPEN_UTTERANCE_TYPE_KEY_RANKING
-        return response_key_for_tracker, response_ranking_key_for_tracker
+            message_selector_properties = {selector_key: prediction_dict}
+            message.set(
+                MESSAGE_SELECTOR_PROPERTY_NAME,
+                message_selector_properties,
+                add_to_output=True,
+            )
 
     def preprocess_data(self, training_data):
         """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""

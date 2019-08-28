@@ -287,7 +287,7 @@ async def test_action_utter_predicted_response(
     action_name = "respond_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
-        parse_data={"respond_chitchat_response": {"name": "I am a bot."}},
+        parse_data={"selector": {"chitchat": {"response": {"name": "I am a bot."}}}},
     )
     events = await ActionUtterPredictedResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
@@ -305,7 +305,8 @@ async def test_action_utter_default_predicted_response(
 
     action_name = "respond_chitchat"
     default_tracker.latest_message = UserMessage(
-        "Who are you?", parse_data={"respond_default_response": {"name": "I am a bot."}}
+        "Who are you?",
+        parse_data={"selector": {"default": {"response": {"name": "I am a bot."}}}},
     )
     events = await ActionUtterPredictedResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
@@ -323,7 +324,8 @@ async def test_action_utter_predicted_empty_response(
 
     action_name = "respond_chitchat"
     default_tracker.latest_message = UserMessage(
-        "Who are you?", parse_data={"respond_dummy_response": {"name": "I am a bot."}}
+        "Who are you?",
+        parse_data={"selector": {"dummy": {"response": {"name": "I am a bot."}}}},
     )
     events = await ActionUtterPredictedResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain

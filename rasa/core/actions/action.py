@@ -17,8 +17,9 @@ from rasa.core.constants import (
     RESPOND_PREFIX,
 )
 from rasa.nlu.constants import (
-    DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
-    OPEN_UTTERANCE_KEY_SUFFIX,
+    DEFAULT_OPEN_UTTERANCE_TYPE,
+    OPEN_UTTERANCE_PREDICTION_KEY,
+    MESSAGE_SELECTOR_PROPERTY_NAME,
 )
 
 from rasa.core.events import (
@@ -182,6 +183,9 @@ class ActionUtterPredictedResponse(Action):
         self.action_name = name
         self.silent_fail = silent_fail
 
+    def intent_name_from_action(self):
+        return self.action_name.split(RESPOND_PREFIX)[1]
+
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -191,27 +195,15 @@ class ActionUtterPredictedResponse(Action):
     ):
         """Query the appropriate response and create a bot utterance with that."""
 
-        message = None
-
-        # Build query keys for tracker. This is a list because response for the action can be
-        # predicted by one of the two -
-        # 1. a specific response selector of this open domain intent type
-        # 2. a generic response selector built for all open domain intent types in the training data.
-        # We check in both
-        response_selector_keys = [
-            "{0}{1}".format(self.action_name, OPEN_UTTERANCE_KEY_SUFFIX),
-            DEFAULT_OPEN_UTTERANCE_TYPE_KEY,
+        response_selector_properties = tracker.latest_message.parse_data[
+            MESSAGE_SELECTOR_PROPERTY_NAME
         ]
-        for query_key in response_selector_keys:
-            logger.debug("Looking for response with query_key {}".format(query_key))
-            if query_key in tracker.latest_message.parse_data:
-                logger.debug("Picking response of type {}".format(query_key))
-                message = {
-                    "text": tracker.latest_message.parse_data.get(query_key).get("name")
-                }
-                break
 
-        if not message:
+        if DEFAULT_OPEN_UTTERANCE_TYPE in response_selector_properties:
+            query_key = DEFAULT_OPEN_UTTERANCE_TYPE
+        elif self.intent_name_from_action() in response_selector_properties:
+            query_key = self.intent_name_from_action()
+        else:
             if not self.silent_fail:
                 logger.error(
                     "Couldn't create message for response action '{}'."
@@ -219,6 +211,12 @@ class ActionUtterPredictedResponse(Action):
                 )
             return []
 
+        logger.debug("Picking response from selector of type {}".format(query_key))
+        message = {
+            "text": response_selector_properties[query_key][
+                OPEN_UTTERANCE_PREDICTION_KEY
+            ]["name"]
+        }
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:

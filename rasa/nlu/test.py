@@ -20,7 +20,11 @@ from typing import (
 import rasa.utils.io as io_utils
 
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
-from rasa.nlu.constants import DEFAULT_OPEN_UTTERANCE_TYPE_KEY
+from rasa.nlu.constants import (
+    DEFAULT_OPEN_UTTERANCE_TYPE,
+    MESSAGE_SELECTOR_PROPERTY_NAME,
+    OPEN_UTTERANCE_PREDICTION_KEY,
+)
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
 from rasa.nlu.utils import write_to_file
@@ -794,14 +798,14 @@ def get_eval_data(
 
         if should_eval_response_selection:
             intent_target = example.get("intent", "")
+            selector_properties = result.get(MESSAGE_SELECTOR_PROPERTY_NAME, {})
             if intent_target in available_response_selector_types:
-                response_prediction_key = "{0}{1}_response".format(
-                    RESPOND_PREFIX, intent_target
-                )
+                response_prediction_key = intent_target
             else:
-                response_prediction_key = DEFAULT_OPEN_UTTERANCE_TYPE_KEY
-
-            response_prediction = result.get(response_prediction_key, {}) or {}
+                response_prediction_key = DEFAULT_OPEN_UTTERANCE_TYPE
+            response_prediction = selector_properties.get(
+                response_prediction_key, {}
+            ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
             response_target = example.get("response", "")
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
@@ -863,7 +867,9 @@ def get_available_response_selector_types(interpreter: Interpreter) -> List[Text
     """Gets all available response selector types"""
 
     response_selector_types = [
-        c.response_type for c in interpreter.pipeline if "response" in c.provides
+        c.open_domain_intent_name
+        for c in interpreter.pipeline
+        if "response" in c.provides
     ]
 
     return response_selector_types
