@@ -289,7 +289,7 @@ def rasa_x(args: argparse.Namespace):
 async def _pull_runtime_config_from_server(
     config_endpoint: Optional[Text],
     attempts: int = 60,
-    wait_time_between_pulls: Union[int, float] = 1,
+    wait_time_between_pulls: Union[int, float] = 5,
     keys: Iterable[Text] = ("endpoints", "credentials"),
 ) -> Optional[List[Text]]:
     """Pull runtime config from `config_endpoint`.
@@ -298,7 +298,7 @@ async def _pull_runtime_config_from_server(
     `keys`.
     """
 
-    while attempts > 0:
+    while attempts:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(config_endpoint) as resp:
