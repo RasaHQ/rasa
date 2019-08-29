@@ -244,12 +244,15 @@ class OutputChannel(object):
 
         Default implementation will just post the elements as a string."""
 
+        # we can't pass the empty "buttons" key of the message through to send_text_with_buttons()
+        kwargs.pop("buttons", None)
+
         for element in elements:
             element_msg = "{title} : {subtitle}".format(
                 title=element.get("title", ""), subtitle=element.get("subtitle", "")
             )
             await self.send_text_with_buttons(
-                recipient_id, element_msg, element.get("buttons", [], **kwargs)
+                recipient_id, element_msg, element.get("buttons", []), **kwargs
             )
 
     async def send_custom_json(
