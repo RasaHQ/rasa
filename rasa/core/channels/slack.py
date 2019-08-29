@@ -63,6 +63,7 @@ class SlackBot(SlackClient, OutputChannel):
             channel=recipient,
             as_user=True,
             attachments=[attachment],
+            **kwargs
         )
 
     async def send_text_with_buttons(
