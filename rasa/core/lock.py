@@ -7,6 +7,8 @@ import time
 
 logger = logging.getLogger(__name__)
 
+NO_TICKET_ISSUED = -1  # index of latest issued ticket if no tickets exist
+
 
 class Ticket:
     def __init__(self, number: int, expires: float) -> None:
@@ -38,7 +40,7 @@ class TicketLock:
     """Locking mechanism that issues tickets managing access to conversation IDs.
 
     Tickets are issued in the order in which they are requested. A detailed
-    explanation of the ticket lock algorithm can be found here:
+    explanation of the ticket lock algorithm can be found at
     http://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks.pdf#page=13
     """
 
@@ -93,14 +95,15 @@ class TicketLock:
         """Return number of the ticket that was last added.
 
         Returns:
-             Number of `Ticket` that was last added. -1 if no tickets exist.
+             Number of `Ticket` that was last added. `NO_TICKET_ISSUED` if no
+             tickets exist.
         """
 
         ticket_number = self._ticket_number_for(-1)
         if ticket_number is not None:
             return ticket_number
 
-        return -1
+        return NO_TICKET_ISSUED
 
     @property
     def now_serving(self) -> Optional[int]:

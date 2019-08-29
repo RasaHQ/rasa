@@ -6,7 +6,7 @@ from typing import Text, Optional, Union
 from async_generator import asynccontextmanager, async_generator, yield_
 
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.core.lock import TicketLock
+from rasa.core.lock import TicketLock, NO_TICKET_ISSUED
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,18 @@ ACCEPTED_LOCK_STORES = ["in_memory", "redis"]
 # noinspection PyUnresolvedReferences
 class LockError(Exception):
     """Exception that is raised when a lock cannot be acquired.
+
+     Attributes:
+          message (str): explanation of which `conversation_id` raised the error
+    """
+
+    pass
+
+
+# noinspection PyUnresolvedReferences
+class TicketExistsError(Exception):
+    """Exception that is raised when an already-existing ticket for a conversation
+    has been issued.
 
      Attributes:
           message (str): explanation of which `conversation_id` raised the error
@@ -61,11 +73,9 @@ class LockStore:
             )
 
     def create_lock(self, conversation_id: Text) -> TicketLock:
-        """Create and save a new `TicketLock` for `conversation_id`."""
+        """Create a new `TicketLock` for `conversation_id`."""
 
-        lock = TicketLock(conversation_id)
-        self.save_lock(lock)
-        return lock
+        return TicketLock(conversation_id)
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
         """Fetch lock for `conversation_id` from storage."""
@@ -211,6 +221,28 @@ class LockStore:
                 "Could not delete lock for conversation '{}'.".format(conversation_id)
             )
 
+    def ensure_ticket_available(self, lock: TicketLock) -> None:
+        """Check for duplicate tickets issued for `lock`.
+
+        This function should be called before saving `lock`. Raises `TicketExistsError`
+        if the last issued ticket for `lock` does not match the last ticket issued
+        for a lock fetched from storage for `lock.conversation_id`. This indicates
+        that some other process has issued a ticket for `lock` in the meantime.
+        """
+
+        existing_lock = self.get_lock(lock.conversation_id)
+        if not existing_lock or existing_lock.last_issued == NO_TICKET_ISSUED:
+            # lock does not yet exist for conversation or no ticket has been issued
+            return
+
+        # raise if the last issued ticket number of `existing_lock` is not the same as
+        # that of the one being acquired
+        if existing_lock.last_issued != lock.last_issued:
+            raise TicketExistsError(
+                "Ticket already exists for conversation ID '{}'."
+                "".format(lock.conversation_id)
+            )
+
 
 class RedisLockStore(LockStore):
     """Redis store for ticket locks."""
@@ -239,6 +271,7 @@ class RedisLockStore(LockStore):
         self._log_deletion(conversation_id, deletion_successful)
 
     def save_lock(self, lock: TicketLock) -> None:
+        self.ensure_ticket_available(lock)
         self.red.set(lock.conversation_id, lock.dumps())
 
 
@@ -259,4 +292,5 @@ class InMemoryLockStore(LockStore):
         )
 
     def save_lock(self, lock: TicketLock) -> None:
+        self.ensure_ticket_available(lock)
         self.conversation_locks[lock.conversation_id] = lock

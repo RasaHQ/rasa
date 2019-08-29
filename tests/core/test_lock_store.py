@@ -1,5 +1,6 @@
 import asyncio
-from typing import Union
+import copy
+from typing import Union, Text
 from unittest.mock import patch
 
 import numpy as np
@@ -10,9 +11,9 @@ from _pytest.tmpdir import TempdirFactory
 import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
-from rasa.core.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.lock import TicketLock
-from rasa.core.lock_store import InMemoryLockStore, LockError
+from rasa.core.constants import INTENT_MESSAGE_PREFIX, DEFAULT_LOCK_LIFETIME
+from rasa.core.lock import TicketLock, Ticket
+from rasa.core.lock_store import InMemoryLockStore, LockError, TicketExistsError
 
 
 @pytest.fixture(scope="session")
@@ -63,8 +64,9 @@ def test_create_lock_store():
     lock_store = InMemoryLockStore()
     conversation_id = "my id 0"
 
-    # create lock
-    lock_store.create_lock(conversation_id)
+    # create and lock
+    lock = lock_store.create_lock(conversation_id)
+    lock_store.save_lock(lock)
     lock = lock_store.get_lock(conversation_id)
     assert lock
     assert lock.conversation_id == conversation_id
@@ -74,7 +76,8 @@ def test_serve_ticket():
     lock_store = InMemoryLockStore()
     conversation_id = "my id 1"
 
-    _ = lock_store.create_lock(conversation_id)
+    lock = lock_store.create_lock(conversation_id)
+    lock_store.save_lock(lock)
 
     # issue ticket with long lifetime
     ticket_0 = lock_store.issue_ticket(conversation_id, 10)
@@ -108,6 +111,7 @@ def test_lock_expiration():
     lock_store = InMemoryLockStore()
     conversation_id = "my id 2"
     lock = lock_store.create_lock(conversation_id)
+    lock_store.save_lock(lock)
 
     # issue ticket with long lifetime
     ticket = lock.issue_ticket(10)
@@ -122,6 +126,33 @@ def test_lock_expiration():
 
     # newly assigned ticket should get number 1 again
     assert lock.issue_ticket(10) == 1
+
+
+def test_ticket_exists_error():
+    def mocked_issue_ticket(
+        self,
+        conversation_id: Text,
+        lock_lifetime: Union[float, int] = DEFAULT_LOCK_LIFETIME,
+    ) -> None:
+        # mock LockStore.issue_ticket() so it issues two tickets for the same
+        # conversation ID simultaneously
+
+        lock = self.get_or_create_lock(conversation_id)
+        lock.issue_ticket(lock_lifetime)
+        self.save_lock(lock)
+
+        # issue another ticket for this lock
+        lock_2 = copy.deepcopy(lock)
+        lock_2.tickets.append(Ticket(1, time.time() + DEFAULT_LOCK_LIFETIME))
+
+        self.save_lock(lock_2)
+
+    lock_store = InMemoryLockStore()
+    conversation_id = "my id 3"
+
+    with patch.object(InMemoryLockStore, "issue_ticket", mocked_issue_ticket):
+        with pytest.raises(TicketExistsError):
+            lock_store.issue_ticket(conversation_id)
 
 
 async def test_multiple_conversation_ids(default_agent: Agent):
