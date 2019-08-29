@@ -7,13 +7,19 @@ import warnings
 from collections import Counter
 from copy import deepcopy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 from rasa.nlu.utils import list_to_str
 import rasa.nlu.utils
 import rasa.utils.common as rasa_utils
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
+from rasa.nlu.constants import (
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
+)
+from rasa.nlu.training_data.formats.markdown import RESPONSE_IDENTIFIER_DELIMITER
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -33,6 +39,7 @@ class TrainingData(object):
         entity_synonyms: Optional[Dict[Text, Text]] = None,
         regex_features: Optional[List[Dict[Text, Text]]] = None,
         lookup_tables: Optional[List[Dict[Text, Text]]] = None,
+        nlg_stories: Optional[Dict[Text, List[Text]]] = None,
     ) -> None:
 
         if training_examples:
@@ -43,6 +50,7 @@ class TrainingData(object):
         self.regex_features = regex_features if regex_features else []
         self.sort_regex_features()
         self.lookup_tables = lookup_tables if lookup_tables else []
+        self.nlg_stories = nlg_stories if nlg_stories else {}
 
     def merge(self, *others: "TrainingData") -> "TrainingData":
         """Return merged instance of this data with other training data."""
@@ -51,6 +59,7 @@ class TrainingData(object):
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
         lookup_tables = deepcopy(self.lookup_tables)
+        nlg_stories = deepcopy(self.nlg_stories)
         others = [other for other in others if other]
 
         for o in others:
@@ -64,6 +73,7 @@ class TrainingData(object):
                 )
 
             entity_synonyms.update(o.entity_synonyms)
+            nlg_stories.update(o.nlg_stories)
 
         return TrainingData(
             training_examples, entity_synonyms, regex_features, lookup_tables
@@ -88,7 +98,7 @@ class TrainingData(object):
         from rasa.core import utils as core_utils
 
         # Sort keys to ensure dictionary order in Python 3.5
-        stringified = self.as_json(sort_keys=True)
+        stringified = self.nlu_as_json(sort_keys=True)
         text_hash = core_utils.get_text_hash(stringified)
 
         return int(text_hash, 16)
@@ -168,7 +178,27 @@ class TrainingData(object):
             self.regex_features, key=lambda e: "{}+{}".format(e["name"], e["pattern"])
         )
 
-    def as_json(self, **kwargs: Any) -> Text:
+    def fill_response_phrases(self):
+        """Set response phrase for all examples by looking up NLG stories"""
+        for example in self.training_examples:
+            response_key = example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
+            if response_key:
+                story_lookup_intent = "{}{}{}".format(
+                    example.get(MESSAGE_INTENT_ATTRIBUTE),
+                    RESPONSE_IDENTIFIER_DELIMITER,
+                    response_key,
+                )
+                assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
+                if assistant_utterances:
+                    # selecting only first assistant utterance for now
+                    example.set(MESSAGE_RESPONSE_ATTRIBUTE, assistant_utterances[0])
+                else:
+                    raise ValueError(
+                        "No response phrases found for {}. Check training data "
+                        "files for a possible typo in NLU/NLG file"
+                    )
+
+    def nlu_as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
         from rasa.nlu.training_data.formats import (  # pytype: disable=pyi-error
             RasaWriter,
@@ -176,13 +206,51 @@ class TrainingData(object):
 
         return RasaWriter().dumps(self, **kwargs)
 
-    def as_markdown(self) -> Text:
-        """Generates the markdown representation of the TrainingData."""
+    def nlg_as_markdown(self) -> Text:
+        from rasa.nlu.training_data.formats import (  # pytype: disable=pyi-error
+            NLGMarkdownWriter,
+        )
+
+        return NLGMarkdownWriter().dumps(self)
+
+    def nlu_as_markdown(self) -> Text:
+        """Generates the markdown representation of the NLU part of TrainingData."""
         from rasa.nlu.training_data.formats import (  # pytype: disable=pyi-error
             MarkdownWriter,
         )
 
         return MarkdownWriter().dumps(self)
+
+    def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
+
+        if filename.endswith("json"):
+            rasa.nlu.utils.write_to_file(filename, self.nlu_as_json(indent=2))
+        elif filename.endswith("md"):
+            rasa.nlu.utils.write_to_file(filename, self.nlu_as_markdown())
+        else:
+            ValueError(
+                "Unsupported file format detected. Supported file formats are 'json' "
+                "and 'md'."
+            )
+
+    def persist_nlg(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
+
+        nlg_serialized_data = self.nlg_as_markdown()
+        if nlg_serialized_data == "":
+            return
+
+        filename = "nlg_" + filename
+        if filename.endswith("json"):
+            logger.warning(
+                "JSON format not supported for NLG training data. Saving it as Markown"
+            )
+            filename += ".md"
+            rasa.nlu.utils.write_to_file(filename, self.nlg_as_markdown())
+        else:
+            ValueError(
+                "Unsupported file format detected. Supported file formats are 'json' "
+                "and 'md'."
+            )
 
     def persist(
         self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
@@ -193,19 +261,11 @@ class TrainingData(object):
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
-        data_file = os.path.join(dir_name, filename)
+        nlu_data_file = os.path.join(dir_name, filename)
+        self.persist_nlu(nlu_data_file)
+        self.persist_nlg(nlu_data_file)
 
-        if data_file.endswith("json"):
-            rasa.nlu.utils.write_to_file(data_file, self.as_json(indent=2))
-        elif data_file.endswith("md"):
-            rasa.nlu.utils.write_to_file(data_file, self.as_markdown())
-        else:
-            ValueError(
-                "Unsupported file format detected. Supported file formats are 'json' "
-                "and 'md'."
-            )
-
-        return {"training_data": relpath(data_file, dir_name)}
+        return {"training_data": relpath(nlu_data_file, dir_name)}
 
     def sorted_entities(self) -> List[Any]:
         """Extract all entities from examples and sorts them by entity type."""

@@ -108,13 +108,13 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 0,  # large values may hurt performance,
         # selector config
-        # name of open domain intent for which this response selector is to be trained
-        "open_domain_intent_name": None,
+        # name of the intent for which this response selector is to be trained
+        "direct_response_intent": None,
     }
     # end default properties (DOC MARKER - don't remove)
 
     def _load_selector_params(self, config: Dict[Text, Any]):
-        self.open_domain_intent_name = config["open_domain_intent_name"]
+        self.direct_response_intent = config["direct_response_intent"]
 
     def _load_params(self) -> None:
         super(ResponseSelector, self)._load_params()
@@ -126,8 +126,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
         label, label_ranking = self.predict_label(message)
 
         selector_key = (
-            self.open_domain_intent_name
-            if self.open_domain_intent_name
+            self.direct_response_intent
+            if self.direct_response_intent
             else DEFAULT_OPEN_UTTERANCE_TYPE
         )
 
@@ -162,8 +162,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
     def preprocess_data(self, training_data):
         """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
 
-        if self.open_domain_intent_name:
-            training_data = training_data.filter_by_intent(self.open_domain_intent_name)
+        if self.direct_response_intent:
+            training_data = training_data.filter_by_intent(self.direct_response_intent)
 
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_RESPONSE_ATTRIBUTE

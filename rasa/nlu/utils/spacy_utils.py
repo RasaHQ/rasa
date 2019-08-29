@@ -39,6 +39,7 @@ class SpacyNLP(Component):
         # applications and models it makes sense to differentiate
         # between these two words, therefore setting this to `True`.
         "case_sensitive": False,
+        "intent_split_symbol": "_",
     }
 
     def __init__(
@@ -107,12 +108,17 @@ class SpacyNLP(Component):
 
     def doc_for_text(self, text: Text) -> "Doc":
 
-        return self.nlp(self.preprocess_text(text))
+        return self.nlp(self.preprocess_text(text, MESSAGE_TEXT_ATTRIBUTE))
 
-    def preprocess_text(self, text):
+    def preprocess_text(self, text, attribute):
 
         if text is None:
+            # converted to empty string so that it can still be passed to spacy.
+            # Another option could be to neglect tokenization of the attribute of this example, but since we are
+            # processing in batch mode, it would get complex to collect all processed and neglected examples.
             text = ""
+        if attribute == MESSAGE_INTENT_ATTRIBUTE:
+            text = " ".join(text.split(self.component_config["intent_split_symbol"]))
         if self.component_config.get("case_sensitive"):
             return text
         else:
@@ -120,7 +126,7 @@ class SpacyNLP(Component):
 
     def get_text(self, example, attribute):
 
-        return self.preprocess_text(example.get(attribute))
+        return self.preprocess_text(example.get(attribute), attribute)
 
     def docs_for_training_data(
         self, training_data: TrainingData

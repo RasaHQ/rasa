@@ -1,13 +1,18 @@
 import logging
 import re
 import typing
-from typing import Any, Text
+from typing import Any, Text, Tuple
 
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
 from rasa.nlu.utils import build_entity
+from rasa.nlu.constants import (
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -16,7 +21,6 @@ INTENT = "intent"
 SYNONYM = "synonym"
 REGEX = "regex"
 LOOKUP = "lookup"
-RESPONSE = "response"
 available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
 
 # regex for: `[entity_text](entity_type(:entity_synonym)?)`
@@ -27,11 +31,12 @@ ent_regex = re.compile(
 item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
 fname_regex = re.compile(r"\s*([^-*+]+)")
-response_regex = re.compile(r"##\s*{}:(.+),\s*{}:(.+)".format(INTENT, RESPONSE))
 
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 
 ESCAPE = re.compile(r"[\b\f\n\r\t]")
+
+RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 
 def encode_string(s):
@@ -54,8 +59,6 @@ class MarkdownReader(TrainingDataReader):
     def __init__(self) -> None:
         self.current_title = None
         self.current_section = None
-        self.current_subsection = None
-        self.current_subtitle = None
         self.training_examples = []
         self.entity_synonyms = {}
         self.regex_features = []
@@ -72,7 +75,7 @@ class MarkdownReader(TrainingDataReader):
             line = line.strip()
             header = self._find_section_header(line)
             if header:
-                self._set_current_section(header)
+                self._set_current_section(header[0], header[1])
             else:
                 self._parse_item(line)
                 self._load_files(line)
@@ -93,8 +96,7 @@ class MarkdownReader(TrainingDataReader):
         def make_regex(section_name):
             return re.compile(r"##\s*{}:(.+)".format(section_name))
 
-        section_regexes = {sn: make_regex(sn) for sn in section_names}
-        return section_regexes
+        return {sn: make_regex(sn) for sn in section_names}
 
     def _find_section_header(self, line):
         """Checks if the current line contains a section header
@@ -102,12 +104,7 @@ class MarkdownReader(TrainingDataReader):
         for name, regex in self.section_regexes.items():
             match = re.search(regex, line)
             if match is not None:
-                if name is INTENT:
-                    sub_match = re.search(response_regex, line)
-                    if sub_match is not None:
-                        return INTENT, sub_match.group(1), RESPONSE, sub_match.group(2)
-
-                return name, match.group(1), None, None
+                return name, match.group(1)
         return None
 
     def _load_files(self, line):
@@ -191,18 +188,15 @@ class MarkdownReader(TrainingDataReader):
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(ent_regex, lambda m: m.groupdict()["entity_text"], example)
         self._add_synonyms(plain_text, entities)
-        message = Message(
-            plain_text, {INTENT: self.current_title, RESPONSE: self.current_subtitle}
-        )
+
+        message = Message.build(plain_text, self.current_title)
 
         if len(entities) > 0:
             message.set("entities", entities)
         return message
 
-    def _set_current_section(self, header):
+    def _set_current_section(self, section, title):
         """Update parsing mode."""
-
-        section = header[0]
         if section not in available_sections:
             raise ValueError(
                 "Found markdown section {} which is not "
@@ -210,9 +204,8 @@ class MarkdownReader(TrainingDataReader):
                 "".format(section, ",".join(available_sections))
             )
 
-        self.current_section, self.current_title, self.current_subsection, self.current_subtitle = (
-            header
-        )
+        self.current_section = section
+        self.current_title = title
 
 
 class MarkdownWriter(TrainingDataWriter):
@@ -229,18 +222,17 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_training_examples_md(self, training_data):
         """generates markdown training examples."""
         training_examples = sorted(
-            [e.as_dict() for e in training_data.training_examples],
-            key=lambda k: (k["intent"], k.get("response", None)),
+            [e.as_dict_nlu() for e in training_data.training_examples],
+            key=lambda k: k[MESSAGE_INTENT_ATTRIBUTE],
         )
         md = ""
         for i, example in enumerate(training_examples):
-            intent = training_examples[i - 1]["intent"]
-            if i == 0 or intent != example["intent"]:
+            intent = training_examples[i - 1][MESSAGE_INTENT_ATTRIBUTE]
+            if i == 0 or intent != example[MESSAGE_INTENT_ATTRIBUTE]:
                 md += self._generate_section_header_md(
                     INTENT,
-                    example["intent"],
-                    RESPONSE,
-                    example.get("response", None),
+                    example[MESSAGE_INTENT_ATTRIBUTE],
+                    example[MESSAGE_RESPONSE_KEY_ATTRIBUTE],
                     i != 0,
                 )
 
@@ -292,13 +284,15 @@ class MarkdownWriter(TrainingDataWriter):
 
     @staticmethod
     def _generate_section_header_md(
-        section_type, title, subsection_type=None, subtitle=None, prepend_newline=True
+        section_type, title, subtitle=None, prepend_newline=True
     ):
         """generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
-        subsection_text = ",{}:{}".format(subsection_type, subtitle) if subtitle else ""
+        subtitle_suffix = (
+            "{}{}".format(RESPONSE_IDENTIFIER_DELIMITER, subtitle) if subtitle else ""
+        )
         return prefix + "## {}:{}{}\n".format(
-            section_type, encode_string(title), encode_string(subsection_text)
+            section_type, encode_string(title), encode_string(subtitle_suffix)
         )
 
     @staticmethod

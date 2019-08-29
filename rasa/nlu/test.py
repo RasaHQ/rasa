@@ -1181,7 +1181,7 @@ def compare_nlu(
         io_utils.create_path(test_path)
 
         train, test = data.train_test_split()
-        write_to_file(test_path, test.as_markdown())
+        write_to_file(test_path, test.nlu_as_markdown())
 
         training_examples_per_run = []
 
@@ -1194,7 +1194,7 @@ def compare_nlu(
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, TRAIN_DATA_FILE)
             io_utils.create_path(train_split_path)
-            write_to_file(train_split_path, train.as_markdown())
+            write_to_file(train_split_path, train.nlu_as_markdown())
 
             for nlu_config, model_name in zip(configs, model_names):
                 logger.info(

@@ -243,15 +243,16 @@ class CountVectorsFeaturizer(Featurizer):
 
         if self.OOV_token and self.analyzer == "word":
             text_tokens = text.split()
-            if self._check_attribute_vocabulary(attribute):
+            if self._check_attribute_vocabulary(
+                attribute
+            ) and self.OOV_token in self._get_attribute_vocabulary(attribute):
                 # CountVectorizer is trained, process for prediction
-                if self.OOV_token in self._get_attribute_vocabulary(attribute):
-                    text_tokens = [
-                        t
-                        if t in self._get_attribute_vocabulary_tokens(attribute)
-                        else self.OOV_token
-                        for t in text_tokens
-                    ]
+                text_tokens = [
+                    t
+                    if t in self._get_attribute_vocabulary_tokens(attribute)
+                    else self.OOV_token
+                    for t in text_tokens
+                ]
             elif self.OOV_words:
                 # CountVectorizer is not trained, process for train
                 text_tokens = [

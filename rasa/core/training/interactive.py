@@ -830,9 +830,9 @@ async def _write_nlu_to_file(
 
     with open(export_nlu_path, "w", encoding="utf-8") as f:
         if fformat == "md":
-            f.write(nlu_data.as_markdown())
+            f.write(nlu_data.nlu_as_markdown())
         else:
-            f.write(nlu_data.as_json())
+            f.write(nlu_data.nlu_as_json())
 
 
 def _entities_from_messages(messages):

@@ -33,7 +33,10 @@ class JiebaTokenizer(Tokenizer, Component):
 
     language_list = ["zh"]
 
-    defaults = {"dictionary_path": None}  # default don't load custom dictionary
+    defaults = {
+        "dictionary_path": None,
+        "intent_split_symbol": "_",
+    }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new intent classifier using the MITIE framework."""
@@ -42,6 +45,9 @@ class JiebaTokenizer(Tokenizer, Component):
 
         # path to dictionary file or None
         self.dictionary_path = self.component_config.get("dictionary_path")
+
+        # symbol to split intents on
+        self.intent_split_symbol = self.component_config.get("intent_split_symbol")
 
         # load dictionary
         if self.dictionary_path is not None:
@@ -77,17 +83,25 @@ class JiebaTokenizer(Tokenizer, Component):
                 if example.get(attribute) is not None:
                     example.set(
                         MESSAGE_TOKENS_NAMES[attribute],
-                        self.tokenize(example.get(attribute)),
+                        self.tokenize(example.get(attribute), MESSAGE_TEXT_ATTRIBUTE),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], self.tokenize(message.text)
+            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self.tokenize(message.text, MESSAGE_TEXT_ATTRIBUTE),
         )
 
+    def preprocess_text(self, text, attribute):
+
+        if attribute == MESSAGE_INTENT_ATTRIBUTE:
+            return " ".join(text.split(self.intent_split_symbol))
+        else:
+            return text
+
     @staticmethod
-    def tokenize(text: Text) -> List[Token]:
+    def tokenize(text: Text, attribute=MESSAGE_TEXT_ATTRIBUTE) -> List[Token]:
         import jieba
 
         tokenized = jieba.tokenize(text)
