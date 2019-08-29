@@ -58,12 +58,10 @@ class SlackBot(SlackClient, OutputChannel):
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        text = attachment.get("text", "Attachment")
         return super(SlackBot, self).api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
-            text=text,
             attachments=[attachment],
         )
 
