@@ -25,6 +25,8 @@ Added
 - ``softmax`` starspace loss for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``balanced`` batching strategy for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``max_history`` parameter for ``EmbeddingPolicy``
+- Successful predictions of the NER are written to a file if ``--successes`` is set when running ``rasa test nlu``
+- Incorrect predictions of the NER are written to a file by default. You can disable it via ``--no-errors``.
 - argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
   the runtime configuration (endpoints and credentials)
 - ``LockStore`` class storing instances of ``TicketLock`` for every ``conversation_id``
@@ -51,14 +53,19 @@ Changed
 - defaults parameters and architectures for both ``EmbeddingPolicy`` and
   ``EmbeddingIntentClassifier`` are changed (this is a breaking change)
 - evaluation of NER does not include 'no-entity' anymore
+- ``--successes`` for ``rasa test nlu`` is now boolean values. If set incorrect/successful predictions
+  are saved in a file.
+- ``--errors`` is renamed to ``--no-errors`` and is now a boolean value. By default incorrect predictions are saved
+  in a file. If ``--no-errors`` is set predictions are not written to a file.
 
 Fixed
 -----
 - ``rasa test nlu`` with a folder of configuration files
 - ``MappingPolicy`` standard featurizer is set to ``None``
 
-Fixed
------
+Removed
+-------
+- Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
 [1.2.5] - 2019-08-26
 ^^^^^^^^^^^^^^^^^^^^
