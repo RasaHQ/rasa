@@ -13,35 +13,34 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
+import rasa.core.brokers.utils as broker_utils
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
-from rasa.core.domain import InvalidDomain
-from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DEFAULT_MODELS_PATH,
     DEFAULT_DOMAIN_PATH,
     DOCS_BASE_URL,
 )
-from rasa.core import broker
 from rasa.core.agent import load_agent, Agent
 from rasa.core.channels.channel import (
     UserMessage,
     CollectingOutputChannel,
     OutputChannel,
 )
+from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
 from rasa.core.test import test
+from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file, AvailableEndpoints
 from rasa.model import get_model_subdirectories, fingerprint_from_path
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
-from rasa.core.tracker_store import TrackerStore
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
 
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
@@ -270,7 +269,7 @@ async def _load_agent(
         action_endpoint = None
 
         if endpoints:
-            _broker = broker.from_endpoint_config(endpoints.event_broker)
+            _broker = broker_utils.from_endpoint_config(endpoints.event_broker)
             tracker_store = TrackerStore.find_tracker_store(
                 None, endpoints.tracker_store, _broker
             )

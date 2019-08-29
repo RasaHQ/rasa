@@ -4,34 +4,30 @@ import shutil
 import tempfile
 import uuid
 from asyncio import CancelledError
-from sanic import Sanic
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
+from sanic import Sanic
 
 import rasa
 import rasa.utils.io
 from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
 from rasa.core import constants, jobs, training
-from rasa.core.channels.channel import (
-    InputChannel,
-    OutputChannel,
-    UserMessage,
-    CollectingOutputChannel,
-)
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.policies.policy import Policy
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import LockCounter
+from rasa.exceptions import ModelNotFound
+from rasa.importers.importer import TrainingDataImporter
 from rasa.model import (
     get_model_subdirectories,
     get_latest_model,
@@ -41,9 +37,6 @@ from rasa.model import (
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level, set_log_level
 from rasa.utils.endpoints import EndpointConfig
-from rasa.exceptions import ModelNotFound
-
-from rasa.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -159,9 +152,10 @@ async def _pull_model_and_fingerprint(
                     return None
                 elif resp.status == 404:
                     logger.debug(
-                        "Model server didn't find a model for our request. "
-                        "Probably no one did train a model for the project "
-                        "and tag combination yet."
+                        "Model server could not find a model at the requested "
+                        "endpoint '{}'. It's possible that no model has been "
+                        "trained, or that the requested tag hasn't been "
+                        "assigned.".format(model_server.url)
                     )
                     return None
                 elif resp.status != 200:
@@ -295,14 +289,15 @@ class Agent(object):
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
-        if self.domain:
-            self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
-        if not self._is_form_policy_present():
-            raise InvalidDomain(
-                "You have defined a form action, but haven't added the "
-                "FormPolicy to your policy ensemble."
-            )
+
+        if self.domain is not None:
+            self.domain.add_requested_slot()
+            self.domain.add_knowledge_base_slots()
+
+        PolicyEnsemble.check_domain_ensemble_compatibility(
+            self.policy_ensemble, self.domain
+        )
 
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
@@ -411,7 +406,7 @@ class Agent(object):
         )
 
     async def parse_message_using_nlu_interpreter(
-        self, message_data: Text
+        self, message_data: Text, tracker: DialogueStateTracker = None
     ) -> Dict[Text, Any]:
         """Handles message text and intent payload input messages.
 
@@ -420,6 +415,8 @@ class Agent(object):
         Args:
             message_data (Text): Contain the received message in text or\
             intent payload format.
+            tracker (DialogueStateTracker): Contains the tracker to be\
+            used by the interpreter.
 
         Returns:
             The parsed message.
@@ -438,7 +435,7 @@ class Agent(object):
 
         processor = self.create_processor()
         message = UserMessage(message_data)
-        return await processor._parse_message(message)
+        return await processor._parse_message(message, tracker)
 
     async def handle_message(
         self,
@@ -953,11 +950,3 @@ class Agent(object):
             )
 
         return None
-
-    def _is_form_policy_present(self) -> bool:
-        """Check whether form policy is present and used."""
-
-        has_form_policy = self.policy_ensemble is not None and any(
-            isinstance(p, FormPolicy) for p in self.policy_ensemble.policies
-        )
-        return not self.domain or not self.domain.form_names or has_form_policy

@@ -5,7 +5,7 @@ import typing
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa.constants import RESULTS_FILE
+from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
@@ -13,6 +13,10 @@ from rasa.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
+
+import matplotlib
+
+matplotlib.use("TkAgg")
 
 logger = logging.getLogger(__name__)
 
@@ -167,7 +171,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         predicted_message = md_format_message(
             self.text, self.predicted_intent, self.predicted_entities
         )
-        return ("{}: {}   <!-- predicted: {}: {} -->").format(
+        return "{}: {}   <!-- predicted: {}: {} -->".format(
             self.intent.get("name"),
             correct_message,
             self.predicted_intent,
@@ -593,13 +597,11 @@ async def compare_models_in_dir(
             if not model.endswith("tar.gz"):
                 continue
 
-            # The model files are named like <policy-name><number>.tar.gz
-            # Remove the number from the name to get the policy name
-            policy_name = "".join(
-                [i for i in os.path.basename(model) if not i.isdigit()]
-            )
+            # The model files are named like <config-name>PERCENTAGE_KEY<number>.tar.gz
+            # Remove the percentage key and number from the name to get the config name
+            config_name = os.path.basename(model).split(PERCENTAGE_KEY)[0]
             number_of_correct_stories = await _evaluate_core_model(model, stories_file)
-            number_correct_in_run[policy_name].append(number_of_correct_stories)
+            number_correct_in_run[config_name].append(number_of_correct_stories)
 
         for k, v in number_correct_in_run.items():
             number_correct[k].append(v)
@@ -686,7 +688,7 @@ def _plot_curve(
     data = rasa.utils.io.read_json_file(os.path.join(output, RESULTS_FILE))
     x = number_of_examples
 
-    # compute mean of all the runs for keras/embed policies
+    # compute mean of all the runs for different configs
     for label in data.keys():
         if len(data[label]) == 0:
             continue

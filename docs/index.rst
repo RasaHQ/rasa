@@ -61,6 +61,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    core/forms
    core/interactive-learning
    core/fallback-actions
+   core/knowledge-bases
 
 .. toctree::
    :maxdepth: 1

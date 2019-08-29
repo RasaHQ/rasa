@@ -240,11 +240,21 @@ components that make up the ``supervised_embeddings`` pipeline:
     - name: "CRFEntityExtractor"
     - name: "EntitySynonymMapper"
     - name: "CountVectorsFeaturizer"
+    - name: "CountVectorsFeaturizer"
+      analyzer: "char_wb"
+      min_ngram: 1
+      max_ngram: 4
     - name: "EmbeddingIntentClassifier"
-
+    
 So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
 can replace the ``WhitespaceTokenizer`` with your own tokenizer. We support a number of different :ref:`tokenizers <tokenizers>`,
 or you can :ref:`create your own <custom-nlu-components>`.
+
+The pipeline uses two instances of ``CountVectorsFeaturizer``. The first one 
+featurizes text based on words. The second one featurizes text based on character 
+n-grams, preserving word boundaries. We empirically found the second featurizer 
+to be more powerful, but we decided to keep the first featurizer as well to make
+featurization more robust.
 
 .. _section_pretrained_embeddings_spacy_pipeline:
 
