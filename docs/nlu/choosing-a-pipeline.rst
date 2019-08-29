@@ -76,7 +76,7 @@ To mitigate this problem, rasa's ``supervised_embeddings`` pipeline uses a ``bal
 ``supervised_embeddings`` pipeline. This algorithm ensures that all classes are represented
 at least in subsequent batches, still mimicking the fact that some classes are more frequent than others.
 Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
-``batch_strategy: sequence`` in config file.
+``batch_strategy: sequence`` in your config file.
 
 .. code-block:: yaml
 
