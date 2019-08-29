@@ -127,7 +127,7 @@ def test_test_help(run):
                  [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU] [--out OUT]
-                 [--successes] [--errors] [--histogram HISTOGRAM]
+                 [--successes] [--no-errors] [--histogram HISTOGRAM]
                  [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
                  [--cross-validation] [-f FOLDS] [-r RUNS]
                  [-p PERCENTAGES [PERCENTAGES ...]]
@@ -143,7 +143,7 @@ def test_test_nlu_help(run):
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [--successes] [--errors] [--histogram HISTOGRAM]
+                     [--successes] [--no-errors] [--histogram HISTOGRAM]
                      [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
                      [--cross-validation] [-f FOLDS] [-r RUNS]
                      [-p PERCENTAGES [PERCENTAGES ...]]"""
