@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 from typing import Text, Optional, Union
 
 from async_generator import asynccontextmanager, async_generator, yield_
@@ -12,6 +13,8 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 ACCEPTED_LOCK_STORES = ["in_memory", "redis"]
+
+LOCK_LIFETIME = int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_LIFETIME
 
 
 # noinspection PyUnresolvedReferences
@@ -72,7 +75,8 @@ class LockStore:
                 "Cannot retrieve `LockStore` from path '{}'.".format(module_path)
             )
 
-    def create_lock(self, conversation_id: Text) -> TicketLock:
+    @staticmethod
+    def create_lock(conversation_id: Text) -> TicketLock:
         """Create a new `TicketLock` for `conversation_id`."""
 
         return TicketLock(conversation_id)
@@ -93,17 +97,28 @@ class LockStore:
         raise NotImplementedError
 
     def issue_ticket(
-        self,
-        conversation_id: Text,
-        lock_lifetime: Union[float, int] = DEFAULT_LOCK_LIFETIME,
+        self, conversation_id: Text, lock_lifetime: Union[float, int] = LOCK_LIFETIME
     ) -> int:
-        """Issue new ticket for lock associated with `conversation_id`.
+        """Issue new ticket with `lock_lifetime` for lock associated with
+        `conversation_id`.
 
         Creates a new lock if none is found.
         """
 
         lock = self.get_or_create_lock(conversation_id)
         ticket = lock.issue_ticket(lock_lifetime)
+
+        while True:
+            try:
+                self.ensure_ticket_available(lock)
+                break
+            except TicketExistsError:
+                # issue a new ticket if current ticket number has been issued twice
+                logger.exception(
+                    "Ticket could not be issued. Issuing new ticket and retrying..."
+                )
+                ticket = lock.issue_ticket(lock_lifetime)
+
         self.save_lock(lock)
 
         return ticket
@@ -113,7 +128,7 @@ class LockStore:
     async def lock(
         self,
         conversation_id: Text,
-        lock_lifetime: int = DEFAULT_LOCK_LIFETIME,
+        lock_lifetime: int = LOCK_LIFETIME,
         wait_time_in_seconds: Union[int, float] = 1,
     ) -> None:
         """Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
@@ -239,8 +254,8 @@ class LockStore:
         # that of the one being acquired
         if existing_lock.last_issued != lock.last_issued:
             raise TicketExistsError(
-                "Ticket already exists for conversation ID '{}'."
-                "".format(lock.conversation_id)
+                "Ticket '{}' already exists for conversation ID '{}'."
+                "".format(existing_lock.last_issued, lock.conversation_id)
             )
 
 
@@ -271,7 +286,6 @@ class RedisLockStore(LockStore):
         self._log_deletion(conversation_id, deletion_successful)
 
     def save_lock(self, lock: TicketLock) -> None:
-        self.ensure_ticket_available(lock)
         self.red.set(lock.conversation_id, lock.dumps())
 
 
@@ -292,5 +306,4 @@ class InMemoryLockStore(LockStore):
         )
 
     def save_lock(self, lock: TicketLock) -> None:
-        self.ensure_ticket_available(lock)
         self.conversation_locks[lock.conversation_id] = lock
