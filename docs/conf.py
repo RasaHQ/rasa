@@ -25,6 +25,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
+    "sphinx_tabs.tabs",
     "sphinxcontrib.programoutput",
     "sphinxcontrib.httpdomain",
     "rasabaster.button",
