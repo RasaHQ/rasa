@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from typing import Tuple, Dict, Any, Text
 from rasa.nlu.utils import ordered
 
 from rasa.nlu.constants import (
@@ -9,8 +8,8 @@ from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_ENTITIES_ATTRIBUTE,
     MESSAGE_RESPONSE_KEY_ATTRIBUTE,
+    RESPONSE_IDENTIFIER_DELIMITER,
 )
-from rasa.nlu.training_data.formats.markdown import RESPONSE_IDENTIFIER_DELIMITER
 
 
 class Message(object):
@@ -33,27 +32,6 @@ class Message(object):
         if prop == MESSAGE_TEXT_ATTRIBUTE:
             return self.text
         return self.data.get(prop, default)
-
-    def get_combined_intent_response_key(self):
-        """Get intent as it appears in training data"""
-
-        intent = self.get(MESSAGE_INTENT_ATTRIBUTE)
-        response_key = self.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
-        response_key_suffix = (
-            "{}{}".format(RESPONSE_IDENTIFIER_DELIMITER, response_key)
-            if response_key
-            else ""
-        )
-        return "{}{}".format(intent, response_key_suffix)
-
-    @staticmethod
-    def separate_intent_response_key(original_intent) -> Tuple[Text, Any]:
-
-        split_title = original_intent.split(RESPONSE_IDENTIFIER_DELIMITER)
-        if len(split_title) == 2:
-            return split_title[0], split_title[1]
-        elif len(split_title) == 1:
-            return split_title[0], None
 
     def as_dict_nlu(self):
         """Get dict representation of message as it would appear in training data"""
@@ -99,3 +77,24 @@ class Message(object):
         if entities:
             data[MESSAGE_ENTITIES_ATTRIBUTE] = entities
         return cls(text, data)
+
+    def get_combined_intent_response_key(self):
+        """Get intent as it appears in training data"""
+
+        intent = self.get(MESSAGE_INTENT_ATTRIBUTE)
+        response_key = self.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
+        response_key_suffix = (
+            "{}{}".format(RESPONSE_IDENTIFIER_DELIMITER, response_key)
+            if response_key
+            else ""
+        )
+        return "{}{}".format(intent, response_key_suffix)
+
+    @staticmethod
+    def separate_intent_response_key(original_intent):
+
+        split_title = original_intent.split(RESPONSE_IDENTIFIER_DELIMITER)
+        if len(split_title) == 2:
+            return split_title[0], split_title[1]
+        elif len(split_title) == 1:
+            return split_title[0], None

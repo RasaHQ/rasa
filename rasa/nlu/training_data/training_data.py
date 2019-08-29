@@ -18,8 +18,8 @@ from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_RESPONSE_KEY_ATTRIBUTE,
+    RESPONSE_IDENTIFIER_DELIMITER,
 )
-from rasa.nlu.training_data.formats.markdown import RESPONSE_IDENTIFIER_DELIMITER
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -76,7 +76,11 @@ class TrainingData(object):
             nlg_stories.update(o.nlg_stories)
 
         return TrainingData(
-            training_examples, entity_synonyms, regex_features, lookup_tables
+            training_examples,
+            entity_synonyms,
+            regex_features,
+            lookup_tables,
+            nlg_stories,
         )
 
     def filter_by_intent(self, intent: Text):
@@ -183,11 +187,7 @@ class TrainingData(object):
         for example in self.training_examples:
             response_key = example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
             if response_key:
-                story_lookup_intent = "{}{}{}".format(
-                    example.get(MESSAGE_INTENT_ATTRIBUTE),
-                    RESPONSE_IDENTIFIER_DELIMITER,
-                    response_key,
-                )
+                story_lookup_intent = example.get_combined_intent_response_key()
                 assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
                 if assistant_utterances:
                     # selecting only first assistant utterance for now
@@ -195,7 +195,9 @@ class TrainingData(object):
                 else:
                     raise ValueError(
                         "No response phrases found for {}. Check training data "
-                        "files for a possible typo in NLU/NLG file"
+                        "files for a possible typo in NLU/NLG file".format(
+                            story_lookup_intent
+                        )
                     )
 
     def nlu_as_json(self, **kwargs: Any) -> Text:
@@ -239,18 +241,17 @@ class TrainingData(object):
         if nlg_serialized_data == "":
             return
 
-        filename = "nlg_" + filename
-        if filename.endswith("json"):
-            logger.warning(
-                "JSON format not supported for NLG training data. Saving it as Markown"
-            )
-            filename += ".md"
-            rasa.nlu.utils.write_to_file(filename, self.nlg_as_markdown())
-        else:
-            ValueError(
-                "Unsupported file format detected. Supported file formats are 'json' "
-                "and 'md'."
-            )
+        rasa.nlu.utils.write_to_file(filename, self.nlg_as_markdown())
+
+    @staticmethod
+    def get_nlg_persist_filename(nlu_filename):
+
+        # Add nlg_ as prefix and change extension to .md
+        filename = os.path.join(
+            os.path.dirname(nlu_filename),
+            "nlg_" + os.path.splitext(os.path.basename(nlu_filename))[0] + ".md",
+        )
+        return filename
 
     def persist(
         self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
@@ -263,7 +264,7 @@ class TrainingData(object):
 
         nlu_data_file = os.path.join(dir_name, filename)
         self.persist_nlu(nlu_data_file)
-        self.persist_nlg(nlu_data_file)
+        self.persist_nlg(self.get_nlg_persist_filename(nlu_data_file))
 
         return {"training_data": relpath(nlu_data_file, dir_name)}
 

@@ -83,7 +83,7 @@ class JiebaTokenizer(Tokenizer, Component):
                 if example.get(attribute) is not None:
                     example.set(
                         MESSAGE_TOKENS_NAMES[attribute],
-                        self.tokenize(example.get(attribute), MESSAGE_TEXT_ATTRIBUTE),
+                        self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -100,10 +100,10 @@ class JiebaTokenizer(Tokenizer, Component):
         else:
             return text
 
-    @staticmethod
-    def tokenize(text: Text, attribute=MESSAGE_TEXT_ATTRIBUTE) -> List[Token]:
+    def tokenize(self, text: Text, attribute=MESSAGE_TEXT_ATTRIBUTE) -> List[Token]:
         import jieba
 
+        text = self.preprocess_text(text, attribute)
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
         return tokens

@@ -296,8 +296,6 @@ def list_files(path: Text) -> List[Text]:
 
     If the path points to a file, returns the file."""
 
-    print (list_directory(path))
-
     return [fn for fn in list_directory(path) if os.path.isfile(fn)]
 
 

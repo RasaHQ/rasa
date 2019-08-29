@@ -15,8 +15,8 @@ from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_RESPONSE_KEY_ATTRIBUTE,
     MESSAGE_RESPONSE_ATTRIBUTE,
+    RESPONSE_IDENTIFIER_DELIMITER,
 )
-from rasa.nlu.training_data.formats.markdown import RESPONSE_IDENTIFIER_DELIMITER
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData

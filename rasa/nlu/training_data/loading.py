@@ -46,7 +46,7 @@ _json_format_heuristics = {
     DIALOGFLOW_INTENT_EXAMPLES: lambda js, fn: "_usersays_" in fn,
     DIALOGFLOW_ENTITY_ENTRIES: lambda js, fn: "_entries_" in fn,
 }
-_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*.*\n\s*\t*\-.*")
+_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*.*\/.*\n\s*\t*\-.*")
 
 
 def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
@@ -59,11 +59,8 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
         raise ValueError("File '{}' does not exist.".format(resource_name))
 
     files = io_utils.list_files(resource_name)
-    print (files)
     data_sets = [_load(f, language) for f in files]
-    print (len(data_sets))
     data_sets = [ds for ds in data_sets if ds]
-    print (len(data_sets))
     if len(data_sets) == 0:
         training_data = TrainingData()
     elif len(data_sets) == 1:
@@ -71,7 +68,9 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     else:
         training_data = data_sets[0].merge(*data_sets[1:])
 
-    training_data.fill_response_phrases()
+    if training_data.nlg_stories:
+        training_data.fill_response_phrases()
+
     return training_data
 
 
@@ -117,7 +116,6 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     elif fformat == MARKDOWN:
         reader = MarkdownReader()
     elif fformat == MARKDOWN_NLG:
-        print ("reader for NLG")
         reader = NLGMarkdownReader()
     return reader
 

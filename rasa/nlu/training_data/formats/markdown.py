@@ -1,7 +1,7 @@
 import logging
 import re
 import typing
-from typing import Any, Text, Tuple
+from typing import Any, Text
 
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -10,8 +10,8 @@ from rasa.nlu.training_data.formats.readerwriter import (
 from rasa.nlu.utils import build_entity
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_RESPONSE_KEY_ATTRIBUTE,
+    RESPONSE_IDENTIFIER_DELIMITER,
 )
 
 if typing.TYPE_CHECKING:
@@ -35,8 +35,6 @@ fname_regex = re.compile(r"\s*([^-*+]+)")
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 
 ESCAPE = re.compile(r"[\b\f\n\r\t]")
-
-RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 
 def encode_string(s):
@@ -232,7 +230,7 @@ class MarkdownWriter(TrainingDataWriter):
                 md += self._generate_section_header_md(
                     INTENT,
                     example[MESSAGE_INTENT_ATTRIBUTE],
-                    example[MESSAGE_RESPONSE_KEY_ATTRIBUTE],
+                    example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE, None),
                     i != 0,
                 )
 

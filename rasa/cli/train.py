@@ -128,8 +128,6 @@ def train_nlu(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
-    print ("Training files in cli train", nlu_data)
-
     return train_nlu(
         config=config,
         nlu_data=nlu_data,

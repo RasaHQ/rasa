@@ -977,7 +977,7 @@ def get_available_response_selector_types(interpreter: Interpreter) -> List[Text
     """Gets all available response selector types"""
 
     response_selector_types = [
-        c.open_domain_intent_name
+        c.direct_response_intent
         for c in interpreter.pipeline
         if "response" in c.provides
     ]
@@ -1003,7 +1003,7 @@ def run_evaluation(
     component_builder: Optional[ComponentBuilder] = None,
 ) -> Dict:  # pragma: no cover
     """
-    Evaluate intent classification and entity extraction.
+    Evaluate intent classification, response selection and entity extraction.
 
     :param data_path: path to the test data
     :param model_path: path to the model
@@ -1045,7 +1045,7 @@ def run_evaluation(
     if response_selection_results:
         logger.info("Response selection evaluation results:")
         result["response_selection_evaluation"] = evaluate_response_selections(
-            response_selection_results, report
+            response_selection_results, output_directory
         )
 
     if entity_results:

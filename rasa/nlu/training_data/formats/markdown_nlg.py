@@ -27,7 +27,6 @@ class NLGMarkdownReader(TrainingDataReader):
 
         self.__init__()
         lines = s.splitlines()
-        # print('lines', len(lines))
         self.stories = self.process_lines(lines)
         return TrainingData(nlg_stories=self.stories)
 
@@ -43,13 +42,14 @@ class NLGMarkdownReader(TrainingDataReader):
             line_num = idx + 1
             try:
                 line = line.strip()
-                # print(line,story_intent, story_bot_utterances)
                 if line == "":
                     continue
                 elif line.startswith("#"):
                     # reached a new story block
                     if story_intent:
                         stories[story_intent] = story_bot_utterances
+                        story_bot_utterances = []
+                        story_intent = None
 
                 elif line.startswith("-"):
                     # reach a assistant's utterance
@@ -75,6 +75,10 @@ class NLGMarkdownReader(TrainingDataReader):
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
                 raise ValueError(msg)
 
+        # add last story
+        if story_intent:
+            stories[story_intent] = story_bot_utterances
+
         return stories
 
 
@@ -90,9 +94,10 @@ class NLGMarkdownWriter(TrainingDataWriter):
     def _generate_nlg_stories(training_data: "TrainingData"):
 
         md = ""
-        for intent, utterances in training_data.nlg_stories:
+        for intent, utterances in training_data.nlg_stories.items():
             md += "## \n"
             md += "* {}\n".format(intent)
             for utterance in utterances:
                 md += "- {}\n".format(utterance)
+            md += "\n"
         return md
