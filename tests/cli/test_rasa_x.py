@@ -5,8 +5,6 @@ import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 
-ENDPOINT_CONFIG = {}
-
 
 def test_x_help(run):
     output = run("x", "--help")

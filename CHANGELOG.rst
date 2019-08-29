@@ -20,7 +20,10 @@ Added
   information.
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
-- The tracker is now avaialble within the interpreter's ``parse`` method, giving the ability to create interpreter classes that use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
+- The tracker is now avaialble within the interpreter's ``parse`` method, giving the
+  ability to create interpreter classes that use the tracker state (eg. slot values)
+  during the parsing of the message. More details on motivation of this change see
+  issues/3015.
 - add example bot ``knowledgebasebot`` to showcase the usage of ``ActionQueryKnowledgeBase``
 - ``softmax`` starspace loss for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``balanced`` batching strategy for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
@@ -30,12 +33,14 @@ Added
 - argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
   the runtime configuration (endpoints and credentials)
 - ``LockStore`` class storing instances of ``TicketLock`` for every ``conversation_id``
+- environment variables ``SQL_POOL_SIZE`` (default: 50) and ``SQL_MAX_OVERFLOW``
+  (default: 100) can be set to control the pool size and maximum pool overflow for
+  ``SQLTrackerStore`` when used with the ``postgresql`` dialect
 
 Changed
 -------
 - added character-level ``CountVectorsFeaturizer`` with empirically found parameters
   into the ``supervised_embeddings`` NLU pipeline template
-- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
 - NLU evaluations now also stores its output in the output directory like the core evaluation
 - show warning in case a default path is used instead of a provided, invalid path
 - compare mode of ``rasa train core`` allows the whole core config comparison,

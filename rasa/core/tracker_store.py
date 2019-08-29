@@ -325,9 +325,10 @@ class SQLTrackerStore(TrackerStore):
         while True:
             try:
                 # pool_size and max_overflow can be set to control the number of
-                # connections that are kept in the connection pool. these parameters
-                # are not available for SQLite
-                if dialect != "sqlite":
+                # connections that are kept in the connection pool. Not available
+                # for SQLite, and only  tested for postgresql. See
+                # https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool
+                if dialect == "postgresql":
                     self.engine = create_engine(
                         engine_url,
                         pool_size=int(os.environ.get("SQL_POOL_SIZE", "50")),
