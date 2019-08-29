@@ -68,6 +68,25 @@ We do not recommend that you use these; mitie support is likely to be deprecated
     You need to provide enough data for both intents and entities.
 
 
+Class imbalance
+---------------
+
+In order to mitigate class imbalance problem, we introduced ``balanced`` batching strategy for
+``supervised_embeddings`` pipeline. This algorithm ensures that all classes are represented
+at least in subsequent batches, still mimicking the fact that some classes are more frequent than others.
+It is turned on by default. In order to turn it off and use classic batching strategy pass
+``batch_strategy: sequence`` in config file.
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
+      batch_strategy: sequence
+
+
 Multiple Intents
 ----------------
 
