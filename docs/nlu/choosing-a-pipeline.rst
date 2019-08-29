@@ -71,7 +71,8 @@ We do not recommend that you use these; mitie support is likely to be deprecated
 Class imbalance
 ---------------
 
-In order to mitigate class imbalance problem, we introduced ``balanced`` batching strategy for
+Classification algorithms often do not perform well if there is a large `class imbalance`, for example if you have a lot of training data for some intents and very little training data for others. 
+To mitigate this problem, rasa's ``supervised_embeddings`` pipeline uses a ``balanced`` batching strategy.
 ``supervised_embeddings`` pipeline. This algorithm ensures that all classes are represented
 at least in subsequent batches, still mimicking the fact that some classes are more frequent than others.
 It is turned on by default. In order to turn it off and use classic batching strategy pass
