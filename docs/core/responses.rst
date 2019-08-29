@@ -17,7 +17,7 @@ can use utterances to send messages back to the user.
 There are three ways to manage these utterances:
 
 1. Include your assistant utterances in your domain file, or
-2. Include responses to open domain intents directly in NLU training file, or
+2. Include responses to direct respond intents in a separate NLG file inside NLU training data, or
 3. Use an external service to generate the responses.
 
 Including the utterances in the domain
@@ -39,31 +39,33 @@ you need to retrain the assistant before these changes will be picked up.
 More details about the format of these responses can be found in the
 documentation about the domain file format: :ref:`utter_templates`.
 
-.. _open-domain-utterances:
+.. _direct-response:
 
-Managing responses to open domain intents
--------------------------------------------
+Managing responses to direct response intents
+----------------------------------------------
 
-All assistant utterances which should be used as a reply to open domain intents can be included as part of ``common examples`` in
-the NLU training data file.
+All assistant utterances which should be used as a reply to direct response intents can be added to a separate NLG file
+as part of the NLU training data. The contents of
 
-For example -
+For example, if you specified a direct response intent as -
 
 .. code-block:: md
 
-    ## intent: faq, response: The supported Python versions are: 2.7,3.5,3.6. The recommended version is 3.6.
+    ## intent: faq/python_version
     - which python version should i install
     - what version of python
     - which python do you support?
 
-    ## intent: faq, response: Yes [here](https://blog.rasa.com/tag/tutorials/) are some tutorials that can help you get started and learn more about Rasa.
-    - are there some tutorials i could look at?
-    - do you have tutorials?
-    - I need a tutorial on how to use Rasa.
+the NLG file with the assistant's utterance for the corresponding intent would look like -
 
-It is recommended that all open domain intents are mapped to a ``respond_`` type action and that action queries the
-tracker to pick the predicted response which would already be stored by the ``ResponseSelector`` component inside the
-NLU pipeline.
+.. code-block:: md
+
+    * faq/python_version
+        - The supported Python versions are: 2.7,3.5,3.6. The recommended version is 3.6.
+
+.. warning::
+    The assistant's utterances for all direct response intents should strictly not be a part of the NLU training file which
+    contains training data for intent classification
 
 
 Managing assistant utterances using an external CMS

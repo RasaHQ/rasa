@@ -93,17 +93,17 @@ Here's an example configuration:
     - name: "EmbeddingIntentClassifier"
 
 
-Open Domain Intents
--------------------
+Direct Response Intents
+------------------------
 
-Open domain intents are those intents which are not directly related to the specific task of your assistant, for e.g. - chitchat/small talk.
-To accommodate open domain intents, you should include ``ResponseSelector`` component in your NLU pipeline. The component needs
-a tokenizer, a featurizer and an intent classifier to operate on the user message before it can predict a response and hence these
+You can use an experimental component ``ResponseSelector`` inside your NLU pipeline which would be trained to select
+an appropriate response text given the incoming user message text. The component needs a tokenizer, a featurizer and an
+intent classifier to operate on the user message before it can predict a response and hence these
 components should be placed before ``ResponseSelector`` in the NLU configuration. The configuration for ``ResponseSelector``
-should mention the name of the open domain intent for which that corresponding response selector should be trained. If that
-parameter is left empty a shared model will be trained picking training examples across all open domain intents.
+should mention the name of the intent for which that corresponding response selector should be trained. If that
+parameter is left empty a shared model will be trained picking training examples across all intents which specify a direct response text.
 
-    - ``response_type``: sets the name of the open domain intent for which this response selector model is trained. Default ``None``
+    - ``direct_response_intent``: sets the name of the direct response intent for which this response selector model is trained. Default ``None``
 
 .. code-block:: yaml
 
@@ -115,7 +115,7 @@ parameter is left empty a shared model will be trained picking training examples
     - name: "CountVectorsFeaturizer"
     - name: "EmbeddingIntentClassifier"
     - name: "ResponseSelector"
-      response_type: chitchat
+      direct_response_intent: chitchat
 
 
 
@@ -214,11 +214,14 @@ exactly. Instead it will return the trained synonym.
     returns ``null``.
 
 
-Result for Response Selection explained
-------------------------
-If your NLU pipeline contains a response selector component, the resultant parsed output of NLU will have two additional keys -
-    - ``respond_<open domain intent>_response``: Similar to ``intent`` key but contains the predicted response instead of intent. This key could be replaced by ``respond_default_response`` in case ``response_type`` parameters is left unspecified in component configuration.
-    - ``respond_<open domain intent>_response_ranking``: Ranking with confidences of top 10 candidate responses.
+Result for Response Selector explained
+----------------------------------------
+
+If your NLU pipeline contains a response selector component, the resultant parsed output of NLU will have a property
+named ``response_selector`` containing the output for each response selector. The output for each response selector has
+a key equal to the ``direct_response_intent`` parameter of that response selector which stores two properties -
+    - ``response``: Contains the predicted response text and the prediction confidence.
+    - ``ranking``: Ranking with confidences of top 10 candidate responses.
 
 Example result:
 
@@ -232,11 +235,15 @@ Example result:
             {"confidence": 0.6485910906220309, "name": "faq"},
             {"confidence": 0.1416153159565678, "name": "greet"}
         ],
-        "respond_faq_response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-        "respond_faq_response_ranking": [
-            {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-            {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
-        ]
+        "response_selector": {
+          "faq": {
+            "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+            "ranking": [
+                {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+                {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
+            ]
+          }
+        }
     }
 
 Pre-configured Pipelines

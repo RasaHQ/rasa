@@ -479,24 +479,35 @@ EmbeddingIntentClassifier
 .. _response-selector:
 
 Selectors
----------
+----------
 
 Response Selector
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 :Short: Response Selector
-:Outputs: ``respond_<intent>_response`` and ``respond_<intent>_response_ranking``
+:Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
 :Requires: A featurizer
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "respond_faq_response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-            "respond_faq_response_ranking": [
-                {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-                {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
-            ]
+            "text": "What is the recommend python version to install?",
+            "entities": [],
+            "intent": {"confidence": 0.6485910906220309, "name": "faq"},
+            "intent_ranking": [
+                {"confidence": 0.6485910906220309, "name": "faq"},
+                {"confidence": 0.1416153159565678, "name": "greet"}
+            ],
+            "response_selector": {
+              "faq": {
+                "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+                "ranking": [
+                    {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+                    {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
+                ]
+              }
+            }
         }
 
 :Description:
@@ -515,9 +526,10 @@ Response Selector
 :Configuration:
 
     The algorithm includes all the hyperparameters that ``EmbeddingIntentClassifier`` uses.
-    In addition, the component can also be configured to train a response selector for a particular open domain intent.
+    In addition, the component can also be configured to train a response selector for a particular intent which
+    needs end to end response selection.
 
-        - ``response_type``: sets the name of the open domain intent for which this response selector model is trained. Default ``None``
+        - ``direct_response_intent``: sets the name of the direct response intent for which this response selector model is trained. Default ``None``
 
     In the config, you can specify these parameters.
     The default values are defined in ``ResponseSelector.defaults``:

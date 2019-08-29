@@ -14,7 +14,7 @@ There are four kinds of actions in Rasa:
 
  1. **Utterance actions**: start with ``utter_``, just send a message
     to the user
- 2. **Open Domain response actions**: start with ``respond_``, send a selected message from different candidates
+ 2. **Direct Response actions**: start with ``respond_``, send a model retrieved message from different candidates
  3. **Custom actions**: any other action, these actions can run arbitrary code
  4. **Default actions**: e.g. ``action_listen``, ``action_restart``,
     ``action_default_fallback``
@@ -43,27 +43,27 @@ If you use an external NLG service, you don't need to specify the
 templates in the domain, but you still need to add the utterance names
 to the actions list of the domain.
 
-.. _open-domain-response-actions:
+.. _end-to-end-response-actions:
 
-Open Domain Utterance Actions
------------------------------
+Direct Response Actions
+-----------------------
 
-Open domain utterance actions are used to respond to open domain utterances belonging to intents like chitchat or FAQ.
+Direct response actions are used to respond to utterances belonging to intents which need a direct retrieved response like chitchat or FAQ.
 These utterances would most likely have just one bot reply to the incoming utterance and hence you can use
-``ResponseSelector`` component inside the NLU pipeline to predict that reply. See :ref:`open-domain-utterances` for more details on how to specify response
+``ResponseSelector`` component inside the NLU pipeline to predict that reply. See :ref:`direct-responses` for more details on how to specify response
 utterances of this type.
 
-It is highly recommended to `map` all such open domain intents to an action of this type using :ref:`mapping-policy`.
+It is highly recommended to `map` all such direct response intents to an action of this type using :ref:`mapping-policy`.
 The naming convention of this type of action is kept strict due to tight coupling of the action to the
 ``ResponseSelector`` model which predicts the actual sentence for the assistant's reply. The template to be
-followed is ``respond_<open-domain-intent>``.
-So, if you have a open domain intent named ``faq`` then the corresponding action name will be named ``respond_faq``
+followed is ``respond_<intent>``.
+So, if you have a direct response intent named ``faq`` then the corresponding action name will be named ``respond_faq``
 
 All such actions are served by ``ActionUtterPredictedResponse`` class which queries the tracker for the response predicted by
 corresponding ``ResponseSelector`` inside the NLU pipeline.
 
 In addition to these actions being `mapped` to their corresponding intents, you can still include them in training data stories
-to specify a follow up action, if any, after the open domain utterance action is triggered.
+to specify a follow up action, if any, after this action is triggered.
 
 .. _custom-actions:
 
