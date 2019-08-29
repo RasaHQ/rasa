@@ -69,6 +69,13 @@ You can create an action server in node.js, .NET, java, or any
 other language and define your actions there - but we provide
 a small python SDK to make development there even easier.
 
+.. note::
+
+    Rasa uses a ticket lock mechanism to ensure incoming messages from the same
+    conversation ID do not interfere with each other and are processed in the right
+    order. If you expect your custom action to take more than 60 seconds to run, please
+    set ``DEFAULT_LOCK_LIFETIME`` in ``rasa/core/constants.py`` to your expected value.
+
 Custom Actions Written in Python
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
