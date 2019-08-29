@@ -14,6 +14,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
@@ -196,6 +197,10 @@ from providing the basis for a scalable machine learning dialogue management." /
 <li class="toctree-l1"><a class="reference internal" href="../../migrate-from/facebook-wit-ai-to-rasa/">Wit.ai</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
 </ul>
 
 <div class="versions">
@@ -429,6 +434,13 @@ at a time):</p>
 <span class="vm">* goodbye</span>
 <span class="vm">  </span>- utter_goodbye
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Unlike regular stories, checkpoints are not restricted to starting with an
+input from the user. As long as the checkpoint is inserted at the right points
+in the main stories, the first event can be an action or an utterance
+as well.</p>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>

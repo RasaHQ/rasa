@@ -9,8 +9,13 @@
     <title>Installation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_tabs/semantic-ui-2.4.1/segment.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_tabs/semantic-ui-2.4.1/menu.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_tabs/tabs.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/button.css" />
@@ -18,6 +23,8 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.js"></script>
+    <script type="text/javascript" src="../../_static/sphinx_tabs/tabs.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Rasa Tutorial" href="../rasa-tutorial/" />
@@ -197,6 +204,10 @@ entity extraction and customisation of the language models." />
 <li class="toctree-l1"><a class="reference internal" href="../../migrate-from/microsoft-luis-to-rasa/">LUIS</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migrate-from/ibm-watson-to-rasa/">IBM Watson</a></li>
 </ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
 
 <div class="versions">
     <p class="caption">Versions</p>
@@ -272,36 +283,167 @@ entity extraction and customisation of the language models." />
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/installation.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
-  </div><p>The recommended way to get started with Rasa is via <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
-
-  <pre class="copyable-snippet">
-    <div class="code copyable" data-clipboard-text="pip install rasa-x --extra-index-url https://pypi.rasa.com/simple">
-pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
-    </div>
-    <button class="button copyable" data-clipboard-text="pip install rasa-x --extra-index-url https://pypi.rasa.com/simple">copy</button>
-    <div class="copyable confirm" id="pip-install-rasa-x---extra-index-url-https://pypi.rasa.com/simple">copied!</div>
-  </pre>
-<p>This will install both Rasa and Rasa X.
-If you don’t want to use Rasa X, run <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa</span></code> instead.</p>
-Unless you've already got numpy & scipy installed, we highly recommend
-that you install and use
-<a class="reference external" href="https://www.anaconda.com/download/"
-target="_blank">Anaconda</a>.<p>If you want to use the development version of Rasa, you can get it from GitHub:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/RasaHQ/rasa.git
-<span class="nb">cd</span> rasa
-pip install -r requirements.txt
-pip install -e .
+  </div><div class="section" id="quick-installation">
+<h2>Quick Installation<a class="headerlink" href="#quick-installation" title="Permalink to this headline">¶</a></h2>
+<p>You can install both Rasa and Rasa X using pip with the following command (requires Python 3.5.4 or higher).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
 </pre></div>
 </div>
-<div class="section" id="windows-prerequisites">
-<h2>Windows Prerequisites<a class="headerlink" href="#windows-prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>Once you’re done with this, you can head over to the tutorial!</p>
+
+ 
+  <a href="../rasa-tutorial/" >
+  <button class="button">Next Step: Tutorial</button>
+  </a>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<hr class="docutils" />
+<p>For a more detailed guide on setting up Rasa with pip, follow along the <a class="reference internal" href="#installation-guide"><span class="std std-ref">installation guide</span></a>. You can also <a class="reference internal" href="#build-from-source"><span class="std std-ref">build Rasa from source</span></a>.</p>
+<p>If you have a specific pipeline in mind and want to install dependencies for that,
+head over to the section on <a class="reference internal" href="#pipeline-dependencies"><span class="std std-ref">pipeline dependencies</span></a>.</p>
+</div>
+<div class="section" id="installation-guide-with-pip">
+<span id="installation-guide"></span><h2>Installation Guide with pip<a class="headerlink" href="#installation-guide-with-pip" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="install-the-python-development-environment">
+<h3>1. Install the Python development environment<a class="headerlink" href="#install-the-python-development-environment" title="Permalink to this headline">¶</a></h3>
+<p>Check if your Python environment is already configured:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python3 --version
+$ pip3 --version
+$ virtualenv --version
+</pre></div>
+</div>
+<p>If these packages are already installed, these commands should display version
+numbers for each step, and you can skip to the next step.</p>
+<p>Otherwise, proceed with the instructions below to install them.</p>
+<div class="sphinx-tabs docutils container">
+<div class="ui top attached tabular menu sphinx-menu docutils container">
+<div class="active item sphinx-data-tab-0-0 docutils container">
+<div class="docutils container">
+Ubuntu</div>
+</div>
+<div class="item sphinx-data-tab-0-1 docutils container">
+<div class="docutils container">
+macOS</div>
+</div>
+<div class="item sphinx-data-tab-0-2 docutils container">
+<div class="docutils container">
+Windows</div>
+</div>
+</div>
+<div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-0-0 active docutils container">
+<p>Fetch the relevant packages using <code class="docutils literal notranslate"><span class="pre">apt</span></code>, and install virtualenv using <code class="docutils literal notranslate"><span class="pre">pip</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo apt update
+$ sudo apt install python3-dev python3-pip
+$ sudo pip3 install -U virtualenv
+</pre></div>
+</div>
+</div>
+<div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-0-1 docutils container">
+<p>Install the <a class="reference external" href="https://brew.sh">Homebrew</a> package manager if you haven’t already.</p>
+<p>Once you’re done, you can install Python and virtualenv.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brew update
+$ brew install python  <span class="c1"># Python 3</span>
+$ sudo pip3 install -U virtualenv  <span class="c1"># system-wide install</span>
+</pre></div>
+</div>
+</div>
+<div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-0-2 docutils container">
 Make sure the Microsoft VC++ Compiler is installed, so python can compile
 any dependencies. You can get the compiler from <a class="reference external"
 href="https://visualstudio.microsoft.com/visual-cpp-build-tools/"
 target="_blank">Visual Studio</a>. Download the installer and select
-VC++ Build tools in the list.</div>
+VC++ Build tools in the list.<p>Install <a class="reference external" href="https://www.python.org/downloads/windows/">Python 3</a> (64-bit version) for Windows.</p>
+<div class="highlight-bat notranslate"><div class="highlight"><pre><span></span>C<span class="p">:</span><span class="nl">\</span><span class="c1">&gt; pip3 install -U pip virtualenv</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="create-a-virtual-environment-strongly-recommended">
+<h3>2. Create a virtual environment (strongly recommended)<a class="headerlink" href="#create-a-virtual-environment-strongly-recommended" title="Permalink to this headline">¶</a></h3>
+<p>Tools like <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> and <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a> provide isolated Python environments, which are cleaner than installing packages systemwide. They also let you install packages without root privileges.</p>
+<div class="sphinx-tabs docutils container">
+<div class="ui top attached tabular menu sphinx-menu docutils container">
+<div class="active item sphinx-data-tab-1-0 docutils container">
+<div class="docutils container">
+Ubuntu / macOS</div>
+</div>
+<div class="item sphinx-data-tab-1-1 docutils container">
+<div class="docutils container">
+Windows</div>
+</div>
+</div>
+<div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-1-0 active docutils container">
+<p>Create a new virtual environment by choosing a Python interpreter and making a <code class="docutils literal notranslate"><span class="pre">./venv</span></code> directory to hold it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ virtualenv --system-site-packages -p python3 ./venv
+</pre></div>
+</div>
+<p>Activate the virtual environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">source</span> ./venv/bin/activate
+</pre></div>
+</div>
+</div>
+<div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-1-1 docutils container">
+<p>Create a new virtual environment by choosing a Python interpreter and making a <code class="docutils literal notranslate"><span class="pre">.\venv</span></code> directory to hold it:</p>
+<div class="highlight-bat notranslate"><div class="highlight"><pre><span></span>C<span class="p">:</span><span class="nl">\</span><span class="c1">&gt; virtualenv --system-site-packages -p python3 ./venv</span>
+</pre></div>
+</div>
+<p>Activate the virtual environment:</p>
+<div class="highlight-bat notranslate"><div class="highlight"><pre><span></span>C<span class="p">:</span><span class="nl">\</span><span class="c1">&gt; .\venv\Scripts\activate</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="install-rasa-and-rasa-x">
+<h3>3. Install Rasa and Rasa X<a class="headerlink" href="#install-rasa-and-rasa-x" title="Permalink to this headline">¶</a></h3>
+<div class="sphinx-tabs docutils container">
+<div class="ui top attached tabular menu sphinx-menu docutils container">
+<div class="active item sphinx-data-tab-2-0 docutils container">
+<div class="docutils container">
+Rasa and Rasa X</div>
+</div>
+<div class="item sphinx-data-tab-2-1 docutils container">
+<div class="docutils container">
+Rasa only</div>
+</div>
+</div>
+<div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-2-0 active docutils container">
+<p>To install both Rasa and Rasa X in one go:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
+</pre></div>
+</div>
+</div>
+<div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-2-1 docutils container">
+<p>If you just want to install Rasa without Rasa X:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip3 install rasa
+</pre></div>
+</div>
+</div>
+</div>
+<div class="admonition-congratulations-you-have-successfully-installed-rasa admonition">
+<p class="first admonition-title">Congratulations! You have successfully installed Rasa!</p>
+<p class="last">You can now head over to the <a class="reference internal" href="../rasa-tutorial/#rasa-tutorial"><span class="std std-ref">tutorial</span></a>.</p>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<hr class="docutils" />
+</div>
+</div>
+<div class="section" id="building-from-source">
+<span id="build-from-source"></span><h2>Building from Source<a class="headerlink" href="#building-from-source" title="Permalink to this headline">¶</a></h2>
+<p>If you want to use the development version of Rasa, you can get it from GitHub:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/RasaHQ/rasa.git
+$ <span class="nb">cd</span> rasa
+$ pip install -r requirements.txt
+$ pip install -e .
+</pre></div>
+</div>
+</div>
 <div class="section" id="nlu-pipeline-dependencies">
-<h2>NLU Pipeline Dependencies<a class="headerlink" href="#nlu-pipeline-dependencies" title="Permalink to this headline">¶</a></h2>
+<span id="pipeline-dependencies"></span><h2>NLU Pipeline Dependencies<a class="headerlink" href="#nlu-pipeline-dependencies" title="Permalink to this headline">¶</a></h2>
 <p>Rasa NLU has different components for recognizing intents and entities,
 most of which have some additional dependencies.</p>
 <p>When you train your NLU model, Rasa will check if all required dependencies are
@@ -311,11 +453,13 @@ will help you pick which pipeline to use.</p>
 <p class="first admonition-title">Note</p>
 <p>If you want to make sure you have the dependencies
 installed for any component you might ever need, and you
-don’t mind the additional dependencies lying around, you can use</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -r alt_requirements/requirements_full.txt
+don’t mind the additional dependencies lying around, you can use
+this to install everything.</p>
+<p>You’ll first need to clone the repository and then run the following
+command to install all the packages:</p>
+<div class="last highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install -r alt_requirements/requirements_full.txt
 </pre></div>
 </div>
-<p class="last">to install everything.</p>
 </div>
 <div class="section" id="great-for-getting-started-pretrained-embeddings-from-spacy">
 <h3>Great for getting started: pretrained embeddings from spaCy<a class="headerlink" href="#great-for-getting-started-pretrained-embeddings-from-spacy" title="Permalink to this headline">¶</a></h3>
@@ -323,9 +467,9 @@ don’t mind the additional dependencies lying around, you can use</p>
 is a popular option. For more information
 check out the <a class="reference external" href="https://spacy.io/usage/models">spaCy docs</a>.</p>
 <p>You can install it with the following commands:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install rasa<span class="o">[</span>spacy<span class="o">]</span>
-python -m spacy download en_core_web_md
-python -m spacy link en_core_web_md en
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install rasa<span class="o">[</span>spacy<span class="o">]</span>
+$ python -m spacy download en_core_web_md
+$ python -m spacy link en_core_web_md en
 </pre></div>
 </div>
 <p>This will install Rasa NLU as well as spacy and its language model
@@ -335,11 +479,11 @@ default small <code class="docutils literal notranslate"><span class="pre">en_co
 memory to run, but will somewhat reduce intent classification performance.</p>
 </div>
 <div class="section" id="first-alternative-tensorflow">
-<h3>First Alternative: Tensorflow<a class="headerlink" href="#first-alternative-tensorflow" title="Permalink to this headline">¶</a></h3>
-<p>To use the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline you will need to install
-Tensorflow and, for entity recognition, the sklearn-crfsuite library.
-To do this, simply run the following command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install rasa
+<h3>First Alternative: TensorFlow<a class="headerlink" href="#first-alternative-tensorflow" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline uses TensorFlow and the sklearn-crfsuite
+library as dependencies. However, these are installed automatically along
+with a standard Rasa installation that you get from doing:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install rasa
 </pre></div>
 </div>
 </div>
@@ -349,8 +493,8 @@ To do this, simply run the following command:</p>
 small datasets, but training can take very long if you have more than a
 couple of hundred examples. We may deprecate the MITIE backend in the future.</p>
 <p>First, run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install git+https://github.com/mit-nlp/MITIE.git
-pip install rasa<span class="o">[</span>mitie<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install git+https://github.com/mit-nlp/MITIE.git
+$ pip install rasa<span class="o">[</span>mitie<span class="o">]</span>
 </pre></div>
 </div>
 <p>and then download the
@@ -359,43 +503,16 @@ The file you need is <code class="docutils literal notranslate"><span class="pre
 anywhere. If you want to use MITIE, you need to
 tell it where to find this file (in this example it was saved in the
 <code class="docutils literal notranslate"><span class="pre">data</span></code> folder of the project directory).</p>
-<p>The complete pipeline for MITIE can be found here</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieNLP&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
-</pre></div>
-</div>
-<p>Using MITIE alone can be quite slow to train, but you can use it with this configuration.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieNLP&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieIntentClassifier&quot;</span>
-</pre></div>
 </div>
 </div>
 <div class="section" id="next-step">
-<h3>Next Step<a class="headerlink" href="#next-step" title="Permalink to this headline">¶</a></h3>
+<h2>Next Step<a class="headerlink" href="#next-step" title="Permalink to this headline">¶</a></h2>
 <p>Now that you have everything installed, head over to the tutorial!</p>
 
  
   <a href="../rasa-tutorial/" >
   <button class="button">Next Step: Tutorial</button>
   </a>
-</div>
 </div>
 </div>
 
