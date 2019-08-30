@@ -131,10 +131,22 @@ def test_lookup_table_md():
 
 
 @pytest.mark.parametrize(
-    "filename", ["data/examples/rasa/demo-rasa.json", "data/examples/rasa/demo-rasa.md"]
+    "files",
+    [
+        [
+            "data/examples/rasa/demo-rasa.json",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+        [
+            "data/examples/rasa/demo-rasa.md",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+    ],
 )
-def test_demo_data(filename):
-    td = training_data.load_data(filename)
+def test_demo_data(files):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(files, language="en")
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
     assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
@@ -492,13 +504,12 @@ def test_markdown_entity_regex():
 
     assert len(result.training_examples) == 4
     first = result.training_examples[0]
-    assert first.data == {"intent": "restaurant_search", "response": None}
+    assert first.data == {"intent": "restaurant_search"}
     assert first.text == "i'm looking for a place to eat"
 
     second = result.training_examples[1]
     assert second.data == {
         "intent": "restaurant_search",
-        "response": None,
         "entities": [
             {"start": 31, "end": 36, "value": "north", "entity": "loc-direction"}
         ],
@@ -508,7 +519,6 @@ def test_markdown_entity_regex():
     third = result.training_examples[2]
     assert third.data == {
         "intent": "restaurant_search",
-        "response": None,
         "entities": [{"start": 8, "end": 14, "value": "chinese", "entity": "cuisine"}],
     }
     assert third.text == "show me chines restaurants"
@@ -516,7 +526,6 @@ def test_markdown_entity_regex():
     fourth = result.training_examples[3]
     assert fourth.data == {
         "intent": "restaurant_search",
-        "response": None,
         "entities": [
             {"start": 8, "end": 14, "value": "43er*+?df", "entity": "22_ab-34*3.A"}
         ],

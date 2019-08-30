@@ -95,7 +95,7 @@ examples in the ``common_examples`` array.
 Regex features are a tool to help the classifier detect entities or intents and improve the performance.
 
 
-Improving Intent Classification, End to End Response Selection and Entity Recognition
+Improving Intent Classification and Entity Recognition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Common Examples
@@ -190,51 +190,6 @@ directly specified in the training data.
     For example if there are false positives or other noise in the table,
     this can hurt performance. So make sure your lookup tables contain
     clean data.
-
-
-.. _direct-response-intents:
-
-Direct Response Intents
-------------------------
-Users of your assistant can often send messages which either belong to an open domain intent like chitchat or utterances that
-always have a fixed concise answer like FAQ related queries. It may be tough to assign an intent to each of these type
-of questions and a corresponding action for each one of them and hence you might want to directly `respond` with pre-defined responses.
-We call such intents as **Direct Response Intents**
-
-Ability to handle such utterances can be integrated by adding training data examples for the ``ResponseSelector`` component in
-your NLU pipeline. These examples are optional and are added together with examples for intent classification.
-To do so, augment your intent name with a response identifier which identifies the specific bot utterance assigned to corresponding user utterance.
-The response identifier and intent name have to separated by a delimiter - ``/``
-
-.. code-block:: md
-
-    ## intent:chitchat/ask_name <!-- Specifying this intent needs end to end response selection with response identifier as ask_name -->
-    - What's your name?
-    - What can I call you?
-    - May I ask your name please?
-
-Specify bot utterances for all response identifiers attached to such direct response intents
-in a **separate** file as -
-
-.. code-block:: md
-
-    * chitchat/ask_name
-        - I am usually called the bank bot, but you could give me a name too.
-
-.. note::
-    You can only specify one bot utterance for each of such intent + response identifier pair
-
-.. note::
-    The intent name for such intents still stays as ``chitchat`` in the above example.
-    Though, You can have multiple response identifiers for the same intent, e.g. - ``chitchat/ask_name``, ``chitchat/ask_weather``
-
-.. warning::
-    The assistant's utterances for all direct response intents should strictly not be a part of the NLU training file which
-    contains training data for intent classification
-
-Every direct response intent can have its own model for picking an appropriate response for any
-user utterance classified under it or it can share one common model across all direct response intents
-For more details on the specific component, check the documentation for :ref:`response-selector`
 
 
 Normalizing Data

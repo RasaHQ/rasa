@@ -111,23 +111,19 @@
       },
       {
         "text": "What's your name?",
-        "intent": "chitchat",
-        "response": "I am Mr. Bot"
+        "intent": "chitchat/ask_name"
       },
       {
         "text": "What can I call you?",
-        "intent": "chitchat",
-        "response": "I am Mr. Bot"
+        "intent": "chitchat/ask_name"
       },
       {
         "text": "How's the weather?",
-        "intent": "chitchat",
-        "response": "It's sunny where I live"
+        "intent": "chitchat/ask_weather"
       },
       {
         "text": "Is it too hot outside?",
-        "intent": "chitchat",
-        "response": "It's sunny where I live"
+        "intent": "chitchat/ask_weather"
       },
       {
         "text": "i'm looking for a place to eat", 

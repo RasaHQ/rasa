@@ -37,7 +37,8 @@ class Message(object):
         """Get dict representation of message as it would appear in training data"""
 
         d = self.as_dict()
-        d[MESSAGE_INTENT_ATTRIBUTE] = self.get_combined_intent_response_key()
+        if d.get(MESSAGE_INTENT_ATTRIBUTE, None):
+            d[MESSAGE_INTENT_ATTRIBUTE] = self.get_combined_intent_response_key()
         d.pop(MESSAGE_RESPONSE_KEY_ATTRIBUTE, None)
         d.pop(MESSAGE_RESPONSE_ATTRIBUTE, None)
         return d

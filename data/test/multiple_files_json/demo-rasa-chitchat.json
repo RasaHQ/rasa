@@ -3,27 +3,23 @@
     "common_examples": [
       {
         "text": "What's your name?",
-        "intent": "chitchat",
-        "entitites": [],
-        "response": "I am Mr. Bot"
+        "intent": "chitchat/ask_name",
+        "entitites": []
       },
       {
         "text": "What can I call you?",
-        "intent": "chitchat",
-        "entitites": [],
-        "response": "I am Mr. Bot"
+        "intent": "chitchat/ask_name",
+        "entitites": []
       },
       {
         "text": "How's the weather?",
-        "intent": "chitchat",
-        "entitites": [],
-        "response": "It's sunny where I live"
+        "intent": "chitchat/ask_weather",
+        "entitites": []
       },
       {
         "text": "Is it too hot outside?",
-        "intent": "chitchat",
-        "entitites": [],
-        "response": "It's sunny where I live"
+        "intent": "chitchat/ask_weather",
+        "entitites": []
       }
     ]
   }

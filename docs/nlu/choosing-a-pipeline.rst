@@ -93,32 +93,6 @@ Here's an example configuration:
     - name: "EmbeddingIntentClassifier"
 
 
-Direct Response Intents
-------------------------
-
-You can use an experimental component ``ResponseSelector`` inside your NLU pipeline which would be trained to select
-an appropriate response text given the incoming user message text. The component needs a tokenizer, a featurizer and an
-intent classifier to operate on the user message before it can predict a response and hence these
-components should be placed before ``ResponseSelector`` in the NLU configuration. The configuration for ``ResponseSelector``
-should mention the name of the intent for which that corresponding response selector should be trained. If that
-parameter is left empty a shared model will be trained picking training examples across all intents which specify a direct response text.
-
-    - ``direct_response_intent``: sets the name of the direct response intent for which this response selector model is trained. Default ``None``
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "WhitespaceTokenizer"
-      intent_split_symbol: "_"
-    - name: "CountVectorsFeaturizer"
-    - name: "EmbeddingIntentClassifier"
-    - name: "ResponseSelector"
-      direct_response_intent: chitchat
-
-
-
 Understanding the Rasa NLU Pipeline
 -----------------------------------
 
@@ -213,38 +187,6 @@ exactly. Instead it will return the trained synonym.
     ``1``. The ``SpacyEntityExtractor`` extractor does not provide this information and
     returns ``null``.
 
-
-Result for Response Selector explained
-----------------------------------------
-
-If your NLU pipeline contains a response selector component, the resultant parsed output of NLU will have a property
-named ``response_selector`` containing the output for each response selector. The output for each response selector has
-a key equal to the ``direct_response_intent`` parameter of that response selector which stores two properties -
-    - ``response``: Contains the predicted response text and the prediction confidence.
-    - ``ranking``: Ranking with confidences of top 10 candidate responses.
-
-Example result:
-
-.. code-block:: json
-
-    {
-        "text": "What is the recommend python version to install?",
-        "entities": [],
-        "intent": {"confidence": 0.6485910906220309, "name": "faq"},
-        "intent_ranking": [
-            {"confidence": 0.6485910906220309, "name": "faq"},
-            {"confidence": 0.1416153159565678, "name": "greet"}
-        ],
-        "response_selector": {
-          "faq": {
-            "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-            "ranking": [
-                {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-                {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
-            ]
-          }
-        }
-    }
 
 Pre-configured Pipelines
 ------------------------

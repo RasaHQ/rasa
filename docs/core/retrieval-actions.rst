@@ -21,8 +21,8 @@ About
 ^^^^^
 
 Retrieval actions are designed to make it simpler to work with :ref:`small-talk` and :ref:`simple-questions` .
-For example, if your assistant can handle 100 FAQs and 50 different small talk intents,
-You can use a single retrieval action to cover all of these. 
+For example, if your assistant can handle 100 FAQs and 50 different small talk intents, you can use a single retrieval
+action to cover all of these.
 From a dialogue perspective, these single-turn exchanges can all be treated equally, so this simplifies your stories.
 
 Instead of having a lot of stories like:
@@ -67,7 +67,9 @@ As with other NLU data, you need to include examples of what your users will say
    - how's weather?
    - is it sunny where you are?
 
-First, all of these examples will be combined into a single ``chitchat`` intent that NLU will predict.
+First, all of these examples will be combined into a single ``chitchat`` meta intent that NLU will predict.
+The intent name in your NLU file needs to add a response identifier to distinguish different
+The naming of such intents follows a strict template and includes the meta intent, e.g. ``chitchat`` or ``faq``, and a
 
 The retrieval model is trained separately to select the correct response. 
 TODO: explain where this file needs to go.
