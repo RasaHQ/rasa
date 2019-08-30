@@ -75,9 +75,11 @@ Next, include response texts for all retrieval intents in a **separate** file as
 
 .. code-block:: md
 
+    ## ask name
     * chitchat/ask_name
         - my name is Sara, Rasa's documentation bot!
 
+    ## ask weather
     * chitchat/ask_weather
         - it's always sunny where I live
 

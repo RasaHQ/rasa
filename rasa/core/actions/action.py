@@ -99,7 +99,7 @@ def action_from_name(
     elif name.startswith(UTTER_PREFIX):
         return ActionUtterTemplate(name)
     elif name.startswith(RESPOND_PREFIX):
-        return ActionUtterPredictedResponse(name)
+        return ActionRetrieveResponse(name)
     else:
         return RemoteAction(name, action_endpoint)
 
@@ -176,7 +176,7 @@ class Action(object):
         return "Action('{}')".format(self.name())
 
 
-class ActionUtterPredictedResponse(Action):
+class ActionRetrieveResponse(Action):
     """An action which queries the Response Selector for the appropriate response."""
 
     def __init__(self, name: Text, silent_fail: Optional[bool] = False):
@@ -199,10 +199,10 @@ class ActionUtterPredictedResponse(Action):
             MESSAGE_SELECTOR_PROPERTY_NAME
         ]
 
-        if DEFAULT_OPEN_UTTERANCE_TYPE in response_selector_properties:
-            query_key = DEFAULT_OPEN_UTTERANCE_TYPE
-        elif self.intent_name_from_action() in response_selector_properties:
+        if self.intent_name_from_action() in response_selector_properties:
             query_key = self.intent_name_from_action()
+        elif DEFAULT_OPEN_UTTERANCE_TYPE in response_selector_properties:
+            query_key = DEFAULT_OPEN_UTTERANCE_TYPE
         else:
             if not self.silent_fail:
                 logger.error(

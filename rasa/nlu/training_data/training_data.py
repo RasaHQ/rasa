@@ -187,6 +187,7 @@ class TrainingData(object):
         for example in self.training_examples:
             response_key = example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
             if response_key:
+                # look for corresponding bot utterance
                 story_lookup_intent = example.get_combined_intent_response_key()
                 assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
                 if assistant_utterances:

@@ -46,6 +46,11 @@ _json_format_heuristics = {
     DIALOGFLOW_INTENT_EXAMPLES: lambda js, fn: "_usersays_" in fn,
     DIALOGFLOW_ENTITY_ENTRIES: lambda js, fn: "_entries_" in fn,
 }
+
+# looks for pattern like:
+# ##
+# * intent/response_key
+#   - response_text
 _nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*.*\/.*\n\s*\t*\-.*")
 
 

@@ -20,7 +20,7 @@ from rasa.core.actions.action import (
     ActionListen,
     ActionRestart,
     ActionUtterTemplate,
-    ActionUtterPredictedResponse,
+    ActionRetrieveResponse,
     RemoteAction,
 )
 from rasa.core.domain import Domain, InvalidDomain
@@ -64,7 +64,7 @@ def test_text_format():
         == "ActionUtterTemplate('my_action_name')"
     )
     assert (
-        "{}".format(ActionUtterPredictedResponse("respond_test"))
+        "{}".format(ActionRetrieveResponse("respond_test"))
         == "ActionUtterPredictedResponse('respond_test')"
     )
 
@@ -82,7 +82,7 @@ def test_action_instantiation_from_names():
     assert isinstance(instantiated_actions[1], ActionUtterTemplate)
     assert instantiated_actions[1].name() == "utter_test"
 
-    assert isinstance(instantiated_actions[2], ActionUtterPredictedResponse)
+    assert isinstance(instantiated_actions[2], ActionRetrieveResponse)
     assert instantiated_actions[2].name() == "respond_test"
 
 
@@ -279,7 +279,7 @@ async def test_remote_action_endpoint_responds_400(
     assert "Custom action 'my_action' rejected to run" in str(execinfo.value)
 
 
-async def test_action_utter_predicted_response(
+async def test_action_utter_retrieved_response(
     default_channel, default_nlg, default_tracker, default_domain
 ):
     from rasa.core.channels.channel import UserMessage
@@ -289,7 +289,7 @@ async def test_action_utter_predicted_response(
         "Who are you?",
         parse_data={"selector": {"chitchat": {"response": {"name": "I am a bot."}}}},
     )
-    events = await ActionUtterPredictedResponse(action_name).run(
+    events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
@@ -298,7 +298,7 @@ async def test_action_utter_predicted_response(
     )
 
 
-async def test_action_utter_default_predicted_response(
+async def test_action_utter_default_retrieved_response(
     default_channel, default_nlg, default_tracker, default_domain
 ):
     from rasa.core.channels.channel import UserMessage
@@ -308,7 +308,7 @@ async def test_action_utter_default_predicted_response(
         "Who are you?",
         parse_data={"selector": {"default": {"response": {"name": "I am a bot."}}}},
     )
-    events = await ActionUtterPredictedResponse(action_name).run(
+    events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
@@ -317,7 +317,7 @@ async def test_action_utter_default_predicted_response(
     )
 
 
-async def test_action_utter_predicted_empty_response(
+async def test_action_utter_retrieved_empty_response(
     default_channel, default_nlg, default_tracker, default_domain
 ):
     from rasa.core.channels.channel import UserMessage
@@ -327,7 +327,7 @@ async def test_action_utter_predicted_empty_response(
         "Who are you?",
         parse_data={"selector": {"dummy": {"response": {"name": "I am a bot."}}}},
     )
-    events = await ActionUtterPredictedResponse(action_name).run(
+    events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
