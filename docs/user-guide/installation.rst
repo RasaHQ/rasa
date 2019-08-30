@@ -49,7 +49,6 @@ Check if your Python environment is already configured:
 
     $ python3 --version
     $ pip3 --version
-    $ virtualenv --version
 
 If these packages are already installed, these commands should display version
 numbers for each step, and you can skip to the next step.
@@ -66,19 +65,17 @@ Otherwise, proceed with the instructions below to install them.
 
             $ sudo apt update
             $ sudo apt install python3-dev python3-pip
-            $ sudo pip3 install -U virtualenv
 
     .. tab:: macOS
 
         Install the `Homebrew <https://brew.sh>`_ package manager if you haven't already.
 
-        Once you're done, you can install Python and virtualenv.
+        Once you're done, you can install Python3.
 
         .. code-block:: bash
 
             $ brew update
             $ brew install python
-            $ sudo pip3 install -U virtualenv
 
     .. tab:: Windows
 
@@ -94,7 +91,7 @@ Otherwise, proceed with the instructions below to install them.
 
         .. code-block:: bat
 
-            C:\> pip3 install -U pip virtualenv
+            C:\> pip3 install -U pip
 
 
 2. Create a virtual environment (strongly recommended)
@@ -110,7 +107,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
         .. code-block:: bash
 
-            $ virtualenv --system-site-packages -p python3 ./venv
+            $ python3 -m venv --system-site-packages ./venv
 
         Activate the virtual environment:
 
@@ -124,7 +121,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
         .. code-block:: bat
 
-            C:\> virtualenv --system-site-packages -p python3 ./venv
+            C:\> python3 -m venv --system-site-packages ./venv
 
         Activate the virtual environment:
 
