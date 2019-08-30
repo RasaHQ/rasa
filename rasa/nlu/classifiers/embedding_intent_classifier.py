@@ -182,7 +182,7 @@ class EmbeddingIntentClassifier(Component):
             and self.hidden_layer_sizes["a"] != self.hidden_layer_sizes["b"]
         ):
             raise ValueError(
-                "If embeddings are shared,"
+                "If hidden layer weights are shared,"
                 "hidden_layer_sizes for a and b must coincide"
             )
 
