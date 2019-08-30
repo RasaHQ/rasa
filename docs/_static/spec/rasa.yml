@@ -245,9 +245,10 @@ paths:
       summary: Run an action in a conversation
       description: >-
         Runs the action, calling the action server if necessary.
-        Any responses sent by the executed action will be returned as
-        part of the endpoints result, they will not be sent over a
-        connected output channel.
+        Any responses sent by the executed action will be forwarded
+        to the channel specified in the output_channel parameter.
+        If no output channel is specified, any messages that should be
+        sent to the user will be included in the response of this endpoint.
       parameters:
       - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
