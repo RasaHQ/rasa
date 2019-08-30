@@ -38,13 +38,20 @@ A Longer Answer
 
 The two most important pipelines are ``supervised_embeddings`` and ``pretrained_embeddings_spacy``.
 The biggest difference between them is that the ``pretrained_embeddings_spacy`` pipeline uses pre-trained
-word vectors from either GloVe or fastText. The ``supervised embeddings`` pipeline, on the other hand,
+word vectors from either GloVe or fastText. The ``supervised_embeddings`` pipeline, on the other hand,
 doesn't use any pre-trained word vectors, but instead fits these specifically for your dataset.
+
+
+pretrained_embeddings_spacy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The advantage of the ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
 already knows that the words "apples" and "pears" are very similar. This is especially useful
 if you don't have very much training data.
+
+supervised_embeddings
+~~~~~~~~~~~~~~~~~~~~~
 
 The advantage of the ``supervised_embeddings`` pipeline is that your word vectors will be customised
 for your domain. For example, in general English, the word "balance" is closely related to "symmetry",
@@ -54,12 +61,18 @@ so it will work with any language that you can tokenize (on whitespace or using 
 
 You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
 
+MITIE
+~~~~~
+
+You can also use MITIE as a source of word vectors in your pipeline, see :ref:`section_mitie_pipeline`. The MITIE backend performs well for small datasets, but training can take very long if you have more than a couple of hundred examples.
+
+However, we do not recommend that you use it as mitie support is likely to be deprecated in a future release.
+
+Comparing different pipelines for your data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Rasa gives you the tools to compare the performance of both of these pipelines on your data directly,
 see :ref:`comparing-nlu-pipelines`.
-
-
-You can also use MITIE as a source of word vectors in your pipeline, see :ref:`section_mitie_pipeline`.
-We do not recommend that you use these; mitie support is likely to be deprecated in a future release.
 
 .. note::
 
