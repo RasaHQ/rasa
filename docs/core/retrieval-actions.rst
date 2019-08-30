@@ -49,6 +49,9 @@ You can cover all of these with a single story:
    * chitchat
       - respond_chitchat
 
+A retrieval action is implemented by ``ActionRetrieveResponse`` class, which queries for the output of
+:ref:`response-selector` components. This component learns a retrieval model to predict the correct response
+from a list of candidate responses given a user message text.
 
 Training Data
 ^^^^^^^^^^^^^
@@ -71,7 +74,7 @@ First, all of these examples will be combined into a single ``chitchat`` retriev
 All retrieval intents have a suffix added to them which identifies a particular response text for your assistant, in the
 above example - ``ask_name`` and ``ask_weather``. The suffix is separated from the intent name by a ``/`` delimiter
 
-Next, include response texts for all retrieval intents in a **separate** file as -
+Next, include response texts for all retrieval intents in a **separate** training data file as ``responses.md``:
 
 .. code-block:: md
 
@@ -86,14 +89,19 @@ Next, include response texts for all retrieval intents in a **separate** file as
 The retrieval model is trained separately as part of the NLU training pipeline to select the correct response.
 One important thing to remember is that the retrieval model uses the text of the response messages
 to select the correct one. If you change the text of these responses, you have to retrain your retrieval model!
-This is a key difference to the response templates in your domain file. 
+This is a key difference to the response templates in your domain file.
+
+.. note::
+    The file containing response texts should exist as a separate file inside the training data directory passed
+    to the training process. The contents of it cannot be a part of the file which contains training data for other
+    components of NLU.
 
 Config File
 ^^^^^^^^^^^
 
 You need to include the :ref:`response-selector` component in your config. The component needs a tokenizer, a featurizer and an
 intent classifier to operate on the user message before it can predict a response and hence these
-components should be placed before ``ResponseSelector`` in the NLU configuration. An example -
+components should be placed before ``ResponseSelector`` in the NLU configuration. An example:
 
 .. code-block:: yaml
 
@@ -111,7 +119,8 @@ Domain
 
 Rasa uses a naming convention to match the intent names like ``chitchat/ask_name``
 to the retrieval action. 
-The correct action name in this case is ``respond_chitchat``.
+The correct action name in this case is ``respond_chitchat``. The prefix ``respond_`` is mandatory to identify it as a
+retrieval action. Another example - correct action name for ``faq/ask_policy`` would be ``respond_faq``
 To include this in your domain, add it to the list of actions:
 
 .. code-block:: yaml
@@ -119,6 +128,7 @@ To include this in your domain, add it to the list of actions:
    actions:
      ...
      - respond_chitchat
+     - respond_faq
 
 
 A simple way to ensure that the retrieval action is predicted after the chitchat
@@ -143,7 +153,8 @@ If your assistant includes both FAQs **and** chitchat, it is possible to
 separate these into separate retrieval actions, for example having intents
 like ``chitchat/ask_weather`` and ``faq/returns_policy``.
 Rasa supports adding multiple ``RetrievalActions`` like ``respond_chitchat`` and ``respond_returns_policy``
-To train separate retrieval models for each of the intents you need to include a separate ``ResponseSelector`` component in the config -
+To train separate retrieval models for each of the intents, you need to include a separate ``ResponseSelector``
+component in the config:
 
 .. code-block:: yaml
 
@@ -159,17 +170,36 @@ To train separate retrieval models for each of the intents you need to include a
     - name: "ResponseSelector"
       retrieval_intent: faq
 
-In our experiments so far, this does **not** make any difference to the accuracy
-of the retrieval models. So for simplicity, we recommend you use a single retrieval
-action for both chitchat and FAQs by leaving ``retrieval_intent`` parameter to its default value.
+You could still have two separate retrieval actions but both actions can share the same retrieval model by specifying a single
+ ``ResponseSelector`` component and leaving the ``retrieval_intent`` to its default value(None):
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "WhitespaceTokenizer"
+      intent_split_symbol: "_"
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
+    - name: "ResponseSelector"
+
+
+In this case, the response selector will be trained on examples from both ``chitchat/{x}`` and ``faq/{x}`` and will be
+identified by the name ``default`` the NLU parsed output.
+
+In our experiments so far, having separate retrieval models does **not** make any difference to the accuracy of each
+retrieval action. So for simplicity, we recommend you use a single retrieval
+model for both chitchat and FAQs
 If you get different results, please let us know in the `forum <https://forum.rasa.com>`_ !
 
 
 Parsing Response Selector Output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The resultant parsed output from NLU will have a property named ``response_selector`` containing the output for
-each response selector. Each response selector is identified by ``retrieval_intent`` parameter of that response selector and stores two properties -
+The parsed output from NLU will have a property named ``response_selector`` containing the output for
+each response selector. Each response selector is identified by ``retrieval_intent`` parameter of that response selector
+ and stores two properties -
 
     - ``response``: The predicted response text and the prediction confidence.
     - ``ranking``: Ranking with confidences of top 10 candidate responses.
@@ -197,5 +227,5 @@ Example result:
         }
     }
 
-If ``retrieval_intent`` parameter of a particular response selector was left its default value,
+If the ``retrieval_intent`` parameter of a particular response selector was left to its default value,
 the corresponding response selector will be identified as ``default`` in the returned output.

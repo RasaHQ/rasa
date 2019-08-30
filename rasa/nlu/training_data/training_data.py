@@ -102,7 +102,7 @@ class TrainingData(object):
         from rasa.core import utils as core_utils
 
         # Sort keys to ensure dictionary order in Python 3.5
-        stringified = self.nlu_as_json(sort_keys=True)
+        stringified = self.nlu_as_json(sort_keys=True) + self.nlg_as_markdown()
         text_hash = core_utils.get_text_hash(stringified)
 
         return int(text_hash, 16)

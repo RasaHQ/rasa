@@ -143,23 +143,16 @@ class ResponseSelector(EmbeddingIntentClassifier):
     def _set_message_property(
         message: "Message", prediction_dict: Dict[Text, Any], selector_key: Text
     ):
-        if message.get(MESSAGE_SELECTOR_PROPERTY_NAME):
-            message_selector_properties = message.get(MESSAGE_SELECTOR_PROPERTY_NAME)
-            message_selector_properties[selector_key] = prediction_dict
-            message.set(
-                MESSAGE_SELECTOR_PROPERTY_NAME,
-                message_selector_properties,
-                add_to_output=True,
-            )
-        else:
-            message_selector_properties = {selector_key: prediction_dict}
-            message.set(
-                MESSAGE_SELECTOR_PROPERTY_NAME,
-                message_selector_properties,
-                add_to_output=True,
-            )
 
-    def preprocess_data(self, training_data):
+        message_selector_properties = message.get(MESSAGE_SELECTOR_PROPERTY_NAME, {})
+        message_selector_properties[selector_key] = prediction_dict
+        message.set(
+            MESSAGE_SELECTOR_PROPERTY_NAME,
+            message_selector_properties,
+            add_to_output=True,
+        )
+
+    def preprocess_train_data(self, training_data):
         """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
 
         if self.retrieval_intent:

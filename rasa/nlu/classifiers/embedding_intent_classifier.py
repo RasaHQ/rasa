@@ -423,7 +423,7 @@ class EmbeddingIntentClassifier(Component):
                     "must coincide. Check the output dimensions of previous components."
                 )
 
-    def preprocess_data(self, training_data):
+    def preprocess_train_data(self, training_data):
         """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
 
         label_id_dict = self._create_label_id_dict(
@@ -471,7 +471,7 @@ class EmbeddingIntentClassifier(Component):
         # set numpy random seed
         np.random.seed(self.random_seed)
 
-        session_data, label_id_dict = self.preprocess_data(training_data)
+        session_data, label_id_dict = self.preprocess_train_data(training_data)
 
         if len(label_id_dict) < 2:
             logger.error(

@@ -476,10 +476,10 @@ EmbeddingIntentClassifier
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
 
-.. _response-selector:
-
 Selectors
 ----------
+
+.. _response-selector:
 
 Response Selector
 ~~~~~~~~~~~~~~~~~~

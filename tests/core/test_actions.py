@@ -287,7 +287,9 @@ async def test_action_utter_retrieved_response(
     action_name = "respond_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
-        parse_data={"selector": {"chitchat": {"response": {"name": "I am a bot."}}}},
+        parse_data={
+            "response_selector": {"chitchat": {"response": {"name": "I am a bot."}}}
+        },
     )
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
@@ -306,7 +308,9 @@ async def test_action_utter_default_retrieved_response(
     action_name = "respond_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
-        parse_data={"selector": {"default": {"response": {"name": "I am a bot."}}}},
+        parse_data={
+            "response_selector": {"default": {"response": {"name": "I am a bot."}}}
+        },
     )
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
@@ -325,7 +329,9 @@ async def test_action_utter_retrieved_empty_response(
     action_name = "respond_chitchat"
     default_tracker.latest_message = UserMessage(
         "Who are you?",
-        parse_data={"selector": {"dummy": {"response": {"name": "I am a bot."}}}},
+        parse_data={
+            "response_selector": {"dummy": {"response": {"name": "I am a bot."}}}
+        },
     )
     events = await ActionRetrieveResponse(action_name).run(
         default_channel, default_nlg, default_tracker, default_domain
