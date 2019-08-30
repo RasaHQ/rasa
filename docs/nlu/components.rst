@@ -561,7 +561,7 @@ WhitespaceTokenizer
     modeling hierarchical intent structure, or use a different delimiter than whitespace for ``response`` key, use these flags:
 
     - tokenization of intent and response labels:
-        - ``label_split_symbol`` sets the delimiter string to split the intent and response labels, default is whitespace.
+        - ``intent_split_symbol`` sets the delimiter string to split the intent and response labels, default is whitespace.
 
     Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
 

@@ -25,7 +25,7 @@ Markdown Format
 Markdown is the easiest Rasa NLU format for humans to read and write.
 Examples are listed using the unordered
 list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
-Examples are grouped by intent, optional response key and entities are annotated as Markdown links,
+Examples are grouped by intent, and entities are annotated as Markdown links,
 e.g. ``[entity](entity name)``.
 
 .. code-block:: md
@@ -96,7 +96,7 @@ Regex features are a tool to help the classifier detect entities or intents and 
 
 
 Improving Intent Classification and Entity Recognition
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Common Examples
 ---------------
