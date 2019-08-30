@@ -65,7 +65,7 @@ def test_text_format():
     )
     assert (
         "{}".format(ActionRetrieveResponse("respond_test"))
-        == "ActionUtterPredictedResponse('respond_test')"
+        == "ActionRetrieveResponse('respond_test')"
     )
 
 
