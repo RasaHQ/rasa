@@ -511,7 +511,10 @@ Response Selector
         }
 
 :Description:
-    The response selector embeds user inputs and response labels into the same space. It follows exactly the same
+
+    Response Selector component can be used to build a response retrieval model to directly predict a bot response from
+    a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
+    It embeds user inputs and response labels into the same space and follows the exact same
     neural network architecture and optimization as the ``EmbeddingIntentClassifier``.
 
     The response selector needs to be preceded by a featurizer in the pipeline.
@@ -526,10 +529,9 @@ Response Selector
 :Configuration:
 
     The algorithm includes all the hyperparameters that ``EmbeddingIntentClassifier`` uses.
-    In addition, the component can also be configured to train a response selector for a particular intent which
-    needs end to end response selection.
+    In addition, the component can also be configured to train a response selector for a particular retrieval intent
 
-        - ``direct_response_intent``: sets the name of the direct response intent for which this response selector model is trained. Default ``None``
+        - ``retrieval_intent``: sets the name of the intent for which this response selector model is trained. Default ``None``
 
     In the config, you can specify these parameters.
     The default values are defined in ``ResponseSelector.defaults``:

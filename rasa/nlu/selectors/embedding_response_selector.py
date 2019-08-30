@@ -63,8 +63,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_b": [256, 128],
-        # Whether to share the embedding between input words and intent labels
-        "share_hidden": False,
+        # Whether to share the hidden layer weights between input words and intent labels
+        "share_hidden_layers": False,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -109,12 +109,12 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "evaluate_on_num_examples": 0,  # large values may hurt performance,
         # selector config
         # name of the intent for which this response selector is to be trained
-        "direct_response_intent": None,
+        "retrieval_intent": None,
     }
     # end default properties (DOC MARKER - don't remove)
 
     def _load_selector_params(self, config: Dict[Text, Any]):
-        self.direct_response_intent = config["direct_response_intent"]
+        self.retrieval_intent = config["retrieval_intent"]
 
     def _load_params(self) -> None:
         super(ResponseSelector, self)._load_params()
@@ -126,8 +126,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
         label, label_ranking = self.predict_label(message)
 
         selector_key = (
-            self.direct_response_intent
-            if self.direct_response_intent
+            self.retrieval_intent
+            if self.retrieval_intent
             else DEFAULT_OPEN_UTTERANCE_TYPE
         )
 
@@ -162,8 +162,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
     def preprocess_data(self, training_data):
         """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
 
-        if self.direct_response_intent:
-            training_data = training_data.filter_by_intent(self.direct_response_intent)
+        if self.retrieval_intent:
+            training_data = training_data.filter_by_intent(self.retrieval_intent)
 
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_RESPONSE_ATTRIBUTE

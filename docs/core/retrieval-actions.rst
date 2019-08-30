@@ -67,12 +67,11 @@ As with other NLU data, you need to include examples of what your users will say
    - how's weather?
    - is it sunny where you are?
 
-First, all of these examples will be combined into a single ``chitchat`` meta intent that NLU will predict.
-The intent name in your NLU file needs to add a response identifier to distinguish different
-The naming of such intents follows a strict template and includes the meta intent, e.g. ``chitchat`` or ``faq``, and a
+First, all of these examples will be combined into a single ``chitchat`` retrieval intent that NLU will predict.
+All retrieval intents have a suffix added to them which identifies a particular response text for your assistant, in the
+above example - ``ask_name`` and ``ask_weather``. The suffix is separated from the intent name by a ``/`` delimiter
 
-The retrieval model is trained separately to select the correct response. 
-TODO: explain where this file needs to go.
+Next, include response texts for all retrieval intents in a **separate** file as -
 
 .. code-block:: md
 
@@ -82,15 +81,28 @@ TODO: explain where this file needs to go.
     * chitchat/ask_weather
         - it's always sunny where I live
 
-In important thing to remember is that the retrieval model uses the text of the response messages
-to select the correct one.
-If you change the text of these responses, you have to retrain your retrieval model!
+The retrieval model is trained separately as part of the NLU training pipeline to select the correct response.
+One important thing to remember is that the retrieval model uses the text of the response messages
+to select the correct one. If you change the text of these responses, you have to retrain your retrieval model!
 This is a key difference to the response templates in your domain file. 
 
 Config File
 ^^^^^^^^^^^
 
-You need to include the ``ResponseSelector`` component in your config.
+You need to include the :ref:`response-selector` component in your config. The component needs a tokenizer, a featurizer and an
+intent classifier to operate on the user message before it can predict a response and hence these
+components should be placed before ``ResponseSelector`` in the NLU configuration. An example -
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "WhitespaceTokenizer"
+      intent_split_symbol: "_"
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
+    - name: "ResponseSelector"
 
 Domain
 ^^^^^^
@@ -128,9 +140,60 @@ Multiple Retrieval Actions
 If your assistant includes both FAQs **and** chitchat, it is possible to
 separate these into separate retrieval actions, for example having intents
 like ``chitchat/ask_weather`` and ``faq/returns_policy``.
-Rasa supports adding multiple ``RetrievalActions``. If you do this, a separate
-retrieval model will be trained for the ``chitchat/{x}`` and ``faq/{x}`` intents.
+Rasa supports adding multiple ``RetrievalActions`` like ``respond_chitchat`` and ``respond_returns_policy``
+To train separate retrieval models for each of the intents you need to include a separate ``ResponseSelector`` component in the config -
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "WhitespaceTokenizer"
+      intent_split_symbol: "_"
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
+    - name: "ResponseSelector"
+      retrieval_intent: chitchat
+    - name: "ResponseSelector"
+      retrieval_intent: faq
+
 In our experiments so far, this does **not** make any difference to the accuracy
 of the retrieval models. So for simplicity, we recommend you use a single retrieval
-action for both chitchat and FAQs. If you get different results, please let us know 
-in the :ref:`forum <https://forum.rasa.com>` !
+action for both chitchat and FAQs by leaving ``retrieval_intent`` parameter to its default value.
+If you get different results, please let us know in the :ref:`forum <https://forum.rasa.com>` !
+
+
+Parsing Response Selector Output
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The resultant parsed output from NLU will have a property
+named ``response_selector`` containing the output for each response selector. Each response selector is identified by
+``retrieval_intent`` parameter of that response selector and stores two properties -
+    - ``response``: The predicted response text and the prediction confidence.
+    - ``ranking``: Ranking with confidences of top 10 candidate responses.
+
+Example result:
+
+.. code-block:: json
+
+    {
+        "text": "What is the recommend python version to install?",
+        "entities": [],
+        "intent": {"confidence": 0.6485910906220309, "name": "faq"},
+        "intent_ranking": [
+            {"confidence": 0.6485910906220309, "name": "faq"},
+            {"confidence": 0.1416153159565678, "name": "greet"}
+        ],
+        "response_selector": {
+          "faq": {
+            "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+            "ranking": [
+                {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+                {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
+            ]
+          }
+        }
+    }
+
+If ``retrieval_intent`` parameter of a particular response selector was left its default value,
+the corresponding response selector will be identified as ``default`` in the returned output.
