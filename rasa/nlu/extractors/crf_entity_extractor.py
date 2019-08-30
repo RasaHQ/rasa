@@ -1,7 +1,7 @@
 import logging
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from sklearn_crfsuite import CRF
+    from spacy.tokens import Doc
 
 
 class CRFEntityExtractor(EntityExtractor):
@@ -214,17 +215,13 @@ class CRFEntityExtractor(EntityExtractor):
     def _create_entity_dict(
         self,
         message: Message,
-        tokens: List[Token],
+        tokens: Union["Doc", List[Token]],
         start: int,
         end: int,
         entity: str,
         confidence: float,
     ) -> Dict[Text, Any]:
-        if self.pos_features:
-            _start = tokens[start].idx
-            _end = tokens[start : end + 1].end_char
-            value = tokens[start : end + 1].text
-        else:
+        if isinstance(tokens, list):  # tokens is a list of Token
             _start = tokens[start].offset
             _end = tokens[end].end
             value = tokens[start].text
@@ -234,6 +231,10 @@ class CRFEntityExtractor(EntityExtractor):
                     for i in range(start + 1, end + 1)
                 ]
             )
+        else:  # tokens is a Doc
+            _start = tokens[start].idx
+            _end = tokens[start : end + 1].end_char
+            value = tokens[start : end + 1].text
 
         return {
             "start": _start,
