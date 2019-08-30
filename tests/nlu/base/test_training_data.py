@@ -169,9 +169,14 @@ def test_demo_data(files):
     ]
 
 
-@pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.md"])
-def test_train_test_split(filename):
-    td = training_data.load_data(filename)
+@pytest.mark.parametrize(
+    "filepaths",
+    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+)
+def test_train_test_split(filepaths):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(filepaths, language="en")
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
     assert len(td.training_examples) == 46

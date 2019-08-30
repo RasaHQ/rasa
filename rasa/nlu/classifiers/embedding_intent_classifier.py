@@ -693,7 +693,7 @@ class EmbeddingIntentClassifier(Component):
 
             return cls(
                 component_config=meta,
-                inv_label_dict=inv_label_dict,
+                inverted_label_dict=inv_label_dict,
                 session=session,
                 graph=graph,
                 message_placeholder=a_in,

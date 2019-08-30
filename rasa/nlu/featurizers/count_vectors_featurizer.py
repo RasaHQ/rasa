@@ -140,7 +140,7 @@ class CountVectorsFeaturizer(Featurizer):
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Check if trained vocabulary exists in attribute's count vectorizer"""
         try:
-            return hasattr(self.vectorizer[attribute], "vocabulary_")
+            return hasattr(self.vectorizers[attribute], "vocabulary_")
         except (AttributeError, TypeError):
             return False
 
@@ -148,7 +148,7 @@ class CountVectorsFeaturizer(Featurizer):
         """Get trained vocabulary from attribute's count vectorizer"""
 
         try:
-            return self.vectorizer[attribute].vocabulary_
+            return self.vectorizers[attribute].vocabulary_
         except (AttributeError, TypeError):
             return None
 
@@ -194,7 +194,7 @@ class CountVectorsFeaturizer(Featurizer):
     def __init__(
         self,
         component_config: Dict[Text, Any] = None,
-        vectorizer: Optional[Dict[Text, "CountVectorizer"]] = None,
+        vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
 
@@ -210,7 +210,7 @@ class CountVectorsFeaturizer(Featurizer):
         self._check_analyzer()
 
         # declare class instance for CountVectorizer
-        self.vectorizer = vectorizer
+        self.vectorizers = vectorizers
 
     def _get_message_text_by_attribute(
         self, message: "Message", attribute: Text = MESSAGE_TEXT_ATTRIBUTE
@@ -408,7 +408,7 @@ class CountVectorsFeaturizer(Featurizer):
     def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]):
         """Construct the vectorizers and train them with a shared vocab"""
 
-        self.vectorizer = self.create_shared_vocab_vectorizers(
+        self.vectorizers = self.create_shared_vocab_vectorizers(
             self.token_pattern,
             self.strip_accents,
             self.lowercase,
@@ -425,7 +425,7 @@ class CountVectorsFeaturizer(Featurizer):
             combined_cleaned_texts += attribute_texts[attribute]
 
         try:
-            self.vectorizer[MESSAGE_TEXT_ATTRIBUTE].fit(combined_cleaned_texts)
+            self.vectorizers[MESSAGE_TEXT_ATTRIBUTE].fit(combined_cleaned_texts)
         except ValueError:
             logger.warning(
                 "Unable to train a shared CountVectorizer. Leaving an untrained CountVectorizer"
@@ -434,7 +434,7 @@ class CountVectorsFeaturizer(Featurizer):
     def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
         """Construct the vectorizers and train them with an independent vocab"""
 
-        self.vectorizer = self.create_independent_vocab_vectorizers(
+        self.vectorizers = self.create_independent_vocab_vectorizers(
             self.token_pattern,
             self.strip_accents,
             self.lowercase,
@@ -446,10 +446,10 @@ class CountVectorsFeaturizer(Featurizer):
             self.analyzer,
         )
 
-        for index, attribute in enumerate(MESSAGE_ATTRIBUTES):
+        for attribute in MESSAGE_ATTRIBUTES:
 
             try:
-                self.vectorizer[attribute].fit(attribute_texts[attribute])
+                self.vectorizers[attribute].fit(attribute_texts[attribute])
             except ValueError:
                 logger.warning(
                     "Unable to train CountVectorizer for message attribute {}. "
@@ -464,7 +464,7 @@ class CountVectorsFeaturizer(Featurizer):
         if self._check_attribute_vocabulary(attribute):
             # count vectorizer was trained
             featurized_attributes = (
-                self.vectorizer[attribute].transform(attribute_texts).toarray()
+                self.vectorizers[attribute].transform(attribute_texts).toarray()
             )
             return featurized_attributes
         else:
@@ -510,7 +510,7 @@ class CountVectorsFeaturizer(Featurizer):
     def process(self, message: Message, **kwargs: Any) -> None:
         """Process incoming message and compute and set features"""
 
-        if self.vectorizer is None:
+        if self.vectorizers is None:
             logger.error(
                 "There is no trained CountVectorizer: "
                 "component is either not trained or "
@@ -522,7 +522,7 @@ class CountVectorsFeaturizer(Featurizer):
             )
 
             bag = (
-                self.vectorizer[MESSAGE_TEXT_ATTRIBUTE]
+                self.vectorizers[MESSAGE_TEXT_ATTRIBUTE]
                 .transform([message_text])
                 .toarray()
                 .squeeze()
@@ -548,7 +548,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         file_name = file_name + ".pkl"
 
-        if self.vectorizer:
+        if self.vectorizers:
             # vectorizer instance was not None, some models could have been trained
             attribute_vocabularies = self._collect_vectorizer_vocabularies()
             if self._is_any_model_trained(attribute_vocabularies):
@@ -583,7 +583,7 @@ class CountVectorsFeaturizer(Featurizer):
             share_vocabulary = meta["use_shared_vocab"]
 
             if share_vocabulary:
-                vectorizer = cls.create_shared_vocab_vectorizers(
+                vectorizers = cls.create_shared_vocab_vectorizers(
                     token_pattern=meta["token_pattern"],
                     strip_accents=meta["strip_accents"],
                     lowercase=meta["lowercase"],
@@ -596,7 +596,7 @@ class CountVectorsFeaturizer(Featurizer):
                     vocabulary=vocabulary,
                 )
             else:
-                vectorizer = cls.create_independent_vocab_vectorizers(
+                vectorizers = cls.create_independent_vocab_vectorizers(
                     token_pattern=meta["token_pattern"],
                     strip_accents=meta["strip_accents"],
                     lowercase=meta["lowercase"],
@@ -609,6 +609,6 @@ class CountVectorsFeaturizer(Featurizer):
                     vocabulary=vocabulary,
                 )
 
-            return cls(meta, vectorizer)
+            return cls(meta, vectorizers)
         else:
             return cls(meta)

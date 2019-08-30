@@ -411,13 +411,13 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     file_dict = train_ftr.persist("ftr", tmpdir.strpath)
     train_vect_params = {
         attribute: vectorizer.get_params()
-        for attribute, vectorizer in train_ftr.vectorizer.items()
+        for attribute, vectorizer in train_ftr.vectorizers.items()
     }
     # add trained vocabulary to vectorizer params
     for attribute, attribute_vect_params in train_vect_params.items():
-        if hasattr(train_ftr.vectorizer[attribute], "vocabulary_"):
+        if hasattr(train_ftr.vectorizers[attribute], "vocabulary_"):
             train_vect_params[attribute].update(
-                {"vocabulary": train_ftr.vectorizer[attribute].vocabulary_}
+                {"vocabulary": train_ftr.vectorizers[attribute].vocabulary_}
             )
 
     # load featurizer
@@ -426,7 +426,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     test_ftr = CountVectorsFeaturizer.load(meta, tmpdir.strpath)
     test_vect_params = {
         attribute: vectorizer.get_params()
-        for attribute, vectorizer in test_ftr.vectorizer.items()
+        for attribute, vectorizer in test_ftr.vectorizers.items()
     }
 
     assert train_vect_params == test_vect_params

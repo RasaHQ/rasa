@@ -330,6 +330,8 @@ class TrainingData(object):
         preserving the fraction of examples per intent."""
 
         train, test = [], []
+
+        # collect all nlu data
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
             random.shuffle(ex)
@@ -337,18 +339,42 @@ class TrainingData(object):
             train.extend(ex[:n_train])
             test.extend(ex[n_train:])
 
+        # collect all nlg stories
+        train_nlg_stories = test_nlg_stories = {}
+        for ex in train:
+            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
+                MESSAGE_RESPONSE_ATTRIBUTE
+            ):
+                train_nlg_stories[ex.get_combined_intent_response_key()] = [
+                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
+                ]
+
+        for ex in test:
+            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
+                MESSAGE_RESPONSE_ATTRIBUTE
+            ):
+                test_nlg_stories[ex.get_combined_intent_response_key()] = [
+                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
+                ]
+
         data_train = TrainingData(
             train,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
             lookup_tables=self.lookup_tables,
+            nlg_stories=train_nlg_stories,
         )
+        data_train.fill_response_phrases()
+
         data_test = TrainingData(
             test,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
             lookup_tables=self.lookup_tables,
+            nlg_stories=test_nlg_stories,
         )
+        data_test.fill_response_phrases()
+
         return data_train, data_test
 
     def print_stats(self) -> None:
