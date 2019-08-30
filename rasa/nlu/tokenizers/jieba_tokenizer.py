@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
 
 class JiebaTokenizer(Tokenizer, Component):
 
-    provides = ["tokens", "intent_tokens", "response_tokens"]
+    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     language_list = ["zh"]
 

@@ -25,9 +25,9 @@ if typing.TYPE_CHECKING:
 
 class RegexFeaturizer(Featurizer):
 
-    provides = ["text_features"]
+    provides = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
-    requires = ["tokens"]
+    requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
 

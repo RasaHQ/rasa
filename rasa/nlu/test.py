@@ -906,16 +906,22 @@ def get_eval_data(
             )
 
         if should_eval_response_selection:
+
+            # including all examples here. Empty response examples are filtered at the time of metric calculation
             intent_target = example.get("intent", "")
             selector_properties = result.get(MESSAGE_SELECTOR_PROPERTY_NAME, {})
+
             if intent_target in available_response_selector_types:
                 response_prediction_key = intent_target
             else:
                 response_prediction_key = DEFAULT_OPEN_UTTERANCE_TYPE
+
             response_prediction = selector_properties.get(
                 response_prediction_key, {}
             ).get(OPEN_UTTERANCE_PREDICTION_KEY, {})
+
             response_target = example.get("response", "")
+
             response_selection_results.append(
                 ResponseSelectionEvaluationResult(
                     intent_target,
@@ -977,9 +983,7 @@ def get_available_response_selector_types(interpreter: Interpreter) -> List[Text
     """Gets all available response selector types"""
 
     response_selector_types = [
-        c.direct_response_intent
-        for c in interpreter.pipeline
-        if "response" in c.provides
+        c.retrieval_intent for c in interpreter.pipeline if "response" in c.provides
     ]
 
     return response_selector_types

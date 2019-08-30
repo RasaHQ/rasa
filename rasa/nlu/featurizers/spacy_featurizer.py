@@ -33,9 +33,13 @@ def features_for_doc(doc: "Doc") -> np.ndarray:
 
 class SpacyFeaturizer(Featurizer):
 
-    provides = ["text_features", "intent_features", "response_features"]
+    provides = [
+        MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+    ]
 
-    requires = ["spacy_doc", "intent_spacy_doc", "response_spacy_doc"]
+    requires = [
+        MESSAGE_SPACY_FEATURES_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+    ]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any

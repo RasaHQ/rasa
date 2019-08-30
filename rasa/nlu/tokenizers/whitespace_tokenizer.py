@@ -18,7 +18,7 @@ from rasa.nlu.constants import (
 
 class WhitespaceTokenizer(Tokenizer, Component):
 
-    provides = ["tokens", "intent_tokens", "response_tokens"]
+    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     defaults = {
         # text will be tokenized with case sensitive as default

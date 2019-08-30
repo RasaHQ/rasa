@@ -37,7 +37,9 @@ class CountVectorsFeaturizer(Featurizer):
     from https://arxiv.org/abs/1810.07150.
     """
 
-    provides = ["text_features", "intent_features", "response_features"]
+    provides = [
+        MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+    ]
 
     requires = []
 

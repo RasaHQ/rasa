@@ -199,7 +199,7 @@ Parsing Response Selector Output
 
 The parsed output from NLU will have a property named ``response_selector`` containing the output for
 each response selector. Each response selector is identified by ``retrieval_intent`` parameter of that response selector
- and stores two properties -
+and stores two properties -
 
     - ``response``: The predicted response text and the prediction confidence.
     - ``ranking``: Ranking with confidences of top 10 candidate responses.

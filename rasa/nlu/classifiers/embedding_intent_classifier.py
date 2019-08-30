@@ -53,7 +53,7 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = ["text_features"]
+    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -113,7 +113,7 @@ class EmbeddingIntentClassifier(Component):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        inv_label_dict: Optional[Dict[int, Text]] = None,
+        inverted_label_dict: Optional[Dict[int, Text]] = None,
         session: Optional["tf.Session"] = None,
         graph: Optional["tf.Graph"] = None,
         message_placeholder: Optional["tf.Tensor"] = None,
@@ -132,7 +132,7 @@ class EmbeddingIntentClassifier(Component):
         self._load_params()
 
         # transform numbers to labels
-        self.inverted_label_dict = inv_label_dict
+        self.inverted_label_dict = inverted_label_dict
         # encode all label_ids with numbers
         self._encoded_all_label_ids = None
 
@@ -165,9 +165,10 @@ class EmbeddingIntentClassifier(Component):
         for deprecated_param in deprecated_tokenization_params:
             if deprecated_param in config:
                 logger.warning(
-                    "Intent tokenization has been moved to WhitespaceTokenizer. "
-                    "Your config still mentions '{}'. Tokenization will fail if you specify the parameter here and "
-                    "ignore it in Whitespace Tokenizer.".format(deprecated_param)
+                    "Intent tokenization has been moved to Tokenizer components. "
+                    "Your config still mentions '{}'. Tokenization may fail if you specify the parameter here.".format(
+                        deprecated_param
+                    )
                 )
 
     # init helpers
@@ -267,16 +268,20 @@ class EmbeddingIntentClassifier(Component):
         """Create matrix with label_ids encoded in rows as bag of words. The features are already computed.
         Find a training example for each label and get the encoded features from the corresponding Message object"""
 
-        encoded_all_labels = []
+        encoded_id_labels = []
 
         for label_name, idx in label_id_dict.items():
             label_example = self._find_example_for_label(
                 label_name, training_data.intent_examples, attribute
             )
             if label_example:
-                encoded_all_labels.insert(
-                    idx, label_example.get(attribute_feature_name)
+                encoded_id_labels.append(
+                    (idx, label_example.get(attribute_feature_name))
                 )
+
+        encoded_id_labels = sorted(encoded_id_labels, key=lambda x: x[0])
+
+        encoded_all_labels = [encoding for (index, encoding) in encoded_id_labels]
 
         return np.array(encoded_all_labels)
 
@@ -456,7 +461,13 @@ class EmbeddingIntentClassifier(Component):
 
         self.check_input_dimension_consistency(session_data)
 
-        return session_data, label_id_dict
+        return session_data
+
+    def _check_enough_labels(self, session_data) -> bool:
+
+        if len(np.unique(session_data.label_ids)) < 2:
+            return False
+        return True
 
     def train(
         self,
@@ -471,9 +482,11 @@ class EmbeddingIntentClassifier(Component):
         # set numpy random seed
         np.random.seed(self.random_seed)
 
-        session_data, label_id_dict = self.preprocess_train_data(training_data)
+        session_data = self.preprocess_train_data(training_data)
 
-        if len(label_id_dict) < 2:
+        possible_to_train = self._check_enough_labels(session_data)
+
+        if not possible_to_train:
             logger.error(
                 "Can not train a classifier. "
                 "Need at least 2 different classes. "

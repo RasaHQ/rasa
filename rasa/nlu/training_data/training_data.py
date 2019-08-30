@@ -143,7 +143,7 @@ class TrainingData(object):
         return set([ex.get("response") for ex in self.training_examples]) - {None}
 
     @rasa_utils.lazy_property
-    def response_types(self) -> Set[Text]:
+    def retrieval_intents(self) -> Set[Text]:
         """Returns the total number of response types in the training data"""
         return set(
             [
@@ -196,7 +196,7 @@ class TrainingData(object):
                 else:
                     raise ValueError(
                         "No response phrases found for {}. Check training data "
-                        "files for a possible typo in NLU/NLG file".format(
+                        "files for a possible wrong intent name in NLU/NLG file".format(
                             story_lookup_intent
                         )
                     )

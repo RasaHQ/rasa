@@ -22,9 +22,11 @@ if typing.TYPE_CHECKING:
 
 class SpacyTokenizer(Tokenizer, Component):
 
-    provides = ["tokens", "intent_tokens", "response_tokens"]
+    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
-    requires = ["spacy_doc", "intent_spacy_doc", "response_spacy_doc"]
+    requires = [
+        MESSAGE_SPACY_FEATURES_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+    ]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any

@@ -23,9 +23,13 @@ from rasa.nlu.constants import (
 
 class MitieFeaturizer(Featurizer):
 
-    provides = ["text_features", "intent_features", "response_features"]
+    provides = [
+        MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+    ]
 
-    requires = ["tokens", "mitie_feature_extractor", "intent_tokens", "response_tokens"]
+    requires = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
+        "mitie_feature_extractor"
+    ]
 
     @classmethod
     def required_packages(cls) -> List[Text]:

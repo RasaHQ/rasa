@@ -29,9 +29,9 @@ if typing.TYPE_CHECKING:
 
 class NGramFeaturizer(Featurizer):
 
-    provides = ["text_features"]
+    provides = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
-    requires = ["spacy_doc"]
+    requires = [MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     defaults = {
         # defines the maximum number of ngrams to collect and add

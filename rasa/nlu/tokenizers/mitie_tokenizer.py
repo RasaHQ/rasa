@@ -18,7 +18,7 @@ from rasa.nlu.constants import (
 
 class MitieTokenizer(Tokenizer, Component):
 
-    provides = ["tokens", "intent_tokens", "response_tokens"]
+    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     @classmethod
     def required_packages(cls) -> List[Text]:

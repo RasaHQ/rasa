@@ -50,7 +50,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     provides = ["response", "response_ranking"]
 
-    requires = ["text_features"]
+    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -118,25 +118,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
         super(ResponseSelector, self)._load_params()
         self._load_selector_params(self.component_config)
 
-    def process(self, message: "Message", **kwargs: Any) -> None:
-        """Return the most likely response and its similarity to the input."""
-
-        label, label_ranking = self.predict_label(message)
-
-        selector_key = (
-            self.retrieval_intent
-            if self.retrieval_intent
-            else DEFAULT_OPEN_UTTERANCE_TYPE
-        )
-
-        logger.debug(
-            "Adding following selector key to message property: {}".format(selector_key)
-        )
-
-        prediction_dict = {"response": label, "ranking": label_ranking}
-
-        self._set_message_property(message, prediction_dict, selector_key)
-
     @staticmethod
     def _set_message_property(
         message: "Message", prediction_dict: Dict[Text, Any], selector_key: Text
@@ -186,4 +167,23 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
         self.check_input_dimension_consistency(session_data)
 
-        return session_data, label_id_dict
+        return session_data
+
+    def process(self, message: "Message", **kwargs: Any) -> None:
+        """Return the most likely response and its similarity to the input."""
+
+        label, label_ranking = self.predict_label(message)
+
+        selector_key = (
+            self.retrieval_intent
+            if self.retrieval_intent
+            else DEFAULT_OPEN_UTTERANCE_TYPE
+        )
+
+        logger.debug(
+            "Adding following selector key to message property: {}".format(selector_key)
+        )
+
+        prediction_dict = {"response": label, "ranking": label_ranking}
+
+        self._set_message_property(message, prediction_dict, selector_key)
