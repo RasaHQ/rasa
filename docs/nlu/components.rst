@@ -520,7 +520,7 @@ Response Selector
     The response selector needs to be preceded by a featurizer in the pipeline.
     This featurizer creates the features used for the embeddings.
     It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
-    by ``SpacyNLP`` and ``SpacyTokenizer``.
+    by ``SpacyNLP``.
 
     .. note:: If during prediction time a message contains **only** words unseen during training,
               and no Out-Of-Vacabulary preprocessor was used,
@@ -558,7 +558,7 @@ WhitespaceTokenizer
 :Configuration:
 
     If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-    modeling hierarchical intent structure, or use a different delimiter than whitespace for ``response`` key, use these flags:
+    modeling hierarchical intent structure, use these flags:
 
     - tokenization of intent and response labels:
         - ``intent_split_symbol`` sets the delimiter string to split the intent and response labels, default is whitespace.
