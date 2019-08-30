@@ -74,8 +74,8 @@ Class imbalance
 Classification algorithms often do not perform well if there is a large `class imbalance`,
 for example if you have a lot of training data for some intents and very little training data for others.
 To mitigate this problem, rasa's ``supervised_embeddings`` pipeline uses a ``balanced`` batching strategy.
-This algorithm ensures that all classes are represented at least in subsequent batches,
-still mimicking the fact that some classes are more frequent than others.
+This algorithm ensures that all classes are represented in every batch, or at least in
+as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
 Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
 ``batch_strategy: sequence`` in your config file.
 
