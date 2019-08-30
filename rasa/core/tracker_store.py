@@ -2,7 +2,7 @@ import json
 import logging
 import pickle
 import typing
-from typing import Iterator, Optional, Text, Iterable, Union
+from typing import Iterator, Optional, Text, Iterable, Union, Dict
 
 import itertools
 
@@ -17,7 +17,7 @@ from rasa.utils.common import class_from_module_path
 
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
-    from sqlalchemy.engine import Engine
+    from sqlalchemy.engine.base import Engine
 
 
 logger = logging.getLogger(__name__)
@@ -307,13 +307,15 @@ class SQLTrackerStore(TrackerStore):
         password: Text = None,
         event_broker: Optional[EventChannel] = None,
         login_db: Optional[Text] = None,
+        query: Optional[Dict] = None,
     ) -> None:
         import sqlalchemy
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy import create_engine
+        import sqlalchemy.exc
 
         engine_url = self.get_db_url(
-            dialect, host, port, db, username, password, login_db
+            dialect, host, port, db, username, password, login_db, query
         )
         logger.debug(
             "Attempting to connect to database " 'via "{}"'.format(repr(engine_url))
@@ -363,6 +365,7 @@ class SQLTrackerStore(TrackerStore):
         username: Text = None,
         password: Text = None,
         login_db: Optional[Text] = None,
+        query: Optional[Dict] = None,
     ) -> Union[Text, "URL"]:
         """Builds an SQLAlchemy `URL` object representing the parameters needed
         to connect to an SQL database.
@@ -376,6 +379,8 @@ class SQLTrackerStore(TrackerStore):
             password: Password for database user.
             login_db: Alternative database name to which initially connect, and create
                 the database specified by `db` (PostgreSQL only).
+            query: Dictionary of options to be passed to the dialect and/or the
+                DBAPI upon connect.
 
         Returns:
             URL ready to be used with an SQLAlchemy `Engine` object.
@@ -404,6 +409,7 @@ class SQLTrackerStore(TrackerStore):
             host,
             port,
             database=login_db if login_db else db,
+            query=query,
         )
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
