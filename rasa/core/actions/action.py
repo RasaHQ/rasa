@@ -223,7 +223,7 @@ class ActionRetrieveResponse(Action):
         return self.action_name
 
     def __str__(self) -> Text:
-        return "ActionUtterPredictedResponse('{}')".format(self.name())
+        return "ActionRetrieveResponse('{}')".format(self.name())
 
 
 class ActionUtterTemplate(Action):

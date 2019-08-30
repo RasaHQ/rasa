@@ -52,7 +52,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     requires = ["text_features"]
 
-
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
