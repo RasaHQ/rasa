@@ -74,7 +74,7 @@ Added
 
 Fixed
 -----
-- corrected default augmentation value in docs
+- made default augmentation value consistent across repo
 - ``'/restart'`` will now also restart the bot if the tracker is paused
 
 
