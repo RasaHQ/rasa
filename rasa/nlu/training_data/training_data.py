@@ -329,33 +329,11 @@ class TrainingData(object):
         """Split into a training and test dataset,
         preserving the fraction of examples per intent."""
 
-        train, test = [], []
-
         # collect all nlu data
-        for intent, count in self.examples_per_intent.items():
-            ex = [e for e in self.intent_examples if e.data["intent"] == intent]
-            random.shuffle(ex)
-            n_train = int(count * train_frac)
-            train.extend(ex[:n_train])
-            test.extend(ex[n_train:])
+        test, train = self.split_nlu_examples(train_frac)
 
         # collect all nlg stories
-        train_nlg_stories = test_nlg_stories = {}
-        for ex in train:
-            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
-                MESSAGE_RESPONSE_ATTRIBUTE
-            ):
-                train_nlg_stories[ex.get_combined_intent_response_key()] = [
-                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
-                ]
-
-        for ex in test:
-            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
-                MESSAGE_RESPONSE_ATTRIBUTE
-            ):
-                test_nlg_stories[ex.get_combined_intent_response_key()] = [
-                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
-                ]
+        test_nlg_stories, train_nlg_stories = self.split_nlg_responses(test, train)
 
         data_train = TrainingData(
             train,
@@ -376,6 +354,34 @@ class TrainingData(object):
         data_test.fill_response_phrases()
 
         return data_train, data_test
+
+    def split_nlg_responses(self, test, train):
+        train_nlg_stories = test_nlg_stories = {}
+        for ex in train:
+            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
+                MESSAGE_RESPONSE_ATTRIBUTE
+            ):
+                train_nlg_stories[ex.get_combined_intent_response_key()] = [
+                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
+                ]
+        for ex in test:
+            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
+                MESSAGE_RESPONSE_ATTRIBUTE
+            ):
+                test_nlg_stories[ex.get_combined_intent_response_key()] = [
+                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
+                ]
+        return test_nlg_stories, train_nlg_stories
+
+    def split_nlu_examples(self, train_frac):
+        train, test = [], []
+        for intent, count in self.examples_per_intent.items():
+            ex = [e for e in self.intent_examples if e.data["intent"] == intent]
+            random.shuffle(ex)
+            n_train = int(count * train_frac)
+            train.extend(ex[:n_train])
+            test.extend(ex[n_train:])
+        return test, train
 
     def print_stats(self) -> None:
         logger.info(
