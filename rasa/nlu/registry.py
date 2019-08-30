@@ -31,11 +31,6 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path
 
-import platform
-
-major, minor, _ = platform.python_version_tuple()
-if major == "3" and minor == "5":
-    from rasa.exceptions35 import ModuleNotFoundError
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -146,11 +141,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
         if component_name not in old_style_names:
             try:
                 return class_from_module_path(component_name)
-            except ModuleNotFoundError as e:
-                # when component_name is a path to a class but that path is invalid
-                raise Exception(
-                    "Failed to find module '{}'. \n{}".format(component_name, e.msg)
-                )
+
             except AttributeError:
                 # when component_name is a path to a class but the path does not contain that class
                 module_name, _, class_name = component_name.rpartition(".")
@@ -158,14 +149,26 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                     "Failed to find class '{}' in module '{}'.\n"
                     "".format(component_name, class_name, module_name)
                 )
-            except ImportError:
+            except ImportError as e:
+                # when component_name is a path to a class but that path is invalid or
                 # when component_name is a class name and not part of old_style_names
-                raise Exception(
-                    "Cannot find class '{0}' from global namespace. Please check that there is no typo in the class "
+                # TODO: Raise ModuleNotFoundError when component_name is a path to a class but that path is invalid
+                #       as soon as we no longer support Python 3.5. See PR #4166 for details
+
+                is_path = "." in component_name
+
+                if is_path:
+                    module_name, _, _ = component_name.rpartition(".")
+                    exception_message = "Failed to find module '{}'. \n{}".format(
+                        module_name, e.msg
+                    )
+                else:
+                    exception_message = "Cannot find class '{0}' from global namespace. Please check that there is no typo in the class "
                     "name and that you have imported the class into the global namespace.".format(
                         component_name
                     )
-                )
+
+                raise Exception(exception_message)
         else:
             # DEPRECATED ensures compatibility, remove in future versions
             logger.warning(

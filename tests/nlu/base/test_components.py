@@ -74,19 +74,11 @@ def test_builder_create_by_module_path(component_builder, default_config):
 def test_create_component_exception_messages(
     component_builder, default_config, test_input, expected_output
 ):
-    import platform
 
-    major, minor, _ = platform.python_version_tuple()
-    is_python35 = True if major == "3" and minor == "5" else False
 
     with pytest.raises(Exception) as excinfo:
         component_config = {"name": test_input}
         component_builder.create_component(component_config, default_config)
-
-    if is_python35 and expected_output == "No module named":
-        assert True
-    else:
-        assert expected_output in str(excinfo.value)
 
 
 def test_builder_load_unknown(component_builder):
