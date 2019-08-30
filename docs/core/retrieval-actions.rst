@@ -162,15 +162,15 @@ To train separate retrieval models for each of the intents you need to include a
 In our experiments so far, this does **not** make any difference to the accuracy
 of the retrieval models. So for simplicity, we recommend you use a single retrieval
 action for both chitchat and FAQs by leaving ``retrieval_intent`` parameter to its default value.
-If you get different results, please let us know in the :ref:`forum <https://forum.rasa.com>` !
+If you get different results, please let us know in the `forum <https://forum.rasa.com>`_ !
 
 
 Parsing Response Selector Output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The resultant parsed output from NLU will have a property
-named ``response_selector`` containing the output for each response selector. Each response selector is identified by
-``retrieval_intent`` parameter of that response selector and stores two properties -
+The resultant parsed output from NLU will have a property named ``response_selector`` containing the output for
+each response selector. Each response selector is identified by ``retrieval_intent`` parameter of that response selector and stores two properties -
+
     - ``response``: The predicted response text and the prediction confidence.
     - ``ranking``: Ranking with confidences of top 10 candidate responses.
 
