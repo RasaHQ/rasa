@@ -59,6 +59,7 @@ Fixed
 -----
 - ``rasa test nlu`` with a folder of configuration files
 - ``MappingPolicy`` standard featurizer is set to ``None``
+- ``agent._pull_model_and_fingerprint`` no longer sets the log level
 
 Removed
 -------
