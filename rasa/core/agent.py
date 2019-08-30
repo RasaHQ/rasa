@@ -35,7 +35,7 @@ from rasa.model import (
     get_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import update_sanic_log_level 
+from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
