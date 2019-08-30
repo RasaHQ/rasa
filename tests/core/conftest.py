@@ -9,8 +9,7 @@ import pytest
 import rasa.utils.io
 from rasa.core import train
 from rasa.core.agent import Agent
-from rasa.core.channels import channel
-from rasa.core.channels.channel import CollectingOutputChannel, RestInput
+from rasa.core.channels.channel import CollectingOutputChannel
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -25,8 +24,6 @@ from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.train import train_async
-
-matplotlib.use("Agg")
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
@@ -43,6 +40,8 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/"
+
+RESTAURANTBOT_PATH = "examples/restaurantbot/"
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
@@ -237,3 +236,16 @@ def train_model(project: Text, filename: Text = "test.tar.gz"):
 @pytest.fixture(scope="session")
 def trained_model(project) -> Text:
     return train_model(project)
+
+
+@pytest.fixture
+async def restaurantbot(tmpdir_factory) -> Text:
+    model_path = tmpdir_factory.mktemp("model").strpath
+    restaurant_domain = os.path.join(RESTAURANTBOT_PATH, "domain.yml")
+    restaurant_config = os.path.join(RESTAURANTBOT_PATH, "config.yml")
+    restaurant_data = os.path.join(RESTAURANTBOT_PATH, "data/")
+
+    agent = await train_async(
+        restaurant_domain, restaurant_config, restaurant_data, model_path
+    )
+    return agent

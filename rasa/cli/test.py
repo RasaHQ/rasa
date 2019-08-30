@@ -10,7 +10,6 @@ from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
-    DEFAULT_NLU_RESULTS_PATH,
     CONFIG_SCHEMA_FILE,
 )
 import rasa.utils.validation as validation_utils
@@ -100,18 +99,14 @@ def test_nlu(args: argparse.Namespace) -> None:
     nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
     output = args.out or DEFAULT_RESULTS_PATH
+    args.errors = not args.no_errors
 
     io_utils.create_directory(output)
 
     if args.config is not None and len(args.config) == 1:
         args.config = os.path.abspath(args.config[0])
         if os.path.isdir(args.config):
-            config_dir = args.config
-            config_files = os.listdir(config_dir)
-            args.config = [
-                os.path.join(config_dir, os.path.abspath(config))
-                for config in config_files
-            ]
+            args.config = io_utils.list_files(args.config)
 
     if isinstance(args.config, list):
         logger.info(

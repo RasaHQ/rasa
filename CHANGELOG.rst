@@ -1,30 +1,112 @@
 :desc: Rasa Changelog
 
+
 Rasa Change Log
 ===============
 
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.2.3] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.3] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- bot messages contain the `timestamp` of the `BotUttered` event, which can be used in channels
-
+- bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
+- ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
+- experimental training data importer which supports training with data of multiple
+  sub bots. Please see the
+  `docs <https://rasa.com/docs/rasa/api/training-data-importers/>`_ for more
+  information.
+- throw error during training when triggers are defined in the domain without
+  ``MappingPolicy`` being present in the policy ensemble
+- the tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that
+  use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
+- add example bot ``knowledgebasebot`` to showcase the usage of ``ActionQueryKnowledgeBase``
+- ``softmax`` starspace loss for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
+- ``balanced`` batching strategy for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
+- ``max_history`` parameter for ``EmbeddingPolicy``
+- Successful predictions of the NER are written to a file if ``--successes`` is set when running ``rasa test nlu``
+- Incorrect predictions of the NER are written to a file by default. You can disable it via ``--no-errors``.
 
 Changed
 -------
+- added character-level ``CountVectorsFeaturizer`` with empirically found parameters
+  into the ``supervised_embeddings`` NLU pipeline template
 - NLU evaluations now also stores its output in the output directory like the core evaluation
+- show warning in case a default path is used instead of a provided, invalid path
+- compare mode of ``rasa train core`` allows the whole core config comparison,
+  naming style of models trained for comparison is changed (this is a breaking change)
+- pika keeps a single connection open, instead of open and closing on each incoming event
+- ``RasaChatInput`` fetches the public key from the Rasa X API. The key is used to
+  decode the bearer token containing the conversation ID. This requires
+  ``rasa-x>=0.20.2``
+- change priorities so that the ``MemoizationPolicy`` has higher priority than the ``MappingPolicy``
+- substitute LSTM with Transformer in ``EmbeddingPolicy``
+- ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
+- non zero ``evaluate_on_num_examples`` in ``EmbeddingPolicy``
+  and ``EmbeddingIntentClassifier`` is the size of
+  hold out validation set that is excluded from training data
+- defaults parameters and architectures for both ``EmbeddingPolicy`` and
+  ``EmbeddingIntentClassifier`` are changed (this is a breaking change)
+- evaluation of NER does not include 'no-entity' anymore
+- ``--successes`` for ``rasa test nlu`` is now boolean values. If set incorrect/successful predictions
+  are saved in a file.
+- ``--errors`` is renamed to ``--no-errors`` and is now a boolean value. By default incorrect predictions are saved
+  in a file. If ``--no-errors`` is set predictions are not written to a file.
+
+Fixed
+-----
+- ``rasa test nlu`` with a folder of configuration files
+- ``MappingPolicy`` standard featurizer is set to ``None``
 
 Removed
 -------
+- Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
+[1.2.5] - 2019-08-26
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- SSL support for ``rasa run`` command. Certificate can be specified using
+  ``--ssl-certificate`` and ``--ssl-keyfile``.
 
 Fixed
 -----
 - corrected default augmentation value in docs
+- ``'/restart'`` will now also restart the bot if the tracker is paused
+
+
+[1.2.4] - 2019-08-23
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- the ``SocketIO`` input channel now allows accesses from other origins
+  (fixes ``SocketIO`` channel on Rasa X)
+
+[1.2.3] - 2019-08-15
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- messages with multiple entities are now handled properly with e2e evaluation
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the
+  restaurantbot domain
+
+[1.2.3] - 2019-08-15
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- messages with multiple entities are now handled properly with e2e evaluation
+- ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
+
+Fixed
+-----
+- Free text input was not allowed in the Rasa shell when the response template
+  contained buttons, which has now been fixed.
 
 [1.2.2] - 2019-08-07
 ^^^^^^^^^^^^^^^^^^^^
@@ -51,12 +133,16 @@ Fixed
 Added
 -----
 - add root route to server started without ``--enable-api`` parameter
-- add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models from ``rasa train core -c <config-1> <config-2>``
+- add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models
+  from ``rasa train core -c <config-1> <config-2>``
 - option to send messages to the user by calling
   ``POST /conversations/{conversation_id}/execute``
 
 Changed
 -------
+- ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
+  or a policy ensemble
+- Update pytype to ``2019.7.11``
 - new event broker class: ``SQLProducer``. This event broker is now used when running locally with
   Rasa X
 - API requests are not longer logged to ``rasa_core.log`` by default in order to avoid
@@ -67,8 +153,8 @@ Changed
 Fixed
 -----
 - ``rasa test core`` can handle compressed model files
-- Rasa can handle story files containing multi line comments
-- Template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
+- rasa can handle story files containing multi line comments
+- template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
 
 [1.1.8] - 2019-07-25
 ^^^^^^^^^^^^^^^^^^^^
@@ -161,7 +247,7 @@ Fixed
 -----
 - all temporal model files are now deleted after stopping the Rasa server
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
-- fixed PUT /model with model_server by deserializing the model_server to 
+- fixed PUT /model with model_server by deserializing the model_server to
   EndpointConfig.
 - ``x in AnySlotDict`` is now ``True`` for any ``x``, which fixes empty slot warnings in
   interactive learning

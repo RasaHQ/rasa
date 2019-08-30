@@ -372,10 +372,11 @@ EmbeddingIntentClassifier
         }
 
 :Description:
-    The embedding intent classifier embeds user inputs and intent labels into the same space. Supervised embeddings are
-    trained by maximizing similarity between them. This algorithm is based on
-    `StarSpace <https://arxiv.org/abs/1709.03856>`_. However, in this implementation
-    the ``mu`` parameter is treated differently and additional hidden layers are added together with dropout.
+    The embedding intent classifier embeds user inputs and intent labels into the same space.
+    Supervised embeddings are trained by maximizing similarity between them.
+    This algorithm is based on `StarSpace <https://arxiv.org/abs/1709.03856>`_.
+    However, in this implementation the loss function is slightly different and
+    additional hidden layers are added together with dropout.
     This algorithm also provides similarity rankings of the labels that did not "win".
 
     The embedding intent classifier needs to be preceded by a featurizer in the pipeline.
@@ -385,7 +386,7 @@ EmbeddingIntentClassifier
 
     .. note:: If during prediction time a message contains **only** words unseen during training,
               and no Out-Of-Vacabulary preprocessor was used,
-              empty intent ``""`` is predicted with confidence ``0.0``.
+              empty intent ``None`` is predicted with confidence ``0.0``.
 
 :Configuration:
     If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
@@ -397,24 +398,62 @@ EmbeddingIntentClassifier
 
 
     The algorithm also has hyperparameters to control:
+
         - neural network's architecture:
-            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before the embedding layer for user inputs, the number of hidden layers is equal to the length of the list
-            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before the embedding layer for intent labels, the number of hidden layers is equal to the length of the list
+
+            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before
+              the embedding layer for user inputs, the number of hidden layers
+              is equal to the length of the list
+            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before
+              the embedding layer for intent labels, the number of hidden layers
+              is equal to the length of the list
+
         - training:
-            - ``batch_size`` sets the number of training examples in one forward/backward pass, the higher the batch size, the more memory space you'll need;
-            - ``epochs`` sets the number of times the algorithm will see training data, where ``one epoch`` = one forward pass and one backward pass of all the training examples;
+
+            - ``batch_size`` sets the number of training examples in one
+              forward/backward pass, the higher the batch size, the more
+              memory space you'll need;
+            - ``batch_strategy`` sets the type of batching strategy,
+              it should be either ``sequence`` or ``balanced``;
+            - ``epochs`` sets the number of times the algorithm will see
+              training data, where one ``epoch`` equals one forward pass and
+              one backward pass of all the training examples;
+            - ``random_seed`` if set to any int will get reproducible
+              training results for the same inputs;
+
         - embedding:
+
             - ``embed_dim`` sets the dimension of embedding space;
-            - ``mu_pos`` controls how similar the algorithm should try to make embedding vectors for correct intent labels;
-            - ``mu_neg`` controls maximum negative similarity for incorrect intents;
-            - ``similarity_type`` sets the type of the similarity, it should be either ``cosine`` or ``inner``;
-            - ``num_neg`` sets the number of incorrect intent labels, the algorithm will minimize their similarity to the user input during training;
-            - ``use_max_sim_neg`` if ``true`` the algorithm only minimizes maximum similarity over incorrect intent labels;
-            - ``random_seed`` (None or int) An integer sets the random seed for numpy and tensorflow, so that the random initialisation is always the same and produces the same training result
+            - ``num_neg`` sets the number of incorrect intent labels,
+              the algorithm will minimize their similarity to the user
+              input during training;
+            - ``similarity_type`` sets the type of the similarity,
+              it should be either ``auto``, ``cosine`` or ``inner``,
+              if ``auto``, it will be set depending on ``loss_type``,
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+            - ``loss_type`` sets the type of the loss function,
+              it should be either ``softmax`` or ``margin``;
+            - ``mu_pos`` controls how similar the algorithm should try
+              to make embedding vectors for correct intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``mu_neg`` controls maximum negative similarity for
+              incorrect intents,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``use_max_sim_neg`` if ``true`` the algorithm only
+              minimizes maximum similarity over incorrect intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
+              for examples where correct label is predicted with high confidence,
+              used only if ``loss_type`` is set to ``softmax``;
+
         - regularization:
+
             - ``C2`` sets the scale of L2 regularization
-            - ``C_emb`` sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;
-            - ``droprate`` sets the dropout rate, it should be between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units;
+            - ``C_emb`` sets the scale of how important is to minimize
+              the maximum similarity between embeddings of different intent labels;
+            - ``droprate`` sets the dropout rate, it should be
+              between ``0`` and ``1``, e.g. ``droprate=0.1``
+              would drop out ``10%`` of input units;
 
     .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
 
@@ -422,39 +461,19 @@ EmbeddingIntentClassifier
               In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
               If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
-    In the config, you can specify these parameters:
+    In the config, you can specify these parameters.
+    The default values are defined in ``EmbeddingIntentClassifier.defaults``:
 
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "EmbeddingIntentClassifier"
-          # nn architecture
-          "hidden_layers_sizes_a": [256, 128]
-          "hidden_layers_sizes_b": []
-          "batch_size": [64, 256]
-          "epochs": 300
-          # embedding parameters
-          "embed_dim": 20
-          "mu_pos": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
-          "mu_neg": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
-          "similarity_type": "cosine"  # string 'cosine' or 'inner'
-          "num_neg": 20
-          "use_max_sim_neg": true  # flag which loss function to use
-          "random_seed": None # set to any int to generate a reproducible training result
-          # regularization
-          "C2": 0.002
-          "C_emb": 0.8
-          "droprate": 0.2
-          # flag for tokenizing intents
-          "intent_tokenization_flag": false
-          "intent_split_symbol": "_"
-          # visualization of accuracy
-          "evaluate_every_num_epochs": 10  # small values may hurt performance
-          "evaluate_on_num_examples": 1000  # large values may hurt performance
+    .. literalinclude:: ../../rasa/nlu/classifiers/embedding_intent_classifier.py
+       :dedent: 4
+       :start-after: # default properties (DOC MARKER - don't remove)
+       :end-before: # end default properties (DOC MARKER - don't remove)
 
     .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
+.. _tokenizers:
 
 Tokenizers
 ----------
@@ -673,7 +692,7 @@ CRFEntityExtractor
           # Available features are:
           # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
           # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
-          # ``bias``, ``upper`` and ``digit``
+          # ``bias``, ``upper``, ``digit`` and ``pattern``
           features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
           # The flag determines whether to use BILOU tagging or not. BILOU
@@ -753,3 +772,5 @@ DucklingHTTPExtractor
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
+
+

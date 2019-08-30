@@ -10,7 +10,7 @@ import itertools
 from time import sleep
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.broker import EventChannel
+from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.utils.common import class_from_module_path
@@ -324,7 +324,7 @@ class SQLTrackerStore(TrackerStore):
             try:
                 self.engine = create_engine(engine_url)
 
-                # if `login_db` has been provided, use current connection with
+                # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
                 if login_db:
                     self._create_database_and_update_engine(db, engine_url)
@@ -447,7 +447,9 @@ class SQLTrackerStore(TrackerStore):
         """Create a tracker from all previously stored events."""
 
         query = self.session.query(self.SQLEvent)
-        result = query.filter_by(sender_id=sender_id).all()
+        result = (
+            query.filter_by(sender_id=sender_id).order_by(self.SQLEvent.timestamp).all()
+        )
         events = [json.loads(event.data) for event in result]
 
         if self.domain and len(events) > 0:

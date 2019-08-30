@@ -25,6 +25,11 @@ from rasa.nlu.test import (
     EntityEvaluationResult,
     evaluate_intents,
     evaluate_entities,
+    get_unique_labels,
+    get_evaluation_metrics,
+    NO_ENTITY,
+    collect_successful_entity_predictions,
+    collect_incorrect_entity_predictions,
 )
 from rasa.nlu.test import does_token_cross_borders
 from rasa.nlu.test import align_entity_predictions
@@ -139,9 +144,11 @@ EN_predicted = [
     },
 ]
 
-EN_entity_result = EntityEvaluationResult(EN_targets, EN_predicted, EN_tokens)
+EN_entity_result = EntityEvaluationResult(
+    EN_targets, EN_predicted, EN_tokens, " ".join([t.text for t in EN_tokens])
+)
 
-EN_entity_result_no_tokens = EntityEvaluationResult(EN_targets, EN_predicted, [])
+EN_entity_result_no_tokens = EntityEvaluationResult(EN_targets, EN_predicted, [], "")
 
 
 def test_token_entity_intersection():
@@ -283,8 +290,8 @@ def test_intent_evaluation_report(tmpdir_factory):
     result = evaluate_intents(
         intent_results,
         report_folder,
-        successes_filename=None,
-        errors_filename=None,
+        successes=False,
+        errors=False,
         confmat_filename=None,
         intent_hist_filename=None,
     )
@@ -342,9 +349,10 @@ def test_entity_evaluation_report(tmpdir_factory):
     report_a = json.loads(rasa.utils.io.read_file(report_filename_a))
     report_b = json.loads(rasa.utils.io.read_file(report_filename_b))
 
-    assert len(report_a) == 8
+    assert len(report_a) == 6
     assert report_a["datetime"]["support"] == 1.0
-    assert report_b["macro avg"]["recall"] == 0.2
+    assert report_b["macro avg"]["recall"] == 0.0
+    assert report_a["macro avg"]["recall"] == 0.5
     assert result["EntityExtractorA"]["accuracy"] == 0.75
 
 
@@ -444,6 +452,61 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
+@pytest.mark.parametrize(
+    "targets,exclude_label,expected",
+    [
+        (
+            ["no_entity", "location", "location", "location", "person"],
+            NO_ENTITY,
+            ["location", "person"],
+        ),
+        (
+            ["no_entity", "location", "location", "location", "person"],
+            None,
+            ["no_entity", "location", "person"],
+        ),
+        (["no_entity"], NO_ENTITY, []),
+        (["location", "location", "location"], NO_ENTITY, ["location"]),
+        ([], None, []),
+    ],
+)
+def test_get_label_set(targets, exclude_label, expected):
+    actual = get_unique_labels(targets, exclude_label)
+    assert set(expected) == set(actual)
+
+
+@pytest.mark.parametrize(
+    "targets,predictions,expected_precision,expected_fscore,expected_accuracy",
+    [
+        (
+            ["no_entity", "location", "no_entity", "location", "no_entity"],
+            ["no_entity", "location", "no_entity", "no_entity", "person"],
+            1.0,
+            0.6666666666666666,
+            3 / 5,
+        ),
+        (
+            ["no_entity", "no_entity", "no_entity", "no_entity", "person"],
+            ["no_entity", "no_entity", "no_entity", "no_entity", "no_entity"],
+            0.0,
+            0.0,
+            4 / 5,
+        ),
+    ],
+)
+def test_get_evaluation_metrics(
+    targets, predictions, expected_precision, expected_fscore, expected_accuracy
+):
+    report, precision, f1, accuracy = get_evaluation_metrics(
+        targets, predictions, True, exclude_label=NO_ENTITY
+    )
+
+    assert f1 == expected_fscore
+    assert precision == expected_precision
+    assert accuracy == expected_accuracy
+    assert NO_ENTITY not in report
+
+
 def test_nlu_comparison(tmpdir):
     configs = [
         NLU_DEFAULT_CONFIG_PATH,
@@ -464,3 +527,160 @@ def test_nlu_comparison(tmpdir):
 
     run_1_path = os.path.join(output, "run_1")
     assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.md"}
+
+
+@pytest.mark.parametrize(
+    "entity_results,targets,predictions,successes,errors",
+    [
+        (
+            [
+                EntityEvaluationResult(
+                    entity_targets=[
+                        {
+                            "start": 17,
+                            "end": 24,
+                            "value": "Italian",
+                            "entity": "cuisine",
+                        }
+                    ],
+                    entity_predictions=[
+                        {
+                            "start": 17,
+                            "end": 24,
+                            "value": "Italian",
+                            "entity": "cuisine",
+                        }
+                    ],
+                    tokens=[
+                        "I",
+                        "want",
+                        "to",
+                        "book",
+                        "an",
+                        "Italian",
+                        "restaurant",
+                        ".",
+                    ],
+                    message="I want to book an Italian restaurant.",
+                ),
+                EntityEvaluationResult(
+                    entity_targets=[
+                        {
+                            "start": 8,
+                            "end": 15,
+                            "value": "Mexican",
+                            "entity": "cuisine",
+                        },
+                        {
+                            "start": 31,
+                            "end": 32,
+                            "value": "4",
+                            "entity": "number_people",
+                        },
+                    ],
+                    entity_predictions=[],
+                    tokens=[
+                        "Book",
+                        "an",
+                        "Mexican",
+                        "restaurant",
+                        "for",
+                        "4",
+                        "people",
+                        ".",
+                    ],
+                    message="Book an Mexican restaurant for 4 people.",
+                ),
+            ],
+            [
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                "cuisine",
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                "cuisine",
+                NO_ENTITY,
+                NO_ENTITY,
+                "number_people",
+                NO_ENTITY,
+                NO_ENTITY,
+            ],
+            [
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                "cuisine",
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+                NO_ENTITY,
+            ],
+            [
+                {
+                    "text": "I want to book an Italian restaurant.",
+                    "entities": [
+                        {
+                            "start": 17,
+                            "end": 24,
+                            "value": "Italian",
+                            "entity": "cuisine",
+                        }
+                    ],
+                    "predicted_entities": [
+                        {
+                            "start": 17,
+                            "end": 24,
+                            "value": "Italian",
+                            "entity": "cuisine",
+                        }
+                    ],
+                }
+            ],
+            [
+                {
+                    "text": "Book an Mexican restaurant for 4 people.",
+                    "entities": [
+                        {
+                            "start": 8,
+                            "end": 15,
+                            "value": "Mexican",
+                            "entity": "cuisine",
+                        },
+                        {
+                            "start": 31,
+                            "end": 32,
+                            "value": "4",
+                            "entity": "number_people",
+                        },
+                    ],
+                    "predicted_entities": [],
+                }
+            ],
+        )
+    ],
+)
+def test_collect_entity_predictions(
+    entity_results, targets, predictions, successes, errors
+):
+    actual = collect_successful_entity_predictions(entity_results, targets, predictions)
+
+    assert len(successes) == len(actual)
+    assert successes == actual
+
+    actual = collect_incorrect_entity_predictions(entity_results, targets, predictions)
+
+    assert len(errors) == len(actual)
+    assert errors == actual

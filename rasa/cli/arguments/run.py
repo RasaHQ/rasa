@@ -60,6 +60,18 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         "--remote-storage",
         help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
     )
+    server_arguments.add_argument(
+        "--ssl-certificate",
+        help="Set the SSL Certificate to create a TLS secured server.",
+    )
+    server_arguments.add_argument(
+        "--ssl-keyfile", help="Set the SSL Keyfile to create a TLS secured server."
+    )
+    server_arguments.add_argument(
+        "--ssl-password",
+        help="If your ssl-keyfile is protected by a password, you can specify it "
+        "using this paramer.",
+    )
 
     channel_arguments = parser.add_argument_group("Channels")
     channel_arguments.add_argument(

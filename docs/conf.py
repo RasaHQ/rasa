@@ -25,6 +25,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
+    "sphinx_tabs.tabs",
     "sphinxcontrib.programoutput",
     "sphinxcontrib.httpdomain",
     "rasabaster.button",
@@ -87,7 +88,6 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     # ignore doc pages that we don't show to appease keep_warnings
-    "multi-skill-assistants.rst",
     "core/old-core-change-log.rst",
     "core/old-core-migration-guide.rst",
     "nlu/old-nlu-change-log.rst",
@@ -333,7 +333,7 @@ scv_priority = "tags"
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ("semver",)
-scv_whitelist_branches = ("master",)  # (re.compile("^master$"),)
+scv_whitelist_branches = (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
 scv_whitelist_tags = (re.compile(r"^[1-9]+\.[0-9]+\.\d+$"),)

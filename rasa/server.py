@@ -5,6 +5,7 @@ import traceback
 from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
+from ssl import SSLContext
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -12,35 +13,34 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
+import rasa.core.brokers.utils as broker_utils
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
-from rasa.core.domain import InvalidDomain
-from rasa.utils.endpoints import EndpointConfig
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DEFAULT_MODELS_PATH,
     DEFAULT_DOMAIN_PATH,
     DOCS_BASE_URL,
 )
-from rasa.core import broker
 from rasa.core.agent import load_agent, Agent
 from rasa.core.channels.channel import (
     UserMessage,
     CollectingOutputChannel,
     OutputChannel,
 )
+from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
 from rasa.core.test import test
+from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file, AvailableEndpoints
 from rasa.model import get_model_subdirectories, fingerprint_from_path
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
-from rasa.core.tracker_store import TrackerStore
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
 
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
@@ -210,6 +210,25 @@ async def authenticate(request: Request):
     )
 
 
+def create_ssl_context(
+    ssl_certificate: Optional[Text],
+    ssl_keyfile: Optional[Text],
+    ssl_password: Optional[Text],
+) -> Optional[SSLContext]:
+    """Create a SSL context (for the sanic server) if a proper certificate is passed."""
+
+    if ssl_certificate:
+        import ssl
+
+        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ssl_context.load_cert_chain(
+            ssl_certificate, keyfile=ssl_keyfile, password=ssl_password
+        )
+        return ssl_context
+    else:
+        return None
+
+
 def _create_emulator(mode: Optional[Text]) -> NoEmulator:
     """Create emulator for specified mode.
     If no emulator is specified, we will use the Rasa NLU format."""
@@ -250,7 +269,7 @@ async def _load_agent(
         action_endpoint = None
 
         if endpoints:
-            _broker = broker.from_endpoint_config(endpoints.event_broker)
+            _broker = broker_utils.from_endpoint_config(endpoints.event_broker)
             tracker_store = TrackerStore.find_tracker_store(
                 None, endpoints.tracker_store, _broker
             )
@@ -301,6 +320,10 @@ def create_app(
 
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = 60 * 60
+    # Workaround so that socketio works with requests from other origins.
+    # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
+    app.config.CORS_AUTOMATIC_OPTIONS = True
+    app.config.CORS_SUPPORTS_CREDENTIALS = True
 
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
