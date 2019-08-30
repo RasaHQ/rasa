@@ -802,6 +802,12 @@ simple example that dispatches a bot utterance and then reverts the interaction:
 case there is no <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code> and the
 intent and the mapped utterance will appear in the dialogue history.</p>
 </div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The MappingPolicy is also responsible for executing the default actions <code class="docutils literal notranslate"><span class="pre">action_back</span></code>
+and <code class="docutils literal notranslate"><span class="pre">action_restart</span></code> in response to <code class="docutils literal notranslate"><span class="pre">/back</span></code> and <code class="docutils literal notranslate"><span class="pre">/restart</span></code>. If it is not included
+in your policy example these intents will not work.</p>
+</div>
 </div>
 <div class="section" id="fallback-policy">
 <span id="id4"></span><h2><a class="toc-backref" href="#id12">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
