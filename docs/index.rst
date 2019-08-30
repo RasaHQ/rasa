@@ -101,3 +101,10 @@ Understand messages, hold conversations, and connect to messaging channels and A
    Wit.ai <migrate-from/facebook-wit-ai-to-rasa>
    LUIS <migrate-from/microsoft-luis-to-rasa>
    IBM Watson <migrate-from/ibm-watson-to-rasa>
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Reference
+
+   glossary

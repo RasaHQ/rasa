@@ -99,6 +99,7 @@ def test_nlu(args: argparse.Namespace) -> None:
     nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     nlu_data = data.get_nlu_directory(nlu_data)
     output = args.out or DEFAULT_RESULTS_PATH
+    args.errors = not args.no_errors
 
     io_utils.create_directory(output)
 
