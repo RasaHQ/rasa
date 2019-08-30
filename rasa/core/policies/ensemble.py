@@ -50,9 +50,12 @@ class PolicyEnsemble(object):
             self.action_fingerprints = {}
 
         self._check_priorities()
+        self._check_for_important_policies()
 
-        if "MappingPolicy" not in policies:
-            logger.debug(
+
+    def _check_for_important_policies(self):
+        if "MappingPolicy" not in self.policies:
+            logger.info(
                 "MappingPolicy not included in policy ensemble. Default intents "
                 "'{} and {} will not trigger actions '{}' and '{}'."
                 "".format(
@@ -62,7 +65,7 @@ class PolicyEnsemble(object):
                     ACTION_BACK_NAME,
                 )
             )
-
+                                
     @staticmethod
     def _training_events_from_trackers(training_trackers):
         events_metadata = defaultdict(set)
