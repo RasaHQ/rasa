@@ -61,7 +61,7 @@ Glossary
 
         Rasa NLU is the part of Rasa that performs intent classification and entity extraction.
 
-    :ref:`Pipeline <choosing-a-pipelin>`
+    :ref:`Pipeline <choosing-a-pipeline>`
         A Rasa bot's NLU system is defined by a pipeline, which is a list of NLU components (see "Rasa NLU Component") in a particular order. A user input is processed by each component one by one before finally giving out the structured output.
 
     :ref:`Policy <policies>`
