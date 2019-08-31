@@ -801,7 +801,7 @@ async def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories())
+                f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
 
 
 async def _write_nlu_to_file(
@@ -1550,6 +1550,9 @@ def run_interactive_learning(
 
     if server_args.get("domain"):
         PATHS["domain"] = server_args["domain"]
+
+    global SAVE_IN_E2E
+    SAVE_IN_E2E = True if server_args.get("e2e") else False
 
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))
