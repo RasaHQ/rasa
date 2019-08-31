@@ -1552,7 +1552,7 @@ def run_interactive_learning(
         PATHS["domain"] = server_args["domain"]
 
     global SAVE_IN_E2E
-    SAVE_IN_E2E = True if server_args.get("e2e") else False
+    SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))
