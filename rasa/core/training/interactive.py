@@ -78,6 +78,8 @@ PATHS = {
     "domain": "domain.yml",
 }
 
+SAVE_IN_E2E = {"value": False}
+
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
 OTHER_ACTION = uuid.uuid4().hex
@@ -801,7 +803,7 @@ async def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
+                f.write("\n" + tracker.export_stories(SAVE_IN_E2E["value"]))
 
 
 async def _write_nlu_to_file(
@@ -1551,8 +1553,7 @@ def run_interactive_learning(
     if server_args.get("domain"):
         PATHS["domain"] = server_args["domain"]
 
-    global SAVE_IN_E2E
-    SAVE_IN_E2E = server_args["e2e"]
+    SAVE_IN_E2E["value"] = server_args["e2e"]
 
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))
