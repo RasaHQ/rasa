@@ -113,6 +113,12 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     def _load_selector_params(self, config: Dict[Text, Any]):
         self.retrieval_intent = config["retrieval_intent"]
+        if not self.retrieval_intent:
+            # retrieval intent was left to its default value
+            logger.info(
+                "Retrieval intent parameter was left to its default value. This response selector will be trained"
+                "on training examples combining all retrieval intents."
+            )
 
     def _load_params(self) -> None:
         super(ResponseSelector, self)._load_params()

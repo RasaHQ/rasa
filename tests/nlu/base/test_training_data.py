@@ -154,6 +154,7 @@ def test_demo_data(files):
     assert len(td.intent_examples) == 46
     assert len(td.response_examples) == 4
     assert len(td.entity_examples) == 11
+    assert len(td.nlg_stories) == 2
 
     assert td.entity_synonyms == {
         "Chines": "chinese",

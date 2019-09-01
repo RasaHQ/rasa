@@ -356,22 +356,23 @@ class TrainingData(object):
         return data_train, data_test
 
     def split_nlg_responses(self, test, train):
-        train_nlg_stories = test_nlg_stories = {}
-        for ex in train:
-            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
-                MESSAGE_RESPONSE_ATTRIBUTE
-            ):
-                train_nlg_stories[ex.get_combined_intent_response_key()] = [
-                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
-                ]
-        for ex in test:
-            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
-                MESSAGE_RESPONSE_ATTRIBUTE
-            ):
-                test_nlg_stories[ex.get_combined_intent_response_key()] = [
-                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
-                ]
+
+        train_nlg_stories = self.build_nlg_stories_from_examples(train)
+        test_nlg_stories = self.build_nlg_stories_from_examples(test)
         return test_nlg_stories, train_nlg_stories
+
+    @staticmethod
+    def build_nlg_stories_from_examples(examples):
+
+        nlg_stories = {}
+        for ex in examples:
+            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
+                MESSAGE_RESPONSE_ATTRIBUTE
+            ):
+                nlg_stories[ex.get_combined_intent_response_key()] = [
+                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
+                ]
+        return nlg_stories
 
     def split_nlu_examples(self, train_frac):
         train, test = [], []
