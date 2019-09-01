@@ -123,7 +123,7 @@ class TwilioInput(InputChannel):
             else:
                 logger.debug("Invalid message")
 
-            return response.text("success")
+            return response
 
         return twilio_webhook
 
