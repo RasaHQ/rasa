@@ -21,7 +21,9 @@ You can install both Rasa and Rasa X using pip (requires Python 3.5.4 or higher)
 
 - Having trouble installing? Read our :ref:`step-by-step installation guide <installation_guide>`.
 - You can also :ref:`build Rasa from source <build_from_source>`.
-- For advanced installation options, head over :ref:`here <pipeline_dependencies>`.
+- For advanced installation options such as building from source and installation instructions for
+  custom pipelines, head over :ref:`here <pipeline_dependencies>`.
+
 
 When you're done installing, you can head over to the tutorial!
 
@@ -151,9 +153,13 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
             $ pip install rasa
 
-.. admonition:: Congratulations! You have successfully installed Rasa!
+**Congratulations! You have successfully installed Rasa!**
 
-    You can now head over to the :ref:`tutorial <rasa-tutorial>`.
+You can now head over to the tutorial.
+
+.. button::
+   :text: Next Step: Tutorial
+   :link: ../rasa-tutorial/
 
 |
 
