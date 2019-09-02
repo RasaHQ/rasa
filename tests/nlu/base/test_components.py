@@ -75,7 +75,6 @@ def test_create_component_exception_messages(
     component_builder, default_config, test_input, expected_output
 ):
 
-
     with pytest.raises(Exception) as excinfo:
         component_config = {"name": test_input}
         component_builder.create_component(component_config, default_config)
