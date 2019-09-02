@@ -286,14 +286,22 @@ sub bots. Please see the
 information.</li>
 <li>throw error during training when triggers are defined in the domain without
 <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> being present in the policy ensemble</li>
-<li>the tracker is now available within the interpreter’s <code class="docutils literal notranslate"><span class="pre">parse</span></code> method, giving the ability to create interpreter classes that
-use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015</li>
+<li>The tracker is now avaialble within the interpreter’s <code class="docutils literal notranslate"><span class="pre">parse</span></code> method, giving the
+ability to create interpreter classes that use the tracker state (eg. slot values)
+during the parsing of the message. More details on motivation of this change see
+issues/3015.</li>
 <li>add example bot <code class="docutils literal notranslate"><span class="pre">knowledgebasebot</span></code> to showcase the usage of <code class="docutils literal notranslate"><span class="pre">ActionQueryKnowledgeBase</span></code></li>
 <li><code class="docutils literal notranslate"><span class="pre">softmax</span></code> starspace loss for both <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code></li>
 <li><code class="docutils literal notranslate"><span class="pre">balanced</span></code> batching strategy for both <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code></li>
 <li><code class="docutils literal notranslate"><span class="pre">max_history</span></code> parameter for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code></li>
 <li>Successful predictions of the NER are written to a file if <code class="docutils literal notranslate"><span class="pre">--successes</span></code> is set when running <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code></li>
 <li>Incorrect predictions of the NER are written to a file by default. You can disable it via <code class="docutils literal notranslate"><span class="pre">--no-errors</span></code>.</li>
+<li>argument <code class="docutils literal notranslate"><span class="pre">--config-endpoint</span></code> to specify the URL from which <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code> pulls
+the runtime configuration (endpoints and credentials)</li>
+<li><code class="docutils literal notranslate"><span class="pre">LockStore</span></code> class storing instances of <code class="docutils literal notranslate"><span class="pre">TicketLock</span></code> for every <code class="docutils literal notranslate"><span class="pre">conversation_id</span></code></li>
+<li>environment variables <code class="docutils literal notranslate"><span class="pre">SQL_POOL_SIZE</span></code> (default: 50) and <code class="docutils literal notranslate"><span class="pre">SQL_MAX_OVERFLOW</span></code>
+(default: 100) can be set to control the pool size and maximum pool overflow for
+<code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> when used with the <code class="docutils literal notranslate"><span class="pre">postgresql</span></code> dialect</li>
 </ul>
 </div>
 <div class="section" id="changed">

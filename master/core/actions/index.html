@@ -340,6 +340,13 @@ the dialogue state.</p>
 <p>You can create an action server in node.js, .NET, java, or any
 other language and define your actions there - but we provide
 a small python SDK to make development there even easier.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Rasa uses a ticket lock mechanism to ensure incoming messages from the same
+conversation ID do not interfere with each other and are processed in the right
+order. If you expect your custom action to take more than 60 seconds to run, please
+set the <code class="docutils literal notranslate"><span class="pre">TICKET_LOCK_LIFETIME</span></code> environment variable to your expected value.</p>
+</div>
 <div class="section" id="custom-actions-written-in-python">
 <h3><a class="toc-backref" href="#id6">Custom Actions Written in Python</a><a class="headerlink" href="#custom-actions-written-in-python" title="Permalink to this headline">¶</a></h3>
 <p>For actions written in python, we have a convenient SDK which starts
