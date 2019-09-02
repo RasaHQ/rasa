@@ -131,7 +131,7 @@ class TicketLock:
             return None
 
     def _ticket_for_ticket_number(self, ticket_number: int) -> Optional[Ticket]:
-        """Return expiration time for `ticket_number`."""
+        """Return ticket for `ticket_number`."""
 
         self.remove_expired_tickets()
 
