@@ -211,12 +211,13 @@ of the box." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.2.6
+          viewing: 1.2.7
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.2.7/api/tracker-stores/">1.2.7</a>
               <a href="../.././1.2.6/api/tracker-stores/">1.2.6</a>
               <a href="../.././1.2.5/api/tracker-stores/">1.2.5</a>
               <a href="../.././1.2.4/api/tracker-stores/">1.2.4</a>
@@ -335,6 +336,8 @@ intent name and typename</p>
     <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="s">&quot;rasa.db&quot;</span>  <span class="c1"># path to your db</span>
     <span class="l l-Scalar l-Scalar-Plain">username</span><span class="p p-Indicator">:</span>  <span class="c1"># username used for authentication</span>
     <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span>  <span class="c1"># password used for authentication</span>
+    <span class="l l-Scalar l-Scalar-Plain">query</span><span class="p p-Indicator">:</span> <span class="c1"># optional dictionary to be added as a query string to the connection URL</span>
+      <span class="l l-Scalar l-Scalar-Plain">driver</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-driver</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -353,13 +356,16 @@ add the <code class="docutils literal notranslate"><span class="pre">--endpoints
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><code class="docutils literal notranslate"><span class="pre">domain</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Domain object associated with this tracker store</li>
 <li><code class="docutils literal notranslate"><span class="pre">dialect</span></code> (default: <code class="docutils literal notranslate"><span class="pre">sqlite</span></code>): The dialect used to communicate with your SQL backend.  Consult the <a class="reference external" href="https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls">SQLAlchemy docs</a> for available dialects.</li>
-<li><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): URL of your SQL database</li>
+<li><code class="docutils literal notranslate"><span class="pre">host</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): URL of your SQL server</li>
+<li><code class="docutils literal notranslate"><span class="pre">port</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Port of your SQL server</li>
 <li><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">rasa.db</span></code>): The path to the database to be used</li>
 <li><code class="docutils literal notranslate"><span class="pre">username</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The username which is used for authentication</li>
 <li><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The password which is used for authentication</li>
-<li><code class="docutils literal notranslate"><span class="pre">collection</span></code> (default: <code class="docutils literal notranslate"><span class="pre">conversations</span></code>): The collection name which is
-used to store the conversations</li>
+<li><code class="docutils literal notranslate"><span class="pre">event_broker</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Event broker to publish events to</li>
+<li><code class="docutils literal notranslate"><span class="pre">login_db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Alternative database name to which initially  connect, and create the database specified by <cite>db</cite> (PostgreSQL only)</li>
+<li><code class="docutils literal notranslate"><span class="pre">query</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect</li>
 </ul>
 </td>
 </tr>
