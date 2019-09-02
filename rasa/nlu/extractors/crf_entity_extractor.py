@@ -7,6 +7,7 @@ from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.constants import DOCS_BASE_URL
 
 try:
     import spacy
@@ -158,8 +159,8 @@ class CRFEntityExtractor(EntityExtractor):
                 "message {}\n"
                 "POS features require a pipeline component "
                 "that provides `spacy_doc` attributes, i.e. `SpacyNLP`. "
-                "See https://nlu.rasa.com/pipeline.html#nlp-spacy "
-                "for details".format(message.text)
+                "See {}/nlu/choosing-a-pipeline/#pretrained-embeddings-spacy "
+                "for details".format(message.text, DOCS_BASE_URL)
             )
 
     def process(self, message: Message, **kwargs: Any) -> None:
