@@ -14,7 +14,12 @@ import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
 
 from rasa.core import utils, training
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ACTION_BACK_NAME,
+    ACTION_RESTART_NAME,
+)
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
@@ -45,6 +50,20 @@ class PolicyEnsemble(object):
             self.action_fingerprints = {}
 
         self._check_priorities()
+        self._check_for_important_policies()
+
+    def _check_for_important_policies(self):
+        if "MappingPolicy" not in self.policies:
+            logger.info(
+                "MappingPolicy not included in policy ensemble. Default intents "
+                "'{} and {} will not trigger actions '{}' and '{}'."
+                "".format(
+                    USER_INTENT_RESTART,
+                    USER_INTENT_BACK,
+                    ACTION_RESTART_NAME,
+                    ACTION_BACK_NAME,
+                )
+            )
 
     @staticmethod
     def _training_events_from_trackers(training_trackers):
