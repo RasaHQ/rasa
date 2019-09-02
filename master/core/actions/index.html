@@ -294,18 +294,18 @@ to the user</li>
 </div></blockquote>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#utterance-actions" id="id3">Utterance Actions</a></li>
-<li><a class="reference internal" href="#custom-actions" id="id4">Custom Actions</a><ul>
-<li><a class="reference internal" href="#custom-actions-written-in-python" id="id5">Custom Actions Written in Python</a></li>
+<li><a class="reference internal" href="#utterance-actions" id="id4">Utterance Actions</a></li>
+<li><a class="reference internal" href="#custom-actions" id="id5">Custom Actions</a><ul>
+<li><a class="reference internal" href="#custom-actions-written-in-python" id="id6">Custom Actions Written in Python</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#execute-actions-in-other-code" id="id6">Execute Actions in Other Code</a></li>
-<li><a class="reference internal" href="#proactively-reaching-out-to-the-user-using-actions" id="id7">Proactively Reaching Out to the User Using Actions</a></li>
-<li><a class="reference internal" href="#default-actions" id="id8">Default Actions</a></li>
+<li><a class="reference internal" href="#execute-actions-in-other-code" id="id7">Execute Actions in Other Code</a></li>
+<li><a class="reference internal" href="#proactively-reaching-out-to-the-user-using-actions" id="id8">Proactively Reaching Out to the User Using Actions</a></li>
+<li><a class="reference internal" href="#default-actions" id="id9">Default Actions</a></li>
 </ul>
 </div>
 <div class="section" id="utterance-actions">
-<h2><a class="toc-backref" href="#id3">Utterance Actions</a><a class="headerlink" href="#utterance-actions" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4">Utterance Actions</a><a class="headerlink" href="#utterance-actions" title="Permalink to this headline">¶</a></h2>
 <p>To define an utterance action (<code class="docutils literal notranslate"><span class="pre">ActionUtterTemplate</span></code>), add an utterance template to the domain file
 that starts with <code class="docutils literal notranslate"><span class="pre">utter_</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
@@ -322,7 +322,7 @@ templates in the domain, but you still need to add the utterance names
 to the actions list of the domain.</p>
 </div>
 <div class="section" id="custom-actions">
-<span id="id2"></span><h2><a class="toc-backref" href="#id4">Custom Actions</a><a class="headerlink" href="#custom-actions" title="Permalink to this headline">¶</a></h2>
+<span id="id2"></span><h2><a class="toc-backref" href="#id5">Custom Actions</a><a class="headerlink" href="#custom-actions" title="Permalink to this headline">¶</a></h2>
 <p>An action can run any code you want. Custom actions can turn on the lights,
 add an event to a calendar, check a user’s bank balance, or anything
 else you can imagine.</p>
@@ -340,7 +340,7 @@ the dialogue state.</p>
 other language and define your actions there - but we provide
 a small python SDK to make development there even easier.</p>
 <div class="section" id="custom-actions-written-in-python">
-<h3><a class="toc-backref" href="#id5">Custom Actions Written in Python</a><a class="headerlink" href="#custom-actions-written-in-python" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6">Custom Actions Written in Python</a><a class="headerlink" href="#custom-actions-written-in-python" title="Permalink to this headline">¶</a></h3>
 <p>For actions written in python, we have a convenient SDK which starts
 this action server for you.</p>
 <p>The only thing your action server needs to install is <code class="docutils literal notranslate"><span class="pre">rasa-sdk</span></code>:</p>
@@ -438,7 +438,7 @@ events in <a class="reference internal" href="../../api/events/#events"><span cl
 </div>
 </div>
 <div class="section" id="execute-actions-in-other-code">
-<h2><a class="toc-backref" href="#id6">Execute Actions in Other Code</a><a class="headerlink" href="#execute-actions-in-other-code" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Execute Actions in Other Code</a><a class="headerlink" href="#execute-actions-in-other-code" title="Permalink to this headline">¶</a></h2>
 <p>Rasa will send an HTTP <code class="docutils literal notranslate"><span class="pre">POST</span></code> request to your server containing
 information on which action to run. Furthermore, this request will contain all
 information about the conversation. <a class="reference internal" href="../../api/action-server/#action-server"><span class="std std-ref">Action Server</span></a> shows the detailed API spec.</p>
@@ -448,7 +448,7 @@ All of the modifications are done using events.
 There is a list of all possible event types in <a class="reference internal" href="../../api/events/#events"><span class="std std-ref">Events</span></a>.</p>
 </div>
 <div class="section" id="proactively-reaching-out-to-the-user-using-actions">
-<h2><a class="toc-backref" href="#id7">Proactively Reaching Out to the User Using Actions</a><a class="headerlink" href="#proactively-reaching-out-to-the-user-using-actions" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id8">Proactively Reaching Out to the User Using Actions</a><a class="headerlink" href="#proactively-reaching-out-to-the-user-using-actions" title="Permalink to this headline">¶</a></h2>
 <p>You may want to proactively reach out to the user,
 for example to display the output of a long running background operation
 or notify the user of an external event.</p>
@@ -473,7 +473,7 @@ conversation tracker.</p>
 </div>
 </div>
 <div class="section" id="default-actions">
-<h2><a class="toc-backref" href="#id8">Default Actions</a><a class="headerlink" href="#default-actions" title="Permalink to this headline">¶</a></h2>
+<span id="id3"></span><h2><a class="toc-backref" href="#id9">Default Actions</a><a class="headerlink" href="#default-actions" title="Permalink to this headline">¶</a></h2>
 <p>There are eight default actions:</p>
 <table border="1" class="docutils">
 <colgroup>

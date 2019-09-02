@@ -771,13 +771,13 @@ Python Logging Options:
 Check out more details in <a class="reference internal" href="../evaluating-models/#nlu-evaluation"><span class="std std-ref">Evaluating an NLU Model</span></a> and <a class="reference internal" href="../evaluating-models/#core-evaluation"><span class="std std-ref">Evaluating a Core Model</span></a>.</p>
 <p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code>:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--out OUT] [--e2e]
-                 [--endpoints ENDPOINTS] [--fail-on-prediction-errors]
-                 [--url URL] [--evaluate-model-directory] [-u NLU]
-                 [--report [REPORT]] [--successes [SUCCESSES]]
-                 [--errors ERRORS] [--histogram HISTOGRAM] [--confmat CONFMAT]
-                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
+                 [--fail-on-prediction-errors] [--url URL]
+                 [--evaluate-model-directory] [-u NLU] [--out OUT]
+                 [--successes] [--no-errors] [--histogram HISTOGRAM]
+                 [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
+                 [--cross-validation] [-f FOLDS] [-r RUNS]
+                 [-p PERCENTAGES [PERCENTAGES ...]]
                  {core,nlu} ...
 
 positional arguments:
@@ -806,8 +806,6 @@ Core Test Arguments:
                         data)
   --max-stories MAX_STORIES
                         Maximum number of stories to test on. (default: None)
-  --out OUT             Output path for any files created during the
-                        evaluation. (default: results)
   --e2e, --end-to-end   Run an end-to-end evaluation for combined action and
                         intent prediction. Requires a story file in end-to-end
                         format. (default: False)
@@ -830,13 +828,12 @@ Core Test Arguments:
 NLU Test Arguments:
   -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
                         data)
-  --report [REPORT]     Output path to save the intent/entity metrics report.
-                        (default: None)
-  --successes [SUCCESSES]
-                        Output path to save successful predictions. (default:
-                        None)
-  --errors ERRORS       Output path to save model errors. (default:
-                        errors.json)
+  --out OUT             Output path for any files created during the
+                        evaluation. (default: results)
+  --successes           If set successful predictions (intent and entities)
+                        will be written to a file. (default: False)
+  --no-errors           If set incorrect predictions (intent and entities)
+                        will NOT be written to a file. (default: False)
   --histogram HISTOGRAM
                         Output path for the confidence histogram. (default:
                         hist.png)

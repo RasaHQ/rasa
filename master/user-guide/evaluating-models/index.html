@@ -319,9 +319,8 @@ To do this, add the flag <code class="docutils literal notranslate"><span class=
 </pre></div>
 </div>
 <p>The full list of options for the script is:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU]
-                     [--report [REPORT]] [--successes [SUCCESSES]]
-                     [--errors ERRORS] [--histogram HISTOGRAM]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
+                     [--successes] [--no-errors] [--histogram HISTOGRAM]
                      [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
                      [--cross-validation] [-f FOLDS] [-r RUNS]
                      [-p PERCENTAGES [PERCENTAGES ...]]
@@ -334,13 +333,12 @@ optional arguments:
                         directory. (default: models)
   -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
                         data)
-  --report [REPORT]     Output path to save the intent/entity metrics report.
-                        (default: None)
-  --successes [SUCCESSES]
-                        Output path to save successful predictions. (default:
-                        None)
-  --errors ERRORS       Output path to save model errors. (default:
-                        errors.json)
+  --out OUT             Output path for any files created during the
+                        evaluation. (default: results)
+  --successes           If set successful predictions (intent and entities)
+                        will be written to a file. (default: False)
+  --no-errors           If set incorrect predictions (intent and entities)
+                        will NOT be written to a file. (default: False)
   --histogram HISTOGRAM
                         Output path for the confidence histogram. (default:
                         hist.png)
