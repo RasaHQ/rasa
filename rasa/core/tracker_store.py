@@ -19,7 +19,6 @@ if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -309,7 +308,6 @@ class SQLTrackerStore(TrackerStore):
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
     ) -> None:
-        import sqlalchemy
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy import create_engine
         import sqlalchemy.exc
@@ -318,7 +316,7 @@ class SQLTrackerStore(TrackerStore):
             dialect, host, port, db, username, password, login_db, query
         )
         logger.debug(
-            "Attempting to connect to database " 'via "{}"'.format(repr(engine_url))
+            "Attempting to connect to database via '{}'.".format(repr(engine_url))
         )
 
         # Database might take a while to come up
@@ -352,7 +350,7 @@ class SQLTrackerStore(TrackerStore):
                 logger.warning(e)
                 sleep(5)
 
-        logger.debug("Connection to SQL database '{}' successful".format(db))
+        logger.debug("Connection to SQL database '{}' successful.".format(db))
 
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
@@ -462,8 +460,8 @@ class SQLTrackerStore(TrackerStore):
             return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
         else:
             logger.debug(
-                "Can't retrieve tracker matching"
-                "sender id '{}' from SQL storage.  "
+                "Can't retrieve tracker matching "
+                "sender id '{}' from SQL storage. "
                 "Returning `None` instead.".format(sender_id)
             )
             return None

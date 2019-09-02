@@ -12,6 +12,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Added ``query`` dictionary argument to ``SQLTrackerStore`` which will be appended
+  to the SQL connection URL as query parameters.
 
 Changed
 -------

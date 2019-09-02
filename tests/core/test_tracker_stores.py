@@ -203,9 +203,13 @@ def test_db_url_with_query_from_endpoint_config():
 
     url = SQLTrackerStore.get_db_url(**store_config.kwargs)
 
-    # order of query dictionary is random
+    import itertools
+
+    # order of query dictionary in yaml is random, test against both permutations
     connection_url = "postgresql://user:pw@:5123/login-db?"
     assert any(
-        str(url) == connection_url + s
-        for s in ("another=query&driver=my-driver", "driver=my-driver&another=query")
+        str(url) == connection_url + "&".join(permutation)
+        for permutation in (
+            itertools.permutations(("another=query", "driver=my-driver"))
+        )
     )
