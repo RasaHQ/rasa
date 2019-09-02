@@ -198,6 +198,7 @@ using the :ref:`callbackInput` channel to send messages to a webhook.
    reverts itself by appending a ``ActionReverted`` event to the end of the
    conversation tracker.
 
+.. _default-actions:
 
 Default Actions
 ---------------
