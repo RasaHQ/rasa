@@ -307,7 +307,9 @@ naming style of models trained for comparison is changed (this is a breaking cha
 <li>pika keeps a single connection open, instead of open and closing on each incoming event</li>
 <li><code class="docutils literal notranslate"><span class="pre">RasaChatInput</span></code> fetches the public key from the Rasa X API. The key is used to
 decode the bearer token containing the conversation ID. This requires
-<code class="docutils literal notranslate"><span class="pre">rasa-x&gt;=0.20.2</span></code></li>
+<code class="docutils literal notranslate"><span class="pre">rasa-x&gt;=0.20.2</span></code>.</li>
+<li>more specific exception message when loading custom components depending on whether component’s path or
+class name is invalid or can’t be found in the global namespace</li>
 <li>change priorities so that the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> has higher priority than the <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code></li>
 <li>substitute LSTM with Transformer in <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code></li>
 <li><code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> can now use <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code></li>
