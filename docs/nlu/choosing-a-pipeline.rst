@@ -81,6 +81,27 @@ see :ref:`comparing-nlu-pipelines`.
     You need to provide enough data for both intents and entities.
 
 
+Class imbalance
+---------------
+
+Classification algorithms often do not perform well if there is a large `class imbalance`,
+for example if you have a lot of training data for some intents and very little training data for others.
+To mitigate this problem, rasa's ``supervised_embeddings`` pipeline uses a ``balanced`` batching strategy.
+This algorithm ensures that all classes are represented in every batch, or at least in
+as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
+Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
+``batch_strategy: sequence`` in your config file.
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
+      batch_strategy: sequence
+
+
 Multiple Intents
 ----------------
 
@@ -253,11 +274,21 @@ components that make up the ``supervised_embeddings`` pipeline:
     - name: "CRFEntityExtractor"
     - name: "EntitySynonymMapper"
     - name: "CountVectorsFeaturizer"
+    - name: "CountVectorsFeaturizer"
+      analyzer: "char_wb"
+      min_ngram: 1
+      max_ngram: 4
     - name: "EmbeddingIntentClassifier"
-
+    
 So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
 can replace the ``WhitespaceTokenizer`` with your own tokenizer. We support a number of different :ref:`tokenizers <tokenizers>`,
 or you can :ref:`create your own <custom-nlu-components>`.
+
+The pipeline uses two instances of ``CountVectorsFeaturizer``. The first one 
+featurizes text based on words. The second one featurizes text based on character 
+n-grams, preserving word boundaries. We empirically found the second featurizer 
+to be more powerful, but we decided to keep the first featurizer as well to make
+featurization more robust.
 
 .. _section_pretrained_embeddings_spacy_pipeline:
 
