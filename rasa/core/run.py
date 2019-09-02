@@ -15,6 +15,7 @@ from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints, configure_file_logging
 from rasa.model import get_model_subdirectories, get_model
@@ -220,6 +221,7 @@ async def load_agent_on_start(
     _tracker_store = TrackerStore.find_tracker_store(
         None, endpoints.tracker_store, _broker
     )
+    _lock_store = LockStore.find_lock_store(endpoints.lock_store)
 
     model_server = endpoints.model if endpoints and endpoints.model else None
 
@@ -230,6 +232,7 @@ async def load_agent_on_start(
         interpreter=_interpreter,
         generator=endpoints.nlg,
         tracker_store=_tracker_store,
+        lock_store=_lock_store,
         action_endpoint=endpoints.action,
     )
 
