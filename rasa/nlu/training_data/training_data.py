@@ -186,6 +186,9 @@ class TrainingData(object):
         """Set response phrase for all examples by looking up NLG stories"""
         for example in self.training_examples:
             response_key = example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
+            # if response_key is None, that means the corresponding intent is not a retrieval intent
+            # and hence no response text needs to be fetched.
+            # If response_key is set, fetch the corresponding response text
             if response_key:
                 # look for corresponding bot utterance
                 story_lookup_intent = example.get_combined_intent_response_key()
@@ -209,7 +212,17 @@ class TrainingData(object):
 
         return RasaWriter().dumps(self, **kwargs)
 
+    def as_json(self) -> Text:
+
+        logger.warning(
+            "DEPRECATION warning: function as_json() is deprecated and will be removed "
+            "in future versions. Use nlu_as_json() instead."
+        )
+
+        return self.nlu_as_json()
+
     def nlg_as_markdown(self) -> Text:
+        """Generates the markdown representation of the response phrases(NLG) of TrainingData."""
         from rasa.nlu.training_data.formats import (  # pytype: disable=pyi-error
             NLGMarkdownWriter,
         )
@@ -223,6 +236,15 @@ class TrainingData(object):
         )
 
         return MarkdownWriter().dumps(self)
+
+    def as_markdown(self) -> Text:
+
+        logger.warning(
+            "DEPRECATION warning: function as_markdown() is deprecated and will be removed "
+            "in future versions. Use nlu_as_markdown() and nlg_as_markdown() instead"
+        )
+
+        return self.nlu_as_markdown()
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
 

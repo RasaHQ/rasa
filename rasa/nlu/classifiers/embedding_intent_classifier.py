@@ -4,6 +4,7 @@ import os
 import pickle
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
+import warnings
 
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
@@ -158,16 +159,17 @@ class EmbeddingIntentClassifier(Component):
     # config migration warning
     def _check_old_config_variables(self, config: Dict[Text, Any]) -> None:
 
-        deprecated_tokenization_params = [
+        removed_tokenization_params = [
             "intent_tokenization_flag",
             "intent_split_symbol",
         ]
-        for deprecated_param in deprecated_tokenization_params:
-            if deprecated_param in config:
-                logger.warning(
+        for removed_param in removed_tokenization_params:
+            if removed_param in config:
+                warnings.warn(
                     "Intent tokenization has been moved to Tokenizer components. "
-                    "Your config still mentions '{}'. Tokenization may fail if you specify the parameter here.".format(
-                        deprecated_param
+                    "Your config still mentions '{}'. Tokenization may fail if you specify the parameter here."
+                    "Please specify the parameter 'intent_split_symbol' in the tokenizer of your NLU pipeline".format(
+                        removed_param
                     )
                 )
 
@@ -465,9 +467,7 @@ class EmbeddingIntentClassifier(Component):
 
     def _check_enough_labels(self, session_data) -> bool:
 
-        if len(np.unique(session_data.label_ids)) < 2:
-            return False
-        return True
+        return len(np.unique(session_data.label_ids)) >= 2
 
     def train(
         self,
