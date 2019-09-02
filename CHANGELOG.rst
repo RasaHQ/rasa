@@ -66,6 +66,13 @@ Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
+[1.2.6] - 2019-09-02
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed bug that occurred when sending template ``elements`` through a channel that doesn't support them
+
 [1.2.5] - 2019-08-26
 ^^^^^^^^^^^^^^^^^^^^
 
