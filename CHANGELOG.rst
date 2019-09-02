@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
-[Unreleased 1.2.6] - `master`_
+[Unreleased 1.2.7] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -21,7 +21,13 @@ Removed
 
 Fixed
 -----
-- fixed bug that occurred when sending ``elements:`` through a channel that doesn't support them
+
+[1.2.6] - 2019-09-02
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed bug that occurred when sending template ``elements`` through a channel that doesn't support them
 
 
 [1.2.5] - 2019-08-26
