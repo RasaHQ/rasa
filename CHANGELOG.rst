@@ -40,7 +40,9 @@ Changed
 - pika keeps a single connection open, instead of open and closing on each incoming event
 - ``RasaChatInput`` fetches the public key from the Rasa X API. The key is used to
   decode the bearer token containing the conversation ID. This requires
-  ``rasa-x>=0.20.2``
+  ``rasa-x>=0.20.2``.
+- more specific exception message when loading custom components depending on whether component's path or
+  class name is invalid or can't be found in the global namespace
 - change priorities so that the ``MemoizationPolicy`` has higher priority than the ``MappingPolicy``
 - substitute LSTM with Transformer in ``EmbeddingPolicy``
 - ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
