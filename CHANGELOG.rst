@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
-[Unreleased 1.2.7] - `master`_
+[Unreleased 1.2.8] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -21,6 +21,16 @@ Removed
 
 Fixed
 -----
+
+
+[1.2.7] - 2019-09-02
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Added ``query`` dictionary argument to ``SQLTrackerStore`` which will be appended
+  to the SQL connection URL as query parameters.
+
 
 [1.2.6] - 2019-09-02
 ^^^^^^^^^^^^^^^^^^^^
