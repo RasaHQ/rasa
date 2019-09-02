@@ -5,6 +5,7 @@ import traceback
 from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
+from ssl import SSLContext
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -209,6 +210,25 @@ async def authenticate(request: Request):
     )
 
 
+def create_ssl_context(
+    ssl_certificate: Optional[Text],
+    ssl_keyfile: Optional[Text],
+    ssl_password: Optional[Text],
+) -> Optional[SSLContext]:
+    """Create a SSL context (for the sanic server) if a proper certificate is passed."""
+
+    if ssl_certificate:
+        import ssl
+
+        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ssl_context.load_cert_chain(
+            ssl_certificate, keyfile=ssl_keyfile, password=ssl_password
+        )
+        return ssl_context
+    else:
+        return None
+
+
 def _create_emulator(mode: Optional[Text]) -> NoEmulator:
     """Create emulator for specified mode.
     If no emulator is specified, we will use the Rasa NLU format."""
@@ -300,6 +320,10 @@ def create_app(
 
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = 60 * 60
+    # Workaround so that socketio works with requests from other origins.
+    # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
+    app.config.CORS_AUTOMATIC_OPTIONS = True
+    app.config.CORS_SUPPORTS_CREDENTIALS = True
 
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
