@@ -14,7 +14,7 @@ how you can migrate from one version to another.
 .. _migration-to-rasa-1.3:
 
 Rasa 1.2 to Rasa 1.3
-------------------------------------------------
+--------------------
 .. warning::
 
   This is a release **breaking backwards compatibility**.
@@ -23,12 +23,32 @@ Rasa 1.2 to Rasa 1.3
 
 General
 ~~~~~~~
-
+- Default parameters of ``EmbeddingIntentClassifier`` are changed. See :ref:`components` for details.
+  Architecture implementation is changed as well, so **old trained models cannot be loaded**.
+  Default parameters and architecture for ``EmbeddingPolicy`` are changed. See :ref:`policies` for details.
+  It uses transformer instead of lstm. **Old trained models cannot be loaded**.
+  They use ``inner`` similarity and ``softmax`` loss by default instead of
+  ``cosine`` similarity and ``margin`` loss (can be set in config file).
+  They use ``balanced`` batching strategy by default to counteract class imbalance problem.
+  The meaning of ``evaluate_on_num_examples`` is changed. If it is non zero, random examples will be
+  picked by stratified split and used as **hold out** validation set, so they will be excluded from training data.
+  We suggest to set it to zero (default) if data set contains a lot of unique examples of dialogue turns.
+- Default ``max_history`` for ``EmbeddingPolicy`` is ``None`` which means it'll use
+  the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
+  some finite value in order to use ``MaxHistoryTrackerFeaturizer``
+  for **faster training**. See :ref:`featurization` for details.
+  We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
+  (e.g. ``"batch_size": [32, 64]``)
 - **Compare** mode of ``rasa train core`` allows the whole core config comparison.
   Therefore, we changed the naming of trained models. They are named by config file
   name instead of policy name. Old naming style will not be read correctly when
-  creating **compare** plots (``rasa test core``). Please remove old trained models in comparison folder
-  and retrain. Normal core training is unaffected.
+  creating **compare** plots (``rasa test core``). Please remove old trained models
+  in comparison folder and retrain. Normal core training is unaffected.
+- We updated the **evaluation metric** for our **NER**. We report the weighted precision and f1-score.
+  So far we included ``no-entity`` in this report. However, as most of the tokens actually don't have
+  an entity set, this will influence the weighted precision and f1-score quite a bit. From now on we
+  exclude ``no-entity`` from the evaluation. The overall metrics now only include proper entities. You
+  might see a drop in the performance scores when running the evaluation again.
 
 .. _migration-to-rasa-1.0:
 

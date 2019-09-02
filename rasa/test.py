@@ -112,7 +112,7 @@ def test_core(
 def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
-    output: Text = DEFAULT_RESULTS_PATH,
+    output_directory: Text = DEFAULT_RESULTS_PATH,
     kwargs: Optional[Dict] = None,
 ):
     from rasa.nlu.test import run_evaluation
@@ -127,13 +127,13 @@ def test_nlu(
         )
         return
 
-    io_utils.create_directory(output)
+    io_utils.create_directory(output_directory)
 
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
         kwargs = utils.minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
-        run_evaluation(nlu_data, nlu_model, out_directory=output, **kwargs)
+        run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
     else:
         print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "

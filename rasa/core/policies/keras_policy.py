@@ -20,6 +20,7 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import obtain_verbosity
+from rasa.utils.train_utils import load_tf_config
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
@@ -82,7 +83,7 @@ class KerasPolicy(Policy):
         config.update(kwargs)
 
         # filter out kwargs that are used explicitly
-        self._tf_config = self._load_tf_config(config)
+        self._tf_config = load_tf_config(config)
         self.rnn_size = config.pop("rnn_size")
         self.epochs = config.pop("epochs")
         self.batch_size = config.pop("batch_size")

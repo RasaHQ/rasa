@@ -167,46 +167,26 @@ set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
 Embedding Policy
 ^^^^^^^^^^^^^^^^
 
-The Recurrent Embedding Dialogue Policy (REDP)
-described in our paper: `<https://arxiv.org/abs/1811.11707>`_
+Transformer Embedding Dialogue Policy (TEDP)
+
+Transformer version of the Recurrent Embedding Dialogue Policy (REDP)
+used in our paper: `<https://arxiv.org/abs/1811.11707>`_
 
 This policy has a pre-defined architecture, which comprises the
 following steps:
 
-    - apply dense layers to create embeddings for user intents,
-      entities and system actions including previous actions and slots;
-    - use the embeddings of previous user inputs as a user memory
-      and embeddings of previous system actions as a system memory;
-    - concatenate user input, previous system action and slots
-      embeddings for current time into an input vector to rnn;
-    - using user and previous system action embeddings from the input
-      vector, calculate attention probabilities over the user and
-      system memories (for system memory, this policy uses
-      `NTM mechanism <https://arxiv.org/abs/1410.5401>`_ with attention
-      by location);
-    - sum the user embedding and user attention vector and feed it
-      and the embeddings of the slots as an input to an LSTM cell;
-    - apply a dense layer to the output of the LSTM to get a raw
-      recurrent embedding of a dialogue;
-    - sum this raw recurrent embedding of a dialogue with system
-      attention vector to create dialogue level embedding, this step
-      allows the algorithm to repeat previous system action by copying
-      its embedding vector directly to the current time output;
-    - weight previous LSTM states with system attention probabilities
-      to get the previous action embedding, the policy is likely payed
-      attention to;
-    - if the similarity between this previous action embedding and
-      current time dialogue embedding is high, overwrite current LSTM
-      state with the one from the time when this action happened;
-    - for each LSTM time step, calculate the similarity between the
+    - concatenate user input (user intent and entities),
+      previous system action, slots and active form
+      for each time step into an input vector
+      to pre-transformer embedding layer;
+    - feed it to transformer;
+    - apply a dense layer to the output of the transformer
+      to get embeddings of a dialogue for each time step;
+    - apply a dense layer to create embeddings for system actions for each time step;
+    - calculate the similarity between the
       dialogue embedding and embedded system actions.
       This step is based on the
       `StarSpace <https://arxiv.org/abs/1709.03856>`_ idea.
-
-.. note::
-
-    This policy only works with
-    ``FullDialogueTrackerFeaturizer(state_featurizer)``.
 
 It is recommended to use
 ``state_featurizer=LabelTokenizerSingleStateFeaturizer(...)``
@@ -217,56 +197,34 @@ It is recommended to use
     Configuration parameters can be passed as parameters to the
     ``EmbeddingPolicy`` within the policy configuration file.
 
-    .. note::
+    .. warning::
 
         Pass an appropriate number of ``epochs`` to the ``EmbeddingPolicy``,
         otherwise the policy will be trained only for ``1``
-        epoch. Since this is an embedding based policy, it requires a large
-        number of epochs, which depends on the complexity of the
-        training data and whether attention is used or not.
-
-    The main feature of this policy is an **attention** mechanism over
-    previous user input and system actions.
-    **Attention is turned on by default**; in order to turn it off,
-    configure the following parameters:
-
-        - ``attn_before_rnn`` if ``true`` the algorithm will use
-          attention mechanism over previous user input, default ``true``;
-        - ``attn_after_rnn`` if ``true`` the algorithm will use
-          attention mechanism over previous system actions and will be
-          able to copy previously executed action together with LSTM's
-          hidden state from its history, default ``true``;
-        - ``sparse_attention`` if ``true`` ``sparsemax`` will be used
-          instead of ``softmax`` for attention probabilities, default
-          ``false``;
-        - ``attn_shift_range`` the range of allowed location-based
-          attention shifts for system memory (``attn_after_rnn``), see
-          `<https://arxiv.org/abs/1410.5401>`_ for details;
-
-    .. note::
-
-        Attention requires larger values of ``epochs`` and takes longer
-        to train. But it can learn more complicated and nonlinear behaviour.
+        epoch.
 
     The algorithm also has hyper-parameters to control:
 
         - neural network's architecture:
 
-            - ``hidden_layers_sizes_a`` sets a list of hidden layers
-              sizes before embedding layer for user inputs, the number
-              of hidden layers is equal to the length of the list;
             - ``hidden_layers_sizes_b`` sets a list of hidden layers
               sizes before embedding layer for system actions, the number
               of hidden layers is equal to the length of the list;
-            - ``rnn_size`` sets the number of units in the LSTM cell;
+            - ``transformer_size`` sets the number of units in the transfomer;
+            - ``num_transformer_layers`` sets the number of transformer layers;
+            - ``pos_encoding`` sets the type of positional encoding in transformer,
+              it should be either ``timing`` or ``emb``;
+            - ``max_seq_length`` sets maximum sequence length
+              if embedding positional encodings are used;
+            - ``num_heads`` sets the number of heads in multihead attention;
 
         - training:
 
-            - ``layer_norm`` if ``true`` layer normalization for lstm
-              cell is turned on,  default ``true``;
             - ``batch_size`` sets the number of training examples in one
               forward/backward pass, the higher the batch size, the more
               memory space you'll need;
+            - ``batch_strategy`` sets the type of batching strategy,
+              it should be either ``sequence`` or ``balanced``;
             - ``epochs`` sets the number of times the algorithm will see
               training data, where one ``epoch`` equals one forward pass and
               one backward pass of all the training examples;
@@ -276,38 +234,63 @@ It is recommended to use
         - embedding:
 
             - ``embed_dim`` sets the dimension of embedding space;
-            - ``mu_pos`` controls how similar the algorithm should try
-              to make embedding vectors for correct intent labels;
-            - ``mu_neg`` controls maximum negative similarity for
-              incorrect intents;
-            - ``similarity_type`` sets the type of the similarity,
-              it should be either ``cosine`` or ``inner``;
             - ``num_neg`` sets the number of incorrect intent labels,
               the algorithm will minimize their similarity to the user
               input during training;
+            - ``similarity_type`` sets the type of the similarity,
+              it should be either ``auto``, ``cosine`` or ``inner``,
+              if ``auto``, it will be set depending on ``loss_type``,
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+            - ``loss_type`` sets the type of the loss function,
+              it should be either ``softmax`` or ``margin``;
+            - ``mu_pos`` controls how similar the algorithm should try
+              to make embedding vectors for correct intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``mu_neg`` controls maximum negative similarity for
+              incorrect intents,
+              used only if ``loss_type`` is set to ``margin``;
             - ``use_max_sim_neg`` if ``true`` the algorithm only
-              minimizes maximum similarity over incorrect intent labels;
+              minimizes maximum similarity over incorrect intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
+              for examples where correct label is predicted with high confidence,
+              used only if ``loss_type`` is set to ``softmax``;
 
         - regularization:
 
             - ``C2`` sets the scale of L2 regularization
             - ``C_emb`` sets the scale of how important is to minimize
               the maximum similarity between embeddings of different
-              intent labels;
-            - ``droprate_a`` sets the dropout rate between hidden
+              intent labels, used only if ``loss_type`` is set to ``margin``;
+            - ``droprate_a`` sets the dropout rate between
               layers before embedding layer for user inputs;
-            - ``droprate_b`` sets the dropout rate between hidden layers
+            - ``droprate_b`` sets the dropout rate between layers
               before embedding layer for system actions;
-            - ``droprate_rnn`` sets the recurrent dropout rate on
-              the LSTM hidden state `<https://arxiv.org/abs/1603.05118>`_;
 
         - train accuracy calculation:
 
             - ``evaluate_every_num_epochs`` sets how often to calculate
               train accuracy, small values may hurt performance;
             - ``evaluate_on_num_examples`` how many examples to use for
-              calculation of train accuracy, large values may hurt
-              performance.
+              hold out validation set to calculate of validation accuracy,
+              large values may hurt performance.
+
+    .. warning::
+
+        Default ``max_history`` for this policy is ``None`` which means it'll use
+        the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
+        some finite value in order to use ``MaxHistoryTrackerFeaturizer``
+        for **faster training**. See :ref:`featurization` for details.
+        We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
+        (e.g. ``"batch_size": [32, 64]``)
+
+    .. warning::
+
+        If ``evaluate_on_num_examples`` is non zero, random examples will be
+        picked by stratified split and used as **hold out** validation set,
+        so they will be excluded from training data.
+        We suggest to set it to zero if data set contains a lot of unique examples
+        of dialogue turns
 
     .. note::
 
@@ -399,6 +382,12 @@ simple example that dispatches a bot utterance and then reverts the interaction:
   ``triggers: utter_{}``), these interactions must go in your stories, as in this
   case there is no ``UserUtteranceReverted()`` and the
   intent and the mapped utterance will appear in the dialogue history.
+
+.. note::
+
+  The MappingPolicy is also responsible for executing the default actions ``action_back``
+  and ``action_restart`` in response to ``/back`` and ``/restart``. If it is not included
+  in your policy example these intents will not work.
 
 .. _fallback-policy:
 

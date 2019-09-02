@@ -33,6 +33,10 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
+    @staticmethod
+    def _standard_featurizer():
+        return None
+
     def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
         """Create a new Mapping policy."""
 
@@ -131,6 +135,10 @@ class MappingPolicy(Policy):
                         action, intent, latest_action.policy
                     )
                 )
+        elif action == ACTION_RESTART_NAME:
+            idx = domain.index_for_action(ACTION_RESTART_NAME)
+            prediction[idx] = 1
+            logger.debug("Restarting the conversation with action_restart.")
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "
