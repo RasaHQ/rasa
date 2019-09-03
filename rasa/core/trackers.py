@@ -86,13 +86,14 @@ class DialogueStateTracker(object):
         evts: List[Event],
         slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
+        source_filename=None,
     ):
-        tracker = cls(sender_id, slots, max_event_history)
+        tracker = cls(sender_id, slots, max_event_history, source_filename)
         for e in evts:
             tracker.update(e)
         return tracker
 
-    def __init__(self, sender_id, slots, max_event_history=None):
+    def __init__(self, sender_id, slots, max_event_history=None, source_filename=None):
         """Initialize the tracker.
 
         A set of events can be stored externally, and we will run through all
@@ -105,6 +106,8 @@ class DialogueStateTracker(object):
         self.events = self._create_events([])
         # id of the source of the messages
         self.sender_id = sender_id
+        # Name of definition file with definition od step
+        self.source_filename = source_filename
         # slots that can be filled in this domain
         if slots is not None:
             self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
@@ -427,14 +430,16 @@ class DialogueStateTracker(object):
             for e in domain.slots_for_entities(event.parse_data["entities"]):
                 self.update(e)
 
-    def export_stories(self, e2e=False) -> Text:
+    def export_stories(self, e2e=False, test=False) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
         from rasa.core.training.structures import Story
 
-        story = Story.from_events(self.applied_events(), self.sender_id)
-        return story.as_story_string(flat=True, e2e=e2e)
+        story = Story.from_events(
+            self.applied_events(), self.sender_id, self.source_filename
+        )
+        return story.as_story_string(flat=True, e2e=e2e, test=test)
 
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
         """Dump the tracker as a story to a file."""

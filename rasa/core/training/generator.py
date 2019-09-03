@@ -44,10 +44,16 @@ class TrackerWithCachedStates(DialogueStateTracker):
     """A tracker wrapper that caches the state creation of the tracker."""
 
     def __init__(
-        self, sender_id, slots, max_event_history=None, domain=None, is_augmented=False
+        self,
+        sender_id,
+        slots,
+        max_event_history=None,
+        domain=None,
+        is_augmented=False,
+        source_filename=None,
     ):
         super(TrackerWithCachedStates, self).__init__(
-            sender_id, slots, max_event_history
+            sender_id, slots, max_event_history, source_filename
         )
         self._states = None
         self.domain = domain
@@ -81,9 +87,12 @@ class TrackerWithCachedStates(DialogueStateTracker):
             self._max_event_history,
             self.domain,
             self.is_augmented,
+            self.source_filename,
         )
 
-    def copy(self, sender_id: Text = "") -> "TrackerWithCachedStates":
+    def copy(
+        self, sender_id: Text = "", source_filename: Text = ""
+    ) -> "TrackerWithCachedStates":
         """Creates a duplicate of this tracker.
 
         A new tracker will be created and all events
@@ -94,6 +103,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         tracker = self.init_copy()
         tracker.sender_id = sender_id
+        tracker.source_filename = source_filename
 
         for event in self.events:
             tracker.update(event, skip_states=True)
@@ -530,7 +540,7 @@ class TrainingDataGenerator(object):
                         new_sender = tracker.sender_id
                 else:
                     new_sender = step.block_name
-                trackers.append(tracker.copy(new_sender))
+                trackers.append(tracker.copy(new_sender, step.source_file_name))
 
         end_trackers = []
         for event in events:

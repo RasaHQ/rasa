@@ -176,3 +176,10 @@ def test_is_not_nlu_file_with_json():
         f.write('{"test": "a"}')
 
     assert not data.is_nlu_file(file)
+
+
+def test_get_source_file_name():
+    assert data.get_source_file_name("") == ""
+    assert data.get_source_file_name("/tmp/stories.md") == "stories.md"
+    assert data.get_source_file_name("/tmp/123_stories.md") == "stories.md"
+    assert data.get_source_file_name("/tmp/123_my_stories.md") == "my_stories.md"

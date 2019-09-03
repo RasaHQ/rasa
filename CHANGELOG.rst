@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Including story source filename in core output for failed stories
 
 Changed
 -------
@@ -103,7 +104,6 @@ Fixed
 - ``rasa test nlu`` with a folder of configuration files
 - ``MappingPolicy`` standard featurizer is set to ``None``
 - Removed ``text`` parameter from send_attachment function in slack.py to avoid duplication of text output to slackbot
-- server ``/status`` endpoint reports status when an NLU-only model is loaded
 
 Removed
 -------

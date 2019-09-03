@@ -8,6 +8,7 @@ import warnings
 from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
 import rasa.utils.io as io_utils
+from rasa import data
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
@@ -60,8 +61,9 @@ class EndToEndReader(MarkdownReader):
 
 
 class StoryStepBuilder(object):
-    def __init__(self, name):
+    def __init__(self, name, source_filename):
         self.name = name
+        self.source_filename = source_filename
         self.story_steps = []
         self.current_steps = []
         self.start_checkpoints = []
@@ -144,7 +146,11 @@ class StoryStepBuilder(object):
         if not start_checkpoints:
             start_checkpoints = [Checkpoint(STORY_START)]
         current_turns = [
-            StoryStep(block_name=self.name, start_checkpoints=start_checkpoints)
+            StoryStep(
+                block_name=self.name,
+                start_checkpoints=start_checkpoints,
+                source_file_name=self.source_filename,
+            )
         ]
         return current_turns
 
@@ -154,6 +160,7 @@ class StoryFileReader(object):
 
     def __init__(
         self,
+        src_filename: Text,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         template_vars: Optional[Dict] = None,
@@ -161,6 +168,7 @@ class StoryFileReader(object):
     ):
         self.story_steps = []
         self.current_step_builder = None  # type: Optional[StoryStepBuilder]
+        self.source_filename = src_filename
         self.domain = domain
         self.interpreter = interpreter
         self.template_variables = template_vars if template_vars else {}
@@ -234,7 +242,10 @@ class StoryFileReader(object):
         try:
             with open(filename, "r", encoding="utf-8") as f:
                 lines = f.readlines()
-            reader = StoryFileReader(domain, interpreter, template_variables, use_e2e)
+            src_filename = data.get_source_file_name(filename)
+            reader = StoryFileReader(
+                src_filename, domain, interpreter, template_variables, use_e2e
+            )
             return await reader.process_lines(lines)
         except ValueError as err:
             file_info = "Invalid story file format. Failed to parse '{}'".format(
@@ -375,7 +386,7 @@ class StoryFileReader(object):
 
     def new_story_part(self, name):
         self._add_current_stories_to_result()
-        self.current_step_builder = StoryStepBuilder(name)
+        self.current_step_builder = StoryStepBuilder(name, self.source_filename)
 
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
 

@@ -101,6 +101,7 @@ class StoryStep(object):
 
     def __init__(
         self,
+        source_file_name: Optional[Text] = None,
         block_name: Optional[Text] = None,
         start_checkpoints: Optional[List[Checkpoint]] = None,
         end_checkpoints: Optional[List[Checkpoint]] = None,
@@ -110,6 +111,7 @@ class StoryStep(object):
         self.end_checkpoints = end_checkpoints if end_checkpoints else []
         self.start_checkpoints = start_checkpoints if start_checkpoints else []
         self.events = events if events else []
+        self.source_file_name = source_file_name
         self.block_name = block_name
         # put a counter prefix to uuid to get reproducible sorting results
         global STEP_COUNT
@@ -120,6 +122,7 @@ class StoryStep(object):
 
     def create_copy(self, use_new_id):
         copied = StoryStep(
+            self.source_file_name,
             self.block_name,
             self.start_checkpoints,
             self.end_checkpoints,
@@ -338,10 +341,12 @@ class StoryStep(object):
     def __repr__(self):
         return (
             "StoryStep("
+            "source_file_name={!r}, "
             "block_name={!r}, "
             "start_checkpoints={!r}, "
             "end_checkpoints={!r}, "
             "events={!r})".format(
+                self.source_file_name,
                 self.block_name,
                 self.start_checkpoints,
                 self.end_checkpoints,
@@ -352,19 +357,23 @@ class StoryStep(object):
 
 class Story(object):
     def __init__(
-        self, story_steps: List[StoryStep] = None, story_name: Optional[Text] = None
+        self,
+        story_steps: List[StoryStep] = None,
+        story_name: Optional[Text] = None,
+        source_file_name: Optional[Text] = None,
     ) -> None:
         self.story_steps = story_steps if story_steps else []
         self.story_name = story_name
+        self.source_file_name = source_file_name
 
     @staticmethod
-    def from_events(events, story_name=None):
+    def from_events(events, story_name=None, source_filename=None):
         """Create a story from a list of events."""
 
         story_step = StoryStep()
         for event in events:
             story_step.add_event(event)
-        return Story([story_step], story_name)
+        return Story([story_step], story_name, source_filename)
 
     def as_dialogue(self, sender_id, domain):
         events = []
@@ -376,7 +385,7 @@ class Story(object):
         events.append(ActionExecuted(ACTION_LISTEN_NAME))
         return Dialogue(sender_id, events)
 
-    def as_story_string(self, flat=False, e2e=False):
+    def as_story_string(self, flat=False, e2e=False, test=False):
         story_content = ""
 
         # initialize helper for first story step
@@ -395,7 +404,10 @@ class Story(object):
                 name = self.story_name
             else:
                 name = "Generated Story {}".format(hash(story_content))
-            return "## {}\n{}".format(name, story_content)
+            file_prefix = "<!-- file: {} -->\n".format(self.source_file_name)
+            return "{}## {}\n{}".format(
+                file_prefix if test else "", name, story_content
+            )
         else:
             return story_content
 
