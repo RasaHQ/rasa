@@ -383,6 +383,12 @@ simple example that dispatches a bot utterance and then reverts the interaction:
   case there is no ``UserUtteranceReverted()`` and the
   intent and the mapped utterance will appear in the dialogue history.
 
+.. note::
+
+  The MappingPolicy is also responsible for executing the default actions ``action_back``
+  and ``action_restart`` in response to ``/back`` and ``/restart``. If it is not included
+  in your policy example these intents will not work.
+
 .. _fallback-policy:
 
 Fallback Policy

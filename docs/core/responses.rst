@@ -14,10 +14,13 @@ your stories, you specify the actions your bot
 should execute. These actions
 can use utterances to send messages back to the user.
 
-There are two ways to manage these utterances:
+There are three ways to manage these utterances:
 
-1. Include your assistant utterances in your domain file, or
-2. Use an external service to generate the responses.
+1. Utterances are normally stored in your domain file, see :ref:`here <domain-utterances>`
+2. Retrieval action responses are part of the training data, see :ref:`here <retrieval-actions>`
+3. You can also create a custom NLG service to generate responses, see :ref:`here <custom-nlg-service>`
+
+.. _domain-utterances:
 
 Including the utterances in the domain
 --------------------------------------
@@ -38,9 +41,10 @@ you need to retrain the assistant before these changes will be picked up.
 More details about the format of these responses can be found in the
 documentation about the domain file format: :ref:`utter_templates`.
 
+.. _custom-nlg-service:
 
-Managing assistant utterances using an external CMS
----------------------------------------------------
+Creating your own NLG service for bot responses
+-----------------------------------------------
 
 Retraining the bot just to change the text copy can be suboptimal for
 some workflows. That's why Core also allows you to outsource the

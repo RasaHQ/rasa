@@ -31,6 +31,14 @@
 - good evening
 - dear sir
 
+## intent:chitchat/ask_name
+- What's your name?
+- What can I call you?
+
+## intent:chitchat/ask_weather
+- How's the weather?
+- Is it too hot outside?
+
 ## intent:restaurant_search
 - i'm looking for a place to eat
 - I want to grab lunch
