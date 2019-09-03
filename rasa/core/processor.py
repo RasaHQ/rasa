@@ -9,17 +9,17 @@ import time
 
 from rasa.core import jobs
 from rasa.core.actions.action import Action
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ActionExecutionRejection,
-    UTTER_PREFIX,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     UserMessage,
     OutputChannel,
 )
-from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
+from rasa.core.constants import (
+    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    USER_INTENT_RESTART,
+    UTTER_PREFIX,
+)
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,

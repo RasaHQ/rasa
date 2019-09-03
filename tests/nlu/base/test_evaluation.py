@@ -15,6 +15,7 @@ from rasa.nlu.test import (
     do_entities_overlap,
     merge_labels,
     remove_empty_intent_examples,
+    remove_empty_response_examples,
     get_entity_extractors,
     remove_pretrained_extractors,
     drop_intents_below_freq,
@@ -23,8 +24,10 @@ from rasa.nlu.test import (
     substitute_labels,
     IntentEvaluationResult,
     EntityEvaluationResult,
+    ResponseSelectionEvaluationResult,
     evaluate_intents,
     evaluate_entities,
+    evaluate_response_selections,
     get_unique_labels,
     get_evaluation_metrics,
     NO_ENTITY,
@@ -238,7 +241,13 @@ def test_label_merging():
 def test_drop_intents_below_freq():
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
     clean_td = drop_intents_below_freq(td, 0)
-    assert clean_td.intents == {"affirm", "goodbye", "greet", "restaurant_search"}
+    assert clean_td.intents == {
+        "affirm",
+        "goodbye",
+        "greet",
+        "restaurant_search",
+        "chitchat",
+    }
 
     clean_td = drop_intents_below_freq(td, 10)
     assert clean_td.intents == {"affirm", "restaurant_search"}
@@ -312,6 +321,54 @@ def test_intent_evaluation_report(tmpdir_factory):
     assert result["predictions"][0] == prediction
 
 
+def test_response_evaluation_report(tmpdir_factory):
+    path = tmpdir_factory.mktemp("evaluation").strpath
+    report_folder = os.path.join(path, "reports")
+    report_filename = os.path.join(report_folder, "response_selection_report.json")
+
+    rasa.utils.io.create_directory(report_folder)
+
+    response_results = [
+        ResponseSelectionEvaluationResult(
+            "chitchat",
+            "It's sunny in Berlin",
+            "It's sunny in Berlin",
+            "What's the weather",
+            0.65432,
+        ),
+        ResponseSelectionEvaluationResult(
+            "chitchat",
+            "My name is Mr.bot",
+            "My name is Mr.bot",
+            "What's your name?",
+            0.98765,
+        ),
+    ]
+
+    result = evaluate_response_selections(response_results, report_folder)
+
+    report = json.loads(rasa.utils.io.read_file(report_filename))
+
+    name_query_results = {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1,
+    }
+
+    prediction = {
+        "text": "What's your name?",
+        "intent_target": "chitchat",
+        "response_target": "My name is Mr.bot",
+        "response_predicted": "My name is Mr.bot",
+        "confidence": 0.98765,
+    }
+
+    assert len(report.keys()) == 5
+    assert report["My name is Mr.bot"] == name_query_results
+    assert result["predictions"][1] == prediction
+
+
 def test_entity_evaluation_report(tmpdir_factory):
     class EntityExtractorA(EntityExtractor):
 
@@ -368,6 +425,29 @@ def test_empty_intent_removal():
     assert intent_results[0].intent_prediction == "greet"
     assert intent_results[0].confidence == 0.98765
     assert intent_results[0].message == "hello"
+
+
+def test_empty_response_removal():
+    response_results = [
+        ResponseSelectionEvaluationResult(
+            "chitchat", None, "It's sunny in Berlin", "What's the weather", 0.65432
+        ),
+        ResponseSelectionEvaluationResult(
+            "chitchat",
+            "My name is Mr.bot",
+            "My name is Mr.bot",
+            "What's your name?",
+            0.98765,
+        ),
+    ]
+    response_results = remove_empty_response_examples(response_results)
+
+    assert len(response_results) == 1
+    assert response_results[0].intent_target == "chitchat"
+    assert response_results[0].response_target == "My name is Mr.bot"
+    assert response_results[0].response_prediction == "My name is Mr.bot"
+    assert response_results[0].confidence == 0.98765
+    assert response_results[0].message == "What's your name?"
 
 
 def test_evaluate_entities_cv_empty_tokens():

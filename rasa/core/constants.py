@@ -48,3 +48,5 @@ FALLBACK_POLICY_PRIORITY = 4
 # the priority intended to be used by form policies
 # it is the highest to prioritize form to the rest of the policies
 FORM_POLICY_PRIORITY = 5
+UTTER_PREFIX = "utter_"
+RESPOND_PREFIX = "respond_"
