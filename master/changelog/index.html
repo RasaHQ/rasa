@@ -160,6 +160,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/retrieval-actions/">Retrieval Actions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/interactive-learning/">Interactive Learning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/fallback-actions/">Fallback Actions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/knowledge-bases/">Knowledge Base Actions</a></li>
@@ -286,7 +287,7 @@ sub bots. Please see the
 information.</li>
 <li>throw error during training when triggers are defined in the domain without
 <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> being present in the policy ensemble</li>
-<li>The tracker is now avaialble within the interpreter’s <code class="docutils literal notranslate"><span class="pre">parse</span></code> method, giving the
+<li>The tracker is now available within the interpreter’s <code class="docutils literal notranslate"><span class="pre">parse</span></code> method, giving the
 ability to create interpreter classes that use the tracker state (eg. slot values)
 during the parsing of the message. More details on motivation of this change see
 issues/3015.</li>
@@ -296,6 +297,14 @@ issues/3015.</li>
 <li><code class="docutils literal notranslate"><span class="pre">max_history</span></code> parameter for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code></li>
 <li>Successful predictions of the NER are written to a file if <code class="docutils literal notranslate"><span class="pre">--successes</span></code> is set when running <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code></li>
 <li>Incorrect predictions of the NER are written to a file by default. You can disable it via <code class="docutils literal notranslate"><span class="pre">--no-errors</span></code>.</li>
+<li>New NLU component <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> added for the task of response selection</li>
+<li>Message data attribute can contain two more keys - <code class="docutils literal notranslate"><span class="pre">response_key</span></code>, <code class="docutils literal notranslate"><span class="pre">response</span></code> depending on the training data</li>
+<li>New action type implemented by <code class="docutils literal notranslate"><span class="pre">ActionRetrieveResponse</span></code> class and identified with <code class="docutils literal notranslate"><span class="pre">response_</span></code> prefix</li>
+<li>Vocabulary sharing inside <code class="docutils literal notranslate"><span class="pre">CountVectorsFeaturizer</span></code> with <code class="docutils literal notranslate"><span class="pre">use_shared_vocab</span></code> flag. If set to True, vocabulary of corpus is shared between text, intent and response attributes of message</li>
+<li>Added an option to share the hidden layer weights of text input and label input inside <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> using the flag <code class="docutils literal notranslate"><span class="pre">share_hidden_layers</span></code></li>
+<li>New type of training data file in NLU which stores response phrases for response selection task.</li>
+<li>Add flag <code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code> to all <code class="docutils literal notranslate"><span class="pre">WhitespaceTokenizer</span></code>, <code class="docutils literal notranslate"><span class="pre">JiebaTokenizer</span></code> and <code class="docutils literal notranslate"><span class="pre">SpacyTokenizer</span></code></li>
+<li>Added evaluation for response selector. Creates a report <code class="docutils literal notranslate"><span class="pre">response_selection_report.json</span></code> inside <code class="docutils literal notranslate"><span class="pre">--out</span></code> directory.</li>
 <li>argument <code class="docutils literal notranslate"><span class="pre">--config-endpoint</span></code> to specify the URL from which <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code> pulls
 the runtime configuration (endpoints and credentials)</li>
 <li><code class="docutils literal notranslate"><span class="pre">LockStore</span></code> class storing instances of <code class="docutils literal notranslate"><span class="pre">TicketLock</span></code> for every <code class="docutils literal notranslate"><span class="pre">conversation_id</span></code></li>
@@ -332,6 +341,9 @@ hold out validation set that is excluded from training data</li>
 are saved in a file.</li>
 <li><code class="docutils literal notranslate"><span class="pre">--errors</span></code> is renamed to <code class="docutils literal notranslate"><span class="pre">--no-errors</span></code> and is now a boolean value. By default incorrect predictions are saved
 in a file. If <code class="docutils literal notranslate"><span class="pre">--no-errors</span></code> is set predictions are not written to a file.</li>
+<li>Remove <code class="docutils literal notranslate"><span class="pre">label_tokenization_flag</span></code> and <code class="docutils literal notranslate"><span class="pre">label_split_symbol</span></code> from <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>. Instead move these parameters to <code class="docutils literal notranslate"><span class="pre">Tokenizers</span></code>.</li>
+<li>Process features of all attributes of a message, i.e. - text, intent and response inside the respective component itself. For e.g. - intent of a message is now tokenized inside the tokenizer itself.</li>
+<li>Deprecate <code class="docutils literal notranslate"><span class="pre">as_markdown</span></code> and <code class="docutils literal notranslate"><span class="pre">as_json</span></code> in favour of <code class="docutils literal notranslate"><span class="pre">nlu_as_markdown</span></code> and <code class="docutils literal notranslate"><span class="pre">nlu_as_json</span></code> respectively.</li>
 </ul>
 </div>
 <div class="section" id="fixed">

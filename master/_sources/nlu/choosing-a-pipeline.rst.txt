@@ -108,9 +108,8 @@ Multiple Intents
 If you want to split intents into multiple labels,
 e.g. for predicting multiple intents or for modeling hierarchical intent structure,
 you can only do this with the supervised embeddings pipeline.
-To do this, use these flags:
+To do this, use these flags in ``Whitespace Tokenizer``:
 
-    - ``intent_tokenization_flag``: If ``true`` the algorithm will split the intent labels into tokens and use a bag-of-words representations for them
     - ``intent_split_symbol``: sets the delimiter string to split the intent labels. Default ``_``
 
 `Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__ is a tutorial on how to use multiple intents in Rasa Core and NLU.
@@ -122,11 +121,10 @@ Here's an example configuration:
     language: "en"
 
     pipeline:
+    - name: "WhitespaceTokenizer"
+      intent_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
     - name: "EmbeddingIntentClassifier"
-      intent_tokenization_flag: true
-      intent_split_symbol: "+"
-
 
 
 Understanding the Rasa NLU Pipeline
@@ -134,7 +132,7 @@ Understanding the Rasa NLU Pipeline
 
 In Rasa NLU, incoming messages are processed by a sequence of components.
 These components are executed one after another
-in a so-called processing pipeline. There are components for entity extraction, for intent classification,
+in a so-called processing pipeline. There are components for entity extraction, for intent classification, response selection,
 pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
 do sentiment analysis, check out :ref:`custom-nlu-components`.
 
@@ -185,7 +183,6 @@ Initially the context is filled with all configuration values, the arrows
 in the image show the call order and visualize the path of the passed
 context. After all components are trained and persisted, the
 final context dictionary is used to persist the model's metadata.
-
 
 
 The "entity" object explained

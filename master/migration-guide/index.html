@@ -164,6 +164,7 @@ Rasa Core and how you can migrate from one version to another." />
 <li class="toctree-l1"><a class="reference internal" href="../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/retrieval-actions/">Retrieval Actions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/interactive-learning/">Interactive Learning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/fallback-actions/">Fallback Actions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core/knowledge-bases/">Knowledge Base Actions</a></li>
@@ -300,7 +301,8 @@ They use <code class="docutils literal notranslate"><span class="pre">inner</spa
 They use <code class="docutils literal notranslate"><span class="pre">balanced</span></code> batching strategy by default to counteract class imbalance problem.
 The meaning of <code class="docutils literal notranslate"><span class="pre">evaluate_on_num_examples</span></code> is changed. If it is non zero, random examples will be
 picked by stratified split and used as <strong>hold out</strong> validation set, so they will be excluded from training data.
-We suggest to set it to zero (default) if data set contains a lot of unique examples of dialogue turns.</li>
+We suggest to set it to zero (default) if data set contains a lot of unique examples of dialogue turns.
+Removed <code class="docutils literal notranslate"><span class="pre">label_tokenization_flag</span></code> and <code class="docutils literal notranslate"><span class="pre">label_split_symbol</span></code> from component. Instead moved intent splitting to <code class="docutils literal notranslate"><span class="pre">Tokenizer</span></code> components via <code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code> and <code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code> flag.</li>
 <li>Default <code class="docutils literal notranslate"><span class="pre">max_history</span></code> for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> which means it’ll use
 the <code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code>. We recommend to set <code class="docutils literal notranslate"><span class="pre">max_history</span></code> to
 some finite value in order to use <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code>
