@@ -131,15 +131,30 @@ def test_lookup_table_md():
 
 
 @pytest.mark.parametrize(
-    "filename", ["data/examples/rasa/demo-rasa.json", "data/examples/rasa/demo-rasa.md"]
+    "files",
+    [
+        [
+            "data/examples/rasa/demo-rasa.json",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+        [
+            "data/examples/rasa/demo-rasa.md",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+    ],
 )
-def test_demo_data(filename):
-    td = training_data.load_data(filename)
-    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
+def test_demo_data(files):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(files, language="en")
+    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert len(td.training_examples) == 42
-    assert len(td.intent_examples) == 42
+    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
+    assert len(td.training_examples) == 46
+    assert len(td.intent_examples) == 46
+    assert len(td.response_examples) == 4
     assert len(td.entity_examples) == 11
+    assert len(td.nlg_stories) == 2
 
     assert td.entity_synonyms == {
         "Chines": "chinese",
@@ -155,18 +170,23 @@ def test_demo_data(filename):
     ]
 
 
-@pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.md"])
-def test_train_test_split(filename):
-    td = training_data.load_data(filename)
-    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
+@pytest.mark.parametrize(
+    "filepaths",
+    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+)
+def test_train_test_split(filepaths):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(filepaths, language="en")
+    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert len(td.training_examples) == 42
-    assert len(td.intent_examples) == 42
+    assert len(td.training_examples) == 46
+    assert len(td.intent_examples) == 46
 
     td_train, td_test = td.train_test_split(train_frac=0.8)
 
-    assert len(td_train.training_examples) == 32
-    assert len(td_test.training_examples) == 10
+    assert len(td_train.training_examples) == 35
+    assert len(td_test.training_examples) == 11
 
 
 @pytest.mark.parametrize(

@@ -20,7 +20,7 @@ Added
   information.
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
-- The tracker is now avaialble within the interpreter's ``parse`` method, giving the
+- The tracker is now available within the interpreter's ``parse`` method, giving the
   ability to create interpreter classes that use the tracker state (eg. slot values)
   during the parsing of the message. More details on motivation of this change see
   issues/3015.
@@ -30,6 +30,14 @@ Added
 - ``max_history`` parameter for ``EmbeddingPolicy``
 - Successful predictions of the NER are written to a file if ``--successes`` is set when running ``rasa test nlu``
 - Incorrect predictions of the NER are written to a file by default. You can disable it via ``--no-errors``.
+- New NLU component ``ResponseSelector`` added for the task of response selection
+- Message data attribute can contain two more keys - ``response_key``, ``response`` depending on the training data
+- New action type implemented by ``ActionRetrieveResponse`` class and identified with ``response_`` prefix
+- Vocabulary sharing inside ``CountVectorsFeaturizer`` with ``use_shared_vocab`` flag. If set to True, vocabulary of corpus is shared between text, intent and response attributes of message
+- Added an option to share the hidden layer weights of text input and label input inside ``EmbeddingIntentClassifier`` using the flag ``share_hidden_layers``
+- New type of training data file in NLU which stores response phrases for response selection task.
+- Add flag ``intent_split_symbol`` and ``intent_tokenization_flag`` to all ``WhitespaceTokenizer``, ``JiebaTokenizer`` and ``SpacyTokenizer``
+- Added evaluation for response selector. Creates a report ``response_selection_report.json`` inside ``--out`` directory.
 - argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
   the runtime configuration (endpoints and credentials)
 - ``LockStore`` class storing instances of ``TicketLock`` for every ``conversation_id``
@@ -64,6 +72,9 @@ Changed
   are saved in a file.
 - ``--errors`` is renamed to ``--no-errors`` and is now a boolean value. By default incorrect predictions are saved
   in a file. If ``--no-errors`` is set predictions are not written to a file.
+- Remove ``label_tokenization_flag`` and ``label_split_symbol`` from ``EmbeddingIntentClassifier``. Instead move these parameters to ``Tokenizers``.
+- Process features of all attributes of a message, i.e. - text, intent and response inside the respective component itself. For e.g. - intent of a message is now tokenized inside the tokenizer itself.
+- Deprecate ``as_markdown`` and ``as_json`` in favour of ``nlu_as_markdown`` and ``nlu_as_json`` respectively.
 
 Fixed
 -----
