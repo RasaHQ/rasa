@@ -75,16 +75,11 @@ def test_whitespace():
         )
     ] == [0, 83]
 
-    assert [
-        t.offset
-        for t in tk.tokenize("should_i_clean_&_unclean_text", attribute="intent")
-    ] == [0, 7, 9, 15, 17, 25]
-
 
 def test_whitespace_custom_intent_symbol():
     from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
-    component_config = {"intent_split_symbol": "+"}
+    component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
     tk = WhitespaceTokenizer(component_config)
 

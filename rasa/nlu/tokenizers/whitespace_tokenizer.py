@@ -21,6 +21,8 @@ class WhitespaceTokenizer(Tokenizer, Component):
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     defaults = {
+        # Flag to check whether to split intents
+        "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
         # text will be tokenized with case sensitive as default
@@ -31,6 +33,11 @@ class WhitespaceTokenizer(Tokenizer, Component):
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
         super(WhitespaceTokenizer, self).__init__(component_config)
+        # flag to check whether to split intents
+        self.intent_tokenization_flag = self.component_config.get(
+            "intent_tokenization_flag"
+        )
+        # split symbol for intents
         self.intent_split_symbol = self.component_config["intent_split_symbol"]
         self.case_sensitive = self.component_config["case_sensitive"]
 
@@ -73,7 +80,11 @@ class WhitespaceTokenizer(Tokenizer, Component):
                 text,
             ).split()
         else:
-            words = text.split(self.intent_split_symbol)
+            words = (
+                text.split(self.intent_split_symbol)
+                if self.intent_tokenization_flag
+                else [text]
+            )
 
         running_offset = 0
         tokens = []

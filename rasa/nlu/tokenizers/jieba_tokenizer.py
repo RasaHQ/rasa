@@ -35,6 +35,9 @@ class JiebaTokenizer(Tokenizer, Component):
 
     defaults = {
         "dictionary_path": None,
+        # Flag to check whether to split intents
+        "intent_tokenization_flag": False,
+        # Symbol on which intent should be split
         "intent_split_symbol": "_",
     }  # default don't load custom dictionary
 
@@ -45,6 +48,11 @@ class JiebaTokenizer(Tokenizer, Component):
 
         # path to dictionary file or None
         self.dictionary_path = self.component_config.get("dictionary_path")
+
+        # flag to check whether to split intents
+        self.intent_tokenization_flag = self.component_config.get(
+            "intent_tokenization_flag"
+        )
 
         # symbol to split intents on
         self.intent_split_symbol = self.component_config.get("intent_split_symbol")
@@ -95,7 +103,7 @@ class JiebaTokenizer(Tokenizer, Component):
 
     def preprocess_text(self, text, attribute):
 
-        if attribute == MESSAGE_INTENT_ATTRIBUTE:
+        if attribute == MESSAGE_INTENT_ATTRIBUTE and self.intent_tokenization_flag:
             return " ".join(text.split(self.intent_split_symbol))
         else:
             return text

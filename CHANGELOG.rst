@@ -35,8 +35,8 @@ Added
 - New action type implemented by ``ActionRetrieveResponse`` class and identified with ``response_`` prefix
 - Vocabulary sharing inside ``CountVectorsFeaturizer`` with ``use_shared_vocab`` flag. If set to True, vocabulary of corpus is shared between text, intent and response attributes of message
 - Added an option to share the hidden layer weights of text input and label input inside ``EmbeddingIntentClassifier`` using the flag ``share_hidden_layers``
-- New type of training data file which stores response phrases for response selection task.
-- Add flag ``intent_split_symbol`` to all ``Tokenizers``
+- New type of training data file in NLU which stores response phrases for response selection task.
+- Add flag ``intent_split_symbol`` and ``intent_tokenization_flag`` to all ``WhitespaceTokenizer``, ``JiebaTokenizer`` and ``SpacyTokenizer``
 - Added evaluation for response selector. Creates a report ``response_selection_report.json`` inside ``--out`` directory.
 - argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
   the runtime configuration (endpoints and credentials)

@@ -39,6 +39,8 @@ class SpacyNLP(Component):
         # applications and models it makes sense to differentiate
         # between these two words, therefore setting this to `True`.
         "case_sensitive": False,
+        # Flag to check whether to split intents
+        "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
     }
@@ -118,7 +120,10 @@ class SpacyNLP(Component):
             # Another option could be to neglect tokenization of the attribute of this example, but since we are
             # processing in batch mode, it would get complex to collect all processed and neglected examples.
             text = ""
-        if attribute == MESSAGE_INTENT_ATTRIBUTE:
+        if (
+            attribute == MESSAGE_INTENT_ATTRIBUTE
+            and self.component_config["intent_tokenization_flag"]
+        ):
             text = " ".join(text.split(self.component_config["intent_split_symbol"]))
         if self.component_config.get("case_sensitive"):
             return text
