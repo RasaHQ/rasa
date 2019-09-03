@@ -20,14 +20,22 @@ Added
   information.
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
-- the tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that
-  use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
+- The tracker is now avaialble within the interpreter's ``parse`` method, giving the
+  ability to create interpreter classes that use the tracker state (eg. slot values)
+  during the parsing of the message. More details on motivation of this change see
+  issues/3015.
 - add example bot ``knowledgebasebot`` to showcase the usage of ``ActionQueryKnowledgeBase``
 - ``softmax`` starspace loss for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``balanced`` batching strategy for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``max_history`` parameter for ``EmbeddingPolicy``
 - Successful predictions of the NER are written to a file if ``--successes`` is set when running ``rasa test nlu``
 - Incorrect predictions of the NER are written to a file by default. You can disable it via ``--no-errors``.
+- argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
+  the runtime configuration (endpoints and credentials)
+- ``LockStore`` class storing instances of ``TicketLock`` for every ``conversation_id``
+- environment variables ``SQL_POOL_SIZE`` (default: 50) and ``SQL_MAX_OVERFLOW``
+  (default: 100) can be set to control the pool size and maximum pool overflow for
+  ``SQLTrackerStore`` when used with the ``postgresql`` dialect
 - Add a `bot_challenge` intent and a `utter_iamabot` action to all example projects and the rasa init bot.
 
 Changed
@@ -41,7 +49,9 @@ Changed
 - pika keeps a single connection open, instead of open and closing on each incoming event
 - ``RasaChatInput`` fetches the public key from the Rasa X API. The key is used to
   decode the bearer token containing the conversation ID. This requires
-  ``rasa-x>=0.20.2``
+  ``rasa-x>=0.20.2``.
+- more specific exception message when loading custom components depending on whether component's path or
+  class name is invalid or can't be found in the global namespace
 - change priorities so that the ``MemoizationPolicy`` has higher priority than the ``MappingPolicy``
 - substitute LSTM with Transformer in ``EmbeddingPolicy``
 - ``EmbeddingPolicy`` can now use ``MaxHistoryTrackerFeaturizer``
@@ -64,6 +74,13 @@ Fixed
 Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
+
+[1.2.6] - 2019-09-02
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed bug that occurred when sending template ``elements`` through a channel that doesn't support them
 
 [1.2.5] - 2019-08-26
 ^^^^^^^^^^^^^^^^^^^^
