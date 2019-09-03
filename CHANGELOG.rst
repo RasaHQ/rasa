@@ -20,14 +20,22 @@ Added
   information.
 - throw error during training when triggers are defined in the domain without
   ``MappingPolicy`` being present in the policy ensemble
-- the tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that
-  use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
+- The tracker is now avaialble within the interpreter's ``parse`` method, giving the
+  ability to create interpreter classes that use the tracker state (eg. slot values)
+  during the parsing of the message. More details on motivation of this change see
+  issues/3015.
 - add example bot ``knowledgebasebot`` to showcase the usage of ``ActionQueryKnowledgeBase``
 - ``softmax`` starspace loss for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``balanced`` batching strategy for both ``EmbeddingPolicy`` and ``EmbeddingIntentClassifier``
 - ``max_history`` parameter for ``EmbeddingPolicy``
 - Successful predictions of the NER are written to a file if ``--successes`` is set when running ``rasa test nlu``
 - Incorrect predictions of the NER are written to a file by default. You can disable it via ``--no-errors``.
+- argument ``--config-endpoint`` to specify the URL from which ``rasa x`` pulls
+  the runtime configuration (endpoints and credentials)
+- ``LockStore`` class storing instances of ``TicketLock`` for every ``conversation_id``
+- environment variables ``SQL_POOL_SIZE`` (default: 50) and ``SQL_MAX_OVERFLOW``
+  (default: 100) can be set to control the pool size and maximum pool overflow for
+  ``SQLTrackerStore`` when used with the ``postgresql`` dialect
 
 Changed
 -------

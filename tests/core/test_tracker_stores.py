@@ -11,6 +11,7 @@ from rasa.core.tracker_store import (
     RedisTrackerStore,
     SQLTrackerStore,
 )
+from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
@@ -125,6 +126,23 @@ def test_tracker_store_from_invalid_string(default_domain):
     tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
 
     assert isinstance(tracker_store, InMemoryTrackerStore)
+
+
+def test_tracker_serialisation():
+    slot_key = "location"
+    slot_val = "Easter Island"
+
+    store = InMemoryTrackerStore(domain)
+
+    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    ev = SlotSet(slot_key, slot_val)
+    tracker.update(ev)
+
+    serialised = store.serialise_tracker(tracker)
+
+    assert tracker == store.deserialise_tracker(
+        UserMessage.DEFAULT_SENDER_ID, serialised
+    )
 
 
 @pytest.mark.parametrize(
