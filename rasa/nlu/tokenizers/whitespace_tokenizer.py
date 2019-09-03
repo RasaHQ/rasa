@@ -21,8 +21,9 @@ class WhitespaceTokenizer(Tokenizer, Component):
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     defaults = {
-        # text will be tokenized with case sensitive as default
+        # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # text will be tokenized with case sensitive as default
         "case_sensitive": True,
     }
 

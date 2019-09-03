@@ -39,6 +39,7 @@ class SpacyNLP(Component):
         # applications and models it makes sense to differentiate
         # between these two words, therefore setting this to `True`.
         "case_sensitive": False,
+        # Symbol on which intent should be split
         "intent_split_symbol": "_",
     }
 

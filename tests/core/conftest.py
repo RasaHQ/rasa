@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 from typing import Text
 
@@ -7,7 +6,6 @@ import matplotlib
 import pytest
 
 import rasa.utils.io
-from rasa.core import train
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel
 from rasa.core.domain import Domain
@@ -107,7 +105,7 @@ def default_domain():
 
 
 @pytest.fixture(scope="session")
-async def default_agent(default_domain):
+async def default_agent(default_domain) -> Agent:
     agent = Agent(
         default_domain,
         policies=[MemoizationPolicy()],
@@ -168,7 +166,6 @@ def moodbot_metadata(unpacked_trained_moodbot_path):
 async def trained_stack_model(
     default_domain_path, default_stack_config, default_nlu_data, default_stories_file
 ):
-
     trained_stack_model_path = await train_async(
         domain=default_domain_path,
         config=default_stack_config,
