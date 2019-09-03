@@ -18,11 +18,6 @@ actions:
 templates:
   utter_greet:
   - text: "Hey! How are you?"
-    buttons:
-    - title: "great"
-      payload: "/mood_great"
-    - title: "super sad"
-      payload: "/mood_unhappy"
 
   utter_cheer_up:
   - text: "Here is something to cheer you up:"
