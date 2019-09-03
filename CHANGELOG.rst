@@ -85,6 +85,11 @@ Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
+[1.2.8] - 2019-09-03
+^^^^^^^^^^^^^^^^^^^^
+Fixed
+-----
+- Removed ```text=text``` dict from send_attachment function in slack.py to avoid duplication of text output to slackbot
 
 [1.2.7] - 2019-09-02
 ^^^^^^^^^^^^^^^^^^^^
