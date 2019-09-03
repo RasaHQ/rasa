@@ -28,6 +28,7 @@ Added
 - ``max_history`` parameter for ``EmbeddingPolicy``
 - Successful predictions of the NER are written to a file if ``--successes`` is set when running ``rasa test nlu``
 - Incorrect predictions of the NER are written to a file by default. You can disable it via ``--no-errors``.
+- Add a `bot_challenge` intent and a `utter_iamabot` action to all example projects and the rasa init bot.
 
 Changed
 -------
