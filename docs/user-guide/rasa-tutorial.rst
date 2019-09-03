@@ -15,7 +15,7 @@ You can also :ref:`install Rasa <installation>` and follow along in your command
 
 .. raw:: html
 
-    The <a style="text-decoration: none" href="https://rasa.com/docs/glossary">glossary</a> contains an overview of the most common terms you’ll see in the Rasa documentation.
+    The <a style="text-decoration: none" href="https://rasa.com/docs/rasa/glossary">glossary</a> contains an overview of the most common terms you’ll see in the Rasa documentation.
 
 
 

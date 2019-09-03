@@ -1,3 +1,5 @@
+import tempfile
+
 import pytest
 
 from rasa.core.channels.channel import UserMessage
@@ -178,4 +180,54 @@ def test_get_db_url_with_correct_host():
             )
         )
         == expected
+    )
+
+
+def test_get_db_url_with_query():
+    expected = "postgresql://localhost:5005/mydb?driver=my-driver"
+
+    assert (
+        str(
+            SQLTrackerStore.get_db_url(
+                dialect="postgresql",
+                host="localhost",
+                port=5005,
+                db="mydb",
+                query={"driver": "my-driver"},
+            )
+        )
+        == expected
+    )
+
+
+def test_db_url_with_query_from_endpoint_config():
+    endpoint_config = """
+    tracker_store:
+      dialect: postgresql
+      url: localhost
+      port: 5123
+      username: user
+      password: pw
+      login_db: login-db
+      query:
+        driver: my-driver
+        another: query
+    """
+
+    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.yml") as f:
+        f.write(endpoint_config)
+        f.flush()
+        store_config = read_endpoint_config(f.name, "tracker_store")
+
+    url = SQLTrackerStore.get_db_url(**store_config.kwargs)
+
+    import itertools
+
+    # order of query dictionary in yaml is random, test against both permutations
+    connection_url = "postgresql://user:pw@:5123/login-db?"
+    assert any(
+        str(url) == connection_url + "&".join(permutation)
+        for permutation in (
+            itertools.permutations(("another=query", "driver=my-driver"))
+        )
     )
