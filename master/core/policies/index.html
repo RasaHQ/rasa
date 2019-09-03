@@ -962,13 +962,15 @@ prediction</td>
 <td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
 to be called if the confidence of Rasa
 Core action prediction is below the
-<code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
+<code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>. This action is
+to propose the recognized intents</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">fallback_nlu_action_name</span></code></td>
 <td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>
 to be called if the confidence of Rasa
 NLU intent classification is below the
-<code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code></td>
+<code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>. This action is called
+when the user denies the second time</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">deny_suggestion_intent_name</span></code></td>
 <td>The name of the intent which is used to

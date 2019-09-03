@@ -513,13 +513,15 @@ by trying to disambiguate the user input.
     |                               | <fallback-actions>`                      |
     |                               | to be called if the confidence of Rasa   |
     |                               | Core action prediction is below the      |
-    |                               | ``core_threshold``                       |
+    |                               | ``core_threshold``. This action is       |  
+    |                               | to propose the recognized intents        |
     +-------------------------------+------------------------------------------+
     | ``fallback_nlu_action_name``  | Name of the :ref:`fallback action        |
     |                               | <fallback-actions>`                      |
     |                               | to be called if the confidence of Rasa   |
     |                               | NLU intent classification is below the   |
-    |                               | ``nlu_threshold``                        |
+    |                               | ``nlu_threshold``. This action is called |
+    |                               | when the user denies the second time     |
     +-------------------------------+------------------------------------------+
     |``deny_suggestion_intent_name``| The name of the intent which is used to  |
     |                               | detect that the user denies the suggested|
