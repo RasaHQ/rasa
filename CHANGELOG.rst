@@ -85,6 +85,16 @@ Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
+
+[1.2.7] - 2019-09-02
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Added ``query`` dictionary argument to ``SQLTrackerStore`` which will be appended
+  to the SQL connection URL as query parameters.
+
+
 [1.2.6] - 2019-09-02
 ^^^^^^^^^^^^^^^^^^^^
 
