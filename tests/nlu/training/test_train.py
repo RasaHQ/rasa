@@ -236,7 +236,6 @@ async def test_train_model_no_training_data_persisted(
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-
 @utilities.slowtest
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_model_training_data_persisted(
