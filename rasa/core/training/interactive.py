@@ -78,6 +78,8 @@ PATHS = {
     "domain": "domain.yml",
 }
 
+SAVE_IN_E2E = False
+
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
 OTHER_ACTION = uuid.uuid4().hex
