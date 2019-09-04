@@ -43,7 +43,7 @@ subsampled during training. Subsampling of the augmented stories is done in orde
 not get too many stories from augmentation, since their number
 can become very large quickly.
 The number of sampled stories is ``augmentation_factor`` x10.
-By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+By default augmentation is set to 50, resulting in a maximum of 500 augmented stories.
 
 ``--augmentation 0`` disables all augmentation behavior.
 The memoization based policies are not affected by augmentation
