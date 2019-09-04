@@ -66,17 +66,13 @@ def _docs(sub_url: Text) -> Text:
     return DOCS_BASE_URL + sub_url
 
 
-def ensure_loaded_agent(app: Sanic, allow_nlu_only: bool = False):
-    """Wraps a request handler ensuring there is a loaded and usable agent.
-
-    If `allow_nlu_only is `True`, consider the agent ready event if no policy
-    ensemble is present.
-    """
+def ensure_loaded_agent(app: Sanic):
+    """Wraps a request handler ensuring there is a loaded and usable agent."""
 
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if not app.agent or not app.agent.is_ready(allow_nlu_only):
+            if not app.agent or not app.agent.is_ready():
                 raise ErrorResponse(
                     409,
                     "Conflict",
@@ -373,7 +369,7 @@ def create_app(
 
     @app.get("/status")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app, allow_nlu_only=True)
+    @ensure_loaded_agent(app)
     async def status(request: Request):
         """Respond with the model name and the fingerprint of that model."""
 
@@ -389,14 +385,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
-        if not app.agent.tracker_store:
-            raise ErrorResponse(
-                409,
-                "Conflict",
-                "No tracker store available. Make sure to "
-                "configure a tracker store when starting "
-                "the server.",
-            )
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
@@ -501,14 +489,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-        if not app.agent.tracker_store:
-            raise ErrorResponse(
-                409,
-                "Conflict",
-                "No tracker store available. Make sure to "
-                "configure a tracker store when starting "
-                "the server.",
-            )
 
         # retrieve tracker and set to requested state
         tracker = get_tracker(app.agent, conversation_id)
@@ -852,6 +832,7 @@ def create_app(
 
     @app.post("/model/parse")
     @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
     async def parse(request: Request):
         validate_request_body(
             request,

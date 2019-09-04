@@ -45,6 +45,7 @@ Added
   (default: 100) can be set to control the pool size and maximum pool overflow for
   ``SQLTrackerStore`` when used with the ``postgresql`` dialect
 - Add a `bot_challenge` intent and a `utter_iamabot` action to all example projects and the rasa init bot.
+- Allow sending attachments when using the socketio channel
 
 Changed
 -------
@@ -76,6 +77,8 @@ Changed
 - Remove ``label_tokenization_flag`` and ``label_split_symbol`` from ``EmbeddingIntentClassifier``. Instead move these parameters to ``Tokenizers``.
 - Process features of all attributes of a message, i.e. - text, intent and response inside the respective component itself. For e.g. - intent of a message is now tokenized inside the tokenizer itself.
 - Deprecate ``as_markdown`` and ``as_json`` in favour of ``nlu_as_markdown`` and ``nlu_as_json`` respectively.
+- pin python-engineio >= 3.9.3
+- update python-socketio req to >= 4.3.1
 
 Fixed
 -----
@@ -114,6 +117,7 @@ Added
 
 Fixed
 -----
+- made default augmentation value consistent across repo
 - ``'/restart'`` will now also restart the bot if the tracker is paused
 
 
