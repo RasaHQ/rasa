@@ -53,6 +53,7 @@ async def train(
     storage: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
+    persist_nlu_training_data: bool = False,
     **kwargs: Any
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
@@ -64,7 +65,11 @@ async def train(
     # Ensure we are training a model that we can save in the end
     # WARN: there is still a race condition if a model with the same name is
     # trained in another subprocess
-    trainer = Trainer(nlu_config, component_builder)
+    trainer = Trainer(
+        nlu_config,
+        component_builder,
+        persist_nlu_training_data=persist_nlu_training_data,
+    )
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
         training_data = await load_data_from_endpoint(
