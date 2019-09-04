@@ -69,7 +69,7 @@ def _docs(sub_url: Text) -> Text:
 def ensure_loaded_agent(app: Sanic, allow_nlu_only: bool = False):
     """Wraps a request handler ensuring there is a loaded and usable agent.
 
-    If `allow_nlu_only is `True`, consider the agent ready event if no policy
+    If `allow_nlu_only` is `True`, consider the agent ready event if no policy
     ensemble is present.
     """
 
