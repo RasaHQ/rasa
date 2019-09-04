@@ -30,7 +30,9 @@ def add_subparser(
     )
     interactive_parser.set_defaults(func=interactive)
     interactive_parser.add_argument(
-        "--e2e", action="store_true", help="Save story files in e2e format. In this format user messages will be included in the stories."
+        "--e2e",
+        action="store_true",
+        help="Save story files in e2e format. In this format user messages will be included in the stories.",
     )
 
     interactive_subparsers = interactive_parser.add_subparsers()

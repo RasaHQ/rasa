@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- option to save stories in e2e format for interactive learning
 - bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
 - ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - experimental training data importer which supports training with data of multiple
