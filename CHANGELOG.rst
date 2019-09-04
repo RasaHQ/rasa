@@ -85,6 +85,7 @@ Fixed
 - ``rasa test nlu`` with a folder of configuration files
 - ``MappingPolicy`` standard featurizer is set to ``None``
 - Removed ``text`` parameter from send_attachment function in slack.py to avoid duplication of text output to slackbot
+- server ``/status`` endpoint reports status when an NLU-only model is loaded
 
 Removed
 -------

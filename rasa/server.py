@@ -66,13 +66,22 @@ def _docs(sub_url: Text) -> Text:
     return DOCS_BASE_URL + sub_url
 
 
-def ensure_loaded_agent(app: Sanic):
-    """Wraps a request handler ensuring there is a loaded and usable agent."""
+def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
+    """Wraps a request handler ensuring there is a loaded and usable agent.
+
+    Require the agent to have a loaded Core model if `require_core_is_ready` is
+    `True`.
+    """
 
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if not app.agent or not app.agent.is_ready():
+            # noinspection PyUnresolvedReferences
+            if not app.agent or not (
+                app.agent.is_core_ready()
+                if require_core_is_ready
+                else app.agent.is_ready()
+            ):
                 raise ErrorResponse(
                     409,
                     "Conflict",
@@ -385,14 +394,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
-        if not app.agent.tracker_store:
-            raise ErrorResponse(
-                409,
-                "Conflict",
-                "No tracker store available. Make sure to "
-                "configure a tracker store when starting "
-                "the server.",
-            )
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
@@ -497,14 +498,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-        if not app.agent.tracker_store:
-            raise ErrorResponse(
-                409,
-                "Conflict",
-                "No tracker store available. Make sure to "
-                "configure a tracker store when starting "
-                "the server.",
-            )
 
         # retrieve tracker and set to requested state
         tracker = get_tracker(app.agent, conversation_id)
@@ -729,7 +722,7 @@ def create_app(
 
     @app.post("/model/test/stories")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
+    @ensure_loaded_agent(app, require_core_is_ready=True)
     async def evaluate_stories(request: Request):
         """Evaluate stories against the currently loaded model."""
         validate_request_body(
@@ -795,7 +788,7 @@ def create_app(
 
     @app.post("/model/predict")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
+    @ensure_loaded_agent(app, require_core_is_ready=True)
     async def tracker_predict(request: Request):
         """ Given a list of events, predicts the next action"""
         validate_request_body(
@@ -848,6 +841,7 @@ def create_app(
 
     @app.post("/model/parse")
     @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
     async def parse(request: Request):
         validate_request_body(
             request,
@@ -915,7 +909,7 @@ def create_app(
 
         app.agent = Agent(lock_store=app.agent.lock_store)
 
-        logger.debug("Successfully unload model '{}'.".format(model_file))
+        logger.debug("Successfully unloaded model '{}'.".format(model_file))
         return response.json(None, status=204)
 
     @app.get("/domain")

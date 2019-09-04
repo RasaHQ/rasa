@@ -111,6 +111,13 @@ class MessageProcessor(object):
             )
             return None
 
+        if not self.policy_ensemble or not self.domain:
+            # save tracker state to continue conversation from this state
+            logger.warning(
+                "No policy ensemble or domain set. Skipping action prediction "
+            )
+            return None
+
         probabilities, policy = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
