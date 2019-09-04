@@ -293,8 +293,8 @@ require generalization." />
 <li><a class="reference internal" href="#action-selection" id="id8">Action Selection</a></li>
 <li><a class="reference internal" href="#keras-policy" id="id9">Keras Policy</a></li>
 <li><a class="reference internal" href="#embedding-policy" id="id10">Embedding Policy</a></li>
-<li><a class="reference internal" href="#memoization-policy" id="id11">Memoization Policy</a></li>
-<li><a class="reference internal" href="#mapping-policy" id="id12">Mapping Policy</a></li>
+<li><a class="reference internal" href="#mapping-policy" id="id11">Mapping Policy</a></li>
+<li><a class="reference internal" href="#memoization-policy" id="id12">Memoization Policy</a></li>
 <li><a class="reference internal" href="#fallback-policy" id="id13">Fallback Policy</a></li>
 <li><a class="reference internal" href="#two-stage-fallback-policy" id="id14">Two-Stage Fallback Policy</a></li>
 <li><a class="reference internal" href="#form-policy" id="id15">Form Policy</a></li>
@@ -412,8 +412,8 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 <div><div class="line-block">
 <div class="line">5. <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code></div>
 <div class="line">4. <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code></div>
-<div class="line">3. <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code></div>
-<div class="line">2. <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">AugmentedMemoizationPolicy</span></code></div>
+<div class="line">3. <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">AugmentedMemoizationPolicy</span></code></div>
+<div class="line">2. <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code></div>
 <div class="line">1. <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">SklearnPolicy</span></code></div>
 </div>
 </div></blockquote>
@@ -791,15 +791,8 @@ the original starspace algorithm in the case
 </div>
 </div></blockquote>
 </div>
-<div class="section" id="memoization-policy">
-<h2><a class="toc-backref" href="#id11">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> just memorizes the conversations in your
-training data. It predicts the next action with confidence <code class="docutils literal notranslate"><span class="pre">1.0</span></code>
-if this exact conversation exists in the training data, otherwise it
-predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
-</div>
 <div class="section" id="mapping-policy">
-<span id="id3"></span><h2><a class="toc-backref" href="#id12">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id3"></span><h2><a class="toc-backref" href="#id11">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> can be used to directly map intents to actions. The
 mappings are assigned by giving an intent the property <code class="docutils literal notranslate"><span class="pre">triggers</span></code>, e.g.:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
@@ -844,6 +837,13 @@ intent and the mapped utterance will appear in the dialogue history.</p>
 and <code class="docutils literal notranslate"><span class="pre">action_restart</span></code> in response to <code class="docutils literal notranslate"><span class="pre">/back</span></code> and <code class="docutils literal notranslate"><span class="pre">/restart</span></code>. If it is not included
 in your policy example these intents will not work.</p>
 </div>
+</div>
+<div class="section" id="memoization-policy">
+<h2><a class="toc-backref" href="#id12">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> just memorizes the conversations in your
+training data. It predicts the next action with confidence <code class="docutils literal notranslate"><span class="pre">1.0</span></code>
+if this exact conversation exists in the training data, otherwise it
+predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
 </div>
 <div class="section" id="fallback-policy">
 <span id="id4"></span><h2><a class="toc-backref" href="#id13">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
