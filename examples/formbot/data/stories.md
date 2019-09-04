@@ -186,3 +186,7 @@
     - utter_slots_values
 * thankyou
     - utter_noworries
+
+## bot challenge
+* bot_challenge
+  - utter_iamabot

@@ -44,6 +44,7 @@ Added
 - environment variables ``SQL_POOL_SIZE`` (default: 50) and ``SQL_MAX_OVERFLOW``
   (default: 100) can be set to control the pool size and maximum pool overflow for
   ``SQLTrackerStore`` when used with the ``postgresql`` dialect
+- Add a `bot_challenge` intent and a `utter_iamabot` action to all example projects and the rasa init bot.
 
 Changed
 -------
