@@ -68,7 +68,7 @@ SECTION_TEMPLATES = Section(name="Templates", relevant_keys=[FINGERPRINT_TEMPLAT
 
 
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
-    """Gets a model and unpacks it. Raises a `ModelNotFound` exception if
+    """Get a model and unpacks it. Raises a `ModelNotFound` exception if
     no model could be found at the provided path.
 
     Args:
@@ -99,7 +99,7 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
 
 
 def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
-    """Gets the latest model from a path.
+    """Get the latest model from a path.
 
     Args:
         model_path: Path to a directory containing zipped models.
@@ -122,7 +122,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 def unpack_model(
     model_file: Text, working_directory: Optional[Text] = None
 ) -> TempDirectoryPath:
-    """Unpacks a zipped Rasa model.
+    """Unpack a zipped Rasa model.
 
     Args:
         model_file: Path to zipped model.
@@ -154,7 +154,7 @@ def unpack_model(
 def get_model_subdirectories(
     unpacked_model_path: Text
 ) -> Tuple[Optional[Text], Optional[Text]]:
-    """Returns paths for Core and NLU model directories, if they exist.
+    """Return paths for Core and NLU model directories, if they exist.
     If neither directories exist, a `ModelNotFound` exception is raised.
 
     Args:
@@ -189,7 +189,7 @@ def create_package_rasa(
     output_filename: Text,
     fingerprint: Optional[Fingerprint] = None,
 ) -> Text:
-    """Creates a zipped Rasa model from trained model files.
+    """Create a zipped Rasa model from trained model files.
 
     Args:
         training_directory: Path to the directory which contains the trained
@@ -219,7 +219,7 @@ def create_package_rasa(
 
 
 async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
-    """Creates a model fingerprint from its used configuration and training data.
+    """Create a model fingerprint from its used configuration and training data.
 
     Args:
         file_importer: File importer which provides the training data and model config.
@@ -277,7 +277,7 @@ def _get_hash_of_config(
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
-    """Loads a persisted fingerprint.
+    """Load a persisted fingerprint.
 
     Args:
         model_path: Path to directory containing the fingerprint.
@@ -297,7 +297,7 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
 
 
 def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
-    """Persists a model fingerprint.
+    """Persist a model fingerprint.
 
     Args:
         output_path: Directory in which the fingerprint should be saved.
@@ -322,7 +322,7 @@ def section_fingerprint_changed(
 
 
 def merge_model(source: Text, target: Text) -> bool:
-    """Merges two model directories.
+    """Merge two model directories.
 
     Args:
         source: The original folder which should be merged in another.
@@ -341,7 +341,7 @@ def merge_model(source: Text, target: Text) -> bool:
 
 
 def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text):
-    """Checks which component of a model should be retrained.
+    """Check which components of a model should be retrained.
 
     Args:
         new_fingerprint: The fingerprint of the new model to be trained.
@@ -372,11 +372,14 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
             last_fingerprint, new_fingerprint, SECTION_NLU
         )
 
-        # If merging directories fails, force retrain
+        # If merging directories fails, force retrain.
         if not retrain_core:
             target_path = os.path.join(train_path, "core")
             retrain_core = not merge_model(old_core, target_path)
         else:
+            # In the case of replace_templates, only do it if the whole
+            # of Core is not being retrained. If it is, then replacing of
+            # templates will be automatically taken care of during that process.
             target_path = os.path.join(train_path, "core")
             replace_templates = not merge_model(old_core, target_path)
         if not retrain_nlu:
@@ -394,7 +397,7 @@ def package_model(
     model_prefix: Text = "",
 ):
     """
-    Compresses a trained model.
+    Compress a trained model.
 
     Args:
         fingerprint: fingerprint of the model

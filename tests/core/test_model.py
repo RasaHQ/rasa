@@ -318,14 +318,10 @@ def test_should_retrain(trained_model: Text, fingerprint: Fingerprint):
     assert replace_templates == fingerprint["replace_templates"]
 
 
-def set_fingerprint(
-    trained_model: Text, fingerprint: Fingerprint, use_fingerprint: bool = True
-) -> Text:
+def set_fingerprint(trained_model: Text, fingerprint: Fingerprint) -> Text:
     unpacked_model_path = get_model(trained_model)
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
-    if not use_fingerprint:
-        fingerprint = None
 
     tempdir = tempfile.mkdtemp()
     output_path = os.path.join(tempdir, "test.tar.gz")
