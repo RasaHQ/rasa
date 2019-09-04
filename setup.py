@@ -74,6 +74,7 @@ install_requires = [
     "aiohttp~=3.5",
     "questionary>=1.1.0",
     "python-socketio~=4.0",
+    "python-engineio~=3.8.1"
     "pydot~=1.4",
     "async_generator~=1.10",
     "SQLAlchemy~=1.3.0",
