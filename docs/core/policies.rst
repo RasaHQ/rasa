@@ -147,8 +147,8 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 
     | 5. ``FormPolicy``
     | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
-    | 3. ``MappingPolicy``
-    | 2. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
+    | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
+    | 2. ``MappingPolicy``
     | 1. ``EmbeddingPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
@@ -355,14 +355,6 @@ It is recommended to use
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
-Memoization Policy
-^^^^^^^^^^^^^^^^^^
-
-The ``MemoizationPolicy`` just memorizes the conversations in your
-training data. It predicts the next action with confidence ``1.0``
-if this exact conversation exists in the training data, otherwise it
-predicts ``None`` with confidence ``0.0``.
-
 .. _mapping-policy:
 
 Mapping Policy
@@ -417,6 +409,14 @@ simple example that dispatches a bot utterance and then reverts the interaction:
   The MappingPolicy is also responsible for executing the default actions ``action_back``
   and ``action_restart`` in response to ``/back`` and ``/restart``. If it is not included
   in your policy example these intents will not work.
+
+Memoization Policy
+^^^^^^^^^^^^^^^^^^
+
+The ``MemoizationPolicy`` just memorizes the conversations in your
+training data. It predicts the next action with confidence ``1.0``
+if this exact conversation exists in the training data, otherwise it
+predicts ``None`` with confidence ``0.0``.
 
 .. _fallback-policy:
 
