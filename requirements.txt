@@ -11,6 +11,7 @@ pymongo==3.8.0
 numpy==1.16.3
 scipy==1.2.1
 tensorflow==1.14.0
+absl-py>=0.8.0
 # setuptools comes from tensorboard requirement:
 # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
 setuptools >= 41.0.0

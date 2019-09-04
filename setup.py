@@ -38,6 +38,9 @@ install_requires = [
     "numpy~=1.16",
     "scipy~=1.2",
     "tensorflow~=1.14.0",
+    # absl is a tensorflow dependency, but produces double logging before 0.8
+    # should be removed once tensorflow requires absl > 0.8 on its own
+    "absl-py>=0.8.0",
     # setuptools comes from tensorboard requirement:
     # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
     "setuptools >= 41.0.0",
