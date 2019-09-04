@@ -312,6 +312,7 @@ the runtime configuration (endpoints and credentials)</li>
 (default: 100) can be set to control the pool size and maximum pool overflow for
 <code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> when used with the <code class="docutils literal notranslate"><span class="pre">postgresql</span></code> dialect</li>
 <li>Add a <cite>bot_challenge</cite> intent and a <cite>utter_iamabot</cite> action to all example projects and the rasa init bot.</li>
+<li>Allow sending attachments when using the socketio channel</li>
 </ul>
 </div>
 <div class="section" id="changed">
@@ -393,6 +394,7 @@ to the SQL connection URL as query parameters.</li>
 <div class="section" id="id7">
 <h3>Fixed<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
+<li>made default augmentation value consistent across repo</li>
 <li><code class="docutils literal notranslate"><span class="pre">'/restart'</span></code> will now also restart the bot if the tracker is paused</li>
 </ul>
 </div>

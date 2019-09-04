@@ -354,6 +354,14 @@ slot with the same name, the slot will be set automatically. For example:</p>
 </div>
 <p>In this case, you don’t have to include the <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">slot{}</span></code> part in the
 story, because it is automatically picked up.</p>
+<p>To disable this behavior for a particular slot, you can set the
+<code class="docutils literal notranslate"><span class="pre">auto_fill</span></code> attribute to <code class="docutils literal notranslate"><span class="pre">False</span></code> in the domain file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">slots</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+    <span class="l l-Scalar l-Scalar-Plain">auto_fill</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="slots-set-by-clicking-buttons">
 <h3><a class="toc-backref" href="#id7">Slots Set By Clicking Buttons</a><a class="headerlink" href="#slots-set-by-clicking-buttons" title="Permalink to this headline">¶</a></h3>
