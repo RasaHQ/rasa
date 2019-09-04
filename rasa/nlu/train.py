@@ -65,10 +65,7 @@ async def train(
     # Ensure we are training a model that we can save in the end
     # WARN: there is still a race condition if a model with the same name is
     # trained in another subprocess
-    trainer = Trainer(
-        nlu_config,
-        component_builder,
-    )
+    trainer = Trainer(nlu_config, component_builder)
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
         training_data = await load_data_from_endpoint(
@@ -83,7 +80,9 @@ async def train(
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
-        persisted_path = trainer.persist(path, persistor, fixed_model_name, persist_nlu_training_data)
+        persisted_path = trainer.persist(
+            path, persistor, fixed_model_name, persist_nlu_training_data
+        )
     else:
         persisted_path = None
 
