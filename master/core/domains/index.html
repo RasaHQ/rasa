@@ -306,6 +306,7 @@ for the things your bot can say.</p>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">deny</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_great</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_unhappy</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bot_challenge</span>
 
 <span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
@@ -313,6 +314,7 @@ for the things your bot can say.</p>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_did_that_help</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_happy</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_iamabot</span>
 
 <span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
@@ -326,10 +328,13 @@ for the things your bot can say.</p>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Did</span><span class="nv"> </span><span class="s">that</span><span class="nv"> </span><span class="s">help</span><span class="nv"> </span><span class="s">you?&quot;</span>
 
   <span class="l l-Scalar l-Scalar-Plain">utter_happy</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Great</span><span class="nv"> </span><span class="s">carry</span><span class="nv"> </span><span class="s">on!&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Great,</span><span class="nv"> </span><span class="s">carry</span><span class="nv"> </span><span class="s">on!&quot;</span>
 
   <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Bye&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_iamabot</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;I</span><span class="nv"> </span><span class="s">am</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">bot,</span><span class="nv"> </span><span class="s">powered</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">Rasa.&quot;</span>
 </pre></div>
 </div>
 <p><strong>What does this mean?</strong></p>
