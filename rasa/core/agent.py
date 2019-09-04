@@ -831,7 +831,9 @@ class Agent(object):
             return domain
         elif isinstance(domain, Domain):
             return domain
-        elif domain is not None:
+        elif domain is None:
+            return Domain.empty()
+        else:
             raise ValueError(
                 "Invalid param `domain`. Expected a path to a domain "
                 "specification or a domain instance. But got "
