@@ -308,7 +308,8 @@ def list_subdirectories(path: Text) -> List[Text]:
     return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
 
 
-def cmp_items(file):
+def _filename_without_prefix(file: Text) -> Text:
+    """Splits of a filenames prefix until after the first ``_``."""
     return "_".join(file.split("_")[1:])
 
 
@@ -329,8 +330,8 @@ def list_directory(path: Text) -> List[Text]:
     elif os.path.isdir(path):
         results = []
         for base, dirs, files in os.walk(path):
-            # sort files for same order
-            files = sorted(files, key=cmp_items)
+            # sort files for same order across runs
+            files = sorted(files, key=_filename_without_prefix)
             # add not hidden files
             good_files = filter(lambda x: not x.startswith("."), files)
             results.extend(os.path.join(base, f) for f in good_files)

@@ -730,8 +730,8 @@ class StoryGraph(object):
 
         while unprocessed:
             dfs(unprocessed.pop())
-        removed_edges = sorted(removed_edges)
-        return ordered, removed_edges
+
+        return ordered, sorted(removed_edges)
 
     def visualize(self, output_file=None):
         import networkx as nx
