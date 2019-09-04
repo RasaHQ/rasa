@@ -63,5 +63,7 @@ class SpacyFeaturizer(Featurizer):
         message_attribute_doc = self.get_doc(message, attribute)
         if message_attribute_doc is not None:
             fs = features_for_doc(message_attribute_doc)
-            features = self._combine_with_existing_features(message, fs, attribute)
+            features = self._combine_with_existing_features(
+                message, fs, MESSAGE_VECTOR_FEATURE_NAMES[attribute]
+            )
             message.set(MESSAGE_VECTOR_FEATURE_NAMES[attribute], features)
