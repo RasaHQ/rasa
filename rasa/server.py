@@ -66,13 +66,22 @@ def _docs(sub_url: Text) -> Text:
     return DOCS_BASE_URL + sub_url
 
 
-def ensure_loaded_agent(app: Sanic):
-    """Wraps a request handler ensuring there is a loaded and usable agent."""
+def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
+    """Wraps a request handler ensuring there is a loaded and usable agent.
+
+    Require the agent to have a loaded Core model if `require_core_is_ready` is
+    `True`.
+    """
 
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if not app.agent or not app.agent.is_ready():
+            # noinspection PyUnresolvedReferences
+            if not app.agent or not (
+                app.agent.is_core_ready()
+                if require_core_is_ready
+                else app.agent.is_ready()
+            ):
                 raise ErrorResponse(
                     409,
                     "Conflict",
@@ -713,7 +722,7 @@ def create_app(
 
     @app.post("/model/test/stories")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
+    @ensure_loaded_agent(app, require_core_is_ready=True)
     async def evaluate_stories(request: Request):
         """Evaluate stories against the currently loaded model."""
         validate_request_body(
@@ -779,7 +788,7 @@ def create_app(
 
     @app.post("/model/predict")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
+    @ensure_loaded_agent(app, require_core_is_ready=True)
     async def tracker_predict(request: Request):
         """ Given a list of events, predicts the next action"""
         validate_request_body(

@@ -479,11 +479,6 @@ def test_predict(rasa_app: SanicTestClient):
     assert "policy" in content
 
 
-def test_retrieve_tracker_not_ready_agent(rasa_app_nlu: SanicTestClient):
-    _, response = rasa_app_nlu.get("/conversations/test/tracker")
-    assert response.status == 409
-
-
 @freeze_time("2018-01-01")
 def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
     _, response = rasa_app.get("/conversations/madeupid/tracker")
