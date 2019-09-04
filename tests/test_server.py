@@ -397,7 +397,11 @@ def test_evaluate_intent(rasa_app, default_nlu_data):
     _, response = rasa_app.post("/model/test/intents", data=nlu_data)
 
     assert response.status == 200
-    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+    assert set(response.json.keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
 
 
 def test_evaluate_intent_on_just_nlu_model(
@@ -409,7 +413,11 @@ def test_evaluate_intent_on_just_nlu_model(
     _, response = rasa_app_nlu.post("/model/test/intents", data=nlu_data)
 
     assert response.status == 200
-    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+    assert set(response.json.keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
 
 
 def test_evaluate_intent_with_query_param(
@@ -426,7 +434,11 @@ def test_evaluate_intent_with_query_param(
     )
 
     assert response.status == 200
-    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+    assert set(response.json.keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
 
     _, response = rasa_app.get("/status")
     assert previous_model_file == response.json["model_file"]

@@ -110,6 +110,16 @@ to the left of the plot.
     multiple tokens. A whitespace tokenizer would not work in this case.
 
 
+Response Selection
+^^^^^^^^^^^^^^^^^^^^^
+
+The evaluation script will produce a combined report for all response selector models in your pipeline.
+
+The report logs precision, recall and f1 measure for
+each response, as well as providing an overall average.
+You can save these reports as JSON files using the ``--report`` argument.
+
+
 Entity Extraction
 ^^^^^^^^^^^^^^^^^
 

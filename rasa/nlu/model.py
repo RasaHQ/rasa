@@ -182,6 +182,9 @@ class Trainer(object):
         # Before the training starts: check that all arguments are provided
         if not self.skip_validation:
             components.validate_arguments(self.pipeline, context)
+            components.validate_required_components_from_data(
+                self.pipeline, self.training_data
+            )
 
         # data gets modified internally during the training - hence the copy
         working_data = copy.deepcopy(data)
@@ -267,9 +270,9 @@ class Interpreter(object):
         model_version = metadata.get("rasa_version", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
-                "The model version is to old to be "
+                "The model version is too old to be "
                 "loaded by this Rasa NLU instance. "
-                "Either retrain the model, or run with"
+                "Either retrain the model, or run with "
                 "an older version. "
                 "Model version: {} Instance version: {}"
                 "".format(model_version, rasa.__version__)
