@@ -24,6 +24,9 @@ tests_requires = [
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
     "fakeredis~=1.0",
+    # upstream dep from fakeredis, should be removed if fakeredis properly depends on
+    # at least 1.12
+    "six>=1.12.0",
 ]
 
 install_requires = [
