@@ -46,6 +46,7 @@ def pipelines_for_tests():
                 "SklearnIntentClassifier",
                 "MitieIntentClassifier",
                 "EmbeddingIntentClassifier",
+                "ResponseSelector",
             ),
         ),
         (
@@ -186,7 +187,7 @@ async def test_handles_pipeline_with_non_existing_component(component_builder):
         await train(
             _config, data=DEFAULT_DATA_PATH, component_builder=component_builder
         )
-    assert "Failed to find component" in str(execinfo.value)
+    assert "Cannot find class" in str(execinfo.value)
 
 
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())

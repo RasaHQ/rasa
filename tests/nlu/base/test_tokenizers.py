@@ -76,6 +76,24 @@ def test_whitespace():
     ] == [0, 83]
 
 
+def test_whitespace_custom_intent_symbol():
+    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+
+    component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
+
+    tk = WhitespaceTokenizer(component_config)
+
+    assert [t.text for t in tk.tokenize("Forecast_for_LUNCH", attribute="intent")] == [
+        "Forecast_for_LUNCH"
+    ]
+
+    assert [t.text for t in tk.tokenize("Forecast+for+LUNCH", attribute="intent")] == [
+        "Forecast",
+        "for",
+        "LUNCH",
+    ]
+
+
 def test_whitespace_with_case():
     from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 

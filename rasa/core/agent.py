@@ -18,6 +18,7 @@ from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.lock_store import LockStore, InMemoryLockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
@@ -25,7 +26,6 @@ from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.utils import LockCounter
 from rasa.exceptions import ModelNotFound
 from rasa.importers.importer import TrainingDataImporter
 from rasa.model import (
@@ -220,6 +220,7 @@ async def load_agent(
     interpreter: Optional[NaturalLanguageInterpreter] = None,
     generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
     tracker_store: Optional[TrackerStore] = None,
+    lock_store: Optional[LockStore] = None,
     action_endpoint: Optional[EndpointConfig] = None,
 ):
     try:
@@ -229,6 +230,7 @@ async def load_agent(
                     interpreter=interpreter,
                     generator=generator,
                     tracker_store=tracker_store,
+                    lock_store=lock_store,
                     action_endpoint=action_endpoint,
                     model_server=model_server,
                     remote_storage=remote_storage,
@@ -243,6 +245,7 @@ async def load_agent(
                 interpreter=interpreter,
                 generator=generator,
                 tracker_store=tracker_store,
+                lock_store=lock_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
             )
@@ -253,6 +256,7 @@ async def load_agent(
                 interpreter=interpreter,
                 generator=generator,
                 tracker_store=tracker_store,
+                lock_store=lock_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
                 remote_storage=remote_storage,
@@ -281,6 +285,7 @@ class Agent(object):
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional[LockStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         fingerprint: Optional[Text] = None,
         model_directory: Optional[Text] = None,
@@ -293,6 +298,7 @@ class Agent(object):
 
         if self.domain is not None:
             self.domain.add_requested_slot()
+            self.domain.add_knowledge_base_slots()
 
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
@@ -302,8 +308,8 @@ class Agent(object):
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
+        self.lock_store = self._create_lock_store(lock_store)
         self.action_endpoint = action_endpoint
-        self.conversations_in_processing = {}
 
         self._set_fingerprint(fingerprint)
         self.model_directory = model_directory
@@ -340,6 +346,7 @@ class Agent(object):
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional[LockStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
@@ -382,6 +389,7 @@ class Agent(object):
             interpreter=interpreter,
             generator=generator,
             tracker_store=tracker_store,
+            lock_store=lock_store,
             action_endpoint=action_endpoint,
             model_directory=model_path,
             model_server=model_server,
@@ -463,34 +471,8 @@ class Agent(object):
 
         processor = self.create_processor(message_preprocessor)
 
-        # get the lock for the current conversation
-        lock = self.conversations_in_processing.get(message.sender_id)
-        if not lock:
-            logger.debug(
-                "Created a new lock for conversation '{}'".format(message.sender_id)
-            )
-            lock = LockCounter()
-            self.conversations_in_processing[message.sender_id] = lock
-
-        try:
-            async with lock:
-                # this makes sure that there can always only be one coroutine
-                # handling a conversation at any point in time
-                # Note: this doesn't support multi-processing, it just works
-                # for coroutines. If there are multiple processes handling
-                # messages, an external system needs to make sure messages
-                # for the same conversation are always processed by the same
-                # process.
-                return await processor.handle_message(message)
-        finally:
-            if not lock.is_someone_waiting():
-                # dispose of the lock if no one needs it to avoid
-                # accumulating locks
-                del self.conversations_in_processing[message.sender_id]
-                logger.debug(
-                    "Deleted lock for conversation '{}' (unused)"
-                    "".format(message.sender_id)
-                )
+        async with self.lock_store.lock(message.sender_id):
+            return await processor.handle_message(message)
 
     # noinspection PyUnusedLocal
     def predict_next(self, sender_id: Text, **kwargs: Any) -> Optional[Dict[Text, Any]]:
@@ -618,7 +600,7 @@ class Agent(object):
         training_resource: Union[Text, TrainingDataImporter],
         remove_duplicates: bool = True,
         unique_last_num_states: Optional[int] = None,
-        augmentation_factor: int = 20,
+        augmentation_factor: int = 50,
         tracker_limit: Optional[int] = None,
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
@@ -871,6 +853,13 @@ class Agent(object):
             return InMemoryTrackerStore(domain)
 
     @staticmethod
+    def _create_lock_store(store: Optional[LockStore]) -> LockStore:
+        if store is not None:
+            return store
+
+        return InMemoryLockStore()
+
+    @staticmethod
     def _create_ensemble(
         policies: Union[List[Policy], PolicyEnsemble, None]
     ) -> Optional[PolicyEnsemble]:
@@ -885,7 +874,7 @@ class Agent(object):
             raise ValueError(
                 "Invalid param `policies`. Passed object is "
                 "of type '{}', but should be policy, an array of "
-                "policies, or a policy ensemble".format(passed_type)
+                "policies, or a policy ensemble.".format(passed_type)
             )
 
     @staticmethod
@@ -894,6 +883,7 @@ class Agent(object):
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional[LockStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
@@ -915,6 +905,7 @@ class Agent(object):
             interpreter=interpreter,
             generator=generator,
             tracker_store=tracker_store,
+            lock_store=lock_store,
             action_endpoint=action_endpoint,
             model_server=model_server,
             remote_storage=remote_storage,
@@ -927,6 +918,7 @@ class Agent(object):
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional[LockStore] = None,
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
     ) -> Optional["Agent"]:
@@ -943,6 +935,7 @@ class Agent(object):
                 interpreter=interpreter,
                 generator=generator,
                 tracker_store=tracker_store,
+                lock_store=lock_store,
                 action_endpoint=action_endpoint,
                 model_server=model_server,
                 remote_storage=remote_storage,

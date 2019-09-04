@@ -101,7 +101,7 @@ Improving Intent Classification and Entity Recognition
 Common Examples
 ---------------
 
-Common examples have three components: ``text``, ``intent``, and ``entities``. The first two are strings while the last one is an array.
+Common examples have three components: ``text``, ``intent`` and ``entities``. The first two are strings while the last one is an array.
 
  - The *text* is the user message [required]
  - The *intent* is the intent that should be associated with the text [optional]
@@ -194,6 +194,8 @@ directly specified in the training data.
 
 Normalizing Data
 ~~~~~~~~~~~~~~~~
+
+.. _entity_synonyms:
 
 Entity Synonyms
 ---------------

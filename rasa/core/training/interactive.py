@@ -21,17 +21,14 @@ from questionary import Choice, Form, Question
 
 from rasa.cli import utils as cliutils
 from rasa.core import constants, run, train, utils
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    default_action_names,
-    UTTER_PREFIX,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,
     DEFAULT_SERVER_PORT,
     DEFAULT_SERVER_URL,
     REQUESTED_SLOT,
+    UTTER_PREFIX,
 )
 from rasa.core.domain import Domain
 import rasa.core.events
@@ -833,9 +830,9 @@ async def _write_nlu_to_file(
 
     with open(export_nlu_path, "w", encoding="utf-8") as f:
         if fformat == "md":
-            f.write(nlu_data.as_markdown())
+            f.write(nlu_data.nlu_as_markdown())
         else:
-            f.write(nlu_data.as_json())
+            f.write(nlu_data.nlu_as_json())
 
 
 def _entities_from_messages(messages):
@@ -1329,7 +1326,9 @@ def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
 
     if not skip_visualization:
-        visualization_url = DEFAULT_SERVER_FORMAT.format(DEFAULT_SERVER_PORT + 1)
+        visualization_url = DEFAULT_SERVER_FORMAT.format(
+            "http", DEFAULT_SERVER_PORT + 1
+        )
         visualization_help = "Visualisation at {}/visualization.html.".format(
             visualization_url
         )
