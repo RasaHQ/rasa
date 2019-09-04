@@ -215,12 +215,10 @@ def test_train_with_empty_data(language, pipeline, component_builder, tmpdir):
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@utilities.slowtest
-@pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_model_no_training_data_persisted(
-    language, pipeline, component_builder, tmpdir
+    component_builder, tmpdir
 ):
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
+    _config = utilities.base_test_conf("keyword")
     (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
@@ -232,16 +230,12 @@ async def test_train_model_no_training_data_persisted(
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.model_metadata.get("training_data") is None
-    assert loaded.parse("hello") is not None
-    assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@utilities.slowtest
-@pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_model_training_data_persisted(
-    language, pipeline, component_builder, tmpdir
+    component_builder, tmpdir
 ):
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
+    _config = utilities.base_test_conf("keyword")
     (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
@@ -253,5 +247,3 @@ async def test_train_model_training_data_persisted(
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.model_metadata.get("training_data") is not None
-    assert loaded.parse("hello") is not None
-    assert loaded.parse("Hello today is Monday, again!") is not None
