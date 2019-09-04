@@ -45,7 +45,7 @@ SQLTrackerStore
             tracker_store:
                 type: SQL
                 dialect: "sqlite"  # the dialect used to interact with the db
-                url: "localhost"  # (optional) host of the sql db
+                #url: "localhost"  # (optional) host of the sql db
                 db: "rasa.db"  # path to your db
                 username:  # username used for authentication
                 password:  # password used for authentication
