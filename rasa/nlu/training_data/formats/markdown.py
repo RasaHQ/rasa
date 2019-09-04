@@ -8,6 +8,11 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataWriter,
 )
 from rasa.nlu.utils import build_entity
+from rasa.nlu.constants import (
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
+    RESPONSE_IDENTIFIER_DELIMITER,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -181,7 +186,9 @@ class MarkdownReader(TrainingDataReader):
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(ent_regex, lambda m: m.groupdict()["entity_text"], example)
         self._add_synonyms(plain_text, entities)
-        message = Message(plain_text, {"intent": self.current_title})
+
+        message = Message.build(plain_text, self.current_title)
+
         if len(entities) > 0:
             message.set("entities", entities)
         return message
@@ -213,15 +220,18 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_training_examples_md(self, training_data):
         """generates markdown training examples."""
         training_examples = sorted(
-            [e.as_dict() for e in training_data.training_examples],
-            key=lambda k: k["intent"],
+            [e.as_dict_nlu() for e in training_data.training_examples],
+            key=lambda k: k[MESSAGE_INTENT_ATTRIBUTE],
         )
         md = ""
         for i, example in enumerate(training_examples):
-            intent = training_examples[i - 1]["intent"]
-            if i == 0 or intent != example["intent"]:
+            intent = training_examples[i - 1][MESSAGE_INTENT_ATTRIBUTE]
+            if i == 0 or intent != example[MESSAGE_INTENT_ATTRIBUTE]:
                 md += self._generate_section_header_md(
-                    INTENT, example["intent"], i != 0
+                    INTENT,
+                    example[MESSAGE_INTENT_ATTRIBUTE],
+                    example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE, None),
+                    i != 0,
                 )
 
             md += self._generate_item_md(self._generate_message_md(example))
@@ -271,10 +281,17 @@ class MarkdownWriter(TrainingDataWriter):
         return md
 
     @staticmethod
-    def _generate_section_header_md(section_type, title, prepend_newline=True):
+    def _generate_section_header_md(
+        section_type, title, subtitle=None, prepend_newline=True
+    ):
         """generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
-        return prefix + "## {}:{}\n".format(section_type, encode_string(title))
+        subtitle_suffix = (
+            "{}{}".format(RESPONSE_IDENTIFIER_DELIMITER, subtitle) if subtitle else ""
+        )
+        return prefix + "## {}:{}{}\n".format(
+            section_type, encode_string(title), encode_string(subtitle_suffix)
+        )
 
     @staticmethod
     def _generate_item_md(text):

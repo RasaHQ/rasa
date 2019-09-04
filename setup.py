@@ -26,7 +26,7 @@ tests_requires = [
 ]
 
 install_requires = [
-    "requests~=2.22",
+    "requests>=2.20",
     "boto3~=1.9",
     "matplotlib~=3.0",
     "simplejson~=3.16",
@@ -38,6 +38,9 @@ install_requires = [
     "numpy~=1.16",
     "scipy~=1.2",
     "tensorflow~=1.14.0",
+    # absl is a tensorflow dependency, but produces double logging before 0.8
+    # should be removed once tensorflow requires absl > 0.8 on its own
+    "absl-py>=0.8.0",
     # setuptools comes from tensorboard requirement:
     # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
     "setuptools >= 41.0.0",
@@ -73,7 +76,9 @@ install_requires = [
     "sanic-jwt~=1.3",
     "aiohttp~=3.5",
     "questionary>=1.1.0",
-    "python-socketio~=4.0",
+    "python-socketio>=4.3.1",
+    # the below can be unpinned when python-socketio pins >=3.9.3
+    "python-engineio>=3.9.3",
     "pydot~=1.4",
     "async_generator~=1.10",
     "SQLAlchemy~=1.3.0",

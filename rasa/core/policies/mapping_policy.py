@@ -138,6 +138,7 @@ class MappingPolicy(Policy):
         elif action == ACTION_RESTART_NAME:
             idx = domain.index_for_action(ACTION_RESTART_NAME)
             prediction[idx] = 1
+            logger.debug("Restarting the conversation with action_restart.")
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "

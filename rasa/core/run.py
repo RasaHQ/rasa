@@ -15,6 +15,7 @@ from rasa.core.agent import load_agent, Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints, configure_file_logging
 from rasa.model import get_model_subdirectories, get_model
@@ -123,7 +124,7 @@ def configure_app(
             """Small wrapper to shut down the server once cmd io is done."""
             await asyncio.sleep(1)  # allow server to start
             await console.record_messages(
-                server_url=constants.DEFAULT_SERVER_FORMAT.format(port)
+                server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port)
             )
 
             logger.info("Killing Sanic server now.")
@@ -147,7 +148,12 @@ def serve_application(
     endpoints: Optional[AvailableEndpoints] = None,
     remote_storage: Optional[Text] = None,
     log_file: Optional[Text] = None,
+    ssl_certificate: Optional[Text] = None,
+    ssl_keyfile: Optional[Text] = None,
+    ssl_password: Optional[Text] = None,
 ):
+    from rasa import server
+
     if not channel and not credentials:
         channel = "cmdline"
 
@@ -165,9 +171,12 @@ def serve_application(
         log_file=log_file,
     )
 
+    ssl_context = server.create_ssl_context(ssl_certificate, ssl_keyfile, ssl_password)
+    protocol = "https" if ssl_context else "http"
+
     logger.info(
         "Starting Rasa server on "
-        "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port))
+        "{}".format(constants.DEFAULT_SERVER_FORMAT.format(protocol, port))
     )
 
     app.register_listener(
@@ -183,7 +192,7 @@ def serve_application(
 
     update_sanic_log_level(log_file)
 
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, ssl=ssl_context)
 
 
 # noinspection PyUnusedLocal
@@ -212,6 +221,7 @@ async def load_agent_on_start(
     _tracker_store = TrackerStore.find_tracker_store(
         None, endpoints.tracker_store, _broker
     )
+    _lock_store = LockStore.find_lock_store(endpoints.lock_store)
 
     model_server = endpoints.model if endpoints and endpoints.model else None
 
@@ -222,6 +232,7 @@ async def load_agent_on_start(
         interpreter=_interpreter,
         generator=endpoints.nlg,
         tracker_store=_tracker_store,
+        lock_store=_lock_store,
         action_endpoint=endpoints.action,
     )
 

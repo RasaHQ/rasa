@@ -21,29 +21,6 @@ if typing.TYPE_CHECKING:
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
-# a fix for tf 1.14 double logging suggested in
-# https://github.com/tensorflow/tensorflow/issues/26691#issuecomment-500369493
-# from
-# https://github.com/dhalperi/pybatfish/blob/f8ddd3938148f9a5d9c14c371a099802c564fac3/pybatfish/client/capirca.py#L33-L50
-try:
-    # Capirca uses Google's abseil-py library, which uses a Google-specific
-    # wrapper for logging. That wrapper will write a warning to sys.stderr if
-    # the Google command-line flags library has not been initialized.
-    #
-    # https://github.com/abseil/abseil-py/blob/pypi-v0.7.1/absl/logging/__init__.py#L819-L825
-    #
-    # This is not right behavior for Python code that is invoked outside of a
-    # Google-authored main program. Use knowledge of abseil-py to disable that
-    # warning; ignore and continue if something goes wrong.
-    import absl.logging
-
-    # https://github.com/abseil/abseil-py/issues/99
-    logging.root.removeHandler(absl.logging._absl_handler)
-    # https://github.com/abseil/abseil-py/issues/102
-    absl.logging._warn_preinit_stderr = False
-except Exception:
-    pass
-
 # namedtuple for all tf session related data
 SessionData = namedtuple("SessionData", ("X", "Y", "label_ids"))
 
@@ -967,7 +944,8 @@ def extract_attention(attention_weights) -> Optional["tf.Tensor"]:
     attention = [
         tf.expand_dims(t, 0)
         for name, t in attention_weights.items()
-        if name.endswith("multihead_attention/dot_product_attention")
+        # the strings come from t2t library
+        if "multihead_attention/dot_product" in name and not name.endswith("/logits")
     ]
 
     if attention:
