@@ -136,7 +136,11 @@ def test_same_file_names_get_resolved(tmpdir):
         ("luis", {"data/examples/luis/demo-restaurants.json"}),
         (
             "rasa",
-            {"data/examples/rasa/demo-rasa.json", "data/examples/rasa/demo-rasa.md"},
+            {
+                "data/examples/rasa/demo-rasa.json",
+                "data/examples/rasa/demo-rasa.md",
+                "data/examples/rasa/demo-rasa-responses.md",
+            },
         ),
         ("wit", {"data/examples/wit/demo-flights.json"}),
     ],
