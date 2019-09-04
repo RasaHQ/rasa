@@ -117,8 +117,9 @@ def test_status_secured(rasa_secured_app: SanicTestClient):
     assert response.status == 401
 
 
-def test_status_not_ready_agent(rasa_app_nlu: SanicTestClient):
-    _, response = rasa_app_nlu.get("/status")
+def test_status_not_ready_agent(rasa_app: SanicTestClient):
+    rasa_app.app.agent = None
+    _, response = rasa_app.get("/status")
     assert response.status == 409
 
 
@@ -666,9 +667,6 @@ def test_unload_model_error(rasa_app: SanicTestClient):
 
     _, response = rasa_app.delete("/model")
     assert response.status == 204
-
-    _, response = rasa_app.get("/status")
-    assert response.status == 409
 
 
 def test_get_domain(rasa_app: SanicTestClient):

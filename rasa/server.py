@@ -919,7 +919,7 @@ def create_app(
 
         app.agent = Agent(lock_store=app.agent.lock_store)
 
-        logger.debug("Successfully unload model '{}'.".format(model_file))
+        logger.debug("Successfully unloaded model '{}'.".format(model_file))
         return response.json(None, status=204)
 
     @app.get("/domain")
