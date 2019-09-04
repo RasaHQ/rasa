@@ -93,7 +93,7 @@ def split_nlu_data(args):
 def validate_files(args):
     """Validate all files needed for training a model.
 
-    Fails with a non-zero exit code if there are any error in the data."""
+    Fails with a non-zero exit code if there are any errors in the data."""
     from rasa.core.validator import Validator
     from rasa.importers.rasa import RasaFileImporter
 
@@ -104,4 +104,4 @@ def validate_files(args):
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
     everything_is_alright = validator.verify_all(not args.fail_on_warnings)
-    sys.exit(not everything_is_alright)  # fail with non zero if there are issues
+    sys.exit(0) if everything_is_alright else sys.exit(1)
