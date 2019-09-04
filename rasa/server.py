@@ -66,13 +66,17 @@ def _docs(sub_url: Text) -> Text:
     return DOCS_BASE_URL + sub_url
 
 
-def ensure_loaded_agent(app: Sanic):
-    """Wraps a request handler ensuring there is a loaded and usable agent."""
+def ensure_loaded_agent(app: Sanic, allow_nlu_only: bool = False):
+    """Wraps a request handler ensuring there is a loaded and usable agent.
+
+    If `allow_nlu_only is `True`, consider the agent ready event if no policy
+    ensemble is present.
+    """
 
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if not app.agent or not app.agent.is_ready():
+            if not app.agent or not app.agent.is_ready(allow_nlu_only):
                 raise ErrorResponse(
                     409,
                     "Conflict",
@@ -369,7 +373,7 @@ def create_app(
 
     @app.get("/status")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
+    @ensure_loaded_agent(app, allow_nlu_only=True)
     async def status(request: Request):
         """Respond with the model name and the fingerprint of that model."""
 
