@@ -7,6 +7,8 @@
 Tracker Stores
 ==============
 
+.. edit-link::
+
 All conversations are stored within a `tracker store`.
 Rasa Core provides implementations for different store types out of the box.
 If you want to use another store, you can also build a custom tracker store by extending the `TrackerStore` class.
@@ -43,10 +45,12 @@ SQLTrackerStore
             tracker_store:
                 type: SQL
                 dialect: "sqlite"  # the dialect used to interact with the db
-                url: "localhost"  # (optional) host of the sql db
+                url: ""  # (optional) host of the sql db, e.g. "localhost"
                 db: "rasa.db"  # path to your db
                 username:  # username used for authentication
                 password:  # password used for authentication
+                query: # optional dictionary to be added as a query string to the connection URL
+                  driver: my-driver
 
     3. To start the Rasa Core server using your SQL backend,
        add the ``--endpoints`` flag, e.g.:
@@ -55,13 +59,16 @@ SQLTrackerStore
 
             rasa run -m models --endpoints endpoints.yml
 :Parameters:
+    - ``domain`` (default: ``None``): Domain object associated with this tracker store
     - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects. 
-    - ``url`` (default: ``None``): URL of your SQL database
+    - ``host`` (default: ``None``): URL of your SQL server
+    - ``port`` (default: ``None``): Port of your SQL server
     - ``db`` (default: ``rasa.db``): The path to the database to be used
     - ``username`` (default: ``None``): The username which is used for authentication
     - ``password`` (default: ``None``): The password which is used for authentication
-    - ``collection`` (default: ``conversations``): The collection name which is
-      used to store the conversations
+    - ``event_broker`` (default: ``None``): Event broker to publish events to
+    - ``login_db`` (default: ``None``): Alternative database name to which initially  connect, and create the database specified by `db` (PostgreSQL only)
+    - ``query`` (default: ``None``): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect
 
 RedisTrackerStore
 ~~~~~~~~~~~~~~~~~~

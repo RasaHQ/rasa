@@ -92,6 +92,13 @@ class Checkpoint(object):
 
 
 class StoryStep(object):
+    """A StoryStep is a section of a story block between two checkpoints.
+
+    NOTE: Checkpoints are not only limited to those manually written
+    in the story file, but are also implicitly created at points where
+    multiple intents are separated in one line by chaining them with "OR"s.
+    """
+
     def __init__(
         self,
         block_name: Optional[Text] = None,
@@ -218,14 +225,20 @@ class StoryStep(object):
                     # form is active
                     if self.story_string_helper.form_rejected:
                         if (
-                            self.story_string_helper.form_validation
+                            self.story_string_helper.form_prefix_string
+                            and self.story_string_helper.form_validation
                             and s.action_name == self.story_string_helper.active_form
                         ):
+                            # if there is something in `form_prefix_string`,
+                            # add action_listen before it,
+                            # because this form user input will be ignored by core
+                            # and therefore action_listen will not be automatically
+                            # added during reading the stories
                             result += self._bot_string(
                                 ActionExecuted(ACTION_LISTEN_NAME)
                             )
                             result += self.story_string_helper.form_prefix_string
-                        else:
+                        elif self.story_string_helper.no_form_prefix_string:
                             result += self.story_string_helper.no_form_prefix_string
                         # form rejected, add story string without form prefix
                         result += self._bot_string(s)
@@ -392,6 +405,8 @@ class Story(object):
 
 
 class StoryGraph(object):
+    """Graph of the story-steps pooled from all stories in the training data."""
+
     def __init__(
         self,
         story_steps: List[StoryStep],

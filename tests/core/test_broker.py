@@ -1,7 +1,10 @@
 import json
 
-from rasa.core import broker
-from rasa.core.broker import FileProducer, PikaProducer, KafkaProducer
+import rasa.core.brokers.utils as broker_utils
+from rasa.core.brokers.file_producer import FileProducer
+from rasa.core.brokers.kafka import KafkaProducer
+from rasa.core.brokers.pika import PikaProducer
+from rasa.core.brokers.sql import SQLProducer
 from rasa.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
@@ -17,27 +20,55 @@ def test_pika_broker_from_config():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/pika_endpoint.yml", "event_broker"
     )
-    actual = broker.from_endpoint_config(cfg)
+    actual = broker_utils.from_endpoint_config(cfg)
 
     assert isinstance(actual, PikaProducer)
     assert actual.host == "localhost"
-    assert actual.credentials.username == "username"
+    assert actual.username == "username"
     assert actual.queue == "queue"
 
 
 def test_no_broker_in_config():
     cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "event_broker")
 
-    actual = broker.from_endpoint_config(cfg)
+    actual = broker_utils.from_endpoint_config(cfg)
 
     assert actual is None
+
+
+def test_sql_broker_from_config():
+    cfg = read_endpoint_config(
+        "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
+    )
+    actual = broker_utils.from_endpoint_config(cfg)
+
+    assert isinstance(actual, SQLProducer)
+    assert actual.engine.name == "sqlite"
+
+
+def test_sql_broker_logs_to_sql_db():
+    cfg = read_endpoint_config(
+        "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
+    )
+    actual = broker_utils.from_endpoint_config(cfg)
+
+    for e in TEST_EVENTS:
+        actual.publish(e.as_dict())
+
+    with actual.session_scope() as session:
+        events_types = [
+            json.loads(event.data)["event"]
+            for event in session.query(actual.SQLBrokerEvent).all()
+        ]
+
+    assert events_types == ["user", "slot", "restart"]
 
 
 def test_file_broker_from_config():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/file_endpoint.yml", "event_broker"
     )
-    actual = broker.from_endpoint_config(cfg)
+    actual = broker_utils.from_endpoint_config(cfg)
 
     assert isinstance(actual, FileProducer)
     assert actual.path == "rasa_event.log"
@@ -46,7 +77,7 @@ def test_file_broker_from_config():
 def test_file_broker_logs_to_file(tmpdir):
     fname = tmpdir.join("events.log").strpath
 
-    actual = broker.from_endpoint_config(
+    actual = broker_utils.from_endpoint_config(
         EndpointConfig(**{"type": "file", "path": fname})
     )
 
@@ -65,7 +96,7 @@ def test_file_broker_logs_to_file(tmpdir):
 def test_file_broker_properly_logs_newlines(tmpdir):
     fname = tmpdir.join("events.log").strpath
 
-    actual = broker.from_endpoint_config(
+    actual = broker_utils.from_endpoint_config(
         EndpointConfig(**{"type": "file", "path": fname})
     )
 
@@ -83,13 +114,13 @@ def test_file_broker_properly_logs_newlines(tmpdir):
 
 
 def test_load_custom_broker_name():
-    config = EndpointConfig(**{"type": "rasa.core.broker.FileProducer"})
-    assert broker.from_endpoint_config(config)
+    config = EndpointConfig(**{"type": "rasa.core.brokers.file_producer.FileProducer"})
+    assert broker_utils.from_endpoint_config(config)
 
 
 def test_load_non_existent_custom_broker_name():
-    config = EndpointConfig(**{"type": "rasa.core.broker.MyProducer"})
-    assert broker.from_endpoint_config(config) is None
+    config = EndpointConfig(**{"type": "rasa.core.brokers.my.MyProducer"})
+    assert broker_utils.from_endpoint_config(config) is None
 
 
 def test_kafka_broker_from_config():

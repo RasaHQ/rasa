@@ -6,10 +6,17 @@
 Rasa Tutorial
 =============
 
+.. edit-link::
+
 This page explains the basics of building an assistant with Rasa and
 shows the structure of a Rasa project. You can test it out right here without
 installing anything.
 You can also :ref:`install Rasa <installation>` and follow along in your command line.
+
+.. raw:: html
+
+    The <a style="text-decoration: none" href="https://rasa.com/docs/rasa/glossary">glossary</a> contains an overview of the most common terms you’ll see in the Rasa documentation.
+
 
 
 .. contents::
@@ -231,6 +238,18 @@ assistant by running:
 
    rasa shell
 
+
+Next Steps
+^^^^^^^^^^
+
+Now that you've built your first Rasa bot it's time to learn about
+some more advanced Rasa features.
+
+- Learn how to implement business logic using :ref:`forms <forms>`
+- Learn how to integrate other APIs using :ref:`custom actions <actions>`
+- Learn how to connect your bot to different :ref:`messaging apps <messaging-and-voice-channels>`
+- Learn about customising the :ref:`components <components>` in your NLU pipeline
+- Read about custom and built-in :ref:`entities <entity-extraction>`
 
 You can also use Rasa X to collect more conversations
 and improve your assistant:

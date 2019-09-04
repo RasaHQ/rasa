@@ -7,7 +7,7 @@ from rasa.nlu.training_data import TrainingData
 from rasa.core.training.dsl import StoryStep
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
-from rasa.core.actions.action import UTTER_PREFIX
+from rasa.core.constants import UTTER_PREFIX
 
 logger = logging.getLogger(__name__)
 

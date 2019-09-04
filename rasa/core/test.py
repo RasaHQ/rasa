@@ -1,17 +1,22 @@
-import json
 import logging
 import os
-import typing
 import warnings
+import typing
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa.constants import RESULTS_FILE
+from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
+from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
+from rasa.nlu.training_data.formats.markdown import MarkdownWriter
+from rasa.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
-    from rasa.core.trackers import DialogueStateTracker
+
+import matplotlib
+
+matplotlib.use("TkAgg")
 
 logger = logging.getLogger(__name__)
 
@@ -76,32 +81,28 @@ class EvaluationStore(object):
             or self.action_predictions != self.action_targets
         )
 
-    def serialise_targets(
-        self, include_actions=True, include_intents=True, include_entities=False
-    ):
-        targets = []
-        if include_actions:
-            targets += self.action_targets
-        if include_intents:
-            targets += self.intent_targets
-        if include_entities:
-            targets += self.entity_targets
+    def serialise(self) -> Tuple[List[Text], List[Text]]:
+        """Turn targets and predictions to lists of equal size for sklearn."""
 
-        return [json.dumps(t) if isinstance(t, dict) else t for t in targets]
+        targets = (
+            self.action_targets
+            + self.intent_targets
+            + [
+                MarkdownWriter._generate_entity_md(gold.get("text"), gold)
+                for gold in self.entity_targets
+            ]
+        )
+        predictions = (
+            self.action_predictions
+            + self.intent_predictions
+            + [
+                MarkdownWriter._generate_entity_md(predicted.get("text"), predicted)
+                for predicted in self.entity_predictions
+            ]
+        )
 
-    def serialise_predictions(
-        self, include_actions=True, include_intents=True, include_entities=False
-    ):
-        predictions = []
-
-        if include_actions:
-            predictions += self.action_predictions
-        if include_intents:
-            predictions += self.intent_predictions
-        if include_entities:
-            predictions += self.entity_predictions
-
-        return [json.dumps(t) if isinstance(t, dict) else t for t in predictions]
+        # sklearn does not cope with lists of unequal size, nor None values
+        return pad_lists_to_size(targets, predictions, padding_value="None")
 
 
 class WronglyPredictedAction(ActionExecuted):
@@ -144,24 +145,23 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     type_name = "wrong_utterance"
 
-    def __init__(
-        self,
-        text,
-        correct_intent,
-        correct_entities,
-        parse_data=None,
-        timestamp=None,
-        input_channel=None,
-        predicted_intent=None,
-        predicted_entities=None,
-    ):
-        self.predicted_intent = predicted_intent
-        self.predicted_entities = predicted_entities
+    def __init__(self, event: UserUttered, eval_store: EvaluationStore):
 
-        intent = {"name": correct_intent}
+        if not eval_store.intent_predictions:
+            self.predicted_intent = None
+        else:
+            self.predicted_intent = eval_store.intent_predictions[0]
+        self.predicted_entities = eval_store.entity_predictions
+
+        intent = {"name": eval_store.intent_targets[0]}
 
         super(WronglyClassifiedUserUtterance, self).__init__(
-            text, intent, correct_entities, parse_data, timestamp, input_channel
+            event.text,
+            intent,
+            eval_store.entity_targets,
+            event.parse_data,
+            event.timestamp,
+            event.input_channel,
         )
 
     def as_story_string(self, e2e=True):
@@ -171,7 +171,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         predicted_message = md_format_message(
             self.text, self.predicted_intent, self.predicted_entities
         )
-        return ("{}: {}   <!-- predicted: {}: {} -->").format(
+        return "{}: {}   <!-- predicted: {}: {} -->".format(
             self.intent.get("name"),
             correct_message,
             self.predicted_intent,
@@ -197,24 +197,35 @@ async def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=Fal
     return g.generate()
 
 
-def _clean_entity_results(entity_results):
-    return [
-        {k: r[k] for k in ("start", "end", "entity", "value") if k in r}
-        for r in entity_results
-    ]
+def _clean_entity_results(
+    text: Text, entity_results: List[Dict[Text, Any]]
+) -> List[Dict[Text, Any]]:
+    """Extract only the token variables from an entity dict."""
+    cleaned_entities = []
+
+    for r in tuple(entity_results):
+        cleaned_entity = {"text": text}
+        for k in ("start", "end", "entity", "value"):
+            if k in set(r):
+                cleaned_entity[k] = r[k]
+        cleaned_entities.append(cleaned_entity)
+
+    return cleaned_entities
 
 
 def _collect_user_uttered_predictions(
-    event, partial_tracker, fail_on_prediction_errors
-):
-    from rasa.core.utils import pad_list_to_size
-
+    event: UserUttered,
+    partial_tracker: DialogueStateTracker,
+    fail_on_prediction_errors: bool,
+) -> EvaluationStore:
     user_uttered_eval_store = EvaluationStore()
 
     intent_gold = event.parse_data.get("true_intent")
-    predicted_intent = event.parse_data.get("intent").get("name")
-    if predicted_intent is None:
-        predicted_intent = "None"
+    predicted_intent = event.parse_data.get("intent", {}).get("name")
+
+    if not predicted_intent:
+        predicted_intent = [None]
+
     user_uttered_eval_store.add_to_store(
         intent_predictions=predicted_intent, intent_targets=intent_gold
     )
@@ -223,30 +234,14 @@ def _collect_user_uttered_predictions(
     predicted_entities = event.parse_data.get("entities")
 
     if entity_gold or predicted_entities:
-        if len(entity_gold) > len(predicted_entities):
-            predicted_entities = pad_list_to_size(
-                predicted_entities, len(entity_gold), "None"
-            )
-        elif len(predicted_entities) > len(entity_gold):
-            entity_gold = pad_list_to_size(entity_gold, len(predicted_entities), "None")
-
         user_uttered_eval_store.add_to_store(
-            entity_targets=_clean_entity_results(entity_gold),
-            entity_predictions=_clean_entity_results(predicted_entities),
+            entity_targets=_clean_entity_results(event.text, entity_gold),
+            entity_predictions=_clean_entity_results(event.text, predicted_entities),
         )
 
     if user_uttered_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
-            WronglyClassifiedUserUtterance(
-                event.text,
-                intent_gold,
-                user_uttered_eval_store.entity_predictions,
-                event.parse_data,
-                event.timestamp,
-                event.input_channel,
-                predicted_intent,
-                user_uttered_eval_store.entity_targets,
-            )
+            WronglyClassifiedUserUtterance(event, user_uttered_eval_store)
         )
         if fail_on_prediction_errors:
             raise ValueError(
@@ -493,10 +488,9 @@ async def test(
         from sklearn.exceptions import UndefinedMetricWarning
 
         warnings.simplefilter("ignore", UndefinedMetricWarning)
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            evaluation_store.serialise_targets(),
-            evaluation_store.serialise_predictions(),
-        )
+
+        targets, predictions = evaluation_store.serialise()
+        report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
 
     if out_directory:
         plot_story_evaluation(
@@ -603,13 +597,11 @@ async def compare_models_in_dir(
             if not model.endswith("tar.gz"):
                 continue
 
-            # The model files are named like <policy-name><number>.tar.gz
-            # Remove the number from the name to get the policy name
-            policy_name = "".join(
-                [i for i in os.path.basename(model) if not i.isdigit()]
-            )
+            # The model files are named like <config-name>PERCENTAGE_KEY<number>.tar.gz
+            # Remove the percentage key and number from the name to get the config name
+            config_name = os.path.basename(model).split(PERCENTAGE_KEY)[0]
             number_of_correct_stories = await _evaluate_core_model(model, stories_file)
-            number_correct_in_run[policy_name].append(number_of_correct_stories)
+            number_correct_in_run[config_name].append(number_of_correct_stories)
 
         for k, v in number_correct_in_run.items():
             number_correct[k].append(v)
@@ -696,7 +688,7 @@ def _plot_curve(
     data = rasa.utils.io.read_json_file(os.path.join(output, RESULTS_FILE))
     x = number_of_examples
 
-    # compute mean of all the runs for keras/embed policies
+    # compute mean of all the runs for different configs
     for label in data.keys():
         if len(data[label]) == 0:
             continue

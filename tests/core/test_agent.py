@@ -7,13 +7,16 @@ from sanic import Sanic, response
 
 import rasa.utils.io
 import rasa.core
-from rasa.core import jobs, utils
+from rasa.core import config, jobs, utils
 from rasa.core.agent import Agent, load_agent
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.channels.channel import UserMessage
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
+from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
-from tests.core.conftest import DEFAULT_DOMAIN_PATH
+
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture(scope="session")
@@ -194,6 +197,53 @@ async def test_load_agent(trained_model):
     assert agent.model_directory is not None
 
 
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [({"forms": ["restaurant_form"]}, {"policies": [{"name": "MemoizationPolicy"}]})],
+)
+def test_form_without_form_policy(domain, policy_config):
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+    assert "haven't added the FormPolicy" in str(execinfo.value)
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {
+                "intents": [{"affirm": {"triggers": "utter_ask_num_people"}}],
+                "actions": ["utter_ask_num_people"],
+            },
+            {"policies": [{"name": "MemoizationPolicy"}]},
+        )
+    ],
+)
+def test_trigger_without_mapping_policy(domain, policy_config):
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+    assert "haven't added the MappingPolicy" in str(execinfo.value)
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [({"intents": ["affirm"]}, {"policies": [{"name": "TwoStageFallbackPolicy"}]})],
+)
+def test_two_stage_fallback_without_deny_suggestion(domain, policy_config):
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+    assert "The intent 'out_of_scope' must be present" in str(execinfo.value)
+
+
 async def test_agent_update_model_none_domain(trained_model):
     agent = await load_agent(model_path=trained_model)
     agent.update_model(
@@ -217,7 +267,12 @@ async def test_load_agent_on_not_existing_path():
 
 @pytest.mark.parametrize(
     "model_path",
-    ["non-existing-path", DEFAULT_DOMAIN_PATH, "not-existing-model.tar.gz", None],
+    [
+        "non-existing-path",
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+        "not-existing-model.tar.gz",
+        None,
+    ],
 )
 async def test_agent_load_on_invalid_model_path(model_path):
     with pytest.raises(ValueError):

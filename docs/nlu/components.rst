@@ -1,10 +1,12 @@
-:desc: Configure the custom components of your ML model to optimise the
-       processes performed on the user input of your contextual assistant.
+:desc: Customize the components and parameters of Rasa's Machine Learning based
+       Natural Language Understanding pipeline
 
 .. _components:
 
 Components
 ==========
+
+.. edit-link::
 
 .. note::
    For clarity, we have renamed the pre-defined pipelines to reflect
@@ -158,14 +160,14 @@ RegexFeaturizer
 CountVectorsFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Creates bag-of-words representation of intent features
+:Short: Creates bag-of-words representation of user message and label(intent and response) features
 :Outputs:
    nothing, used as an input to intent classifiers that
    need bag-of-words representation of intent features
    (e.g. ``EmbeddingIntentClassifier``)
 :Requires: nothing
 :Description:
-    Creates bag-of-words representation of intent features using
+    Creates bag-of-words representation of user message and label features using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
@@ -217,10 +219,18 @@ CountVectorsFeaturizer
             Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom additional preprocessor.
             Unseen words will be substituted with ``OOV_token`` **only** if this token is present in the training data or ``OOV_words`` list is provided.
 
+    Sharing Vocabulary between user message and labels:
+
+        .. note:: Enabled only if ``use_shared_vocab`` is ``True``
+
+        Build a common vocabulary set between tokens in labels and user message.
+
     .. code-block:: yaml
 
         pipeline:
         - name: "CountVectorsFeaturizer"
+          # whether to use a shared vocab
+          "use_shared_vocab": False,
           # whether to use word or character n-grams
           # 'char_wb' creates character n-grams only inside word boundaries
           # n-grams at the edges of words are padded with space.
@@ -370,10 +380,11 @@ EmbeddingIntentClassifier
         }
 
 :Description:
-    The embedding intent classifier embeds user inputs and intent labels into the same space. Supervised embeddings are
-    trained by maximizing similarity between them. This algorithm is based on
-    `StarSpace <https://arxiv.org/abs/1709.03856>`_. However, in this implementation
-    the ``mu`` parameter is treated differently and additional hidden layers are added together with dropout.
+    The embedding intent classifier embeds user inputs and intent labels into the same space.
+    Supervised embeddings are trained by maximizing similarity between them.
+    This algorithm is based on `StarSpace <https://arxiv.org/abs/1709.03856>`_.
+    However, in this implementation the loss function is slightly different and
+    additional hidden layers are added together with dropout.
     This algorithm also provides similarity rankings of the labels that did not "win".
 
     The embedding intent classifier needs to be preceded by a featurizer in the pipeline.
@@ -383,36 +394,68 @@ EmbeddingIntentClassifier
 
     .. note:: If during prediction time a message contains **only** words unseen during training,
               and no Out-Of-Vacabulary preprocessor was used,
-              empty intent ``""`` is predicted with confidence ``0.0``.
+              empty intent ``None`` is predicted with confidence ``0.0``.
 
 :Configuration:
-    If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-    modeling hierarchical intent structure, use these flags:
-
-    - tokenization of intent labels:
-        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them, default ``false``;
-        - ``intent_split_symbol`` sets the delimiter string to split the intent labels, default ``_``.
-
 
     The algorithm also has hyperparameters to control:
+
         - neural network's architecture:
-            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before the embedding layer for user inputs, the number of hidden layers is equal to the length of the list
-            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before the embedding layer for intent labels, the number of hidden layers is equal to the length of the list
+
+            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before
+              the embedding layer for user inputs, the number of hidden layers
+              is equal to the length of the list
+            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before
+              the embedding layer for intent labels, the number of hidden layers
+              is equal to the length of the list
+            - ``share_hidden`` if set to True, shares the hidden layers between user inputs and intent label
+
         - training:
-            - ``batch_size`` sets the number of training examples in one forward/backward pass, the higher the batch size, the more memory space you'll need;
-            - ``epochs`` sets the number of times the algorithm will see training data, where ``one epoch`` = one forward pass and one backward pass of all the training examples;
+
+            - ``batch_size`` sets the number of training examples in one
+              forward/backward pass, the higher the batch size, the more
+              memory space you'll need;
+            - ``batch_strategy`` sets the type of batching strategy,
+              it should be either ``sequence`` or ``balanced``;
+            - ``epochs`` sets the number of times the algorithm will see
+              training data, where one ``epoch`` equals one forward pass and
+              one backward pass of all the training examples;
+            - ``random_seed`` if set to any int will get reproducible
+              training results for the same inputs;
+
         - embedding:
+
             - ``embed_dim`` sets the dimension of embedding space;
-            - ``mu_pos`` controls how similar the algorithm should try to make embedding vectors for correct intent labels;
-            - ``mu_neg`` controls maximum negative similarity for incorrect intents;
-            - ``similarity_type`` sets the type of the similarity, it should be either ``cosine`` or ``inner``;
-            - ``num_neg`` sets the number of incorrect intent labels, the algorithm will minimize their similarity to the user input during training;
-            - ``use_max_sim_neg`` if ``true`` the algorithm only minimizes maximum similarity over incorrect intent labels;
-            - ``random_seed`` (None or int) An integer sets the random seed for numpy and tensorflow, so that the random initialisation is always the same and produces the same training result
+            - ``num_neg`` sets the number of incorrect intent labels,
+              the algorithm will minimize their similarity to the user
+              input during training;
+            - ``similarity_type`` sets the type of the similarity,
+              it should be either ``auto``, ``cosine`` or ``inner``,
+              if ``auto``, it will be set depending on ``loss_type``,
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+            - ``loss_type`` sets the type of the loss function,
+              it should be either ``softmax`` or ``margin``;
+            - ``mu_pos`` controls how similar the algorithm should try
+              to make embedding vectors for correct intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``mu_neg`` controls maximum negative similarity for
+              incorrect intents,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``use_max_sim_neg`` if ``true`` the algorithm only
+              minimizes maximum similarity over incorrect intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
+              for examples where correct label is predicted with high confidence,
+              used only if ``loss_type`` is set to ``softmax``;
+
         - regularization:
+
             - ``C2`` sets the scale of L2 regularization
-            - ``C_emb`` sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;
-            - ``droprate`` sets the dropout rate, it should be between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units;
+            - ``C_emb`` sets the scale of how important is to minimize
+              the maximum similarity between embeddings of different intent labels;
+            - ``droprate`` sets the dropout rate, it should be
+              between ``0`` and ``1``, e.g. ``droprate=0.1``
+              would drop out ``10%`` of input units;
 
     .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
 
@@ -420,39 +463,85 @@ EmbeddingIntentClassifier
               In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
               If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
-    In the config, you can specify these parameters:
+    In the config, you can specify these parameters.
+    The default values are defined in ``EmbeddingIntentClassifier.defaults``:
 
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "EmbeddingIntentClassifier"
-          # nn architecture
-          "hidden_layers_sizes_a": [256, 128]
-          "hidden_layers_sizes_b": []
-          "batch_size": [64, 256]
-          "epochs": 300
-          # embedding parameters
-          "embed_dim": 20
-          "mu_pos": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
-          "mu_neg": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
-          "similarity_type": "cosine"  # string 'cosine' or 'inner'
-          "num_neg": 20
-          "use_max_sim_neg": true  # flag which loss function to use
-          "random_seed": None # set to any int to generate a reproducible training result
-          # regularization
-          "C2": 0.002
-          "C_emb": 0.8
-          "droprate": 0.2
-          # flag for tokenizing intents
-          "intent_tokenization_flag": false
-          "intent_split_symbol": "_"
-          # visualization of accuracy
-          "evaluate_every_num_epochs": 10  # small values may hurt performance
-          "evaluate_on_num_examples": 1000  # large values may hurt performance
+    .. literalinclude:: ../../rasa/nlu/classifiers/embedding_intent_classifier.py
+       :dedent: 4
+       :start-after: # default properties (DOC MARKER - don't remove)
+       :end-before: # end default properties (DOC MARKER - don't remove)
 
     .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
+
+Selectors
+----------
+
+.. _response-selector:
+
+Response Selector
+~~~~~~~~~~~~~~~~~~
+
+:Short: Response Selector
+:Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
+:Requires: A featurizer
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "text": "What is the recommend python version to install?",
+            "entities": [],
+            "intent": {"confidence": 0.6485910906220309, "name": "faq"},
+            "intent_ranking": [
+                {"confidence": 0.6485910906220309, "name": "faq"},
+                {"confidence": 0.1416153159565678, "name": "greet"}
+            ],
+            "response_selector": {
+              "faq": {
+                "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+                "ranking": [
+                    {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+                    {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
+                ]
+              }
+            }
+        }
+
+:Description:
+
+    Response Selector component can be used to build a response retrieval model to directly predict a bot response from
+    a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
+    It embeds user inputs and response labels into the same space and follows the exact same
+    neural network architecture and optimization as the ``EmbeddingIntentClassifier``.
+
+    The response selector needs to be preceded by a featurizer in the pipeline.
+    This featurizer creates the features used for the embeddings.
+    It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
+    by ``SpacyNLP``.
+
+    .. note:: If during prediction time a message contains **only** words unseen during training,
+              and no Out-Of-Vacabulary preprocessor was used,
+              empty response ``None`` is predicted with confidence ``0.0``.
+
+:Configuration:
+
+    The algorithm includes all the hyperparameters that ``EmbeddingIntentClassifier`` uses.
+    In addition, the component can also be configured to train a response selector for a particular retrieval intent
+
+        - ``retrieval_intent``: sets the name of the intent for which this response selector model is trained. Default ``None``
+
+    In the config, you can specify these parameters.
+    The default values are defined in ``ResponseSelector.defaults``:
+
+    .. literalinclude:: ../../rasa/nlu/selectors/embedding_response_selector.py
+       :dedent: 4
+       :start-after: # default properties (DOC MARKER - don't remove)
+       :end-before: # end default properties (DOC MARKER - don't remove)
+
+.. _tokenizers:
 
 Tokenizers
 ----------
@@ -467,6 +556,13 @@ WhitespaceTokenizer
     Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
     extractor.
 :Configuration:
+
+    If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+    modeling hierarchical intent structure, use these flags:
+
+    - tokenization of intent and response labels:
+        - ``intent_split_symbol`` sets the delimiter string to split the intent and response labels, default is whitespace.
+
     Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
 
     .. code-block:: yaml
@@ -671,7 +767,7 @@ CRFEntityExtractor
           # Available features are:
           # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
           # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
-          # ``bias``, ``upper`` and ``digit``
+          # ``bias``, ``upper``, ``digit`` and ``pattern``
           features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
           # The flag determines whether to use BILOU tagging or not. BILOU
@@ -751,3 +847,5 @@ DucklingHTTPExtractor
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
+
+

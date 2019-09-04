@@ -1,8 +1,14 @@
+:desc: Read about common dialogue patterns encountered by task-oriented
+       bots and how best to handle them using Rasa's open source dialogue
+       management system.
+
 .. _completing-tasks:
 
 ================
 Completing Tasks
 ================
+
+.. edit-link::
 
 .. contents::
    :local:
@@ -82,6 +88,7 @@ Understanding contextual questions is a key difference between `level 2 and leve
        - what do you mean?
        - ( We have different memberships. Check your statement to see if you are a premium member.
 
+.. _unhappy-paths:
 
 Unhappy Paths
 -------------

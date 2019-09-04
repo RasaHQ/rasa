@@ -1,7 +1,12 @@
+:desc: Check out how to make your Rasa assistant available on platforms like
+       Facebook Messenger, Slack, Telegram or even your very own website. 
+
 .. _messaging-and-voice-channels:
 
 Messaging and Voice Channels
 ============================
+
+.. edit-link::
 
 If you're testing this on your local computer (i.e. not a server), you
 will need to use `ngrok <https://rasa.com/docs/rasa-x/get-feedback-from-test-users/#use-ngrok-for-local-testing>`_.

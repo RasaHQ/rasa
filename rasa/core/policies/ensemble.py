@@ -14,7 +14,12 @@ import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
 
 from rasa.core import utils, training
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ACTION_BACK_NAME,
+    ACTION_RESTART_NAME,
+)
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
@@ -45,6 +50,20 @@ class PolicyEnsemble(object):
             self.action_fingerprints = {}
 
         self._check_priorities()
+        self._check_for_important_policies()
+
+    def _check_for_important_policies(self):
+        if "MappingPolicy" not in self.policies:
+            logger.info(
+                "MappingPolicy not included in policy ensemble. Default intents "
+                "'{} and {} will not trigger actions '{}' and '{}'."
+                "".format(
+                    USER_INTENT_RESTART,
+                    USER_INTENT_BACK,
+                    ACTION_RESTART_NAME,
+                    ACTION_BACK_NAME,
+                )
+            )
 
     @staticmethod
     def _training_events_from_trackers(training_trackers):
@@ -59,6 +78,24 @@ class PolicyEnsemble(object):
                     events_metadata[action_name].add(event)
 
         return events_metadata
+
+    @staticmethod
+    def check_domain_ensemble_compatibility(
+        ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ) -> None:
+        """Check for elements that only work with certain policy/domain combinations."""
+
+        from rasa.core.policies.form_policy import FormPolicy
+        from rasa.core.policies.mapping_policy import MappingPolicy
+        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+
+        policies_needing_validation = [
+            FormPolicy,
+            MappingPolicy,
+            TwoStageFallbackPolicy,
+        ]
+        for policy in policies_needing_validation:
+            policy.validate_against_domain(ensemble, domain)
 
     def _check_priorities(self) -> None:
         """Checks for duplicate policy priorities within PolicyEnsemble."""
@@ -195,9 +232,9 @@ class PolicyEnsemble(object):
         model_version = metadata.get("rasa", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedDialogueModelError(
-                "The model version is to old to be "
+                "The model version is too old to be "
                 "loaded by this Rasa Core instance. "
-                "Either retrain the model, or run with"
+                "Either retrain the model, or run with "
                 "an older version. "
                 "Model version: {} Instance version: {} "
                 "Minimal compatible version: {}"

@@ -1,9 +1,11 @@
 import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
+import warnings
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.constants import MESSAGE_RESPONSE_ATTRIBUTE
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -26,7 +28,7 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 
 
 def validate_requirements(component_names: List[Text]) -> None:
-    """Ensures that all required python packages are installed to
+    """Ensures that all required importable python packages are installed to
     instantiate and used the passed components."""
     from rasa.nlu import registry
 
@@ -41,10 +43,12 @@ def validate_requirements(component_names: List[Text]) -> None:
         # if available, use the development file to figure out the correct
         # version numbers for each requirement
         raise Exception(
-            "Not all required packages are installed. "
+            "Not all required importable packages are installed. "
             + "To use this pipeline, you need to install the "
             "missing dependencies. "
-            + "Please install {}".format(", ".join(failed_imports))
+            + "Please install the package(s) that contain the module(s): {}".format(
+                ", ".join(failed_imports)
+            )
         )
 
 
@@ -77,6 +81,23 @@ def validate_arguments(
                     "".format(component.name, r)
                 )
         provided_properties.update(component.provides)
+
+
+def validate_required_components_from_data(
+    pipeline: List["Component"], data: TrainingData
+):
+
+    response_selector_exists = False
+    for component in pipeline:
+        # check if a response selector is part of NLU pipeline
+        if MESSAGE_RESPONSE_ATTRIBUTE in component.provides:
+            response_selector_exists = True
+
+    if len(data.response_examples) and not response_selector_exists:
+        warnings.warn(
+            "Training data consists examples for training a response selector but "
+            "no response selector component specified inside NLU pipeline"
+        )
 
 
 class MissingArgumentError(ValueError):
@@ -198,7 +219,9 @@ class Component(object, metaclass=ComponentMetaclass):
     @classmethod
     def required_packages(cls) -> List[Text]:
         """Specify which python packages need to be installed to use this
-        component, e.g. ``["spacy"]``.
+        component, e.g. ``["spacy"]``. More specifically, these should be
+        importable python package names e.g. `sklearn` and not package
+        names in the dependencies sense e.g. `scikit-learn`
 
         This list of requirements allows us to fail early during training
         if a required package is not installed."""

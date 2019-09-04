@@ -4,16 +4,16 @@ import logging
 import os
 import tarfile
 import tempfile
+import typing
 import warnings
 import zipfile
 import glob
 from asyncio import AbstractEventLoop
-from typing import Text, Any, Dict, Union, List, Type, Callable
-import ruamel.yaml as yaml
 from io import BytesIO as IOReader
+from typing import Text, Any, Dict, Union, List, Type, Callable
 
+import ruamel.yaml as yaml
 import simplejson
-import typing
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 
@@ -100,6 +100,7 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
         content: A text containing yaml content.
     """
     fix_yaml_loader()
+
     replace_environment_variables()
 
     yaml_parser = yaml.YAML(typ="safe")
@@ -324,9 +325,12 @@ def list_directory(path: Text) -> List[Text]:
     elif os.path.isdir(path):
         results = []
         for base, dirs, files in os.walk(path):
-            # remove hidden files
-            goodfiles = filter(lambda x: not x.startswith("."), files)
-            results.extend(os.path.join(base, f) for f in goodfiles)
+            # add not hidden files
+            good_files = filter(lambda x: not x.startswith("."), files)
+            results.extend(os.path.join(base, f) for f in good_files)
+            # add not hidden directories
+            good_directories = filter(lambda x: not x.startswith("."), dirs)
+            results.extend(os.path.join(base, f) for f in good_directories)
         return results
     else:
         raise ValueError(
@@ -355,5 +359,5 @@ def zip_folder(folder: Text) -> Text:
     zipped_path = tempfile.NamedTemporaryFile(delete=False)
     zipped_path.close()
 
-    # WARN: not thread save!
+    # WARN: not thread-safe!
     return shutil.make_archive(zipped_path.name, str("zip"), folder)

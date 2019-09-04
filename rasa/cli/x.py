@@ -1,19 +1,19 @@
 import argparse
+import asyncio
 import importlib.util
 import logging
-import signal
-import sys
 import os
+import signal
 import traceback
 from multiprocessing import get_context
-import typing
-from typing import List, Text, Optional
+from typing import List, Text, Optional, Tuple, Union, Iterable
 
+import aiohttp
 import ruamel.yaml as yaml
 
-from rasa.cli.utils import get_validated_path, print_warning, print_error
+import rasa.cli.utils as cli_utils
+import rasa.utils.io as io_utils
 from rasa.cli.arguments import x as arguments
-
 from rasa.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_CREDENTIALS_PATH,
@@ -23,15 +23,12 @@ from rasa.constants import (
     DEFAULT_RASA_X_PORT,
     DEFAULT_RASA_PORT,
 )
-import rasa.utils.io as io_utils
+from rasa.core.utils import AvailableEndpoints
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TRACKER_DB = "tracker.db"
-
-if typing.TYPE_CHECKING:
-    from rasa.core.utils import AvailableEndpoints
+DEFAULT_EVENTS_DB = "events.db"
 
 
 # noinspection PyProtectedMember
@@ -56,8 +53,9 @@ def add_subparser(
 
 def _rasa_service(
     args: argparse.Namespace,
-    endpoints: "AvailableEndpoints",
+    endpoints: AvailableEndpoints,
     rasa_x_url: Optional[Text] = None,
+    credentials_path: Optional[Text] = None,
 ):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
@@ -67,9 +65,10 @@ def _rasa_service(
     io_utils.configure_colored_logging(args.loglevel)
     logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
-    credentials_path = _prepare_credentials_for_rasa_x(
-        args.credentials, rasa_x_url=rasa_x_url
-    )
+    if not credentials_path:
+        credentials_path = _prepare_credentials_for_rasa_x(
+            args.credentials, rasa_x_url=rasa_x_url
+        )
 
     serve_application(
         endpoints=endpoints,
@@ -86,7 +85,7 @@ def _rasa_service(
 def _prepare_credentials_for_rasa_x(
     credentials_path: Optional[Text], rasa_x_url: Optional[Text] = None
 ) -> Text:
-    credentials_path = get_validated_path(
+    credentials_path = cli_utils.get_validated_path(
         credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
     if credentials_path:
@@ -104,7 +103,7 @@ def _prepare_credentials_for_rasa_x(
 
 
 def _overwrite_endpoints_for_local_x(
-    endpoints: "AvailableEndpoints", rasa_x_token: Text, rasa_x_url: Text
+    endpoints: AvailableEndpoints, rasa_x_token: Text, rasa_x_url: Text
 ):
     from rasa.utils.endpoints import EndpointConfig
     import questionary
@@ -115,45 +114,40 @@ def _overwrite_endpoints_for_local_x(
         wait_time_between_pulls=2,
     )
 
-    overwrite_existing_tracker_store = False
-    if endpoints.tracker_store and not _is_correct_tracker_store(
-        endpoints.tracker_store
-    ):
-        print_error(
-            "Rasa X currently only supports a SQLite tracker store with path '{}' "
+    overwrite_existing_event_broker = False
+    if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
+        cli_utils.print_error(
+            "Rasa X currently only supports a SQLite event broker with path '{}' "
             "when running locally. You can deploy Rasa X with Docker "
             "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
-            "other tracker store configurations.".format(DEFAULT_TRACKER_DB)
+            "other event broker configurations.".format(DEFAULT_EVENTS_DB)
         )
-        overwrite_existing_tracker_store = questionary.confirm(
-            "Do you want to continue with the default SQLite tracker store?"
+        overwrite_existing_event_broker = questionary.confirm(
+            "Do you want to continue with the default SQLite event broker?"
         ).ask()
 
-        if not overwrite_existing_tracker_store:
+        if not overwrite_existing_event_broker:
             exit(0)
 
-    if not endpoints.tracker_store or overwrite_existing_tracker_store:
-        endpoints.tracker_store = EndpointConfig(type="sql", db=DEFAULT_TRACKER_DB)
+    if not endpoints.tracker_store or overwrite_existing_event_broker:
+        endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
 
 
-def _is_correct_tracker_store(tracker_endpoint: EndpointConfig) -> bool:
-    return (
-        tracker_endpoint.type == "sql"
-        and tracker_endpoint.kwargs.get("dialect", "").lower() == "sqlite"
-        and tracker_endpoint.kwargs.get("db") == DEFAULT_TRACKER_DB
+def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
+    return all(
+        [
+            event_broker.type == "sql",
+            event_broker.kwargs.get("dialect", "").lower() == "sqlite",
+            event_broker.kwargs.get("db") == DEFAULT_EVENTS_DB,
+        ]
     )
 
 
 def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     """Starts the Rasa X API with Rasa as a background process."""
 
-    from rasa.core.utils import AvailableEndpoints
-
-    args.endpoints = get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-
-    endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+    credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
+    endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
 
     rasa_x_url = "http://localhost:{}/api".format(args.rasa_x_port)
     _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url)
@@ -169,7 +163,9 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     )
 
     ctx = get_context("spawn")
-    p = ctx.Process(target=_rasa_service, args=(args, endpoints, rasa_x_url))
+    p = ctx.Process(
+        target=_rasa_service, args=(args, endpoints, rasa_x_url, credentials_path)
+    )
     p.daemon = True
     p.start()
     return p
@@ -232,16 +228,15 @@ def is_rasa_project_setup(project_path: Text):
 
 def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
     if not is_rasa_x_installed():
-        print_error(
+        cli_utils.print_error_and_exit(
             "Rasa X is not installed. The `rasa x` "
             "command requires an installation of Rasa X. "
             "Instructions on how to install Rasa X can be found here: "
             "https://rasa.com/docs/rasa-x/installation-and-setup/."
         )
-        sys.exit(1)
 
     if args.port == args.rasa_x_port:
-        print_error(
+        cli_utils.print_error_and_exit(
             "The port for Rasa X '{}' and the port of the Rasa server '{}' are the "
             "same. We need two different ports, one to run Rasa X (e.g. delivering the "
             "UI) and another one to run a normal Rasa server.\nPlease specify two "
@@ -249,20 +244,19 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
                 args.rasa_x_port, args.port
             )
         )
-        sys.exit(1)
 
     if not is_rasa_project_setup(project_path):
-        print_error(
+        cli_utils.print_error_and_exit(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
-            "directory (see http://rasa.com/docs/rasa/user-guide/rasa-tutorial/#create-a-new-project)."
+            "directory (see http://rasa.com/docs/rasa/user-guide/"
+            "rasa-tutorial/#create-a-new-project)."
         )
-        sys.exit(1)
 
     _validate_domain(os.path.join(project_path, DEFAULT_DOMAIN_PATH))
 
     if args.data and not os.path.exists(args.data):
-        print_warning(
+        cli_utils.print_warning(
             "The provided data path ('{}') does not exists. Rasa X will start "
             "without any training data.".format(args.data)
         )
@@ -274,8 +268,9 @@ def _validate_domain(domain_path: Text):
     try:
         Domain.load(domain_path)
     except InvalidDomain as e:
-        print_error("The provided domain file could not be loaded. Error: {}".format(e))
-        sys.exit(1)
+        cli_utils.print_error_and_exit(
+            "The provided domain file could not be loaded. " "Error: {}".format(e)
+        )
 
 
 def rasa_x(args: argparse.Namespace):
@@ -291,16 +286,79 @@ def rasa_x(args: argparse.Namespace):
         run_locally(args)
 
 
+async def _pull_runtime_config_from_server(
+    config_endpoint: Optional[Text],
+    attempts: int = 60,
+    wait_time_between_pulls: Union[int, float] = 5,
+    keys: Iterable[Text] = ("endpoints", "credentials"),
+) -> Optional[List[Text]]:
+    """Pull runtime config from `config_endpoint`.
+
+    Returns a list of paths to yaml dumps, each containing the contents of one of
+    `keys`.
+    """
+
+    while attempts:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(config_endpoint) as resp:
+                    if resp.status == 200:
+                        rjs = await resp.json()
+                        try:
+                            return [
+                                io_utils.create_temporary_file(rjs[k]) for k in keys
+                            ]
+                        except KeyError as e:
+                            cli_utils.print_error_and_exit(
+                                "Failed to find key '{}' in runtime config. "
+                                "Exiting.".format(e)
+                            )
+                    else:
+                        logger.debug(
+                            "Failed to get a proper response from remote "
+                            "server. Status Code: {}. Response: '{}'"
+                            "".format(resp.status, await resp.text())
+                        )
+        except aiohttp.ClientError as e:
+            logger.debug("Failed to connect to server. Retrying. {}".format(e))
+
+        await asyncio.sleep(wait_time_between_pulls)
+        attempts -= 1
+
+    cli_utils.print_error_and_exit(
+        "Could not fetch runtime config from server at '{}'. "
+        "Exiting.".format(config_endpoint)
+    )
+
+
 def run_in_production(args: argparse.Namespace):
     from rasa.cli.utils import print_success
-    from rasa.core.utils import AvailableEndpoints
 
     print_success("Starting Rasa X in production mode... 🚀")
-    args.endpoints = get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-    endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
-    _rasa_service(args, endpoints)
+
+    credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
+    endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
+
+    _rasa_service(args, endpoints, None, credentials_path)
+
+
+def _get_credentials_and_endpoints_paths(
+    args: argparse.Namespace
+) -> Tuple[Optional[Text], Optional[Text]]:
+    config_endpoint = args.config_endpoint
+    if config_endpoint:
+        loop = asyncio.get_event_loop()
+        endpoints_config_path, credentials_path = loop.run_until_complete(
+            _pull_runtime_config_from_server(config_endpoint)
+        )
+
+    else:
+        endpoints_config_path = cli_utils.get_validated_path(
+            args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+        )
+        credentials_path = None
+
+    return credentials_path, endpoints_config_path
 
 
 def run_locally(args: argparse.Namespace):
@@ -322,7 +380,7 @@ def run_locally(args: argparse.Namespace):
         local.main(args, project_path, args.data, token=rasa_x_token)
     except Exception:
         print (traceback.format_exc())
-        print_error(
+        cli_utils.print_error(
             "Sorry, something went wrong (see error above). Make sure to start "
             "Rasa X with valid data and valid domain and config files. Please, "
             "also check any warnings that popped up.\nIf you need help fixing "

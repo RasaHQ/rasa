@@ -2,7 +2,6 @@ import json
 import logging
 import os
 
-import requests
 import typing
 from typing import Optional, Text
 
@@ -18,6 +17,7 @@ from rasa.nlu.training_data.formats.dialogflow import (
 )
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io as io_utils
+import re
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -31,6 +31,7 @@ LUIS = "luis"
 RASA = "rasa_nlu"
 MARKDOWN = "md"
 UNK = "unk"
+MARKDOWN_NLG = "nlg.md"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
 _markdown_section_markers = ["## {}:".format(s) for s in markdown.available_sections]
@@ -45,6 +46,12 @@ _json_format_heuristics = {
     DIALOGFLOW_INTENT_EXAMPLES: lambda js, fn: "_usersays_" in fn,
     DIALOGFLOW_ENTITY_ENTRIES: lambda js, fn: "_entries_" in fn,
 }
+
+# looks for pattern like:
+# ##
+# * intent/response_key
+#   - response_text
+_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*.*\/.*\n\s*\t*\-.*")
 
 
 def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
@@ -66,6 +73,9 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     else:
         training_data = data_sets[0].merge(*data_sets[1:])
 
+    if training_data.nlg_stories:
+        training_data.fill_response_phrases()
+
     return training_data
 
 
@@ -73,6 +83,7 @@ async def load_data_from_endpoint(
     data_endpoint: EndpointConfig, language: Optional[Text] = "en"
 ) -> "TrainingData":
     """Load training data from a URL."""
+    import requests
 
     if not utils.is_url(data_endpoint.url):
         raise requests.exceptions.InvalidURL(data_endpoint.url)
@@ -95,6 +106,7 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
         LuisReader,
         RasaReader,
         DialogflowReader,
+        NLGMarkdownReader,
     )
 
     reader = None
@@ -108,6 +120,8 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
         reader = RasaReader()
     elif fformat == MARKDOWN:
         reader = MarkdownReader()
+    elif fformat == MARKDOWN_NLG:
+        reader = NLGMarkdownReader()
     return reader
 
 
@@ -125,6 +139,13 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
         return reader.read(filename, language=language, fformat=fformat)
     else:
         return None
+
+
+def _is_nlg_story_format(content: Text) -> bool:
+
+    match = re.search(_nlg_markdown_marker_regex, content)
+    if match:
+        return True
 
 
 def guess_format(filename: Text) -> Text:
@@ -145,6 +166,8 @@ def guess_format(filename: Text) -> Text:
     except ValueError:
         if any([marker in content for marker in _markdown_section_markers]):
             guess = MARKDOWN
+        elif _is_nlg_story_format(content):
+            guess = MARKDOWN_NLG
     else:
         for fformat, format_heuristic in _json_format_heuristics.items():
             if format_heuristic(js, filename):

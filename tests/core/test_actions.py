@@ -20,6 +20,7 @@ from rasa.core.actions.action import (
     ActionListen,
     ActionRestart,
     ActionUtterTemplate,
+    ActionRetrieveResponse,
     RemoteAction,
 )
 from rasa.core.domain import Domain, InvalidDomain
@@ -28,6 +29,7 @@ from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
+from rasa.core.constants import UTTER_PREFIX, RESPOND_PREFIX
 
 
 @pytest.fixture(scope="module")
@@ -61,18 +63,27 @@ def test_text_format():
         "{}".format(ActionUtterTemplate("my_action_name"))
         == "ActionUtterTemplate('my_action_name')"
     )
+    assert (
+        "{}".format(ActionRetrieveResponse("respond_test"))
+        == "ActionRetrieveResponse('respond_test')"
+    )
 
 
 def test_action_instantiation_from_names():
     instantiated_actions = action.actions_from_names(
-        ["random_name", "utter_test"], None, ["random_name", "utter_test"]
+        ["random_name", "utter_test", "respond_test"],
+        None,
+        ["random_name", "utter_test"],
     )
-    assert len(instantiated_actions) == 2
+    assert len(instantiated_actions) == 3
     assert isinstance(instantiated_actions[0], RemoteAction)
     assert instantiated_actions[0].name() == "random_name"
 
     assert isinstance(instantiated_actions[1], ActionUtterTemplate)
     assert instantiated_actions[1].name() == "utter_test"
+
+    assert isinstance(instantiated_actions[2], ActionRetrieveResponse)
+    assert instantiated_actions[2].name() == "respond_test"
 
 
 def test_domain_action_instantiation():
@@ -81,13 +92,13 @@ def test_domain_action_instantiation():
         entities=[],
         slots=[],
         templates={},
-        action_names=["my_module.ActionTest", "utter_test"],
+        action_names=["my_module.ActionTest", "utter_test", "respond_test"],
         form_names=[],
     )
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 10
+    assert len(instantiated_actions) == 11
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_DEFAULT_FALLBACK_NAME
@@ -98,6 +109,7 @@ def test_domain_action_instantiation():
     assert instantiated_actions[7].name() == ACTION_BACK_NAME
     assert instantiated_actions[8].name() == "my_module.ActionTest"
     assert instantiated_actions[9].name() == "utter_test"
+    assert instantiated_actions[10].name() == "respond_test"
 
 
 async def test_remote_action_runs(
@@ -127,7 +139,13 @@ async def test_remote_action_runs(
             "sender_id": "my-sender",
             "version": rasa.__version__,
             "tracker": {
-                "latest_message": {"entities": [], "intent": {}, "text": None},
+                "latest_message": {
+                    "entities": [],
+                    "intent": {},
+                    "text": None,
+                    "message_id": None,
+                    "metadata": None,
+                },
                 "active_form": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
@@ -171,7 +189,13 @@ async def test_remote_action_logs_events(
             "sender_id": "my-sender",
             "version": rasa.__version__,
             "tracker": {
-                "latest_message": {"entities": [], "intent": {}, "text": None},
+                "latest_message": {
+                    "entities": [],
+                    "intent": {},
+                    "text": None,
+                    "message_id": None,
+                    "metadata": None,
+                },
                 "active_form": {},
                 "latest_action_name": None,
                 "sender_id": "my-sender",
@@ -253,6 +277,67 @@ async def test_remote_action_endpoint_responds_400(
 
     assert execinfo.type == ActionExecutionRejection
     assert "Custom action 'my_action' rejected to run" in str(execinfo.value)
+
+
+async def test_action_utter_retrieved_response(
+    default_channel, default_nlg, default_tracker, default_domain
+):
+    from rasa.core.channels.channel import UserMessage
+
+    action_name = "respond_chitchat"
+    default_tracker.latest_message = UserMessage(
+        "Who are you?",
+        parse_data={
+            "response_selector": {"chitchat": {"response": {"name": "I am a bot."}}}
+        },
+    )
+    events = await ActionRetrieveResponse(action_name).run(
+        default_channel, default_nlg, default_tracker, default_domain
+    )
+
+    assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
+        "text"
+    )
+
+
+async def test_action_utter_default_retrieved_response(
+    default_channel, default_nlg, default_tracker, default_domain
+):
+    from rasa.core.channels.channel import UserMessage
+
+    action_name = "respond_chitchat"
+    default_tracker.latest_message = UserMessage(
+        "Who are you?",
+        parse_data={
+            "response_selector": {"default": {"response": {"name": "I am a bot."}}}
+        },
+    )
+    events = await ActionRetrieveResponse(action_name).run(
+        default_channel, default_nlg, default_tracker, default_domain
+    )
+
+    assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
+        "text"
+    )
+
+
+async def test_action_utter_retrieved_empty_response(
+    default_channel, default_nlg, default_tracker, default_domain
+):
+    from rasa.core.channels.channel import UserMessage
+
+    action_name = "respond_chitchat"
+    default_tracker.latest_message = UserMessage(
+        "Who are you?",
+        parse_data={
+            "response_selector": {"dummy": {"response": {"name": "I am a bot."}}}
+        },
+    )
+    events = await ActionRetrieveResponse(action_name).run(
+        default_channel, default_nlg, default_tracker, default_domain
+    )
+
+    assert events == []
 
 
 async def test_action_utter_template(

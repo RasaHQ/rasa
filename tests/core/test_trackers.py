@@ -1,16 +1,15 @@
 import asyncio
 import json
+import logging
+import os
+import tempfile
 
 import fakeredis
 import pytest
-import tempfile
-import os
-import logging
 
 import rasa.utils.io
 from rasa.core import training, restore
 from rasa.core import utils
-from rasa.core.slots import Slot
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -52,6 +51,10 @@ class MockRedisTrackerStore(RedisTrackerStore):
     def __init__(self, domain):
         self.red = fakeredis.FakeStrictRedis()
         self.record_exp = None
+
+        # added in redis==3.3.0, but not yet in fakeredis
+        self.red.connection_pool.connection_class.health_check_interval = 0
+
         TrackerStore.__init__(self, domain)
 
 

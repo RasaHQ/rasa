@@ -1,3 +1,5 @@
+import tempfile
+
 import pytest
 
 from rasa.core.channels.channel import UserMessage
@@ -9,6 +11,7 @@ from rasa.core.tracker_store import (
     RedisTrackerStore,
     SQLTrackerStore,
 )
+from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
@@ -125,6 +128,23 @@ def test_tracker_store_from_invalid_string(default_domain):
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
+def test_tracker_serialisation():
+    slot_key = "location"
+    slot_val = "Easter Island"
+
+    store = InMemoryTrackerStore(domain)
+
+    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    ev = SlotSet(slot_key, slot_val)
+    tracker.update(ev)
+
+    serialised = store.serialise_tracker(tracker)
+
+    assert tracker == store.deserialise_tracker(
+        UserMessage.DEFAULT_SENDER_ID, serialised
+    )
+
+
 @pytest.mark.parametrize(
     "full_url",
     [
@@ -134,7 +154,7 @@ def test_tracker_store_from_invalid_string(default_domain):
     ],
 )
 def test_get_db_url_with_fully_specified_url(full_url):
-    assert SQLTrackerStore._get_db_url(host=full_url) == full_url
+    assert SQLTrackerStore.get_db_url(host=full_url) == full_url
 
 
 def test_get_db_url_with_port_in_host():
@@ -145,7 +165,7 @@ def test_get_db_url_with_port_in_host():
     expected = "{}://{}/{}".format(dialect, host, db)
 
     assert (
-        str(SQLTrackerStore._get_db_url(dialect="postgresql", host=host, db=db))
+        str(SQLTrackerStore.get_db_url(dialect="postgresql", host=host, db=db))
         == expected
     )
 
@@ -155,9 +175,59 @@ def test_get_db_url_with_correct_host():
 
     assert (
         str(
-            SQLTrackerStore._get_db_url(
+            SQLTrackerStore.get_db_url(
                 dialect="postgresql", host="localhost", port=5005, db="mydb"
             )
         )
         == expected
+    )
+
+
+def test_get_db_url_with_query():
+    expected = "postgresql://localhost:5005/mydb?driver=my-driver"
+
+    assert (
+        str(
+            SQLTrackerStore.get_db_url(
+                dialect="postgresql",
+                host="localhost",
+                port=5005,
+                db="mydb",
+                query={"driver": "my-driver"},
+            )
+        )
+        == expected
+    )
+
+
+def test_db_url_with_query_from_endpoint_config():
+    endpoint_config = """
+    tracker_store:
+      dialect: postgresql
+      url: localhost
+      port: 5123
+      username: user
+      password: pw
+      login_db: login-db
+      query:
+        driver: my-driver
+        another: query
+    """
+
+    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.yml") as f:
+        f.write(endpoint_config)
+        f.flush()
+        store_config = read_endpoint_config(f.name, "tracker_store")
+
+    url = SQLTrackerStore.get_db_url(**store_config.kwargs)
+
+    import itertools
+
+    # order of query dictionary in yaml is random, test against both permutations
+    connection_url = "postgresql://user:pw@:5123/login-db?"
+    assert any(
+        str(url) == connection_url + "&".join(permutation)
+        for permutation in (
+            itertools.permutations(("another=query", "driver=my-driver"))
+        )
     )
