@@ -2,7 +2,7 @@ import os
 import tempfile
 import time
 import shutil
-from typing import Text, Optional
+from typing import Text, Optional, List, Any
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -11,27 +11,31 @@ import rasa
 import rasa.core
 import rasa.nlu
 from rasa.importers.rasa import RasaFileImporter
-from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
+from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 from rasa.core.domain import Domain
+from rasa.core.utils import get_dict_hash
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
-    FINGERPRINT_DOMAIN_KEY,
+    FINGERPRINT_DOMAIN_WITHOUT_TEMPLATES_KEY,
+    FINGERPRINT_TEMPLATES_KEY,
     FINGERPRINT_FILE_PATH,
     FINGERPRINT_NLU_DATA_KEY,
     FINGERPRINT_RASA_VERSION_KEY,
     FINGERPRINT_STORIES_KEY,
     FINGERPRINT_TRAINED_AT_KEY,
-    core_fingerprint_changed,
+    FINGERPRINT_CONFIG_CORE_KEY,
+    FINGERPRINT_CONFIG_NLU_KEY,
+    SECTION_CORE,
+    SECTION_NLU,
+    SECTION_TEMPLATES,
     create_package_rasa,
     get_latest_model,
     get_model,
     get_model_subdirectories,
     model_fingerprint,
-    nlu_fingerprint_changed,
     Fingerprint,
+    section_fingerprint_changed,
     should_retrain,
-    FINGERPRINT_CONFIG_CORE_KEY,
-    FINGERPRINT_CONFIG_NLU_KEY,
 )
 from rasa.exceptions import ModelNotFound
 
@@ -91,13 +95,14 @@ def test_get_model_from_directory_nlu_only(trained_model):
 
 
 def _fingerprint(
-    config: Optional[Text] = None,
-    config_nlu: Optional[Text] = None,
-    config_core: Optional[Text] = None,
-    domain: Optional[int] = None,
+    config: Optional[Any] = None,
+    config_nlu: Optional[Any] = None,
+    config_core: Optional[Any] = None,
+    domain: Optional[Any] = None,
+    templates: Optional[Any] = None,
+    stories: Optional[Any] = None,
+    nlu: Optional[Any] = None,
     rasa_version: Text = "1.0",
-    stories: Optional[int] = None,
-    nlu: Optional[int] = None,
 ):
     return {
         FINGERPRINT_CONFIG_KEY: config if config is not None else ["test"],
@@ -105,7 +110,10 @@ def _fingerprint(
         if config_core is not None
         else ["test"],
         FINGERPRINT_CONFIG_NLU_KEY: config_nlu if config_nlu is not None else ["test"],
-        FINGERPRINT_DOMAIN_KEY: domain if domain is not None else ["test"],
+        FINGERPRINT_DOMAIN_WITHOUT_TEMPLATES_KEY: domain
+        if domain is not None
+        else ["test"],
+        FINGERPRINT_TEMPLATES_KEY: templates if templates is not None else ["test"],
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa_version,
         FINGERPRINT_STORIES_KEY: stories if stories is not None else ["test"],
@@ -126,39 +134,50 @@ def test_persist_and_load_fingerprint():
 
 
 @pytest.mark.parametrize(
-    "fingerprint2",
+    "fingerprint2, changed",
     [
-        _fingerprint(config=["other"]),
-        _fingerprint(domain=["other"]),
-        _fingerprint(domain=Domain.empty()),
-        _fingerprint(stories=["test", "other"]),
-        _fingerprint(rasa_version="100"),
-        _fingerprint(config=["other"], domain=["other"]),
+        (_fingerprint(config=["other"]), True),
+        (_fingerprint(config_core=["other"]), True),
+        (_fingerprint(domain=["other"]), True),
+        (_fingerprint(domain=Domain.empty()), True),
+        (_fingerprint(stories=["test", "other"]), True),
+        (_fingerprint(rasa_version="100"), True),
+        (_fingerprint(config=["other"], domain=["other"]), True),
+        (_fingerprint(templates=["other"]), False),
+        (_fingerprint(nlu=["test", "other"]), False),
+        (_fingerprint(config_nlu=["other"]), False),
     ],
 )
-def test_core_fingerprint_changed(fingerprint2):
+def test_core_fingerprint_changed(fingerprint2, changed):
     fingerprint1 = _fingerprint()
-    assert core_fingerprint_changed(fingerprint1, fingerprint2)
+    assert (
+        section_fingerprint_changed(fingerprint1, fingerprint2, SECTION_CORE) is changed
+    )
 
 
 @pytest.mark.parametrize(
-    "fingerprint2",
+    "fingerprint2, changed",
     [
-        _fingerprint(config=["other"]),
-        _fingerprint(nlu=["test", "other"]),
-        _fingerprint(rasa_version="100"),
-        _fingerprint(rasa_version="100", config=["other"]),
+        (_fingerprint(config=["other"]), True),
+        (_fingerprint(nlu=["test", "other"]), True),
+        (_fingerprint(rasa_version="100"), True),
+        (_fingerprint(rasa_version="100", config=["other"]), True),
+        (_fingerprint(templates=["other"]), False),
+        (_fingerprint(config_core=["other"]), False),
+        (_fingerprint(stories=["other"]), False),
     ],
 )
-def test_nlu_fingerprint_changed(fingerprint2):
+def test_nlu_fingerprint_changed(fingerprint2, changed):
     fingerprint1 = _fingerprint()
-    assert nlu_fingerprint_changed(fingerprint1, fingerprint2)
+    assert (
+        section_fingerprint_changed(fingerprint1, fingerprint2, SECTION_NLU) is changed
+    )
 
 
 def _project_files(
     project,
     config_file=DEFAULT_CONFIG_PATH,
-    domain="domain.yml",
+    domain=DEFAULT_DOMAIN_PATH,
     training_files=DEFAULT_DATA_PATH,
 ):
     paths = {
@@ -192,9 +211,10 @@ async def test_create_fingerprint_from_invalid_paths(project, project_files):
         config_nlu="",
         config_core="",
         domain=hash(Domain.empty()),
-        rasa_version=rasa.__version__,
+        templates=get_dict_hash(Domain.empty().templates),
         stories=hash(StoryGraph([])),
         nlu=hash(TrainingData()),
+        rasa_version=rasa.__version__,
     )
 
     actual = await model_fingerprint(project_files)
@@ -240,48 +260,62 @@ async def test_rasa_packaging(trained_model, project, use_fingerprint):
             "old": _fingerprint(stories=["others"]),
             "retrain_core": True,
             "retrain_nlu": False,
+            "replace_templates": False,
         },
         {
             "new": _fingerprint(nlu=["others"]),
             "old": _fingerprint(),
             "retrain_core": False,
             "retrain_nlu": True,
+            "replace_templates": False,
         },
         {
             "new": _fingerprint(config="others"),
             "old": _fingerprint(),
             "retrain_core": True,
             "retrain_nlu": True,
+            "replace_templates": False,
         },
         {
             "new": _fingerprint(config_core="others"),
             "old": _fingerprint(),
             "retrain_core": True,
             "retrain_nlu": False,
+            "replace_templates": False,
         },
         {
             "new": _fingerprint(),
             "old": _fingerprint(config_nlu="others"),
             "retrain_core": False,
             "retrain_nlu": True,
+            "replace_templates": False,
         },
         {
             "new": _fingerprint(),
             "old": _fingerprint(),
             "retrain_core": False,
             "retrain_nlu": False,
+            "replace_templates": False,
+        },
+        {
+            "new": _fingerprint(),
+            "old": _fingerprint(templates=["others"]),
+            "retrain_core": False,
+            "retrain_nlu": False,
+            "replace_templates": True,
         },
     ],
 )
-def test_should_retrain(trained_model, fingerprint):
+def test_should_retrain(trained_model: Text, fingerprint: Fingerprint):
     old_model = set_fingerprint(trained_model, fingerprint["old"])
 
-    retrain_core, retrain_nlu = should_retrain(
+    retrain_core, retrain_nlu, replace_templates = should_retrain(
         fingerprint["new"], old_model, tempfile.mkdtemp()
     )
 
     assert retrain_core == fingerprint["retrain_core"]
     assert retrain_nlu == fingerprint["retrain_nlu"]
+    assert replace_templates == fingerprint["replace_templates"]
 
 
 def set_fingerprint(
@@ -290,9 +324,7 @@ def set_fingerprint(
     unpacked_model_path = get_model(trained_model)
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
-    if use_fingerprint:
-        fingerprint = fingerprint
-    else:
+    if not use_fingerprint:
         fingerprint = None
 
     tempdir = tempfile.mkdtemp()

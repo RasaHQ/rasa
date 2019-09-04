@@ -159,11 +159,11 @@ async def _train_async_internal(
         )
 
     old_model = model.get_latest_model(output_path)
-    retrain_core, retrain_nlu = model.should_retrain(
+    retrain_core, retrain_nlu, replace_templates = model.should_retrain(
         new_fingerprint, old_model, train_path
     )
 
-    if force_training or retrain_core or retrain_nlu:
+    if force_training or retrain_core or retrain_nlu or replace_templates:
         await _do_training(
             file_importer,
             output_path=output_path,
@@ -171,6 +171,7 @@ async def _train_async_internal(
             force_training=force_training,
             retrain_core=retrain_core,
             retrain_nlu=retrain_nlu,
+            replace_templates=replace_templates,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             kwargs=kwargs,
@@ -197,17 +198,29 @@ async def _do_training(
     force_training: bool = False,
     retrain_core: bool = True,
     retrain_nlu: bool = True,
+    replace_templates: bool = True,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     kwargs: Optional[Dict] = None,
 ):
 
-    if force_training or retrain_core:
+    if retrain_core or replace_templates or force_training:
+        replace_templates_only = (
+            replace_templates and not retrain_core and not force_training
+        )
+        if replace_templates_only:
+            print_color(
+                "Core stories/configuration did not change. "
+                "Only the templates section has been changed. A new model with "
+                "the updated templates will be created.",
+                color=bcolors.OKBLUE,
+            )
         await _train_core_with_validated_data(
             file_importer,
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
+            replace_templates_only=replace_templates_only,
             kwargs=kwargs,
         )
     else:
@@ -216,7 +229,7 @@ async def _do_training(
             color=bcolors.OKBLUE,
         )
 
-    if force_training or retrain_nlu:
+    if retrain_nlu or force_training:
         await _train_nlu_with_validated_data(
             file_importer,
             output=output_path,
@@ -314,6 +327,7 @@ async def _train_core_with_validated_data(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
+    replace_templates_only: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
@@ -337,6 +351,7 @@ async def _train_core_with_validated_data(
             training_resource=file_importer,
             output_path=os.path.join(_train_path, "core"),
             policy_config=config,
+            replace_templates_only=replace_templates_only,
             kwargs=kwargs,
         )
         print_color("Core model training completed.", color=bcolors.OKBLUE)
