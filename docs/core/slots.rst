@@ -7,6 +7,8 @@
 Slots
 =====
 
+.. edit-link::
+
 .. contents::
    :local:
 
@@ -326,7 +328,7 @@ a vector of length ``2``.
                    r[0] = 1.0
                else:
                    r[1] = 1.0
-       return r
+           return r
 
 Now we also need some training stories, so that Rasa Core
 can learn from these how to handle the different situations:

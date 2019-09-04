@@ -397,7 +397,11 @@ def test_evaluate_intent(rasa_app, default_nlu_data):
     _, response = rasa_app.post("/model/test/intents", data=nlu_data)
 
     assert response.status == 200
-    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+    assert set(response.json.keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
 
 
 def test_evaluate_intent_on_just_nlu_model(
@@ -409,7 +413,11 @@ def test_evaluate_intent_on_just_nlu_model(
     _, response = rasa_app_nlu.post("/model/test/intents", data=nlu_data)
 
     assert response.status == 200
-    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+    assert set(response.json.keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
 
 
 def test_evaluate_intent_with_query_param(
@@ -426,7 +434,11 @@ def test_evaluate_intent_with_query_param(
     )
 
     assert response.status == 200
-    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+    assert set(response.json.keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
 
     _, response = rasa_app.get("/status")
     assert previous_model_file == response.json["model_file"]
@@ -481,7 +493,13 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
             "timestamp": 1514764800,
         }
     ]
-    assert content["latest_message"] == {"text": None, "intent": {}, "entities": []}
+    assert content["latest_message"] == {
+        "text": None,
+        "intent": {},
+        "entities": [],
+        "message_id": None,
+        "metadata": None,
+    }
 
 
 @pytest.mark.parametrize("event", test_events)
@@ -819,3 +837,17 @@ def test_get_latest_output_channel(input_channels: List[Text], expected_channel:
     actual = rasa.server._get_output_channel(request, tracker)
 
     assert isinstance(actual, expected_channel)
+
+
+def test_app_when_app_has_no_input_channels():
+    request = MagicMock()
+
+    class NoInputChannels:
+        pass
+
+    request.app = NoInputChannels()
+
+    actual = rasa.server._get_output_channel(
+        request, DialogueStateTracker.from_events("default", [])
+    )
+    assert isinstance(actual, CollectingOutputChannel)

@@ -196,6 +196,69 @@ def test_count_vector_featurizer(sentence, expected):
 
 
 @pytest.mark.parametrize(
+    "sentence, intent, response, intent_features, response_features",
+    [
+        ("hello hello hello hello hello ", "greet", None, [1], None),
+        ("hello goodbye hello", "greet", None, [1], None),
+        ("a 1 2", "char", "char char", [1], [2]),
+    ],
+)
+def test_count_vector_featurizer_attribute_featurization(
+    sentence, intent, response, intent_features, response_features
+):
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    train_message = Message(sentence)
+
+    # this is needed for a valid training example
+    train_message.set("intent", intent)
+    train_message.set("response", response)
+
+    data = TrainingData([train_message])
+    ftr.train(data)
+
+    assert train_message.get("intent_features") == intent_features
+    assert train_message.get("response_features") == response_features
+
+
+@pytest.mark.parametrize(
+    "sentence, intent, response, text_features, intent_features, response_features",
+    [
+        ("hello hello greet ", "greet", "hello", [1, 2], [1, 0], [0, 1]),
+        (
+            "I am fine",
+            "acknowledge",
+            "good",
+            [0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0],
+        ),
+    ],
+)
+def test_count_vector_featurizer_shared_vocab(
+    sentence, intent, response, text_features, intent_features, response_features
+):
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer(
+        {"token_pattern": r"(?u)\b\w+\b", "use_shared_vocab": True}
+    )
+    train_message = Message(sentence)
+
+    # this is needed for a valid training example
+    train_message.set("intent", intent)
+    train_message.set("response", response)
+
+    data = TrainingData([train_message])
+    ftr.train(data)
+
+    assert np.all(train_message.get("text_features") == text_features)
+    assert np.all(train_message.get("intent_features") == intent_features)
+    assert np.all(train_message.get("response_features") == response_features)
+
+
+@pytest.mark.parametrize(
     "sentence, expected",
     [
         ("hello hello hello hello hello __OOV__", [1, 5]),
@@ -300,7 +363,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
         ("abc", [1, 1, 1, 1, 1]),
     ],
 )
-def test_count_vector_featurizer(sentence, expected):
+def test_count_vector_featurizer_char(sentence, expected):
     from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
 
     ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char"})
@@ -346,15 +409,25 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     train_ftr.train(data)
     # persist featurizer
     file_dict = train_ftr.persist("ftr", tmpdir.strpath)
-    train_vect_params = train_ftr.vectorizer.get_params()
+    train_vect_params = {
+        attribute: vectorizer.get_params()
+        for attribute, vectorizer in train_ftr.vectorizers.items()
+    }
     # add trained vocabulary to vectorizer params
-    train_vect_params.update({"vocabulary": train_ftr.vectorizer.vocabulary_})
+    for attribute, attribute_vect_params in train_vect_params.items():
+        if hasattr(train_ftr.vectorizers[attribute], "vocabulary_"):
+            train_vect_params[attribute].update(
+                {"vocabulary": train_ftr.vectorizers[attribute].vocabulary_}
+            )
 
     # load featurizer
     meta = train_ftr.component_config.copy()
     meta.update(file_dict)
     test_ftr = CountVectorsFeaturizer.load(meta, tmpdir.strpath)
-    test_vect_params = test_ftr.vectorizer.get_params()
+    test_vect_params = {
+        attribute: vectorizer.get_params()
+        for attribute, vectorizer in test_ftr.vectorizers.items()
+    }
 
     assert train_vect_params == test_vect_params
 

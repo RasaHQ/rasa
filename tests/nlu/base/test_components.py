@@ -27,7 +27,7 @@ def test_all_components_in_model_templates_exist(pipeline_template):
     components = registry.registered_pipeline_templates[pipeline_template]
     for component in components:
         assert (
-            component in registry.registered_components
+            component["name"] in registry.registered_components
         ), "Model template contains unknown component."
 
 
@@ -54,13 +54,6 @@ def test_find_unavailable_packages():
     assert unavailable == {"my_made_up_package_name", "foo_bar"}
 
 
-def test_builder_create_unknown(component_builder, default_config):
-    with pytest.raises(Exception) as excinfo:
-        component_config = {"name": "my_made_up_componment"}
-        component_builder.create_component(component_config, default_config)
-    assert "Unknown component name" in str(excinfo.value)
-
-
 def test_builder_create_by_module_path(component_builder, default_config):
     from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
 
@@ -70,11 +63,28 @@ def test_builder_create_by_module_path(component_builder, default_config):
     assert type(component) == RegexFeaturizer
 
 
+@pytest.mark.parametrize(
+    "test_input, expected_output",
+    [
+        ("my_made_up_component", "Cannot find class"),
+        ("rasa.nlu.featurizers.regex_featurizer.MadeUpClass", "Failed to find class"),
+        ("made.up.path.RegexFeaturizer", "No module named"),
+    ],
+)
+def test_create_component_exception_messages(
+    component_builder, default_config, test_input, expected_output
+):
+
+    with pytest.raises(Exception):
+        component_config = {"name": test_input}
+        component_builder.create_component(component_config, default_config)
+
+
 def test_builder_load_unknown(component_builder):
     with pytest.raises(Exception) as excinfo:
         component_meta = {"name": "my_made_up_componment"}
         component_builder.load_component(component_meta, "", Metadata({}, None))
-    assert "Unknown component name" in str(excinfo.value)
+    assert "Cannot find class" in str(excinfo.value)
 
 
 async def test_example_component(component_builder, tmpdir_factory):

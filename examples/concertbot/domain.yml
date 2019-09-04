@@ -11,6 +11,7 @@ intents:
  - search_concerts
  - search_venues
  - compare_reviews
+ - bot_challenge
 
 entities:
  - name
@@ -24,6 +25,8 @@ templates:
     - text: "default message"
   utter_youarewelcome:
     - text: "you're very welcome"
+  utter_iamabot:
+    - text: "I am a bot, powered by Rasa."
 
 actions:
   - utter_default
@@ -34,3 +37,4 @@ actions:
   - action_search_venues
   - action_show_concert_reviews
   - action_show_venue_reviews
+  - utter_iamabot

@@ -85,27 +85,26 @@ def add_test_nlu_argument_group(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
 ):
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
-    parser.add_argument(
-        "--report",
-        required=False,
-        nargs="?",
-        const="reports",
-        default=None,
-        help="Output path to save the intent/entity metrics report.",
+
+    add_out_param(
+        parser,
+        default=DEFAULT_RESULTS_PATH,
+        help_text="Output path for any files created during the evaluation.",
     )
+
     parser.add_argument(
         "--successes",
-        required=False,
-        nargs="?",
-        const="successes.json",
-        default=None,
-        help="Output path to save successful predictions.",
+        action="store_true",
+        default=False,
+        help="If set successful predictions (intent and entities) will be written "
+        "to a file.",
     )
     parser.add_argument(
-        "--errors",
-        required=False,
-        default="errors.json",
-        help="Output path to save model errors.",
+        "--no-errors",
+        action="store_true",
+        default=False,
+        help="If set incorrect predictions (intent and entities) will NOT be written "
+        "to a file.",
     )
     parser.add_argument(
         "--histogram",

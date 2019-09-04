@@ -6,11 +6,19 @@
 Stories
 =======
 
+.. edit-link::
+
+.. contents::
+   :local:
+
+Rasa stories are a form of training data used to train the Rasa's dialogue management models.
+
+A story is a representation of a conversation between a user and an AI assistant, converted into a specific format where user inputs are expressed as corresponding intents (and entities where necessary) while the responses of an assistant are expressed as corresponding action names.
+
 A training example for the Rasa Core dialogue system is called a **story**.
 This is a guide to the story data format.
 
 .. note::
-
    You can also **spread your stories across multiple files** and specify the
    folder containing the files for most of the scripts (e.g. training,
    visualization). The stories will be treated as if they would have
@@ -20,12 +28,11 @@ This is a guide to the story data format.
 Format
 ------
 
-Here's an example from the `bAbI <https://research.fb.com/downloads/babi/>`_
-dataset (converted into Rasa stories):
+Here's an example of a dialogue in the Rasa story format:
 
 .. code-block:: story
 
-   ## story_07715946    <!-- name of the story - just for debugging -->
+   ## greet + location/price + cuisine + num people    <!-- name of the story - just for debugging -->
    * greet
       - action_ask_howcanhelp
    * inform{"location": "rome", "price": "cheap"}  <!-- user utterance, in format intent{entities} -->
@@ -37,8 +44,8 @@ dataset (converted into Rasa stories):
       - action_ack_dosearch
 
 
-This is what we call a **story**.
-
+What makes up a story?
+~~~~~~~~~~~~~~~~~~~~~~
 
 - A story starts with a name preceded by two hashes ``## story_03248462``.
   You can call the story anything you like, but it can be very useful for
@@ -49,13 +56,79 @@ This is what we call a **story**.
   in the format ``intent{"entity1": "value", "entity2": "value"}``.
 - Actions executed by the bot are shown as lines starting with ``-``
   and contain the name of the action.
-- Events returned by an action are on lines immediately after that
-  action. For example, if an action returns a ``SetSlot`` event,
-  this is shown as the line ``- slot{"slot_name": "value"}``
+- Events returned by an action are on lines immediately after that action.
+  For example, if an action returns a ``SlotSet`` event, this is shown as
+  ``slot{"slot_name": "value"}``.
+
+
+User Messages
+~~~~~~~~~~~~~
+While writing stories, you do not have to deal with the specific contents of
+the messages that the users send. Instead, you can take advantage of the output
+from the NLU pipeline, which lets you use just the combination of an intent and
+entities to refer to all the possible messages the users can send to mean the
+same thing.
+
+It is important to include the entities here as well because the policies learn
+to predict the next action based on a *combination* of both the intent and
+entities (you can, however, change this behavior using the
+:ref:`use_entities <use_entities>` attribute).
+
+Actions
+~~~~~~~
+While writing stories, you will encounter two types of actions: utterances
+and custom actions. Utterances are hardcoded messages that a bot can respond
+with. Custom actions, on the other hand, involve custom code being executed.
+
+All actions (both utterances and custom actions) executed by the bot are shown
+as lines starting with ``-`` followed by the name of the action.
+
+All utterances must begin with the prefix ``utter_``, and must match the name
+of the template defined in the domain.
+
+For custom actions, the action name is the string you choose to return from
+the ``name`` method of the custom action class. Although there is no restriction
+on naming your custom actions (unlike utterances), the best practice here is to
+prefix the name with ``action_``.
+
+Events
+~~~~~~
+Events such as setting a slot or activating/deactivating a form have to be
+explicitly written out as part of the stories. Having to include the events
+returned by a custom action separately, when that custom action is already
+part of a story might seem redundant. However, since Rasa cannot
+determine this fact during training, this step is necessary.
+
+You can read more about events :ref:`here <end_to_end_evaluation>`.
+
+Slot Events
+***********
+Slot events are written as ``- slot{"slot_name": "value"}``. If this slot is set
+inside a custom action, it is written on the line immediately following the
+custom action event. If your custom action resets a slot value to `None`, the
+corresponding event for that would be ``-slot{"slot_name": null}``.
+
+Form Events
+***********
+There are three kinds of events that need to be kept in mind while dealing with
+forms in stories.
+
+- A form action event (e.g. ``- restaurant_form``) is used in the beginning when first starting a form, and also while resuming the form action when the form is already active.
+- A form activation event (e.g. ``- form{"name": "restaurant_form"}``) is used right after the first form action event.
+- A form deactivation event (e.g. ``- form{"name": null}``), which is used to deactivate the form.
+
+
+.. note::
+    In order to get around the pitfall of forgetting to add events, the recommended
+    way to write these stories is to use :ref:`interactive learning <interactive-learning>`.
+
+
+Writing Fewer and Shorter Stories
+---------------------------------
 
 
 Checkpoints
------------
+~~~~~~~~~~~
 
 You can use ``> checkpoints`` to modularize and simplify your training
 data. Checkpoints can be useful, but **do not overuse them**. Using
@@ -63,12 +136,13 @@ lots of checkpoints can quickly make your example stories hard to
 understand. It makes sense to use them if a story block is repeated
 very often in different stories, but stories *without* checkpoints
 are easier to read and write. Here is an example story file which
-contains checkpoints:
+contains checkpoints (note that you can attach more than one checkpoint
+at a time):
 
 .. code-block:: story
 
     ## first story
-    * hello
+    * greet
        - action_ask_user_question
     > check_asked_question
 
@@ -76,23 +150,42 @@ contains checkpoints:
     > check_asked_question
     * affirm
       - action_handle_affirmation
+    > check_handled_affirmation
 
     ## user denies question
     > check_asked_question
     * deny
       - action_handle_denial
+    > check_handled_denial
+
+    ## user leaves
+    > check_handled_denial
+    > check_handled_affirmation
+    * goodbye
+      - utter_goodbye
+
+.. note::
+   Unlike regular stories, checkpoints are not restricted to starting with an
+   input from the user. As long as the checkpoint is inserted at the right points
+   in the main stories, the first event can be an action or an utterance
+   as well.
+
+.. note::
+   Unlike regular stories, checkpoints are not restricted to starting with an
+   input from the user. As long as the checkpoint is inserted at the right points
+   in the main stories, the first event can be an action or an utterance
+   as well.
 
 
 OR Statements
--------------
+~~~~~~~~~~~~~
 
 Another way to write shorter stories, or to handle multiple intents
-the same way, is to use an ``OR`` statement. For example if you ask
-the user to confirm something, and we want to treat the ``affirm``
+the same way, is to use an ``OR`` statement. For example, if you ask
+the user to confirm something, and you want to treat the ``affirm``
 and ``thankyou`` intents in the same way. The story below will be
-converted into two stories at training time. Just like checkpoints,
-``OR`` statements can be useful, but if you are using a lot of them,
-it is probably better to restructure your domain and/or intents:
+converted into two stories at training time:
+
 
 .. code-block:: story
 
@@ -102,8 +195,21 @@ it is probably better to restructure your domain and/or intents:
     * affirm OR thankyou
       - action_handle_affirmation
 
+Just like checkpoints, ``OR`` statements can be useful, but if you are using a
+lot of them, it is probably better to restructure your domain and/or intents.
 
-.. note::
 
-   Adding lines to your stories with many ``OR`` statements
-   will slow down training.
+.. warning::
+    Overusing these features (both checkpoints and OR statements)
+    will slow down training.
+
+
+End-to-End Story Evaluation Format
+----------------------------------
+
+The end-to-end story format is a format that combines both NLU and Core training data
+into a single file for evaluation. You can read more about it
+:ref:`here <end_to_end_evaluation>`.
+
+.. warning::
+    This format is only used for end-to-end evaluation and cannot be used for training.

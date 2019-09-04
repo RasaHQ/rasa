@@ -33,3 +33,7 @@
     - slot{"concerts": [{"artist": "Foo Fighters", "reviews": 4.5}]}
 * compare_reviews
     - action_show_concert_reviews
+
+## bot challenge
+* bot_challenge
+  - utter_iamabot

@@ -1,8 +1,11 @@
+import logging
 import sys
 import tempfile
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 
+import rasa.cli.utils
 from rasa.cli.utils import (
     parse_last_positional_argument_as_model_path,
     get_validated_path,
@@ -59,7 +62,25 @@ def test_validate_if_none_is_valid():
     assert get_validated_path(None, "out", "default", True) is None
 
 
-def test_validate_if_default_is_valid():
+def test_validate_with_none_if_default_is_valid(caplog: LogCaptureFixture):
     tempdir = tempfile.mkdtemp()
 
-    assert get_validated_path(None, "out", tempdir) == tempdir
+    with caplog.at_level(logging.WARNING, rasa.cli.utils.logger.name):
+        assert get_validated_path(None, "out", tempdir) == tempdir
+
+    assert caplog.records == []
+
+
+def test_validate_with_invalid_directory_if_default_is_valid(caplog: LogCaptureFixture):
+    tempdir = tempfile.mkdtemp()
+    invalid_directory = "gcfhvjkb"
+
+    with caplog.at_level(logging.WARNING, rasa.cli.utils.logger.name):
+        assert get_validated_path(invalid_directory, "out", tempdir) == tempdir
+
+    assert "'{}' does not exist".format(invalid_directory) in caplog.text
+
+
+def test_print_error_and_exit():
+    with pytest.raises(SystemExit):
+        rasa.cli.utils.print_error_and_exit("")
