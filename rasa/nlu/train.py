@@ -68,7 +68,6 @@ async def train(
     trainer = Trainer(
         nlu_config,
         component_builder,
-        persist_nlu_training_data=persist_nlu_training_data,
     )
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
@@ -84,7 +83,7 @@ async def train(
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
-        persisted_path = trainer.persist(path, persistor, fixed_model_name)
+        persisted_path = trainer.persist(path, persistor, fixed_model_name, persist_nlu_training_data)
     else:
         persisted_path = None
 

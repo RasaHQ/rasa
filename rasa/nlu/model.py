@@ -131,12 +131,10 @@ class Trainer(object):
         cfg: RasaNLUModelConfig,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
-        persist_nlu_training_data: bool = False,
     ):
 
         self.config = cfg
         self.skip_validation = skip_validation
-        self.persist_nlu_training_data = persist_nlu_training_data
         self.training_data = None  # type: Optional[TrainingData]
 
         if component_builder is None:
@@ -210,6 +208,7 @@ class Trainer(object):
         path: Text,
         persistor: Optional[Persistor] = None,
         fixed_model_name: Text = None,
+        persist_nlu_training_data: bool = False,
     ) -> Text:
         """Persist all components of the pipeline to the passed path.
 
@@ -228,7 +227,7 @@ class Trainer(object):
 
         rasa.utils.io.create_directory(dir_name)
 
-        if self.training_data and self.persist_nlu_training_data:
+        if self.training_data and persist_nlu_training_data:
             metadata.update(self.training_data.persist(dir_name))
 
         for i, component in enumerate(self.pipeline):
