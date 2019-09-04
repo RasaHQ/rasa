@@ -396,21 +396,17 @@ class Agent(object):
             remote_storage=remote_storage,
         )
 
-    def is_ready(self, allow_nlu_only: bool = False):
+    def is_core_ready(self):
+        """Check if all necessary components and policies are ready to use the agent.
+        """
+        return self.is_ready() and self.policy_ensemble
+
+    def is_ready(self):
         """Check if all necessary components are instantiated to use agent.
 
-        Args:
-            allow_nlu_only: If `True`, consider the agent ready event if no policy
-                ensemble is present.
+        Policies might not be available, if this is an NLU only agent."""
 
-        """
-        return all(
-            [
-                self.tracker_store,
-                self.interpreter,
-                self.policy_ensemble or allow_nlu_only,
-            ]
-        )
+        return self.tracker_store and self.interpreter
 
     async def parse_message_using_nlu_interpreter(
         self, message_data: Text, tracker: DialogueStateTracker = None
@@ -466,7 +462,7 @@ class Agent(object):
             logger.info("Ignoring message as there is no agent to handle it.")
             return None
 
-        if not self.is_ready(allow_nlu_only=True):
+        if not self.is_ready():
             return noop(message)
 
         processor = self.create_processor(message_preprocessor)
@@ -567,7 +563,7 @@ class Agent(object):
         self, trackers: List[DialogueStateTracker], **kwargs: Any
     ) -> None:
 
-        if not self.is_ready():
+        if not self.is_core_ready():
             raise AgentNotReady("Can't continue training without a policy ensemble.")
 
         self.policy_ensemble.continue_training(trackers, self.domain, **kwargs)
@@ -651,7 +647,7 @@ class Agent(object):
             **kwargs: additional arguments passed to the underlying ML
                            trainer (e.g. keras parameters)
         """
-        if not self.is_ready():
+        if not self.is_core_ready():
             raise AgentNotReady("Can't train without a policy ensemble.")
 
         # deprecation tests
@@ -760,7 +756,7 @@ class Agent(object):
     def persist(self, model_path: Text, dump_flattened_stories: bool = False) -> None:
         """Persists this agent into a directory for later loading and usage."""
 
-        if not self.is_ready():
+        if not self.is_core_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
 
         if not model_path.endswith("core"):
@@ -810,7 +806,7 @@ class Agent(object):
         """Instantiates a processor based on the set state of the agent."""
         # Checks that the interpreter and tracker store are set and
         # creates a processor
-        if not self.is_ready(allow_nlu_only=True):
+        if not self.is_ready():
             raise AgentNotReady(
                 "Agent needs to be prepared before usage. You need to set an "
                 "interpreter and a tracker store."
