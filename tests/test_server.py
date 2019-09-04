@@ -105,6 +105,13 @@ def test_status(rasa_app: SanicTestClient):
     assert "model_file" in response.json
 
 
+def test_status_nlu_only(rasa_app_nlu: SanicTestClient):
+    _, response = rasa_app_nlu.get("/status")
+    assert response.status == 200
+    assert "fingerprint" in response.json
+    assert "model_file" in response.json
+
+
 def test_status_secured(rasa_secured_app: SanicTestClient):
     _, response = rasa_secured_app.get("/status")
     assert response.status == 401
