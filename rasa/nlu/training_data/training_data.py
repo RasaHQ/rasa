@@ -258,7 +258,7 @@ class TrainingData(object):
                 "and 'md'."
             )
 
-    def persist_nlg(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
+    def persist_nlg(self, filename):
 
         nlg_serialized_data = self.nlg_as_markdown()
         if nlg_serialized_data == "":
