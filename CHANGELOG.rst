@@ -45,6 +45,7 @@ Added
   (default: 100) can be set to control the pool size and maximum pool overflow for
   ``SQLTrackerStore`` when used with the ``postgresql`` dialect
 - Add a `bot_challenge` intent and a `utter_iamabot` action to all example projects and the rasa init bot.
+- ``rasa data validate`` will fail with a non-zero exit code if validation fails
 
 Changed
 -------
