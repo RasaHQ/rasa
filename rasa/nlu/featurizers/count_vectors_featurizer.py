@@ -314,7 +314,9 @@ class CountVectorsFeaturizer(Featurizer):
             example.set(
                 MESSAGE_VECTOR_FEATURE_NAMES[attribute],
                 self._combine_with_existing_features(
-                    example, attribute_features[i], attribute
+                    example,
+                    attribute_features[i],
+                    MESSAGE_VECTOR_FEATURE_NAMES[attribute],
                 ),
             )
 
@@ -530,7 +532,9 @@ class CountVectorsFeaturizer(Featurizer):
             message.set(
                 MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
                 self._combine_with_existing_features(
-                    message, bag, feature_name=MESSAGE_TEXT_ATTRIBUTE
+                    message,
+                    bag,
+                    feature_name=MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
                 ),
             )
 
