@@ -42,18 +42,16 @@ async def test_verify_valid_utterances():
 async def test_fail_on_invalid_utterances(tmpdir):
     # domain and stories are from different domain and should produce warnings
     invalid_domain = str(tmpdir / "invalid_domain.yml")
-    io_utils.write_yaml_file({
-        "templates": {
-            "utter_greet": {
-                "text": "hello"
-            }
+    io_utils.write_yaml_file(
+        {
+            "templates": {"utter_greet": {"text": "hello"}},
+            "actions": [
+                "utter_greet",
+                "utter_non_existent",  # error: utter template odes not exist
+            ],
         },
-        "actions": [
-            "utter_greet",
-            "utter_non_existent"   # error: utter template odes not exist
-        ]
-    }, invalid_domain)
+        invalid_domain,
+    )
     importer = RasaFileImporter(domain_path=invalid_domain)
     validator = await Validator.from_importer(importer)
     assert not validator.verify_utterances()
-
