@@ -1,6 +1,7 @@
 import typing
 from typing import List
 from typing import Text
+from typing import Dict
 
 if typing.TYPE_CHECKING:
     from rasa.core.events import Event
@@ -21,3 +22,6 @@ class Dialogue(object):
         return "Dialogue with name '{}' and turns:\n{}".format(
             self.name, "\n\n".join(["\t{}".format(t) for t in self.events])
         )
+
+    def as_dict(self) -> Dict:
+        return {"events": [event.as_dict() for event in self.events], "name": self.name}

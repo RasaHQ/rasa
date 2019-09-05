@@ -2,12 +2,17 @@ import json
 import logging
 import pickle
 import typing
-from typing import Iterator, Optional, Text, Iterable, Union
+from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Dict, Iterator, List, Optional, Text, Iterable, Union
 
 import itertools
 
 # noinspection PyPep8Naming
 from time import sleep
+
+import boto3
+from boto3.dynamodb.conditions import Key
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.broker import EventChannel
@@ -35,17 +40,21 @@ class TrackerStore(object):
     def find_tracker_store(domain, store=None, event_broker=None):
         if store is None or store.type is None:
             tracker_store = InMemoryTrackerStore(domain, event_broker=event_broker)
-        elif store.type == "redis":
+        elif store.type.lower() == "redis":
             tracker_store = RedisTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
-        elif store.type == "mongod":
+        elif store.type.lower() == "mongod":
             tracker_store = MongoTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
         elif store.type.lower() == "sql":
             tracker_store = SQLTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
+            )
+        elif store.type.lower() == "dynamo":
+            tracker_store = DynamoTrackerStore(
+                domain=domain, event_broker=event_broker, **store.kwargs
             )
         else:
             tracker_store = TrackerStore.load_tracker_from_module_string(domain, store)
@@ -92,6 +101,7 @@ class TrackerStore(object):
         if tracker:
             if append_action_listen:
                 tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+            print(tracker.sender_id)
             self.save(tracker)
         return tracker
 
@@ -158,8 +168,6 @@ class InMemoryTrackerStore(TrackerStore):
 
 
 class RedisTrackerStore(TrackerStore):
-    def keys(self) -> Iterable[Text]:
-        return self.red.keys()
 
     def __init__(
         self,
@@ -194,6 +202,108 @@ class RedisTrackerStore(TrackerStore):
             return self.deserialise_tracker(sender_id, stored)
         else:
             return None
+
+    def keys(self) -> Iterable[Text]:
+        return self.red.keys()
+
+
+class DynamoTrackerStore(TrackerStore):
+
+    def __init__(self, domain, table_name="states", event_broker=None):
+        """
+
+        Args:
+            domain:
+            table_name: The name of the DynamoDb table, does not need to be present a priori.
+            event_broker:
+        """
+        self.client = boto3.client('dynamodb')
+        self.table_name = table_name
+        self.db = self.get_or_create_table(table_name)
+        super().__init__(domain, event_broker)
+
+    def get_or_create_table(self, table_name: str):
+        if self.table_name in self.client.list_tables()["TableNames"]:
+            return boto3.resource('dynamodb').Table(table_name)
+        else:
+            table = self.client.create_table(
+                TableName=self.table_name,
+                KeySchema=[
+                    {
+                        'AttributeName': 'sender_id',
+                        'KeyType': 'HASH'
+                    },
+                    {
+                        'AttributeName': 'session_date',
+                        'KeyType': 'RANGE'
+                    }
+                ],
+                AttributeDefinitions=[
+                    {
+                        'AttributeName': 'sender_id',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'session_date',
+                        'AttributeType': 'N'
+                    },
+                ],
+                ProvisionedThroughput={
+                    'ReadCapacityUnits': 5,
+                    'WriteCapacityUnits': 5
+                }
+            )
+
+            # Wait until the table exists.
+            table.meta.client.get_waiter('table_exists').wait(TableName=table_name)
+            return table
+
+    def save(self, tracker):
+        if self.event_broker:
+            self.stream_events(tracker)
+        self.db.put_item(Item=self.serialise_tracker(tracker))
+
+    @staticmethod
+    def replace_floats(obj: Union[List, Dict]):
+        """
+        Utility method to recursively walk an object converting all `float` to `Decimal` as required by DynamoDb.
+
+        Args:
+            obj: A `List` or `Dict` object.
+
+        Returns: An object with all matching values and `float` type replaced by `Decimal`.
+
+        """
+        if isinstance(obj, list):
+            for i in range(len(obj)):
+                obj[i] = DynamoTrackerStore.replace_floats(obj[i])
+            return obj
+        elif isinstance(obj, dict):
+            for j in obj:
+                obj[j] = DynamoTrackerStore.replace_floats(obj[j])
+            return obj
+        elif isinstance(obj, float):
+            return Decimal(obj)
+        else:
+            return obj
+
+    def serialise_tracker(self, tracker):
+        d = tracker.as_dialogue().as_dict()
+        d.update({"sender_id": tracker.sender_id, "session_date": int(datetime.now(tz=timezone.utc).timestamp())})
+        return DynamoTrackerStore.replace_floats(d)
+
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        # Retrieve dialogues for a sender_id in reverse chronological order based on the session_date sort key
+        dialogues = self.db.query(KeyConditionExpression=Key('sender_id').eq(sender_id),
+                                  Limit=1,
+                                  ScanIndexForward=False)["Items"]
+        if dialogues:
+            return DialogueStateTracker.from_dict(sender_id, dialogues[0].get("events"), self.domain.slots)
+        else:
+            return None
+
+    def keys(self) -> Iterable[Text]:
+        return [i['sender_id'] for i in self.db.scan(ProjectionExpression='sender_id')["Items"]]
 
 
 class MongoTrackerStore(TrackerStore):
