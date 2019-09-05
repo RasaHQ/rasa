@@ -376,18 +376,16 @@ the bot wants to respond.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="rasa.core.agent.Agent.is_core_ready">
+<code class="descname">is_core_ready</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.is_core_ready" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if all necessary components and policies are ready to use the agent.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="rasa.core.agent.Agent.is_ready">
-<code class="descname">is_ready</code><span class="sig-paren">(</span><em>allow_nlu_only=False</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.is_ready" title="Permalink to this definition">¶</a></dt>
+<code class="descname">is_ready</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.agent.Agent.is_ready" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check if all necessary components are instantiated to use agent.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>allow_nlu_only</strong> – If <cite>True</cite>, consider the agent ready event if no policy
-ensemble is present.</td>
-</tr>
-</tbody>
-</table>
+<p>Policies might not be available, if this is an NLU only agent.</p>
 </dd></dl>
 
 <dl class="classmethod">

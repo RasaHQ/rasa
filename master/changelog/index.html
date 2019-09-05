@@ -279,6 +279,7 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <div class="section" id="added">
 <h3>Added<a class="headerlink" href="#added" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
+<li>Added option to persist nlu training data (default: False)</li>
 <li>bot messages contain the <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> of the <code class="docutils literal notranslate"><span class="pre">BotUttered</span></code> event, which can be used in channels</li>
 <li><code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> can now be configured to trigger when the difference between confidences of two predicted intents is too narrow</li>
 <li>experimental training data importer which supports training with data of multiple
@@ -313,6 +314,7 @@ the runtime configuration (endpoints and credentials)</li>
 <code class="docutils literal notranslate"><span class="pre">SQLTrackerStore</span></code> when used with the <code class="docutils literal notranslate"><span class="pre">postgresql</span></code> dialect</li>
 <li>Add a <cite>bot_challenge</cite> intent and a <cite>utter_iamabot</cite> action to all example projects and the rasa init bot.</li>
 <li>Allow sending attachments when using the socketio channel</li>
+<li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span> <span class="pre">validate</span></code> will fail with a non-zero exit code if validation fails</li>
 </ul>
 </div>
 <div class="section" id="changed">
@@ -356,6 +358,7 @@ in a file. If <code class="docutils literal notranslate"><span class="pre">--no-
 <li><code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span> <span class="pre">nlu</span></code> with a folder of configuration files</li>
 <li><code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> standard featurizer is set to <code class="docutils literal notranslate"><span class="pre">None</span></code></li>
 <li>Removed <code class="docutils literal notranslate"><span class="pre">text</span></code> parameter from send_attachment function in slack.py to avoid duplication of text output to slackbot</li>
+<li>server <code class="docutils literal notranslate"><span class="pre">/status</span></code> endpoint reports status when an NLU-only model is loaded</li>
 </ul>
 </div>
 <div class="section" id="removed">
