@@ -164,8 +164,10 @@ AI Assistants and chatbots using open source bot framework Rasa." />
 <li class="toctree-l1"><a class="reference internal" href="../policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../retrieval-actions/">Retrieval Actions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../interactive-learning/">Interactive Learning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../knowledge-bases/">Knowledge Base Actions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Conversation Design</span></p>
 <ul>
@@ -207,12 +209,13 @@ AI Assistants and chatbots using open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.2.7
+          viewing: 1.3.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.3.0/core/domains/">1.3.0</a>
               <a href="../.././1.2.7/core/domains/">1.2.7</a>
               <a href="../.././1.2.6/core/domains/">1.2.6</a>
               <a href="../.././1.2.5/core/domains/">1.2.5</a>
@@ -301,6 +304,7 @@ for the things your bot can say.</p>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">deny</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_great</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_unhappy</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bot_challenge</span>
 
 <span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
@@ -308,6 +312,7 @@ for the things your bot can say.</p>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_did_that_help</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_happy</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_iamabot</span>
 
 <span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
@@ -321,10 +326,13 @@ for the things your bot can say.</p>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Did</span><span class="nv"> </span><span class="s">that</span><span class="nv"> </span><span class="s">help</span><span class="nv"> </span><span class="s">you?&quot;</span>
 
   <span class="l l-Scalar l-Scalar-Plain">utter_happy</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Great</span><span class="nv"> </span><span class="s">carry</span><span class="nv"> </span><span class="s">on!&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Great,</span><span class="nv"> </span><span class="s">carry</span><span class="nv"> </span><span class="s">on!&quot;</span>
 
   <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;Bye&quot;</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">utter_iamabot</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;I</span><span class="nv"> </span><span class="s">am</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">bot,</span><span class="nv"> </span><span class="s">powered</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">Rasa.&quot;</span>
 </pre></div>
 </div>
 <p><strong>What does this mean?</strong></p>
@@ -540,7 +548,7 @@ multiple responses and Rasa will randomly pick one of them, e.g.:</p>
 </div>
 </div>
 <div class="section" id="ignoring-entities-for-certain-intents">
-<h2><a class="toc-backref" href="#id10">Ignoring entities for certain intents</a><a class="headerlink" href="#ignoring-entities-for-certain-intents" title="Permalink to this headline">¶</a></h2>
+<span id="use-entities"></span><h2><a class="toc-backref" href="#id10">Ignoring entities for certain intents</a><a class="headerlink" href="#ignoring-entities-for-certain-intents" title="Permalink to this headline">¶</a></h2>
 <p>If you want all entities to be ignored for certain intents, you can
 add the <code class="docutils literal notranslate"><span class="pre">use_entities:</span> <span class="pre">[]</span></code> parameter to the intent in your domain
 file like this:</p>
@@ -553,12 +561,12 @@ file like this:</p>
 into account you can use this syntax:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">use_entities</span><span class="p p-Indicator">:</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">first_name</span>
-  <span class="l l-Scalar l-Scalar-Plain">ignore_entities</span><span class="p p-Indicator">:</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">location</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">age</span>
+    <span class="l l-Scalar l-Scalar-Plain">use_entities</span><span class="p p-Indicator">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">first_name</span>
+    <span class="l l-Scalar l-Scalar-Plain">ignore_entities</span><span class="p p-Indicator">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">location</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">age</span>
 </pre></div>
 </div>
 <p>This means that excluded entities for those intents will be unfeaturized and therefore

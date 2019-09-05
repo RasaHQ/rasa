@@ -168,8 +168,10 @@ AI Assistant." />
 <li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Conversation Design</span></p>
 <ul>
@@ -211,12 +213,13 @@ AI Assistant." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.2.7
+          viewing: 1.3.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.3.0/user-guide/evaluating-models/">1.3.0</a>
               <a href="../.././1.2.7/user-guide/evaluating-models/">1.2.7</a>
               <a href="../.././1.2.6/user-guide/evaluating-models/">1.2.6</a>
               <a href="../.././1.2.5/user-guide/evaluating-models/">1.2.5</a>
@@ -283,13 +286,14 @@ AI Assistant." />
 <li><a class="reference internal" href="#evaluating-an-nlu-model" id="id4">Evaluating an NLU Model</a><ul>
 <li><a class="reference internal" href="#comparing-nlu-pipelines" id="id5">Comparing NLU Pipelines</a></li>
 <li><a class="reference internal" href="#intent-classification" id="id6">Intent Classification</a></li>
-<li><a class="reference internal" href="#entity-extraction" id="id7">Entity Extraction</a></li>
-<li><a class="reference internal" href="#entity-scoring" id="id8">Entity Scoring</a></li>
+<li><a class="reference internal" href="#response-selection" id="id7">Response Selection</a></li>
+<li><a class="reference internal" href="#entity-extraction" id="id8">Entity Extraction</a></li>
+<li><a class="reference internal" href="#entity-scoring" id="id9">Entity Scoring</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#evaluating-a-core-model" id="id9">Evaluating a Core Model</a></li>
-<li><a class="reference internal" href="#comparing-policies" id="id10">Comparing Policies</a></li>
-<li><a class="reference internal" href="#end-to-end-evaluation" id="id11">End-to-End Evaluation</a></li>
+<li><a class="reference internal" href="#evaluating-a-core-model" id="id10">Evaluating a Core Model</a></li>
+<li><a class="reference internal" href="#comparing-core-configurations" id="id11">Comparing Core Configurations</a></li>
+<li><a class="reference internal" href="#end-to-end-evaluation" id="id12">End-to-End Evaluation</a></li>
 </ul>
 </div>
 <div class="admonition note">
@@ -418,8 +422,15 @@ like <code class="docutils literal notranslate"><span class="pre">[Brian](name)'
 multiple tokens. A whitespace tokenizer would not work in this case.</p>
 </div>
 </div>
+<div class="section" id="response-selection">
+<h3><a class="toc-backref" href="#id7">Response Selection</a><a class="headerlink" href="#response-selection" title="Permalink to this headline">¶</a></h3>
+<p>The evaluation script will produce a combined report for all response selector models in your pipeline.</p>
+<p>The report logs precision, recall and f1 measure for
+each response, as well as providing an overall average.
+You can save these reports as JSON files using the <code class="docutils literal notranslate"><span class="pre">--report</span></code> argument.</p>
+</div>
 <div class="section" id="entity-extraction">
-<h3><a class="toc-backref" href="#id7">Entity Extraction</a><a class="headerlink" href="#entity-extraction" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8">Entity Extraction</a><a class="headerlink" href="#entity-extraction" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> is the only entity extractor which you train using your own data,
 and so is the only one that will be evaluated. If you use the spaCy or duckling
 pre-trained entity extractors, Rasa NLU will not include these in the evaluation.</p>
@@ -427,7 +438,7 @@ pre-trained entity extractors, Rasa NLU will not include these in the evaluation
 <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> is trained to recognize.</p>
 </div>
 <div class="section" id="entity-scoring">
-<h3><a class="toc-backref" href="#id8">Entity Scoring</a><a class="headerlink" href="#entity-scoring" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9">Entity Scoring</a><a class="headerlink" href="#entity-scoring" title="Permalink to this headline">¶</a></h3>
 <p>To evaluate entity extraction we apply a simple tag-based approach. We don’t consider BILOU tags, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
 expect the labels <code class="docutils literal notranslate"><span class="pre">LOC</span> <span class="pre">LOC</span></code> instead of the BILOU-based <code class="docutils literal notranslate"><span class="pre">B-LOC</span> <span class="pre">L-LOC</span></code>. Our approach is more lenient
@@ -477,7 +488,7 @@ BILOU-based one.</p>
 </div>
 </div>
 <div class="section" id="evaluating-a-core-model">
-<span id="core-evaluation"></span><h2><a class="toc-backref" href="#id9">Evaluating a Core Model</a><a class="headerlink" href="#evaluating-a-core-model" title="Permalink to this headline">¶</a></h2>
+<span id="core-evaluation"></span><h2><a class="toc-backref" href="#id10">Evaluating a Core Model</a><a class="headerlink" href="#evaluating-a-core-model" title="Permalink to this headline">¶</a></h2>
 <p>You can evaluate your trained model on a set of test stories
 by using the evaluate script:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">test</span> core --stories test_stories.md --out results
@@ -542,9 +553,9 @@ Python Logging Options:
 </pre></div>
 </div>
 </div>
-<div class="section" id="comparing-policies">
-<h2><a class="toc-backref" href="#id10">Comparing Policies</a><a class="headerlink" href="#comparing-policies" title="Permalink to this headline">¶</a></h2>
-<p>To choose a specific policy configuration, or to choose hyperparameters for a
+<div class="section" id="comparing-core-configurations">
+<h2><a class="toc-backref" href="#id11">Comparing Core Configurations</a><a class="headerlink" href="#comparing-core-configurations" title="Permalink to this headline">¶</a></h2>
+<p>To choose a configuration for your core model, or to choose hyperparameters for a
 specific policy, you want to measure how well Rasa Core will <cite>generalise</cite>
 to conversations which it hasn’t seen before. Especially in the beginning
 of a project, you do not have a lot of real conversations to use to train
@@ -552,9 +563,8 @@ your bot, so you don’t just want to throw some away to use as a test set.</p>
 <p>Rasa Core has some scripts to help you choose and fine-tune your policy configuration.
 Once you are happy with it, you can then train your final configuration on your
 full data set. To do this, you first have to train models for your different
-policies. Create two (or more) config files including the policies you want to
-compare (containing only one policy each), and then use the <code class="docutils literal notranslate"><span class="pre">compare</span></code> mode of
-the train script to train your models:</p>
+configurations. Create two (or more) config files including the policies you want to
+compare, and then use the <code class="docutils literal notranslate"><span class="pre">compare</span></code> mode of the train script to train your models:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ rasa train core -c config_1.yml config_2.yml <span class="se">\</span>
   -d domain.yml -s stories_folder --out comparison_models --runs <span class="m">3</span> <span class="se">\</span>
   --percentages <span class="m">0</span> <span class="m">5</span> <span class="m">25</span> <span class="m">50</span> <span class="m">70</span> <span class="m">95</span>
@@ -569,10 +579,12 @@ mode to evaluate the models you just trained:</p>
 --out comparison_results --evaluate-model-directory
 </pre></div>
 </div>
-<p>This will evaluate each of the models on the training set and plot some graphs
+<p>This will evaluate each of the models on the provided stories
+(can be either training or test set) and plot some graphs
 to show you which policy performs best. By evaluating on the full set of stories, you
 can measure how well Rasa Core is predicting the held-out stories.</p>
-<p>If you’re not sure which policies to compare, we’d recommend trying out the
+<p>To compare single policies create config files containing only one policy each.
+If you’re not sure which policies to compare, we’d recommend trying out the
 <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> and the <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> to see which one works better for
 you.</p>
 <div class="admonition note">
@@ -582,7 +594,7 @@ somewhere in the background where it can’t be interrupted.</p>
 </div>
 </div>
 <div class="section" id="end-to-end-evaluation">
-<span id="id3"></span><h2><a class="toc-backref" href="#id11">End-to-End Evaluation</a><a class="headerlink" href="#end-to-end-evaluation" title="Permalink to this headline">¶</a></h2>
+<span id="id3"></span><h2><a class="toc-backref" href="#id12">End-to-End Evaluation</a><a class="headerlink" href="#end-to-end-evaluation" title="Permalink to this headline">¶</a></h2>
 <p>Rasa lets you evaluate dialogues end-to-end, running through
 test conversations and making sure that both NLU and Core make correct predictions.</p>
 <p>To do this, you need some stories in the end-to-end format,

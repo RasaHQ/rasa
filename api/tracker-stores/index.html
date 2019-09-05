@@ -168,8 +168,10 @@ of the box." />
 <li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Conversation Design</span></p>
 <ul>
@@ -211,12 +213,13 @@ of the box." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.2.7
+          viewing: 1.3.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.3.0/api/tracker-stores/">1.3.0</a>
               <a href="../.././1.2.7/api/tracker-stores/">1.2.7</a>
               <a href="../.././1.2.6/api/tracker-stores/">1.2.6</a>
               <a href="../.././1.2.5/api/tracker-stores/">1.2.5</a>
@@ -332,7 +335,7 @@ intent name and typename</p>
 <div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
     <span class="l l-Scalar l-Scalar-Plain">dialect</span><span class="p p-Indicator">:</span> <span class="s">&quot;sqlite&quot;</span>  <span class="c1"># the dialect used to interact with the db</span>
-    <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="s">&quot;localhost&quot;</span>  <span class="c1"># (optional) host of the sql db</span>
+    <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="s">&quot;&quot;</span>  <span class="c1"># (optional) host of the sql db, e.g. &quot;localhost&quot;</span>
     <span class="l l-Scalar l-Scalar-Plain">db</span><span class="p p-Indicator">:</span> <span class="s">&quot;rasa.db&quot;</span>  <span class="c1"># path to your db</span>
     <span class="l l-Scalar l-Scalar-Plain">username</span><span class="p p-Indicator">:</span>  <span class="c1"># username used for authentication</span>
     <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span>  <span class="c1"># password used for authentication</span>

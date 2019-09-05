@@ -164,8 +164,10 @@ writing your own importer." />
 <li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/retrieval-actions/">Retrieval Actions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/interactive-learning/">Interactive Learning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/fallback-actions/">Fallback Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/knowledge-bases/">Knowledge Base Actions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Conversation Design</span></p>
 <ul>
@@ -207,12 +209,13 @@ writing your own importer." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.2.7
+          viewing: 1.3.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.3.0/api/training-data-importers/">1.3.0</a>
               <a href="../.././1.2.7/api/training-data-importers/">1.2.7</a>
               <a href="../.././1.2.6/api/training-data-importers/">1.2.6</a>
               <a href="../.././1.2.5/api/training-data-importers/">1.2.5</a>
@@ -274,7 +277,15 @@ writing your own importer." />
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/api/training-data-importers.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
-  </div><p>By default, you can use command line arguments to specify where Rasa should look
+  </div><div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#rasafileimporter-default" id="id2">RasaFileImporter (default)</a></li>
+<li><a class="reference internal" href="#multiprojectimporter-experimental" id="id3">MultiProjectImporter (experimental)</a></li>
+<li><a class="reference internal" href="#writing-a-custom-importer" id="id4">Writing a Custom Importer</a></li>
+<li><a class="reference internal" href="#trainingdataimporter" id="id5">TrainingDataImporter</a></li>
+</ul>
+</div>
+<p>By default, you can use command line arguments to specify where Rasa should look
 for training data on your disk. Rasa then loads any potential training files and uses
 them to train your assistant.</p>
 <p>If needed, you can also customize <cite>how</cite> Rasa imports training data.
@@ -300,7 +311,7 @@ parameters are passed as constructor arguments to the loaded importer.</p>
 <p class="last">You can specify multiple importers. Rasa will automatically merge their results.</p>
 </div>
 <div class="section" id="rasafileimporter-default">
-<h2>RasaFileImporter (default)<a class="headerlink" href="#rasafileimporter-default" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2">RasaFileImporter (default)</a><a class="headerlink" href="#rasafileimporter-default" title="Permalink to this headline">¶</a></h2>
 <p>By default Rasa uses the importer <code class="docutils literal notranslate"><span class="pre">RasaFileImporter</span></code>. If you want to use it on its
 own, you don’t have to specify anything in your configuration file.
 If you want to use it together with other importers, add it to your
@@ -310,8 +321,78 @@ configuration file:</p>
 </pre></div>
 </div>
 </div>
+<div class="section" id="multiprojectimporter-experimental">
+<h2><a class="toc-backref" href="#id3">MultiProjectImporter (experimental)</a><a class="headerlink" href="#multiprojectimporter-experimental" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This feature is currently experimental and might change or be removed in the future.
+Please share your feedback on it in the <a class="reference external" href="https://forum.rasa.com">forum</a> to help
+us making this feature ready for production.</p>
+</div>
+<p>With this importer you can build a contextual AI assistant by combining multiple
+reusable Rasa projects.
+You might, for example, handle chitchat with one project and greet your users with
+another. These projects can be developed in isolation, and then combined at train time
+to create your assistant.</p>
+<p>An example directory structure could look like this:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>.
+├── config.yml
+└── projects
+    ├── GreetBot
+    │   ├── data
+    │   │   ├── nlu.md
+    │   │   └── stories.md
+    │   └── domain.yml
+    └── ChitchatBot
+        ├── config.yml
+        ├── data
+        │   ├── nlu.md
+        │   └── stories.md
+        └── domain.yml
+</pre></div>
+</div>
+<p>In this example the contextual AI assistant imports the <code class="docutils literal notranslate"><span class="pre">ChitchatBot</span></code> project which in turn
+imports the <code class="docutils literal notranslate"><span class="pre">GreetBot</span></code> project. Project imports are defined in the configuration files of
+each project.
+To instruct Rasa to use the <code class="docutils literal notranslate"><span class="pre">MultiProjectImporter</span></code> module, put this section in the config
+file of your root project:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">importers</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">MultiProjectImporter</span>
+</pre></div>
+</div>
+<p>Then specify which projects you want to import.
+In our example, the <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> in the root project would look like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">imports</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">projects/ChitchatBot</span>
+</pre></div>
+</div>
+<p>The configuration file of the <code class="docutils literal notranslate"><span class="pre">ChitchatBot</span></code> in turn references the <code class="docutils literal notranslate"><span class="pre">GreetBot</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">imports</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">../GreetBot</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">GreetBot</span></code> project does not specify further projects so the <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> can be
+omitted.</p>
+<p>Rasa uses relative paths from the referencing configuration file to import projects.
+These can be anywhere on your file system as long as the file access is permitted.</p>
+<p>During the training process Rasa will import all required training files, combine
+them, and train a unified AI assistant. The merging of the training data happens during
+runtime, so no additional files with training data are created or visible.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Rasa will use the policy and NLU pipeline configuration of the root project
+directory during training. <strong>Policy or NLU configurations of imported projects
+will be ignored.</strong></p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Equal intents, entities, slots, templates, actions and forms will be merged,
+e.g. if two projects have training data for an intent <code class="docutils literal notranslate"><span class="pre">greet</span></code>,
+their training data will be combined.</p>
+</div>
+</div>
 <div class="section" id="writing-a-custom-importer">
-<h2>Writing a Custom Importer<a class="headerlink" href="#writing-a-custom-importer" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4">Writing a Custom Importer</a><a class="headerlink" href="#writing-a-custom-importer" title="Permalink to this headline">¶</a></h2>
 <p>If you are writing a custom importer, this importer has to implement the interface of
 <a class="reference internal" href="#training-data-importers-trainingfileimporter"><span class="std std-ref">TrainingDataImporter</span></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Text</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
@@ -386,7 +467,7 @@ configuration file:</p>
 </div>
 </div>
 <div class="section" id="trainingdataimporter">
-<span id="training-data-importers-trainingfileimporter"></span><h2>TrainingDataImporter<a class="headerlink" href="#trainingdataimporter" title="Permalink to this headline">¶</a></h2>
+<span id="training-data-importers-trainingfileimporter"></span><h2><a class="toc-backref" href="#id5">TrainingDataImporter</a><a class="headerlink" href="#trainingdataimporter" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="rasa.importers.importer.TrainingDataImporter">
 <em class="property">class </em><code class="descclassname">rasa.importers.importer.</code><code class="descname">TrainingDataImporter</code><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter" title="Permalink to this definition">¶</a></dt>
