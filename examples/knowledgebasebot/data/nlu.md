@@ -61,3 +61,9 @@
 - City Hotel
 - Jugendherberge
 - Berlin Hotel
+
+## intent:bot_challenge
+- are you a bot?
+- are you a human?
+- am I talking to a bot?
+- am I talking to a human?

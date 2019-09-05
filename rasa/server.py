@@ -31,6 +31,7 @@ from rasa.core.channels.channel import (
 )
 from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
+from rasa.core.lock_store import LockStore
 from rasa.core.test import test
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
@@ -65,13 +66,22 @@ def _docs(sub_url: Text) -> Text:
     return DOCS_BASE_URL + sub_url
 
 
-def ensure_loaded_agent(app: Sanic):
-    """Wraps a request handler ensuring there is a loaded and usable agent."""
+def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
+    """Wraps a request handler ensuring there is a loaded and usable agent.
+
+    Require the agent to have a loaded Core model if `require_core_is_ready` is
+    `True`.
+    """
 
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if not app.agent or not app.agent.is_ready():
+            # noinspection PyUnresolvedReferences
+            if not app.agent or not (
+                app.agent.is_core_ready()
+                if require_core_is_ready
+                else app.agent.is_ready()
+            ):
                 raise ErrorResponse(
                     409,
                     "Conflict",
@@ -185,7 +195,7 @@ def event_verbosity_parameter(
         )
 
 
-def obtain_tracker_store(agent: "Agent", conversation_id: Text) -> DialogueStateTracker:
+def get_tracker(agent: "Agent", conversation_id: Text) -> DialogueStateTracker:
     tracker = agent.tracker_store.get_or_create_tracker(conversation_id)
     if not tracker:
         raise ErrorResponse(
@@ -262,6 +272,7 @@ async def _load_agent(
     model_server: Optional[EndpointConfig] = None,
     remote_storage: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
+    lock_store: Optional[LockStore] = None,
 ) -> Agent:
     try:
         tracker_store = None
@@ -275,6 +286,8 @@ async def _load_agent(
             )
             generator = endpoints.nlg
             action_endpoint = endpoints.action
+            if not lock_store:
+                lock_store = LockStore.find_lock_store(endpoints.lock_store)
 
         loaded_agent = await load_agent(
             model_path,
@@ -282,6 +295,7 @@ async def _load_agent(
             remote_storage,
             generator=generator,
             tracker_store=tracker_store,
+            lock_store=lock_store,
             action_endpoint=action_endpoint,
         )
     except Exception as e:
@@ -380,19 +394,11 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
         """Get a dump of a conversation's tracker including its events."""
-        if not app.agent.tracker_store:
-            raise ErrorResponse(
-                409,
-                "Conflict",
-                "No tracker store available. Make sure to "
-                "configure a tracker store when starting "
-                "the server.",
-            )
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = obtain_tracker_store(app.agent, conversation_id)
+        tracker = get_tracker(app.agent, conversation_id)
 
         try:
             if until_time is not None:
@@ -439,13 +445,13 @@ def create_app(
             )
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
-        tracker = obtain_tracker_store(app.agent, conversation_id)
 
         try:
-            for event in events:
-                tracker.update(event, app.agent.domain)
-
-            app.agent.tracker_store.save(tracker)
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = get_tracker(app.agent, conversation_id)
+                for event in events:
+                    tracker.update(event, app.agent.domain)
+                app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -470,12 +476,14 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            tracker = DialogueStateTracker.from_dict(
-                conversation_id, request.json, app.agent.domain.slots
-            )
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = DialogueStateTracker.from_dict(
+                    conversation_id, request.json, app.agent.domain.slots
+                )
 
-            # will override an existing tracker with the same id!
-            app.agent.tracker_store.save(tracker)
+                # will override an existing tracker with the same id!
+                app.agent.tracker_store.save(tracker)
+
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -490,17 +498,9 @@ def create_app(
     @ensure_loaded_agent(app)
     async def retrieve_story(request: Request, conversation_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
-        if not app.agent.tracker_store:
-            raise ErrorResponse(
-                409,
-                "Conflict",
-                "No tracker store available. Make sure to "
-                "configure a tracker store when starting "
-                "the server.",
-            )
 
         # retrieve tracker and set to requested state
-        tracker = obtain_tracker_store(app.agent, conversation_id)
+        tracker = get_tracker(app.agent, conversation_id)
 
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
@@ -540,11 +540,17 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            tracker = obtain_tracker_store(app.agent, conversation_id)
-            output_channel = _get_output_channel(request, tracker)
-            await app.agent.execute_action(
-                conversation_id, action_to_execute, output_channel, policy, confidence
-            )
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = get_tracker(app.agent, conversation_id)
+                output_channel = _get_output_channel(request, tracker)
+                await app.agent.execute_action(
+                    conversation_id,
+                    action_to_execute,
+                    output_channel,
+                    policy,
+                    confidence,
+                )
+
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
@@ -553,7 +559,7 @@ def create_app(
                 "An unexpected error occurred. Error: {}".format(e),
             )
 
-        tracker = obtain_tracker_store(app.agent, conversation_id)
+        tracker = get_tracker(app.agent, conversation_id)
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -610,9 +616,11 @@ def create_app(
                 {"parameter": "sender", "in": "body"},
             )
 
+        user_message = UserMessage(message, None, conversation_id, parse_data)
+
         try:
-            user_message = UserMessage(message, None, conversation_id, parse_data)
-            tracker = await app.agent.log_message(user_message)
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = await app.agent.log_message(user_message)
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -714,7 +722,7 @@ def create_app(
 
     @app.post("/model/test/stories")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
+    @ensure_loaded_agent(app, require_core_is_ready=True)
     async def evaluate_stories(request: Request):
         """Evaluate stories against the currently loaded model."""
         validate_request_body(
@@ -780,7 +788,7 @@ def create_app(
 
     @app.post("/model/predict")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app)
+    @ensure_loaded_agent(app, require_core_is_ready=True)
     async def tracker_predict(request: Request):
         """ Given a list of events, predicts the next action"""
         validate_request_body(
@@ -792,7 +800,6 @@ def create_app(
         sender_id = UserMessage.DEFAULT_SENDER_ID
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json
-
         try:
             tracker = DialogueStateTracker.from_dict(
                 sender_id, request_params, app.agent.domain.slots
@@ -834,6 +841,7 @@ def create_app(
 
     @app.post("/model/parse")
     @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
     async def parse(request: Request):
         validate_request_body(
             request,
@@ -874,6 +882,7 @@ def create_app(
         model_path = request.json.get("model_file", None)
         model_server = request.json.get("model_server", None)
         remote_storage = request.json.get("remote_storage", None)
+
         if model_server:
             try:
                 model_server = EndpointConfig.from_dict(model_server)
@@ -885,8 +894,9 @@ def create_app(
                     "Supplied 'model_server' is not valid. Error: {}".format(e),
                     {"parameter": "model_server", "in": "body"},
                 )
+
         app.agent = await _load_agent(
-            model_path, model_server, remote_storage, endpoints
+            model_path, model_server, remote_storage, endpoints, app.agent.lock_store
         )
 
         logger.debug("Successfully loaded model '{}'.".format(model_path))
@@ -897,9 +907,9 @@ def create_app(
     async def unload_model(request: Request):
         model_file = app.agent.model_directory
 
-        app.agent = Agent()
+        app.agent = Agent(lock_store=app.agent.lock_store)
 
-        logger.debug("Successfully unload model '{}'.".format(model_file))
+        logger.debug("Successfully unloaded model '{}'.".format(model_file))
         return response.json(None, status=204)
 
     @app.get("/domain")

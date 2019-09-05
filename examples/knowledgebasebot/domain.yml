@@ -2,6 +2,7 @@ intents:
   - greet
   - goodbye
   - query_knowledge_base
+  - bot_challenge
 
 entities:
   - object_type
@@ -32,6 +33,7 @@ actions:
 - utter_greet
 - utter_goodbye
 - utter_ask_rephrase
+- utter_iamabot
 - action_query_knowledge_base
 
 templates:
@@ -46,3 +48,6 @@ templates:
   utter_ask_rephrase:
   - text: "Sorry, I'm not sure I understand. Can you rephrase?"
   - text: "Can you please rephrase? I did not got that."
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
