@@ -7,6 +7,14 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[Unreleased 1.3.1] - `1.3.x`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- API endpoint to obtain the number of training processes currently running (``/model/train/status``)
+
+
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
 
