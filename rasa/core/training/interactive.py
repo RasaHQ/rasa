@@ -568,7 +568,7 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 async def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
     """Write stories and nlu data to file."""
 
-    story_path, nlu_path, domain_path = _request_export_info()
+    story_name, story_path, nlu_path, domain_path = _request_export_info()
 
     tracker = await retrieve_tracker(endpoint, sender_id)
     events = tracker.get("events", [])
@@ -576,7 +576,7 @@ async def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
     serialised_domain = await retrieve_domain(endpoint)
     domain = Domain.from_dict(serialised_domain)
 
-    await _write_stories_to_file(story_path, events, domain)
+    await _write_stories_to_file(story_name, story_path, events, domain)
     await _write_nlu_to_file(nlu_path, events)
     await _write_domain_to_file(domain_path, events, domain)
 
@@ -667,11 +667,15 @@ async def _request_action_from_user(
     return action_name, is_new_action
 
 
-def _request_export_info() -> Tuple[Text, Text, Text]:
+def _request_export_info() -> Tuple[Text, Text, Text, Text]:
     """Request file path and export stories & nlu data to that path"""
 
     # export training data and quit
     questions = questionary.form(
+        name_stories=questionary.text(
+            message="Name stories to (default name interactive_story_xxx)",
+            default="interactive_story",
+        ),
         export_stories=questionary.text(
             message="Export stories to (if file exists, this "
             "will append the stories)",
@@ -705,7 +709,12 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
     if not answers:
         raise Abort()
 
-    return (answers["export_stories"], answers["export_nlu"], answers["export_domain"])
+    return (
+        answers["name_stories"],
+        answers["export_stories"],
+        answers["export_nlu"],
+        answers["export_domain"],
+    )
 
 
 def _split_conversation_at_restarts(
@@ -776,7 +785,10 @@ def _collect_actions(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
 
 
 async def _write_stories_to_file(
-    export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
+    export_story_name: Text,
+    export_story_path: Text,
+    events: List[Dict[Text, Any]],
+    domain: Domain,
 ) -> None:
     """Write the conversation of the sender_id to the file paths."""
 
@@ -794,7 +806,9 @@ async def _write_stories_to_file(
         for conversation in sub_conversations:
             parsed_events = rasa.core.events.deserialise_events(conversation)
             tracker = DialogueStateTracker.from_events(
-                "interactive_story_{}".format(i), evts=parsed_events, slots=domain.slots
+                export_story_name + "_{}".format(i),
+                evts=parsed_events,
+                slots=domain.slots,
             )
 
             if any(
