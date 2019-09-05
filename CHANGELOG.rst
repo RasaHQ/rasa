@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Added TLS, SRV support in ``setup.py``
 
 Changed
 -------
@@ -21,6 +22,7 @@ Removed
 
 Fixed
 -----
+- Fixed regression of TLS, SRV dependencies for PyMongo in ``requirements.txt``
 
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
