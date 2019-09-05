@@ -273,10 +273,14 @@ You can run it with the following command:</p>
 </div>
 <p>The script above runs all the validations on your files. Here is the list of options to
 the script:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data validate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [--data DATA]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data validate [-h] [-v] [-vv] [--quiet] [--fail-on-warnings]
+                          [-d DOMAIN] [--data DATA]
 
 optional arguments:
   -h, --help            show this help message and exit
+  --fail-on-warnings    Fail validation on warnings and errors. If omitted
+                        only errors will result in a non zero exit code.
+                        (default: False)
   -d DOMAIN, --domain DOMAIN
                         Domain specification (yml file). (default: domain.yml)
   --data DATA           Path to the file or directory containing Rasa data.

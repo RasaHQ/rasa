@@ -446,7 +446,7 @@ train a new Rasa model with the data located in <code class="docutils literal no
 <code class="docutils literal notranslate"><span class="pre">--data</span></code> flag. After training the initial model, the interactive learning session starts.
 Training will be skipped if the training data and config haven’t changed.</p>
 <p>The full list of arguments that can be set for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> is:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa interactive [-h] [-v] [-vv] [--quiet] [-m MODEL]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
                         [--data DATA [DATA ...]] [--skip-visualization]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]
@@ -466,6 +466,9 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  --e2e                 Save story files in e2e format. In this format user
+                        messages will be included in the stories. (default:
+                        False)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
