@@ -361,7 +361,7 @@ def create_app(
     app.agent = agent
     # Initialize shared object of type unsigned int for tracking
     # the number of active training processes
-    app.active_training_processes = multiprocessing.Value('I', 0)
+    app.active_training_processes = multiprocessing.Value("I", 0)
 
     @app.exception(ErrorResponse)
     async def handle_error_response(request: Request, exception: ErrorResponse):
@@ -708,11 +708,7 @@ def create_app(
     async def training_status(request: Request):
         """Get status of ongoing training jobs."""
 
-        return response.json(
-            {
-                "n_jobs": app.active_training_processes.value
-            }
-        )
+        return response.json({"n_jobs": app.active_training_processes.value})
 
     def validate_request(rjs):
         if "config" not in rjs:
