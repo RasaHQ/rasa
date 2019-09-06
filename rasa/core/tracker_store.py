@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class TrackerStore(object):
+	"""Class to hold all of the TrackerStore classes"""
     def __init__(
         self, domain: Optional[Domain], event_broker: Optional[EventChannel] = None
     ) -> None:
@@ -38,6 +39,7 @@ class TrackerStore(object):
 
     @staticmethod
     def find_tracker_store(domain, store=None, event_broker=None):
+    	"""Returns the tracker_store type"""
         if store is None or store.type is None:
             tracker_store = InMemoryTrackerStore(domain, event_broker=event_broker)
         elif store.type.lower() == "redis":
@@ -64,6 +66,17 @@ class TrackerStore(object):
 
     @staticmethod
     def load_tracker_from_module_string(domain, store):
+        """
+        Initializes a custom tracker.
+
+        Parameters:
+        domain: defines the universe in which the assistant operates
+        store: the specific tracker store
+
+        Returns:
+        custom_tracker: a tracker store from a specified database
+        InMemoryTrackerStore: only used if no other tracker store is configured
+        """
         custom_tracker = None
         try:
             custom_tracker = class_from_module_path(store.type)
@@ -79,6 +92,7 @@ class TrackerStore(object):
             return InMemoryTrackerStore(domain)
 
     def get_or_create_tracker(self, sender_id, max_event_history=None):
+        """returns tracker or creates one if the retrieval returns None"""
         tracker = self.retrieve(sender_id)
         self.max_event_history = max_event_history
         if tracker is None:
@@ -86,6 +100,7 @@ class TrackerStore(object):
         return tracker
 
     def init_tracker(self, sender_id):
+        """returns a Dialogue State Tracker"""
         return DialogueStateTracker(
             sender_id,
             self.domain.slots if self.domain else None,
@@ -106,12 +121,15 @@ class TrackerStore(object):
         return tracker
 
     def save(self, tracker):
+        """Save method that will be overriden by specific tracker"""
         raise NotImplementedError()
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """Retrieve method that will be overriden by specific tracker"""
         raise NotImplementedError()
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
+        """Streams events to a message broker"""
         offset = self.number_of_existing_events(tracker.sender_id)
         evts = tracker.events
         for evt in list(itertools.islice(evts, offset, len(evts))):
@@ -125,14 +143,17 @@ class TrackerStore(object):
         return len(old_tracker.events) if old_tracker else 0
 
     def keys(self) -> Iterable[Text]:
+        """keys method that will be overriden by specific tracker"""
         raise NotImplementedError()
 
     @staticmethod
     def serialise_tracker(tracker):
+        """Serializes the tracker, returns pickled representation of tracker"""
         dialogue = tracker.as_dialogue()
         return pickle.dumps(dialogue)
 
     def deserialise_tracker(self, sender_id, _json) -> Optional[DialogueStateTracker]:
+        """Deserializes the tracker and returns it"""
         dialogue = pickle.loads(_json)
         tracker = self.init_tracker(sender_id)
         if tracker:
@@ -143,6 +164,7 @@ class TrackerStore(object):
 
 
 class InMemoryTrackerStore(TrackerStore):
+	"""Stores conversation history in memory"""
     def __init__(
         self, domain: Domain, event_broker: Optional[EventChannel] = None
     ) -> None:
@@ -150,12 +172,20 @@ class InMemoryTrackerStore(TrackerStore):
         super(InMemoryTrackerStore, self).__init__(domain, event_broker)
 
     def save(self, tracker: DialogueStateTracker) -> None:
+        """Updates and saves the current conversation state"""
         if self.event_broker:
             self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        """
+        Parameters:
+        sender_id: the message owner ID
+        
+        Returns:
+            deserialize_tracker
+        """
         if sender_id in self.store:
             logger.debug("Recreating tracker for id '{}'".format(sender_id))
             return self.deserialise_tracker(sender_id, self.store[sender_id])
@@ -164,10 +194,12 @@ class InMemoryTrackerStore(TrackerStore):
             return None
 
     def keys(self) -> Iterable[Text]:
+        """Returns sender_ids of the Tracker Store in memory"""
         return self.store.keys()
 
 
 class RedisTrackerStore(TrackerStore):
+	"""Stores conversation history in Redis"""
 
     def __init__(
         self,
@@ -187,6 +219,7 @@ class RedisTrackerStore(TrackerStore):
         super(RedisTrackerStore, self).__init__(domain, event_broker)
 
     def save(self, tracker, timeout=None):
+        """Updates and saves the current conversation state"""
         if self.event_broker:
             self.stream_events(tracker)
 
@@ -197,6 +230,13 @@ class RedisTrackerStore(TrackerStore):
         self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
 
     def retrieve(self, sender_id):
+        """
+        Parameters:
+        sender_id: the message owner ID
+        
+        Returns:
+            deserialize_tracker
+        """
         stored = self.red.get(sender_id)
         if stored is not None:
             return self.deserialise_tracker(sender_id, stored)
@@ -204,6 +244,7 @@ class RedisTrackerStore(TrackerStore):
             return None
 
     def keys(self) -> Iterable[Text]:
+        """Returns keys of the Redis Tracker Store"""
         return self.red.keys()
 
 
@@ -307,6 +348,7 @@ class DynamoTrackerStore(TrackerStore):
 
 
 class MongoTrackerStore(TrackerStore):
+	"""Stores conversation history in Mongo"""
     def __init__(
         self,
         domain,
@@ -338,12 +380,15 @@ class MongoTrackerStore(TrackerStore):
 
     @property
     def conversations(self):
+    	"""Returns the current conversation"""
         return self.db[self.collection]
 
     def _ensure_indices(self):
+    	"""Create indexes on the conversations collection"""
         self.conversations.create_index("sender_id")
 
     def save(self, tracker, timeout=None):
+    	"""Updates and saves the current conversation state"""
         if self.event_broker:
             self.stream_events(tracker)
 
@@ -354,6 +399,13 @@ class MongoTrackerStore(TrackerStore):
         )
 
     def retrieve(self, sender_id):
+    	"""
+    	Parameters:
+        sender_id: the message owner ID
+
+    	Returns:
+    		Dialogue State Tracker
+    	"""
         stored = self.conversations.find_one({"sender_id": sender_id})
 
         # look for conversations which have used an `int` sender_id in the past
@@ -383,6 +435,7 @@ class MongoTrackerStore(TrackerStore):
             return None
 
     def keys(self) -> Iterable[Text]:
+    	"""Returns sender_ids of the Mongo Tracker Store"""
         return [c["sender_id"] for c in self.conversations.find()]
 
 
@@ -394,6 +447,7 @@ class SQLTrackerStore(TrackerStore):
     Base = declarative_base()
 
     class SQLEvent(Base):
+    	"""Represents an event in the SQL Tracker Store"""
         from sqlalchemy import Column, Integer, String, Float, Text
 
         __tablename__ = "events"
@@ -550,6 +604,7 @@ class SQLTrackerStore(TrackerStore):
         conn.close()
 
     def keys(self) -> Iterable[Text]:
+    	"""Returns sender_ids of the SQLTrackerStore"""
         sender_ids = self.session.query(self.SQLEvent.sender_id).distinct().all()
         return [sender_id for (sender_id,) in sender_ids]
 
