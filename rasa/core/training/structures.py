@@ -659,7 +659,7 @@ class StoryGraph(object):
     @staticmethod
     def order_steps(
         story_steps: List[StoryStep]
-    ) -> Tuple[deque, Set[Tuple[Text, Text]]]:
+    ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Topological sort of the steps returning the ids of the steps."""
 
         checkpoints = StoryGraph._group_by_start_checkpoint(story_steps)
@@ -686,7 +686,7 @@ class StoryGraph(object):
     @staticmethod
     def topological_sort(
         graph: Dict[Text, Set[Text]]
-    ) -> Tuple[deque, Set[Tuple[Text, Text]]]:
+    ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Creates a top sort of a directed graph. This is an unstable sorting!
 
         The function returns the sorted nodes as well as the edges that need
@@ -716,7 +716,7 @@ class StoryGraph(object):
 
         def dfs(node):
             visited_nodes[node] = GRAY
-            for k in graph.get(node, set()):
+            for k in sorted(graph.get(node, set())):
                 sk = visited_nodes.get(k, None)
                 if sk == GRAY:
                     removed_edges.add((node, k))
@@ -730,7 +730,8 @@ class StoryGraph(object):
 
         while unprocessed:
             dfs(unprocessed.pop())
-        return ordered, removed_edges
+
+        return ordered, sorted(removed_edges)
 
     def visualize(self, output_file=None):
         import networkx as nx

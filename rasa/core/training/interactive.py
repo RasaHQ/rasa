@@ -75,6 +75,8 @@ PATHS = {
     "domain": "domain.yml",
 }
 
+SAVE_IN_E2E = False
+
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
 OTHER_ACTION = uuid.uuid4().hex
@@ -798,7 +800,7 @@ async def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories())
+                f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
 
 
 async def _write_nlu_to_file(
@@ -1536,7 +1538,7 @@ def run_interactive_learning(
     additional_arguments: Dict[Text, Any] = None,
 ):
     """Start the interactive learning with the model of the agent."""
-
+    global SAVE_IN_E2E
     server_args = server_args or {}
 
     if server_args.get("nlu_data"):
@@ -1547,6 +1549,8 @@ def run_interactive_learning(
 
     if server_args.get("domain"):
         PATHS["domain"] = server_args["domain"]
+
+    SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))
@@ -1574,5 +1578,5 @@ def run_interactive_learning(
     _serve_application(app, stories, skip_visualization)
 
     if not skip_visualization and p is not None:
-        p.terminate()
-        p.join()
+        p.terminate()  # pytype: disable=attribute-error
+        p.join()  # pytype: disable=attribute-error
