@@ -7,11 +7,28 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.4.0] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[1.3.0] - 2019-09-05
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added option to persist nlu training data (default: False)
+- option to save stories in e2e format for interactive learning
 - bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
 - ``FallbackPolicy`` can now be configured to trigger when the difference between confidences of two predicted intents is too narrow
 - experimental training data importer which supports training with data of multiple
@@ -44,6 +61,9 @@ Added
 - environment variables ``SQL_POOL_SIZE`` (default: 50) and ``SQL_MAX_OVERFLOW``
   (default: 100) can be set to control the pool size and maximum pool overflow for
   ``SQLTrackerStore`` when used with the ``postgresql`` dialect
+- Add a `bot_challenge` intent and a `utter_iamabot` action to all example projects and the rasa init bot.
+- Allow sending attachments when using the socketio channel
+- ``rasa data validate`` will fail with a non-zero exit code if validation fails
 
 Changed
 -------
@@ -75,16 +95,19 @@ Changed
 - Remove ``label_tokenization_flag`` and ``label_split_symbol`` from ``EmbeddingIntentClassifier``. Instead move these parameters to ``Tokenizers``.
 - Process features of all attributes of a message, i.e. - text, intent and response inside the respective component itself. For e.g. - intent of a message is now tokenized inside the tokenizer itself.
 - Deprecate ``as_markdown`` and ``as_json`` in favour of ``nlu_as_markdown`` and ``nlu_as_json`` respectively.
+- pin python-engineio >= 3.9.3
+- update python-socketio req to >= 4.3.1
 
 Fixed
 -----
 - ``rasa test nlu`` with a folder of configuration files
 - ``MappingPolicy`` standard featurizer is set to ``None``
+- Removed ``text`` parameter from send_attachment function in slack.py to avoid duplication of text output to slackbot
+- server ``/status`` endpoint reports status when an NLU-only model is loaded
 
 Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
-
 
 [1.2.7] - 2019-09-02
 ^^^^^^^^^^^^^^^^^^^^
@@ -112,6 +135,7 @@ Added
 
 Fixed
 -----
+- made default augmentation value consistent across repo
 - ``'/restart'`` will now also restart the bot if the tracker is paused
 
 

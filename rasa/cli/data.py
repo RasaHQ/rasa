@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import sys
 from typing import List
 
 from rasa import data
@@ -90,6 +91,9 @@ def split_nlu_data(args):
 
 
 def validate_files(args):
+    """Validate all files needed for training a model.
+
+    Fails with a non-zero exit code if there are any errors in the data."""
     from rasa.core.validator import Validator
     from rasa.importers.rasa import RasaFileImporter
 
@@ -99,4 +103,5 @@ def validate_files(args):
     )
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
-    validator.verify_all()
+    everything_is_alright = validator.verify_all(not args.fail_on_warnings)
+    sys.exit(0) if everything_is_alright else sys.exit(1)

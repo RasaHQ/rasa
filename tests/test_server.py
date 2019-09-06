@@ -105,13 +105,21 @@ def test_status(rasa_app: SanicTestClient):
     assert "model_file" in response.json
 
 
+def test_status_nlu_only(rasa_app_nlu: SanicTestClient):
+    _, response = rasa_app_nlu.get("/status")
+    assert response.status == 200
+    assert "fingerprint" in response.json
+    assert "model_file" in response.json
+
+
 def test_status_secured(rasa_secured_app: SanicTestClient):
     _, response = rasa_secured_app.get("/status")
     assert response.status == 401
 
 
-def test_status_not_ready_agent(rasa_app_nlu: SanicTestClient):
-    _, response = rasa_app_nlu.get("/status")
+def test_status_not_ready_agent(rasa_app: SanicTestClient):
+    rasa_app.app.agent = None
+    _, response = rasa_app.get("/status")
     assert response.status == 409
 
 
@@ -471,11 +479,6 @@ def test_predict(rasa_app: SanicTestClient):
     assert "policy" in content
 
 
-def test_retrieve_tracker_not_ready_agent(rasa_app_nlu: SanicTestClient):
-    _, response = rasa_app_nlu.get("/conversations/test/tracker")
-    assert response.status == 409
-
-
 @freeze_time("2018-01-01")
 def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
     _, response = rasa_app.get("/conversations/madeupid/tracker")
@@ -659,9 +662,6 @@ def test_unload_model_error(rasa_app: SanicTestClient):
 
     _, response = rasa_app.delete("/model")
     assert response.status == 204
-
-    _, response = rasa_app.get("/status")
-    assert response.status == 409
 
 
 def test_get_domain(rasa_app: SanicTestClient):
