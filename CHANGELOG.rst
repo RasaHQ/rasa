@@ -543,6 +543,7 @@ Fixed
 - all message arguments (kwargs in dispatcher.utter methods, as well as template args) are now sent through to output channels
 - utterance templates defined in actions are checked for existence upon training a new agent, and a warning
   is thrown before training if one is missing
+- fix missing ``tkinter`` dependency for running tests on Ubuntu
 
 .. _`master`: https://github.com/RasaHQ/rasa/
 
