@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 ^^^^^^^^^^^^^^^^^^
 
 Changed
------
+-------
 - Do not retrain the entire Core model if only the Templates section of the domain is changed.
 
 [1.3.0] - 2019-09-05
