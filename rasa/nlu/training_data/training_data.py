@@ -81,11 +81,17 @@ class TrainingData(object):
     def sanitize_examples(examples: List[Message]) -> List[Message]:
         """Makes sure the training data is clean.
 
-        removes trailing whitespaces from intent annotations."""
+        removes trailing whitespaces from intent annotations and drops duplicate examples."""
 
         for ex in examples:
             if ex.get("intent"):
                 ex.set("intent", ex.get("intent").strip())
+
+        # this check is necessary because test_markdown_entity_regex() definition massumes order (but test case has no
+        # duplicates)
+        if len(set(examples)) != len(examples):
+            examples = list(set(examples))
+
         return examples
 
     @lazyproperty
