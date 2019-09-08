@@ -8,43 +8,47 @@ from rasa.nlu.training_data.formats import RasaReader
 from rasa import model
 from rasa.core import utils
 from rasa.core.domain import Domain
-from rasa.importers.skill import SkillSelector
+from rasa.importers.multi_project import MultiProjectImporter
 from rasa.train import train_async
 
 
 def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
     root = tmpdir_factory.mktemp("Parent Bot")
-    root_imports = {"imports": ["Skill A"]}
+    root_imports = {"imports": ["Project A"]}
     utils.dump_obj_as_yaml_to_file(root / "config.yml", root_imports)
 
-    skill_a_directory = root / "Skill A"
-    skill_a_directory.mkdir()
-    skill_a_imports = {"imports": ["../Skill B"]}
-    utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
+    project_a_directory = root / "Project A"
+    project_a_directory.mkdir()
+    project_a_imports = {"imports": ["../Project B"]}
+    utils.dump_obj_as_yaml_to_file(
+        project_a_directory / "config.yml", project_a_imports
+    )
 
-    skill_b_directory = root / "Skill B"
-    skill_b_directory.mkdir()
-    skill_b_imports = {"some other": ["../Skill C"]}
-    utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
+    project_b_directory = root / "Project B"
+    project_b_directory.mkdir()
+    project_b_imports = {"some other": ["../Project C"]}
+    utils.dump_obj_as_yaml_to_file(
+        project_b_directory / "config.yml", project_b_imports
+    )
 
-    skill_b_subskill_directory = skill_b_directory / "Skill B-1"
-    skill_b_subskill_directory.mkdir()
-    skill_b_1_imports = {"imports": ["../../Skill A"]}
+    project_b_subproject_directory = project_b_directory / "Project B-1"
+    project_b_subproject_directory.mkdir()
+    project_b_1_imports = {"imports": ["../../Project A"]}
     # Check if loading from `.yaml` also works
     utils.dump_obj_as_yaml_to_file(
-        skill_b_subskill_directory / "config.yaml", skill_b_1_imports
+        project_b_subproject_directory / "config.yaml", project_b_1_imports
     )
 
     # should not be imported
-    subdirectory_3 = root / "Skill C"
+    subdirectory_3 = root / "Project C"
     subdirectory_3.mkdir()
 
     expected = {
-        os.path.join(str(skill_a_directory)),
-        os.path.join(str(skill_b_directory)),
+        os.path.join(str(project_a_directory)),
+        os.path.join(str(project_b_directory)),
     }
 
-    actual = SkillSelector(str(root / "config.yml"))
+    actual = MultiProjectImporter(str(root / "config.yml"))
 
     assert actual._imports == expected
 
@@ -54,17 +58,17 @@ def test_load_imports_without_imports(tmpdir_factory: TempdirFactory):
     root = tmpdir_factory.mktemp("Parent Bot")
     utils.dump_obj_as_yaml_to_file(root / "config.yml", empty_config)
 
-    skill_a_directory = root / "Skill A"
-    skill_a_directory.mkdir()
-    utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", empty_config)
+    project_a_directory = root / "Project A"
+    project_a_directory.mkdir()
+    utils.dump_obj_as_yaml_to_file(project_a_directory / "config.yml", empty_config)
 
-    skill_b_directory = root / "Skill B"
-    skill_b_directory.mkdir()
-    utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", empty_config)
+    project_b_directory = root / "Project B"
+    project_b_directory.mkdir()
+    utils.dump_obj_as_yaml_to_file(project_b_directory / "config.yml", empty_config)
 
-    actual = SkillSelector(str(root / "config.yml"))
+    actual = MultiProjectImporter(str(root / "config.yml"))
 
-    assert actual.is_imported(str(root / "Skill C"))
+    assert actual.is_imported(str(root / "Project C"))
 
 
 @pytest.mark.parametrize("input_dict", [{}, {"imports": None}])
@@ -73,24 +77,28 @@ def test_load_from_none(input_dict: Dict, tmpdir_factory: TempdirFactory):
     config_path = root / "config.yml"
     utils.dump_obj_as_yaml_to_file(root / "config.yml", input_dict)
 
-    actual = SkillSelector(str(config_path))
+    actual = MultiProjectImporter(str(config_path))
 
     assert actual._imports == set()
 
 
-def test_load_if_subskill_is_more_specific_than_parent(tmpdir_factory: TempdirFactory):
+def test_load_if_subproject_is_more_specific_than_parent(
+    tmpdir_factory: TempdirFactory
+):
     root = tmpdir_factory.mktemp("Parent Bot")
     config_path = str(root / "config.yml")
     utils.dump_obj_as_yaml_to_file(root / "config.yml", {})
 
-    skill_a_directory = root / "Skill A"
-    skill_a_directory.mkdir()
-    skill_a_imports = {"imports": ["Skill B"]}
-    utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
+    project_a_directory = root / "Project A"
+    project_a_directory.mkdir()
+    project_a_imports = {"imports": ["Project B"]}
+    utils.dump_obj_as_yaml_to_file(
+        project_a_directory / "config.yml", project_a_imports
+    )
 
-    actual = SkillSelector(config_path)
+    actual = MultiProjectImporter(config_path)
 
-    assert actual.is_imported(str(skill_a_directory))
+    assert actual.is_imported(str(project_a_directory))
 
 
 @pytest.mark.parametrize(
@@ -101,7 +109,7 @@ def test_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
     config_path = str(root / "config.yml")
     utils.dump_obj_as_yaml_to_file(root / "config.yml", {"imports": ["A/A/A", "A/B/A"]})
 
-    importer = SkillSelector(config_path, project_directory=os.getcwd())
+    importer = MultiProjectImporter(config_path, project_directory=os.getcwd())
 
     assert importer.is_imported(input_path)
 
@@ -111,49 +119,57 @@ def test_not_in_imports(input_path: Text, tmpdir_factory: TempdirFactory):
     root = tmpdir_factory.mktemp("Parent Bot")
     config_path = str(root / "config.yml")
     utils.dump_obj_as_yaml_to_file(root / "config.yml", {"imports": ["A/A/A", "A/B/A"]})
-    importer = SkillSelector(config_path, project_directory=os.getcwd())
+    importer = MultiProjectImporter(config_path, project_directory=os.getcwd())
 
     assert not importer.is_imported(input_path)
 
 
 def test_cyclic_imports(tmpdir_factory):
     root = tmpdir_factory.mktemp("Parent Bot")
-    skill_imports = {"imports": ["Skill A"]}
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", skill_imports)
+    project_imports = {"imports": ["Project A"]}
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", project_imports)
 
-    skill_a_directory = root / "Skill A"
-    skill_a_directory.mkdir()
-    skill_a_imports = {"imports": ["../Skill B"]}
-    utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
+    project_a_directory = root / "Project A"
+    project_a_directory.mkdir()
+    project_a_imports = {"imports": ["../Project B"]}
+    utils.dump_obj_as_yaml_to_file(
+        project_a_directory / "config.yml", project_a_imports
+    )
 
-    skill_b_directory = root / "Skill B"
-    skill_b_directory.mkdir()
-    skill_b_imports = {"imports": ["../Skill A"]}
-    utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
+    project_b_directory = root / "Project B"
+    project_b_directory.mkdir()
+    project_b_imports = {"imports": ["../Project A"]}
+    utils.dump_obj_as_yaml_to_file(
+        project_b_directory / "config.yml", project_b_imports
+    )
 
-    actual = SkillSelector(str(root / "config.yml"))
+    actual = MultiProjectImporter(str(root / "config.yml"))
 
-    assert actual._imports == {str(skill_a_directory), str(skill_b_directory)}
+    assert actual._imports == {str(project_a_directory), str(project_b_directory)}
 
 
 def test_import_outside_project_directory(tmpdir_factory):
     root = tmpdir_factory.mktemp("Parent Bot")
-    skill_imports = {"imports": ["Skill A"]}
-    utils.dump_obj_as_yaml_to_file(root / "config.yml", skill_imports)
+    project_imports = {"imports": ["Project A"]}
+    utils.dump_obj_as_yaml_to_file(root / "config.yml", project_imports)
 
-    skill_a_directory = root / "Skill A"
-    skill_a_directory.mkdir()
-    skill_a_imports = {"imports": ["../Skill B"]}
-    utils.dump_obj_as_yaml_to_file(skill_a_directory / "config.yml", skill_a_imports)
+    project_a_directory = root / "Project A"
+    project_a_directory.mkdir()
+    project_a_imports = {"imports": ["../Project B"]}
+    utils.dump_obj_as_yaml_to_file(
+        project_a_directory / "config.yml", project_a_imports
+    )
 
-    skill_b_directory = root / "Skill B"
-    skill_b_directory.mkdir()
-    skill_b_imports = {"imports": ["../Skill C"]}
-    utils.dump_obj_as_yaml_to_file(skill_b_directory / "config.yml", skill_b_imports)
+    project_b_directory = root / "Project B"
+    project_b_directory.mkdir()
+    project_b_imports = {"imports": ["../Project C"]}
+    utils.dump_obj_as_yaml_to_file(
+        project_b_directory / "config.yml", project_b_imports
+    )
 
-    actual = SkillSelector(str(skill_a_directory / "config.yml"))
+    actual = MultiProjectImporter(str(project_a_directory / "config.yml"))
 
-    assert actual._imports == {str(skill_b_directory), str(root / "Skill C")}
+    assert actual._imports == {str(project_b_directory), str(root / "Project C")}
 
 
 def test_importing_additional_files(tmpdir_factory):
@@ -166,7 +182,7 @@ def test_importing_additional_files(tmpdir_factory):
 
     # create intermediate directories and fake files
     additional_file.write("""## story""", ensure=True)
-    selector = SkillSelector(
+    selector = MultiProjectImporter(
         config_path, training_data_paths=[str(root / "directory"), str(additional_file)]
     )
 
@@ -181,7 +197,7 @@ def test_not_importing_not_relevant_additional_files(tmpdir_factory):
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
     additional_file = root / "directory" / "file.yml"
-    selector = SkillSelector(
+    selector = MultiProjectImporter(
         config_path, training_data_paths=[str(root / "data"), str(additional_file)]
     )
 
@@ -203,18 +219,24 @@ def test_single_additional_file(tmpdir_factory):
     additional_file = root / "directory" / "file.yml"
     additional_file.write({}, ensure=True)
 
-    selector = SkillSelector(config_path, training_data_paths=str(additional_file))
+    selector = MultiProjectImporter(
+        config_path, training_data_paths=str(additional_file)
+    )
 
     assert selector.is_imported(str(additional_file))
 
 
-async def test_multi_skill_training():
+async def test_multi_project_training():
     example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
     domain_file = os.path.join(example_directory, "domain.yml")
     files_of_root_project = os.path.join(example_directory, "data")
     trained_stack_model_path = await train_async(
-        config=config_file, domain=domain_file, training_files=files_of_root_project
+        config=config_file,
+        domain=domain_file,
+        training_files=files_of_root_project,
+        force_training=True,
+        persist_nlu_training_data=True,
     )
 
     unpacked = model.unpack_model(trained_stack_model_path)

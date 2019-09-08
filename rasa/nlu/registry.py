@@ -12,6 +12,7 @@ from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClas
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
@@ -30,6 +31,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path
+
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -66,6 +68,8 @@ component_classes = [
     MitieIntentClassifier,
     KeywordIntentClassifier,
     EmbeddingIntentClassifier,
+    # selectors
+    ResponseSelector,
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -100,36 +104,37 @@ old_style_names = {
 # the preexisting `backends`.
 registered_pipeline_templates = {
     "pretrained_embeddings_spacy": [
-        "SpacyNLP",
-        "SpacyTokenizer",
-        "SpacyFeaturizer",
-        "RegexFeaturizer",
-        "CRFEntityExtractor",
-        "EntitySynonymMapper",
-        "SklearnIntentClassifier",
+        {"name": "SpacyNLP"},
+        {"name": "SpacyTokenizer"},
+        {"name": "SpacyFeaturizer"},
+        {"name": "RegexFeaturizer"},
+        {"name": "CRFEntityExtractor"},
+        {"name": "EntitySynonymMapper"},
+        {"name": "SklearnIntentClassifier"},
     ],
-    "keyword": ["KeywordIntentClassifier"],
+    "keyword": [{"name": "KeywordIntentClassifier"}],
     "supervised_embeddings": [
-        "WhitespaceTokenizer",
-        "RegexFeaturizer",
-        "CRFEntityExtractor",
-        "EntitySynonymMapper",
-        "CountVectorsFeaturizer",
-        "EmbeddingIntentClassifier",
+        {"name": "WhitespaceTokenizer"},
+        {"name": "RegexFeaturizer"},
+        {"name": "CRFEntityExtractor"},
+        {"name": "EntitySynonymMapper"},
+        {"name": "CountVectorsFeaturizer"},
+        {
+            "name": "CountVectorsFeaturizer",
+            "analyzer": "char_wb",
+            "min_ngram": 1,
+            "max_ngram": 4,
+        },
+        {"name": "EmbeddingIntentClassifier"},
     ],
 }
 
 
-def pipeline_template(s: Text) -> Optional[List[Dict[Text, Text]]]:
-    components = registered_pipeline_templates.get(s)
+def pipeline_template(s: Text) -> Optional[List[Dict[Text, Any]]]:
+    import copy
 
-    if components:
-        # converts the list of components in the configuration
-        # format expected (one json object per component)
-        return [{"name": c} for c in components]
-
-    else:
-        return None
+    # do a deepcopy to avoid changing the template configurations
+    return copy.deepcopy(registered_pipeline_templates.get(s))
 
 
 def get_component_class(component_name: Text) -> Type["Component"]:
@@ -139,16 +144,34 @@ def get_component_class(component_name: Text) -> Type["Component"]:
         if component_name not in old_style_names:
             try:
                 return class_from_module_path(component_name)
-            except Exception:
+
+            except AttributeError:
+                # when component_name is a path to a class but the path does not contain that class
+                module_name, _, class_name = component_name.rpartition(".")
                 raise Exception(
-                    "Failed to find component class for '{}'. Unknown "
-                    "component name. Check your configured pipeline and make "
-                    "sure the mentioned component is not misspelled. If you "
-                    "are creating your own component, make sure it is either "
-                    "listed as part of the `component_classes` in "
-                    "`rasa.nlu.registry.py` or is a proper name of a class "
-                    "in a module.".format(component_name)
+                    "Failed to find class '{}' in module '{}'.\n"
+                    "".format(component_name, class_name, module_name)
                 )
+            except ImportError as e:
+                # when component_name is a path to a class but that path is invalid or
+                # when component_name is a class name and not part of old_style_names
+                # TODO: Raise ModuleNotFoundError when component_name is a path to a class but that path is invalid
+                #       as soon as we no longer support Python 3.5. See PR #4166 for details
+
+                is_path = "." in component_name
+
+                if is_path:
+                    module_name, _, _ = component_name.rpartition(".")
+                    exception_message = "Failed to find module '{}'. \n{}".format(
+                        module_name, e.msg
+                    )
+                else:
+                    exception_message = "Cannot find class '{0}' from global namespace. Please check that there is no typo in the class "
+                    "name and that you have imported the class into the global namespace.".format(
+                        component_name
+                    )
+
+                raise Exception(exception_message)
         else:
             # DEPRECATED ensures compatibility, remove in future versions
             logger.warning(

@@ -6,6 +6,8 @@
 Event Brokers
 =============
 
+.. edit-link::
+
 Rasa Core allows you to stream events to a message broker. The event broker
 emits events into the event queue. It becomes part of the ``TrackerStore``
 which you use when starting an ``Agent`` or launch ``rasa.core.run``.
@@ -97,7 +99,7 @@ example:
         # RabbitMQ credentials with username and password
         credentials = pika.PlainCredentials('username', 'password')
 
-        # pika connection to the RabbitMQ host - typically 'rabbit' in a
+        # Pika connection to the RabbitMQ host - typically 'rabbit' in a
         # docker environment, or 'localhost' in a local environment
         connection = pika.BlockingConnection(
             pika.ConnectionParameters('rabbit', credentials=credentials))

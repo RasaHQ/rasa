@@ -7,5 +7,9 @@
 Agent
 =====
 
+.. edit-link::
+   :url: https://github.com/RasaHQ/rasa/edit/master/rasa/core/agent.py
+   :text: SUGGEST DOCSTRING EDITS
+
 .. autoclass:: rasa.core.agent.Agent
    :members:

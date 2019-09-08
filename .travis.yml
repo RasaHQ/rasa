@@ -72,7 +72,7 @@ jobs:
   - stage: docs
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
-    - RASABASTER=rasabaster-0.7.22.tar.gz
+    - RASABASTER=rasabaster-0.7.23.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
     - pip install $RASABASTER
     - pip install --no-cache-dir -r requirements-docs.txt
@@ -114,3 +114,5 @@ jobs:
       distributions: "sdist bdist_wheel"
       password:
         secure: "MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA="
+    after_deploy:
+    - "if [[ ${TRAVIS_TAG} =~ ^[0-9]+\\.[0-9]+\\.[0-9]+$ ]] ; then curl -X POST -H 'Content-type: application/json' --data '{\"text\":\"💥 New *Rasa* version ${TRAVIS_TAG} has been released! Changelog: https://rasa.com/docs/rasa/${TRAVIS_TAG}/changelog/#id1\"}' https://hooks.slack.com/services/T0GHWFTS8/BMTQQL47K/${SLACK_WEBHOOK_TOKEN} ; fi"

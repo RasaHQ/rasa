@@ -25,12 +25,14 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
+    "sphinx_tabs.tabs",
     "sphinxcontrib.programoutput",
     "sphinxcontrib.httpdomain",
     "rasabaster.button",
     "rasabaster.card",
     "rasabaster.chatbubble",
     "rasabaster.copyable",
+    "rasabaster.editlink",
     "rasabaster.runnable",
     "rasabaster.conversations",
 ]
@@ -86,7 +88,6 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     # ignore doc pages that we don't show to appease keep_warnings
-    "multi-skill-assistants.rst",
     "core/old-core-change-log.rst",
     "core/old-core-migration-guide.rst",
     "nlu/old-nlu-change-log.rst",
@@ -332,10 +333,17 @@ scv_priority = "tags"
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ("semver",)
-scv_whitelist_branches = ("master",)  # (re.compile("^master$"),)
+scv_whitelist_branches = (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
-scv_whitelist_tags = (re.compile(r"^[1-9]+\.[0-9]+\.\d+$"),)
+scv_whitelist_tags = (
+    re.compile(r"^[2-9]+\.\d+\.\d+$"),
+    re.compile(r"^1\.[456789]+\.\d+$"),
+    re.compile(r"^1\.3\.\d+$"),
+    "1.2.7",
+    "1.1.8",
+    "1.0.9",
+)
 scv_greatest_tag = True
 
 # type classes for nitpicky to ignore

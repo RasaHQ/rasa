@@ -7,12 +7,15 @@ from sanic import Sanic, response
 
 import rasa.utils.io
 import rasa.core
-from rasa.core import jobs, utils
+from rasa.core import config, jobs, utils
 from rasa.core.agent import Agent, load_agent
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.channels.channel import UserMessage
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
+from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
+
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
@@ -57,6 +60,21 @@ async def model_server(test_server, trained_moodbot_path):
     await server.close()
 
 
+async def test_training_data_is_reproducible(tmpdir, default_domain):
+    training_data_file = "examples/moodbot/data/stories.md"
+    agent = Agent(
+        "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
+    )
+
+    training_data = await agent.load_data(training_data_file)
+    # make another copy of training data
+    same_training_data = await agent.load_data(training_data_file)
+
+    # test if both datasets are identical (including in the same order)
+    for i, x in enumerate(training_data):
+        assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
+
+
 async def test_agent_train(tmpdir, default_domain):
     training_data_file = "examples/moodbot/data/stories.md"
     agent = Agent(
@@ -64,6 +82,7 @@ async def test_agent_train(tmpdir, default_domain):
     )
 
     training_data = await agent.load_data(training_data_file)
+
     agent.train(training_data)
     agent.persist(tmpdir.strpath)
 
@@ -192,6 +211,53 @@ async def test_load_agent(trained_model):
     assert agent.tracker_store is not None
     assert agent.interpreter is not None
     assert agent.model_directory is not None
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [({"forms": ["restaurant_form"]}, {"policies": [{"name": "MemoizationPolicy"}]})],
+)
+def test_form_without_form_policy(domain, policy_config):
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+    assert "haven't added the FormPolicy" in str(execinfo.value)
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [
+        (
+            {
+                "intents": [{"affirm": {"triggers": "utter_ask_num_people"}}],
+                "actions": ["utter_ask_num_people"],
+            },
+            {"policies": [{"name": "MemoizationPolicy"}]},
+        )
+    ],
+)
+def test_trigger_without_mapping_policy(domain, policy_config):
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+    assert "haven't added the MappingPolicy" in str(execinfo.value)
+
+
+@pytest.mark.parametrize(
+    "domain, policy_config",
+    [({"intents": ["affirm"]}, {"policies": [{"name": "TwoStageFallbackPolicy"}]})],
+)
+def test_two_stage_fallback_without_deny_suggestion(domain, policy_config):
+    with pytest.raises(InvalidDomain) as execinfo:
+        Agent(
+            domain=Domain.from_dict(domain),
+            policies=PolicyEnsemble.from_dict(policy_config),
+        )
+    assert "The intent 'out_of_scope' must be present" in str(execinfo.value)
 
 
 async def test_agent_update_model_none_domain(trained_model):

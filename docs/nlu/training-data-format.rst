@@ -6,11 +6,14 @@
 Training Data Format
 ====================
 
+.. edit-link::
+
 .. contents::
    :local:
 
 Data Formats
 ~~~~~~~~~~~~
+
 
 You can provide training data as Markdown or as JSON, as a single file or as a directory containing multiple files.
 Note that Markdown is usually easier to work with.
@@ -98,7 +101,7 @@ Improving Intent Classification and Entity Recognition
 Common Examples
 ---------------
 
-Common examples have three components: ``text``, ``intent``, and ``entities``. The first two are strings while the last one is an array.
+Common examples have three components: ``text``, ``intent`` and ``entities``. The first two are strings while the last one is an array.
 
  - The *text* is the user message [required]
  - The *intent* is the intent that should be associated with the text [optional]
@@ -191,6 +194,8 @@ directly specified in the training data.
 
 Normalizing Data
 ~~~~~~~~~~~~~~~~
+
+.. _entity_synonyms:
 
 Entity Synonyms
 ---------------
