@@ -339,6 +339,8 @@ def create_app(
     app.config.CORS_AUTOMATIC_OPTIONS = True
     app.config.CORS_SUPPORTS_CREDENTIALS = True
 
+    app.config.KEEP_ALIVE_TIMEOUT = 120
+
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
     )
