@@ -34,6 +34,14 @@
 - I am looking for [mexican indian fusion](cuisine)
 - [central](location) [indian](cuisine) restaurant
 
+## intent:chitchat/ask_name
+- What's your name?
+- What can I call you?
+
+## intent:chitchat/ask_weather
+- How's the weather?
+- Is it too hot outside?
+
 ## synonym:chinese
 + Chines
 * Chinese
