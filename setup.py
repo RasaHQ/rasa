@@ -88,6 +88,8 @@ install_requires = [
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
+    # remove when tensorflow@1.15.x or a pre-release patch is released
+    "gast==0.2.2",
 ]
 
 extras_requires = {
