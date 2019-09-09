@@ -13,44 +13,6 @@ Policies
    :local:
 
 
-Data Augmentation
-^^^^^^^^^^^^^^^^^
-
-When you train a model, by default Rasa Core will create
-longer stories by randomly gluing together
-the ones in your stories files.
-This is because if you have stories like:
-
-.. code-block:: story
-
-    # thanks
-    * thankyou
-       - utter_youarewelcome
-
-    # bye
-    * goodbye
-       - utter_goodbye
-
-
-You actually want to teach your policy to **ignore** the dialogue history
-when it isn't relevant and just respond with the same action no matter
-what happened before.
-
-You can alter this behaviour with the ``--augmentation`` flag.
-Which allows you to set the ``augmentation_factor``.
-The ``augmentation_factor`` determines how many augmented stories are
-subsampled during training. Subsampling of the augmented stories is done in order to
-not get too many stories from augmentation, since their number
-can become very large quickly.
-The number of sampled stories is ``augmentation_factor`` x10.
-By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
-
-``--augmentation 0`` disables all augmentation behavior.
-The memoization based policies are not affected by augmentation
-(independent of the ``augmentation_factor``) and will automatically
-ignore all augmented stories.
-
-
 .. _policy_file:
 
 Configuring Policies
@@ -60,10 +22,7 @@ The :class:`rasa.core.policies.Policy` class decides which action to take
 at every step in the conversation.
 
 There are different policies to choose from, and you can include
-multiple policies in a single :class:`rasa.core.agent.Agent`. At
-every turn, the policy which predicts the next action with the
-highest confidence will be used. If two policies predict with equal
-confidence, the policy with the higher priority will be used.
+multiple policies in a single :class:`rasa.core.agent.Agent`.
 
 .. note::
 
@@ -98,7 +57,7 @@ policy class and pass arguments to it.
 
 
 Max History
-^^^^^^^^^^^
+-----------
 
 One important hyperparameter for Rasa Core policies is the ``max_history``.
 This controls how much dialogue history the model looks at to decide which
@@ -135,6 +94,76 @@ training will take longer. If you have some information that should
 affect the dialogue very far into the future, you should store it as a
 slot. Slot information is always available for every featurizer.
 
+
+Data Augmentation
+-----------------
+
+When you train a model, by default Rasa Core will create
+longer stories by randomly gluing together
+the ones in your stories files.
+This is because if you have stories like:
+
+.. code-block:: story
+
+    # thanks
+    * thankyou
+       - utter_youarewelcome
+
+    # bye
+    * goodbye
+       - utter_goodbye
+
+
+You actually want to teach your policy to **ignore** the dialogue history
+when it isn't relevant and just respond with the same action no matter
+what happened before.
+
+You can alter this behaviour with the ``--augmentation`` flag.
+Which allows you to set the ``augmentation_factor``.
+The ``augmentation_factor`` determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since their number
+can become very large quickly.
+The number of sampled stories is ``augmentation_factor`` x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+
+``--augmentation 0`` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the ``augmentation_factor``) and will automatically
+ignore all augmented stories.
+
+Action Selection
+^^^^^^^^^^^^^^^^
+
+At every turn, each policy defined in your configuration will
+predict a next action with a certain confidence level. For more information
+about how each policy makes its decision, read into the policy's description below.
+The bot's next action is then decided by the policy that predicts with the highest confidence.
+
+In the case that two policies predict with equal confidence (for example, the Memoization
+and Mapping Policies always predict with confidence of either 0 or 1), the priority of the
+policies is considered. Rasa policies have default priorities that are set to ensure the
+expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
+
+    | 5. ``FormPolicy``
+    | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
+    | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
+    | 2. ``MappingPolicy``
+    | 1. ``EmbeddingPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
+
+This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
+above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more
+than one policy per priority level, and some policies on the same priority level, such as the two
+fallback policies, strictly cannot be used in tandem.
+
+If you create your own policy, use these priorities as a guide for figuring out the priority of your policy.
+If your policy is a machine learning policy, it should most likely have priority 1, the same as the Rasa machine
+learning policies.
+
+.. warning::
+    All policy priorities are configurable via the ``priority:`` parameter in the configuration,
+    but we **do not recommend** changing them outside of specific cases such as custom policies.
+    Doing so can lead to unexpected and undesired bot behavior.
 
 Keras Policy
 ^^^^^^^^^^^^
@@ -326,14 +355,6 @@ It is recommended to use
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
-Memoization Policy
-^^^^^^^^^^^^^^^^^^
-
-The ``MemoizationPolicy`` just memorizes the conversations in your
-training data. It predicts the next action with confidence ``1.0``
-if this exact conversation exists in the training data, otherwise it
-predicts ``None`` with confidence ``0.0``.
-
 .. _mapping-policy:
 
 Mapping Policy
@@ -388,6 +409,14 @@ simple example that dispatches a bot utterance and then reverts the interaction:
   The MappingPolicy is also responsible for executing the default actions ``action_back``
   and ``action_restart`` in response to ``/back`` and ``/restart``. If it is not included
   in your policy example these intents will not work.
+
+Memoization Policy
+^^^^^^^^^^^^^^^^^^
+
+The ``MemoizationPolicy`` just memorizes the conversations in your
+training data. It predicts the next action with confidence ``1.0``
+if this exact conversation exists in the training data, otherwise it
+predicts ``None`` with confidence ``0.0``.
 
 .. _fallback-policy:
 

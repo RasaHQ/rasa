@@ -61,7 +61,7 @@ class MitieFeaturizer(Featurizer):
                     example.set(
                         MESSAGE_VECTOR_FEATURE_NAMES[attribute],
                         self._combine_with_existing_features(
-                            example, features, attribute
+                            example, features, MESSAGE_VECTOR_FEATURE_NAMES[attribute]
                         ),
                     )
 
@@ -74,7 +74,9 @@ class MitieFeaturizer(Featurizer):
         )
         message.set(
             MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-            self._combine_with_existing_features(message, features),
+            self._combine_with_existing_features(
+                message, features, MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            ),
         )
 
     def _mitie_feature_extractor(self, **kwargs):
