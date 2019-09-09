@@ -15,6 +15,7 @@ tracker_store:
   db: 0
   password: password
   record_exp: 30000
+  ssl: true
 # example of mongoDB external tracker store config
 #tracker_store:
   #type: mongod
