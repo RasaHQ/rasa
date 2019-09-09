@@ -3,6 +3,7 @@ import os
 import time
 import tempfile
 import uuid
+from multiprocessing import Process, Manager
 from typing import List, Text, Type
 from contextlib import ExitStack
 
@@ -340,42 +341,35 @@ def formbot_data():
     )
 
 
-def test_train_status(rasa_server, formbot_data):
+def test_train_status(rasa_server, rasa_app, formbot_data):
     with ExitStack() as stack:
         payload = {
             key: stack.enter_context(open(path)).read()
             for key, path in formbot_data.items()
         }
 
-    from multiprocessing import Process, Manager
-
     def train(results):
-        client1 = SanicTestClient(rasa_server, port=PORT)
+        client1 = SanicTestClient(rasa_server, port=PORT + 1)
         _, train_resp = client1.post("/model/train", json=payload)
         results["train_response_code"] = train_resp.status
 
-    def train_status(results):
-        # Wait for 1 second for the training to definitively begin
-        time.sleep(1)
-
-        client2 = SanicTestClient(rasa_server, port=PORT + 1)
-        _, status_resp = client2.get("/model/train/status")
-        results["train_status_response_code"] = status_resp.status
-        results["train_status_n_jobs"] = status_resp.json["n_jobs"]
-
+    # Run training process in the background
     manager = Manager()
     results = manager.dict()
-
     p1 = Process(target=train, args=(results,))
-    p2 = Process(target=train_status, args=(results,))
     p1.start()
-    p2.start()
-    p1.join()
-    p2.join()
 
+    # Query the status endpoint a few times to ensure the test does
+    # not fail prematurely due to mismatched timing of a single query.
+    for i in range(10):
+        _, status_resp = rasa_app.get("/model/train/status")
+        assert status_resp.status == 200
+        if status_resp.json["n_jobs"] == 1:
+            break
+    assert status_resp.json["n_jobs"] == 1
+
+    p1.join()
     assert results["train_response_code"] == 200
-    assert results["train_status_response_code"] == 200
-    assert results["train_status_n_jobs"] == 1
 
 
 def test_evaluate_stories(rasa_app, default_stories_file):
