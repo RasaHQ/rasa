@@ -82,6 +82,7 @@ Changed
 - Deprecate ``as_markdown`` and ``as_json`` in favour of ``nlu_as_markdown`` and ``nlu_as_json`` respectively.
 - pin python-engineio >= 3.9.3
 - update python-socketio req to >= 4.3.1
+- Pin gast to == 0.2.2
 
 Fixed
 -----
