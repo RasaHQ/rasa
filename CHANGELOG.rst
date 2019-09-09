@@ -7,6 +7,22 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[1.3.1] - 2019-09-09
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+- Pin gast to == 0.2.2
+
+Removed
+-------
+
+Fixed
+-----
+
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -82,7 +98,6 @@ Changed
 - Deprecate ``as_markdown`` and ``as_json`` in favour of ``nlu_as_markdown`` and ``nlu_as_json`` respectively.
 - pin python-engineio >= 3.9.3
 - update python-socketio req to >= 4.3.1
-- Pin gast to == 0.2.2
 
 Fixed
 -----
