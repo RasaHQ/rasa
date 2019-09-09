@@ -406,6 +406,37 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
+  /model/train/status:
+    get:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: modelTrainingStatus
+      tags:
+      - Model
+      summary: Number of active training processes
+      description: >-
+        Returns the number of active training processes.
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  n_jobs:
+                    type: integer
+                    description: >-
+                      Number of active training processes
+              example:
+                n_jobs: 2
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
   /model/test/stories:
     post:
       security:
