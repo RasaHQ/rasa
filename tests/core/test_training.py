@@ -7,7 +7,7 @@ from rasa.core.policies.form_policy import FormPolicy
 
 from rasa.core.training.dsl import StoryFileReader
 from rasa.core.training.visualization import visualize_stories
-from tests.core.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
 async def test_story_visualization(default_domain, tmpdir):
@@ -46,7 +46,7 @@ async def test_story_visualization_with_merging(default_domain):
 
 async def test_training_script(tmpdir):
     await train(
-        DEFAULT_DOMAIN_PATH,
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
         DEFAULT_STORIES_FILE,
         tmpdir.strpath,
         policy_config="data/test_config/max_hist_config.yml",
@@ -58,7 +58,7 @@ async def test_training_script(tmpdir):
 
 async def test_training_script_without_max_history_set(tmpdir):
     await train(
-        DEFAULT_DOMAIN_PATH,
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
         DEFAULT_STORIES_FILE,
         tmpdir.strpath,
         interpreter=RegexInterpreter(),
@@ -80,7 +80,7 @@ async def test_training_script_without_max_history_set(tmpdir):
 
 async def test_training_script_with_max_history_set(tmpdir):
     await train(
-        DEFAULT_DOMAIN_PATH,
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
         DEFAULT_STORIES_FILE,
         tmpdir.strpath,
         interpreter=RegexInterpreter(),
@@ -98,7 +98,7 @@ async def test_training_script_with_max_history_set(tmpdir):
 
 async def test_training_script_with_restart_stories(tmpdir):
     await train(
-        DEFAULT_DOMAIN_PATH,
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
         "data/test_stories/stories_restart.md",
         tmpdir.strpath,
         interpreter=RegexInterpreter(),
@@ -121,7 +121,7 @@ async def test_random_seed(tmpdir, config_file):
     # set random seed in config file to
     # generate a reproducible training result
     agent_1 = await train(
-        DEFAULT_DOMAIN_PATH,
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
         DEFAULT_STORIES_FILE,
         tmpdir.strpath + "1",
         interpreter=RegexInterpreter(),
@@ -130,7 +130,7 @@ async def test_random_seed(tmpdir, config_file):
     )
 
     agent_2 = await train(
-        DEFAULT_DOMAIN_PATH,
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
         DEFAULT_STORIES_FILE,
         tmpdir.strpath + "2",
         interpreter=RegexInterpreter(),

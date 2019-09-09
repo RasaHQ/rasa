@@ -101,9 +101,7 @@ class TwilioInput(InputChannel):
             sender = request.form.get("From", None)
             text = request.form.get("Body", None)
 
-            out_channel = TwilioOutput(
-                self.account_sid, self.auth_token, self.twilio_number
-            )
+            out_channel = self.get_output_channel()
 
             if sender is not None and message is not None:
                 try:
@@ -125,6 +123,9 @@ class TwilioInput(InputChannel):
             else:
                 logger.debug("Invalid message")
 
-            return response.text("success")
+            return response.text("", status=204)
 
         return twilio_webhook
+
+    def get_output_channel(self) -> OutputChannel:
+        return TwilioOutput(self.account_sid, self.auth_token, self.twilio_number)

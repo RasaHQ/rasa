@@ -21,18 +21,14 @@ from questionary import Choice, Form, Question
 
 from rasa.cli import utils as cliutils
 from rasa.core import constants, run, train, utils
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    default_action_names,
-    UTTER_PREFIX,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.channels.channel import UserMessage
-from rasa.core.channels.channel import button_to_string, element_to_string
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,
     DEFAULT_SERVER_PORT,
     DEFAULT_SERVER_URL,
     REQUESTED_SLOT,
+    UTTER_PREFIX,
 )
 from rasa.core.domain import Domain
 import rasa.core.events
@@ -78,6 +74,8 @@ PATHS = {
     "backup": "data/nlu_interactive.md",
     "domain": "domain.yml",
 }
+
+SAVE_IN_E2E = False
 
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
@@ -257,20 +255,22 @@ def format_bot_output(message: BotUttered) -> Text:
 
     if data.get("buttons"):
         output += "\nButtons:"
-        for idx, button in enumerate(data.get("buttons")):
-            button_str = button_to_string(button, idx)
-            output += "\n" + button_str
+        choices = cliutils.button_choices_from_message_data(
+            data, allow_free_text_input=True
+        )
+        for choice in choices:
+            output += "\n" + choice
 
     if data.get("elements"):
         output += "\nElements:"
         for idx, element in enumerate(data.get("elements")):
-            element_str = element_to_string(element, idx)
+            element_str = cliutils.element_to_string(element, idx)
             output += "\n" + element_str
 
     if data.get("quick_replies"):
         output += "\nQuick replies:"
         for idx, element in enumerate(data.get("quick_replies")):
-            element_str = element_to_string(element, idx)
+            element_str = cliutils.element_to_string(element, idx)
             output += "\n" + element_str
     return output
 
@@ -800,7 +800,7 @@ async def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories())
+                f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
 
 
 async def _write_nlu_to_file(
@@ -832,9 +832,9 @@ async def _write_nlu_to_file(
 
     with open(export_nlu_path, "w", encoding="utf-8") as f:
         if fformat == "md":
-            f.write(nlu_data.as_markdown())
+            f.write(nlu_data.nlu_as_markdown())
         else:
-            f.write(nlu_data.as_json())
+            f.write(nlu_data.nlu_as_json())
 
 
 def _entities_from_messages(messages):
@@ -885,7 +885,7 @@ async def _predict_till_next_listen(
     sender_ids: List[Text],
     plot_file: Optional[Text],
 ) -> None:
-    """Predict and validate actions until we need to wait for a user msg."""
+    """Predict and validate actions until we need to wait for a user message."""
 
     listen = False
     while not listen:
@@ -921,16 +921,21 @@ async def _predict_till_next_listen(
         if last_event.get("event") == BotUttered.type_name and last_event["data"].get(
             "buttons", None
         ):
-            data = last_event["data"]
-            message = last_event.get("text", "")
-            choices = [
-                button_to_string(button, idx)
-                for idx, button in enumerate(data.get("buttons"))
-            ]
+            response = _get_button_choice(last_event)
+            if response != cliutils.FREE_TEXT_INPUT_PROMPT:
+                await send_message(endpoint, sender_id, response)
 
-            question = questionary.select(message, choices)
-            button_payload = cliutils.payload_from_button_question(question)
-            await send_message(endpoint, sender_id, button_payload)
+
+def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
+    data = last_event["data"]
+    message = last_event.get("text", "")
+
+    choices = cliutils.button_choices_from_message_data(
+        data, allow_free_text_input=True
+    )
+    question = questionary.select(message, choices)
+    response = cliutils.payload_from_button_question(question)
+    return response
 
 
 async def _correct_wrong_nlu(
@@ -1323,7 +1328,9 @@ def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
 
     if not skip_visualization:
-        visualization_url = DEFAULT_SERVER_FORMAT.format(DEFAULT_SERVER_PORT + 1)
+        visualization_url = DEFAULT_SERVER_FORMAT.format(
+            "http", DEFAULT_SERVER_PORT + 1
+        )
         visualization_help = "Visualisation at {}/visualization.html.".format(
             visualization_url
         )
@@ -1384,6 +1391,7 @@ async def record_messages(
                 if await is_listening_for_message(sender_id, endpoint):
                     await _enter_user_message(sender_id, endpoint)
                     await _validate_nlu(intents, endpoint, sender_id)
+
                 await _predict_till_next_listen(
                     endpoint, sender_id, sender_ids, plot_file
                 )
@@ -1530,7 +1538,7 @@ def run_interactive_learning(
     additional_arguments: Dict[Text, Any] = None,
 ):
     """Start the interactive learning with the model of the agent."""
-
+    global SAVE_IN_E2E
     server_args = server_args or {}
 
     if server_args.get("nlu_data"):
@@ -1541,6 +1549,8 @@ def run_interactive_learning(
 
     if server_args.get("domain"):
         PATHS["domain"] = server_args["domain"]
+
+    SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))
@@ -1568,5 +1578,5 @@ def run_interactive_learning(
     _serve_application(app, stories, skip_visualization)
 
     if not skip_visualization and p is not None:
-        p.terminate()
-        p.join()
+        p.terminate()  # pytype: disable=attribute-error
+        p.join()  # pytype: disable=attribute-error

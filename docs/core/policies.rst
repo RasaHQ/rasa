@@ -1,5 +1,5 @@
 :desc: Define and train customized policy configurations to optimize your
-       contextual assistant for longer context or unseen utterances which
+       contextual assistant for longer contexts or unseen utterances which
        require generalization.
 
 .. _policies:
@@ -7,46 +7,10 @@
 Policies
 ========
 
+.. edit-link::
+
 .. contents::
    :local:
-
-
-Data Augmentation
-^^^^^^^^^^^^^^^^^
-
-When you train a model, by default Rasa Core will create
-longer stories by randomly gluing together
-the ones in your stories files.
-This is because if you have stories like:
-
-.. code-block:: story
-
-    # thanks
-    * thankyou
-       - utter_youarewelcome
-
-    # bye
-    * goodbye
-       - utter_goodbye
-
-
-You actually want to teach your policy to **ignore** the dialogue history
-when it isn't relevant and just respond with the same action no matter
-what happened before.
-
-You can alter this behaviour with the ``--augmentation`` flag.
-Which allows you to set the ``augmentation_factor``.
-The ``augmentation_factor`` determines how many augmented stories are
-subsampled during training. Subsampling of the augmented stories is done in order to
-not get too many stories from augmentation, since their number
-can become very large quickly.
-The number of sampled stories is ``augmentation_factor`` x10.
-By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
-
-``--augmentation 0`` disables all augmentation behavior.
-The memoization based policies are not affected by augmentation
-(independent of the ``augmentation_factor``) and will automatically
-ignore all augmented stories.
 
 
 .. _policy_file:
@@ -58,10 +22,7 @@ The :class:`rasa.core.policies.Policy` class decides which action to take
 at every step in the conversation.
 
 There are different policies to choose from, and you can include
-multiple policies in a single :class:`rasa.core.agent.Agent`. At
-every turn, the policy which predicts the next action with the
-highest confidence will be used. If two policies predict with equal
-confidence, the policy with the higher priority will be used.
+multiple policies in a single :class:`rasa.core.agent.Agent`.
 
 .. note::
 
@@ -96,7 +57,7 @@ policy class and pass arguments to it.
 
 
 Max History
-^^^^^^^^^^^
+-----------
 
 One important hyperparameter for Rasa Core policies is the ``max_history``.
 This controls how much dialogue history the model looks at to decide which
@@ -134,6 +95,76 @@ affect the dialogue very far into the future, you should store it as a
 slot. Slot information is always available for every featurizer.
 
 
+Data Augmentation
+-----------------
+
+When you train a model, by default Rasa Core will create
+longer stories by randomly gluing together
+the ones in your stories files.
+This is because if you have stories like:
+
+.. code-block:: story
+
+    # thanks
+    * thankyou
+       - utter_youarewelcome
+
+    # bye
+    * goodbye
+       - utter_goodbye
+
+
+You actually want to teach your policy to **ignore** the dialogue history
+when it isn't relevant and just respond with the same action no matter
+what happened before.
+
+You can alter this behaviour with the ``--augmentation`` flag.
+Which allows you to set the ``augmentation_factor``.
+The ``augmentation_factor`` determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since their number
+can become very large quickly.
+The number of sampled stories is ``augmentation_factor`` x10.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+
+``--augmentation 0`` disables all augmentation behavior.
+The memoization based policies are not affected by augmentation
+(independent of the ``augmentation_factor``) and will automatically
+ignore all augmented stories.
+
+Action Selection
+^^^^^^^^^^^^^^^^
+
+At every turn, each policy defined in your configuration will
+predict a next action with a certain confidence level. For more information
+about how each policy makes its decision, read into the policy's description below.
+The bot's next action is then decided by the policy that predicts with the highest confidence.
+
+In the case that two policies predict with equal confidence (for example, the Memoization
+and Mapping Policies always predict with confidence of either 0 or 1), the priority of the
+policies is considered. Rasa policies have default priorities that are set to ensure the
+expected outcome in the case of a tie. They look like this, where higher numbers have higher priority:
+
+    | 5. ``FormPolicy``
+    | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
+    | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
+    | 2. ``MappingPolicy``
+    | 1. ``EmbeddingPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
+
+This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
+above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more
+than one policy per priority level, and some policies on the same priority level, such as the two
+fallback policies, strictly cannot be used in tandem.
+
+If you create your own policy, use these priorities as a guide for figuring out the priority of your policy.
+If your policy is a machine learning policy, it should most likely have priority 1, the same as the Rasa machine
+learning policies.
+
+.. warning::
+    All policy priorities are configurable via the ``priority:`` parameter in the configuration,
+    but we **do not recommend** changing them outside of specific cases such as custom policies.
+    Doing so can lead to unexpected and undesired bot behavior.
+
 Keras Policy
 ^^^^^^^^^^^^
 
@@ -165,46 +196,26 @@ set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
 Embedding Policy
 ^^^^^^^^^^^^^^^^
 
-The Recurrent Embedding Dialogue Policy (REDP)
-described in our paper: `<https://arxiv.org/abs/1811.11707>`_
+Transformer Embedding Dialogue Policy (TEDP)
+
+Transformer version of the Recurrent Embedding Dialogue Policy (REDP)
+used in our paper: `<https://arxiv.org/abs/1811.11707>`_
 
 This policy has a pre-defined architecture, which comprises the
 following steps:
 
-    - apply dense layers to create embeddings for user intents,
-      entities and system actions including previous actions and slots;
-    - use the embeddings of previous user inputs as a user memory
-      and embeddings of previous system actions as a system memory;
-    - concatenate user input, previous system action and slots
-      embeddings for current time into an input vector to rnn;
-    - using user and previous system action embeddings from the input
-      vector, calculate attention probabilities over the user and
-      system memories (for system memory, this policy uses
-      `NTM mechanism <https://arxiv.org/abs/1410.5401>`_ with attention
-      by location);
-    - sum the user embedding and user attention vector and feed it
-      and the embeddings of the slots as an input to an LSTM cell;
-    - apply a dense layer to the output of the LSTM to get a raw
-      recurrent embedding of a dialogue;
-    - sum this raw recurrent embedding of a dialogue with system
-      attention vector to create dialogue level embedding, this step
-      allows the algorithm to repeat previous system action by copying
-      its embedding vector directly to the current time output;
-    - weight previous LSTM states with system attention probabilities
-      to get the previous action embedding, the policy is likely payed
-      attention to;
-    - if the similarity between this previous action embedding and
-      current time dialogue embedding is high, overwrite current LSTM
-      state with the one from the time when this action happened;
-    - for each LSTM time step, calculate the similarity between the
+    - concatenate user input (user intent and entities),
+      previous system action, slots and active form
+      for each time step into an input vector
+      to pre-transformer embedding layer;
+    - feed it to transformer;
+    - apply a dense layer to the output of the transformer
+      to get embeddings of a dialogue for each time step;
+    - apply a dense layer to create embeddings for system actions for each time step;
+    - calculate the similarity between the
       dialogue embedding and embedded system actions.
       This step is based on the
       `StarSpace <https://arxiv.org/abs/1709.03856>`_ idea.
-
-.. note::
-
-    This policy only works with
-    ``FullDialogueTrackerFeaturizer(state_featurizer)``.
 
 It is recommended to use
 ``state_featurizer=LabelTokenizerSingleStateFeaturizer(...)``
@@ -215,56 +226,34 @@ It is recommended to use
     Configuration parameters can be passed as parameters to the
     ``EmbeddingPolicy`` within the policy configuration file.
 
-    .. note::
+    .. warning::
 
         Pass an appropriate number of ``epochs`` to the ``EmbeddingPolicy``,
         otherwise the policy will be trained only for ``1``
-        epoch. Since this is an embedding based policy, it requires a large
-        number of epochs, which depends on the complexity of the
-        training data and whether attention is used or not.
-
-    The main feature of this policy is an **attention** mechanism over
-    previous user input and system actions.
-    **Attention is turned on by default**; in order to turn it off,
-    configure the following parameters:
-
-        - ``attn_before_rnn`` if ``true`` the algorithm will use
-          attention mechanism over previous user input, default ``true``;
-        - ``attn_after_rnn`` if ``true`` the algorithm will use
-          attention mechanism over previous system actions and will be
-          able to copy previously executed action together with LSTM's
-          hidden state from its history, default ``true``;
-        - ``sparse_attention`` if ``true`` ``sparsemax`` will be used
-          instead of ``softmax`` for attention probabilities, default
-          ``false``;
-        - ``attn_shift_range`` the range of allowed location-based
-          attention shifts for system memory (``attn_after_rnn``), see
-          `<https://arxiv.org/abs/1410.5401>`_ for details;
-
-    .. note::
-
-        Attention requires larger values of ``epochs`` and takes longer
-        to train. But it can learn more complicated and nonlinear behaviour.
+        epoch.
 
     The algorithm also has hyper-parameters to control:
 
         - neural network's architecture:
 
-            - ``hidden_layers_sizes_a`` sets a list of hidden layers
-              sizes before embedding layer for user inputs, the number
-              of hidden layers is equal to the length of the list;
             - ``hidden_layers_sizes_b`` sets a list of hidden layers
               sizes before embedding layer for system actions, the number
               of hidden layers is equal to the length of the list;
-            - ``rnn_size`` sets the number of units in the LSTM cell;
+            - ``transformer_size`` sets the number of units in the transfomer;
+            - ``num_transformer_layers`` sets the number of transformer layers;
+            - ``pos_encoding`` sets the type of positional encoding in transformer,
+              it should be either ``timing`` or ``emb``;
+            - ``max_seq_length`` sets maximum sequence length
+              if embedding positional encodings are used;
+            - ``num_heads`` sets the number of heads in multihead attention;
 
         - training:
 
-            - ``layer_norm`` if ``true`` layer normalization for lstm
-              cell is turned on,  default ``true``;
             - ``batch_size`` sets the number of training examples in one
               forward/backward pass, the higher the batch size, the more
               memory space you'll need;
+            - ``batch_strategy`` sets the type of batching strategy,
+              it should be either ``sequence`` or ``balanced``;
             - ``epochs`` sets the number of times the algorithm will see
               training data, where one ``epoch`` equals one forward pass and
               one backward pass of all the training examples;
@@ -274,38 +263,63 @@ It is recommended to use
         - embedding:
 
             - ``embed_dim`` sets the dimension of embedding space;
-            - ``mu_pos`` controls how similar the algorithm should try
-              to make embedding vectors for correct intent labels;
-            - ``mu_neg`` controls maximum negative similarity for
-              incorrect intents;
-            - ``similarity_type`` sets the type of the similarity,
-              it should be either ``cosine`` or ``inner``;
             - ``num_neg`` sets the number of incorrect intent labels,
               the algorithm will minimize their similarity to the user
               input during training;
+            - ``similarity_type`` sets the type of the similarity,
+              it should be either ``auto``, ``cosine`` or ``inner``,
+              if ``auto``, it will be set depending on ``loss_type``,
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+            - ``loss_type`` sets the type of the loss function,
+              it should be either ``softmax`` or ``margin``;
+            - ``mu_pos`` controls how similar the algorithm should try
+              to make embedding vectors for correct intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``mu_neg`` controls maximum negative similarity for
+              incorrect intents,
+              used only if ``loss_type`` is set to ``margin``;
             - ``use_max_sim_neg`` if ``true`` the algorithm only
-              minimizes maximum similarity over incorrect intent labels;
+              minimizes maximum similarity over incorrect intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
+              for examples where correct label is predicted with high confidence,
+              used only if ``loss_type`` is set to ``softmax``;
 
         - regularization:
 
             - ``C2`` sets the scale of L2 regularization
             - ``C_emb`` sets the scale of how important is to minimize
               the maximum similarity between embeddings of different
-              intent labels;
-            - ``droprate_a`` sets the dropout rate between hidden
+              intent labels, used only if ``loss_type`` is set to ``margin``;
+            - ``droprate_a`` sets the dropout rate between
               layers before embedding layer for user inputs;
-            - ``droprate_b`` sets the dropout rate between hidden layers
+            - ``droprate_b`` sets the dropout rate between layers
               before embedding layer for system actions;
-            - ``droprate_rnn`` sets the recurrent dropout rate on
-              the LSTM hidden state `<https://arxiv.org/abs/1603.05118>`_;
 
         - train accuracy calculation:
 
             - ``evaluate_every_num_epochs`` sets how often to calculate
               train accuracy, small values may hurt performance;
             - ``evaluate_on_num_examples`` how many examples to use for
-              calculation of train accuracy, large values may hurt
-              performance.
+              hold out validation set to calculate of validation accuracy,
+              large values may hurt performance.
+
+    .. warning::
+
+        Default ``max_history`` for this policy is ``None`` which means it'll use
+        the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
+        some finite value in order to use ``MaxHistoryTrackerFeaturizer``
+        for **faster training**. See :ref:`featurization` for details.
+        We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
+        (e.g. ``"batch_size": [32, 64]``)
+
+    .. warning::
+
+        If ``evaluate_on_num_examples`` is non zero, random examples will be
+        picked by stratified split and used as **hold out** validation set,
+        so they will be excluded from training data.
+        We suggest to set it to zero if data set contains a lot of unique examples
+        of dialogue turns
 
     .. note::
 
@@ -340,14 +354,6 @@ It is recommended to use
           the original starspace algorithm in the case
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
-
-Memoization Policy
-^^^^^^^^^^^^^^^^^^
-
-The ``MemoizationPolicy`` just memorizes the conversations in your
-training data. It predicts the next action with confidence ``1.0``
-if this exact conversation exists in the training data, otherwise it
-predicts ``None`` with confidence ``0.0``.
 
 .. _mapping-policy:
 
@@ -398,15 +404,31 @@ simple example that dispatches a bot utterance and then reverts the interaction:
   case there is no ``UserUtteranceReverted()`` and the
   intent and the mapped utterance will appear in the dialogue history.
 
+.. note::
+
+  The MappingPolicy is also responsible for executing the default actions ``action_back``
+  and ``action_restart`` in response to ``/back`` and ``/restart``. If it is not included
+  in your policy example these intents will not work.
+
+Memoization Policy
+^^^^^^^^^^^^^^^^^^
+
+The ``MemoizationPolicy`` just memorizes the conversations in your
+training data. It predicts the next action with confidence ``1.0``
+if this exact conversation exists in the training data, otherwise it
+predicts ``None`` with confidence ``0.0``.
+
 .. _fallback-policy:
 
 Fallback Policy
 ^^^^^^^^^^^^^^^
 
 The ``FallbackPolicy`` invokes a :ref:`fallback action
-<fallback-actions>` if the intent recognition
-has a confidence below ``nlu_threshold`` or if none of the dialogue
-policies predict an action with confidence higher than ``core_threshold``.
+<fallback-actions>` if at least one of the following occurs:
+1. The intent recognition has a confidence below ``nlu_threshold``.
+2. The highest ranked intent differs in confidence with the second highest ranked intent
+by less than ``ambiguity_threshold``.
+3. None of the dialogue policies predict an action with confidence higher than ``core_threshold``.
 
 **Configuration:**
 
@@ -418,12 +440,17 @@ policies predict an action with confidence higher than ``core_threshold``.
       policies:
         - name: "FallbackPolicy"
           nlu_threshold: 0.3
+          ambiguity_threshold: 0.1
           core_threshold: 0.3
           fallback_action_name: 'action_default_fallback'
 
     +----------------------------+---------------------------------------------+
     | ``nlu_threshold``          | Min confidence needed to accept an NLU      |
     |                            | prediction                                  |
+    +----------------------------+---------------------------------------------+
+    | ``ambiguity_threshold``    | Min amount by which the confidence of the   |
+    |                            | top intent must exceed that of the second   |
+    |                            | highest ranked intent.                      |
     +----------------------------+---------------------------------------------+
     | ``core_threshold``         | Min confidence needed to accept an action   |
     |                            | prediction from Rasa Core                   |
@@ -444,7 +471,8 @@ policies predict an action with confidence higher than ``core_threshold``.
 
        fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
                                  core_threshold=0.3,
-                                 nlu_threshold=0.3)
+                                 nlu_threshold=0.3,
+                                 ambiguity_threshold=0.1)
 
        agent = Agent("domain.yml", policies=[KerasPolicy(), fallback])
 
@@ -460,7 +488,8 @@ Two-Stage Fallback Policy
 The ``TwoStageFallbackPolicy`` handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.
 
-- If a NLU prediction has a low confidence score, the user is asked to affirm
+- If an NLU prediction has a low confidence score or is not significantly higher
+  than the second highest ranked prediction, the user is asked to affirm
   the classification of the intent.
 
     - If they affirm, the story continues as if the intent was classified
@@ -492,6 +521,7 @@ by trying to disambiguate the user input.
         policies:
           - name: TwoStageFallbackPolicy
             nlu_threshold: 0.3
+            ambiguity_threshold: 0.1
             core_threshold: 0.3
             fallback_core_action_name: "action_default_fallback"
             fallback_nlu_action_name: "action_default_fallback"
@@ -501,6 +531,10 @@ by trying to disambiguate the user input.
     | ``nlu_threshold``             | Min confidence needed to accept an NLU   |
     |                               | prediction                               |
     +-------------------------------+------------------------------------------+
+    | ``ambiguity_threshold``       | Min amount by which the confidence of the|
+    |                               | top intent must exceed that of the second|
+    |                               | highest ranked intent.                   |
+    +--------------------------------------------------------------------------+
     | ``core_threshold``            | Min confidence needed to accept an action|
     |                               | prediction from Rasa Core                |
     +-------------------------------+------------------------------------------+
@@ -508,13 +542,15 @@ by trying to disambiguate the user input.
     |                               | <fallback-actions>`                      |
     |                               | to be called if the confidence of Rasa   |
     |                               | Core action prediction is below the      |
-    |                               | ``core_threshold``                       |
+    |                               | ``core_threshold``. This action is       |  
+    |                               | to propose the recognized intents        |
     +-------------------------------+------------------------------------------+
     | ``fallback_nlu_action_name``  | Name of the :ref:`fallback action        |
     |                               | <fallback-actions>`                      |
     |                               | to be called if the confidence of Rasa   |
     |                               | NLU intent classification is below the   |
-    |                               | ``nlu_threshold``                        |
+    |                               | ``nlu_threshold``. This action is called |
+    |                               | when the user denies the second time     |
     +-------------------------------+------------------------------------------+
     |``deny_suggestion_intent_name``| The name of the intent which is used to  |
     |                               | detect that the user denies the suggested|

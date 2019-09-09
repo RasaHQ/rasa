@@ -58,13 +58,12 @@ class SlackBot(SlackClient, OutputChannel):
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        text = attachment.get("text", "Attachment")
         return super(SlackBot, self).api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
-            text=text,
             attachments=[attachment],
+            **kwargs
         )
 
     async def send_text_with_buttons(
@@ -121,13 +120,20 @@ class SlackInput(InputChannel):
     def from_credentials(cls, credentials):
         if not credentials:
             cls.raise_missing_credentials_exception()
-
-        return cls(credentials.get("slack_token"), credentials.get("slack_channel"))
+        return cls(
+            credentials.get("slack_token"),
+            credentials.get("slack_channel"),
+            credentials.get("slack_retry_reason_header", "x-slack-retry-reason"),
+            credentials.get("slack_retry_number_header", "x-slack-retry-num"),
+            credentials.get("errors_ignore_retry", None),
+        )
 
     def __init__(
         self,
         slack_token: Text,
         slack_channel: Optional[Text] = None,
+        slack_retry_reason_header: Optional[Text] = None,
+        slack_retry_number_header: Optional[Text] = None,
         errors_ignore_retry: Optional[List[Text]] = None,
     ) -> None:
         """Create a Slack input channel.
@@ -145,6 +151,8 @@ class SlackInput(InputChannel):
                 the bot posts, or channel name (e.g. '#bot-test')
                 If not set, messages will be sent back
                 to the "App" DM channel of your bot's name.
+            slack_retry_reason_header: Slack HTTP header name indicating reason that slack send retry request.
+            slack_retry_number_header: Slack HTTP header name indicating the attempt number
             errors_ignore_retry: Any error codes given by Slack
                 included in this list will be ignored.
                 Error codes are listed
@@ -154,6 +162,8 @@ class SlackInput(InputChannel):
         self.slack_token = slack_token
         self.slack_channel = slack_channel
         self.errors_ignore_retry = errors_ignore_retry or ("http_timeout",)
+        self.retry_reason_header = slack_retry_reason_header
+        self.retry_num_header = slack_retry_number_header
 
     @staticmethod
     def _is_user_message(slack_event):
@@ -253,8 +263,8 @@ class SlackInput(InputChannel):
         failure conditions defined here:
         https://api.slack.com/events-api#failure_conditions
         """
-        retry_reason = request.headers.get("HTTP_X_SLACK_RETRY_REASON")
-        retry_count = request.headers.get("HTTP_X_SLACK_RETRY_NUM")
+        retry_reason = request.headers.get(self.retry_reason_header)
+        retry_count = request.headers.get(self.retry_num_header)
         if retry_count and retry_reason in self.errors_ignore_retry:
             logger.warning(
                 "Received retry #{} request from slack"
@@ -264,7 +274,7 @@ class SlackInput(InputChannel):
             return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
 
         try:
-            out_channel = SlackBot(self.slack_token, self.slack_channel)
+            out_channel = self.get_output_channel()
             user_msg = UserMessage(
                 text, out_channel, sender_id, input_channel=self.name()
             )
@@ -321,3 +331,6 @@ class SlackInput(InputChannel):
             return response.text("Bot message delivered")
 
         return slack_webhook
+
+    def get_output_channel(self) -> OutputChannel:
+        return SlackBot(self.slack_token, self.slack_channel)

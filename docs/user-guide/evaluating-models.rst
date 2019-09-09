@@ -7,6 +7,8 @@
 Evaluating Models
 =================
 
+.. edit-link::
+
 .. contents::
    :local:
 
@@ -108,6 +110,16 @@ to the left of the plot.
     multiple tokens. A whitespace tokenizer would not work in this case.
 
 
+Response Selection
+^^^^^^^^^^^^^^^^^^^^^
+
+The evaluation script will produce a combined report for all response selector models in your pipeline.
+
+The report logs precision, recall and f1 measure for
+each response, as well as providing an overall average.
+You can save these reports as JSON files using the ``--report`` argument.
+
+
 Entity Extraction
 ^^^^^^^^^^^^^^^^^
 
@@ -173,10 +185,10 @@ The full list of options for the script is:
 .. program-output:: rasa test core --help
 
 
-Comparing Policies
-------------------
+Comparing Core Configurations
+-----------------------------
 
-To choose a specific policy configuration, or to choose hyperparameters for a
+To choose a configuration for your core model, or to choose hyperparameters for a
 specific policy, you want to measure how well Rasa Core will `generalise`
 to conversations which it hasn't seen before. Especially in the beginning
 of a project, you do not have a lot of real conversations to use to train
@@ -185,9 +197,8 @@ your bot, so you don't just want to throw some away to use as a test set.
 Rasa Core has some scripts to help you choose and fine-tune your policy configuration.
 Once you are happy with it, you can then train your final configuration on your
 full data set. To do this, you first have to train models for your different
-policies. Create two (or more) config files including the policies you want to
-compare (containing only one policy each), and then use the ``compare`` mode of
-the train script to train your models:
+configurations. Create two (or more) config files including the policies you want to
+compare, and then use the ``compare`` mode of the train script to train your models:
 
 .. code-block:: bash
 
@@ -204,13 +215,15 @@ mode to evaluate the models you just trained:
 
 .. code-block:: bash
 
-  $ rasa test core -m comparison_models/<model-1>.tar.gz comparison_models/<model-2>.tar.gz \
-    --stories stories_folder --out comparison_results
+  $ rasa test core -m comparison_models --stories stories_folder
+  --out comparison_results --evaluate-model-directory
 
-This will evaluate each of the models on the training set and plot some graphs
-to show you which policy performs best.  By evaluating on the full set of stories, you
+This will evaluate each of the models on the provided stories
+(can be either training or test set) and plot some graphs
+to show you which policy performs best. By evaluating on the full set of stories, you
 can measure how well Rasa Core is predicting the held-out stories.
 
+To compare single policies create config files containing only one policy each.
 If you're not sure which policies to compare, we'd recommend trying out the
 ``EmbeddingPolicy`` and the ``KerasPolicy`` to see which one works better for
 you.

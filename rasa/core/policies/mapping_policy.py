@@ -1,7 +1,8 @@
 import logging
 import json
 import os
-from typing import Any, List, Text
+import typing
+from typing import Any, List, Text, Optional
 
 import rasa.utils.io
 
@@ -12,10 +13,15 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
 )
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import MAPPING_POLICY_PRIORITY
+
+if typing.TYPE_CHECKING:
+    from rasa.core.policies.ensemble import PolicyEnsemble
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +33,38 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
-    def __init__(self, priority: int = 3) -> None:
+    @staticmethod
+    def _standard_featurizer():
+        return None
+
+    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
         """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__(priority=priority)
+
+    @classmethod
+    def validate_against_domain(
+        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ) -> None:
+        if not domain:
+            return
+
+        has_mapping_policy = ensemble is not None and any(
+            isinstance(p, cls) for p in ensemble.policies
+        )
+        has_triggers_in_domain = any(
+            [
+                "triggers" in properties
+                for intent, properties in domain.intent_properties.items()
+            ]
+        )
+        if has_triggers_in_domain and not has_mapping_policy:
+            raise InvalidDomain(
+                "You have defined triggers in your domain, but haven't "
+                "added the MappingPolicy to your policy ensemble. "
+                "Either remove the triggers from your domain or "
+                "exclude the MappingPolicy from your policy configuration."
+            )
 
     def train(
         self,
@@ -53,7 +87,13 @@ class MappingPolicy(Policy):
 
         prediction = [0.0] * domain.num_actions
         intent = tracker.latest_message.intent.get("name")
-        action = domain.intent_properties.get(intent, {}).get("triggers")
+        if intent == USER_INTENT_RESTART:
+            action = ACTION_RESTART_NAME
+        elif intent == USER_INTENT_BACK:
+            action = ACTION_BACK_NAME
+        else:
+            action = domain.intent_properties.get(intent, {}).get("triggers")
+
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
             if action:
                 idx = domain.index_for_action(action)
@@ -64,12 +104,6 @@ class MappingPolicy(Policy):
                     )
                 else:
                     prediction[idx] = 1
-            elif intent == USER_INTENT_RESTART:
-                idx = domain.index_for_action(ACTION_RESTART_NAME)
-                prediction[idx] = 1
-            elif intent == USER_INTENT_BACK:
-                idx = domain.index_for_action(ACTION_BACK_NAME)
-                prediction[idx] = 1
 
             if any(prediction):
                 logger.debug(
@@ -93,6 +127,18 @@ class MappingPolicy(Policy):
 
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
                 prediction[idx] = 1
+            else:
+                logger.debug(
+                    "The mapped action, '{}', for this intent, '{}', was "
+                    "executed last, but it was predicted by another policy, '{}', so MappingPolicy is not"
+                    "predicting any action.".format(
+                        action, intent, latest_action.policy
+                    )
+                )
+        elif action == ACTION_RESTART_NAME:
+            idx = domain.index_for_action(ACTION_RESTART_NAME)
+            prediction[idx] = 1
+            logger.debug("Restarting the conversation with action_restart.")
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "

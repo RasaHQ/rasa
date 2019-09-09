@@ -23,21 +23,32 @@ tests_requires = [
     "nbsphinx>=0.3",
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
+    "fakeredis~=1.0",
+    # upstream dep from fakeredis, should be removed if fakeredis properly depends on
+    # at least 1.12
+    "six>=1.12.0",
 ]
 
 install_requires = [
-    "requests~=2.22",
+    "requests>=2.20",
     "boto3~=1.9",
     "matplotlib~=3.0",
     "simplejson~=3.16",
     "attrs>=18",
     "jsonpickle~=1.1",
-    "redis~=3.2",
-    "fakeredis~=1.0",
+    "redis~=3.3.5",
     "pymongo~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
-    "tensorflow~=1.13.0",
+    "tensorflow~=1.14.0",
+    # absl is a tensorflow dependency, but produces double logging before 0.8
+    # should be removed once tensorflow requires absl > 0.8 on its own
+    "absl-py>=0.8.0",
+    # setuptools comes from tensorboard requirement:
+    # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
+    "setuptools >= 41.0.0",
+    "tensorflow-probability~=0.7.0",
+    "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
     "networkx~=2.3",
@@ -60,7 +71,7 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.1.0",
+    "rasa-sdk~=1.3.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=19.3.1",
@@ -68,12 +79,15 @@ install_requires = [
     "sanic-jwt~=1.3",
     "aiohttp~=3.5",
     "questionary>=1.1.0",
-    "python-socketio~=4.0",
+    "python-socketio>=4.3.1",
+    # the below can be unpinned when python-socketio pins >=3.9.3
+    "python-engineio>=3.9.3",
     "pydot~=1.4",
     "async_generator~=1.10",
     "SQLAlchemy~=1.3.0",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
+    "PyJWT~=1.7",
 ]
 
 extras_requires = {

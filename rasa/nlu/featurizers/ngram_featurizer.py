@@ -15,6 +15,11 @@ from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
+from rasa.nlu.constants import (
+    MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +29,9 @@ if typing.TYPE_CHECKING:
 
 class NGramFeaturizer(Featurizer):
 
-    provides = ["text_features"]
+    provides = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
-    requires = ["spacy_doc"]
+    requires = [MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     defaults = {
         # defines the maximum number of ngrams to collect and add
@@ -70,12 +75,12 @@ class NGramFeaturizer(Featurizer):
 
         for example in training_data.training_examples:
             updated = self._text_features_with_ngrams(example, self.best_num_ngrams)
-            example.set("text_features", updated)
+            example.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
 
     def process(self, message: Message, **kwargs: Any):
 
         updated = self._text_features_with_ngrams(message, self.best_num_ngrams)
-        message.set("text_features", updated)
+        message.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
 
     def _text_features_with_ngrams(self, message, max_ngrams):
 
@@ -83,9 +88,9 @@ class NGramFeaturizer(Featurizer):
 
         if ngrams_to_use is not None:
             extras = np.array(self._ngrams_in_sentence(message, ngrams_to_use))
-            return self._combine_with_existing_text_features(message, extras)
+            return self._combine_with_existing_features(message, extras)
         else:
-            return message.get("text_features")
+            return message.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
     @classmethod
     def load(
@@ -166,7 +171,11 @@ class NGramFeaturizer(Featurizer):
         """Filter for words that do not have a word vector."""
 
         cleaned_tokens = [
-            token for token in example.get("spacy_doc") if self._is_ngram_worthy(token)
+            token
+            for token in example.get(
+                MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            )
+            if self._is_ngram_worthy(token)
         ]
 
         # keep only out-of-vocab 'non_word' words
@@ -316,9 +325,10 @@ class NGramFeaturizer(Featurizer):
     def _collect_features(examples):
         if examples:
             collected_features = [
-                e.get("text_features")
+                e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
                 for e in examples
-                if e.get("text_features") is not None
+                if e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                is not None
             ]
         else:
             collected_features = []

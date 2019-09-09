@@ -17,7 +17,7 @@ from rasa.core.agent import Agent
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def loop():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -165,8 +165,27 @@ def test_nlg_fill_template_custom(slot_name, slot_value):
     }
 
 
+@pytest.mark.parametrize(
+    "template_text, expected",
+    [
+        ('{{"variable":"{slot_1}"}}', '{"variable":"foo"}'),
+        ("{slot_1} and {slot_2}", "foo and bar"),
+        ("{{{slot_1}, {slot_2}!}}", "{foo, bar!}"),
+        ("{{{slot_1}}}", "{foo}"),
+        ("{{slot_1}}", "{slot_1}"),
+    ],
+)
+def test_nlg_fill_template_text_with_json(template_text, expected):
+    template = {"text": template_text}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(
+        template=template, filled_slots={"slot_1": "foo", "slot_2": "bar"}
+    )
+    assert result == {"text": expected}
+
+
 @pytest.mark.parametrize("slot_name, slot_value", [("tag_w_\n", "a")])
-def test_nlg_fill_template_w_bad_slot_name2(slot_name, slot_value):
+def test_nlg_fill_template_with_bad_slot_name(slot_name, slot_value):
     template_text = "{" + slot_name + "}"
     t = TemplatedNaturalLanguageGenerator(templates=dict())
     result = t._fill_template(

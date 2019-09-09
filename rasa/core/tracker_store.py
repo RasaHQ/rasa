@@ -1,8 +1,10 @@
+import contextlib
 import json
 import logging
+import os
 import pickle
 import typing
-from typing import Iterator, Optional, Text, Iterable, Union
+from typing import Iterator, Optional, Text, Iterable, Union, Dict
 
 import itertools
 
@@ -10,15 +12,15 @@ import itertools
 from time import sleep
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.broker import EventChannel
+from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.utils.common import class_from_module_path
 
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
-    from sqlalchemy.engine import Engine
-
+    from sqlalchemy.engine.base import Engine
+    from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -307,24 +309,36 @@ class SQLTrackerStore(TrackerStore):
         password: Text = None,
         event_broker: Optional[EventChannel] = None,
         login_db: Optional[Text] = None,
+        query: Optional[Dict] = None,
     ) -> None:
-        import sqlalchemy
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy import create_engine
+        import sqlalchemy.exc
 
-        engine_url = self._get_db_url(
-            dialect, host, port, db, username, password, login_db
+        engine_url = self.get_db_url(
+            dialect, host, port, db, username, password, login_db, query
         )
         logger.debug(
-            "Attempting to connect to database " 'via "{}"'.format(repr(engine_url))
+            "Attempting to connect to database via '{}'.".format(repr(engine_url))
         )
 
         # Database might take a while to come up
         while True:
             try:
-                self.engine = create_engine(engine_url)
+                # pool_size and max_overflow can be set to control the number of
+                # connections that are kept in the connection pool. Not available
+                # for SQLite, and only  tested for postgresql. See
+                # https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool
+                if dialect == "postgresql":
+                    self.engine = create_engine(
+                        engine_url,
+                        pool_size=int(os.environ.get("SQL_POOL_SIZE", "50")),
+                        max_overflow=int(os.environ.get("SQL_MAX_OVERFLOW", "100")),
+                    )
+                else:
+                    self.engine = create_engine(engine_url)
 
-                # if `login_db` has been provided, use current connection with
+                # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
                 if login_db:
                     self._create_database_and_update_engine(db, engine_url)
@@ -340,7 +354,7 @@ class SQLTrackerStore(TrackerStore):
                     # the first services finishes the table creation.
                     logger.error("Could not create tables: {}".format(e))
 
-                self.session = sessionmaker(bind=self.engine)()
+                self.sessionmaker = sessionmaker(bind=self.engine)
                 break
             except (
                 sqlalchemy.exc.OperationalError,
@@ -350,12 +364,12 @@ class SQLTrackerStore(TrackerStore):
                 logger.warning(e)
                 sleep(5)
 
-        logger.debug("Connection to SQL database '{}' successful".format(db))
+        logger.debug("Connection to SQL database '{}' successful.".format(db))
 
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
     @staticmethod
-    def _get_db_url(
+    def get_db_url(
         dialect: Text = "sqlite",
         host: Optional[Text] = None,
         port: Optional[int] = None,
@@ -363,7 +377,27 @@ class SQLTrackerStore(TrackerStore):
         username: Text = None,
         password: Text = None,
         login_db: Optional[Text] = None,
+        query: Optional[Dict] = None,
     ) -> Union[Text, "URL"]:
+        """Builds an SQLAlchemy `URL` object representing the parameters needed
+        to connect to an SQL database.
+
+        Args:
+            dialect: SQL database type.
+            host: Database network host.
+            port: Database network port.
+            db: Database name.
+            username: User name to use when connecting to the database.
+            password: Password for database user.
+            login_db: Alternative database name to which initially connect, and create
+                the database specified by `db` (PostgreSQL only).
+            query: Dictionary of options to be passed to the dialect and/or the
+                DBAPI upon connect.
+
+        Returns:
+            URL ready to be used with an SQLAlchemy `Engine` object.
+
+        """
         from urllib.parse import urlsplit
         from sqlalchemy.engine.url import URL
 
@@ -387,6 +421,7 @@ class SQLTrackerStore(TrackerStore):
             host,
             port,
             database=login_db if login_db else db,
+            query=query,
         )
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
@@ -422,28 +457,41 @@ class SQLTrackerStore(TrackerStore):
         cursor.close()
         conn.close()
 
+    @contextlib.contextmanager
+    def session_scope(self):
+        """Provide a transactional scope around a series of operations."""
+        session = self.sessionmaker()
+        try:
+            yield session
+        finally:
+            session.close()
+
     def keys(self) -> Iterable[Text]:
-        sender_ids = self.session.query(self.SQLEvent.sender_id).distinct().all()
-        return [sender_id for (sender_id,) in sender_ids]
+        with self.session_scope() as session:
+            sender_ids = session.query(self.SQLEvent.sender_id).distinct().all()
+            return [sender_id for (sender_id,) in sender_ids]
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
-        query = self.session.query(self.SQLEvent)
-        result = query.filter_by(sender_id=sender_id).all()
-        events = [json.loads(event.data) for event in result]
+        with self.session_scope() as session:
+            query = session.query(self.SQLEvent)
+            result = query.filter_by(sender_id=sender_id).all()
 
-        if self.domain and len(events) > 0:
-            logger.debug("Recreating tracker from sender id '{}'".format(sender_id))
+            events = [json.loads(event.data) for event in result]
 
-            return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
-        else:
-            logger.debug(
-                "Can't retrieve tracker matching"
-                "sender id '{}' from SQL storage.  "
-                "Returning `None` instead.".format(sender_id)
-            )
-            return None
+            if self.domain and len(events) > 0:
+                logger.debug("Recreating tracker from sender id '{}'".format(sender_id))
+                return DialogueStateTracker.from_dict(
+                    sender_id, events, self.domain.slots
+                )
+            else:
+                logger.debug(
+                    "Can't retrieve tracker matching "
+                    "sender id '{}' from SQL storage. "
+                    "Returning `None` instead.".format(sender_id)
+                )
+                return None
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
@@ -451,40 +499,45 @@ class SQLTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        events = self._additional_events(tracker)  # only store recent events
+        with self.session_scope() as session:
+            # only store recent events
+            events = self._additional_events(session, tracker)
 
-        for event in events:
-            data = event.as_dict()
+            for event in events:
+                data = event.as_dict()
 
-            intent = data.get("parse_data", {}).get("intent", {}).get("name")
-            action = data.get("name")
-            timestamp = data.get("timestamp")
+                intent = data.get("parse_data", {}).get("intent", {}).get("name")
+                action = data.get("name")
+                timestamp = data.get("timestamp")
 
-            # noinspection PyArgumentList
-            self.session.add(
-                self.SQLEvent(
-                    sender_id=tracker.sender_id,
-                    type_name=event.type_name,
-                    timestamp=timestamp,
-                    intent_name=intent,
-                    action_name=action,
-                    data=json.dumps(data),
+                # noinspection PyArgumentList
+                session.add(
+                    self.SQLEvent(
+                        sender_id=tracker.sender_id,
+                        type_name=event.type_name,
+                        timestamp=timestamp,
+                        intent_name=intent,
+                        action_name=action,
+                        data=json.dumps(data),
+                    )
                 )
-            )
-        self.session.commit()
+            session.commit()
 
         logger.debug(
             "Tracker with sender_id '{}' "
             "stored to database".format(tracker.sender_id)
         )
 
-    def number_of_existing_events(self, sender_id: Text) -> int:
-        """Return number of stored events for a given sender id."""
-
-        query = self.session.query(self.SQLEvent.sender_id)
-        return query.filter_by(sender_id=sender_id).count() or 0
-
-    def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
+    def _additional_events(
+        self, session: "Session", tracker: DialogueStateTracker
+    ) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
-        n_events = self.number_of_existing_events(tracker.sender_id)
+
+        n_events = (
+            session.query(self.SQLEvent.sender_id)
+            .filter_by(sender_id=tracker.sender_id)
+            .count()
+            or 0
+        )
+
         return itertools.islice(tracker.events, n_events, len(tracker.events))

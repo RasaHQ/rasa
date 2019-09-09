@@ -1,4 +1,3 @@
-import io
 import os
 
 import json
@@ -7,7 +6,17 @@ from collections import Counter
 import numpy as np
 
 from rasa.core import training
-from rasa.core.events import ActionExecuted, UserUttered
+from rasa.core.interpreter import RegexInterpreter
+from rasa.core.training.dsl import StoryFileReader
+from rasa.core.domain import Domain
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.events import (
+    UserUttered,
+    ActionExecuted,
+    ActionExecutionRejected,
+    Form,
+    FormValidation,
+)
 from rasa.core.training.structures import Story
 from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
@@ -114,6 +123,80 @@ async def test_persist_and_read_test_story(tmpdir, default_domain):
         existing_stories.discard(story_str)
 
 
+async def test_persist_form_story(tmpdir):
+    domain = Domain.load("data/test_domains/form.yml")
+
+    tracker = DialogueStateTracker("", domain.slots)
+
+    story = (
+        "* greet\n"
+        "    - utter_greet\n"
+        "* start_form\n"
+        "    - some_form\n"
+        '    - form{"name": "some_form"}\n'
+        "* default\n"
+        "    - utter_default\n"
+        "    - some_form\n"
+        "* stop\n"
+        "    - utter_ask_continue\n"
+        "* affirm\n"
+        "    - some_form\n"
+        "* stop\n"
+        "    - utter_ask_continue\n"
+        "    - action_listen\n"
+        "* form: inform\n"
+        "    - some_form\n"
+        '    - form{"name": null}\n'
+        "* goodbye\n"
+        "    - utter_goodbye\n"
+    )
+
+    # simulate talking to the form
+    events = [
+        UserUttered(intent={"name": "greet"}),
+        ActionExecuted("utter_greet"),
+        ActionExecuted("action_listen"),
+        # start the form
+        UserUttered(intent={"name": "start_form"}),
+        ActionExecuted("some_form"),
+        Form("some_form"),
+        ActionExecuted("action_listen"),
+        # out of form input
+        UserUttered(intent={"name": "default"}),
+        ActionExecutionRejected("some_form"),
+        ActionExecuted("utter_default"),
+        ActionExecuted("some_form"),
+        ActionExecuted("action_listen"),
+        # out of form input
+        UserUttered(intent={"name": "stop"}),
+        ActionExecutionRejected("some_form"),
+        ActionExecuted("utter_ask_continue"),
+        ActionExecuted("action_listen"),
+        # out of form input but continue with the form
+        UserUttered(intent={"name": "affirm"}),
+        FormValidation(False),
+        ActionExecuted("some_form"),
+        ActionExecuted("action_listen"),
+        # out of form input
+        UserUttered(intent={"name": "stop"}),
+        ActionExecutionRejected("some_form"),
+        ActionExecuted("utter_ask_continue"),
+        ActionExecuted("action_listen"),
+        # form input
+        UserUttered(intent={"name": "inform"}),
+        FormValidation(True),
+        ActionExecuted("some_form"),
+        ActionExecuted("action_listen"),
+        Form(None),
+        UserUttered(intent={"name": "goodbye"}),
+        ActionExecuted("utter_goodbye"),
+        ActionExecuted("action_listen"),
+    ]
+    [tracker.update(e) for e in events]
+
+    assert story in tracker.export_stories()
+
+
 async def test_read_story_file_with_cycles(tmpdir, default_domain):
     graph = await training.extract_story_graph(
         "data/test_stories/stories_with_cycle.md", default_domain
@@ -124,7 +207,8 @@ async def test_read_story_file_with_cycles(tmpdir, default_domain):
     graph_without_cycles = graph.with_cycles_removed()
 
     assert graph.cyclic_edge_ids != set()
-    assert graph_without_cycles.cyclic_edge_ids == set()
+    # sorting removed_edges converting set converting it to list
+    assert graph_without_cycles.cyclic_edge_ids == list()
 
     assert len(graph.story_steps) == len(graph_without_cycles.story_steps) == 5
 
@@ -262,3 +346,21 @@ async def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
 
     assert len(data.X) == 0
     assert len(data.y) == 0
+
+
+async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
+    story_steps = await StoryFileReader.read_from_file(
+        "data/test_stories/stories_with_multiline_comments.md",
+        default_domain,
+        RegexInterpreter(),
+    )
+
+    assert len(story_steps) == 4
+    assert story_steps[0].block_name == "happy path"
+    assert len(story_steps[0].events) == 4
+    assert story_steps[1].block_name == "sad path 1"
+    assert len(story_steps[1].events) == 7
+    assert story_steps[2].block_name == "sad path 2"
+    assert len(story_steps[2].events) == 7
+    assert story_steps[3].block_name == "say goodbye"
+    assert len(story_steps[3].events) == 2

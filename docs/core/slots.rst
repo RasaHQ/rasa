@@ -7,6 +7,8 @@
 Slots
 =====
 
+.. edit-link::
+
 .. contents::
    :local:
 
@@ -74,6 +76,16 @@ slot with the same name, the slot will be set automatically. For example:
 
 In this case, you don't have to include the ``- slot{}`` part in the
 story, because it is automatically picked up.
+
+To disable this behavior for a particular slot, you can set the
+``auto_fill`` attribute to ``False`` in the domain file:
+
+.. code-block:: yaml
+    
+    slots:
+      name:
+        type: text
+        auto_fill: False
 
 
 Slots Set By Clicking Buttons
@@ -316,7 +328,7 @@ a vector of length ``2``.
                    r[0] = 1.0
                else:
                    r[1] = 1.0
-       return r
+           return r
 
 Now we also need some training stories, so that Rasa Core
 can learn from these how to handle the different situations:
