@@ -169,12 +169,14 @@ class RedisTrackerStore(TrackerStore):
         password=None,
         event_broker=None,
         record_exp=None,
-        ssl=False
+        ssl=False,
     ):
 
         import redis
 
-        self.red = redis.StrictRedis(host=host, port=port, db=db, password=password, ssl=ssl)
+        self.red = redis.StrictRedis(
+            host=host, port=port, db=db, password=password, ssl=ssl
+        )
         self.record_exp = record_exp
         super(RedisTrackerStore, self).__init__(domain, event_broker)
 
