@@ -96,9 +96,9 @@ Otherwise, proceed with the instructions below to install them.
             C:\> pip3 install -U pip
 
 .. note::
+   Note that `pip` in this refers to `pip3` as Rasa requires python3. To see which version the `pip` 
+   command on your machine calls use `pip --version`.
 
-   Note that `pip` in this refers to `pip3` as Rasa requires python3. To see which version the `pip` command on your 
-   machine calls use `pip --version`.
 
 2. Create a virtual environment (strongly recommended)
 ------------------------------------------------------
