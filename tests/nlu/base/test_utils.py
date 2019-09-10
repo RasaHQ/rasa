@@ -95,18 +95,8 @@ def test_remove_model_empty(empty_model_dir):
     assert remove_model(empty_model_dir)
 
 
-def test_remove_model_with_files(empty_model_dir):
-    metadata_file = "metadata.json"
-    metadata_content = {"pipeline": "pretrained_embeddings_spacy", "language": "en"}
-    metadata_path = os.path.join(empty_model_dir, metadata_file)
-    write_json_to_file(metadata_path, metadata_content)
-
-    fake_obj = {"Fake", "model"}
-    fake_obj_path = os.path.join(empty_model_dir, "component.pkl")
-    with io.open(fake_obj_path, "wb") as f:
-        pickle.dump(fake_obj, f)
-
-    assert remove_model(empty_model_dir)
+def test_remove_model_with_files(fake_model_dir):
+    assert remove_model(fake_model_dir)
 
 
 def test_remove_model_invalid(empty_model_dir):
