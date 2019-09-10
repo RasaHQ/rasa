@@ -25,6 +25,7 @@ from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
+from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
@@ -53,20 +54,18 @@ class PolicyEnsemble(object):
         self._check_for_important_policies()
 
     def _check_for_important_policies(self):
-        for policy in self.policies:
-            if "MappingPolicy" in type(policy).__name__:
-                return
-        # if the mapping policy is not in the enemble print this message
-        logger.info(
-            "MappingPolicy not included in policy ensemble. Default intents "
-            "'{} and {} will not trigger actions '{}' and '{}'."
-            "".format(
-                USER_INTENT_RESTART,
-                USER_INTENT_BACK,
-                ACTION_RESTART_NAME,
-                ACTION_BACK_NAME,
+        if not any([isinstance(policy, MappingPolicy) for policy in
+            self.policies]):
+            logger.info(
+                "MappingPolicy not included in policy ensemble. Default intents "
+                "'{} and {} will not trigger actions '{}' and '{}'."
+                "".format(
+                    USER_INTENT_RESTART,
+                    USER_INTENT_BACK,
+                    ACTION_RESTART_NAME,
+                    ACTION_BACK_NAME,
+                )
             )
-        )
 
     @staticmethod
     def _training_events_from_trackers(training_trackers):
