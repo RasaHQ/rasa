@@ -54,8 +54,7 @@ class PolicyEnsemble(object):
         self._check_for_important_policies()
 
     def _check_for_important_policies(self):
-        if not any([isinstance(policy, MappingPolicy) for policy in
-            self.policies]):
+        if not any([isinstance(policy, MappingPolicy) for policy in self.policies]):
             logger.info(
                 "MappingPolicy not included in policy ensemble. Default intents "
                 "'{} and {} will not trigger actions '{}' and '{}'."
