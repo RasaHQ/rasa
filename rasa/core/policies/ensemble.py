@@ -53,17 +53,20 @@ class PolicyEnsemble(object):
         self._check_for_important_policies()
 
     def _check_for_important_policies(self):
-        if "MappingPolicy" not in self.policies:
-            logger.info(
-                "MappingPolicy not included in policy ensemble. Default intents "
-                "'{} and {} will not trigger actions '{}' and '{}'."
-                "".format(
-                    USER_INTENT_RESTART,
-                    USER_INTENT_BACK,
-                    ACTION_RESTART_NAME,
-                    ACTION_BACK_NAME,
-                )
+        for policy in self.policies:
+            if "MappingPolicy" in type(policy).__name__:
+                return
+        # if the mapping policy is not in the enemble print this message
+        logger.info(
+            "MappingPolicy not included in policy ensemble. Default intents "
+            "'{} and {} will not trigger actions '{}' and '{}'."
+            "".format(
+                USER_INTENT_RESTART,
+                USER_INTENT_BACK,
+                ACTION_RESTART_NAME,
+                ACTION_BACK_NAME,
             )
+        )
 
     @staticmethod
     def _training_events_from_trackers(training_trackers):
