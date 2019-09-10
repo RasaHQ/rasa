@@ -105,31 +105,31 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
     .. tab:: Ubuntu / macOS
 
-        Create a new virtual environment by choosing a Python interpreter and making a ``./venv`` directory to hold it:
+        Create a new virtual environment by choosing a Python interpreter and making a ``./rasa-project`` directory to hold it, where ``./rasa-project`` is the directory name for your rasa project  :
 
         .. code-block:: bash
 
-            $ python3 -m venv --system-site-packages ./venv
+            $ python3 -m venv --system-site-packages ./rasa-project
 
         Activate the virtual environment:
 
         .. code-block:: bash
 
-            $ source ./venv/bin/activate
+            $ source ./rasa-project/bin/activate
 
     .. tab:: Windows
 
-        Create a new virtual environment by choosing a Python interpreter and making a ``.\venv`` directory to hold it:
+        Create a new virtual environment by choosing a Python interpreter and making a ``.\rasa-project`` directory to hold it, where ``./rasa-project`` is the directory name for your rasa project  ::
 
         .. code-block:: bat
 
-            C:\> python3 -m venv --system-site-packages ./venv
+            C:\> python3 -m venv --system-site-packages ./rasa-project
 
         Activate the virtual environment:
 
         .. code-block:: bat
 
-            C:\> .\venv\Scripts\activate
+            C:\> .\rasa-project\Scripts\activate
 
 
 3. Install Rasa and Rasa X
