@@ -14,6 +14,7 @@ Fixed
 -----
 - SQL tracker events are retrieved ordered by timestamps. This fixes interactive
   learning events being shown in the wrong order.
+- Avoid training CountVectorizer for a particular attribute of a message if no text is provided for that attribute across the training data.
 
 [1.3.1] - 2019-09-09
 ^^^^^^^^^^^^^^^^^^^^
