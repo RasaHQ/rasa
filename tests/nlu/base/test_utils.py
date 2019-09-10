@@ -4,6 +4,7 @@ import os
 import pickle
 import pytest
 import tempfile
+import shutil
 import rasa.utils.io as io_utils
 from rasa.nlu.utils import (
     is_model_dir,
@@ -21,7 +22,7 @@ def empty_model_dir():
     temp_path = tempfile.mkdtemp()
     yield temp_path
     if os.path.exists(temp_path):
-        os.rmdir(temp_path)
+        shutil.rmtree(temp_path)
 
 
 @pytest.fixture
@@ -79,16 +80,16 @@ def test_empty_is_model_dir(empty_model_dir):
     assert is_model_dir(empty_model_dir)
 
 
-def test_non_existant_folder_is_no_model_dir():
-    assert not is_model_dir(empty_model_dir)
-
-
-def test_data_folder_is__no_model_dir():
+def test_non_existent_folder_is_no_model_dir():
     assert not is_model_dir("nonexistent_for_sure_123/")
 
 
+def test_data_folder_is_no_model_dir():
+    assert not is_model_dir("data/")
+
+
 def test_model_folder_is_model_dir(fake_model_dir):
-    assert not is_model_dir(fake_model_dir)
+    assert is_model_dir(fake_model_dir)
 
 
 def test_remove_model_empty(empty_model_dir):
