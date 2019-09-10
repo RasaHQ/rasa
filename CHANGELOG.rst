@@ -7,6 +7,14 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[1.3.3] - Unreleased
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Policy ensemble no longer incorrectly wrings "missing mapping policy" when
+  mapping policy is present.
+
 [1.3.2] - 2019-09-10
 ^^^^^^^^^^^^^^^^^^^^
 
