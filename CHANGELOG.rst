@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- Policy ensemble no longer incorrectly prints missing mapping policy message.
 
 [1.3.2] - 2019-09-10
 ^^^^^^^^^^^^^^^^^^^^
