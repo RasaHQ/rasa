@@ -213,12 +213,14 @@ require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.3.0
+          viewing: 1.3.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.3.2/core/policies/">1.3.2</a>
+              <a href="../.././1.3.1/core/policies/">1.3.1</a>
               <a href="../.././1.3.0/core/policies/">1.3.0</a>
               <a href="../.././1.2.7/core/policies/">1.2.7</a>
               <a href="../.././1.1.8/core/policies/">1.1.8</a>
@@ -361,9 +363,8 @@ what happened before.</p>
 <p>You can alter this behaviour with the <code class="docutils literal notranslate"><span class="pre">--augmentation</span></code> flag.
 Which allows you to set the <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code>.
 The <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code> determines how many augmented stories are
-subsampled during training. Subsampling of the augmented stories is done in order to
-not get too many stories from augmentation, since their number
-can become very large quickly.
+subsampled during training. The augmented stories are subsampled before training
+since their number can quickly become very large, and we want to limit it.
 The number of sampled stories is <code class="docutils literal notranslate"><span class="pre">augmentation_factor</span></code> x10.
 By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.</p>
 <p><code class="docutils literal notranslate"><span class="pre">--augmentation</span> <span class="pre">0</span></code> disables all augmentation behavior.
