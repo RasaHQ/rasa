@@ -451,7 +451,9 @@ class SQLTrackerStore(TrackerStore):
         """Create a tracker from all previously stored events."""
 
         query = self.session.query(self.SQLEvent)
-        result = query.filter_by(sender_id=sender_id).all()
+        result = (
+            query.filter_by(sender_id=sender_id).order_by(self.SQLEvent.timestamp).all()
+        )
         events = [json.loads(event.data) for event in result]
 
         if self.domain and len(events) > 0:
