@@ -22,6 +22,21 @@ Removed
 Fixed
 -----
 
+[1.3.2] - 2019-09-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- SQL tracker events are retrieved ordered by timestamps. This fixes interactive
+  learning events being shown in the wrong order.
+
+[1.3.1] - 2019-09-09
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Pin gast to == 0.2.2
+
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
 
