@@ -123,8 +123,8 @@ SpacyFeaturizer
 
         pipeline:
         - name: "SpacyFeaturizer"
-          # Whether to add word vectors to ``ner_features``
-          ner_feature_vectors: False
+          # Whether to add word vectors to ``ner_features`` (default: False)
+          ner_feature_vectors: True
 
 NGramFeaturizer
 ~~~~~~~~~~~~~~~
