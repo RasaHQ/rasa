@@ -21,17 +21,14 @@ from questionary import Choice, Form, Question
 
 from rasa.cli import utils as cliutils
 from rasa.core import constants, run, train, utils
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    default_action_names,
-    UTTER_PREFIX,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT,
     DEFAULT_SERVER_PORT,
     DEFAULT_SERVER_URL,
     REQUESTED_SLOT,
+    UTTER_PREFIX,
 )
 from rasa.core.domain import Domain
 import rasa.core.events
@@ -77,6 +74,8 @@ PATHS = {
     "backup": "data/nlu_interactive.md",
     "domain": "domain.yml",
 }
+
+SAVE_IN_E2E = False
 
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
@@ -801,7 +800,7 @@ async def _write_stories_to_file(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
                 i += 1
-                f.write("\n" + tracker.export_stories())
+                f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
 
 
 async def _write_nlu_to_file(
@@ -833,9 +832,9 @@ async def _write_nlu_to_file(
 
     with open(export_nlu_path, "w", encoding="utf-8") as f:
         if fformat == "md":
-            f.write(nlu_data.as_markdown())
+            f.write(nlu_data.nlu_as_markdown())
         else:
-            f.write(nlu_data.as_json())
+            f.write(nlu_data.nlu_as_json())
 
 
 def _entities_from_messages(messages):
@@ -1329,7 +1328,9 @@ def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
 
     if not skip_visualization:
-        visualization_url = DEFAULT_SERVER_FORMAT.format(DEFAULT_SERVER_PORT + 1)
+        visualization_url = DEFAULT_SERVER_FORMAT.format(
+            "http", DEFAULT_SERVER_PORT + 1
+        )
         visualization_help = "Visualisation at {}/visualization.html.".format(
             visualization_url
         )
@@ -1537,7 +1538,7 @@ def run_interactive_learning(
     additional_arguments: Dict[Text, Any] = None,
 ):
     """Start the interactive learning with the model of the agent."""
-
+    global SAVE_IN_E2E
     server_args = server_args or {}
 
     if server_args.get("nlu_data"):
@@ -1548,6 +1549,8 @@ def run_interactive_learning(
 
     if server_args.get("domain"):
         PATHS["domain"] = server_args["domain"]
+
+    SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))
@@ -1575,5 +1578,5 @@ def run_interactive_learning(
     _serve_application(app, stories, skip_visualization)
 
     if not skip_visualization and p is not None:
-        p.terminate()
-        p.join()
+        p.terminate()  # pytype: disable=attribute-error
+        p.join()  # pytype: disable=attribute-error

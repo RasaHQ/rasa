@@ -225,14 +225,20 @@ class StoryStep(object):
                     # form is active
                     if self.story_string_helper.form_rejected:
                         if (
-                            self.story_string_helper.form_validation
+                            self.story_string_helper.form_prefix_string
+                            and self.story_string_helper.form_validation
                             and s.action_name == self.story_string_helper.active_form
                         ):
+                            # if there is something in `form_prefix_string`,
+                            # add action_listen before it,
+                            # because this form user input will be ignored by core
+                            # and therefore action_listen will not be automatically
+                            # added during reading the stories
                             result += self._bot_string(
                                 ActionExecuted(ACTION_LISTEN_NAME)
                             )
                             result += self.story_string_helper.form_prefix_string
-                        else:
+                        elif self.story_string_helper.no_form_prefix_string:
                             result += self.story_string_helper.no_form_prefix_string
                         # form rejected, add story string without form prefix
                         result += self._bot_string(s)
@@ -653,7 +659,7 @@ class StoryGraph(object):
     @staticmethod
     def order_steps(
         story_steps: List[StoryStep]
-    ) -> Tuple[deque, Set[Tuple[Text, Text]]]:
+    ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Topological sort of the steps returning the ids of the steps."""
 
         checkpoints = StoryGraph._group_by_start_checkpoint(story_steps)
@@ -680,7 +686,7 @@ class StoryGraph(object):
     @staticmethod
     def topological_sort(
         graph: Dict[Text, Set[Text]]
-    ) -> Tuple[deque, Set[Tuple[Text, Text]]]:
+    ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Creates a top sort of a directed graph. This is an unstable sorting!
 
         The function returns the sorted nodes as well as the edges that need
@@ -710,7 +716,7 @@ class StoryGraph(object):
 
         def dfs(node):
             visited_nodes[node] = GRAY
-            for k in graph.get(node, set()):
+            for k in sorted(graph.get(node, set())):
                 sk = visited_nodes.get(k, None)
                 if sk == GRAY:
                     removed_edges.add((node, k))
@@ -724,7 +730,8 @@ class StoryGraph(object):
 
         while unprocessed:
             dfs(unprocessed.pop())
-        return ordered, removed_edges
+
+        return ordered, sorted(removed_edges)
 
     def visualize(self, output_file=None):
         import networkx as nx

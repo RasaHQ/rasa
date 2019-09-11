@@ -9,17 +9,17 @@ import time
 
 from rasa.core import jobs
 from rasa.core.actions.action import Action
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ActionExecutionRejection,
-    UTTER_PREFIX,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     UserMessage,
     OutputChannel,
 )
-from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
+from rasa.core.constants import (
+    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    USER_INTENT_RESTART,
+    UTTER_PREFIX,
+)
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
@@ -77,13 +77,16 @@ class MessageProcessor(object):
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
-        tracker = await self.log_message(message)
+        tracker = await self.log_message(message, should_save_tracker=False)
         if not tracker:
             return None
 
         if not self.policy_ensemble or not self.domain:
+            # save tracker state to continue conversation from this state
+            self._save_tracker(tracker)
             logger.warning(
-                "No policy ensemble or domain set. Skipping action prediction and execution."
+                "No policy ensemble or domain set. Skipping action prediction "
+                "and execution."
             )
             return None
 
@@ -108,6 +111,13 @@ class MessageProcessor(object):
             )
             return None
 
+        if not self.policy_ensemble or not self.domain:
+            # save tracker state to continue conversation from this state
+            logger.warning(
+                "No policy ensemble or domain set. Skipping action prediction "
+            )
+            return None
+
         probabilities, policy = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -122,7 +132,15 @@ class MessageProcessor(object):
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
         }
 
-    async def log_message(self, message: UserMessage) -> Optional[DialogueStateTracker]:
+    async def log_message(
+        self, message: UserMessage, should_save_tracker: bool = True
+    ) -> Optional[DialogueStateTracker]:
+        """Log `message` on tracker belonging to the message's conversation_id.
+
+        Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
+        can be skipped if the tracker returned by this method is used for further
+        processing and saved at a later stage.
+        """
 
         # preprocess message if necessary
         if self.message_preprocessor is not None:
@@ -132,8 +150,10 @@ class MessageProcessor(object):
         tracker = self._get_tracker(message.sender_id)
         if tracker:
             await self._handle_message_with_tracker(message, tracker)
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
+
+            if should_save_tracker:
+                # save tracker state to continue conversation from this state
+                self._save_tracker(tracker)
         else:
             logger.warning(
                 "Failed to retrieve or create tracker for sender "
