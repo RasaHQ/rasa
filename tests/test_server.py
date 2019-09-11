@@ -362,6 +362,7 @@ def test_train_status(rasa_server, rasa_app, formbot_data):
     # Query the status endpoint a few times to ensure the test does
     # not fail prematurely due to mismatched timing of a single query.
     for i in range(10):
+        time.sleep(1)
         _, status_resp = rasa_app.get("/model/train/status")
         assert status_resp.status == 200
         if status_resp.json["n_jobs"] == 1:
