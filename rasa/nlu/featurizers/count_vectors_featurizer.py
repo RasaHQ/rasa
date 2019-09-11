@@ -435,7 +435,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     @staticmethod
     def _attribute_texts_is_non_empty(attribute_texts):
-        return any(text for text in attribute_texts)
+        return any(attribute_texts)
 
     def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
         """Construct the vectorizers and train them with an independent vocab"""
