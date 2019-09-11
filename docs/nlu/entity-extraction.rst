@@ -157,4 +157,4 @@ Passing Custom Features to ``CRFEntityExtractor``
 If you want to pass custom features to ``CRFEntityExtractor``, you can create a ``Featurizer`` that provides ``ner_features``.
 If you do, ``ner_features`` should be an iterable of ``len(tokens)``, where each entry is a vector.
 If ``CRFEntityExtractor`` finds ``"ner_features"`` in one of the arrays in ``features`` in the config, it will pass the ``ner_features`` vectors to ``sklearn_crfsuite``.
-The simplest example of this is to pass word vectors as features, which you can do using ``SpacyFeaturizer``
+The simplest example of this is to pass word vectors as features, which you can do using :ref:``SpacyFeaturizer``.
