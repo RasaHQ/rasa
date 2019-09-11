@@ -667,11 +667,11 @@ class EmbeddingIntentClassifier(Component):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-        with io.open(
+        with open(
             os.path.join(model_dir, file_name + "_inv_intent_dict.pkl"), "wb"
         ) as f:
             pickle.dump(self.inv_intent_dict, f)
-        with io.open(
+        with open(
             os.path.join(model_dir, file_name + "_encoded_all_intents.pkl"), "wb"
         ) as f:
             pickle.dump(self.encoded_all_intents, f)
@@ -706,11 +706,11 @@ class EmbeddingIntentClassifier(Component):
                 word_embed = tf.get_collection("word_embed")[0]
                 intent_embed = tf.get_collection("intent_embed")[0]
 
-            with io.open(
+            with open(
                 os.path.join(model_dir, file_name + "_inv_intent_dict.pkl"), "rb"
             ) as f:
                 inv_intent_dict = pickle.load(f)
-            with io.open(
+            with open(
                 os.path.join(model_dir, file_name + "_encoded_all_intents.pkl"), "rb"
             ) as f:
                 encoded_all_intents = pickle.load(f)
