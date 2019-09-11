@@ -10,7 +10,7 @@ DEFAULT_CORE_FALLBACK_THRESHOLD = 0.0
 
 DEFAULT_FALLBACK_ACTION = "action_default_fallback"
 
-DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+DEFAULT_REQUEST_TIMEOUT = 60 * 60  # 60 minutes
 
 REQUESTED_SLOT = "requested_slot"
 
