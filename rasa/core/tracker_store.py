@@ -476,7 +476,11 @@ class SQLTrackerStore(TrackerStore):
 
         with self.session_scope() as session:
             query = session.query(self.SQLEvent)
-            result = query.filter_by(sender_id=sender_id).all()
+            result = (
+                query.filter_by(sender_id=sender_id)
+                .order_by(self.SQLEvent.timestamp)
+                .all()
+            )
 
             events = [json.loads(event.data) for event in result]
 

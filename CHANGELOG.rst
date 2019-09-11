@@ -7,13 +7,27 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.1]
+[Unreleased 1.3.3]
 ^^^^^^^^^^^^^^^^^^
 
 Added
 -----
 - API endpoint to obtain the number of training processes currently running (``/model/train/status``)
 
+[1.3.2] - 2019-09-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- SQL tracker events are retrieved ordered by timestamps. This fixes interactive
+  learning events being shown in the wrong order.
+
+[1.3.1] - 2019-09-09
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Pin gast to == 0.2.2
 
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
