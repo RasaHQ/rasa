@@ -419,6 +419,7 @@ paths:
         Returns the number of active training processes.
       responses:
         200:
+          description: Number of active training processes
           content:
             application/json:
               schema:
