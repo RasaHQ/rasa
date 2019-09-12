@@ -12,11 +12,11 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Fixed
 -----
-- Multi-hot intent featurization inside EmbeddingIntentClassifier if ``intent_features`` don't exist.
+- Default one-hot representation for label featurization inside EmbeddingIntentClassifier if label features don't exist.
 
-Changed
+Removed
 -------
-- Removed computation of `intent_spacy_doc`. As a result, none of the spacy components process intents now.
+- Removed computation of ``intent_spacy_doc``. As a result, none of the spacy components process intents now.
 
 
 [1.3.3] - 2019-09-11

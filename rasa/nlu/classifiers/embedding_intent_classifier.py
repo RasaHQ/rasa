@@ -287,56 +287,12 @@ class EmbeddingIntentClassifier(Component):
 
         return np.array(encoded_all_labels)
 
-    def _extract_distinct_tokens(
-        self, labels_example: List[Tuple[int, "Message"]], attribute
-    ) -> Dict[Text, int]:
-        """Get a dictionary of all distinct tokens used for all labels"""
-
-        # Get all tokens
-        all_tokens = []
-        for (label_idx, label_example) in labels_example:
-            label_example_tokens = self._get_label_example_tokens(
-                label_example, attribute
-            )
-            all_tokens += label_example_tokens
-
-        # Collect unique tokens and create a dictionary of them
-        distinct_tokens = sorted(set(all_tokens))
-        return {distinct_tokens[i]: i for i in range(0, len(distinct_tokens))}
-
-    @staticmethod
-    def _get_label_example_tokens(
-        label_example: "Message", attribute: Text
-    ) -> List[Text]:
-        """Get tokens for an example of a label"""
-
-        # Collect tokens of an example if they are already precomputed, else create them on the fly
-        label_example_tokens = (
-            [token.text for token in label_example.get(MESSAGE_TOKENS_NAMES[attribute])]
-            if label_example.get(MESSAGE_TOKENS_NAMES[attribute])
-            else [token for token in label_example.get(attribute).split()]
-        )
-        return label_example_tokens
-
-    def _compute_label_features(
-        self, labels_example: List[Tuple[int, "Message"]], attribute: Text
+    def _compute_default_label_features(
+        self, labels_example: List[Tuple[int, "Message"]]
     ) -> np.ndarray:
-        """Compute multi-hot representation for the labels"""
+        """Compute one-hot representation for the labels"""
 
-        # Get all distinct tokens used across all labels
-        label_distinct_tokens = self._extract_distinct_tokens(labels_example, attribute)
-
-        encoded_id_labels = np.zeros((len(labels_example), len(label_distinct_tokens)))
-
-        # Create multi hot representation
-        for (label_idx, label_example) in labels_example:
-            label_example_tokens = self._get_label_example_tokens(
-                label_example, attribute
-            )
-            for token in label_example_tokens:
-                encoded_id_labels[label_idx, label_distinct_tokens[token]] = 1
-
-        return encoded_id_labels
+        return np.eye(len(labels_example))
 
     def _create_encoded_label_ids(
         self,
@@ -346,7 +302,7 @@ class EmbeddingIntentClassifier(Component):
         attribute_feature_name: Text,
     ) -> np.ndarray:
         """Create matrix with label_ids encoded in rows as bag of words. If the features are already computed, fetch
-        them from the message object else compute a multi hot encoding for the label as the feature vector
+        them from the message object else compute a one hot encoding for the label as the feature vector
         Find a training example for each label and get the encoded features from the corresponding Message object"""
 
         labels_example = []
@@ -364,7 +320,7 @@ class EmbeddingIntentClassifier(Component):
                 labels_example, attribute_feature_name
             )
             if self._check_labels_features_exist(labels_example, attribute_feature_name)
-            else self._compute_label_features(labels_example, attribute)
+            else self._compute_default_label_features(labels_example)
         )
 
         return encoded_id_labels
