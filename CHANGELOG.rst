@@ -7,13 +7,17 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[1.3.3] - 2019-09-11
+[1.3.3] - 2019-09-12
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - Added a check to avoid training CountVectorizer for a particular attribute of a message if no text is provided for that attribute across the training data.
+- Multi-hot intent featurization inside EmbeddingIntentClassifier if ``intent_features`` don't exist.
 
+Changed
+-------
+- Removed computation of `intent_spacy_doc`. As a result, none of the spacy components process intents now.
 
 [1.3.2] - 2019-09-10
 ^^^^^^^^^^^^^^^^^^^^
