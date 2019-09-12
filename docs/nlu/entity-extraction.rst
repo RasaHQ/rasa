@@ -152,7 +152,7 @@ as a postprocessing step after receiving the response from Rasa NLU.
 
 
 Passing Custom Features to ``CRFEntityExtractor``
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you want to pass custom features to ``CRFEntityExtractor``, you can create a ``Featurizer`` that provides ``ner_features``.
 If you do, ``ner_features`` should be an iterable of ``len(tokens)``, where each entry is a vector.
