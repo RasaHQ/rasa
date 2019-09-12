@@ -72,16 +72,16 @@ class SpacyFeaturizer(Featurizer):
         """If we want to use spacy as an NER featurizer, set token vectors"""
         doc = message.get(MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_ENTITIES_ATTRIBUTE])
         if self.ner_feature_vectors:
-            ner_features = [t.vector for t in doc]
+            ner_features = np.array([t.vector for t in doc])
         else:
-            ner_features = [[] for t in doc]
-        self._combine_with_existing_features(
+            ner_features = np.array([[] for t in doc])
+        combined_features = self._combine_with_existing_features(
             message,
             ner_features,
             MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_ENTITIES_ATTRIBUTE],
         )
         message.set(
-            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_ENTITIES_ATTRIBUTE], ner_features
+            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_ENTITIES_ATTRIBUTE], combined_features
         )
 
     def _set_spacy_features(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE):
