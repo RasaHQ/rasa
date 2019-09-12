@@ -198,10 +198,13 @@ def test_spacy_intent_tokenizer(spacy_nlp_component):
     spacy_tokenizer = SpacyTokenizer()
     spacy_tokenizer.train(td, config=None)
 
-    intent_tokens = [example.get("intent_tokens") for example in td.intent_examples]
+    intent_tokens_exist = [
+        True if example.get("intent_tokens") is not None else False
+        for example in td.intent_examples
+    ]
 
     # no intent tokens should have been set
-    assert not any(intent_tokens)
+    assert not any(intent_tokens_exist)
 
 
 def test_mitie():

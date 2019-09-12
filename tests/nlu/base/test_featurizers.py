@@ -37,12 +37,15 @@ def test_spacy_intent_featurizer(spacy_nlp_component):
     spacy_featurizer = SpacyFeaturizer()
     spacy_featurizer.train(td, config=None)
 
-    intent_features = np.array(
-        [example.get("intent_features") for example in td.intent_examples]
+    intent_features_exist = np.array(
+        [
+            True if example.get("intent_features") is not None else False
+            for example in td.intent_examples
+        ]
     )
 
     # no intent features should have been set
-    assert not any(intent_features)
+    assert not any(intent_features_exist)
 
 
 def test_mitie_featurizer(mitie_feature_extractor, default_config):
