@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- fix missing ``tkinter`` dependency for running tests on Ubuntu
 
 [1.3.3] - 2019-09-11
 ^^^^^^^^^^^^^^^^^^^^
