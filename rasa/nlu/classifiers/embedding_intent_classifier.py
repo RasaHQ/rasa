@@ -315,13 +315,12 @@ class EmbeddingIntentClassifier(Component):
             labels_example.append((idx, label_example))
 
         # Collect features, precomputed if they exist, else compute on the fly
-        encoded_id_labels = (
-            self._extract_labels_precomputed_features(
+        if self._check_labels_features_exist(labels_example, attribute_feature_name):
+            encoded_id_labels = self._extract_labels_precomputed_features(
                 labels_example, attribute_feature_name
             )
-            if self._check_labels_features_exist(labels_example, attribute_feature_name)
-            else self._compute_default_label_features(labels_example)
-        )
+        else:
+            encoded_id_labels = self._compute_default_label_features(labels_example)
 
         return encoded_id_labels
 
