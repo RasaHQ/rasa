@@ -23,6 +23,15 @@ Fixed
 -----
 - fix missing ``tkinter`` dependency for running tests on Ubuntu
 
+[1.3.3] - 2019-09-11
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Added a check to avoid training ``CountVectorizer`` for a particular
+  attribute of a message if no text is provided for that attribute across
+  the training data.
+
 [1.3.2] - 2019-09-10
 ^^^^^^^^^^^^^^^^^^^^
 
