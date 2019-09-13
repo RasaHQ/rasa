@@ -192,7 +192,7 @@ def serve_application(
 
     update_sanic_log_level(log_file)
 
-    app.run(host="0.0.0.0", port=port, ssl=ssl_context, backlog=1000)
+    app.run(host="0.0.0.0", port=port, ssl=ssl_context, backlog=10000)
 
 
 # noinspection PyUnusedLocal
