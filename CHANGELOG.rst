@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Fixed
 -----
-- Default one-hot representation for label featurization inside EmbeddingIntentClassifier if label features don't exist.
+- Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
 
 Removed
 -------
