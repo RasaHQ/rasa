@@ -22,7 +22,8 @@ Removed
 Fixed
 -----
 
-[1.3.3] - 2019-09-11
+
+[1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
@@ -30,6 +31,13 @@ Fixed
 - Added a check to avoid training ``CountVectorizer`` for a particular
   attribute of a message if no text is provided for that attribute across
   the training data.
+- Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
+- Policy ensemble no longer incorrectly wrings "missing mapping policy" when
+  mapping policy is present.
+
+Removed
+-------
+- Removed computation of ``intent_spacy_doc``. As a result, none of the spacy components process intents now.
 
 [1.3.2] - 2019-09-10
 ^^^^^^^^^^^^^^^^^^^^
