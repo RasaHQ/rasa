@@ -25,7 +25,7 @@
 - show me [chinese](cuisine) restaurants
 - show me [chines](cuisine:chinese) restaurants in the [north](location)
 - show me a [mexican](cuisine) place in the [centre](location)
-- i am looking for an [indian](cuisine) spot called olaolaolaolaolaola
+- i am looking for an [indian](cuisine) spot
 - search for restaurants
 - anywhere in the [west](location)
 - anywhere near [18328](location)
