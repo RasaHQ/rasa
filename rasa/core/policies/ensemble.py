@@ -54,6 +54,7 @@ class PolicyEnsemble(object):
 
     def _check_for_important_policies(self):
         from rasa.core.policies.mapping_policy import MappingPolicy
+
         if not any(isinstance(policy, MappingPolicy) for policy in self.policies):
             logger.info(
                 "MappingPolicy not included in policy ensemble. Default intents "
