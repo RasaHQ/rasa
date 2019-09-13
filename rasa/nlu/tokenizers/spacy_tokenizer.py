@@ -14,6 +14,7 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
+    SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
 if typing.TYPE_CHECKING:
@@ -22,10 +23,13 @@ if typing.TYPE_CHECKING:
 
 class SpacyTokenizer(Tokenizer, Component):
 
-    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+    provides = [
+        MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+    ]
 
     requires = [
-        MESSAGE_SPACY_FEATURES_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+        MESSAGE_SPACY_FEATURES_NAMES[attribute]
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
     def train(
@@ -34,7 +38,7 @@ class SpacyTokenizer(Tokenizer, Component):
 
         for example in training_data.training_examples:
 
-            for attribute in MESSAGE_ATTRIBUTES:
+            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
 
                 attribute_doc = self.get_doc(example, attribute)
 

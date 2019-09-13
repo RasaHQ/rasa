@@ -17,7 +17,7 @@ You can install both Rasa and Rasa X using pip (requires Python 3.5.4 or higher)
 
 .. code-block:: bash
 
-    $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
+    $ pip3 install rasa-x --extra-index-url https://pypi.rasa.com/simple
 
 - Having trouble installing? Read our :ref:`step-by-step installation guide <installation_guide>`.
 - You can also :ref:`build Rasa from source <build_from_source>`.
@@ -94,6 +94,10 @@ Otherwise, proceed with the instructions below to install them.
         .. code-block:: bat
 
             C:\> pip3 install -U pip
+
+.. note::
+   Note that `pip` in this refers to `pip3` as Rasa requires python3. To see which version the `pip` 
+   command on your machine calls use `pip --version`.
 
 
 2. Create a virtual environment (strongly recommended)
