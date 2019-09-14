@@ -8,6 +8,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
+[1.3.4] - 2019-09-14
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added the ability to set the ``backlog`` parameter in Sanics ``run()`` method using
+  the ``SANIC_BACKLOG`` environment variable. This parameter sets the
+  number of unaccepted connections the server allows before refusing new
+  connections. A default value of 100 is used if the variable is not set.
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
