@@ -182,7 +182,7 @@ class SpacyNLP(Component):
                 freezed_indices, docs + n_docs
             )
 
-            # Since we only need the trainings samples strings, we create a list to get them out
+            # Since we only need the training samples strings, we create a list to get them out
             # of the tuple.
             attribute_docs[attribute] = [doc for _, doc in attribute_document_list]
         return attribute_docs
