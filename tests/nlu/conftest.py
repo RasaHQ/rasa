@@ -33,6 +33,12 @@ def spacy_nlp(component_builder, default_config):
 
 
 @pytest.fixture(scope="session")
+def spacy_nlp_component(component_builder, default_config):
+    spacy_nlp_config = {"name": "SpacyNLP"}
+    return component_builder.create_component(spacy_nlp_config, default_config)
+
+
+@pytest.fixture(scope="session")
 def ner_crf_pos_feature_config():
     return {
         "features": [
