@@ -19,6 +19,7 @@ from rasa.nlu.constants import (
     MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
     MESSAGE_ENTITIES_ATTRIBUTE,
+    SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
 
@@ -35,11 +36,13 @@ def features_for_doc(doc: "Doc") -> np.ndarray:
 class SpacyFeaturizer(Featurizer):
 
     provides = [
-        MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
-    ] + [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_ENTITIES_ATTRIBUTE]]
+        MESSAGE_VECTOR_FEATURE_NAMES[attribute]
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+    ]
 
     requires = [
-        MESSAGE_SPACY_FEATURES_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+        MESSAGE_SPACY_FEATURES_NAMES[attribute]
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
     defaults = {"ner_feature_vectors": False}
@@ -55,7 +58,7 @@ class SpacyFeaturizer(Featurizer):
     ) -> None:
 
         for example in training_data.intent_examples:
-            for attribute in MESSAGE_ATTRIBUTES:
+            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(example, attribute)
             self._set_spacy_ner_features(example)
 

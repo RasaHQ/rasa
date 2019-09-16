@@ -7,8 +7,56 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.4.0] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+- fix missing ``tkinter`` dependency for running tests on Ubuntu
+
+
+[1.3.3] - 2019-09-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Added a check to avoid training ``CountVectorizer`` for a particular
+  attribute of a message if no text is provided for that attribute across
+  the training data.
+- Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
+- Policy ensemble no longer incorrectly wrings "missing mapping policy" when
+  mapping policy is present.
+
+Removed
+-------
+- Removed computation of ``intent_spacy_doc``. As a result, none of the spacy components process intents now.
+
+[1.3.2] - 2019-09-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- SQL tracker events are retrieved ordered by timestamps. This fixes interactive
+  learning events being shown in the wrong order.
+
+[1.3.1] - 2019-09-09
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Pin gast to == 0.2.2
+
+[1.3.0] - 2019-09-05
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----

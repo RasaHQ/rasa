@@ -121,9 +121,8 @@ what happened before.
 You can alter this behaviour with the ``--augmentation`` flag.
 Which allows you to set the ``augmentation_factor``.
 The ``augmentation_factor`` determines how many augmented stories are
-subsampled during training. Subsampling of the augmented stories is done in order to
-not get too many stories from augmentation, since their number
-can become very large quickly.
+subsampled during training. The augmented stories are subsampled before training
+since their number can quickly become very large, and we want to limit it.
 The number of sampled stories is ``augmentation_factor`` x10.
 By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
 

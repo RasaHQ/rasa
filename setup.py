@@ -71,7 +71,7 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.3.0a1",
+    "rasa-sdk~=1.3.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=19.3.1",
@@ -88,6 +88,9 @@ install_requires = [
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
+    # remove when tensorflow@1.15.x or a pre-release patch is released
+    # https://github.com/tensorflow/tensorflow/issues/32319
+    "gast==0.2.2",
 ]
 
 extras_requires = {

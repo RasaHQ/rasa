@@ -14,10 +14,6 @@ DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 NLU_MODEL_NAME = "nlu_model.tar.gz"
 
-TEST_MODEL_DIR = "test_models"
-
-NLU_MODEL_PATH = os.path.join(TEST_MODEL_DIR, "nlu")
-
 MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 
@@ -30,6 +26,12 @@ def component_builder():
 def spacy_nlp(component_builder, default_config):
     spacy_nlp_config = {"name": "SpacyNLP"}
     return component_builder.create_component(spacy_nlp_config, default_config).nlp
+
+
+@pytest.fixture(scope="session")
+def spacy_nlp_component(component_builder, default_config):
+    spacy_nlp_config = {"name": "SpacyNLP"}
+    return component_builder.create_component(spacy_nlp_config, default_config)
 
 
 @pytest.fixture(scope="session")
