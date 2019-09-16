@@ -150,8 +150,8 @@ class SpacyNLP(Component):
             # in spaCy and are therefore set as empty strings by Rasa. Since third-party
             # libraries relying on spaCy might have problems with Doc-objects created on empty
             # strings, we further treat them separately.
-            docs_to_pipe = list(filter(lambda f: f[1] != "", freezed_indices))
-            empty_docs = list(filter(lambda f: f[1] == "", freezed_indices))
+            docs_to_pipe = list(filter(lambda fi_tpl: fi_tpl[1] != "", freezed_indices))
+            empty_docs = list(filter(lambda fi_tpl: fi_tpl[1] == "", freezed_indices))
 
             # To preserve the order of the training samples, we send the non-empty samples to
             # pipe and then simply update their original/index tuple.
