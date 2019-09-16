@@ -17,6 +17,7 @@ from rasa.core.featurizers import (
     FullDialogueTrackerFeaturizer,
     LabelTokenizerSingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
+    CountVectorsSingleStateFeaturizer,
 )
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
@@ -107,10 +108,10 @@ class EmbeddingPolicy(Policy):
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> "TrackerFeaturizer":
         if max_history is None:
-            return FullDialogueTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer())
+            return FullDialogueTrackerFeaturizer(CountVectorsSingleStateFeaturizer())
         else:
             return MaxHistoryTrackerFeaturizer(
-                LabelTokenizerSingleStateFeaturizer(), max_history=max_history
+                CountVectorsSingleStateFeaturizer(), max_history=max_history
             )
 
     def __init__(

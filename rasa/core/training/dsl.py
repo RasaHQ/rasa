@@ -396,14 +396,14 @@ class StoryFileReader(object):
         utterance = UserUttered(
             message, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
-        intent_name = utterance.intent.get("name")
-        if intent_name not in self.domain.intents:
-            logger.warning(
-                "Found unknown intent '{}' on line {}. "
-                "Please, make sure that all intents are "
-                "listed in your domain yaml."
-                "".format(intent_name, line_num)
-            )
+        # intent_name = utterance.intent.get("name")
+        # if intent_name not in self.domain.intents:
+        #     logger.warning(
+        #         "Found unknown intent '{}' on line {}. "
+        #         "Please, make sure that all intents are "
+        #         "listed in your domain yaml."
+        #         "".format(intent_name, line_num)
+        #     )
         return utterance
 
     async def add_user_messages(self, messages, line_num):

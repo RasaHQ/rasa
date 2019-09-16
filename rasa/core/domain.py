@@ -552,18 +552,18 @@ class Domain(object):
         latest_action = tracker.latest_action_name
         if latest_action:
             prev_action_name = PREV_PREFIX + latest_action
-            if prev_action_name in self.input_state_map:
-                return {prev_action_name: 1.0}
-            else:
-                logger.warning(
-                    "Failed to use action '{}' in history. "
-                    "Please make sure all actions are listed in the "
-                    "domains action list. If you recently removed an "
-                    "action, don't worry about this warning. It "
-                    "should stop appearing after a while. "
-                    "".format(latest_action)
-                )
-                return {}
+            # if prev_action_name in self.input_state_map:
+            return {prev_action_name: 1.0}
+            # else:
+            #     logger.warning(
+            #         "Failed to use action '{}' in history. "
+            #         "Please make sure all actions are listed in the "
+            #         "domains action list. If you recently removed an "
+            #         "action, don't worry about this warning. It "
+            #         "should stop appearing after a while. "
+            #         "".format(latest_action)
+            #     )
+            #     return {}
         else:
             return {}
 

@@ -8,12 +8,18 @@ from typing import Tuple, List, Optional, Dict, Text, Any
 
 import rasa.utils.io
 from rasa.core import utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, combine_user_with_default_actions
 from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
+from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+from rasa.nlu.constants import (
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -260,6 +266,106 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         return encoded_all_actions
 
 
+class CountVectorsSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer, CountVectorsFeaturizer):
+
+    def train_vects(self, trackers_as_states, trackers_as_actions, domain):
+
+        # process sentences and collect data for all attributes
+        all_text = set()
+        for states in trackers_as_states:
+            for state in states:
+                if state:
+                    for state_name, prob in state.items():
+                        if state_name.startswith("intent_"):
+                            all_text.add(state_name[len("intent_"):])
+        all_text = list(all_text)
+
+        all_response = set()
+        for actions in trackers_as_actions:
+            for action in actions:
+                all_response.add(action)
+        all_response = sorted(list(all_response))
+
+        domain.user_actions = all_response
+        domain.action_names = (
+                combine_user_with_default_actions(all_response) + domain.form_names
+        )
+        self.bot_labels = domain.action_names
+
+        processed_attribute_texts = {MESSAGE_TEXT_ATTRIBUTE: all_text,
+                                     MESSAGE_INTENT_ATTRIBUTE: [],
+                                     MESSAGE_RESPONSE_ATTRIBUTE: self.bot_labels}
+
+        # train for all attributes
+        if self.use_shared_vocab:
+            self._train_with_shared_vocab(processed_attribute_texts)
+        else:
+            self._train_with_independent_vocab(processed_attribute_texts)
+
+        self.user_vocab = self._get_attribute_vocabulary(MESSAGE_TEXT_ATTRIBUTE)
+        self.bot_vocab = self._get_attribute_vocabulary(MESSAGE_RESPONSE_ATTRIBUTE)
+
+        self.num_features = (
+            len(self.user_vocab) + len(self.slot_labels) + len(self.bot_vocab)
+        )
+
+    def encode(self, state: Dict[Text, float]) -> np.ndarray:
+        """Encode user input."""
+
+        if state is None or None in state:
+            return np.ones(self.num_features, dtype=np.int32) * -1
+
+        # we are going to use floats and convert to int later if possible
+        used_features = np.zeros(self.num_features, dtype=np.float)
+        using_only_ints = True
+        for state_name, prob in state.items():
+            using_only_ints = using_only_ints and utils.is_int(prob)
+            if state_name.startswith("intent_"):
+                if PREV_PREFIX + ACTION_LISTEN_NAME in state:
+                    # else we predict next action from bot action and memory
+                    text_features = self._get_featurized_attribute(
+                        MESSAGE_TEXT_ATTRIBUTE, [state_name[len("intent_"):]]
+                    )
+                    used_features[:len(self.user_vocab)] = text_features
+
+            elif state_name in self.slot_labels:
+                offset = len(self.user_vocab)
+                idx = self.slot_labels.index(state_name)
+                used_features[offset + idx] += prob
+
+            elif state_name.startswith(PREV_PREFIX):
+                action_name = state_name[len(PREV_PREFIX):]
+                response_features = self._get_featurized_attribute(
+                    MESSAGE_RESPONSE_ATTRIBUTE, [action_name]
+                )
+                offset = len(self.user_vocab) + len(self.slot_labels)
+                used_features[offset:] = response_features
+
+            else:
+                logger.warning(
+                    "Feature '{}' could not be found in "
+                    "feature map.".format(state_name)
+                )
+
+        if using_only_ints:
+            # this is an optimization - saves us a bit of memory
+            return used_features.astype(np.int32)
+        else:
+            return used_features
+
+    def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
+        """Create matrix with all actions from domain encoded in rows."""
+
+        encoded_all_actions = np.zeros(
+            (domain.num_actions, len(self.bot_vocab)), dtype=np.int32
+        )
+        for idx, name in enumerate(domain.action_names):
+            encoded_all_actions[idx] = self._get_featurized_attribute(
+                MESSAGE_RESPONSE_ATTRIBUTE, [name]
+            )
+        return encoded_all_actions
+
+
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers."""
 
@@ -402,6 +508,10 @@ class TrackerFeaturizer(object):
         (trackers_as_states, trackers_as_actions) = self.training_states_and_actions(
             trackers, domain
         )
+        try:
+            self.state_featurizer.train_vects(trackers_as_states, trackers_as_actions, domain)
+        except AttributeError:
+            pass
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)
