@@ -3,6 +3,7 @@
 from unittest.mock import patch
 from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
+from rasa.nlu import training_data
 
 
 def test_whitespace():
@@ -187,6 +188,23 @@ def test_spacy(spacy_nlp):
         "?",
     ]
     assert [t.offset for t in tk.tokenize(spacy_nlp(text))] == [0, 4, 13, 16, 20, 23]
+
+
+def test_spacy_intent_tokenizer(spacy_nlp_component):
+    from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+
+    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    spacy_nlp_component.train(td, config=None)
+    spacy_tokenizer = SpacyTokenizer()
+    spacy_tokenizer.train(td, config=None)
+
+    intent_tokens_exist = [
+        True if example.get("intent_tokens") is not None else False
+        for example in td.intent_examples
+    ]
+
+    # no intent tokens should have been set
+    assert not any(intent_tokens_exist)
 
 
 def test_mitie():
