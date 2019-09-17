@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Fixed
 -----
-- Fixed regression of TLS, SRV dependencies for PyMongo in ``requirements.txt``
+- re-added TLS, SRV dependencies for PyMongo
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
