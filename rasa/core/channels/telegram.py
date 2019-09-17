@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from sanic import Blueprint, response
 from sanic.request import Request
 from telegram import (
@@ -94,6 +95,8 @@ class TelegramOutput(Bot, OutputChannel):
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
+        json_message = deepcopy(json_message)
+
         recipient_id = json_message.pop("chat_id", recipient_id)
 
         send_functions = {
