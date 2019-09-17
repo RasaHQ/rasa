@@ -193,14 +193,19 @@ class SlackInput(InputChannel):
             # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,
             # but is a good first approximation
-            for regex, replacement in [(r"<@{}>\s".format(uid_to_remove), ""),(r"\s<@{}>".format(uid_to_remove), ""),(r"<@{}>".format(uid_to_remove), " "),]:
+            for regex, replacement in [(r"<@{}>\s".format(uid_to_remove), ""),
+			    (r"\s<@{}>".format(uid_to_remove), ""),
+			    (r"<@{}>".format(uid_to_remove), " "),
+			]:
                 text = re.sub(regex, replacement, text)
  
         """Find mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and    
         substitute it with original content 
         """
+
         pattern = '\<(mailto:|(http|https):\/\/).*\|.*\>'
         match = re.search(pattern, text)
+
         if match:
             regex = match.group(0)
             replacement = regex.split("|")[1]
