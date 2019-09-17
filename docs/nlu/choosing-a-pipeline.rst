@@ -81,15 +81,35 @@ see :ref:`comparing-nlu-pipelines`.
     You need to provide enough data for both intents and entities.
 
 
+Class imbalance
+---------------
+
+Classification algorithms often do not perform well if there is a large `class imbalance`,
+for example if you have a lot of training data for some intents and very little training data for others.
+To mitigate this problem, rasa's ``supervised_embeddings`` pipeline uses a ``balanced`` batching strategy.
+This algorithm ensures that all classes are represented in every batch, or at least in
+as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
+Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
+``batch_strategy: sequence`` in your config file.
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
+      batch_strategy: sequence
+
+
 Multiple Intents
 ----------------
 
 If you want to split intents into multiple labels,
 e.g. for predicting multiple intents or for modeling hierarchical intent structure,
 you can only do this with the supervised embeddings pipeline.
-To do this, use these flags:
+To do this, use these flags in ``Whitespace Tokenizer``:
 
-    - ``intent_tokenization_flag``: If ``true`` the algorithm will split the intent labels into tokens and use a bag-of-words representations for them
     - ``intent_split_symbol``: sets the delimiter string to split the intent labels. Default ``_``
 
 `Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__ is a tutorial on how to use multiple intents in Rasa Core and NLU.
@@ -101,11 +121,10 @@ Here's an example configuration:
     language: "en"
 
     pipeline:
+    - name: "WhitespaceTokenizer"
+      intent_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
     - name: "EmbeddingIntentClassifier"
-      intent_tokenization_flag: true
-      intent_split_symbol: "+"
-
 
 
 Understanding the Rasa NLU Pipeline
@@ -113,7 +132,7 @@ Understanding the Rasa NLU Pipeline
 
 In Rasa NLU, incoming messages are processed by a sequence of components.
 These components are executed one after another
-in a so-called processing pipeline. There are components for entity extraction, for intent classification,
+in a so-called processing pipeline. There are components for entity extraction, for intent classification, response selection,
 pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
 do sentiment analysis, check out :ref:`custom-nlu-components`.
 
@@ -164,7 +183,6 @@ Initially the context is filled with all configuration values, the arrows
 in the image show the call order and visualize the path of the passed
 context. After all components are trained and persisted, the
 final context dictionary is used to persist the model's metadata.
-
 
 
 The "entity" object explained
@@ -253,11 +271,21 @@ components that make up the ``supervised_embeddings`` pipeline:
     - name: "CRFEntityExtractor"
     - name: "EntitySynonymMapper"
     - name: "CountVectorsFeaturizer"
+    - name: "CountVectorsFeaturizer"
+      analyzer: "char_wb"
+      min_ngram: 1
+      max_ngram: 4
     - name: "EmbeddingIntentClassifier"
-
+    
 So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
 can replace the ``WhitespaceTokenizer`` with your own tokenizer. We support a number of different :ref:`tokenizers <tokenizers>`,
 or you can :ref:`create your own <custom-nlu-components>`.
+
+The pipeline uses two instances of ``CountVectorsFeaturizer``. The first one 
+featurizes text based on words. The second one featurizes text based on character 
+n-grams, preserving word boundaries. We empirically found the second featurizer 
+to be more powerful, but we decided to keep the first featurizer as well to make
+featurization more robust.
 
 .. _section_pretrained_embeddings_spacy_pipeline:
 

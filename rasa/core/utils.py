@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 import argparse
-import asyncio
 import json
 import logging
 import re
 import sys
-from pathlib import Path
-from typing import Union
 from asyncio import Future
 from hashlib import md5, sha1
 from io import StringIO
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
+from typing import Union
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -18,12 +17,11 @@ from sanic import Sanic
 from sanic.views import CompositionView
 
 import rasa.utils.io as io_utils
-from rasa.utils.endpoints import read_endpoint_config
-
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.endpoints import concat_url
+from rasa.utils.endpoints import read_endpoint_config
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +34,7 @@ def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text])
         return
 
     formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(log_file)
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setLevel(logger_obj.level)
     file_handler.setFormatter(formatter)
     logger_obj.addHandler(file_handler)
@@ -89,24 +87,6 @@ def is_int(value: Any) -> bool:
         return value == int(value)
     except Exception:
         return False
-
-
-def lazyproperty(fn):
-    """Allows to avoid recomputing a property over and over.
-
-    Instead the result gets stored in a local var. Computation of the property
-    will happen once, on the first call of the property. All succeeding calls
-    will use the value stored in the private property."""
-
-    attr_name = "_lazy_" + fn.__name__
-
-    @property
-    def _lazyprop(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
-        return getattr(self, attr_name)
-
-    return _lazyprop
 
 
 def one_hot(hot_idx, length, dtype=None):
@@ -278,7 +258,7 @@ def list_routes(app: Sanic):
 def cap_length(s, char_limit=20, append_ellipsis=True):
     """Makes sure the string doesn't exceed the passed char limit.
 
-    Appends an ellipsis if the string is to long."""
+    Appends an ellipsis if the string is too long."""
 
     if len(s) > char_limit:
         if append_ellipsis:
@@ -340,6 +320,15 @@ def file_as_bytes(path: Text) -> bytes:
     """Read in a file as a byte array."""
     with open(path, "rb") as f:
         return f.read()
+
+
+def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
+    """Convert `data` to string if it is a bytes-like object."""
+
+    if isinstance(data, (bytes, bytearray)):
+        return data.decode("utf-8")
+
+    return data
 
 
 def get_file_hash(path: Text) -> Text:
@@ -406,9 +395,10 @@ class AvailableEndpoints(object):
         tracker_store = read_endpoint_config(
             endpoint_file, endpoint_type="tracker_store"
         )
+        lock_store = read_endpoint_config(endpoint_file, endpoint_type="lock_store")
         event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
 
-        return cls(nlg, nlu, action, model, tracker_store, event_broker)
+        return cls(nlg, nlu, action, model, tracker_store, lock_store, event_broker)
 
     def __init__(
         self,
@@ -417,6 +407,7 @@ class AvailableEndpoints(object):
         action=None,
         model=None,
         tracker_store=None,
+        lock_store=None,
         event_broker=None,
     ):
         self.model = model
@@ -424,6 +415,7 @@ class AvailableEndpoints(object):
         self.nlu = nlu
         self.nlg = nlg
         self.tracker_store = tracker_store
+        self.lock_store = lock_store
         self.event_broker = event_broker
 
 
@@ -465,29 +457,3 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
             )
 
     return handler
-
-
-class LockCounter(asyncio.Lock):
-    """Decorated asyncio lock that counts how many coroutines are waiting.
-
-    The counter can be used to discard the lock when there is no coroutine
-    waiting for it. For this to work, there should not be any execution yield
-    between retrieving the lock and acquiring it, otherwise there might be
-    race conditions."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.wait_counter = 0
-
-    async def acquire(self) -> bool:
-        """Acquire the lock, makes sure only one coroutine can retrieve it."""
-
-        self.wait_counter += 1
-        try:
-            return await super(LockCounter, self).acquire()  # type: ignore
-        finally:
-            self.wait_counter -= 1
-
-    def is_someone_waiting(self) -> bool:
-        """Check if a coroutine is waiting for this lock to be freed."""
-        return self.wait_counter != 0

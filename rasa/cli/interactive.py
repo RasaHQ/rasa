@@ -29,6 +29,11 @@ def add_subparser(
         "Rasa model by chatting.",
     )
     interactive_parser.set_defaults(func=interactive)
+    interactive_parser.add_argument(
+        "--e2e",
+        action="store_true",
+        help="Save story files in e2e format. In this format user messages will be included in the stories.",
+    )
 
     interactive_subparsers = interactive_parser.add_subparsers()
     interactive_core_parser = interactive_subparsers.add_parser(

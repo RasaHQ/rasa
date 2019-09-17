@@ -12,9 +12,10 @@ import rasa.utils
 import rasa.utils.io
 from rasa.core import constants, utils
 from rasa.core.agent import load_agent, Agent
-from rasa.core.channels import BUILTIN_CHANNELS, console
+from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints, configure_file_logging
 from rasa.model import get_model_subdirectories, get_model
@@ -206,7 +207,7 @@ async def load_agent_on_start(
 
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments)."""
-    from rasa.core import broker
+    import rasa.core.brokers.utils as broker_utils
 
     try:
         with get_model(model_path) as unpacked_model:
@@ -216,10 +217,11 @@ async def load_agent_on_start(
         logger.debug("Could not load interpreter from '{}'.".format(model_path))
         _interpreter = None
 
-    _broker = broker.from_endpoint_config(endpoints.event_broker)
+    _broker = broker_utils.from_endpoint_config(endpoints.event_broker)
     _tracker_store = TrackerStore.find_tracker_store(
         None, endpoints.tracker_store, _broker
     )
+    _lock_store = LockStore.find_lock_store(endpoints.lock_store)
 
     model_server = endpoints.model if endpoints and endpoints.model else None
 
@@ -230,6 +232,7 @@ async def load_agent_on_start(
         interpreter=_interpreter,
         generator=endpoints.nlg,
         tracker_store=_tracker_store,
+        lock_store=_lock_store,
         action_endpoint=endpoints.action,
     )
 

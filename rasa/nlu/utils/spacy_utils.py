@@ -14,9 +14,23 @@ if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
     from rasa.nlu.model import Metadata
 
+from rasa.nlu.constants import (
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+    SPACY_FEATURIZABLE_ATTRIBUTES,
+)
+
 
 class SpacyNLP(Component):
-    provides = ["spacy_doc", "spacy_nlp"]
+    provides = ["spacy_nlp"] + [
+        MESSAGE_SPACY_FEATURES_NAMES[attribute]
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+    ]
 
     defaults = {
         # name of the language model to load - if it is not set
@@ -96,34 +110,62 @@ class SpacyNLP(Component):
         return {"spacy_nlp": self.nlp}
 
     def doc_for_text(self, text: Text) -> "Doc":
+
+        return self.nlp(self.preprocess_text(text))
+
+    def preprocess_text(self, text):
+
+        if text is None:
+            # converted to empty string so that it can still be passed to spacy.
+            # Another option could be to neglect tokenization of the attribute of this example, but since we are
+            # processing in batch mode, it would get complex to collect all processed and neglected examples.
+            text = ""
         if self.component_config.get("case_sensitive"):
-            return self.nlp(text)
+            return text
         else:
-            return self.nlp(text.lower())
+            return text.lower()
 
-    def docs_for_training_data(self, training_data: TrainingData) -> List[Any]:
+    def get_text(self, example, attribute):
 
-        texts = [
-            e.text if self.component_config.get("case_sensitive") else e.text.lower()
-            for e in training_data.intent_examples
-        ]
+        return self.preprocess_text(example.get(attribute))
 
-        docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
+    def docs_for_training_data(
+        self, training_data: TrainingData
+    ) -> Dict[Text, List[Any]]:
 
-        return docs
+        attribute_docs = {}
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+
+            texts = [self.get_text(e, attribute) for e in training_data.intent_examples]
+
+            docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
+
+            attribute_docs[attribute] = docs
+        return attribute_docs
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
 
-        docs = self.docs_for_training_data(training_data)
+        attribute_docs = self.docs_for_training_data(training_data)
 
-        for idx, example in enumerate(training_data.training_examples):
-            example.set("spacy_doc", docs[idx])
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+
+            for idx, example in enumerate(training_data.training_examples):
+                example_attribute_doc = attribute_docs[attribute][idx]
+                if len(example_attribute_doc):
+                    # If length is 0, that means the initial text feature was None and was replaced by ''
+                    # in preprocess method
+                    example.set(
+                        MESSAGE_SPACY_FEATURES_NAMES[attribute], example_attribute_doc
+                    )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        message.set("spacy_doc", self.doc_for_text(message.text))
+        message.set(
+            MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self.doc_for_text(message.text),
+        )
 
     @classmethod
     def load(

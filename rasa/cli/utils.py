@@ -1,10 +1,11 @@
 import os
 import sys
 import json
-import re
-from typing import Any, Optional, Text, List, Dict
+from typing import Any, Optional, Text, List, Dict, TYPE_CHECKING
 import logging
-from questionary import Question
+
+if TYPE_CHECKING:
+    from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
@@ -33,12 +34,17 @@ def get_validated_path(
         The current value if it was valid, else the default value of the
         argument if it is valid, else `None`.
     """
-
     if current is None or current is not None and not os.path.exists(current):
         if default is not None and os.path.exists(default):
             reason_str = "'{}' not found.".format(current)
             if current is None:
                 reason_str = "Parameter '{}' not set.".format(parameter)
+            else:
+                logger.warning(
+                    "'{}' does not exist. Using default value '{}' instead.".format(
+                        current, default
+                    )
+                )
 
             logger.debug(
                 "{} Using default location '{}' instead.".format(reason_str, default)
@@ -165,7 +171,7 @@ def element_to_string(element: Dict[Text, Any], idx: int = 0) -> Text:
 
 def button_choices_from_message_data(
     message: Dict[Text, Any], allow_free_text_input: bool = True
-) -> Question:
+) -> "Question":
     """Return list of choices to present to the user.
 
     If allow_free_text_input is True, an additional option is added
@@ -181,7 +187,7 @@ def button_choices_from_message_data(
     return choices
 
 
-def payload_from_button_question(button_question: Question) -> Text:
+def payload_from_button_question(button_question: "Question") -> Text:
     """Prompt user with a button question and returns the nlu payload."""
     response = button_question.ask()
     if response != FREE_TEXT_INPUT_PROMPT:
@@ -223,6 +229,13 @@ def print_warning(*args: Any):
 
 def print_error(*args: Any):
     print_color(*args, color=bcolors.FAIL)
+
+
+def print_error_and_exit(message: Text, exit_code: int = 1) -> None:
+    """Print error message and exit the application."""
+
+    print_error(message)
+    sys.exit(exit_code)
 
 
 def signal_handler(sig, frame):

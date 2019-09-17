@@ -9,6 +9,7 @@ intents:
   - stop
   - thankyou
   - greet
+  - bot_challenge
 
 entities:
   - cuisine
@@ -72,6 +73,8 @@ templates:
     - text: "sorry, I didn't understand you, please try input something else"
   utter_greet:
     - text: "Hello! I am restaurant search assistant! How can I help?"
+  utter_iamabot:
+    - text: "I am a bot, powered by Rasa."
 
 actions:
   - utter_slots_values
@@ -79,6 +82,7 @@ actions:
   - utter_chitchat
   - utter_ask_continue
   - utter_greet
+  - utter_iamabot
 
 forms:
   - restaurant_form
