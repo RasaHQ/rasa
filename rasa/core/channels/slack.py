@@ -195,16 +195,15 @@ class SlackInput(InputChannel):
             # but is a good first approximation
             for regex, replacement in [
                 (r"<@{}>\s".format(uid_to_remove), ""),
-                (r"\s<@{}>".format(uid_to_remove), ""), # a bit arbitrary but probably OK
+                (r"\s<@{}>".format(uid_to_remove), ""),  # a bit arbitrary but probably OK
                 (r"<@{}>".format(uid_to_remove), " "),
             ]:
                 text = re.sub(regex, replacement, text)
- 
-        """Find mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and    
-        substitute it with original content 
+
+        """Find mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and substitute it with original content
         """
 
-        pattern = '\<(mailto:|(http|https):\/\/).*\|.*\>'
+        pattern = r"\<(mailto:|(http|https):\/\/).*\|.*\>"
         match = re.search(pattern, text)
 
         if match:
@@ -212,10 +211,9 @@ class SlackInput(InputChannel):
             replacement = regex.split("|")[1]
             replacement = replacement.replace('>', '')
             text = text.replace(regex, replacement)
-            
-        else:
-            text = text
     
+        else:
+            text = text 
         return text.strip()
 
     @staticmethod
