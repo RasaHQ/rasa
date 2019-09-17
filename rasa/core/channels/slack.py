@@ -212,7 +212,7 @@ class SlackInput(InputChannel):
             replacement = replacement.replace('>', '')
             text = text.replace(regex, replacement)
         else:
-            text = text 
+            text = text
         return text.strip()
 
     @staticmethod
