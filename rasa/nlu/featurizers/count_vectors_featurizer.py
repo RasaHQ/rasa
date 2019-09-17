@@ -21,6 +21,7 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
+    SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
 
@@ -269,7 +270,7 @@ class CountVectorsFeaturizer(Featurizer):
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
 
-        if message.get(
+        if attribute in SPACY_FEATURIZABLE_ATTRIBUTES and message.get(
             MESSAGE_SPACY_FEATURES_NAMES[attribute]
         ):  # if lemmatize is possible
             tokens = [
@@ -433,6 +434,10 @@ class CountVectorsFeaturizer(Featurizer):
                 "Unable to train a shared CountVectorizer. Leaving an untrained CountVectorizer"
             )
 
+    @staticmethod
+    def _attribute_texts_is_non_empty(attribute_texts):
+        return any(attribute_texts)
+
     def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
         """Construct the vectorizers and train them with an independent vocab"""
 
@@ -449,13 +454,18 @@ class CountVectorsFeaturizer(Featurizer):
         )
 
         for attribute in MESSAGE_ATTRIBUTES:
-
-            try:
-                self.vectorizers[attribute].fit(attribute_texts[attribute])
-            except ValueError:
-                logger.warning(
-                    "Unable to train CountVectorizer for message attribute {}. "
-                    "Leaving an untrained CountVectorizer for it".format(attribute)
+            if self._attribute_texts_is_non_empty(attribute_texts[attribute]):
+                try:
+                    self.vectorizers[attribute].fit(attribute_texts[attribute])
+                except ValueError:
+                    logger.warning(
+                        "Unable to train CountVectorizer for message attribute {}. "
+                        "Leaving an untrained CountVectorizer for it".format(attribute)
+                    )
+            else:
+                logger.debug(
+                    "No text provided for {} attribute in any messages of training data. Skipping "
+                    "training a CountVectorizer for it.".format(attribute)
                 )
 
     def _get_featurized_attribute(

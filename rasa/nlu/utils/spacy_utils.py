@@ -22,11 +22,15 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
+    SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
 
 class SpacyNLP(Component):
-    provides = ["spacy_doc", "spacy_nlp", "intent_spacy_doc", "response_spacy_doc"]
+    provides = ["spacy_nlp"] + [
+        MESSAGE_SPACY_FEATURES_NAMES[attribute]
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+    ]
 
     defaults = {
         # name of the language model to load - if it is not set
@@ -39,10 +43,6 @@ class SpacyNLP(Component):
         # applications and models it makes sense to differentiate
         # between these two words, therefore setting this to `True`.
         "case_sensitive": False,
-        # Flag to check whether to split intents
-        "intent_tokenization_flag": False,
-        # Symbol on which intent should be split
-        "intent_split_symbol": "_",
     }
 
     def __init__(
@@ -111,20 +111,15 @@ class SpacyNLP(Component):
 
     def doc_for_text(self, text: Text) -> "Doc":
 
-        return self.nlp(self.preprocess_text(text, MESSAGE_TEXT_ATTRIBUTE))
+        return self.nlp(self.preprocess_text(text))
 
-    def preprocess_text(self, text, attribute):
+    def preprocess_text(self, text):
 
         if text is None:
             # converted to empty string so that it can still be passed to spacy.
             # Another option could be to neglect tokenization of the attribute of this example, but since we are
             # processing in batch mode, it would get complex to collect all processed and neglected examples.
             text = ""
-        if (
-            attribute == MESSAGE_INTENT_ATTRIBUTE
-            and self.component_config["intent_tokenization_flag"]
-        ):
-            text = " ".join(text.split(self.component_config["intent_split_symbol"]))
         if self.component_config.get("case_sensitive"):
             return text
         else:
@@ -132,14 +127,14 @@ class SpacyNLP(Component):
 
     def get_text(self, example, attribute):
 
-        return self.preprocess_text(example.get(attribute), attribute)
+        return self.preprocess_text(example.get(attribute))
 
     def docs_for_training_data(
         self, training_data: TrainingData
     ) -> Dict[Text, List[Any]]:
 
         attribute_docs = {}
-        for attribute in MESSAGE_ATTRIBUTES:
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
 
             texts = [self.get_text(e, attribute) for e in training_data.intent_examples]
 
@@ -154,7 +149,7 @@ class SpacyNLP(Component):
 
         attribute_docs = self.docs_for_training_data(training_data)
 
-        for attribute in MESSAGE_ATTRIBUTES:
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
 
             for idx, example in enumerate(training_data.training_examples):
                 example_attribute_doc = attribute_docs[attribute][idx]
