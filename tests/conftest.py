@@ -184,6 +184,13 @@ async def rasa_server_without_api():
     return app
 
 
+def get_test_client(server):
+    test_client = server.test_client
+    test_client.port = None
+
+    return test_client
+
+
 def clean_folder(folder):
     import os
 
