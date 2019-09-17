@@ -65,18 +65,19 @@ class MattermostBot(MattermostAPI, OutputChannel):
             button_block["actions"].append(
                 {
                     "name": button["title"],
-                    "integration": {"url": self.webhook_url,"context": {"action": button["payload"]}}
+                    "integration": {"url": self.webhook_url, "context": {"action": button["payload"]}}
                 }
             )
         props = {"attachments": []}
         props["attachments"].append(button_block)
-        
+
         json_message = {}
         json_message.setdefault("channel_id", self.bot_channel)
         json_message.setdefault("message", text)
         json_message.setdefault("props", props)
-        
+
         self.post("/posts", json_message)
+
 
 class MattermostInput(InputChannel):
     """Mattermost input channel implemenation."""
@@ -109,8 +110,8 @@ class MattermostInput(InputChannel):
             team: Your mattermost team name
             user: Your mattermost userid that will post messages
             pw: Your mattermost password for your user
-            webhook_url: The mattermost callback url as specified 
-                in the outgoing webhooks in mattermost example 
+            webhook_url: The mattermost callback url as specified
+                in the outgoing webhooks in mattermost example
                 https://mysite.example.com/webhooks/mattermost/webhook
         """
         self.url = url
@@ -130,7 +131,7 @@ class MattermostInput(InputChannel):
         async def webhook(request: Request):
             output = request.json
             if output:
-				# handle normal message with trigger_word
+                # handle normal message with trigger_word
                 if "trigger_word" in output:
                     # splitting to get rid of the @botmention
                     # trigger we are using for this
@@ -152,9 +153,9 @@ class MattermostInput(InputChannel):
                         )
                         logger.debug(e, exc_info=True)
                         pass
-                        
+
                 # handle context actions from buttons
-                elif "context" in output:      
+                elif "context" in output:
                     action = output["context"]["action"]
                     sender_id = output["user_id"]
                     self.bot_channel = output["channel_id"]
@@ -172,7 +173,7 @@ class MattermostInput(InputChannel):
                         )
                         logger.debug(e, exc_info=True)
                         pass
-                    
+
             return response.text("")
 
         return mattermost_webhook
