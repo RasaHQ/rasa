@@ -196,7 +196,7 @@ class SlackInput(InputChannel):
             for regex, replacement in [
                 (r"<@{}>\s".format(uid_to_remove), ""),
                 (r"\s<@{}>".format(uid_to_remove), ""), # a bit arbitrary but probably OK
-			    (r"<@{}>".format(uid_to_remove), " "),
+                (r"<@{}>".format(uid_to_remove), " "),
             ]:
                 text = re.sub(regex, replacement, text)
  
