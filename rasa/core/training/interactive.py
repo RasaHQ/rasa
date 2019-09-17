@@ -803,12 +803,18 @@ async def _write_stories_to_file(
                 f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
 
 
-def _retrieve_intents_from_domain(domain):
-    intents = [next(iter(i)) for i in (domain.get("intents") or [])]
+def _retrieve_intents_from_domain(serialised_domain: Dict[Text, Any]) -> List[Text]:
+    """Retrieve the intents from the serialised domain"""
+
+    intents = [next(iter(i)) for i in (serialised_domain.get("intents") or [])]
     return intents
 
 
-def _remove_intent_payload_input(msgs, intents):
+def _remove_intent_payload_input(
+    msgs: List[Message], intents: List[Text]
+) -> List[Message]:
+    """Filter messages removing intents before write nlu to file"""
+
     filtered_messages = []
     for msg in msgs:
         if not (msg.text.startswith(INTENT_MESSAGE_PREFIX) and msg.text[1:] in intents):
@@ -817,14 +823,16 @@ def _remove_intent_payload_input(msgs, intents):
 
 
 async def _write_nlu_to_file(
-    export_nlu_path: Text, events: List[Dict[Text, Any]], domain
+    export_nlu_path: Text,
+    events: List[Dict[Text, Any]],
+    serialised_domain: Dict[Text, Any],
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
     from rasa.nlu.training_data import TrainingData
 
     msgs = _collect_messages(events)
 
-    intents = _retrieve_intents_from_domain(domain)
+    intents = _retrieve_intents_from_domain(serialised_domain)
     msgs = _remove_intent_payload_input(msgs, intents)
 
     # noinspection PyBroadException
@@ -1237,9 +1245,7 @@ def _is_same_entity_annotation(entity, other):
     return entity["value"] == other["value"] and entity["entity"] == other["entity"]
 
 
-async def _enter_user_message(
-    sender_id: Text, endpoint: EndpointConfig, intents: List[Text]
-) -> None:
+async def _enter_user_message(sender_id: Text, endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
 
     question = questionary.text("Your input ->")
@@ -1407,7 +1413,7 @@ async def record_messages(
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
                 if await is_listening_for_message(sender_id, endpoint):
-                    await _enter_user_message(sender_id, endpoint, intents)
+                    await _enter_user_message(sender_id, endpoint)
                     await _validate_nlu(intents, endpoint, sender_id)
 
                 await _predict_till_next_listen(
