@@ -9,6 +9,7 @@ from rasa.core.training import interactive
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.actions.action import default_actions
 from rasa.core.domain import Domain
+from rasa.nlu.training_data import Message
 from tests.utilities import latest_request, json_of_latest_request
 
 
@@ -322,3 +323,22 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
 
     for default_action in default_actions():
         assert default_action.name() not in saved_domain["actions"]
+
+
+async def test_filter_intents_before_save_nlu_file(mock_endpoint):
+    # Test method interactive._remove_intent_payload_input
+    from random import choice
+
+    greet = {"intent": "greet", "text_features": [0.5]}
+    goodbye = {"intent": "goodbye", "text_features": [0.5]}
+    test_msgs = [Message("How are you?", greet), Message("I am inevitable", goodbye)]
+    serialised_domain = None
+    url = "{}/domain".format(mock_endpoint.url)
+    with aioresponses() as mocked:
+        mocked.get(url, payload={})
+        serialised_domain = await interactive.retrieve_domain(mock_endpoint)
+
+    intents = interactive._retrieve_intents_from_domain(serialised_domain)
+    msgs = test_msgs.append(Message(choice(intents), greet)) if intents else test_msgs
+
+    assert test_msgs == interactive._remove_intent_payload_input(msgs, intents)
