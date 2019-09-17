@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
-[Unreleased 1.2.9] - `master`_
+[Unreleased 1.2.10] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -21,6 +21,13 @@ Removed
 
 Fixed
 -----
+
+[1.2.9] - 2019-09-17
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Correctly pass SSL flag values to x CLI command
 
 
 [1.2.8] - 2019-09-10
