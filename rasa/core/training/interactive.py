@@ -576,7 +576,7 @@ async def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
     domain = Domain.from_dict(serialised_domain)
 
     await _write_stories_to_file(story_path, events, domain)
-    await _write_nlu_to_file(nlu_path, events)
+    await _write_nlu_to_file(nlu_path, events, serialised_domain)
     await _write_domain_to_file(domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
@@ -803,13 +803,29 @@ async def _write_stories_to_file(
                 f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
 
 
+def _retrieve_intents_from_domain(domain):
+    intents = [next(iter(i)) for i in (domain.get("intents") or [])]
+    return intents
+
+
+def _remove_intent_payload_input(msgs, intents):
+    filtered_messages = []
+    for msg in msgs:
+        if not (msg.text.startswith(INTENT_MESSAGE_PREFIX) and msg.text[1:] in intents):
+            filtered_messages.append(msg)
+    return filtered_messages
+
+
 async def _write_nlu_to_file(
-    export_nlu_path: Text, events: List[Dict[Text, Any]]
+    export_nlu_path: Text, events: List[Dict[Text, Any]], domain
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
     from rasa.nlu.training_data import TrainingData
 
     msgs = _collect_messages(events)
+
+    intents = _retrieve_intents_from_domain(domain)
+    msgs = _remove_intent_payload_input(msgs, intents)
 
     # noinspection PyBroadException
     try:
@@ -1221,7 +1237,9 @@ def _is_same_entity_annotation(entity, other):
     return entity["value"] == other["value"] and entity["entity"] == other["entity"]
 
 
-async def _enter_user_message(sender_id: Text, endpoint: EndpointConfig) -> None:
+async def _enter_user_message(
+    sender_id: Text, endpoint: EndpointConfig, intents: List[Text]
+) -> None:
     """Request a new message from the user."""
 
     question = questionary.text("Your input ->")
@@ -1389,7 +1407,7 @@ async def record_messages(
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
                 if await is_listening_for_message(sender_id, endpoint):
-                    await _enter_user_message(sender_id, endpoint)
+                    await _enter_user_message(sender_id, endpoint, intents)
                     await _validate_nlu(intents, endpoint, sender_id)
 
                 await _predict_till_next_listen(
