@@ -464,7 +464,7 @@ def _tf_calc_iou_mask(
     union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
 
     iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
-    return 1.0 - tf.nn.relu(tf.sign(1.0 - iou))
+    return 1.0 - tf.nn.relu(tf.sign(0.66 - iou))
 
 
 def _tf_get_negs(
