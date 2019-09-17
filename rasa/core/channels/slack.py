@@ -217,6 +217,7 @@ class SlackInput(InputChannel):
             text = text
     
         return text.strip()
+
     @staticmethod
     def _is_interactive_message(payload):
         """Check wheter the input is a supported interactive input type."""
