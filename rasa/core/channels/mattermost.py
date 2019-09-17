@@ -21,11 +21,17 @@ class MattermostBot(MattermostAPI, OutputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(
-            credentials.get("webhook_url"),
-        )
+        return cls(credentials.get("webhook_url"))
 
-    def __init__(self, url, team, user, pw, bot_channel, webhook_url):
+    def __init__(
+        self,
+        url: Text,
+        team: Text,
+        user: Text,
+        pw: Text,
+        bot_channel: Text,
+        webhook_url: Text,
+    ):
         self.url = url
         self.team = team
         self.user = user
@@ -58,14 +64,17 @@ class MattermostBot(MattermostAPI, OutputChannel):
     ) -> None:
         """Sends buttons to the output."""
 
-        # buttons is a list of tuples: [(option_name, payload)]
+        # buttons are a list of objects: [(option_name, payload)]
         # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons
         button_block = {"actions": []}
         for button in buttons:
             button_block["actions"].append(
                 {
                     "name": button["title"],
-                    "integration": {"url": self.webhook_url, "context": {"action": button["payload"]}}
+                    "integration": {
+                        "url": self.webhook_url,
+                        "context": {"action": button["payload"]},
+                    },
                 }
             )
         props = {"attachments": []}
@@ -99,7 +108,9 @@ class MattermostInput(InputChannel):
             credentials.get("webhook_url"),
         )
 
-    def __init__(self, url: Text, team: Text, user: Text, pw: Text, webhook_url: Text) -> None:
+    def __init__(
+        self, url: Text, team: Text, user: Text, pw: Text, webhook_url: Text
+    ) -> None:
         """Create a Mattermost input channel.
         Needs a couple of settings to properly authenticate and validate
         messages.
@@ -130,50 +141,61 @@ class MattermostInput(InputChannel):
         @mattermost_webhook.route("/webhook", methods=["POST"])
         async def webhook(request: Request):
             output = request.json
-            if output:
-                # handle normal message with trigger_word
-                if "trigger_word" in output:
-                    # splitting to get rid of the @botmention
-                    # trigger we are using for this
-                    text = output["text"].split(" ", 1)
-                    text = text[1]
-                    sender_id = output["user_id"]
-                    self.bot_channel = output["channel_id"]
-                    try:
-                        out_channel = MattermostBot(
-                            self.url, self.team, self.user, self.pw, self.bot_channel, self.webhook_url
-                        )
-                        user_msg = UserMessage(
-                            text, out_channel, sender_id, input_channel=self.name()
-                        )
-                        await on_new_message(user_msg)
-                    except Exception as e:
-                        logger.error(
-                            "Exception when trying to handle message.{0}".format(e)
-                        )
-                        logger.debug(e, exc_info=True)
-                        pass
 
-                # handle context actions from buttons
-                elif "context" in output:
-                    action = output["context"]["action"]
-                    sender_id = output["user_id"]
-                    self.bot_channel = output["channel_id"]
-                    try:
-                        out_channel = MattermostBot(
-                            self.url, self.team, self.user, self.pw, self.bot_channel, self.webhook_url
-                        )
-                        context_action = UserMessage(
-                            action, out_channel, sender_id, input_channel=self.name()
-                        )
-                        await on_new_message(context_action)
-                    except Exception as e:
-                        logger.error(
-                            "Exception when trying to handle message.{0}".format(e)
-                        )
-                        logger.debug(e, exc_info=True)
-                        pass
+            if not output:
+                return response.text("")
 
-            return response.text("")
+            # handle normal message with trigger_word
+            if "trigger_word" in output:
+                # splitting to get rid of the @botmention
+                # trigger we are using for this
+                text = output["text"].split(" ", 1)
+                text = text[1]
+                sender_id = output["user_id"]
+                self.bot_channel = output["channel_id"]
+                try:
+                    out_channel = MattermostBot(
+                        self.url,
+                        self.team,
+                        self.user,
+                        self.pw,
+                        self.bot_channel,
+                        self.webhook_url,
+                    )
+                    user_msg = UserMessage(
+                        text, out_channel, sender_id, input_channel=self.name()
+                    )
+                    await on_new_message(user_msg)
+                except Exception as e:
+                    logger.error(
+                        "Exception when trying to handle message.{0}".format(e)
+                    )
+                    logger.debug(e, exc_info=True)
+                    pass
+
+            # handle context actions from buttons
+            elif "context" in output:
+                action = output["context"]["action"]
+                sender_id = output["user_id"]
+                self.bot_channel = output["channel_id"]
+                try:
+                    out_channel = MattermostBot(
+                        self.url,
+                        self.team,
+                        self.user,
+                        self.pw,
+                        self.bot_channel,
+                        self.webhook_url,
+                    )
+                    context_action = UserMessage(
+                        action, out_channel, sender_id, input_channel=self.name()
+                    )
+                    await on_new_message(context_action)
+                except Exception as e:
+                    logger.error(
+                        "Exception when trying to handle message.{0}".format(e)
+                    )
+                    logger.debug(e, exc_info=True)
+                    pass
 
         return mattermost_webhook
