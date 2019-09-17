@@ -195,9 +195,9 @@ class SlackInput(InputChannel):
             # but is a good first approximation
             for regex, replacement in [
                 (r"<@{}>\s".format(uid_to_remove), ""),
-                (r"\s<@{}>".format(uid_to_remove), ""),
+                (r"\s<@{}>".format(uid_to_remove), ""), # a bit arbitrary but probably OK
 			    (r"<@{}>".format(uid_to_remove), " "),
-			]:
+            ]:
                 text = re.sub(regex, replacement, text)
  
         """Find mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and    
