@@ -211,7 +211,6 @@ class SlackInput(InputChannel):
             replacement = regex.split("|")[1]
             replacement = replacement.replace('>', '')
             text = text.replace(regex, replacement)
-    
         else:
             text = text 
         return text.strip()
