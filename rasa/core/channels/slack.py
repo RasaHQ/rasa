@@ -180,16 +180,12 @@ class SlackInput(InputChannel):
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
         """Remove superfluous/wrong/problematic tokens from a message.
-
         Probably a good starting point for pre-formatting of user-provided text
         to make NLU's life easier in case they go funky to the power of extreme
-
         In the current state will just drop self-mentions of bot itself
-
         Args:
             text: raw message as sent from slack
             uids_to_remove: a list of user ids to remove from the content
-
         Returns:
             str: parsed and cleaned version of the input text
         """
@@ -197,16 +193,24 @@ class SlackInput(InputChannel):
             # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,
             # but is a good first approximation
-            for regex, replacement in [
-                (r"<@{}>\s".format(uid_to_remove), ""),
-                (r"\s<@{}>".format(uid_to_remove), ""),
-                # a bit arbitrary but probably OK
-                (r"<@{}>".format(uid_to_remove), " "),
-            ]:
+            for regex, replacement in [(r"<@{}>\s".format(uid_to_remove), ""),(r"\s<@{}>".format(uid_to_remove), ""),(r"<@{}>".format(uid_to_remove), " "),]:
                 text = re.sub(regex, replacement, text)
-
+ 
+        """Find mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and    
+        substitute it with original content 
+        """
+        pattern = '\<(mailto:|(http|https):\/\/).*\|.*\>'
+        match = re.search(pattern, text)
+        if match:
+            regex = match.group(0)
+            replacement = regex.split("|")[1]
+            replacement = replacement.replace('>', '')
+            text = text.replace(regex, replacement)
+            
+        else:
+            text = text
+    
         return text.strip()
-
     @staticmethod
     def _is_interactive_message(payload):
         """Check wheter the input is a supported interactive input type."""
