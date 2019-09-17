@@ -193,8 +193,9 @@ class SlackInput(InputChannel):
             # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,
             # but is a good first approximation
-            for regex, replacement in [(r"<@{}>\s".format(uid_to_remove), ""),
-			    (r"\s<@{}>".format(uid_to_remove), ""),
+            for regex, replacement in [
+                (r"<@{}>\s".format(uid_to_remove), ""),
+                (r"\s<@{}>".format(uid_to_remove), ""),
 			    (r"<@{}>".format(uid_to_remove), " "),
 			]:
                 text = re.sub(regex, replacement, text)
