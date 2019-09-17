@@ -25,6 +25,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
+    "sphinx_tabs.tabs",
     "sphinxcontrib.programoutput",
     "sphinxcontrib.httpdomain",
     "rasabaster.button",
@@ -332,10 +333,17 @@ scv_priority = "tags"
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ("semver",)
-scv_whitelist_branches = ("master",)  # (re.compile("^master$"),)
+scv_whitelist_branches = (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
-scv_whitelist_tags = (re.compile(r"^[1-9]+\.[0-9]+\.\d+$"),)
+scv_whitelist_tags = (
+    re.compile(r"^[2-9]+\.\d+\.\d+$"),
+    re.compile(r"^1\.[456789]+\.\d+$"),
+    re.compile(r"^1\.3\.\d+$"),
+    "1.2.7",
+    "1.1.8",
+    "1.0.9",
+)
 scv_greatest_tag = True
 
 # type classes for nitpicky to ignore

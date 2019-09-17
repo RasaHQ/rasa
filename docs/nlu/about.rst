@@ -7,7 +7,8 @@ Rasa NLU: Language Understanding for Chatbots and AI assistants
 ===============================================================
 
 
-Rasa NLU is an open-source natural language processing tool for intent classification and entity extraction in chatbots. For example, taking a sentence like
+Rasa NLU is an open-source natural language processing tool for intent classification, response retrieval and
+entity extraction in chatbots. For example, taking a sentence like
 
 .. code-block:: console
 

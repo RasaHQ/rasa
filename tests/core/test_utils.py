@@ -1,5 +1,5 @@
 import asyncio
-import os
+
 import pytest
 
 import rasa.utils.io
@@ -81,3 +81,13 @@ def test_pad_lists_to_size():
     assert utils.pad_lists_to_size(list_x, list_y) == (list_x, ["a", "b", None])
     assert utils.pad_lists_to_size(list_y, list_x, "c") == (["a", "b", "c"], list_x)
     assert utils.pad_lists_to_size(list_z, list_x) == (list_z, list_x)
+
+
+def test_convert_bytes_to_string():
+    # byte string will be decoded
+    byte_string = b"\xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
+    decoded_string = "τoρνoς"
+    assert utils.convert_bytes_to_string(byte_string) == decoded_string
+
+    # string remains string
+    assert utils.convert_bytes_to_string(decoded_string) == decoded_string

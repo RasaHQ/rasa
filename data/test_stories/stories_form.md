@@ -47,6 +47,21 @@
 * goodbye
     - utter_goodbye
 
+## simple_story_with_form_stop_inform
+* greet
+    - utter_greet
+* start_form
+    - some_form
+    - form{"name": "some_form"}
+* stop
+    - utter_ask_continue
+    - action_listen
+* form: inform
+    - some_form
+    - form{"name": null}
+* goodbye
+    - utter_goodbye
+
 ## simple_story_with_form_stop_deactivate
 * greet
     - utter_greet

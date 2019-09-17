@@ -79,7 +79,7 @@ class RestaurantForm(FormAction):
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: Dict[Text, Any],
-    ) -> Optional[Text]:
+    ) -> Dict[Text, Any]:
         """Validate cuisine value."""
 
         if value.lower() in self.cuisine_db():
@@ -97,7 +97,7 @@ class RestaurantForm(FormAction):
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: Dict[Text, Any],
-    ) -> Optional[Text]:
+    ) -> Dict[Text, Any]:
         """Validate num_people value."""
 
         if self.is_int(value) and int(value) > 0:
@@ -113,7 +113,7 @@ class RestaurantForm(FormAction):
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: Dict[Text, Any],
-    ) -> Any:
+    ) -> Dict[Text, Any]:
         """Validate outdoor_seating value."""
 
         if isinstance(value, str):

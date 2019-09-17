@@ -5,13 +5,21 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
+import rasa.core.constants
+import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.cli.utils import bcolors
 from rasa.constants import DOMAIN_SCHEMA_FILE
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
-from rasa.core.constants import REQUESTED_SLOT
+from rasa.core.constants import (
+    REQUESTED_SLOT,
+    DEFAULT_KNOWLEDGE_BASE_ACTION,
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_OBJECT_TYPE,
+    SLOT_LAST_OBJECT,
+)
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.utils.endpoints import EndpointConfig
@@ -299,20 +307,20 @@ class Domain(object):
 
         return int(text_hash, 16)
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def user_actions_and_forms(self):
         """Returns combination of user actions and forms"""
 
         return self.user_actions + self.form_names
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def num_actions(self):
         """Returns the number of available actions."""
 
         # noinspection PyTypeChecker
         return len(self.action_names)
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def num_states(self):
         """Number of used input states for the action prediction."""
 
@@ -326,6 +334,31 @@ class Domain(object):
         """
         if self.form_names and REQUESTED_SLOT not in [s.name for s in self.slots]:
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
+
+    def add_knowledge_base_slots(self):
+        """
+        Add slots for the knowledge base action to the list of slots, if the
+        default knowledge base action name is present.
+
+        As soon as the knowledge base action is not experimental anymore, we should
+        consider creating a new section in the domain file dedicated to knowledge
+        base slots.
+        """
+        if DEFAULT_KNOWLEDGE_BASE_ACTION in self.action_names:
+            logger.warning(
+                "You are using an experiential feature: Action '{}'!".format(
+                    DEFAULT_KNOWLEDGE_BASE_ACTION
+                )
+            )
+            slot_names = [s.name for s in self.slots]
+            knowledge_base_slots = [
+                SLOT_LISTED_ITEMS,
+                SLOT_LAST_OBJECT,
+                SLOT_LAST_OBJECT_TYPE,
+            ]
+            for s in knowledge_base_slots:
+                if s not in slot_names:
+                    self.slots.append(UnfeaturizedSlot(s))
 
     def action_for_name(
         self, action_name: Text, action_endpoint: Optional[EndpointConfig]
@@ -387,7 +420,7 @@ class Domain(object):
             return None
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
 
@@ -398,28 +431,28 @@ class Domain(object):
         ]
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def prev_action_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [PREV_PREFIX + a for a in self.action_names]
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return ["intent_{0}".format(i) for i in self.intents]
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return ["entity_{0}".format(e) for e in self.entities]
 
     # noinspection PyTypeChecker
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def form_states(self) -> List[Text]:
         return ["active_form_{0}".format(f) for f in self.form_names]
 
@@ -428,12 +461,12 @@ class Domain(object):
 
         return self.input_state_map.get(state_name)
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def input_state_map(self) -> Dict[Text, int]:
         """Provides a mapping from state names to indices."""
         return {f: i for i, f in enumerate(self.input_states)}
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def input_states(self) -> List[Text]:
         """Returns all available states."""
 
@@ -686,7 +719,7 @@ class Domain(object):
         """Return the configuration for an intent."""
         return self.intent_properties.get(intent_name, {})
 
-    @utils.lazyproperty
+    @common_utils.lazy_property
     def intents(self):
         return sorted(self.intent_properties.keys())
 
@@ -865,7 +898,11 @@ class Domain(object):
     def check_missing_templates(self) -> None:
         """Warn user of utterance names which have no specified template."""
 
-        utterances = [a for a in self.action_names if a.startswith(action.UTTER_PREFIX)]
+        utterances = [
+            a
+            for a in self.action_names
+            if a.startswith(rasa.core.constants.UTTER_PREFIX)
+        ]
 
         missing_templates = [t for t in utterances if t not in self.templates.keys()]
 

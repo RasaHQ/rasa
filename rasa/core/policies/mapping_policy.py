@@ -17,6 +17,7 @@ from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import MAPPING_POLICY_PRIORITY
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -32,7 +33,11 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
-    def __init__(self, priority: int = 3) -> None:
+    @staticmethod
+    def _standard_featurizer():
+        return None
+
+    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
         """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__(priority=priority)
@@ -130,6 +135,10 @@ class MappingPolicy(Policy):
                         action, intent, latest_action.policy
                     )
                 )
+        elif action == ACTION_RESTART_NAME:
+            idx = domain.index_for_action(ACTION_RESTART_NAME)
+            prediction[idx] = 1
+            logger.debug("Restarting the conversation with action_restart.")
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "

@@ -232,7 +232,11 @@ async def test_multi_project_training():
     domain_file = os.path.join(example_directory, "domain.yml")
     files_of_root_project = os.path.join(example_directory, "data")
     trained_stack_model_path = await train_async(
-        config=config_file, domain=domain_file, training_files=files_of_root_project
+        config=config_file,
+        domain=domain_file,
+        training_files=files_of_root_project,
+        force_training=True,
+        persist_nlu_training_data=True,
     )
 
     unpacked = model.unpack_model(trained_stack_model_path)

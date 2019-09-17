@@ -105,13 +105,21 @@ def test_status(rasa_app: SanicTestClient):
     assert "model_file" in response.json
 
 
+def test_status_nlu_only(rasa_app_nlu: SanicTestClient):
+    _, response = rasa_app_nlu.get("/status")
+    assert response.status == 200
+    assert "fingerprint" in response.json
+    assert "model_file" in response.json
+
+
 def test_status_secured(rasa_secured_app: SanicTestClient):
     _, response = rasa_secured_app.get("/status")
     assert response.status == 401
 
 
-def test_status_not_ready_agent(rasa_app_nlu: SanicTestClient):
-    _, response = rasa_app_nlu.get("/status")
+def test_status_not_ready_agent(rasa_app: SanicTestClient):
+    rasa_app.app.agent = None
+    _, response = rasa_app.get("/status")
     assert response.status == 409
 
 
@@ -397,7 +405,11 @@ def test_evaluate_intent(rasa_app, default_nlu_data):
     _, response = rasa_app.post("/model/test/intents", data=nlu_data)
 
     assert response.status == 200
-    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+    assert set(response.json.keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
 
 
 def test_evaluate_intent_on_just_nlu_model(
@@ -409,7 +421,11 @@ def test_evaluate_intent_on_just_nlu_model(
     _, response = rasa_app_nlu.post("/model/test/intents", data=nlu_data)
 
     assert response.status == 200
-    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+    assert set(response.json.keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
 
 
 def test_evaluate_intent_with_query_param(
@@ -426,7 +442,11 @@ def test_evaluate_intent_with_query_param(
     )
 
     assert response.status == 200
-    assert set(response.json.keys()) == {"intent_evaluation", "entity_evaluation"}
+    assert set(response.json.keys()) == {
+        "intent_evaluation",
+        "entity_evaluation",
+        "response_selection_evaluation",
+    }
 
     _, response = rasa_app.get("/status")
     assert previous_model_file == response.json["model_file"]
@@ -457,11 +477,6 @@ def test_predict(rasa_app: SanicTestClient):
     assert "scores" in content
     assert "tracker" in content
     assert "policy" in content
-
-
-def test_retrieve_tracker_not_ready_agent(rasa_app_nlu: SanicTestClient):
-    _, response = rasa_app_nlu.get("/conversations/test/tracker")
-    assert response.status == 409
 
 
 @freeze_time("2018-01-01")
@@ -647,9 +662,6 @@ def test_unload_model_error(rasa_app: SanicTestClient):
 
     _, response = rasa_app.delete("/model")
     assert response.status == 204
-
-    _, response = rasa_app.get("/status")
-    assert response.status == 409
 
 
 def test_get_domain(rasa_app: SanicTestClient):
