@@ -684,7 +684,6 @@ def test_list_routes(default_agent):
         "predict",
         "add_message",
         "train",
-        "training_status",
         "evaluate_stories",
         "evaluate_intents",
         "tracker_predict",
