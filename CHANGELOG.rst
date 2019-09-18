@@ -7,22 +7,12 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[Unreleased 1.3.3]
+^^^^^^^^^^^^^^^^^^
 
-
-[1.3.3] - 2019-09-13
-^^^^^^^^^^^^^^^^^^^^
-
-Fixed
+Added
 -----
-- Added a check to avoid training CountVectorizer for a particular attribute of a message if no text is provided for that attribute across the training data.
-- Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
-- Policy ensemble no longer incorrectly wrings "missing mapping policy" when
-  mapping policy is present.
-- "test" from ``utter_custom_json`` now correctly saved to tracker when using telegram channel
-
-Removed
--------
-- Removed computation of ``intent_spacy_doc``. As a result, none of the spacy components process intents now.
+- API endpoint to obtain the number of training processes currently running (``/model/train/status``)
 
 [1.3.2] - 2019-09-10
 ^^^^^^^^^^^^^^^^^^^^
