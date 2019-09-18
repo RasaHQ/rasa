@@ -132,9 +132,71 @@ class SpacyNLP(Component):
 
     @staticmethod
     def merge_content_lists(freezed_indices, doc_lists):
+        """
+        After processing the training samples, we merge the resulting lists back into the
+        tuple with our freezed indices.
+
+        :param freezed_indices:
+        :param doc_lists:
+        :return:
+        """
         dct = dict(freezed_indices)
         dct.update(dict(doc_lists))
         return list(dct.items())
+
+    @staticmethod
+    def filter_attribute_samples_by_content(freezed_indices):
+        """
+        Currently, none existent attribute samples are None which leads to an error
+        in spaCy and are therefore set as empty strings by Rasa. Since third-party
+        libraries relying on spaCy might have problems with Doc-objects created on empty
+        strings, we further treat them separately.
+
+        :param freezed_indices:
+        :return:
+        """
+
+        docs_to_pipe = list(filter(lambda training_sample: training_sample[1] != "", freezed_indices))
+        empty_docs = list(filter(lambda training_sample: training_sample[1] == "", freezed_indices))
+        return docs_to_pipe, empty_docs
+
+    def process_content_bearing_docs(self, docs_to_pipe):
+        """
+        To preserve the order of the training samples, we send the non-empty samples to
+        pipe and then simply update their original/index tuple.
+
+        :param docs_to_pipe:
+        :return:
+        """
+        docs = [
+            (docs_to_pipe_sample[0], doc)
+            for docs_to_pipe_sample, doc in zip(
+                docs_to_pipe,
+                [
+                    doc
+                    for doc in self.nlp.pipe(
+                    [txt for _, txt in docs_to_pipe], batch_size=50
+                )
+                ],
+            )
+        ]
+        return docs
+
+    def process_non_content_bearing_docs(self, empty_docs):
+        """
+        To avoid creating a Doc-object by parsing an empty string, we instantiate it directly
+        via spaCy's API for every empty attribute sample and update its original/index tuple.
+
+        :param empty_docs:
+        :return:
+        """
+        n_docs = [
+            (empty_docs_sample[0], doc)
+            for empty_docs_sample, doc in zip(
+                empty_docs, [Doc(self.nlp.vocab) for doc in empty_docs]
+            )
+        ]
+        return n_docs
 
     def docs_for_training_data(
         self, training_data: TrainingData
@@ -146,38 +208,13 @@ class SpacyNLP(Component):
             # Index and freeze indices of the training samples for preserving the order
             # after processing the data.
             freezed_indices = [(idx, text) for idx, text in enumerate(texts)]
-            # Currently, none existent attribute samples are None which leads to an error
-            # in spaCy and are therefore set as empty strings by Rasa. Since third-party
-            # libraries relying on spaCy might have problems with Doc-objects created on empty
-            # strings, we further treat them separately.
-            docs_to_pipe = list(filter(lambda fi_tpl: fi_tpl[1] != "", freezed_indices))
-            empty_docs = list(filter(lambda fi_tpl: fi_tpl[1] == "", freezed_indices))
 
-            # To preserve the order of the training samples, we send the non-empty samples to
-            # pipe and then simply update their original/index tuple.
-            docs = [
-                (idx_tpl[0], doc)
-                for idx_tpl, doc in zip(
-                    docs_to_pipe,
-                    [
-                        doc
-                        for doc in self.nlp.pipe(
-                            [txt for _, txt in docs_to_pipe], batch_size=50
-                        )
-                    ],
-                )
-            ]
-            # To avoid creating a Doc-object by parsing an empty string, we instantiate it directly
-            # via spaCy's API for every empty attribute sample and update its original/index tuple.
-            n_docs = [
-                (idx_tpl[0], doc)
-                for idx_tpl, doc in zip(
-                    empty_docs, [Doc(self.nlp.vocab) for doc in empty_docs]
-                )
-            ]
+            docs_to_pipe, empty_docs = self.filter_attribute_samples_by_content(freezed_indices)
 
-            # After processing the training samples, we merge the resulting lists back into the
-            # tuple with our freezed indices.
+            docs = self.process_content_bearing_docs(docs_to_pipe)
+
+            n_docs = self.process_non_content_bearing_docs(empty_docs)
+
             attribute_document_list = self.merge_content_lists(
                 freezed_indices, docs + n_docs
             )
