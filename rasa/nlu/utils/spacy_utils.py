@@ -131,9 +131,7 @@ class SpacyNLP(Component):
         return self.preprocess_text(example.get(attribute))
 
     @staticmethod
-    def merge_content_lists(
-            indexed_training_samples: List, doc_lists: List
-    ) -> List:
+    def merge_content_lists(indexed_training_samples: List, doc_lists: List) -> List:
         """ Merge lists with processed Docs back into their original order. """
 
         dct = dict(indexed_training_samples)
@@ -141,18 +139,24 @@ class SpacyNLP(Component):
         return list(dct.items())
 
     @staticmethod
-    def filter_training_samples_by_content(
-            indexed_training_samples: List
-    ) -> Tuple:
+    def filter_training_samples_by_content(indexed_training_samples: List) -> Tuple:
         """ Separates empty training samples from content bearing ones. """
 
-        docs_to_pipe = list(filter(lambda training_sample: training_sample[1] != "", indexed_training_samples))
-        empty_docs = list(filter(lambda training_sample: training_sample[1] == "", indexed_training_samples))
+        docs_to_pipe = list(
+            filter(
+                lambda training_sample: training_sample[1] != "",
+                indexed_training_samples,
+            )
+        )
+        empty_docs = list(
+            filter(
+                lambda training_sample: training_sample[1] == "",
+                indexed_training_samples,
+            )
+        )
         return docs_to_pipe, empty_docs
 
-    def process_content_bearing_samples(
-            self, samples_to_pipe: Tuple
-    ) -> List:
+    def process_content_bearing_samples(self, samples_to_pipe: Tuple) -> List:
         """ Sends content bearing training samples to spaCy's pipe. """
 
         docs = [
@@ -162,16 +166,14 @@ class SpacyNLP(Component):
                 [
                     doc
                     for doc in self.nlp.pipe(
-                    [txt for _, txt in samples_to_pipe], batch_size=50
-                )
+                        [txt for _, txt in samples_to_pipe], batch_size=50
+                    )
                 ],
             )
         ]
         return docs
 
-    def process_non_content_bearing_samples(
-            self, empty_samples: Tuple
-    ) -> List:
+    def process_non_content_bearing_samples(self, empty_samples: Tuple) -> List:
         """ Creates empty Doc-objects from zero-lenghted training samples strings. """
 
         n_docs = [
@@ -184,15 +186,17 @@ class SpacyNLP(Component):
 
     @staticmethod
     def check_non_content_bearing_sample_order(
-            empty_samples: Tuple, attribute_document_list: List
+        empty_samples: Tuple, attribute_document_list: List
     ) -> Any:
         """ Checks if zero-lengthed strings were converted into Doc objects in their preserved order. """
 
         preserved_order_and_type = True
         attribute_document_list_as_dict = dict(attribute_document_list)
         for sample_index, _ in empty_samples:
-            if not isinstance(attribute_document_list_as_dict[sample_index], Doc) \
-                    or len(attribute_document_list_as_dict[sample_index]) != 0:
+            if (
+                not isinstance(attribute_document_list_as_dict[sample_index], Doc)
+                or len(attribute_document_list_as_dict[sample_index]) != 0
+            ):
                 preserved_order_and_type = False
         return preserved_order_and_type
 
@@ -207,17 +211,24 @@ class SpacyNLP(Component):
             # after processing the data.
             indexed_training_samples = [(idx, text) for idx, text in enumerate(texts)]
 
-            samples_to_pipe, empty_samples = self.filter_training_samples_by_content(indexed_training_samples)
+            samples_to_pipe, empty_samples = self.filter_training_samples_by_content(
+                indexed_training_samples
+            )
 
             content_bearing_docs = self.process_content_bearing_samples(samples_to_pipe)
 
-            non_content_bearing_docs = self.process_non_content_bearing_samples(empty_samples)
-
-            attribute_document_list = self.merge_content_lists(
-                indexed_training_samples, content_bearing_docs + non_content_bearing_docs
+            non_content_bearing_docs = self.process_non_content_bearing_samples(
+                empty_samples
             )
 
-            assert self.check_non_content_bearing_sample_order(empty_samples, attribute_document_list)
+            attribute_document_list = self.merge_content_lists(
+                indexed_training_samples,
+                content_bearing_docs + non_content_bearing_docs,
+            )
+
+            assert self.check_non_content_bearing_sample_order(
+                empty_samples, attribute_document_list
+            )
 
             # Since we only need the training samples strings, we create a list to get them out
             # of the tuple.
