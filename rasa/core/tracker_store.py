@@ -302,7 +302,7 @@ class DynamoTrackerStore(TrackerStore):
             self.stream_events(tracker)
         self.db.put_item(Item=self.serialise_tracker(tracker))
 
-    def serialise_tracker(self, tracker) -> Dict:
+    def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
         """Serializes the tracker, returns object with decimal types"""
         d = tracker.as_dialogue().as_dict()
         d.update({"sender_id": tracker.sender_id, "session_date": int(datetime.now(tz=timezone.utc).timestamp())})
