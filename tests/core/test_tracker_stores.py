@@ -18,10 +18,9 @@ from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 domain = Domain.load("data/test_domains/default.yml")
 
 
-def test_get_or_create():
+def get_or_create_tracker_store(store: "TrackerStore"):
     slot_key = "location"
     slot_val = "Easter Island"
-    store = InMemoryTrackerStore(domain)
 
     tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
@@ -32,22 +31,14 @@ def test_get_or_create():
 
     again = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     assert again.get_slot(slot_key) == slot_val
+
+
+def test_get_or_create():
+    get_or_create_tracker_store(InMemoryTrackerStore(domain))
 
 
 def test_dynamo_get_or_create():
-    slot_key = "location"
-    slot_val = "Easter Island"
-    store = DynamoTrackerStore(domain)
-
-    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
-    ev = SlotSet(slot_key, slot_val)
-    tracker.update(ev)
-    assert tracker.get_slot(slot_key) == slot_val
-
-    store.save(tracker)
-
-    again = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
-    assert again.get_slot(slot_key) == slot_val
+    get_or_create_tracker_store(DynamoTrackerStore(domain))
 
 
 def test_restart_after_retrieval_from_tracker_store(default_domain):
