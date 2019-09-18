@@ -7,8 +7,8 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.4] - `1.3.x`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.3.4]
+^^^^^^^^^^^^^^^^^^
 Fixed
 -----
 - re-added TLS, SRV dependencies for PyMongo
