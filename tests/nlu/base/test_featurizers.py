@@ -28,6 +28,67 @@ def test_spacy_featurizer(sentence, expected, spacy_nlp):
     assert np.allclose(doc.vector[:5], expected, atol=1e-5)
     assert np.allclose(vecs, doc.vector, atol=1e-5)
 
+@pytest.mark.parametrize(
+    "indexed_training_samples",
+    [
+        (
+            [
+                (0, "I have a feeling"), (1, "that tonight is gonna be the night"), (2, ""), (3, ""),
+                (4, "we are visiting"), (5, ""), (6, " in the west of"), (7, "California's coast"),
+                (8, ""), (9, "we have already taken"), (10, ""), (11, "account")
+            ]
+        )
+    ],
+)
+def test_spacy_training_sample_order(indexed_training_samples, spacy_nlp):
+    from rasa.nlu.utils.spacy_utils import SpacyNLP
+    from spacy.tokens import Doc
+
+    def process_content_bearing_samples(samples_to_pipe):
+
+        docs = [
+            (to_pipe_sample[0], doc)
+            for to_pipe_sample, doc in zip(
+                samples_to_pipe,
+                [
+                    doc
+                    for doc in spacy_nlp.pipe(
+                        [txt for _, txt in samples_to_pipe], batch_size=50
+                    )
+                ],
+            )
+        ]
+        return docs
+
+    def process_non_content_bearing_samples(empty_samples):
+
+        n_docs = [
+            (empty_sample[0], doc)
+            for empty_sample, doc in zip(
+                empty_samples, [Doc(spacy_nlp.vocab) for doc in empty_samples]
+            )
+        ]
+        return n_docs
+
+    samples_to_pipe, empty_samples = SpacyNLP.filter_training_samples_by_content(
+        indexed_training_samples
+    )
+
+    content_bearing_docs = process_content_bearing_samples(samples_to_pipe)
+
+    non_content_bearing_docs = process_non_content_bearing_samples(
+        empty_samples
+    )
+
+    attribute_document_list = SpacyNLP.merge_content_lists(
+        indexed_training_samples,
+        content_bearing_docs + non_content_bearing_docs,
+    )
+
+    assert SpacyNLP.check_non_content_bearing_sample_order(
+        empty_samples, attribute_document_list
+    )
+
 
 def test_spacy_intent_featurizer(spacy_nlp_component):
     from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
