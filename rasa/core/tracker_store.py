@@ -247,14 +247,15 @@ class RedisTrackerStore(TrackerStore):
 
 class DynamoTrackerStore(TrackerStore):
     """Stores conversation history in DynamoDB"""
-    def __init__(self, domain, table_name="states", event_broker=None):
+    def __init__(self, domain, table_name="states", region="us-east-1", event_broker=None):
         """
         Args:
             domain:
             table_name: The name of the DynamoDb table, does not need to be present a priori.
             event_broker:
         """
-        self.client = boto3.client('dynamodb')
+        self.client = boto3.client('dynamodb', region_name=region)
+        self.region = region
         self.table_name = table_name
         self.db = self.get_or_create_table(table_name)
         super().__init__(domain, event_broker)
@@ -262,7 +263,7 @@ class DynamoTrackerStore(TrackerStore):
     def get_or_create_table(self, table_name: str) -> "boto3.resources.factory.dynamodb.Table":
         """Returns table or creates one if the table name is not in the table list"""
         if self.table_name not in self.client.list_tables()["TableNames"]:
-            table = self.client.create_table(
+            table = boto3.resource('dynamodb', region_name=self.region).create_table(
                 TableName=self.table_name,
                 KeySchema=[
                     {
@@ -292,7 +293,8 @@ class DynamoTrackerStore(TrackerStore):
 
             # Wait until the table exists.
             table.meta.client.get_waiter('table_exists').wait(TableName=table_name)
-        return boto3.resource('dynamodb').Table(table_name)
+        else:
+            return boto3.resource('dynamodb', region_name=self.region).Table(table_name)
 
     def save(self, tracker):
         """Saves the current conversation state"""
