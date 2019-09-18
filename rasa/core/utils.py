@@ -460,7 +460,7 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
     return handler
 
 
-def replace_floats_with_decimals(obj: Union[List, Dict]) -> Union[List, Dict]:
+def replace_floats_with_decimals(obj: Union[List, Dict]) -> Any:
     """
     Utility method to recursively walk a dictionary or list converting all `float` to `Decimal` as required by DynamoDb.
 

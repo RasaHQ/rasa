@@ -20,6 +20,7 @@ from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.core.utils import replace_floats_with_decimals
 from rasa.utils.common import class_from_module_path
+from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class TrackerStore(object):
     """Class to hold all of the TrackerStore classes"""
+
     def __init__(
         self, domain: Optional[Domain], event_broker: Optional[EventChannel] = None
     ) -> None:
@@ -39,7 +41,11 @@ class TrackerStore(object):
         self.max_event_history = None
 
     @staticmethod
-    def find_tracker_store(domain, store=None, event_broker=None) -> "TrackerStore":
+    def find_tracker_store(
+        domain: Domain,
+        store: Optional[EndpointConfig] = None,
+        event_broker: Optional[EventChannel] = None,
+    ) -> "TrackerStore":
         """Returns the tracker_store type"""
         if store is None or store.type is None:
             tracker_store = InMemoryTrackerStore(domain, event_broker=event_broker)
@@ -66,7 +72,9 @@ class TrackerStore(object):
         return tracker_store
 
     @staticmethod
-    def load_tracker_from_module_string(domain, store) -> "TrackerStore":
+    def load_tracker_from_module_string(
+        domain: Domain, store: EndpointConfig
+    ) -> "TrackerStore":
         """
         Initializes a custom tracker.
 
@@ -92,7 +100,9 @@ class TrackerStore(object):
         else:
             return InMemoryTrackerStore(domain)
 
-    def get_or_create_tracker(self, sender_id, max_event_history=None) -> "DialogueStateTracker":
+    def get_or_create_tracker(
+        self, sender_id: Text, max_event_history: Optional[int] = None
+    ) -> "DialogueStateTracker":
         """Returns tracker or creates one if the retrieval returns None"""
         tracker = self.retrieve(sender_id)
         self.max_event_history = max_event_history
@@ -100,7 +110,7 @@ class TrackerStore(object):
             tracker = self.create_tracker(sender_id)
         return tracker
 
-    def init_tracker(self, sender_id) -> "DialogueStateTracker":
+    def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
         """Returns a Dialogue State Tracker"""
         return DialogueStateTracker(
             sender_id,
@@ -108,7 +118,9 @@ class TrackerStore(object):
             max_event_history=self.max_event_history,
         )
 
-    def create_tracker(self, sender_id, append_action_listen=True) -> DialogueStateTracker:
+    def create_tracker(
+        self, sender_id: Text, append_action_listen: bool = True
+    ) -> DialogueStateTracker:
         """Creates a new tracker for the sender_id. The tracker is initially listening."""
         tracker = self.init_tracker(sender_id)
         if tracker:
@@ -162,6 +174,7 @@ class TrackerStore(object):
 
 class InMemoryTrackerStore(TrackerStore):
     """Stores conversation history in memory"""
+
     def __init__(
         self, domain: Domain, event_broker: Optional[EventChannel] = None
     ) -> None:
@@ -247,54 +260,48 @@ class RedisTrackerStore(TrackerStore):
 
 class DynamoTrackerStore(TrackerStore):
     """Stores conversation history in DynamoDB"""
-    def __init__(self, domain, table_name="states", region="us-east-1", event_broker=None):
+
+    def __init__(
+        self,
+        domain: Domain,
+        table_name: Text = "states",
+        region: Text = "us-east-1",
+        event_broker: Optional[EndpointConfig] = None,
+    ):
         """
         Args:
             domain:
             table_name: The name of the DynamoDb table, does not need to be present a priori.
             event_broker:
         """
-        self.client = boto3.client('dynamodb', region_name=region)
+        self.client = boto3.client("dynamodb", region_name=region)
         self.region = region
         self.table_name = table_name
         self.db = self.get_or_create_table(table_name)
         super().__init__(domain, event_broker)
 
-    def get_or_create_table(self, table_name: str) -> "boto3.resources.factory.dynamodb.Table":
+    def get_or_create_table(
+        self, table_name: Text
+    ) -> "boto3.resources.factory.dynamodb.Table":
         """Returns table or creates one if the table name is not in the table list"""
         if self.table_name not in self.client.list_tables()["TableNames"]:
-            table = boto3.resource('dynamodb', region_name=self.region).create_table(
+            table = boto3.resource("dynamodb", region_name=self.region).create_table(
                 TableName=self.table_name,
                 KeySchema=[
-                    {
-                        'AttributeName': 'sender_id',
-                        'KeyType': 'HASH'
-                    },
-                    {
-                        'AttributeName': 'session_date',
-                        'KeyType': 'RANGE'
-                    }
+                    {"AttributeName": "sender_id", "KeyType": "HASH"},
+                    {"AttributeName": "session_date", "KeyType": "RANGE"},
                 ],
                 AttributeDefinitions=[
-                    {
-                        'AttributeName': 'sender_id',
-                        'AttributeType': 'S'
-                    },
-                    {
-                        'AttributeName': 'session_date',
-                        'AttributeType': 'N'
-                    },
+                    {"AttributeName": "sender_id", "AttributeType": "S"},
+                    {"AttributeName": "session_date", "AttributeType": "N"},
                 ],
-                ProvisionedThroughput={
-                    'ReadCapacityUnits': 5,
-                    'WriteCapacityUnits': 5
-                }
+                ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             )
 
             # Wait until the table exists.
-            table.meta.client.get_waiter('table_exists').wait(TableName=table_name)
+            table.meta.client.get_waiter("table_exists").wait(TableName=table_name)
         else:
-            return boto3.resource('dynamodb', region_name=self.region).Table(table_name)
+            return boto3.resource("dynamodb", region_name=self.region).Table(table_name)
 
     def save(self, tracker):
         """Saves the current conversation state"""
@@ -305,24 +312,36 @@ class DynamoTrackerStore(TrackerStore):
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
         """Serializes the tracker, returns object with decimal types"""
         d = tracker.as_dialogue().as_dict()
-        d.update({"sender_id": tracker.sender_id, "session_date": int(datetime.now(tz=timezone.utc).timestamp())})
+        d.update(
+            {
+                "sender_id": tracker.sender_id,
+                "session_date": int(datetime.now(tz=timezone.utc).timestamp()),
+            }
+        )
         return replace_floats_with_decimals(d)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
         # Retrieve dialogues for a sender_id in reverse chronological order based on the session_date sort key
-        dialogues = self.db.query(KeyConditionExpression=Key('sender_id').eq(sender_id),
-                                  Limit=1,
-                                  ScanIndexForward=False)["Items"]
+        dialogues = self.db.query(
+            KeyConditionExpression=Key("sender_id").eq(sender_id),
+            Limit=1,
+            ScanIndexForward=False,
+        )["Items"]
         if dialogues:
-            return DialogueStateTracker.from_dict(sender_id, dialogues[0].get("events"), self.domain.slots)
+            return DialogueStateTracker.from_dict(
+                sender_id, dialogues[0].get("events"), self.domain.slots
+            )
         else:
             return None
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the DynamoTrackerStore"""
-        return [i['sender_id'] for i in self.db.scan(ProjectionExpression='sender_id')["Items"]]
+        return [
+            i["sender_id"]
+            for i in self.db.scan(ProjectionExpression="sender_id")["Items"]
+        ]
 
 
 class MongoTrackerStore(TrackerStore):
@@ -332,6 +351,7 @@ class MongoTrackerStore(TrackerStore):
     Property methods:
         conversations: returns the current conversation
     """
+
     def __init__(
         self,
         domain,
@@ -431,6 +451,7 @@ class SQLTrackerStore(TrackerStore):
 
     class SQLEvent(Base):
         """Represents an event in the SQL Tracker Store"""
+
         from sqlalchemy import Column, Integer, String, Float, Text
 
         __tablename__ = "events"

@@ -10,7 +10,8 @@ from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     RedisTrackerStore,
     SQLTrackerStore,
-    DynamoTrackerStore)
+    DynamoTrackerStore,
+)
 
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
