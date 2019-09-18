@@ -390,6 +390,7 @@ def create_app(
             {
                 "model_file": app.agent.model_directory,
                 "fingerprint": fingerprint_from_path(app.agent.model_directory),
+                "n_training_jobs": app.active_training_processes.value,
             }
         )
 
@@ -702,13 +703,6 @@ def create_app(
         finally:
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value -= 1
-
-    @app.get("/model/train/status")
-    @requires_auth(app, auth_token)
-    async def training_status(request: Request):
-        """Get status of ongoing training jobs."""
-
-        return response.json({"n_jobs": app.active_training_processes.value})
 
     def validate_request(rjs):
         if "config" not in rjs:

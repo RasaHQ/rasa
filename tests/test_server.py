@@ -126,6 +126,38 @@ def test_status_not_ready_agent(rasa_app: SanicTestClient):
     assert response.status == 409
 
 
+def test_train_status(rasa_server, rasa_app, formbot_data):
+    with ExitStack() as stack:
+        payload = {
+            key: stack.enter_context(open(path)).read()
+            for key, path in formbot_data.items()
+        }
+
+    def train(results):
+        client1 = SanicTestClient(rasa_server, port=PORT + 1)
+        _, train_resp = client1.post("/model/train", json=payload)
+        results["train_response_code"] = train_resp.status
+
+    # Run training process in the background
+    manager = Manager()
+    results = manager.dict()
+    p1 = Process(target=train, args=(results,))
+    p1.start()
+
+    # Query the status endpoint a few times to ensure the test does
+    # not fail prematurely due to mismatched timing of a single query.
+    for i in range(10):
+        time.sleep(1)
+        _, status_resp = rasa_app.get("/status")
+        assert status_resp.status == 200
+        if status_resp.json["n_training_jobs"] == 1:
+            break
+    assert status_resp.json["n_training_jobs"] == 1
+
+    p1.join()
+    assert results["train_response_code"] == 200
+
+
 @pytest.mark.parametrize(
     "response_test",
     [
@@ -339,38 +371,6 @@ def formbot_data():
         stories="examples/formbot/data/stories.md",
         nlu="examples/formbot/data/nlu.md",
     )
-
-
-def test_train_status(rasa_server, rasa_app, formbot_data):
-    with ExitStack() as stack:
-        payload = {
-            key: stack.enter_context(open(path)).read()
-            for key, path in formbot_data.items()
-        }
-
-    def train(results):
-        client1 = SanicTestClient(rasa_server, port=PORT + 1)
-        _, train_resp = client1.post("/model/train", json=payload)
-        results["train_response_code"] = train_resp.status
-
-    # Run training process in the background
-    manager = Manager()
-    results = manager.dict()
-    p1 = Process(target=train, args=(results,))
-    p1.start()
-
-    # Query the status endpoint a few times to ensure the test does
-    # not fail prematurely due to mismatched timing of a single query.
-    for i in range(10):
-        time.sleep(1)
-        _, status_resp = rasa_app.get("/model/train/status")
-        assert status_resp.status == 200
-        if status_resp.json["n_jobs"] == 1:
-            break
-    assert status_resp.json["n_jobs"] == 1
-
-    p1.join()
-    assert results["train_response_code"] == 200
 
 
 def test_evaluate_stories(rasa_app, default_stories_file):

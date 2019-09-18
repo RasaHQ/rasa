@@ -69,9 +69,9 @@ paths:
       operationId: getStatus
       tags:
       - Server Information
-      summary: Status of the currently loaded Rasa model
+      summary: Status of the Rasa server
       description: >-
-        Information about the currently loaded Rasa model.
+        Information about the server and the currently loaded Rasa model.
       responses:
         200:
           description: Success
@@ -399,38 +399,6 @@ paths:
                 $ref: '#/components/schemas/TrainingResult'
         400:
           $ref: '#/components/responses/400BadRequest'
-        401:
-          $ref: '#/components/responses/401NotAuthenticated'
-        403:
-          $ref: '#/components/responses/403NotAuthorized'
-        500:
-          $ref: '#/components/responses/500ServerError'
-
-  /model/train/status:
-    get:
-      security:
-      - TokenAuth: []
-      - JWT: []
-      operationId: modelTrainingStatus
-      tags:
-      - Model
-      summary: Number of active training processes
-      description: >-
-        Returns the number of active training processes.
-      responses:
-        200:
-          description: Number of active training processes
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  n_jobs:
-                    type: integer
-                    description: >-
-                      Number of active training processes
-              example:
-                n_jobs: 2
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
