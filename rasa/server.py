@@ -670,7 +670,7 @@ def create_app(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
-                output_path=temp_dir,
+                output_path=tempfile.gettempdir(),
                 force_training=rjs.get("force", False),
             )
 
