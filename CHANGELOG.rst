@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
+[Unreleased 1.4.0]
+^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- models trained with ``POST /model/train`` now get saved in a temporary directory by
+  default (instead of the ``models`` directory)
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
