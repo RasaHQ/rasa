@@ -189,6 +189,7 @@ class SlackInput(InputChannel):
         Returns:
             str: parsed and cleaned version of the input text
         """
+
         for uid_to_remove in uids_to_remove:
             # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,
@@ -214,8 +215,6 @@ class SlackInput(InputChannel):
             replacement = regex.split("|")[1]
             replacement = replacement.replace(">", "")
             text = text.replace(regex, replacement)
-        else:
-            text = text
         return text.strip()
 
     @staticmethod
