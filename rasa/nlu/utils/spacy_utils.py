@@ -145,58 +145,78 @@ class SpacyNLP(Component):
         return list(dct.items())
 
     @staticmethod
-    def filter_attribute_samples_by_content(freezed_indices):
+    def filter_training_samples_by_content(indexed_training_samples):
         """
         Currently, none existent attribute samples are None which leads to an error
         in spaCy and are therefore set as empty strings by Rasa. Since third-party
         libraries relying on spaCy might have problems with Doc-objects created on empty
         strings, we further treat them separately.
 
-        :param freezed_indices:
+        :param indexed_training_samples:
         :return:
         """
 
-        docs_to_pipe = list(filter(lambda training_sample: training_sample[1] != "", freezed_indices))
-        empty_docs = list(filter(lambda training_sample: training_sample[1] == "", freezed_indices))
+        docs_to_pipe = list(filter(lambda training_sample: training_sample[1] != "", indexed_training_samples))
+        empty_docs = list(filter(lambda training_sample: training_sample[1] == "", indexed_training_samples))
         return docs_to_pipe, empty_docs
 
-    def process_content_bearing_docs(self, docs_to_pipe):
+    def process_content_bearing_samples(self, samples_to_pipe):
         """
         To preserve the order of the training samples, we send the non-empty samples to
         pipe and then simply update their original/index tuple.
 
-        :param docs_to_pipe:
+        :param samples_to_pipe:
         :return:
         """
         docs = [
-            (docs_to_pipe_sample[0], doc)
-            for docs_to_pipe_sample, doc in zip(
-                docs_to_pipe,
+            (to_pipe_sample[0], doc)
+            for to_pipe_sample, doc in zip(
+                samples_to_pipe,
                 [
                     doc
                     for doc in self.nlp.pipe(
-                    [txt for _, txt in docs_to_pipe], batch_size=50
+                    [txt for _, txt in samples_to_pipe], batch_size=50
                 )
                 ],
             )
         ]
         return docs
 
-    def process_non_content_bearing_docs(self, empty_docs):
+    def process_non_content_bearing_samples(self, empty_samples):
         """
         To avoid creating a Doc-object by parsing an empty string, we instantiate it directly
         via spaCy's API for every empty attribute sample and update its original/index tuple.
 
-        :param empty_docs:
+        :param empty_samples:
         :return:
         """
         n_docs = [
-            (empty_docs_sample[0], doc)
-            for empty_docs_sample, doc in zip(
-                empty_docs, [Doc(self.nlp.vocab) for doc in empty_docs]
+            (empty_sample[0], doc)
+            for empty_sample, doc in zip(
+                empty_samples, [Doc(self.nlp.vocab) for doc in empty_samples]
             )
         ]
         return n_docs
+
+    @staticmethod
+    def check_non_content_bearing_sample_order(empty_samples, attribute_document_list):
+        """
+        Since we freezed indices and know the non-content-bearing-sample positions, we can
+        check their order and type after the modificationby:
+            a. ensure that for every x in (x, "") we afterwards have (x, Doc)
+            b. ensure that for every Doc in (x, Doc) the token count is zero
+
+        :param empty_samples:
+        :param attribute_document_list:
+        :return:
+        """
+        preserved_order_and_type = True
+        attribute_document_list_as_dict = dict(attribute_document_list)
+        for sample_index, _ in empty_samples:
+            if not isinstance(attribute_document_list_as_dict[sample_index], Doc) \
+                    or len(attribute_document_list_as_dict[sample_index]) != 0:
+                preserved_order_and_type = False
+        return preserved_order_and_type
 
     def docs_for_training_data(
         self, training_data: TrainingData
@@ -207,17 +227,19 @@ class SpacyNLP(Component):
             texts = [self.get_text(e, attribute) for e in training_data.intent_examples]
             # Index and freeze indices of the training samples for preserving the order
             # after processing the data.
-            freezed_indices = [(idx, text) for idx, text in enumerate(texts)]
+            indexed_training_samples = [(idx, text) for idx, text in enumerate(texts)]
 
-            docs_to_pipe, empty_docs = self.filter_attribute_samples_by_content(freezed_indices)
+            samples_to_pipe, empty_samples = self.filter_training_samples_by_content(indexed_training_samples)
 
-            docs = self.process_content_bearing_docs(docs_to_pipe)
+            content_bearing_docs = self.process_content_bearing_samples(samples_to_pipe)
 
-            n_docs = self.process_non_content_bearing_docs(empty_docs)
+            non_content_bearing_docs = self.process_non_content_bearing_samples(empty_samples)
 
             attribute_document_list = self.merge_content_lists(
-                freezed_indices, docs + n_docs
+                indexed_training_samples, content_bearing_docs + non_content_bearing_docs
             )
+
+            assert self.check_non_content_bearing_sample_order(empty_samples, attribute_document_list)
 
             # Since we only need the training samples strings, we create a list to get them out
             # of the tuple.
