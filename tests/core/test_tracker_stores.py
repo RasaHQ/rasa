@@ -15,7 +15,7 @@ from rasa.core.tracker_store import (
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
-domain = Domain.load("../../data/test_domains/default.yml")
+domain = Domain.load("data/test_domains/default.yml")
 
 
 def test_get_or_create():
@@ -37,8 +37,8 @@ def test_get_or_create():
 def test_dynamo_get_or_create():
     slot_key = "location"
     slot_val = "Easter Island"
-
     store = DynamoTrackerStore(domain)
+
     tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
@@ -47,7 +47,6 @@ def test_dynamo_get_or_create():
     store.save(tracker)
 
     again = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
-    print(again.slots)
     assert again.get_slot(slot_key) == slot_val
 
 
