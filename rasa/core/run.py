@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import shutil
 from functools import partial
 from typing import List, Optional, Text, Union
@@ -192,7 +193,12 @@ def serve_application(
 
     update_sanic_log_level(log_file)
 
-    app.run(host="0.0.0.0", port=port, ssl=ssl_context)
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        ssl=ssl_context,
+        backlog=int(os.environ.get("SANIC_BACKLOG", "100")),
+    )
 
 
 # noinspection PyUnusedLocal
