@@ -5,6 +5,7 @@ import logging
 import re
 import sys
 from asyncio import Future
+from decimal import Decimal
 from hashlib import md5, sha1
 from io import StringIO
 from pathlib import Path
@@ -457,3 +458,27 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
             )
 
     return handler
+
+
+def replace_floats_with_decimals(obj: Union[List, Dict]) -> Union[List, Dict]:
+    """
+    Utility method to recursively walk a dictionary or list converting all `float` to `Decimal` as required by DynamoDb.
+
+    Args:
+        obj: A `List` or `Dict` object.
+
+    Returns: An object with all matching values and `float` type replaced by `Decimal`.
+
+    """
+    if isinstance(obj, list):
+        for i in range(len(obj)):
+            obj[i] = replace_floats_with_decimals(obj[i])
+        return obj
+    elif isinstance(obj, dict):
+        for j in obj:
+            obj[j] = replace_floats_with_decimals(obj[j])
+        return obj
+    elif isinstance(obj, float):
+        return Decimal(obj)
+    else:
+        return obj

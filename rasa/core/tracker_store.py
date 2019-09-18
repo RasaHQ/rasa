@@ -5,8 +5,7 @@ import os
 import pickle
 import typing
 from datetime import datetime, timezone
-from decimal import Decimal
-from typing import Iterator, Optional, Text, Iterable, Union, Dict, List
+from typing import Iterator, Optional, Text, Iterable, Union, Dict
 import itertools
 
 # noinspection PyPep8Naming
@@ -19,6 +18,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
+from rasa.core.utils import replace_floats_with_decimals
 from rasa.utils.common import class_from_module_path
 
 if typing.TYPE_CHECKING:
@@ -300,35 +300,11 @@ class DynamoTrackerStore(TrackerStore):
             self.stream_events(tracker)
         self.db.put_item(Item=self.serialise_tracker(tracker))
 
-    @staticmethod
-    def replace_floats(obj: Union[List, Dict]) -> Union[List, Dict]:
-        """
-        Utility method to recursively walk an object converting all `float` to `Decimal` as required by DynamoDb.
-
-        Args:
-            obj: A `List` or `Dict` object.
-
-        Returns: An object with all matching values and `float` type replaced by `Decimal`.
-
-        """
-        if isinstance(obj, list):
-            for i in range(len(obj)):
-                obj[i] = DynamoTrackerStore.replace_floats(obj[i])
-            return obj
-        elif isinstance(obj, dict):
-            for j in obj:
-                obj[j] = DynamoTrackerStore.replace_floats(obj[j])
-            return obj
-        elif isinstance(obj, float):
-            return Decimal(obj)
-        else:
-            return obj
-
     def serialise_tracker(self, tracker) -> Dict:
         """Serializes the tracker, returns object with decimal types"""
         d = tracker.as_dialogue().as_dict()
         d.update({"sender_id": tracker.sender_id, "session_date": int(datetime.now(tz=timezone.utc).timestamp())})
-        return DynamoTrackerStore.replace_floats(d)
+        return replace_floats_with_decimals(d)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
