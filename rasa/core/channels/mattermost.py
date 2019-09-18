@@ -55,6 +55,21 @@ class MattermostBot(MattermostAPI, OutputChannel):
         json_message.setdefault("message", "")
         self.post("/posts", json_message)
 
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
+        """Sends an image. """
+        image_url = image
+
+        props = {"attachments": []}
+        props["attachments"].append(image_url)
+
+        json_message = {}
+        json_message.setdefault("channel_id", self.bot_channel)
+        json_message.setdefault("props", props)
+
+        self.post("/posts", json_message)
+
     async def send_text_with_buttons(
         self,
         recipient_id: Text,
@@ -145,14 +160,15 @@ class MattermostInput(InputChannel):
             if not output:
                 return response.text("")
 
+            sender_id = output["user_id"]
+            self.bot_channel = output["channel_id"]
+                
             # handle normal message with trigger_word
             if "trigger_word" in output:
                 # splitting to get rid of the @botmention
                 # trigger we are using for this
                 text = output["text"].split(" ", 1)
                 text = text[1]
-                sender_id = output["user_id"]
-                self.bot_channel = output["channel_id"]
                 try:
                     out_channel = MattermostBot(
                         self.url,
@@ -176,8 +192,6 @@ class MattermostInput(InputChannel):
             # handle context actions from buttons
             elif "context" in output:
                 action = output["context"]["action"]
-                sender_id = output["user_id"]
-                self.bot_channel = output["channel_id"]
                 try:
                     out_channel = MattermostBot(
                         self.url,
