@@ -259,6 +259,41 @@ class EmbeddingIntentClassifier(Component):
                 return ex
         return None
 
+    @staticmethod
+    def _check_labels_features_exist(
+        labels_example: List[Tuple[int, "Message"]], attribute_feature_name: Text
+    ) -> bool:
+        """Check if all labels have features set"""
+        for (label_idx, label_example) in labels_example:
+            if label_example.get(attribute_feature_name) is None:
+                return False
+        return True
+
+    @staticmethod
+    def _extract_labels_precomputed_features(
+        label_examples: List[Tuple[int, "Message"]], attribute_feature_name: Text
+    ) -> np.ndarray:
+
+        # Collect precomputed encodings
+        encoded_id_labels = [
+            (label_idx, label_example.get(attribute_feature_name))
+            for (label_idx, label_example) in label_examples
+        ]
+
+        # Sort the list of tuples based on label_idx
+        encoded_id_labels = sorted(encoded_id_labels, key=lambda x: x[0])
+
+        encoded_all_labels = [encoding for (index, encoding) in encoded_id_labels]
+
+        return np.array(encoded_all_labels)
+
+    def _compute_default_label_features(
+        self, labels_example: List[Tuple[int, "Message"]]
+    ) -> np.ndarray:
+        """Compute one-hot representation for the labels"""
+
+        return np.eye(len(labels_example))
+
     def _create_encoded_label_ids(
         self,
         training_data: "TrainingData",
@@ -266,25 +301,28 @@ class EmbeddingIntentClassifier(Component):
         attribute: Text,
         attribute_feature_name: Text,
     ) -> np.ndarray:
-        """Create matrix with label_ids encoded in rows as bag of words. The features are already computed.
+        """Create matrix with label_ids encoded in rows as bag of words. If the features are already computed, fetch
+        them from the message object else compute a one hot encoding for the label as the feature vector
         Find a training example for each label and get the encoded features from the corresponding Message object"""
 
-        encoded_id_labels = []
+        labels_example = []
 
+        # Collect one example for each label
         for label_name, idx in label_id_dict.items():
             label_example = self._find_example_for_label(
                 label_name, training_data.intent_examples, attribute
             )
-            if label_example:
-                encoded_id_labels.append(
-                    (idx, label_example.get(attribute_feature_name))
-                )
+            labels_example.append((idx, label_example))
 
-        encoded_id_labels = sorted(encoded_id_labels, key=lambda x: x[0])
+        # Collect features, precomputed if they exist, else compute on the fly
+        if self._check_labels_features_exist(labels_example, attribute_feature_name):
+            encoded_id_labels = self._extract_labels_precomputed_features(
+                labels_example, attribute_feature_name
+            )
+        else:
+            encoded_id_labels = self._compute_default_label_features(labels_example)
 
-        encoded_all_labels = [encoding for (index, encoding) in encoded_id_labels]
-
-        return np.array(encoded_all_labels)
+        return encoded_id_labels
 
     # noinspection PyPep8Naming
     def _create_session_data(
