@@ -280,17 +280,17 @@ class CountVectorsSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer, Cou
                             all_text.add(state_name[len("intent_"):])
         all_text = list(all_text)
 
-        all_response = set()
-        for actions in trackers_as_actions:
-            for action in actions:
-                all_response.add(action)
-        all_response = sorted(list(all_response))
+        # all_response = set()
+        # for actions in trackers_as_actions:
+        #     for action in actions:
+        #         all_response.add(action)
+        # all_response = sorted(list(all_response))
 
-        domain.user_actions = all_response
-        domain.action_names = (
-                combine_user_with_default_actions(all_response) + domain.form_names
-        )
-        self.bot_labels = domain.action_names
+        # domain.user_actions = all_response
+        # domain.action_names = (
+        #         combine_user_with_default_actions(all_response) + domain.form_names
+        # )
+        # self.bot_labels = domain.action_names
 
         processed_attribute_texts = {MESSAGE_TEXT_ATTRIBUTE: all_text,
                                      MESSAGE_INTENT_ATTRIBUTE: [],
