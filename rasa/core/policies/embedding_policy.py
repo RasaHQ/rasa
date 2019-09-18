@@ -41,6 +41,7 @@ class EmbeddingPolicy(Policy):
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
+        "type": "transformer",  # "lstm"
         # nn architecture
         # a list of hidden layers sizes before user embed layer
         # number of hidden layers is equal to the length of this list
@@ -165,6 +166,7 @@ class EmbeddingPolicy(Policy):
 
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
+        self.type = config["type"]
         self.hidden_layers_sizes = {
             "pre_dial": config["hidden_layers_sizes_pre_dial"],
             "bot": config["hidden_layers_sizes_bot"],
@@ -307,19 +309,29 @@ class EmbeddingPolicy(Policy):
         )
 
         self.attention_weights = {}
-        hparams = train_utils.create_t2t_hparams(
-            self.num_transformer_layers,
-            self.transformer_size,
-            self.num_heads,
-            self.droprate["dial"],
-            self.pos_encoding,
-            self.max_seq_length,
-            self._is_training,
-        )
+        if self.type == "transformer":
+            hparams = train_utils.create_t2t_hparams(
+                self.num_transformer_layers,
+                self.transformer_size,
+                self.num_heads,
+                self.droprate["dial"],
+                self.pos_encoding,
+                self.max_seq_length,
+                self._is_training,
+            )
 
-        a = train_utils.create_t2t_transformer_encoder(
-            a, mask, self.attention_weights, hparams, self.C2, self._is_training
-        )
+            a = train_utils.create_t2t_transformer_encoder(
+                a, mask, self.attention_weights, hparams, self.C2, self._is_training
+            )
+        elif self.type == "lstm":
+            a = tf.transpose(a, [1, 0, 2])
+            cell = tf.contrib.rnn.LSTMBlockFusedCell(self.transformer_size,
+                                                     reuse=tf.AUTO_REUSE,
+                                                     name='lstm')
+            a, _ = cell(a, dtype=tf.float32)
+            a = tf.transpose(a, [1, 0, 2])
+        else:
+            raise
 
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
             # pick last label if max history featurizer is used
