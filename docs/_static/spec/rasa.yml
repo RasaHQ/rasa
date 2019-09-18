@@ -1224,10 +1224,6 @@ components:
           $ref: '#/components/schemas/NLUTrainingData'
         stories:
           $ref: '#/components/schemas/StoriesTrainingData'
-        out:
-          type: string
-          description: Output directory
-          example: models
         force:
           type: boolean
           description: >-

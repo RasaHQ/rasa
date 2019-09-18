@@ -16,6 +16,12 @@ Changed
 - models trained with ``POST /model/train`` now get saved in a temporary directory by
   default (instead of the ``models`` directory)
 
+Removed
+-------
+- the endpoint ``POST /model/train`` no longer supports specifying an output directory
+  for the trained model
+
+
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
 
