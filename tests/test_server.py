@@ -126,6 +126,16 @@ def test_status_not_ready_agent(rasa_app: SanicTestClient):
     assert response.status == 409
 
 
+@pytest.fixture
+def formbot_data():
+    return dict(
+        domain="examples/formbot/domain.yml",
+        config="examples/formbot/config.yml",
+        stories="examples/formbot/data/stories.md",
+        nlu="examples/formbot/data/nlu.md",
+    )
+
+
 def test_train_status(rasa_server, rasa_app, formbot_data):
     with ExitStack() as stack:
         payload = {
@@ -361,16 +371,6 @@ def test_train_internal_error(rasa_app: SanicTestClient):
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 500
-
-
-@pytest.fixture
-def formbot_data():
-    return dict(
-        domain="examples/formbot/domain.yml",
-        config="examples/formbot/config.yml",
-        stories="examples/formbot/data/stories.md",
-        nlu="examples/formbot/data/nlu.md",
-    )
 
 
 def test_evaluate_stories(rasa_app, default_stories_file):
