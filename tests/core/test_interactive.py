@@ -11,6 +11,7 @@ from rasa.core.actions.action import default_actions
 from rasa.core.domain import Domain
 from rasa.nlu.training_data import Message
 from tests.utilities import latest_request, json_of_latest_request
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture
@@ -332,13 +333,13 @@ async def test_filter_intents_before_save_nlu_file(mock_endpoint):
     greet = {"intent": "greet", "text_features": [0.5]}
     goodbye = {"intent": "goodbye", "text_features": [0.5]}
     test_msgs = [Message("How are you?", greet), Message("I am inevitable", goodbye)]
-    serialised_domain = None
-    url = "{}/domain".format(mock_endpoint.url)
-    with aioresponses() as mocked:
-        mocked.get(url, payload={})
-        serialised_domain = await interactive.retrieve_domain(mock_endpoint)
 
-    intents = interactive._retrieve_intents_from_domain(serialised_domain)
-    msgs = test_msgs.append(Message(choice(intents), greet)) if intents else test_msgs
+    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    domain = Domain.load(domain_file)
+    intents = domain.intents
+
+    msgs = test_msgs.copy()
+    if intents:
+        msgs.append(Message("/" + choice(intents), greet))
 
     assert test_msgs == interactive._remove_intent_payload_input(msgs, intents)
