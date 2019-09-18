@@ -12,6 +12,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Sanitizing incoming messages from slack to remove the superfluous words like <mailto:xyz@rasa.com|xyz@rasa.com> 
+  or '<http://url.com|url.com> and substitute it with original content 
 
 Changed
 -------
