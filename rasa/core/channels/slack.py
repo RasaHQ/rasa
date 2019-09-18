@@ -182,10 +182,13 @@ class SlackInput(InputChannel):
         """Remove superfluous/wrong/problematic tokens from a message.
         Probably a good starting point for pre-formatting of user-provided text
         to make NLU's life easier in case they go funky to the power of extreme
+
         In the current state will just drop self-mentions of bot itself
+
         Args:
             text: raw message as sent from slack
             uids_to_remove: a list of user ids to remove from the content
+
         Returns:
             str: parsed and cleaned version of the input text
         """
