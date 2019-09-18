@@ -179,7 +179,7 @@ class InMemoryTrackerStore(TrackerStore):
         """
         Args:
             sender_id: the message owner ID
-        
+
         Returns:
             DialogueStateTracker
         """
@@ -230,7 +230,7 @@ class RedisTrackerStore(TrackerStore):
         """
         Args:
             sender_id: the message owner ID
-        
+
         Returns:
             DialogueStateTracker
         """
@@ -310,7 +310,7 @@ class DynamoTrackerStore(TrackerStore):
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
-        
+
         # Retrieve dialogues for a sender_id in reverse chronological order based on the session_date sort key
         dialogues = self.db.query(KeyConditionExpression=Key('sender_id').eq(sender_id),
                                   Limit=1,
