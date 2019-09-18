@@ -7,11 +7,21 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.4]
+[Unreleased 1.3.5]
 ^^^^^^^^^^^^^^^^^^
 Fixed
 -----
 - re-added TLS, SRV dependencies for PyMongo
+
+[1.3.4] - 2019-09-14
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added the ability to set the ``backlog`` parameter in Sanics ``run()`` method using
+  the ``SANIC_BACKLOG`` environment variable. This parameter sets the
+  number of unaccepted connections the server allows before refusing new
+  connections. A default value of 100 is used if the variable is not set.
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
@@ -22,6 +32,7 @@ Fixed
 - Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
 - Policy ensemble no longer incorrectly wrings "missing mapping policy" when
   mapping policy is present.
+- "test" from ``utter_custom_json`` now correctly saved to tracker when using telegram channel
 
 Removed
 -------

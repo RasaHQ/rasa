@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 
 from sanic import Sanic, response
 
@@ -70,7 +71,12 @@ def run_server(domain, port, workers):
 
         return response.json(bot_response)
 
-    app.run(host="0.0.0.0", port=port, workers=workers)
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        workers=workers,
+        backlog=int(os.environ.get("SANIC_BACKLOG", "100")),
+    )
 
 
 if __name__ == "__main__":
