@@ -1,7 +1,7 @@
 import logging
 import re
 import typing
-from typing import Any, Text
+from typing import Any, Text, Optional, Tuple, List, Dict, Pattern
 
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -37,10 +37,8 @@ ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 ESCAPE = re.compile(r"[\b\f\n\r\t]")
 
 
-def encode_string(s):
-    """Return a encoded python string
-
-    """
+def encode_string(s: Text) -> Text:
+    """Return a encoded python string"""
 
     def replace(match):
         return ESCAPE_DCT[match.group(0)]
@@ -55,13 +53,13 @@ class MarkdownReader(TrainingDataReader):
     """Reads markdown training data and creates a TrainingData object."""
 
     def __init__(self) -> None:
-        self.current_title = None
-        self.current_section = None
-        self.training_examples = []
-        self.entity_synonyms = {}
-        self.regex_features = []
+        self.current_title: Optional[Text] = None
+        self.current_section: Optional[Text] = None
+        self.training_examples: List[Message] = []
+        self.entity_synonyms: Dict[Text, Text] = {}
+        self.regex_features: List[Dict] = []
         self.section_regexes = self._create_section_regexes(available_sections)
-        self.lookup_tables = []
+        self.lookup_tables: List[Dict] = []
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
@@ -90,22 +88,28 @@ class MarkdownReader(TrainingDataReader):
         return re.sub(comment_regex, "", text)
 
     @staticmethod
-    def _create_section_regexes(section_names):
-        def make_regex(section_name):
+    def _create_section_regexes(section_names: List[Text]) -> Dict[Text, Pattern]:
+        def make_regex(section_name: Text) -> Pattern:
             return re.compile(r"##\s*{}:(.+)".format(section_name))
 
         return {sn: make_regex(sn) for sn in section_names}
 
-    def _find_section_header(self, line):
+    def _find_section_header(self, line: Text) -> Optional[Tuple[Text, Text]]:
         """Checks if the current line contains a section header
         and returns the section and the title."""
         for name, regex in self.section_regexes.items():
             match = re.search(regex, line)
             if match is not None:
                 return name, match.group(1)
+
+        # check if unknown section header was used
+        match = re.search(r"##\s*(.+):(.+)", line)
+        if match is not None:
+            return match.group(1), match.group(2)
+
         return None
 
-    def _load_files(self, line):
+    def _load_files(self, line: Text) -> None:
         """Checks line to see if filename was supplied.  If so, inserts the
         filename into the lookup table slot for processing from the regex
         featurizer."""
@@ -117,7 +121,7 @@ class MarkdownReader(TrainingDataReader):
                     {"name": self.current_title, "elements": str(fname)}
                 )
 
-    def _parse_item(self, line):
+    def _parse_item(self, line: Text) -> None:
         """Parses an md list item line based on the current section type."""
         match = re.match(item_regex, line)
         if match:
@@ -134,7 +138,7 @@ class MarkdownReader(TrainingDataReader):
             elif self.current_section == LOOKUP:
                 self._add_item_to_lookup(item)
 
-    def _add_item_to_lookup(self, item):
+    def _add_item_to_lookup(self, item: Text) -> None:
         """Takes a list of lookup table dictionaries.  Finds the one associated
         with the current lookup, then adds the item to the list."""
         matches = [l for l in self.lookup_tables if l["name"] == self.current_title]
@@ -145,7 +149,7 @@ class MarkdownReader(TrainingDataReader):
             elements.append(item)
 
     @staticmethod
-    def _find_entities_in_training_example(example):
+    def _find_entities_in_training_example(example: Text) -> List[Dict]:
         """Extracts entities from a markdown intent example."""
         entities = []
         offset = 0
@@ -166,20 +170,20 @@ class MarkdownReader(TrainingDataReader):
 
         return entities
 
-    def _add_synonym(self, text, value):
+    def _add_synonym(self, text: Text, value: Text) -> None:
         from rasa.nlu.training_data.util import check_duplicate_synonym
 
         check_duplicate_synonym(self.entity_synonyms, text, value, "reading markdown")
         self.entity_synonyms[text] = value
 
-    def _add_synonyms(self, plain_text, entities):
+    def _add_synonyms(self, plain_text: Text, entities: List[Dict]) -> None:
         """Adds synonyms found in intent examples"""
         for e in entities:
             e_text = plain_text[e["start"] : e["end"]]
             if e_text != e["value"]:
                 self._add_synonym(e_text, e["value"])
 
-    def _parse_training_example(self, example):
+    def _parse_training_example(self, example: Text) -> Message:
         """Extract entities and synonyms, and convert to plain text."""
         from rasa.nlu.training_data import Message
 
@@ -193,13 +197,13 @@ class MarkdownReader(TrainingDataReader):
             message.set("entities", entities)
         return message
 
-    def _set_current_section(self, section, title):
+    def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""
         if section not in available_sections:
             raise ValueError(
-                "Found markdown section {} which is not "
-                "in the allowed sections {},"
-                "".format(section, ",".join(available_sections))
+                "Found markdown section '{}' which is not "
+                "in the allowed sections '{}'."
+                "".format(section, "', '".join(available_sections))
             )
 
         self.current_section = section
