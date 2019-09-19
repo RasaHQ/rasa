@@ -98,9 +98,9 @@ paths:
                     type: string
                     description: Path of the loaded model
                     example: 20190429-103105.tar.gz
-                  n_training_jobs:
+                  num_active_training_jobs:
                     type: integer
-                    description: Number of actively running training processes
+                    description: Number of running training processes
                     example: 2
         401:
           $ref: '#/components/responses/401NotAuthenticated'
