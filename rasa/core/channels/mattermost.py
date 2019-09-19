@@ -2,7 +2,7 @@ import logging
 from mattermostwrapper import MattermostAPI
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, Dict, Any, List
+from typing import Text, Dict, Any, List, Callable, Awaitable
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -62,7 +62,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
         image_url = image
 
         props = {"attachments": []}
-        props["attachments"].append(image_url)
+        props["attachments"].append({"image_url": image_url})
 
         json_message = {}
         json_message.setdefault("channel_id", self.bot_channel)
@@ -146,7 +146,67 @@ class MattermostInput(InputChannel):
         self.pw = pw
         self.webhook_url = webhook_url
 
-    def blueprint(self, on_new_message):
+    async def message_with_trigger_word(
+        self,
+        on_new_message: Callable[[UserMessage], Awaitable[None]],
+        output: Dict[Text, Any],
+    ) -> None:
+        # splitting to get rid of the @botmention
+        # trigger we are using for this
+        text = output["text"].split(" ", 1)
+        text = text[1]
+
+        sender_id = output["user_id"]
+        self.bot_channel = output["channel_id"]
+
+        try:
+            out_channel = MattermostBot(
+                self.url,
+                self.team,
+                self.user,
+                self.pw,
+                self.bot_channel,
+                self.webhook_url,
+            )
+            user_msg = UserMessage(
+                text, out_channel, sender_id, input_channel=self.name()
+            )
+            await on_new_message(user_msg)
+        except Exception as e:
+            logger.error("Exception when trying to handle message.{0}".format(e))
+            logger.debug(e, exc_info=True)
+            pass
+
+    async def action_from_button(
+        self,
+        on_new_message: Callable[[UserMessage], Awaitable[None]],
+        output: Dict[Text, Any],
+    ) -> None:
+        # get the action, the buttons triggers
+        action = output["context"]["action"]
+
+        sender_id = output["user_id"]
+        self.bot_channel = output["channel_id"]
+
+        try:
+            out_channel = MattermostBot(
+                self.url,
+                self.team,
+                self.user,
+                self.pw,
+                self.bot_channel,
+                self.webhook_url,
+            )
+            context_action = UserMessage(
+                action, out_channel, sender_id, input_channel=self.name()
+            )
+            await on_new_message(context_action)
+        except Exception as e:
+            logger.error("Exception when trying to handle message.{0}".format(e))
+            logger.debug(e, exc_info=True)
+            pass
+
+    def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[None]]):
         mattermost_webhook = Blueprint("mattermost_webhook", __name__)
 
         @mattermost_webhook.route("/", methods=["GET"])
@@ -162,54 +222,15 @@ class MattermostInput(InputChannel):
 
             sender_id = output["user_id"]
             self.bot_channel = output["channel_id"]
-                
+
             # handle normal message with trigger_word
             if "trigger_word" in output:
-                # splitting to get rid of the @botmention
-                # trigger we are using for this
-                text = output["text"].split(" ", 1)
-                text = text[1]
-                try:
-                    out_channel = MattermostBot(
-                        self.url,
-                        self.team,
-                        self.user,
-                        self.pw,
-                        self.bot_channel,
-                        self.webhook_url,
-                    )
-                    user_msg = UserMessage(
-                        text, out_channel, sender_id, input_channel=self.name()
-                    )
-                    await on_new_message(user_msg)
-                except Exception as e:
-                    logger.error(
-                        "Exception when trying to handle message.{0}".format(e)
-                    )
-                    logger.debug(e, exc_info=True)
-                    pass
+                await self.message_with_trigger_word(on_new_message, output)
 
             # handle context actions from buttons
             elif "context" in output:
-                action = output["context"]["action"]
-                try:
-                    out_channel = MattermostBot(
-                        self.url,
-                        self.team,
-                        self.user,
-                        self.pw,
-                        self.bot_channel,
-                        self.webhook_url,
-                    )
-                    context_action = UserMessage(
-                        action, out_channel, sender_id, input_channel=self.name()
-                    )
-                    await on_new_message(context_action)
-                except Exception as e:
-                    logger.error(
-                        "Exception when trying to handle message.{0}".format(e)
-                    )
-                    logger.debug(e, exc_info=True)
-                    pass
+                await self.action_from_button(on_new_message, output)
+
+            return response.text("success")
 
         return mattermost_webhook
