@@ -77,6 +77,7 @@ Fixed
 - fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
 - fixed Interactive Learning intent payload messages saving in nlu files
 - fixed DucklingHTTPExtractor dimensions by actually applying to the request
+- fixed random_seed does not work when using MultiProjectImporter
 
 
 [1.3.10] - 2019-10-18
