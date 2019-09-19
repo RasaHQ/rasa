@@ -143,7 +143,7 @@ class SpacyNLP(Component):
     @staticmethod
     def filter_training_samples_by_content(
         indexed_training_samples: List[Tuple[int, Text]]
-    ) -> Tuple[Any, Any]:
+    ) -> Tuple[List[int, Text], List[int, Text]]:
         """Separates empty training samples from content bearing ones."""
 
         docs_to_pipe = list(
