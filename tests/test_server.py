@@ -160,12 +160,16 @@ def test_train_status(rasa_server, rasa_app, formbot_data):
         time.sleep(1)
         _, status_resp = rasa_app.get("/status")
         assert status_resp.status == 200
-        if status_resp.json["n_training_jobs"] == 1:
+        if status_resp.json["num_training_jobs"] == 1:
             break
-    assert status_resp.json["n_training_jobs"] == 1
+    assert status_resp.json["num_training_jobs"] == 1
 
     p1.join()
     assert results["train_response_code"] == 200
+
+    _, status_resp = rasa_app.get("/status")
+    assert status_resp.status == 200
+    assert status_resp.json["num_training_jobs"] == 0
 
 
 @pytest.mark.parametrize(
