@@ -15,6 +15,7 @@ Added
 
 Changed
 -------
+- Unknown sections in markdown format (NLU data) are not ignored anymore, but instead an error is raised.
 
 Removed
 -------
