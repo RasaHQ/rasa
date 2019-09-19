@@ -1,6 +1,8 @@
 import argparse
 import logging
 
+import errorhandler
+
 import rasa.utils.io
 
 from rasa import version
@@ -10,6 +12,7 @@ from rasa.cli.utils import parse_last_positional_argument_as_model_path
 from rasa.utils.common import set_log_level
 
 logger = logging.getLogger(__name__)
+error_handler = errorhandler.ErrorHandler()
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -74,6 +77,8 @@ def main() -> None:
     if hasattr(cmdline_arguments, "func"):
         rasa.utils.io.configure_colored_logging(log_level)
         cmdline_arguments.func(cmdline_arguments)
+        if error_handler.fired:
+            exit(1)
     elif hasattr(cmdline_arguments, "version"):
         print_version()
     else:
