@@ -99,8 +99,8 @@ This is a key difference to the response templates in your domain file.
     components of NLU.
 
 .. note::
-    ``/`` symbol is reserved as a delimiter to separate retrieval intents from a response identifier. Make sure not to
-    use it as part of the name of your intents.
+    As shown in the above examples, ``/`` symbol is reserved as a delimiter to separate retrieval intents from response text identifier. Make sure not to
+    use it in the name of your intents.
 
 Config File
 ^^^^^^^^^^^
