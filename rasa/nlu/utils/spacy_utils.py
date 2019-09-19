@@ -138,12 +138,12 @@ class SpacyNLP(Component):
 
         dct = dict(indexed_training_samples)
         dct.update(dict(doc_lists))
-        return list(sorted(dct.items()))
+        return sorted(dct.items())
 
     @staticmethod
     def filter_training_samples_by_content(
         indexed_training_samples: List[Tuple[int, Text]]
-    ) -> Tuple[List[Tuple[int, str]], List[Tuple[int, str]]]:
+    ) -> Tuple[List[Tuple[int, Text]], List[Tuple[int, Text]]]:
         """Separates empty training samples from content bearing ones."""
 
         docs_to_pipe = list(
