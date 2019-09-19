@@ -109,7 +109,7 @@ class RegexFeaturizer(Featurizer):
         else:
 
             try:
-                f = open(lookup_elements, "r", encoding="utf-8")
+                f = io.open(lookup_elements, "r", encoding="utf-8")
             except IOError:
                 raise ValueError(
                     "Could not load lookup table {}"
