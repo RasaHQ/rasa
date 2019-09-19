@@ -22,6 +22,8 @@ from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.train import train_async
+from rasa.constants import DEFAULT_MODELS_PATH
+
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
@@ -57,6 +59,8 @@ EXAMPLE_DOMAINS = [
     "examples/moodbot/domain.yml",
     "examples/restaurantbot/domain.yml",
 ]
+
+DEFAULT_TESTS_MODELS_PATH = os.path.join(DEFAULT_MODELS_PATH, 'tests')
 
 
 class CustomSlot(Slot):
@@ -164,11 +168,15 @@ def moodbot_metadata(unpacked_trained_moodbot_path):
 
 @pytest.fixture()
 async def trained_stack_model(
-    default_domain_path, default_stack_config, default_nlu_data, default_stories_file
+    request, default_domain_path, default_stack_config, default_nlu_data, default_stories_file
 ):
+
+    model_folder = os.path.join(DEFAULT_TESTS_MODELS_PATH, request.node.name)
+
     trained_stack_model_path = await train_async(
         domain=default_domain_path,
         config=default_stack_config,
+        output_path=model_folder,
         training_files=[default_nlu_data, default_stories_file],
     )
 
@@ -236,13 +244,19 @@ def trained_model(project) -> Text:
 
 
 @pytest.fixture
-async def restaurantbot(tmpdir_factory) -> Text:
+async def restaurantbot(request, tmpdir_factory) -> Text:
     model_path = tmpdir_factory.mktemp("model").strpath
     restaurant_domain = os.path.join(RESTAURANTBOT_PATH, "domain.yml")
     restaurant_config = os.path.join(RESTAURANTBOT_PATH, "config.yml")
     restaurant_data = os.path.join(RESTAURANTBOT_PATH, "data/")
 
+    model_folder = os.path.join(DEFAULT_TESTS_MODELS_PATH, request.node.name)
+
     agent = await train_async(
-        restaurant_domain, restaurant_config, restaurant_data, model_path
+        restaurant_domain,
+        restaurant_config,
+        restaurant_data,
+        model_path,
+        output_path=model_folder,
     )
     return agent

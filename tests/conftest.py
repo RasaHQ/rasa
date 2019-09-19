@@ -1,3 +1,4 @@
+import os
 import pytest
 import logging
 
@@ -11,10 +12,11 @@ from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.model import get_model
 from rasa.train import train_async
 from tests.core.conftest import (
-    DEFAULT_STORIES_FILE,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_STACK_CONFIG,
     DEFAULT_NLU_DATA,
+    DEFAULT_STACK_CONFIG,
+    DEFAULT_STORIES_FILE,
+    DEFAULT_TESTS_MODELS_PATH,
     END_TO_END_STORY_FILE,
     MOODBOT_MODEL_PATH,
 )
@@ -111,12 +113,16 @@ def default_config():
 
 @pytest.fixture()
 async def trained_rasa_model(
-    default_domain_path, default_config, default_nlu_data, default_stories_file
+    request, default_domain_path, default_config, default_nlu_data,
+    default_stories_file
 ):
-    clean_folder("models")
+    model_folder = os.path.join(DEFAULT_TESTS_MODELS_PATH, request.node.name)
+    clean_folder(model_folder)
+
     trained_stack_model_path = await train_async(
         domain="data/test_domains/default.yml",
         config=DEFAULT_STACK_CONFIG,
+        output_path=model_folder,
         training_files=[default_nlu_data, default_stories_file],
     )
 
@@ -125,12 +131,17 @@ async def trained_rasa_model(
 
 @pytest.fixture()
 async def trained_core_model(
-    default_domain_path, default_config, default_nlu_data, default_stories_file
+    request, default_domain_path, default_config, default_nlu_data,
+    default_stories_file
 ):
+    model_folder = os.path.join(DEFAULT_TESTS_MODELS_PATH, request.node.name)
+    clean_folder(model_folder)
+
     trained_core_model_path = await train_async(
         domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_stories_file],
+        output_path=model_folder,
     )
 
     return trained_core_model_path
@@ -138,12 +149,17 @@ async def trained_core_model(
 
 @pytest.fixture()
 async def trained_nlu_model(
-    default_domain_path, default_config, default_nlu_data, default_stories_file
+    request, default_domain_path, default_config, default_nlu_data,
+    default_stories_file
 ):
+    model_folder = os.path.join(DEFAULT_TESTS_MODELS_PATH, request.node.name)
+    clean_folder(model_folder)
+
     trained_nlu_model_path = await train_async(
         domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_nlu_data],
+        output_path=model_folder,
     )
 
     return trained_nlu_model_path
