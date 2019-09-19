@@ -77,7 +77,8 @@ entities (you can, however, change this behavior using the
 .. warning::
     ``/`` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers.
     Refer to ``Training Data Format`` section of :ref:`retrieval-actions` for more details on this format.
-    If any of the intent names contain the delimiter, the file containing these stories will be considered as a training file for :ref:`response-selector` model.
+    If any of the intent names contain the delimiter, the file containing these stories will be considered as a training
+    file for :ref:`response-selector` model and will be ignored for training Core models.
 
 Actions
 ~~~~~~~
