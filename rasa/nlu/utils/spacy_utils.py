@@ -161,7 +161,7 @@ class SpacyNLP(Component):
         return docs_to_pipe, empty_docs
 
     def process_content_bearing_samples(
-        self, samples_to_pipe: Tuple[Any, Any]
+        self, samples_to_pipe: List[int, Text]
     ) -> List[Any]:
         """Sends content bearing training samples to spaCy's pipe."""
 
