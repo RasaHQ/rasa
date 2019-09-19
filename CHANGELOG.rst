@@ -20,7 +20,7 @@ Added
 
 Changed
 -------
-- the endpoint ``POST /model/train`` no longer supports specifying an output directory
+- The endpoint ``POST /model/train`` no longer supports specifying an output directory
   for the trained model using the field ``out``. Instead you can choose whether you
   want to save the trained model in the default model directory (``models``) or in a
   temporary directory by specifying the ``save_to_default_model_directory`` field in
