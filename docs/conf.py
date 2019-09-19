@@ -340,9 +340,9 @@ scv_whitelist_tags = (
     re.compile(r"^[2-9]+\.\d+\.\d+$"),
     re.compile(r"^1\.[456789]+\.\d+$"),
     re.compile(r"^1\.3\.\d+$"),
-    "1.2.7",
-    "1.1.8",
-    "1.0.9",
+    re.compile("^1\.2\.9$"),
+    re.compile("^1\.1\.8$"),
+    re.compile("^1\.0\.9$"),
 )
 scv_greatest_tag = True
 
