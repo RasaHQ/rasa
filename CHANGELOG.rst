@@ -7,13 +7,6 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.4]
-^^^^^^^^^^^^^^^^^^
-
-Added
------
-- Status endpoint (``/status``) now also returns the number of training processes currently running
-
 [1.3.4] - 2019-09-19
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -23,10 +16,10 @@ Added
   the ``SANIC_BACKLOG`` environment variable. This parameter sets the
   number of unaccepted connections the server allows before refusing new
   connections. A default value of 100 is used if the variable is not set.
+- Status endpoint (``/status``) now also returns the number of training processes currently running
 
 Fixed
 -----
-
 - Added the ability to properly deal with spaCy ``Doc``-objects created on
   empty strings as discussed `here <https://github.com/RasaHQ/rasa/issues/4445>`_.
   Only training samples that actually bear content are sent to ``self.nlp.pipe``
