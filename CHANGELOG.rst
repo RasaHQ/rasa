@@ -22,6 +22,7 @@ Removed
 Fixed
 -----
 - fix missing ``tkinter`` dependency for running tests on Ubuntu
+- fix Interactive Learning intent payload messages saving in nlu files
 
 
 [1.3.3] - 2019-09-13
