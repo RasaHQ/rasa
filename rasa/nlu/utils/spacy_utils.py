@@ -133,7 +133,7 @@ class SpacyNLP(Component):
     @staticmethod
     def merge_content_lists(
         indexed_training_samples: List[Tuple[int, Text]], doc_lists: List[Tuple[int, "Doc"]]
-    ) -> List[Tuple[int,"Doc"]]:
+    ) -> List[Tuple[int, "Doc"]]:
         """Merge lists with processed Docs back into their original order."""
 
         dct = dict(indexed_training_samples)
