@@ -1,4 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+set -Eeuo pipefail
 
 if [[ ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     curl -X POST -H "Content-type: application/json" \
