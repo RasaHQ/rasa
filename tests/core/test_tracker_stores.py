@@ -1,6 +1,7 @@
 import tempfile
 
 import pytest
+from moto import mock_dynamodb2
 
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
@@ -38,6 +39,8 @@ def test_get_or_create():
     get_or_create_tracker_store(InMemoryTrackerStore(domain))
 
 
+# noinspection PyPep8Naming
+@mock_dynamodb2
 def test_dynamo_get_or_create():
     get_or_create_tracker_store(DynamoTrackerStore(domain))
 

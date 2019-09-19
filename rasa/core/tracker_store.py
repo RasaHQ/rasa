@@ -284,8 +284,9 @@ class DynamoTrackerStore(TrackerStore):
         self, table_name: Text
     ) -> "boto3.resources.factory.dynamodb.Table":
         """Returns table or creates one if the table name is not in the table list"""
+        dynamo = boto3.resource("dynamodb", region_name=self.region)
         if self.table_name not in self.client.list_tables()["TableNames"]:
-            table = boto3.resource("dynamodb", region_name=self.region).create_table(
+            table = dynamo.create_table(
                 TableName=self.table_name,
                 KeySchema=[
                     {"AttributeName": "sender_id", "KeyType": "HASH"},
@@ -300,8 +301,7 @@ class DynamoTrackerStore(TrackerStore):
 
             # Wait until the table exists.
             table.meta.client.get_waiter("table_exists").wait(TableName=table_name)
-        else:
-            return boto3.resource("dynamodb", region_name=self.region).Table(table_name)
+        return dynamo.Table(table_name)
 
     def save(self, tracker):
         """Saves the current conversation state"""
