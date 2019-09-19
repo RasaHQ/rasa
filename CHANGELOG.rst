@@ -24,7 +24,7 @@ Changed
   for the trained model using the field ``out``. Instead you can choose whether you
   want to save the trained model in the default model directory (``models``) or in a
   temporary directory by specifying the ``save_to_default_model_directory`` field in
-  the training request
+  the training request.
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
