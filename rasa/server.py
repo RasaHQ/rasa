@@ -665,7 +665,7 @@ def create_app(
             domain_path = os.path.join(temp_dir, "domain.yml")
             dump_obj_as_str_to_file(domain_path, rjs["domain"])
 
-        if rjs.get("save_to_default_model_directory", True):
+        if rjs.get("save_to_default_model_directory", True) is True:
             model_output_directory = DEFAULT_MODELS_PATH
         else:
             model_output_directory = tempfile.gettempdir()
