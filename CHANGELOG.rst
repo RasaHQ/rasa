@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- API endpoint to obtain the number of training processes currently running (``/model/train/status``)
+- Status endpoint (``/status``) now also returns the number of training processes currently running
 
 
 [1.3.3] - 2019-09-13
