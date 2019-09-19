@@ -1,7 +1,7 @@
 import logging
 import re
 import typing
-from typing import Any, Text, Optional, Tuple, List, Dict, Pattern
+from typing import Any, Text, Optional, Tuple, List, Dict
 
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -169,7 +169,7 @@ class MarkdownReader(TrainingDataReader):
             if e_text != e["value"]:
                 self._add_synonym(e_text, e["value"])
 
-    def _parse_training_example(self, example: Text) -> Message:
+    def _parse_training_example(self, example: Text) -> "Message":
         """Extract entities and synonyms, and convert to plain text."""
         from rasa.nlu.training_data import Message
 
