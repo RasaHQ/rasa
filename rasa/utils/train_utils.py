@@ -521,7 +521,10 @@ def sample_negatives(
         _tf_make_flat(a_embed), _tf_make_flat(b_raw), b_raw, num_neg
     )
 
-    neg_bot_embed, bot_bad_negs = _tf_get_negs(all_b_embed, all_b_raw, b_raw, num_neg)
+    # neg_bot_embed, bot_bad_negs = _tf_get_negs(all_b_embed, all_b_raw, b_raw, num_neg)
+    neg_bot_embed, bot_bad_negs = _tf_get_negs(
+        _tf_make_flat(b_embed), _tf_make_flat(b_raw), b_raw, num_neg
+    )
     return (
         tf.expand_dims(a_embed, -2),
         tf.expand_dims(b_embed, -2),
