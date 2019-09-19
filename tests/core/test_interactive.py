@@ -9,7 +9,9 @@ from rasa.core.training import interactive
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.actions.action import default_actions
 from rasa.core.domain import Domain
+from rasa.nlu.training_data import Message
 from tests.utilities import latest_request, json_of_latest_request
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture
@@ -322,3 +324,22 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
 
     for default_action in default_actions():
         assert default_action.name() not in saved_domain["actions"]
+
+
+async def test_filter_intents_before_save_nlu_file(mock_endpoint):
+    # Test method interactive._remove_intent_payload_input
+    from random import choice
+
+    greet = {"intent": "greet", "text_features": [0.5]}
+    goodbye = {"intent": "goodbye", "text_features": [0.5]}
+    test_msgs = [Message("How are you?", greet), Message("I am inevitable", goodbye)]
+
+    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    domain = Domain.load(domain_file)
+    intents = domain.intents
+
+    msgs = test_msgs.copy()
+    if intents:
+        msgs.append(Message("/" + choice(intents), greet))
+
+    assert test_msgs == interactive._remove_intent_payload_input(msgs, intents)
