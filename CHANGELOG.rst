@@ -18,6 +18,17 @@ Added
   number of unaccepted connections the server allows before refusing new
   connections. A default value of 100 is used if the variable is not set.
 
+Fixed
+-----
+
+- Added the ability to properly deal with spaC'y ``Doc``-objects created on
+  empty strings as discussed `here <https://github.com/RasaHQ/rasa/issues/4445>`_.
+  Only training samples that actually bear content are sent to ``self.nlp.pipe``
+  for every given attribute. Non-content-bearing samples are converted to empty
+  ``Doc``-objects. The resulting lists are merged with their preserved order and
+  properly returned.
+
+
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
 
