@@ -8,19 +8,6 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
-[Unreleased 1.3.5]
-^^^^^^^^^^^^^^^^^^
-
-Changed
--------
-- models trained with ``POST /model/train`` now get saved in a temporary directory by
-  default (instead of the ``models`` directory)
-
-Removed
--------
-- the endpoint ``POST /model/train`` no longer supports specifying an output directory
-  for the trained model
-
 [1.3.4] - 2019-09-14
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -30,6 +17,14 @@ Added
   the ``SANIC_BACKLOG`` environment variable. This parameter sets the
   number of unaccepted connections the server allows before refusing new
   connections. A default value of 100 is used if the variable is not set.
+
+Changed
+-------
+- the endpoint ``POST /model/train`` no longer supports specifying an output directory
+  for the trained model using the field ``out``. Instead you can choose whether you
+  want to save the trained model in the default model directory (``models``) or in a
+  temporary directory by specifying the ``save_to_default_model_directory`` field in
+  the training request
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^

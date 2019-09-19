@@ -1229,6 +1229,11 @@ components:
           description: >-
             Force a model training even if the data has not changed
           example: false
+        save_to_default_model_directory:
+          type: boolean
+          description:  >-
+            If `true` (default) the trained model will be saved in the default model
+            directory, if `false` it will be saved in a temporary directory
       required: ["config"]
 
     NLUTrainingData:
