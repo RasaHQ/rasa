@@ -38,7 +38,7 @@ ESCAPE = re.compile(r"[\b\f\n\r\t]")
 
 
 def encode_string(s: Text) -> Text:
-    """Return a encoded python string"""
+    """Return a encoded python string."""
 
     def replace(match):
         return ESCAPE_DCT[match.group(0)]
