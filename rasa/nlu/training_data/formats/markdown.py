@@ -53,13 +53,12 @@ class MarkdownReader(TrainingDataReader):
     """Reads markdown training data and creates a TrainingData object."""
 
     def __init__(self) -> None:
-        self.current_title: Optional[Text] = None
-        self.current_section: Optional[Text] = None
-        self.training_examples: List[Message] = []
-        self.entity_synonyms: Dict[Text, Text] = {}
-        self.regex_features: List[Dict] = []
-        self.section_regexes = self._create_section_regexes(available_sections)
-        self.lookup_tables: List[Dict] = []
+        self.current_title = None
+        self.current_section = None
+        self.training_examples = []
+        self.entity_synonyms = {}
+        self.regex_features = []
+        self.lookup_tables = []
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
@@ -87,22 +86,9 @@ class MarkdownReader(TrainingDataReader):
         """ Removes comments defined by `comment_regex` from `text`. """
         return re.sub(comment_regex, "", text)
 
-    @staticmethod
-    def _create_section_regexes(section_names: List[Text]) -> Dict[Text, Pattern]:
-        def make_regex(section_name: Text) -> Pattern:
-            return re.compile(r"##\s*{}:(.+)".format(section_name))
-
-        return {sn: make_regex(sn) for sn in section_names}
-
     def _find_section_header(self, line: Text) -> Optional[Tuple[Text, Text]]:
         """Checks if the current line contains a section header
         and returns the section and the title."""
-        for name, regex in self.section_regexes.items():
-            match = re.search(regex, line)
-            if match is not None:
-                return name, match.group(1)
-
-        # check if unknown section header was used
         match = re.search(r"##\s*(.+):(.+)", line)
         if match is not None:
             return match.group(1), match.group(2)
