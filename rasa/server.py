@@ -390,7 +390,7 @@ def create_app(
             {
                 "model_file": app.agent.model_directory,
                 "fingerprint": fingerprint_from_path(app.agent.model_directory),
-                "num_training_jobs": app.active_training_processes.value,
+                "num_active_training_jobs": app.active_training_processes.value,
             }
         )
 

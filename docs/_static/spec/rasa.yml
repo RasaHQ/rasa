@@ -98,7 +98,7 @@ paths:
                     type: string
                     description: Path of the loaded model
                     example: 20190429-103105.tar.gz
-                  num_training_jobs:
+                  num_active_training_jobs:
                     type: integer
                     description: Number of running training processes
                     example: 2
