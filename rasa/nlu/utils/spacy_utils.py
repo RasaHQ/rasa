@@ -180,7 +180,7 @@ class SpacyNLP(Component):
         return docs
 
     def process_non_content_bearing_samples(
-        self, empty_samples: Tuple[Any]
+        self, empty_samples: List[int, Text]
     ) -> List[Any]:
         """Creates empty Doc-objects from zero-lengthed training samples strings."""
 
