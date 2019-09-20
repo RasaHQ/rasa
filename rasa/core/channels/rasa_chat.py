@@ -105,7 +105,7 @@ class RasaChatInput(RestInput):
     def _get_conversation_id_from_jwt(self, user: Dict, request: Request) -> Text:
         conversation_id = request.json.get("conversation_id")
         user_scopes = user.get("scopes", [])
-        if conversation_id and "clientEvents:create.create" in user_scopes:
+        if conversation_id and "clientEvents:create" in user_scopes:
             return conversation_id
 
         return user["username"]
