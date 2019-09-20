@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Return code of `rasa` command is 1 when rasa logged `ERROR`
 
 Changed
 -------
