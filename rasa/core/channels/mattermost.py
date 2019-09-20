@@ -175,7 +175,6 @@ class MattermostInput(InputChannel):
         except Exception as e:
             logger.error("Exception when trying to handle message.{0}".format(e))
             logger.debug(e, exc_info=True)
-            pass
 
     async def action_from_button(
         self,
@@ -204,7 +203,6 @@ class MattermostInput(InputChannel):
         except Exception as e:
             logger.error("Exception when trying to handle message.{0}".format(e))
             logger.debug(e, exc_info=True)
-            pass
 
     def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[None]]):
         mattermost_webhook = Blueprint("mattermost_webhook", __name__)
