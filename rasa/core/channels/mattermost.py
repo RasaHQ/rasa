@@ -58,7 +58,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
-        """Sends an image. """
+        """Sends an image."""
         image_url = image
 
         props = {"attachments": []}
