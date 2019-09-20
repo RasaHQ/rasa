@@ -711,7 +711,11 @@ class Agent(object):
 
         update_sanic_log_level()
 
-        app.run(host="0.0.0.0", port=http_port)
+        app.run(
+            host="0.0.0.0",
+            port=http_port,
+            backlog=int(os.environ.get("SANIC_BACKLOG", "100")),
+        )
 
         # this might seem unnecessary (as run does not return until the server
         # is killed) - but we use it for tests where we mock `.run` to directly
