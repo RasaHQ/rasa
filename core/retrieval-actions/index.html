@@ -209,12 +209,13 @@ in open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.3.3
+          viewing: 1.3.4
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.3.4/core/retrieval-actions/">1.3.4</a>
               <a href="../.././1.3.3/core/retrieval-actions/">1.3.3</a>
               <a href="../.././1.3.2/core/retrieval-actions/">1.3.2</a>
               <a href="../.././1.3.1/core/retrieval-actions/">1.3.1</a>
@@ -301,7 +302,7 @@ From a dialogue perspective, these single-turn exchanges can all be treated equa
 retrieval model to predict the correct response from a list of candidate responses given a user message text.</p>
 </div>
 <div class="section" id="training-data">
-<h2><a class="toc-backref" href="#id4">Training Data</a><a class="headerlink" href="#training-data" title="Permalink to this headline">¶</a></h2>
+<span id="retrieval-training-data"></span><h2><a class="toc-backref" href="#id4">Training Data</a><a class="headerlink" href="#training-data" title="Permalink to this headline">¶</a></h2>
 <p>Like the name suggests, retrieval actions learn to select the correct response from a list of candidates.
 As with other NLU data, you need to include examples of what your users will say in your NLU file:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent: chitchat/ask_name
@@ -336,6 +337,11 @@ This is a key difference to the response templates in your domain file.</p>
 <p class="last">The file containing response texts must exist as a separate file inside the training data directory passed
 to the training process. The contents of it cannot be a part of the file which contains training data for other
 components of NLU.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">As shown in the above examples, <code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifier. Make sure not to
+use it in the name of your intents.</p>
 </div>
 </div>
 <div class="section" id="config-file">

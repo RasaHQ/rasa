@@ -209,12 +209,13 @@ source natural language processing." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.3.3
+          viewing: 1.3.4
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.3.4/nlu/training-data-format/">1.3.4</a>
               <a href="../.././1.3.3/nlu/training-data-format/">1.3.3</a>
               <a href="../.././1.3.2/nlu/training-data-format/">1.3.2</a>
               <a href="../.././1.3.1/nlu/training-data-format/">1.3.1</a>
@@ -327,6 +328,11 @@ However, this only happens <em>after</em> the entities have been extracted, so y
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU model by providing additional features to the machine learning algorithm during training. Therefore, it must not be assumed that having a single example would be enough for the model to robustly identify intents and/or entities across all variants of that example.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not to
+use it in the name of your intents.</p>
 </div>
 </div>
 <div class="section" id="json-format">
