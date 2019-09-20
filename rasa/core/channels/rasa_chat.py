@@ -90,13 +90,22 @@ class RasaChatInput(RestInput):
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API"""
 
+        user = None
         if req.headers.get("Authorization"):
             user = await self._decode_bearer_token(req.headers["Authorization"])
-            if user:
-                return user["username"]
 
-        user = await self._decode_bearer_token(req.args.get("token", default=None))
+        if not user:
+            user = await self._decode_bearer_token(req.args.get("token", default=None))
+
         if user:
-            return user["username"]
+            return self._get_conversation_id_from_jwt(user, req)
 
         abort(401)
+
+    def _get_conversation_id_from_jwt(self, user: Dict, request: Request) -> Text:
+        conversation_id = request.json.get("conversation_id")
+        user_scopes = user.get("scopes", [])
+        if conversation_id and "clientEvents:create.create" in user_scopes:
+            return conversation_id
+
+        return user["username"]
