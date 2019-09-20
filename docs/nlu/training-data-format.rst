@@ -72,6 +72,10 @@ Lookup tables may be specified either directly as lists or as txt files containi
 .. note::
     The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU model by providing additional features to the machine learning algorithm during training. Therefore, it must not be assumed that having a single example would be enough for the model to robustly identify intents and/or entities across all variants of that example.
 
+.. note::
+    ``/`` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not to
+    use it in the name of your intents.
+
 JSON Format
 -----------
 
