@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
-[1.3.4] - 2019-09-14
+[1.3.4] - 2019-09-20
 ^^^^^^^^^^^^^^^^^^^^
 
 Added
