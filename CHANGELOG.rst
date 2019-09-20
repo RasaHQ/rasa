@@ -14,6 +14,7 @@ Added
 -----
 - added ``DynamoTrackerStore`` to support persistence of agents running on AWS
 - added docstrings for ``TrackerStore`` classes
+- added buttons and images to mattermost.
 
 Changed
 -------
