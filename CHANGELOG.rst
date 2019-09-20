@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
+[1.3.5] - 2019-09-20
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed issue where ``rasa init`` would fail without spaCy being installed
+
 [1.3.4] - 2019-09-20
 ^^^^^^^^^^^^^^^^^^^^
 
