@@ -90,22 +90,33 @@ class RasaChatInput(RestInput):
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API"""
 
-        user = None
+        jwt_payload = None
         if req.headers.get("Authorization"):
-            user = await self._decode_bearer_token(req.headers["Authorization"])
+            jwt_payload = await self._decode_bearer_token(req.headers["Authorization"])
 
-        if not user:
-            user = await self._decode_bearer_token(req.args.get("token", default=None))
+        if not jwt_payload:
+            jwt_payload = await self._decode_bearer_token(
+                req.args.get("token", default=None)
+            )
 
-        if user:
-            return self._get_conversation_id_from_jwt(user, req)
+        if not jwt_payload:
+            abort(401)
 
-        abort(401)
+        if (
+            "conversation_id" in req.json
+            and self._has_user_permission_to_send_messages_to_conversation(
+                jwt_payload, req.json
+            )
+        ):
+            return req.json["conversation_id"]
+        else:
+            return jwt_payload["username"]
 
-    def _get_conversation_id_from_jwt(self, user: Dict, request: Request) -> Text:
-        conversation_id = request.json.get("conversation_id")
-        user_scopes = user.get("scopes", [])
-        if conversation_id and "clientEvents:create" in user_scopes:
-            return conversation_id
-
-        return user["username"]
+    @staticmethod
+    def _has_user_permission_to_send_messages_to_conversation(
+        jwt_payload: Dict, message: Dict
+    ) -> bool:
+        user_scopes = jwt_payload.get("scopes", [])
+        return "clientEvents:create" in user_scopes or message[
+            "conversation_id"
+        ] == jwt_payload.get("username")
