@@ -2,7 +2,6 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from spacy.tokens import Doc
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import Message, TrainingData
@@ -184,6 +183,8 @@ class SpacyNLP(Component):
         self, empty_samples: List[Tuple[int, Text]]
     ) -> List[Tuple[int, "Doc"]]:
         """Creates empty Doc-objects from zero-lengthed training samples strings."""
+
+        from spacy.tokens import Doc
 
         n_docs = [
             (empty_sample[0], doc)
