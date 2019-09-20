@@ -2,7 +2,6 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from spacy.tokens import Doc
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import Message, TrainingData
