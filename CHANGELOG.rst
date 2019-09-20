@@ -17,6 +17,16 @@ Added
   the ``SANIC_BACKLOG`` environment variable. This parameter sets the
   number of unaccepted connections the server allows before refusing new
   connections. A default value of 100 is used if the variable is not set.
+- Status endpoint (``/status``) now also returns the number of training processes currently running
+
+Fixed
+-----
+- Added the ability to properly deal with spaCy ``Doc``-objects created on
+  empty strings as discussed `here <https://github.com/RasaHQ/rasa/issues/4445>`_.
+  Only training samples that actually bear content are sent to ``self.nlp.pipe``
+  for every given attribute. Non-content-bearing samples are converted to empty
+  ``Doc``-objects. The resulting lists are merged with their preserved order and
+  properly returned.
 
 Changed
 -------
