@@ -77,14 +77,16 @@ def main() -> None:
     if hasattr(cmdline_arguments, "func"):
         rasa.utils.io.configure_colored_logging(log_level)
         cmdline_arguments.func(cmdline_arguments)
-        if error_handler.fired:
-            exit(1)
     elif hasattr(cmdline_arguments, "version"):
         print_version()
     else:
         # user has not provided a subcommand, let's print the help
         logger.error("No command specified.")
         arg_parser.print_help()
+        exit(1)
+
+    # if rasa logged error return 1
+    if error_handler.fired:
         exit(1)
 
 
