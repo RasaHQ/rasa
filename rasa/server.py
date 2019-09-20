@@ -670,6 +670,11 @@ def create_app(
             domain_path = os.path.join(temp_dir, "domain.yml")
             dump_obj_as_str_to_file(domain_path, rjs["domain"])
 
+        if rjs.get("save_to_default_model_directory", True) is True:
+            model_output_directory = DEFAULT_MODELS_PATH
+        else:
+            model_output_directory = tempfile.gettempdir()
+
         try:
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
@@ -678,7 +683,7 @@ def create_app(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
-                output_path=rjs.get("out", DEFAULT_MODELS_PATH),
+                output_path=model_output_directory,
                 force_training=rjs.get("force", False),
             )
 
