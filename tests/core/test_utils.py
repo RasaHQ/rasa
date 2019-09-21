@@ -1,9 +1,10 @@
 import asyncio
-
 import pytest
+from decimal import Decimal
 
 import rasa.utils.io
 from rasa.core import utils
+from rasa.core.utils import replace_floats_with_decimals
 
 
 def test_is_int():
@@ -82,3 +83,25 @@ def test_convert_bytes_to_string():
 
     # string remains string
     assert utils.convert_bytes_to_string(decoded_string) == decoded_string
+
+
+def test_float_conversion_to_decimal():
+    # Create test objects
+    d = {
+        "int": -1,
+        "float": 2.1,
+        "list": ["one", "two"],
+        "list_of_floats": [1.0, -2.1, 3.2],
+        "nested_dict_with_floats": {"list_with_floats": [4.5, -5.6], "float": 6.7},
+    }
+    d_replaced = replace_floats_with_decimals(d)
+
+    assert isinstance(d_replaced["int"], int)
+    assert isinstance(d_replaced["float"], Decimal)
+    for t in d_replaced["list"]:
+        assert isinstance(t, str)
+    for f in d_replaced["list_of_floats"]:
+        assert isinstance(f, Decimal)
+    for f in d_replaced["nested_dict_with_floats"]["list_with_floats"]:
+        assert isinstance(f, Decimal)
+    assert isinstance(d_replaced["nested_dict_with_floats"]["float"], Decimal)

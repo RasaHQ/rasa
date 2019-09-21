@@ -12,6 +12,9 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- added ``DynamoTrackerStore`` to support persistence of agents running on AWS
+- added docstrings for ``TrackerStore`` classes
+- added buttons and images to mattermost.
 
 Changed
 -------
@@ -24,6 +27,7 @@ Removed
 Fixed
 -----
 - Fix missing ``tkinter`` dependency for running tests on Ubuntu
+- fixed issue with ``conversation`` JSON serialization
 
 [1.3.4] - 2019-09-14
 ^^^^^^^^^^^^^^^^^^^^
