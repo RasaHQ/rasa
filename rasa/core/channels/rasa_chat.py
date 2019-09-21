@@ -118,7 +118,7 @@ class RasaChatInput(RestInput):
                 )
                 abort(401)
 
-        return jwt_payload.get(JWT_USERNAME_KEY)
+        return jwt_payload[JWT_USERNAME_KEY]
 
     @staticmethod
     def _has_user_permission_to_send_messages_to_conversation(
