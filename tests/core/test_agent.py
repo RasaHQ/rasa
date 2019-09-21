@@ -166,7 +166,7 @@ async def test_agent_with_model_server_in_thread(
         agent, model_server=model_endpoint_config
     )
 
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
     assert hash(agent.domain) == hash(moodbot_domain)

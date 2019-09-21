@@ -206,7 +206,7 @@ async def test_reminder_cancelled(
     assert len((await jobs.scheduler()).get_jobs()) == 1
 
     # execute the jobs
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
 
     tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
