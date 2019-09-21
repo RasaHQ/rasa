@@ -8,6 +8,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
+[1.3.6] - 2019-09-21
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added the ability for users to specify a conversation id to send a message to when
+  using the ``RasaChat`` input channel.
+
 [1.3.5] - 2019-09-20
 ^^^^^^^^^^^^^^^^^^^^
 
