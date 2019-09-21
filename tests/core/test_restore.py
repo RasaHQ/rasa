@@ -8,15 +8,6 @@ from rasa.core.agent import Agent
 from rasa.model import get_model
 
 
-@pytest.fixture(scope="module")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 async def test_restoring_tracker(trained_moodbot_path, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 

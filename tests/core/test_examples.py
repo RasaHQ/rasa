@@ -13,15 +13,6 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 async def test_moodbot_example(unpacked_trained_moodbot_path):
     agent = Agent.load(unpacked_trained_moodbot_path)
 

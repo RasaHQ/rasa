@@ -38,15 +38,6 @@ from tests.core.utilities import (
 domain = Domain.load("examples/moodbot/domain.yml")
 
 
-@pytest.fixture(scope="module")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 class MockRedisTrackerStore(RedisTrackerStore):
     def __init__(self, domain):
         self.red = fakeredis.FakeStrictRedis()

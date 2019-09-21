@@ -32,15 +32,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 async def test_message_processor(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):

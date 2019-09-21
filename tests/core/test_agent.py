@@ -19,15 +19,6 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 def model_server_app(model_path: Text, model_hash: Text = "somehash"):
     app = Sanic(__name__)
     app.number_of_model_requests = 0

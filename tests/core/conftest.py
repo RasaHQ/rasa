@@ -74,7 +74,7 @@ class ExamplePolicy(Policy):
         pass
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def loop():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -219,7 +219,7 @@ def project() -> Text:
     return directory
 
 
-def train_model(project: Text, filename: Text = "test.tar.gz"):
+def train_model(loop, project: Text, filename: Text = "test.tar.gz"):
     from rasa.constants import (
         DEFAULT_CONFIG_PATH,
         DEFAULT_DATA_PATH,
@@ -233,19 +233,18 @@ def train_model(project: Text, filename: Text = "test.tar.gz"):
     config = os.path.join(project, DEFAULT_CONFIG_PATH)
     training_files = os.path.join(project, DEFAULT_DATA_PATH)
 
-    rasa.train(domain, config, training_files, output)
+    rasa.train(domain, config, training_files, output, loop=loop)
 
     return output
 
 
 @pytest.fixture(scope="session")
-def trained_model(project) -> Text:
-    return train_model(project)
+def trained_model(loop, project) -> Text:
+    return train_model(loop, project)
 
 
 @pytest.fixture
 async def restaurantbot(request, tmpdir_factory) -> Text:
-    model_path = tmpdir_factory.mktemp("model").strpath
     restaurant_domain = os.path.join(RESTAURANTBOT_PATH, "domain.yml")
     restaurant_config = os.path.join(RESTAURANTBOT_PATH, "config.yml")
     restaurant_data = os.path.join(RESTAURANTBOT_PATH, "data/")
@@ -256,7 +255,6 @@ async def restaurantbot(request, tmpdir_factory) -> Text:
         restaurant_domain,
         restaurant_config,
         restaurant_data,
-        model_path,
         output_path=model_folder,
     )
     return agent
