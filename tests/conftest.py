@@ -16,7 +16,6 @@ from tests.core.conftest import (
     DEFAULT_NLU_DATA,
     DEFAULT_STACK_CONFIG,
     DEFAULT_STORIES_FILE,
-    DEFAULT_TESTS_MODELS_PATH,
     END_TO_END_STORY_FILE,
     MOODBOT_MODEL_PATH,
 )
@@ -52,8 +51,8 @@ async def default_agent(tmpdir_factory) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path():
-    return await train_async(
+async def trained_moodbot_path(trained_async):
+    return await trained_async(
         domain="examples/moodbot/domain.yml",
         config="examples/moodbot/config.yml",
         training_files="examples/moodbot/data/",
@@ -111,18 +110,28 @@ def default_config():
     return config.load(DEFAULT_CONFIG_PATH)
 
 
+@pytest.fixture(scope="session")
+def trained_async(tmpdir_factory):
+    async def _train(*args, output_path=None, **kwargs):
+        if output_path is None:
+            output_path = str(tmpdir_factory.mktemp("models"))
+
+        return await train_async(*args, output_path=output_path, **kwargs)
+
+    return _train
+
+
 @pytest.fixture()
 async def trained_rasa_model(
-    request, default_domain_path, default_config, default_nlu_data,
-    default_stories_file
+    trained_async,
+    default_domain_path,
+    default_config,
+    default_nlu_data,
+    default_stories_file,
 ):
-    model_folder = os.path.join(DEFAULT_TESTS_MODELS_PATH, request.node.name)
-    clean_folder(model_folder)
-
-    trained_stack_model_path = await train_async(
+    trained_stack_model_path = await trained_async(
         domain="data/test_domains/default.yml",
         config=DEFAULT_STACK_CONFIG,
-        output_path=model_folder,
         training_files=[default_nlu_data, default_stories_file],
     )
 
@@ -131,17 +140,16 @@ async def trained_rasa_model(
 
 @pytest.fixture()
 async def trained_core_model(
-    request, default_domain_path, default_config, default_nlu_data,
-    default_stories_file
+    trained_async,
+    default_domain_path,
+    default_config,
+    default_nlu_data,
+    default_stories_file,
 ):
-    model_folder = os.path.join(DEFAULT_TESTS_MODELS_PATH, request.node.name)
-    clean_folder(model_folder)
-
-    trained_core_model_path = await train_async(
+    trained_core_model_path = await trained_async(
         domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_stories_file],
-        output_path=model_folder,
     )
 
     return trained_core_model_path
@@ -149,17 +157,17 @@ async def trained_core_model(
 
 @pytest.fixture()
 async def trained_nlu_model(
-    request, default_domain_path, default_config, default_nlu_data,
-    default_stories_file
+    trained_async,
+    default_domain_path,
+    default_config,
+    default_nlu_data,
+    default_stories_file,
 ):
-    model_folder = os.path.join(DEFAULT_TESTS_MODELS_PATH, request.node.name)
-    clean_folder(model_folder)
 
-    trained_nlu_model_path = await train_async(
+    trained_nlu_model_path = await trained_async(
         domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_nlu_data],
-        output_path=model_folder,
     )
 
     return trained_nlu_model_path
@@ -205,12 +213,3 @@ def get_test_client(server):
     test_client.port = None
 
     return test_client
-
-
-def clean_folder(folder):
-    import os
-
-    if os.path.exists(folder):
-        import shutil
-
-        shutil.rmtree(folder)

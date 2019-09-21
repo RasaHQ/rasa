@@ -10,7 +10,6 @@ from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.importers.multi_project import MultiProjectImporter
 from rasa.train import train_async
-from rasa.core.constants import DEFAULT_TESTS_MODELS_PATH
 
 
 def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
@@ -227,21 +226,18 @@ def test_single_additional_file(tmpdir_factory):
     assert selector.is_imported(str(additional_file))
 
 
-async def test_multi_project_training(request):
+async def test_multi_project_training(trained_async):
     example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
     domain_file = os.path.join(example_directory, "domain.yml")
     files_of_root_project = os.path.join(example_directory, "data")
 
-    model_folder = os.path.join(DEFAULT_TESTS_MODELS_PATH, request.node.name)
-
-    trained_stack_model_path = await train_async(
+    trained_stack_model_path = await trained_async(
         config=config_file,
         domain=domain_file,
         training_files=files_of_root_project,
         force_training=True,
         persist_nlu_training_data=True,
-        output_path=model_folder,
     )
 
     unpacked = model.unpack_model(trained_stack_model_path)
