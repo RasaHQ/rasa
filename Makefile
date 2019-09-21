@@ -59,7 +59,8 @@ prepare-tests-files:
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
 test: clean get-num-jobs
-	py.test tests -n $(JOBS) --cov rasa
+	# PYTHONHASHSEED needed for keeping determinist ordering for some <=Python3.5 structures
+	PYTHONHASHSEED=0 pytest tests -n $(JOBS) --cov rasa
 
 get-num-jobs:
 	$(eval JOBS := $(if $(findstring -j, $(MAKEFLAGS)), $(shell echo $(MAKEFLAGS) | sed -E "s@.*-j([0-9]+).*@\1@"), $(JOBS)))

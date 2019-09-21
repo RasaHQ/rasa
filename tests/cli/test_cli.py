@@ -1,8 +1,11 @@
 import pytest
 
 
-@pytest.mark.repeat(3)
+@pytest.mark.repeat(5)
 def test_cli_start(run):
+    """
+    Startup of cli should not take longer than n seconds
+    """
     import time
 
     start = time.time()
@@ -11,7 +14,8 @@ def test_cli_start(run):
 
     duration = end - start
 
-    assert duration < 3  # startup of cli should not take longer than 3 seconds
+    # When run in parallel, it takes a little longer
+    assert duration <= 4
 
 
 def test_data_convert_help(run):
