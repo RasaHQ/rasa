@@ -13,6 +13,10 @@ from sanic.request import Request
 
 logger = logging.getLogger(__name__)
 
+CONVERSATION_ID_KEY = "conversation_id"
+JWT_USERNAME_KEY = "username"
+INTERACTIVE_LEARNING_PERMISSION = "clientEvents:create"
+
 
 class RasaChatInput(RestInput):
     """Chat input channel for Rasa X"""
@@ -88,35 +92,39 @@ class RasaChatInput(RestInput):
             logger.exception("Failed to decode bearer token.")
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
-        """Fetch user from the Rasa X Admin API"""
+        """Fetch user from the Rasa X Admin API."""
 
         jwt_payload = None
         if req.headers.get("Authorization"):
             jwt_payload = await self._decode_bearer_token(req.headers["Authorization"])
 
         if not jwt_payload:
-            jwt_payload = await self._decode_bearer_token(
-                req.args.get("token", default=None)
-            )
+            jwt_payload = await self._decode_bearer_token(req.args.get("token"))
 
         if not jwt_payload:
             abort(401)
 
-        if (
-            "conversation_id" in req.json
-            and self._has_user_permission_to_send_messages_to_conversation(
+        if CONVERSATION_ID_KEY in req.json:
+            if self._has_user_permission_to_send_messages_to_conversation(
                 jwt_payload, req.json
-            )
-        ):
-            return req.json["conversation_id"]
-        else:
-            return jwt_payload["username"]
+            ):
+                return req.json[CONVERSATION_ID_KEY]
+            else:
+                logger.error(
+                    "User '{}' does not have permissions to send messages to "
+                    "conversation '{}'.".format(
+                        jwt_payload[JWT_USERNAME_KEY], req.json[CONVERSATION_ID_KEY]
+                    )
+                )
+                abort(401)
+
+        return jwt_payload.get(JWT_USERNAME_KEY)
 
     @staticmethod
     def _has_user_permission_to_send_messages_to_conversation(
         jwt_payload: Dict, message: Dict
     ) -> bool:
         user_scopes = jwt_payload.get("scopes", [])
-        return "clientEvents:create" in user_scopes or message[
-            "conversation_id"
-        ] == jwt_payload.get("username")
+        return INTERACTIVE_LEARNING_PERMISSION in user_scopes or message[
+            CONVERSATION_ID_KEY
+        ] == jwt_payload.get(JWT_USERNAME_KEY)
