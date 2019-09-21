@@ -42,7 +42,7 @@ jobs:
     name: "Test 3.5"
     python: "3.5"
     script:
-      - make test
+      - make test -j
   - <<: *run-tests
     name: "Test 3.6"
     python: '3.6'
