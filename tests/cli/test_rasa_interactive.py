@@ -1,7 +1,7 @@
 def test_interactive_help(run):
     output = run("interactive", "--help")
 
-    help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [-m MODEL]
+    help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
                         [--data DATA [DATA ...]] [--skip-visualization]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]

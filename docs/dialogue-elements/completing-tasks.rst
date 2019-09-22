@@ -88,6 +88,7 @@ Understanding contextual questions is a key difference between `level 2 and leve
        - what do you mean?
        - ( We have different memberships. Check your statement to see if you are a premium member.
 
+.. _unhappy-paths:
 
 Unhappy Paths
 -------------

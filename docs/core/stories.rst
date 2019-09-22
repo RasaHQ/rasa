@@ -164,6 +164,18 @@ at a time):
     * goodbye
       - utter_goodbye
 
+.. note::
+   Unlike regular stories, checkpoints are not restricted to starting with an
+   input from the user. As long as the checkpoint is inserted at the right points
+   in the main stories, the first event can be an action or an utterance
+   as well.
+
+.. note::
+   Unlike regular stories, checkpoints are not restricted to starting with an
+   input from the user. As long as the checkpoint is inserted at the right points
+   in the main stories, the first event can be an action or an utterance
+   as well.
+
 
 OR Statements
 ~~~~~~~~~~~~~

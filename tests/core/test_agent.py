@@ -60,6 +60,21 @@ async def model_server(test_server, trained_moodbot_path):
     await server.close()
 
 
+async def test_training_data_is_reproducible(tmpdir, default_domain):
+    training_data_file = "examples/moodbot/data/stories.md"
+    agent = Agent(
+        "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
+    )
+
+    training_data = await agent.load_data(training_data_file)
+    # make another copy of training data
+    same_training_data = await agent.load_data(training_data_file)
+
+    # test if both datasets are identical (including in the same order)
+    for i, x in enumerate(training_data):
+        assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
+
+
 async def test_agent_train(tmpdir, default_domain):
     training_data_file = "examples/moodbot/data/stories.md"
     agent = Agent(
@@ -67,6 +82,7 @@ async def test_agent_train(tmpdir, default_domain):
     )
 
     training_data = await agent.load_data(training_data_file)
+
     agent.train(training_data)
     agent.persist(tmpdir.strpath)
 

@@ -203,11 +203,12 @@ def test_mattermost_channel():
         url="http://chat.example.com/api/v4",
         # the name of your team for mattermost
         team="community",
-        # the username of your bot user that will post
+        # the username of your bot user that will post messages
         user="user@email.com",
-        # messages
-        pw="password"
         # the password of your bot user that will post messages
+        pw="password",
+        # the webhook-url your bot should listen for messages
+        webhook_url="YOUR_WEBHOOK_URL",
     )
 
     s = rasa.core.run.configure_app([input_channel], port=5004)
