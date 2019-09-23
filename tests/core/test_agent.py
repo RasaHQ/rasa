@@ -23,8 +23,7 @@ from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 def loop():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop,
-            slow_callback_duration=0.1)
+    loop = rasa.utils.io.enable_async_loop_debugging(loop)
     yield loop
     loop.close()
 

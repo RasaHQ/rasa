@@ -35,7 +35,7 @@ from rasa.model import (
     get_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import update_sanic_log_level, set_log_level
+from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -132,7 +132,6 @@ async def _pull_model_and_fingerprint(
 
     async with model_server.session() as session:
         try:
-            # set_log_level()
             params = model_server.combine_parameters()
             async with session.request(
                 "GET",
