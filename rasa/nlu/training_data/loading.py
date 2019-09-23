@@ -132,7 +132,6 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
     if fformat == UNK:
         raise ValueError("Unknown data format for file '{}'.".format(filename))
 
-    logger.debug("Training data format of '{}' is '{}'.".format(filename, fformat))
     reader = _reader_factory(fformat)
 
     if reader:
@@ -173,6 +172,8 @@ def guess_format(filename: Text) -> Text:
             if format_heuristic(js, filename):
                 guess = fformat
                 break
+
+    logger.debug("Training data format of '{}' is '{}'.".format(filename, guess))
 
     return guess
 
