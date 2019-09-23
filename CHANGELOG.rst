@@ -12,17 +12,31 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- added ``DynamoTrackerStore`` to support persistence of agents running on AWS
+- added docstrings for ``TrackerStore`` classes
+- added buttons and images to mattermost.
 
 Changed
 -------
+- Unknown sections in markdown format (NLU data) are not ignored anymore, but instead an error is raised.
 
 Removed
 -------
 
 Fixed
 -----
-- fix missing ``tkinter`` dependency for running tests on Ubuntu
+- fixed missing ``tkinter`` dependency for running tests on Ubuntu
+- fixed issue with ``conversation`` JSON serialization
 
+[1.3.4] - 2019-09-14
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added the ability to set the ``backlog`` parameter in Sanics ``run()`` method using
+  the ``SANIC_BACKLOG`` environment variable. This parameter sets the
+  number of unaccepted connections the server allows before refusing new
+  connections. A default value of 100 is used if the variable is not set.
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
@@ -35,6 +49,7 @@ Fixed
 - Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
 - Policy ensemble no longer incorrectly wrings "missing mapping policy" when
   mapping policy is present.
+- "test" from ``utter_custom_json`` now correctly saved to tracker when using telegram channel
 
 Removed
 -------
