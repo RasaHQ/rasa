@@ -19,6 +19,7 @@ from rasa.nlu.constants import (
     MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
     MESSAGE_ENTITIES_ATTRIBUTE,
+    MESSAGE_NER_FEATURES_ATTRIBUTE,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
@@ -38,7 +39,7 @@ class SpacyFeaturizer(Featurizer):
     provides = [
         MESSAGE_VECTOR_FEATURE_NAMES[attribute]
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
-    ]
+    ] + [MESSAGE_NER_FEATURES_ATTRIBUTE]
 
     requires = [
         MESSAGE_SPACY_FEATURES_NAMES[attribute]
