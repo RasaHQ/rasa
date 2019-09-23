@@ -81,6 +81,7 @@ Changed
 -------
 - Pin gast to == 0.2.2
 
+
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -167,6 +168,25 @@ Fixed
 Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
+
+
+[1.2.9] - 2019-09-17
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Correctly pass SSL flag values to x CLI command (backport of
+
+
+[1.2.8] - 2019-09-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- SQL tracker events are retrieved ordered by timestamps. This fixes interactive
+  learning events being shown in the wrong order. Backport of ``1.3.2`` patch
+  (PR #4427).
+
 
 [1.2.7] - 2019-09-02
 ^^^^^^^^^^^^^^^^^^^^
