@@ -62,9 +62,9 @@ class DucklingHTTPExtractor(EntityExtractor):
         # timezone like Europe/Berlin
         # if not set the default timezone of Duckling is going to be used
         "timezone": None,
-        #Timeout for receiving response from http url of the running duckling server
-        #if not set the default timeout of duckling http url is set to 3 seconds. 
-        "timeout" : 3      
+        # Timeout for receiving response from http url of the running duckling server
+        # if not set the default timeout of duckling http url is set to 3 seconds.
+        "timeout": 3,
     }
 
     def __init__(
@@ -92,10 +92,6 @@ class DucklingHTTPExtractor(EntityExtractor):
             self.component_config["locale"] = locale_fix
         return self.component_config.get("locale")
 
-
-    def _timeout(self):
-        return self.component_config.get("timeout")
-
     def _url(self):
         """Return url of the duckling service. Environment var will override."""
         if os.environ.get("RASA_DUCKLING_HTTP_URL"):
@@ -120,7 +116,10 @@ class DucklingHTTPExtractor(EntityExtractor):
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
             response = requests.post(
-                self._url() + "/parse", data=payload, headers=headers,timeout=self._timeout()
+                self._url() + "/parse",
+                data=payload,
+                headers=headers,
+                timeout=self.component_config.get("timeout"),
             )
             if response.status_code == 200:
                 return response.json()
