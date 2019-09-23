@@ -9,6 +9,15 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
 
+[1.3.4] 
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- asyncio warnings are now only printed if the callback takes more than 100ms
+  (up from 1ms)
+- ``agent.load_model_from_server`` no longer affects logging
+
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
 
