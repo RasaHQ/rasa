@@ -132,7 +132,7 @@ async def _pull_model_and_fingerprint(
 
     async with model_server.session() as session:
         try:
-            set_log_level()
+            # set_log_level()
             params = model_server.combine_parameters()
             async with session.request(
                 "GET",
