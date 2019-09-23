@@ -7,7 +7,23 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[1.3.4] - 2019-09-19
+
+[1.3.6] - 2019-09-21
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added the ability for users to specify a conversation id to send a message to when
+  using the ``RasaChat`` input channel.
+
+[1.3.5] - 2019-09-20
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed issue where ``rasa init`` would fail without spaCy being installed
+
+[1.3.4] - 2019-09-20
 ^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -26,6 +42,14 @@ Fixed
   for every given attribute. Non-content-bearing samples are converted to empty
   ``Doc``-objects. The resulting lists are merged with their preserved order and
   properly returned.
+
+Changed
+-------
+- The endpoint ``POST /model/train`` no longer supports specifying an output directory
+  for the trained model using the field ``out``. Instead you can choose whether you
+  want to save the trained model in the default model directory (``models``)
+  (default behavior) or in a temporary directory by specifying the
+  ``save_to_default_model_directory`` field in the training request.
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
@@ -56,6 +80,7 @@ Fixed
 Changed
 -------
 - Pin gast to == 0.2.2
+
 
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
@@ -150,7 +175,7 @@ Removed
 
 Fixed
 -----
-- Correctly pass SSL flag values to x CLI command
+- Correctly pass SSL flag values to x CLI command (backport of
 
 
 [1.2.8] - 2019-09-10
@@ -159,7 +184,8 @@ Fixed
 Fixed
 -----
 - SQL tracker events are retrieved ordered by timestamps. This fixes interactive
-  learning events being shown in the wrong order.
+  learning events being shown in the wrong order. Backport of ``1.3.2`` patch
+  (PR #4427).
 
 
 [1.2.7] - 2019-09-02
