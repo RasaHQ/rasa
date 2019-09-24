@@ -88,6 +88,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/tracker
    api/tracker-stores
    api/event-brokers
+   api/lock-stores
    api/training-data-importers
    api/featurization
    migration-guide
