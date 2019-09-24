@@ -434,13 +434,26 @@ to use precomputed features.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">spacy intent featurizer</td>
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">spacy intent featurizer</p>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body">nothing, used as an input to intent classifiers that need intent features (e.g. <code class="docutils literal notranslate"><span class="pre">SklearnIntentClassifier</span></code>)</td>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing, used as an input to intent classifiers that need intent features (e.g. <code class="docutils literal notranslate"><span class="pre">SklearnIntentClassifier</span></code>)</p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></td>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></p>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body">Creates feature for intent classification using the spacy featurizer.</td>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates feature for intent classification using the spacy featurizer.
+Optionally adds word vectors for each <code class="docutils literal notranslate"><span class="pre">token</span></code> to <code class="docutils literal notranslate"><span class="pre">ner_features</span></code>, which can be referenced in <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
+  <span class="c1"># Whether to add word vectors to ``ner_features`` (default: False)</span>
+  <span class="l l-Scalar l-Scalar-Plain">ner_feature_vectors</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+</td>
 </tr>
 </tbody>
 </table>
@@ -1379,7 +1392,8 @@ CRFs can be thought of as an undirected Markov chain where the time steps are wo
 and the states are entity classes. Features of the words (capitalisation, POS tagging,
 etc.) give probabilities to certain entity classes, as are transitions between
 neighbouring entity tags: the most likely set of tags is then calculated and returned.
-If POS features are used (pos or pos2), spaCy has to be installed.</p>
+If POS features are used (pos or pos2), spaCy has to be installed. To use custom features
+made available by Featurizers, use <code class="docutils literal notranslate"><span class="pre">&quot;ner_features&quot;</span></code>.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
@@ -1392,7 +1406,7 @@ If POS features are used (pos or pos2), spaCy has to be installed.</p>
   <span class="c1"># Available features are:</span>
   <span class="c1"># ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,</span>
   <span class="c1"># ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,</span>
-  <span class="c1"># ``bias``, ``upper``, ``digit`` and ``pattern``</span>
+  <span class="c1"># ``bias``, ``upper``, ``digit``, ``pattern``, and ``ner_features``</span>
   <span class="l l-Scalar l-Scalar-Plain">features</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">],</span> <span class="p p-Indicator">[</span><span class="s">&quot;bias&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;suffix3&quot;</span><span class="p p-Indicator">],</span> <span class="p p-Indicator">[</span><span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos2&quot;</span><span class="p p-Indicator">]]</span>
 
   <span class="c1"># The flag determines whether to use BILOU tagging or not. BILOU</span>
