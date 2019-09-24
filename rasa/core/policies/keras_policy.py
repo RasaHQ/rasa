@@ -5,7 +5,6 @@ import os
 import tensorflow as tf
 import numpy as np
 import warnings
-import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 import rasa.utils.io
@@ -60,7 +59,7 @@ class KerasPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         model: Optional[tf.keras.models.Sequential] = None,
         graph: Optional[tf.Graph] = None,
-        session: Optional[tf.Session] = None,
+        session: Optional[tf.compat.v1.Session] = None,
         current_epoch: int = 0,
         max_history: Optional[int] = None,
         **kwargs: Any
@@ -183,7 +182,7 @@ class KerasPolicy(Policy):
         with self.graph.as_default():
             # set random seed in tf
             tf.set_random_seed(self.random_seed)
-            self.session = tf.Session(config=self._tf_config)
+            self.session = tf.compat.v1.Session(config=self._tf_config)
 
             with self.session.as_default():
                 if self.model is None:
@@ -315,7 +314,7 @@ class KerasPolicy(Policy):
 
                 graph = tf.Graph()
                 with graph.as_default():
-                    session = tf.Session(config=_tf_config)
+                    session = tf.compat.v1.Session(config=_tf_config)
                     with session.as_default():
                         with warnings.catch_warnings():
                             warnings.simplefilter("ignore")
