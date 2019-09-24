@@ -15,6 +15,8 @@ Added
 - added ``DynamoTrackerStore`` to support persistence of agents running on AWS
 - added docstrings for ``TrackerStore`` classes
 - added buttons and images to mattermost.
+- `CRFEntityExtractor` updated to accept arbitrary token-level features like word vectors (issues/4214)
+- `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
 
 Changed
 -------
@@ -112,8 +114,6 @@ Added
 - Add a `bot_challenge` intent and a `utter_iamabot` action to all example projects and the rasa init bot.
 - Allow sending attachments when using the socketio channel
 - ``rasa data validate`` will fail with a non-zero exit code if validation fails
-- `CRFEntityExtractor` updated to accept arbitrary token-level features like word vectors (issues/4214)
-- `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
 
 Changed
 -------
