@@ -21,14 +21,14 @@ InMemoryLockStore (default)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    `InMemoryLockStore` is the default lock store. It maintains conversation locks
+    ``InMemoryLockStore`` is the default lock store. It maintains conversation locks
     within a single process.
 
     .. note:: This lock store should not be used when multiple Rasa servers are run
       parallel.
 
 :Configuration:
-    To use the `InMemoryTrackerStore` no configuration is needed.
+    To use the ``InMemoryTrackerStore`` no configuration is needed.
 
 RedisLockStore
 ~~~~~~~~~~~~~~
