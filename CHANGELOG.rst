@@ -97,8 +97,6 @@ Added
 - Add a `bot_challenge` intent and a `utter_iamabot` action to all example projects and the rasa init bot.
 - Allow sending attachments when using the socketio channel
 - ``rasa data validate`` will fail with a non-zero exit code if validation fails
-- The tracker is now available within the interpreter's ``parse`` method, giving the ability to create interpreter classes that
-  use the tracker state (eg. slot values) during the parsing of the message. More details on motivation of this change see issues/3015
 - `CRFEntityExtractor` updated to accept arbitrary token-level features like word vectors (issues/4214)
 - `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
 
