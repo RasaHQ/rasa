@@ -7,22 +7,22 @@ from typing import List, Optional, Text, Union
 
 from sanic import Sanic
 
-import rasa.core
+import rasa.core.utils
 import rasa.utils
 import rasa.utils.io
+import rasa.utils.common
 from rasa import model
 from rasa import server
-from rasa.core import constants, utils
 from rasa.core import agent
+from rasa.core import channels
+from rasa.core import constants
 from rasa.core.agent import Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.utils import AvailableEndpoints, configure_file_logging
-from rasa.utils.common import update_sanic_log_level, class_from_module_path
-
+from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger()  # get the root logger
 
@@ -58,7 +58,7 @@ def _create_single_channel(channel, credentials):
     else:
         # try to load channel based on class name
         try:
-            input_channel_class = class_from_module_path(channel)
+            input_channel_class = rasa.utils.common.class_from_module_path(channel)
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
             raise Exception(
@@ -73,7 +73,7 @@ def _create_single_channel(channel, credentials):
 def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
     app = Sanic(__name__, configure_logging=False)
     server.add_root_route(app)
-    server.configure_cors(app)
+    server.configure_cors(app, cors)
     return app
 
 
@@ -92,7 +92,7 @@ def configure_app(
     """Run the agent."""
     from rasa import server
 
-    configure_file_logging(logger, log_file)
+    rasa.core.utils.configure_file_logging(logger, log_file)
 
     if enable_api:
         app = server.create_app(
@@ -106,12 +106,12 @@ def configure_app(
         app = _create_app_without_api(cors)
 
     if input_channels:
-        rasa.core.channels.channel.register(input_channels, app, route=route)
+        channels.channel.register(input_channels, app, route=route)
     else:
         input_channels = []
 
     if logger.isEnabledFor(logging.DEBUG):
-        utils.list_routes(app)
+        rasa.core.utils.list_routes(app)
 
     # configure async loop logging
     async def configure_async_logging():
@@ -192,7 +192,7 @@ def serve_application(
 
     app.register_listener(clear_model_files, "after_server_stop")
 
-    update_sanic_log_level(log_file)
+    rasa.utils.common.update_sanic_log_level(log_file)
 
     app.run(
         host="0.0.0.0",

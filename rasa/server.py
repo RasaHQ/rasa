@@ -14,10 +14,13 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
-import rasa.core.brokers.utils as broker_utils
+import rasa.core.brokers.utils
+import rasa.core.utils
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
+
+from rasa import model
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DEFAULT_MODELS_PATH,
@@ -30,16 +33,15 @@ from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
 )
+import rasa.nlu.test as test_nlu
+import rasa.core.test as test_core
 from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
 from rasa.core.lock_store import LockStore
-from rasa.core.test import test
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.core.utils import dump_obj_as_str_to_file, AvailableEndpoints
-from rasa.model import get_model_subdirectories, fingerprint_from_path
+from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
-from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -281,7 +283,9 @@ async def _load_agent(
         action_endpoint = None
 
         if endpoints:
-            _broker = broker_utils.from_endpoint_config(endpoints.event_broker)
+            _broker = rasa.core.brokers.utils.from_endpoint_config(
+                endpoints.event_broker
+            )
             tracker_store = TrackerStore.find_tracker_store(
                 None, endpoints.tracker_store, _broker
             )
@@ -316,15 +320,15 @@ async def _load_agent(
     return loaded_agent
 
 
-def configure_cors(app: Sanic) -> None:
+def configure_cors(app: Sanic, cors_origins: Union[Text, List[Text]] = "") -> None:
+    """Configure CORS origins for the given app."""
+
     # Workaround so that socketio works with requests from other origins.
     # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
     app.config.CORS_AUTOMATIC_OPTIONS = True
     app.config.CORS_SUPPORTS_CREDENTIALS = True
 
-    CORS(
-        app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
-    )
+    CORS(app, resources={r"/*": {"origins": cors_origins}}, automatic_options=True)
 
 
 def add_root_route(app: Sanic):
@@ -346,7 +350,7 @@ def create_app(
 
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = 60 * 60
-    configure_cors(app)
+    configure_cors(app, cors_origins)
 
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:
@@ -393,7 +397,7 @@ def create_app(
         return response.json(
             {
                 "model_file": app.agent.model_directory,
-                "fingerprint": fingerprint_from_path(app.agent.model_directory),
+                "fingerprint": model.fingerprint_from_path(app.agent.model_directory),
                 "num_active_training_jobs": app.active_training_processes.value,
             }
         )
@@ -659,20 +663,20 @@ def create_app(
         temp_dir = tempfile.mkdtemp()
 
         config_path = os.path.join(temp_dir, "config.yml")
-        dump_obj_as_str_to_file(config_path, rjs["config"])
+        rasa.core.utils.dump_obj_as_str_to_file(config_path, rjs["config"])
 
         if "nlu" in rjs:
             nlu_path = os.path.join(temp_dir, "nlu.md")
-            dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
+            rasa.core.utils.dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
 
         if "stories" in rjs:
             stories_path = os.path.join(temp_dir, "stories.md")
-            dump_obj_as_str_to_file(stories_path, rjs["stories"])
+            rasa.core.utils.dump_obj_as_str_to_file(stories_path, rjs["stories"])
 
         domain_path = DEFAULT_DOMAIN_PATH
         if "domain" in rjs:
             domain_path = os.path.join(temp_dir, "domain.yml")
-            dump_obj_as_str_to_file(domain_path, rjs["domain"])
+            rasa.core.utils.dump_obj_as_str_to_file(domain_path, rjs["domain"])
 
         if rjs.get("save_to_default_model_directory", True) is True:
             model_output_directory = DEFAULT_MODELS_PATH
@@ -755,7 +759,7 @@ def create_app(
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test(stories, app.agent, e2e=use_e2e)
+            evaluation = await test_core.test(stories, app.agent, e2e=use_e2e)
             return response.json(evaluation)
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -793,10 +797,10 @@ def create_app(
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
         model_directory = eval_agent.model_directory
-        _, nlu_model = get_model_subdirectories(model_directory)
+        _, nlu_model = model.get_model_subdirectories(model_directory)
 
         try:
-            evaluation = run_evaluation(data_path, nlu_model)
+            evaluation = test_nlu.run_evaluation(data_path, nlu_model)
             return response.json(evaluation)
         except Exception as e:
             logger.debug(traceback.format_exc())
