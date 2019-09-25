@@ -72,6 +72,10 @@ def _create_single_channel(channel, credentials):
 def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
     app = Sanic(__name__, configure_logging=False)
     add_root_route(app)
+    # Workaround so that socketio works with requests from other origins.
+    # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
+    app.config.CORS_AUTOMATIC_OPTIONS = True
+    app.config.CORS_SUPPORTS_CREDENTIALS = True
     CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
     return app
 
