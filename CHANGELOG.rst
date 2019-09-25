@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Fixed
 -----
 - re-added TLS, SRV dependencies for PyMongo
-- socketio can now be run without turning on ``--enable-api`` flag
+- socketio can now be run without turning on the ``--enable-api`` flag
 
 [1.3.6] - 2019-09-21
 ^^^^^^^^^^^^^^^^^^^^
