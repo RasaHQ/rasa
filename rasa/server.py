@@ -2,7 +2,7 @@ import logging
 import os
 import tempfile
 import traceback
-from functools import wraps
+from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
 
@@ -25,7 +25,11 @@ from rasa.constants import (
 )
 from rasa.core import broker
 from rasa.core.agent import load_agent, Agent
-from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
+from rasa.core.channels.channel import (
+    UserMessage,
+    CollectingOutputChannel,
+    OutputChannel,
+)
 from rasa.core.events import Event
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
@@ -36,6 +40,10 @@ from rasa.nlu.test import run_evaluation
 from rasa.core.tracker_store import TrackerStore
 
 logger = logging.getLogger(__name__)
+
+
+OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
+USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
 
 
 class ErrorResponse(Exception):
@@ -274,6 +282,13 @@ async def _load_agent(
     return loaded_agent
 
 
+def add_root_route(app: Sanic):
+    @app.get("/")
+    async def hello(request: Request):
+        """Check if the server is running and responds with the version."""
+        return response.text("Hello from Rasa: " + rasa.__version__)
+
+
 def create_app(
     agent: Optional["Agent"] = None,
     cors_origins: Union[Text, List[Text]] = "*",
@@ -311,10 +326,7 @@ def create_app(
     async def handle_error_response(request: Request, exception: ErrorResponse):
         return response.json(exception.error_info, status=exception.status)
 
-    @app.get("/")
-    async def hello(request: Request):
-        """Check if the server is running and responds with the version."""
-        return response.text("Hello from Rasa: " + rasa.__version__)
+    add_root_route(app)
 
     @app.get("/version")
     async def version(request: Request):
@@ -502,13 +514,13 @@ def create_app(
 
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
-
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            out = CollectingOutputChannel()
+            tracker = obtain_tracker_store(app.agent, conversation_id)
+            output_channel = _get_output_channel(request, tracker)
             await app.agent.execute_action(
-                conversation_id, action_to_execute, out, policy, confidence
+                conversation_id, action_to_execute, output_channel, policy, confidence
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -520,7 +532,13 @@ def create_app(
 
         tracker = obtain_tracker_store(app.agent, conversation_id)
         state = tracker.current_state(verbosity)
-        return response.json({"tracker": state, "messages": out.messages})
+
+        response_body = {"tracker": state}
+
+        if isinstance(output_channel, CollectingOutputChannel):
+            response_body["messages"] = output_channel.messages
+
+        return response.json(response_body)
 
     @app.post("/conversations/<conversation_id>/predict")
     @requires_auth(app, auth_token)
@@ -805,6 +823,8 @@ def create_app(
         try:
             data = emulator.normalise_request_json(request.json)
             try:
+                data['text'] = data['text'].lower()
+                print(data['text'])
                 parsed_data = await app.agent.parse_message_using_nlu_interpreter(
                     data.get("text")
                 )
@@ -816,7 +836,14 @@ def create_app(
                     "An unexpected error occurred. Error: {}".format(e),
                 )
             response_data = emulator.normalise_response_json(parsed_data)
-
+            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",response_data,"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+            if response_data['intent']['confidence'] >= 0.9:
+                narrowedEntity = entitySerializer(response_data['entities'])
+                entMap = entityMapper(narrowedEntity, response_data['intent']['name'],response_data['text'])
+                response_data['entities'] = entMap
+            else:
+                response_data['intent'] = {}
+                response_data['intent']['name'] = 'AMAZON.FallbackIntent'
             return response.json(response_data)
 
         except Exception as e:
@@ -824,6 +851,186 @@ def create_app(
             raise ErrorResponse(
                 500, "ParsingError", "An unexpected error occurred. Error: {}".format(e)
             )
+
+    def entityMapper(entMap, intent, utterence):
+        intent = intent.lower()
+        conditionMap = {}
+        entityMap = {}
+        entityArray = []
+        count = 0
+        print(entMap, intent, utterence)
+        newMap = {}
+        for data in entMap:
+            newMap[data['name']] = data['value']
+        if newMap.__contains__("WORK_OF_ART") and newMap.__contains__("subject"):
+            print("into special condition")
+            newMap.__delitem__("WORK_OF_ART")
+            entMap = []
+            resMap = {}
+            for data, value in newMap.items():
+                resMap['name'] = data
+                resMap['value'] = value
+                entMap.append(resMap)
+                resMap = {}
+        if intent == "searchintent" or intent == "cancelholdintent" or intent == "renewintent" or intent == "listcheckOutintent":
+            print("enitity map revised ",entMap)
+            for data in entMap:
+                if data["name"] == "WORK_OF_ART":
+                    data["name"] = "stitle"
+                    print("###############################################", data["value"],
+                          "##########################################################")
+                    data["value"] = data["value"].lower().replace("search for a book", "").replace(
+                        "search for the book", "").replace("serach for title", "").replace("search for a title",
+                                                                                           "").replace(
+                        "serach for the title", "")
+                    print("###############################################", data["value"],
+                          "##########################################################")
+                    if data["value"] != "":
+                        entityArray.append(data)
+                        conditionMap["stitle"] = data["value"]
+                elif data["name"] == "person":
+                    data["name"] = "sauthor"
+                    entityArray.append(data)
+                elif data["name"] == "sBook":
+                    if "stitle" not in conditionMap:
+                        data["name"] = "stitle"
+                        entityArray.append(data)
+                        conditionMap["stitle"] = data["value"]
+                elif data["name"] == "sbook":
+                    if "stitle" not in conditionMap:
+                        data["name"] = "stitle"
+                        entityArray.append(data)
+                        conditionMap["stitle"] = data["value"]
+                elif data["name"] == 'type' or data["name"] == 'timeline' or data["name"] == 'filterphrase' or data[
+                    "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data[
+                    "name"] == 'subject':
+                    data["name"] = data["name"].lower()
+                    entityArray.append(data)
+                else:
+                    pass
+        elif intent == "eventsearchintent":
+            for data in entMap:
+                if data["name"] == "person":
+                    if "present" in utterence and "organize" in utterence:
+                        if count == 0:
+                            data["name"] = 'presenter'
+                            entityArray.append(data)
+                            count = count + 1
+                        elif count == 1:
+                            data["name"] = 'organizer'
+                            entityArray.append(data)
+                            count = 0
+                    elif "present" in utterence:
+                        data["name"] = "presenter"
+                        entityArray.append(data)
+                    elif "organize" in utterence:
+                        data["name"] = "organizer"
+                        entityArray.append(data)
+                elif data["name"] == "time":
+                    if data['value'] is dict:
+                        tempMap = {}
+                        tempMap['entity'] = 'from'
+                        tempMap['value'] = data['value']['from']
+                        entityArray.append(tempMap)
+                        tempMap = {}
+                        tempMap['entity'] = 'to'
+                        tempMap['value'] = data['value']['to']
+                        entityArray.append(tempMap)
+                    else:
+                        data["name"] = 'edate'
+                        entityArray.append(data)
+                    conditionMap["edate"] = data["value"]
+                elif data["name"].lower() == 'date':
+                    data["name"] = 'date'
+                elif data["name"] == "edate":
+                    if "edate" not in conditionMap:
+                        entityArray.append(data)
+                elif data["name"] == 'sBook':
+                    data["name"] = 'title'
+                    entityArray.append(data)
+                elif data["name"] == "ORG":
+                    data["name"] = "libname"
+                    entityArray.append(data)
+                elif data["name"] == 'timeline':
+                    pass
+                else:
+                    entityArray.append(data)
+        # elif intent == "hoursintent":
+        #     for data in entMap:
+        #         if data["name"] == "ORG":
+        #             data["name"] = "libname"
+        #             entityArray.append(data)
+        #         elif data["name"] == "time":
+        #             if data['value'] is dict:
+        #                 tempMap = {}
+        #                 tempMap['entity'] = 'from'
+        #                 tempMap['value'] = data['value']['from']
+        #                 entityArray.append(tempMap)
+        #                 tempMap = {}
+        #                 tempMap['entity'] = 'to'
+        #                 tempMap['value'] = data['value']['to']
+        #                 entityArray.append(tempMap)
+        #             else:
+        #                 data["name"] = 'edate'
+        #                 entityArray.append(data)
+        #             conditionMap["edate"] = data["value"]
+        #         elif data["name"] == "hdate":
+        #             if "edate" not in conditionMap:
+        #                 entityArray.append(data)
+        #         elif data["name"].lower() == 'date':
+        #             data["name"] = 'date'
+        #         else:
+        #             entityArray.append(data)
+        elif intent == "optionintent":
+            for data in entMap:
+                if data["name"] == 'ordinal':
+                    data["name"] = 'option'
+                    data['value'] = str(data['value'])
+                    entityArray.append(data)
+                elif data["name"] == 'number':
+                    data["name"] = 'options'
+                    data['value'] = str(data['value'])
+                    entityArray.append(data)
+        elif intent == "PickUpIntent":
+            if data["name"] == 'pickup':
+                entityArray.append(data)
+        else:
+            for data in entMap:
+                entityArray.append(data)
+        return entityArray
+
+
+    def entitySerializer(enityData):
+        filterMap = []
+        entityArray = []
+        entityMap = {}
+        for data in enityData:
+            if data["entity"] == "PERSON":
+                entData = data["value"]
+                entArray = entData.split("||")
+                if len(entArray) > 1:
+                    for k in entArray:
+                        entityMap["value"] = k
+                        entityMap["name"] = "PERSON"
+                        entityArray.append(entityMap)
+                        entityMap = {}
+                else:
+                    entityMap["value"] = str(data["value"])
+                    entityMap["name"] = data["entity"]
+                    entityArray.append(entityMap)
+                    entityMap = {}
+            else:
+                entityMap["value"] = str(data["value"])
+                entityMap["name"] = data["entity"]
+                if "synonym" in data:
+                    entityMap["synonym"] = data["synonym"]
+                entityArray.append(entityMap)
+                entityMap = {}
+
+
+        return entityArray
+
+
 
     @app.put("/model")
     @requires_auth(app, auth_token)
@@ -889,3 +1096,43 @@ def create_app(
             )
 
     return app
+
+
+def _get_output_channel(
+    request: Request, tracker: Optional[DialogueStateTracker]
+) -> OutputChannel:
+    """Returns the `OutputChannel` which should be used for the bot's responses.
+
+    Args:
+        request: HTTP request whose query parameters can specify which `OutputChannel`
+                 should be used.
+        tracker: Tracker for the conversation. Used to get the latest input channel.
+
+    Returns:
+        `OutputChannel` which should be used to return the bot's responses to.
+    """
+    requested_output_channel = request.args.get(OUTPUT_CHANNEL_QUERY_KEY)
+
+    if (
+        requested_output_channel == USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL
+        and tracker
+    ):
+        requested_output_channel = tracker.get_latest_input_channel()
+
+    # Interactive training does not set `input_channels`, hence we have to be cautious
+    registered_input_channels = getattr(request.app, "input_channels", None) or []
+    matching_channels = [
+        channel
+        for channel in registered_input_channels
+        if channel.name() == requested_output_channel
+    ]
+
+    # Check if matching channels can provide a valid output channel,
+    # otherwise use `CollectingOutputChannel`
+    return reduce(
+        lambda output_channel_created_so_far, input_channel: (
+            input_channel.get_output_channel() or output_channel_created_so_far
+        ),
+        matching_channels,
+        CollectingOutputChannel(),
+    )
