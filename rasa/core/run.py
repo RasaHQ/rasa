@@ -6,22 +6,23 @@ from functools import partial
 from typing import List, Optional, Text, Union
 
 from sanic import Sanic
-from sanic_cors import CORS
 
 import rasa.core
 import rasa.utils
 import rasa.utils.io
+from rasa import model
+from rasa import server
 from rasa.core import constants, utils
-from rasa.core.agent import load_agent, Agent
+from rasa.core import agent
+from rasa.core.agent import Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints, configure_file_logging
-from rasa.model import get_model_subdirectories, get_model
 from rasa.utils.common import update_sanic_log_level, class_from_module_path
-from rasa.server import add_root_route
+
 
 logger = logging.getLogger()  # get the root logger
 
@@ -71,12 +72,8 @@ def _create_single_channel(channel, credentials):
 
 def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
     app = Sanic(__name__, configure_logging=False)
-    add_root_route(app)
-    # Workaround so that socketio works with requests from other origins.
-    # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
-    app.config.CORS_AUTOMATIC_OPTIONS = True
-    app.config.CORS_SUPPORTS_CREDENTIALS = True
-    CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
+    server.add_root_route(app)
+    server.configure_cors(app)
     return app
 
 
@@ -220,8 +217,8 @@ async def load_agent_on_start(
     import rasa.core.brokers.utils as broker_utils
 
     try:
-        with get_model(model_path) as unpacked_model:
-            _, nlu_model = get_model_subdirectories(unpacked_model)
+        with model.get_model(model_path) as unpacked_model:
+            _, nlu_model = model.get_model_subdirectories(unpacked_model)
             _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
     except Exception:
         logger.debug("Could not load interpreter from '{}'.".format(model_path))
@@ -235,7 +232,7 @@ async def load_agent_on_start(
 
     model_server = endpoints.model if endpoints and endpoints.model else None
 
-    app.agent = await load_agent(
+    app.agent = await agent.load_agent(
         model_path,
         model_server=model_server,
         remote_storage=remote_storage,

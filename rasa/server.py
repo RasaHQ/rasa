@@ -316,6 +316,17 @@ async def _load_agent(
     return loaded_agent
 
 
+def configure_cors(app: Sanic) -> None:
+    # Workaround so that socketio works with requests from other origins.
+    # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
+    app.config.CORS_AUTOMATIC_OPTIONS = True
+    app.config.CORS_SUPPORTS_CREDENTIALS = True
+
+    CORS(
+        app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
+    )
+
+
 def add_root_route(app: Sanic):
     @app.get("/")
     async def hello(request: Request):
@@ -335,14 +346,7 @@ def create_app(
 
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = 60 * 60
-    # Workaround so that socketio works with requests from other origins.
-    # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
-    app.config.CORS_AUTOMATIC_OPTIONS = True
-    app.config.CORS_SUPPORTS_CREDENTIALS = True
-
-    CORS(
-        app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
-    )
+    configure_cors(app)
 
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:
