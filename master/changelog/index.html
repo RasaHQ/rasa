@@ -68,12 +68,6 @@
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MMHSZCS" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
-<div class="announcement-banner" data-cookie-id="docsAnnouncementBannerDismissed">
-  Join us for a full day of talks and networking at the Rasa Developer Summit in San Francisco, September 24th!
-  <a href="http://bit.ly/2XAd05f" target="_blank">Get your ticket</a>
-  <button class="announcement-banner__close">✕</button>
-</div>
-
 <div class="nav-top">
   <div class="nav-container">
     <ul class="main-nav nav">
@@ -267,6 +261,8 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <li>added buttons and images to mattermost.</li>
 <li><cite>CRFEntityExtractor</cite> updated to accept arbitrary token-level features like word vectors (issues/4214)</li>
 <li><cite>SpacyFeaturizer</cite> updated to add <cite>ner_features</cite> for <cite>CRFEntityExtractor</cite></li>
+<li>Sanitizing incoming messages from slack to remove slack formatting like &lt;<a class="reference external" href="mailto:xyz&#37;&#52;&#48;rasa">mailto:xyz<span>&#64;</span>rasa</a>.com|xyz&#64;rasa.com&gt;
+or &lt;<a class="reference external" href="http://url">http://url</a>.com|url.com&gt; and substitute it with original content</li>
 </ul>
 </div>
 <div class="section" id="changed">
