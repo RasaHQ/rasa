@@ -33,15 +33,15 @@ from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
 )
-import rasa.nlu.test as test_nlu
-import rasa.core.test as test_core
 from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
 from rasa.core.lock_store import LockStore
+from rasa.core.test import test
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -759,7 +759,7 @@ def create_app(
         use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = await test_core.test(stories, app.agent, e2e=use_e2e)
+            evaluation = await test(stories, app.agent, e2e=use_e2e)
             return response.json(evaluation)
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -800,7 +800,7 @@ def create_app(
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
         try:
-            evaluation = test_nlu.run_evaluation(data_path, nlu_model)
+            evaluation = run_evaluation(data_path, nlu_model)
             return response.json(evaluation)
         except Exception as e:
             logger.debug(traceback.format_exc())
