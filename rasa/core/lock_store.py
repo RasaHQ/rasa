@@ -4,7 +4,7 @@ import logging
 import os
 from typing import Text, Optional, Union
 
-from async_generator import asynccontextmanager, async_generator, yield_
+from async_generator import asynccontextmanager
 
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock, NO_TICKET_ISSUED
