@@ -23,10 +23,7 @@ tests_requires = [
     "nbsphinx>=0.3",
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
-    "fakeredis~=1.0",
-    # upstream dep from fakeredis, should be removed if fakeredis properly depends on
-    # at least 1.12
-    "six>=1.12.0",
+    "fakeredis~=1.0.5",
 ]
 
 install_requires = [
@@ -108,7 +105,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",

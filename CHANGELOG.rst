@@ -27,6 +27,7 @@ Changed
 
 Removed
 -------
+- Python 3.5 support
 
 Fixed
 -----

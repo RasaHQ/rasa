@@ -51,12 +51,11 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
 
 
 @pytest.fixture
-@async_generator
 async def model_server(test_server, trained_moodbot_path):
     server = await test_server(
         model_server_app(trained_moodbot_path, model_hash="somehash")
     )
-    await yield_(server)  # python 3.5 compatibility
+    yield await server
     await server.close()
 
 

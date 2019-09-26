@@ -124,7 +124,6 @@ class LockStore:
         return ticket
 
     @asynccontextmanager
-    @async_generator
     async def lock(
         self,
         conversation_id: Text,
@@ -140,10 +139,10 @@ class LockStore:
         ticket = self.issue_ticket(conversation_id, lock_lifetime)
 
         try:
-            # have to use async_generator.yield_() for py 3.5 compatibility
-            await yield_(
-                await self._acquire_lock(conversation_id, ticket, wait_time_in_seconds)
+            yield await self._acquire_lock(
+                conversation_id, ticket, wait_time_in_seconds
             )
+
         finally:
             self.cleanup(conversation_id, ticket)
 
