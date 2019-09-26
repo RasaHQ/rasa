@@ -114,16 +114,18 @@ class WronglyPredictedAction(ActionExecuted):
     type_name = "wrong_action"
 
     def __init__(
-        self, correct_action, predicted_action, policy, confidence, timestamp=None
+        self, correct_label, predicted_label, correct_action, predicted_action, policy, confidence, timestamp=None
     ):
         self.predicted_action = predicted_action
+        self.correct_label = correct_label
+        self.predicted_label = predicted_label
         super(WronglyPredictedAction, self).__init__(
             correct_action, policy, confidence, timestamp=timestamp
         )
 
     def as_story_string(self):
-        return "{}   <!-- predicted: {} -->".format(
-            self.action_name, self.predicted_action
+        return "{}: {}   <!-- predicted: {}: {} -->".format(
+            self.correct_label, self.action_name, self.predicted_label, self.predicted_action
         )
 
 
@@ -282,26 +284,37 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
+    import json
+    with open("multiwoz/data/action_map.json", "r") as file:
+        action_map = json.load(file)
+        action_map['action_listen'] = ['action_listen']
+
+    # for k, v in action_map.items():
+    #     if not v:
+    #         print(k, v)
+    #         exit()
+
     gold = event.action_name
 
     action, policy, confidence = processor.predict_next_action(partial_tracker)
     predicted = action.name()
 
-    if policy and predicted != gold and FormPolicy.__name__ in policy:
-        # FormPolicy predicted wrong action
-        # but it might be Ok if form action is rejected
-        _emulate_form_rejection(processor, partial_tracker)
-        # try again
-        action, policy, confidence = processor.predict_next_action(partial_tracker)
-        predicted = action.name()
+    # if policy and predicted != gold and FormPolicy.__name__ in policy:
+    #     # FormPolicy predicted wrong action
+    #     # but it might be Ok if form action is rejected
+    #     _emulate_form_rejection(processor, partial_tracker)
+    #     # try again
+    #     action, policy, confidence = processor.predict_next_action(partial_tracker)
+    #     predicted = action.name()
 
     action_executed_eval_store.add_to_store(
-        action_predictions=predicted, action_targets=gold
+        action_predictions="_".join(action_map[predicted]), action_targets="_".join(action_map[gold])
     )
 
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
+                "_".join(action_map[gold]), "_".join(action_map[predicted]),
                 gold, predicted, event.policy, event.confidence, event.timestamp
             )
         )
@@ -320,6 +333,14 @@ def _collect_action_executed_predictions(
                 )
             raise ValueError(error_msg)
     else:
+        # if event.action_name != 'action_listen':
+        #     partial_tracker.update(
+        #         WronglyPredictedAction(
+        #             "_".join(action_map[gold]), "_".join(action_map[predicted]),
+        #             gold, predicted, event.policy, event.confidence, event.timestamp
+        #         )
+        #     )
+        # else:
         partial_tracker.update(event)
 
     return action_executed_eval_store, policy, confidence
@@ -490,7 +511,7 @@ async def test(
         warnings.simplefilter("ignore", UndefinedMetricWarning)
 
         targets, predictions = evaluation_store.serialise()
-        report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
+        report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions, exclude_label='action_listen')
 
     if out_directory:
         plot_story_evaluation(
@@ -528,6 +549,9 @@ def log_evaluation_table(
     include_report=True,
 ):  # pragma: no cover
     """Log the sklearn evaluation metrics."""
+    if 'action_listen' in golds:
+        golds = [g for g in golds if g != 'action_listen']
+
     logger.info("Evaluation Results on {} level:".format(name))
     logger.info(
         "\tCorrect:          {} / {}".format(int(len(golds) * accuracy), len(golds))
