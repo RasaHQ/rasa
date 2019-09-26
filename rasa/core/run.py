@@ -13,9 +13,7 @@ import rasa.utils.io
 import rasa.utils.common
 from rasa import model
 from rasa import server
-from rasa.core import agent
-from rasa.core import channels
-from rasa.core import constants
+from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
