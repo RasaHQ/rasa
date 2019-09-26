@@ -53,7 +53,7 @@ async def model_server(test_server, trained_moodbot_path):
     server = await test_server(
         model_server_app(trained_moodbot_path, model_hash="somehash")
     )
-    yield await server
+    yield server
     await server.close()
 
 

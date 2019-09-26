@@ -98,7 +98,7 @@ async def send_message_receive_stream(server_url, auth_token, sender_id, message
 
             async for line in resp.content:
                 if line:
-                    yield await json.loads(line.decode("utf-8"))
+                    yield json.loads(line.decode("utf-8"))
 
 
 async def record_messages(

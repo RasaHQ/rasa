@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Text, Optional, Union
+from typing import Text, Optional, Union, AsyncGenerator, Coroutine
 
 from async_generator import asynccontextmanager
 
@@ -129,7 +129,7 @@ class LockStore:
         conversation_id: Text,
         lock_lifetime: int = LOCK_LIFETIME,
         wait_time_in_seconds: Union[int, float] = 1,
-    ) -> None:
+    ) -> AsyncGenerator[TicketLock, None]:
         """Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
 
         Try acquiring lock with a wait time of `wait_time_in_seconds` seconds
