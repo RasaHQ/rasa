@@ -101,8 +101,7 @@ class TrainingData(object):
     def __hash__(self) -> int:
         from rasa.core import utils as core_utils
 
-        # Sort keys to ensure dictionary order in Python 3.5
-        stringified = self.nlu_as_json(sort_keys=True) + self.nlg_as_markdown()
+        stringified = self.nlu_as_json() + self.nlg_as_markdown()
         text_hash = core_utils.get_text_hash(stringified)
 
         return int(text_hash, 16)
@@ -229,7 +228,9 @@ class TrainingData(object):
         return self.nlu_as_json()
 
     def nlg_as_markdown(self) -> Text:
-        """Generates the markdown representation of the response phrases(NLG) of TrainingData."""
+        """Generates the markdown representation of the response phrases(NLG) of
+        TrainingData."""
+
         from rasa.nlu.training_data.formats import (  # pytype: disable=pyi-error
             NLGMarkdownWriter,
         )

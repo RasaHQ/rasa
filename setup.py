@@ -24,9 +24,6 @@ tests_requires = [
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
     "fakeredis~=1.0",
-    # upstream dep from fakeredis, should be removed if fakeredis properly depends on
-    # at least 1.12
-    "six>=1.12.0",
 ]
 
 install_requires = [
@@ -88,6 +85,9 @@ install_requires = [
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
+    # remove when tensorflow@1.15.x or a pre-release patch is released
+    # https://github.com/tensorflow/tensorflow/issues/32319
+    "gast==0.2.2",
 ]
 
 extras_requires = {
@@ -105,11 +105,11 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
+    python_requires=">=3.6",
     packages=find_packages(exclude=["tests", "tools", "docs", "contrib"]),
     entry_points={"console_scripts": ["rasa=rasa.__main__:main"]},
     version=__version__,
