@@ -5,6 +5,7 @@ from sanic.request import Request
 from typing import Text, Dict, Any, List, Callable, Awaitable, Optional
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
+from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
     """A Mattermost communication channel"""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "mattermost"
 
     @classmethod
@@ -31,7 +32,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
         pw: Text,
         bot_channel: Text,
         webhook_url: Optional[Text],
-    ):
+    ) -> None:
         self.url = url
         self.team = team
         self.user = user
@@ -107,11 +108,11 @@ class MattermostInput(InputChannel):
     """Mattermost input channel implemenation."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "mattermost"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
@@ -214,15 +215,17 @@ class MattermostInput(InputChannel):
             logger.error("Exception when trying to handle message.{0}".format(e))
             logger.debug(e, exc_info=True)
 
-    def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[None]]):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[None]]
+    ) -> Blueprint:
         mattermost_webhook = Blueprint("mattermost_webhook", __name__)
 
         @mattermost_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @mattermost_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request: Request):
+        async def webhook(request: Request) -> HTTPResponse:
             output = request.json
 
             if not output:
