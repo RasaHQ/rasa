@@ -7,9 +7,10 @@ from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable
+from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
+from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +19,13 @@ class Messenger:
     """Implement a fbmessenger to parse incoming webhooks and send msgs."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "facebook"
 
     def __init__(
         self,
         page_access_token: Text,
-        on_new_message: Callable[[UserMessage], Awaitable[None]],
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
     ) -> None:
 
         self.on_new_message = on_new_message
@@ -117,7 +118,7 @@ class MessengerBot(OutputChannel):
     """A bot that uses fb-messenger to communicate."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "facebook"
 
     def __init__(self, messenger_client: MessengerClient) -> None:
@@ -252,11 +253,11 @@ class FacebookInput(InputChannel):
     """Facebook input channel implementation. Based on the HTTPInputChannel."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "facebook"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
@@ -284,17 +285,19 @@ class FacebookInput(InputChannel):
         self.fb_secret = fb_secret
         self.fb_access_token = fb_access_token
 
-    def blueprint(self, on_new_message):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
 
         fb_webhook = Blueprint("fb_webhook", __name__)
 
         # noinspection PyUnusedLocal
         @fb_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(request: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @fb_webhook.route("/webhook", methods=["GET"])
-        async def token_verification(request: Request):
+        async def token_verification(request: Request) -> HTTPResponse:
             if request.args.get("hub.verify_token") == self.fb_verify:
                 return response.text(request.args.get("hub.challenge"))
             else:
@@ -305,7 +308,7 @@ class FacebookInput(InputChannel):
                 return response.text("failure, invalid token")
 
         @fb_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request: Request):
+        async def webhook(request: Request) -> HTTPResponse:
             signature = request.headers.get("X-Hub-Signature") or ""
             if not self.validate_hub_signature(self.fb_secret, request.body, signature):
                 logger.warning(

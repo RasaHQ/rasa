@@ -2,9 +2,10 @@ import logging
 from mattermostwrapper import MattermostAPI
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, Dict, Any, List, Callable, Awaitable
+from typing import Text, Dict, Any, Callable, Awaitable, Optional
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
+from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
     """A Mattermost communication channel"""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "mattermost"
 
     @classmethod
@@ -25,10 +26,10 @@ class MattermostBot(MattermostAPI, OutputChannel):
 
     def __init__(
         self,
-        url: Text,
-        team: Text,
-        user: Text,
-        pw: Text,
+        url: Optional[Text],
+        team: Optional[Text],
+        user: Optional[Text],
+        pw: Optional[Text],
         bot_channel: Text,
         webhook_url: Text,
     ):
@@ -55,63 +56,16 @@ class MattermostBot(MattermostAPI, OutputChannel):
         json_message.setdefault("message", "")
         self.post("/posts", json_message)
 
-    async def send_image_url(
-        self, recipient_id: Text, image: Text, **kwargs: Any
-    ) -> None:
-        """Sends an image."""
-        image_url = image
-
-        props = {"attachments": []}
-        props["attachments"].append({"image_url": image_url})
-
-        json_message = {}
-        json_message.setdefault("channel_id", self.bot_channel)
-        json_message.setdefault("props", props)
-
-        self.post("/posts", json_message)
-
-    async def send_text_with_buttons(
-        self,
-        recipient_id: Text,
-        text: Text,
-        buttons: List[Dict[Text, Any]],
-        **kwargs: Any
-    ) -> None:
-        """Sends buttons to the output."""
-
-        # buttons are a list of objects: [(option_name, payload)]
-        # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons
-        button_block = {"actions": []}
-        for button in buttons:
-            button_block["actions"].append(
-                {
-                    "name": button["title"],
-                    "integration": {
-                        "url": self.webhook_url,
-                        "context": {"action": button["payload"]},
-                    },
-                }
-            )
-        props = {"attachments": []}
-        props["attachments"].append(button_block)
-
-        json_message = {}
-        json_message.setdefault("channel_id", self.bot_channel)
-        json_message.setdefault("message", text)
-        json_message.setdefault("props", props)
-
-        self.post("/posts", json_message)
-
 
 class MattermostInput(InputChannel):
     """Mattermost input channel implemenation."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "mattermost"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
@@ -120,12 +74,9 @@ class MattermostInput(InputChannel):
             credentials.get("team"),
             credentials.get("user"),
             credentials.get("pw"),
-            credentials.get("webhook_url"),
         )
 
-    def __init__(
-        self, url: Text, team: Text, user: Text, pw: Text, webhook_url: Text
-    ) -> None:
+    def __init__(self, url: Text, team: Text, user: Text, pw: Text) -> None:
         """Create a Mattermost input channel.
         Needs a couple of settings to properly authenticate and validate
         messages.

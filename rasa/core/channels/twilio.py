@@ -2,9 +2,10 @@
 import logging
 from sanic import Blueprint, response
 from sanic.request import Request
+from sanic.response import HTTPResponse
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
-from typing import Dict, Text, Any
+from typing import Dict, Text, Any, Callable, Awaitable, Optional
 
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
@@ -16,10 +17,15 @@ class TwilioOutput(Client, OutputChannel):
     """Output channel for Twilio"""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "twilio"
 
-    def __init__(self, account_sid, auth_token, twilio_number):
+    def __init__(
+        self,
+        account_sid: Optional[Text],
+        auth_token: Optional[Text],
+        twilio_number: Optional[Text],
+    ) -> None:
         super(TwilioOutput, self).__init__(account_sid, auth_token)
         self.twilio_number = twilio_number
         self.send_retry = 0
@@ -69,11 +75,11 @@ class TwilioInput(InputChannel):
     """Twilio input channel"""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "twilio"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
@@ -83,21 +89,29 @@ class TwilioInput(InputChannel):
             credentials.get("twilio_number"),
         )
 
-    def __init__(self, account_sid, auth_token, twilio_number, debug_mode=True):
+    def __init__(
+        self,
+        account_sid: Optional[Text],
+        auth_token: Optional[Text],
+        twilio_number: Optional[Text],
+        debug_mode: bool = True,
+    ) -> None:
         self.account_sid = account_sid
         self.auth_token = auth_token
         self.twilio_number = twilio_number
         self.debug_mode = debug_mode
 
-    def blueprint(self, on_new_message):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
         twilio_webhook = Blueprint("twilio_webhook", __name__)
 
         @twilio_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @twilio_webhook.route("/webhook", methods=["POST"])
-        async def message(request: Request):
+        async def message(request: Request) -> HTTPResponse:
             sender = request.form.get("From", None)
             text = request.form.get("Body", None)
 

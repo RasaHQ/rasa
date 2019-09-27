@@ -12,6 +12,7 @@ import rasa.utils.endpoints
 from rasa.cli import utils as cli_utils
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
+from sanic.response import HTTPResponse
 
 try:
     from urlparse import urljoin  # pytype: disable=import-error
@@ -21,7 +22,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class UserMessage(object):
+class UserMessage:
     """Represents an incoming message.
 
      Includes the channel the responses should be sent to."""
@@ -90,21 +91,21 @@ def register(
     app.input_channels = input_channels
 
 
-class InputChannel(object):
+class InputChannel:
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         """Every input channel needs a name to identify it."""
         return cls.__name__
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict]) -> "InputChannel":
         return cls()
 
-    def url_prefix(self):
+    def url_prefix(self) -> Text:
         return self.name()
 
     def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[None]]
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
         """Defines a Sanic blueprint.
 
@@ -113,7 +114,7 @@ class InputChannel(object):
         raise NotImplementedError("Component listener needs to provide blueprint.")
 
     @classmethod
-    def raise_missing_credentials_exception(cls):
+    def raise_missing_credentials_exception(cls) -> None:
         raise Exception(
             "To use the {} input channel, you need to "
             "pass a credentials file using '--credentials'. "
@@ -139,15 +140,30 @@ class InputChannel(object):
         """
         pass
 
+    def get_metadata(self, request: Request) -> Optional[Dict]:
+        """Extracts additional information from the incoming request.
 
-class OutputChannel(object):
+         Implementing this function is not required. However, it can be used to extract
+         metadata from the request. The return value is passed on to the
+         ``UserMessage`` object and stored in the conversation tracker.
+
+        Args:
+            request: incoming request with the message of the user
+
+        Returns:
+            Metadata which was extracted from the request.
+        """
+        pass
+
+
+class OutputChannel:
     """Output channel base class.
 
     Provides sane implementation of the send methods
     for text only output channels."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         """Every output channel needs a name to identify it."""
         return cls.__name__
 
@@ -244,7 +260,8 @@ class OutputChannel(object):
 
         Default implementation will just post the elements as a string."""
 
-        # we can't pass the empty "buttons" key of the message through to send_text_with_buttons()
+        # we can't pass the empty "buttons" key of the message through to send_text_
+        # with_buttons()
         kwargs.pop("buttons", None)
 
         for element in elements:
@@ -270,17 +287,22 @@ class CollectingOutputChannel(OutputChannel):
 
     (doesn't send them anywhere, just collects them)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.messages = []
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "collector"
 
     @staticmethod
     def _message(
-        recipient_id, text=None, image=None, buttons=None, attachment=None, custom=None
-    ):
+        recipient_id: Text,
+        text: Text = None,
+        image: Text = None,
+        buttons: List[Dict[Text, Any]] = None,
+        attachment: Text = None,
+        custom: Dict[Text, Any] = None,
+    ) -> Dict:
         """Create a message object that will be stored."""
 
         obj = {
@@ -295,13 +317,13 @@ class CollectingOutputChannel(OutputChannel):
         # filter out any values that are `None`
         return utils.remove_none_values(obj)
 
-    def latest_output(self):
+    def latest_output(self) -> Optional[Dict]:
         if self.messages:
             return self.messages[-1]
         else:
             return None
 
-    async def _persist_message(self, message) -> None:
+    async def _persist_message(self, message: Dict) -> None:
         self.messages.append(message)  # pytype: disable=bad-return-type
 
     async def send_text_message(
@@ -347,7 +369,7 @@ class QueueOutputChannel(CollectingOutputChannel):
     (doesn't send them anywhere, just collects them)."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "queue"
 
     # noinspection PyMissingConstructor
@@ -370,12 +392,12 @@ class RestInput(InputChannel):
     retrieve responses from the agent."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "rest"
 
     @staticmethod
     async def on_message_wrapper(
-        on_new_message: Callable[[UserMessage], Awaitable[None]],
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
         text: Text,
         queue: Queue,
         sender_id: Text,
@@ -423,7 +445,9 @@ class RestInput(InputChannel):
 
         return stream  # pytype: disable=bad-return-type
 
-    def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[None]]):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[None]]
+    ) -> Blueprint:
         custom_webhook = Blueprint(
             "custom_webhook_{}".format(type(self).__name__),
             inspect.getmodule(self).__name__,
@@ -431,11 +455,11 @@ class RestInput(InputChannel):
 
         # noinspection PyUnusedLocal
         @custom_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(request: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @custom_webhook.route("/webhook", methods=["POST"])
-        async def receive(request: Request):
+        async def receive(request: Request) -> HTTPResponse:
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
             should_use_stream = rasa.utils.endpoints.bool_arg(
