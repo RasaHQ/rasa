@@ -36,6 +36,7 @@ Fixed
 
 [Unreleased 1.3.7]
 ^^^^^^^^^^^^^^^^^^
+
 Fixed
 -----
 - re-added TLS, SRV dependencies for PyMongo
@@ -75,6 +76,9 @@ Fixed
   for every given attribute. Non-content-bearing samples are converted to empty
   ``Doc``-objects. The resulting lists are merged with their preserved order and
   properly returned.
+- asyncio warnings are now only printed if the callback takes more than 100ms
+  (up from 1ms)
+- ``agent.load_model_from_server`` no longer affects logging
 
 Changed
 -------
@@ -83,15 +87,6 @@ Changed
   want to save the trained model in the default model directory (``models``)
   (default behavior) or in a temporary directory by specifying the
   ``save_to_default_model_directory`` field in the training request.
-
-[1.3.4] 
-^^^^^^^^^^^^^^^^^^^^
-
-Fixed
------
-- asyncio warnings are now only printed if the callback takes more than 100ms
-  (up from 1ms)
-- ``agent.load_model_from_server`` no longer affects logging
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
