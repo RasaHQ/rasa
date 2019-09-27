@@ -7,12 +7,14 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.7]
-^^^^^^^^^^^^^^^^^^
+[1.3.7] - 2019-09-27
+^^^^^^^^^^^^^^^^^^^^
+
 Fixed
 -----
 - re-added TLS, SRV dependencies for PyMongo
 - socketio can now be run without turning on the ``--enable-api`` flag
+- MappingPolicy no longer fails when the latest action doesn't have a policy
 
 [1.3.6] - 2019-09-21
 ^^^^^^^^^^^^^^^^^^^^
@@ -57,7 +59,7 @@ Changed
   (default behavior) or in a temporary directory by specifying the
   ``save_to_default_model_directory`` field in the training request.
 
-[1.3.4] 
+[1.3.4]
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
