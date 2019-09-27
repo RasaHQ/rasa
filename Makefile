@@ -59,9 +59,8 @@ prepare-tests-files:
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
 test: clean get-num-jobs
-	# PYTHONHASHSEED needed for keeping determinist ordering for some <=Python3.5 structures
 	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
-	PYTHONHASHSEED=0 OMP_NUM_THREADS=1 pytest tests -n $(JOBS) --cov rasa
+	OMP_NUM_THREADS=1 pytest tests -n $(JOBS) --cov rasa
 
 get-num-jobs:
 	$(eval JOBS := $(if $(findstring -j, $(MAKEFLAGS)), $(shell echo $(MAKEFLAGS) | sed -E "s@.*-j([0-9]+).*@\1@"), $(JOBS)))
