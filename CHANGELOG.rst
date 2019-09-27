@@ -7,6 +7,14 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[Unreleased 1.3.8]
+^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Policies now only get imported if they are actually used. This removes
+  TensorFlow warnings when starting Rasa X
+
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^
 
