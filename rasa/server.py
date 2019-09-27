@@ -844,6 +844,7 @@ def create_app(
             else:
                 response_data['intent'] = {}
                 response_data['intent']['name'] = 'AMAZON.FallbackIntent'
+            del[response_data['intent_ranking']]
             return response.json(response_data)
 
         except Exception as e:
