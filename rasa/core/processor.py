@@ -330,7 +330,6 @@ class MessageProcessor(object):
                 message.text, parse_data["intent"], parse_data["entities"]
             )
         )
-        logger.info("parse_data: {}".format(parse_data))
         # check if we pick up intents that aren't in the domain
         intent = parse_data['intent']['name']
         if intent is "" or intent not in self.domain.intents:
