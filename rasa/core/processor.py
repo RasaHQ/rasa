@@ -290,6 +290,24 @@ class MessageProcessor(object):
         if slot_values.strip():
             logger.debug("Current slot values: \n{}".format(slot_values))
 
+    def _log_unseen_enitites(self, parse_data):
+        """check if the NLU picks up entities that aren't in the domain.
+        """
+        entities = parse_data["entities"]
+        entity_list_not_in_domain = []
+        if not len(entities):
+            return -1, entity_list_not_in_domain
+        
+        for element in entities:
+            entity = element['entity']
+            if entity is "" or entity not in self.domain.entities:
+                entity_list_not_in_domain.append(entity)
+        
+        if not len(entity_list_not_in_domain):
+            return 0, entity_list_not_in_domain
+
+        return 1, entity_list_not_in_domain
+
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
@@ -312,6 +330,26 @@ class MessageProcessor(object):
                 message.text, parse_data["intent"], parse_data["entities"]
             )
         )
+        logger.info("parse_data: {}".format(parse_data))
+        # check if we pick up intents that aren't in the domain
+        intent = parse_data['intent']['name']
+        if intent is "" or intent not in self.domain.intents:
+            logger.warning(
+                "Interpreter parsed an intent '{}' "
+                "that is not defined in the domain.".format(intent)
+            )
+        # check if we pick up entities that aren't in the domain
+        logging_code, entity_list_not_in_domain = self._log_unseen_enitites(parse_data)
+        if logging_code == -1 or logging_code == 1:
+            if logging_code == 1:
+                for entity in entity_list_not_in_domain:
+                    logger.warning(
+                        "Interpreter parsed an entity '{}' "
+                        "that is not defined in the domain.".format(entity)
+                        )
+            else:
+                logger.warning("no entity is detected")
+        
         return parse_data
 
     async def _handle_message_with_tracker(
@@ -337,7 +375,7 @@ class MessageProcessor(object):
             ),
             self.domain,
         )
-
+        
         if parse_data["entities"]:
             self._log_slots(tracker)
 
