@@ -48,9 +48,6 @@ jobs:
     python: '3.7'
     after_success:
       - coveralls   # only this version will submit results to coveralls
-  - <<: *run-tests
-    name: "Test 3.8-dev"
-    python: '3.8-dev'
   - stage: integration
     name: "Test API specification"
     language: python
