@@ -328,6 +328,11 @@ However, this only happens <em>after</em> the entities have been extracted, so y
 <p class="first admonition-title">Note</p>
 <p class="last">The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU model by providing additional features to the machine learning algorithm during training. Therefore, it must not be assumed that having a single example would be enough for the model to robustly identify intents and/or entities across all variants of that example.</p>
 </div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not to
+use it in the name of your intents.</p>
+</div>
 </div>
 <div class="section" id="json-format">
 <h3><a class="toc-backref" href="#id6">JSON Format</a><a class="headerlink" href="#json-format" title="Permalink to this headline">¶</a></h3>

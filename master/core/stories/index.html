@@ -331,6 +331,13 @@ same thing.</p>
 to predict the next action based on a <em>combination</em> of both the intent and
 entities (you can, however, change this behavior using the
 <a class="reference internal" href="../domains/#use-entities"><span class="std std-ref">use_entities</span></a> attribute).</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers.
+Refer to <code class="docutils literal notranslate"><span class="pre">Training</span> <span class="pre">Data</span> <span class="pre">Format</span></code> section of <a class="reference internal" href="../retrieval-actions/#retrieval-actions"><span class="std std-ref">Retrieval Actions</span></a> for more details on this format.
+If any of the intent names contain the delimiter, the file containing these stories will be considered as a training
+file for <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">Response Selector</span></a> model and will be ignored for training Core models.</p>
+</div>
 </div>
 <div class="section" id="actions">
 <h3><a class="toc-backref" href="#id5">Actions</a><a class="headerlink" href="#actions" title="Permalink to this headline">¶</a></h3>

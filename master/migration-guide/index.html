@@ -296,6 +296,8 @@ So far we included <code class="docutils literal notranslate"><span class="pre">
 an entity set, this will influence the weighted precision and f1-score quite a bit. From now on we
 exclude <code class="docutils literal notranslate"><span class="pre">no-entity</span></code> from the evaluation. The overall metrics now only include proper entities. You
 might see a drop in the performance scores when running the evaluation again.</li>
+<li><code class="docutils literal notranslate"><span class="pre">/</span></code> is reserved as a delimiter token to distinguish between retrieval intent and the corresponding response text
+identifier. Make sure you don’t include <code class="docutils literal notranslate"><span class="pre">/</span></code> symbol in the name of your intents.</li>
 </ul>
 </div>
 </div>
