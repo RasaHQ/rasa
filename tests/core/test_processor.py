@@ -27,6 +27,9 @@ from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
+from rasa.core.domain import Domain
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -71,6 +74,12 @@ async def test_parsing(default_processor: MessageProcessor):
     assert parsed["intent"]["name"] == "greet"
     assert parsed["entities"][0]["entity"] == "name"
 
+async def test_log_unseen_enitites(default_processor: MessageProcessor):
+    message = UserMessage('/love{"test": "RASA", "name": "RASA", "location": "Singapore"}')
+    parsed = await default_processor._parse_message(message)
+    logging_code, entity_list_not_in_domain = default_processor._log_unseen_enitites(parsed)
+    assert logging_code == 1
+    assert len(entity_list_not_in_domain) == 2
 
 async def test_http_parsing():
     message = UserMessage("lunch?")
