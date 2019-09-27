@@ -201,6 +201,7 @@ class BotFrameworkInput(InputChannel):
         @botframework_webhook.route("/webhook", methods=["POST"])
         async def webhook(request: Request) -> HTTPResponse:
             postdata = request.json
+            metadata = self.get_metadata(request)
 
             try:
                 if postdata["type"] == "message":
@@ -217,6 +218,7 @@ class BotFrameworkInput(InputChannel):
                         out_channel,
                         postdata["from"]["id"],
                         input_channel=self.name(),
+                        metadata=metadata,
                     )
                     await on_new_message(user_msg)
                 else:

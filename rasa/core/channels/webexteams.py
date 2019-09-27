@@ -124,8 +124,9 @@ class WebexTeamsInput(InputChannel):
                 return response.text("OK")
 
             else:
+                metadata = self.get_metadata(request)
                 await self.process_message(
-                    on_new_message, text=message.text, sender_id=message.personId
+                    on_new_message, message.text, message.personId, metadata
                 )
                 return response.text("")
 

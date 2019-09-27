@@ -62,16 +62,16 @@ class Messenger:
             and message["message"]["quick_reply"].get("payload")
         )
 
-    async def handle(self, payload):
+    async def handle(self, payload: Dict, metadata: Optional[Dict]) -> None:
         for entry in payload["entry"]:
             for message in entry["messaging"]:
                 self.last_message = message
                 if message.get("message"):
-                    return await self.message(message)
+                    return await self.message(message, metadata)
                 elif message.get("postback"):
-                    return await self.postback(message)
+                    return await self.postback(message, metadata)
 
-    async def message(self, message: Dict[Text, Any]) -> None:
+    async def message(self, message: Dict[Text, Any], metadata: Optional[Dict]) -> None:
         """Handle an incoming event from the fb webhook."""
 
         # quick reply and user message both share 'text' attribute
@@ -90,19 +90,25 @@ class Messenger:
             )
             return
 
-        await self._handle_user_message(text, self.get_user_id())
+        await self._handle_user_message(text, self.get_user_id(), metadata)
 
-    async def postback(self, message: Dict[Text, Any]) -> None:
+    async def postback(
+        self, message: Dict[Text, Any], metadata: Optional[Dict]
+    ) -> None:
         """Handle a postback (e.g. quick reply button)."""
 
         text = message["postback"]["payload"]
-        await self._handle_user_message(text, self.get_user_id())
+        await self._handle_user_message(text, self.get_user_id(), metadata)
 
-    async def _handle_user_message(self, text: Text, sender_id: Text) -> None:
+    async def _handle_user_message(
+        self, text: Text, sender_id: Text, metadata: Optional[Dict]
+    ) -> None:
         """Pass on the text to the dialogue engine for processing."""
 
         out_channel = MessengerBot(self.client)
-        user_msg = UserMessage(text, out_channel, sender_id, input_channel=self.name())
+        user_msg = UserMessage(
+            text, out_channel, sender_id, input_channel=self.name(), metadata=metadata
+        )
 
         # noinspection PyBroadException
         try:
@@ -319,7 +325,8 @@ class FacebookInput(InputChannel):
 
             messenger = Messenger(self.fb_access_token, on_new_message)
 
-            await messenger.handle(request.json)
+            metadata = self.get_metadata(request)
+            await messenger.handle(request.json, metadata)
             return response.text("success")
 
         return fb_webhook

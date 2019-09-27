@@ -219,11 +219,16 @@ class TelegramInput(InputChannel):
                     else:
                         return response.text("success")
                 sender_id = msg.chat.id
+                metadata = self.get_metadata(request)
                 try:
                     if text == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
                         await on_new_message(
                             UserMessage(
-                                text, out_channel, sender_id, input_channel=self.name()
+                                text,
+                                out_channel,
+                                sender_id,
+                                input_channel=self.name(),
+                                metadata=metadata,
                             )
                         )
                         await on_new_message(
@@ -232,12 +237,17 @@ class TelegramInput(InputChannel):
                                 out_channel,
                                 sender_id,
                                 input_channel=self.name(),
+                                metadata=metadata,
                             )
                         )
                     else:
                         await on_new_message(
                             UserMessage(
-                                text, out_channel, sender_id, input_channel=self.name()
+                                text,
+                                out_channel,
+                                sender_id,
+                                input_channel=self.name(),
+                                metadata=metadata,
                             )
                         )
                 except Exception as e:

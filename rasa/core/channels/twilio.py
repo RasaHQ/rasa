@@ -118,12 +118,17 @@ class TwilioInput(InputChannel):
             out_channel = self.get_output_channel()
 
             if sender is not None and message is not None:
+                metadata = self.get_metadata(request)
                 try:
                     # @ signs get corrupted in SMSes by some carriers
                     text = text.replace("¡", "@")
                     await on_new_message(
                         UserMessage(
-                            text, out_channel, sender, input_channel=self.name()
+                            text,
+                            out_channel,
+                            sender,
+                            input_channel=self.name(),
+                            metadata=metadata,
                         )
                     )
                 except Exception as e:

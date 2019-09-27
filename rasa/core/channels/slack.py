@@ -273,7 +273,14 @@ class SlackInput(InputChannel):
         elif action["type"] == "datepicker":
             return action.get("selected_date")
 
-    async def process_message(self, request: Request, on_new_message, text, sender_id):
+    async def process_message(
+        self,
+        request: Request,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        text,
+        sender_id: Optional[Text],
+        metadata: Optional[Dict],
+    ) -> Any:
         """Slack retries to post messages up to 3 times based on
         failure conditions defined here:
         https://api.slack.com/events-api#failure_conditions
@@ -291,7 +298,11 @@ class SlackInput(InputChannel):
         try:
             out_channel = self.get_output_channel()
             user_msg = UserMessage(
-                text, out_channel, sender_id, input_channel=self.name()
+                text,
+                out_channel,
+                sender_id,
+                input_channel=self.name(),
+                metadata=metadata,
             )
 
             await on_new_message(user_msg)
@@ -320,8 +331,9 @@ class SlackInput(InputChannel):
                     sender_id = payload["user"]["id"]
                     text = self._get_interactive_response(payload["actions"][0])
                     if text is not None:
+                        metadata = self.get_metadata(request)
                         return await self.process_message(
-                            request, on_new_message, text=text, sender_id=sender_id
+                            request, on_new_message, text, sender_id, metadata
                         )
                     elif payload["actions"][0]["type"] == "button":
                         # link buttons don't have "value", don't send their clicks to bot
@@ -336,13 +348,15 @@ class SlackInput(InputChannel):
                     return response.json(output.get("challenge"))
 
                 elif self._is_user_message(output):
+                    metadata = self.get_metadata(request)
                     return await self.process_message(
                         request,
                         on_new_message,
-                        text=self._sanitize_user_message(
+                        self._sanitize_user_message(
                             output["event"]["text"], output["authed_users"]
                         ),
-                        sender_id=output.get("event").get("user"),
+                        output.get("event").get("user"),
+                        metadata,
                     )
 
             return response.text("Bot message delivered")

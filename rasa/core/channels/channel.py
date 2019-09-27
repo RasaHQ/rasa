@@ -402,10 +402,13 @@ class RestInput(InputChannel):
         queue: Queue,
         sender_id: Text,
         input_channel: Text,
+        metadata: Optional[Dict],
     ) -> None:
         collector = QueueOutputChannel(queue)
 
-        message = UserMessage(text, collector, sender_id, input_channel=input_channel)
+        message = UserMessage(
+            text, collector, sender_id, input_channel=input_channel, metadata=metadata
+        )
         await on_new_message(message)
 
         await queue.put("DONE")  # pytype: disable=bad-return-type
@@ -426,12 +429,13 @@ class RestInput(InputChannel):
         text: Text,
         sender_id: Text,
         input_channel: Text,
+        metadata: Optional[Dict],
     ) -> Callable[[Any], Awaitable[None]]:
         async def stream(resp: Any) -> None:
             q = Queue()
             task = asyncio.ensure_future(
                 self.on_message_wrapper(
-                    on_new_message, text, q, sender_id, input_channel
+                    on_new_message, text, q, sender_id, input_channel, metadata
                 )
             )
             result = None  # declare variable up front to avoid pytype error
@@ -466,11 +470,12 @@ class RestInput(InputChannel):
                 request, "stream", default=False
             )
             input_channel = self._extract_input_channel(request)
+            metadata = self.get_metadata(request)
 
             if should_use_stream:
                 return response.stream(
                     self.stream_response(
-                        on_new_message, text, sender_id, input_channel
+                        on_new_message, text, sender_id, input_channel, metadata
                     ),
                     content_type="text/event-stream",
                 )
@@ -480,7 +485,11 @@ class RestInput(InputChannel):
                 try:
                     await on_new_message(
                         UserMessage(
-                            text, collector, sender_id, input_channel=input_channel
+                            text,
+                            collector,
+                            sender_id,
+                            input_channel=input_channel,
+                            metadata=metadata,
                         )
                     )
                 except CancelledError:

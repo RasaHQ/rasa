@@ -120,12 +120,23 @@ class RocketChatInput(InputChannel):
         self.password = password
         self.server_url = server_url
 
-    async def send_message(self, text, sender_name, recipient_id, on_new_message):
+    async def send_message(
+        self,
+        text: Optional[Text],
+        sender_name: Optional[Text],
+        recipient_id: Optional[Text],
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        metadata: Optional[Dict],
+    ):
         if sender_name != self.user:
             output_channel = self.get_output_channel()
 
             user_msg = UserMessage(
-                text, output_channel, recipient_id, input_channel=self.name()
+                text,
+                output_channel,
+                recipient_id,
+                input_channel=self.name(),
+                metadata=metadata,
             )
             await on_new_message(user_msg)
 
@@ -141,6 +152,7 @@ class RocketChatInput(InputChannel):
         @rocketchat_webhook.route("/webhook", methods=["GET", "POST"])
         async def webhook(request: Request) -> HTTPResponse:
             output = request.json
+            metadata = self.get_metadata(request)
             if output:
                 if "visitor" not in output:
                     sender_name = output.get("user_name", None)
@@ -152,7 +164,9 @@ class RocketChatInput(InputChannel):
                     sender_name = messages_list[0].get("username", None)
                     recipient_id = output.get("_id")
 
-                await self.send_message(text, sender_name, recipient_id, on_new_message)
+                await self.send_message(
+                    text, sender_name, recipient_id, on_new_message, metadata
+                )
 
             return response.text("")
 
