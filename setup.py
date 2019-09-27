@@ -23,7 +23,7 @@ tests_requires = [
     "nbsphinx>=0.3",
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
-    "fakeredis~=1.0.5",
+    "fakeredis~=1.0",
 ]
 
 install_requires = [
@@ -109,6 +109,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
+    python_requires=">=3.6",
     packages=find_packages(exclude=["tests", "tools", "docs", "contrib"]),
     entry_points={"console_scripts": ["rasa=rasa.__main__:main"]},
     version=__version__,
