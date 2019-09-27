@@ -24,9 +24,6 @@ tests_requires = [
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
     "fakeredis~=1.0",
-    # upstream dep from fakeredis, should be removed if fakeredis properly depends on
-    # at least 1.12
-    "six>=1.12.0",
 ]
 
 install_requires = [
@@ -108,11 +105,11 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
+    python_requires=">=3.6",
     packages=find_packages(exclude=["tests", "tools", "docs", "contrib"]),
     entry_points={"console_scripts": ["rasa=rasa.__main__:main"]},
     version=__version__,
