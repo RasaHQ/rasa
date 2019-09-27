@@ -1,5 +1,7 @@
 from collections import namedtuple
 import logging
+import typing
+from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -11,8 +13,7 @@ from tensor2tensor.models.transformer import (
 )
 from tensor2tensor.layers.common_attention import large_compatible_negative
 from rasa.utils.common import is_logging_disabled
-import typing
-from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
+
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams

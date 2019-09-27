@@ -19,7 +19,6 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import obtain_verbosity
-from rasa.utils.train_utils import load_tf_config
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
@@ -78,6 +77,8 @@ class KerasPolicy(Policy):
         self.current_epoch = current_epoch
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
+        from rasa.utils.train_utils import load_tf_config
+
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
