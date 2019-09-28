@@ -174,9 +174,9 @@ class BotFrameworkInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(
-            credentials.get("app_id"), credentials.get("app_password")
-        )  # pytype: disable=attribute-error
+        # pytype: disable=attribute-error
+        return cls(credentials.get("app_id"), credentials.get("app_password"))
+        # pytype: enable=attribute-error
 
     def __init__(self, app_id: Text, app_password: Text) -> None:
         """Create a Bot Framework input channel.
