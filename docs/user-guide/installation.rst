@@ -13,7 +13,7 @@ Installation
 Quick Installation
 ~~~~~~~~~~~~~~~~~~
 
-You can install both Rasa and Rasa X using pip (requires Python 3.5.4 or higher).
+You can install both Rasa and Rasa X using pip (requires Python 3.6 or higher).
 
 .. code-block:: bash
 
