@@ -55,7 +55,9 @@ class WebexTeamsInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
+        # pytype: disable=attribute-error
         return cls(credentials.get("access_token"), credentials.get("room"))
+        # pytype: enable=attribute-error
 
     def __init__(self, access_token: Text, room: Optional[Text] = None) -> None:
         """Create a Cisco Webex Teams input channel.
@@ -75,7 +77,7 @@ class WebexTeamsInput(InputChannel):
         self,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
         text: Optional[Text],
-        sender_id: [Optional[Text]],
+        sender_id: Optional[Text],
         metadata: Optional[Dict],
     ) -> Any:
 

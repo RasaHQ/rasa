@@ -121,6 +121,8 @@ class SlackInput(InputChannel):
     def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
+
+        # pytype: disable=attribute-error
         return cls(
             credentials.get("slack_token"),
             credentials.get("slack_channel"),
@@ -128,6 +130,7 @@ class SlackInput(InputChannel):
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
         )
+        # pytype: enable=attribute-error
 
     def __init__(
         self,
@@ -171,11 +174,11 @@ class SlackInput(InputChannel):
         return (
             slack_event.get("event")
             and (
-                slack_event.get("event").get("type") == "message"
-                or slack_event.get("event").get("type") == "app_mention"
+                slack_event.get("event", {}).get("type") == "message"
+                or slack_event.get("event", {}).get("type") == "app_mention"
             )
-            and slack_event.get("event").get("text")
-            and not slack_event.get("event").get("bot_id")
+            and slack_event.get("event", {}).get("text")
+            and not slack_event.get("event", {}).get("bot_id")
         )
 
     @staticmethod

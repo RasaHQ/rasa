@@ -22,7 +22,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(credentials.get("webhook_url"))
+        return cls(credentials.get("webhook_url"))  # pytype: disable=attribute-error
 
     def __init__(
         self,
@@ -116,6 +116,7 @@ class MattermostInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
+        # pytype: disable=attribute-error
         return cls(
             credentials.get("url"),
             credentials.get("team"),
@@ -123,6 +124,7 @@ class MattermostInput(InputChannel):
             credentials.get("pw"),
             credentials.get("webhook_url"),
         )
+        # pytype: enable=attribute-error
 
     def __init__(
         self, url: Text, team: Text, user: Text, pw: Text, webhook_url: Text
