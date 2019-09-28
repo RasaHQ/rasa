@@ -30,7 +30,6 @@ install_requires = [
     "requests>=2.20",
     "boto3~=1.9",
     "matplotlib~=3.0",
-    "simplejson~=3.16",
     "attrs>=18",
     "jsonpickle~=1.1",
     "redis~=3.3.5",

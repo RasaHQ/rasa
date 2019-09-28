@@ -73,6 +73,7 @@ def rasa_secured_app(rasa_server_secured: Sanic) -> SanicTestClient:
 
 
 def test_root(rasa_app: SanicTestClient):
+    print ("have type", rasa_app, type(rasa))
     _, response = rasa_app.get("/")
     assert response.status == 200
     assert response.text.startswith("Hello from Rasa:")
