@@ -205,6 +205,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.3.7/user-guide/command-line-interface/">1.3.7</a>
               <a href="../../../1.3.6/user-guide/command-line-interface/">1.3.6</a>
               <a href="../../../1.3.5/user-guide/command-line-interface/">1.3.5</a>
               <a href="../../../1.3.4/user-guide/command-line-interface/">1.3.4</a>
@@ -246,7 +247,7 @@
 
 
 
-    <p class="scv-banner"><a href="../../../1.3.6/user-guide/command-line-interface/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.3.6.</a></p>
+    <p class="scv-banner"><a href="../../../1.3.7/user-guide/command-line-interface/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.3.7.</a></p>
 <div class="section" id="command-line-interface">
 <span id="id1"></span><h1>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h1>
 
@@ -691,6 +692,9 @@ See the Rasa <a class="reference internal" href="../../api/http-api/#http-api"><
 <p>The following arguments can be used to adapt the server settings:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
                         [--cors [CORS [CORS ...]]] [--actions ACTIONS]
+                        [--ssl-keyfile SSL_KEYFILE]
+                        [--ssl-certificate SSL_CERTIFICATE]
+                        [--ssl-password SSL_PASSWORD]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -699,6 +703,15 @@ optional arguments:
                         enable CORS for the passed origin. Use * to whitelist
                         all origins (default: None)
   --actions ACTIONS     name of action package to be loaded (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
