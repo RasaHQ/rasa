@@ -52,6 +52,9 @@ You can cover all of these with a single story where the above intents are group
 A retrieval action uses the output of a :ref:`response-selector` component from NLU which learns a
 retrieval model to predict the correct response from a list of candidate responses given a user message text.
 
+
+.. _retrieval-training-data:
+
 Training Data
 ^^^^^^^^^^^^^
 
@@ -94,6 +97,10 @@ This is a key difference to the response templates in your domain file.
     The file containing response texts must exist as a separate file inside the training data directory passed
     to the training process. The contents of it cannot be a part of the file which contains training data for other
     components of NLU.
+
+.. note::
+    As shown in the above examples, ``/`` symbol is reserved as a delimiter to separate retrieval intents from response text identifier. Make sure not to
+    use it in the name of your intents.
 
 Config File
 ^^^^^^^^^^^
