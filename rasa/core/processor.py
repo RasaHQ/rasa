@@ -299,7 +299,7 @@ class MessageProcessor(object):
 
         for element in entities:
             entity = element["entity"]
-            if entity is "" or entity not in self.domain.entities:
+            if entity == "" or entity not in self.domain.entities:
                 logger.warning(
                     "Interpreter parsed an entity '{}' "
                     "that is not defined in the domain.".format(entity)
@@ -329,7 +329,7 @@ class MessageProcessor(object):
         )
         # check if we pick up intents that aren't in the domain
         intent = parse_data["intent"]["name"]
-        if intent is "" or intent not in self.domain.intents:
+        if intent is == or intent not in self.domain.intents:
             logger.warning(
                 "Interpreter parsed an intent '{}' "
                 "that is not defined in the domain.".format(intent)
