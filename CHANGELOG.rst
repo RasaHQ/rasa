@@ -15,6 +15,7 @@ Added
 
 Fixed
 -----
+- fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
 
 Changed
 -------
