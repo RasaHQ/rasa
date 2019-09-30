@@ -37,7 +37,7 @@ install_requires = [
     "attrs>=18",
     "jsonpickle~=1.1",
     "redis~=3.3.5",
-    "pymongo~=3.8",
+    "pymongo[tls,srv]~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
     "tensorflow~=1.14.0",
@@ -88,6 +88,9 @@ install_requires = [
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
+    # remove when tensorflow@1.15.x or a pre-release patch is released
+    # https://github.com/tensorflow/tensorflow/issues/32319
+    "gast==0.2.2",
 ]
 
 extras_requires = {

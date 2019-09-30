@@ -53,7 +53,9 @@ class PolicyEnsemble(object):
         self._check_for_important_policies()
 
     def _check_for_important_policies(self):
-        if "MappingPolicy" not in self.policies:
+        from rasa.core.policies.mapping_policy import MappingPolicy
+
+        if not any(isinstance(policy, MappingPolicy) for policy in self.policies):
             logger.info(
                 "MappingPolicy not included in policy ensemble. Default intents "
                 "'{} and {} will not trigger actions '{}' and '{}'."
@@ -275,8 +277,12 @@ class PolicyEnsemble(object):
         return ensemble
 
     @classmethod
-    def from_dict(cls, dictionary: Dict[Text, Any]) -> List[Policy]:
-        policies = dictionary.get("policies") or dictionary.get("policy")
+    def from_dict(cls, policy_configuration: Dict[Text, Any]) -> List[Policy]:
+        import copy
+
+        policies = policy_configuration.get("policies") or policy_configuration.get(
+            "policy"
+        )
         if policies is None:
             raise InvalidPolicyConfig(
                 "You didn't define any policies. "
@@ -288,10 +294,10 @@ class PolicyEnsemble(object):
                 "The policy configuration file has to include at least one policy."
             )
 
+        policies = copy.deepcopy(policies)  # don't manipulate passed `Dict`
         parsed_policies = []
 
         for policy in policies:
-
             policy_name = policy.pop("name")
             if policy.get("featurizer"):
                 featurizer_func, featurizer_config = cls.get_featurizer_from_dict(

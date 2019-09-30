@@ -7,12 +7,99 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.1]
+[Unreleased 1.3.8]
 ^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Do not retrain the entire Core model if only the Templates section of the domain is changed.
+- Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
+  when running ``rasa train core``
+
+[1.3.7] - 2019-09-27
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- re-added TLS, SRV dependencies for PyMongo
+- socketio can now be run without turning on the ``--enable-api`` flag
+- MappingPolicy no longer fails when the latest action doesn't have a policy
+
+[1.3.6] - 2019-09-21
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added the ability for users to specify a conversation id to send a message to when
+  using the ``RasaChat`` input channel.
+
+[1.3.5] - 2019-09-20
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed issue where ``rasa init`` would fail without spaCy being installed
+
+[1.3.4] - 2019-09-20
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added the ability to set the ``backlog`` parameter in Sanics ``run()`` method using
+  the ``SANIC_BACKLOG`` environment variable. This parameter sets the
+  number of unaccepted connections the server allows before refusing new
+  connections. A default value of 100 is used if the variable is not set.
+- Status endpoint (``/status``) now also returns the number of training processes currently running
+
+Fixed
+-----
+- asyncio warnings are now only printed if the callback takes more than 100ms
+  (up from 1ms)
+- ``agent.load_model_from_server`` no longer affects logging
+- Added the ability to properly deal with spaCy ``Doc``-objects created on
+  empty strings as discussed `here <https://github.com/RasaHQ/rasa/issues/4445>`_.
+  Only training samples that actually bear content are sent to ``self.nlp.pipe``
+  for every given attribute. Non-content-bearing samples are converted to empty
+  ``Doc``-objects. The resulting lists are merged with their preserved order and
+  properly returned.
 
 Changed
 -------
-- Do not retrain the entire Core model if only the Templates section of the domain is changed.
+- The endpoint ``POST /model/train`` no longer supports specifying an output directory
+  for the trained model using the field ``out``. Instead you can choose whether you
+  want to save the trained model in the default model directory (``models``)
+  (default behavior) or in a temporary directory by specifying the
+  ``save_to_default_model_directory`` field in the training request.
+
+[1.3.3] - 2019-09-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Added a check to avoid training CountVectorizer for a particular attribute of a message if no text is provided for that attribute across the training data.
+- Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
+- Policy ensemble no longer incorrectly wrings "missing mapping policy" when
+  mapping policy is present.
+- "test" from ``utter_custom_json`` now correctly saved to tracker when using telegram channel
+
+Removed
+-------
+- Removed computation of ``intent_spacy_doc``. As a result, none of the spacy components process intents now.
+
+[1.3.2] - 2019-09-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- SQL tracker events are retrieved ordered by timestamps. This fixes interactive
+  learning events being shown in the wrong order.
+
+[1.3.1] - 2019-09-09
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Pin gast to == 0.2.2
 
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
@@ -100,6 +187,25 @@ Fixed
 Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
+
+
+[1.2.9] - 2019-09-17
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Correctly pass SSL flag values to x CLI command (backport of
+
+
+[1.2.8] - 2019-09-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- SQL tracker events are retrieved ordered by timestamps. This fixes interactive
+  learning events being shown in the wrong order. Backport of ``1.3.2`` patch
+  (PR #4427).
+
 
 [1.2.7] - 2019-09-02
 ^^^^^^^^^^^^^^^^^^^^
