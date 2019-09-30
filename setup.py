@@ -31,6 +31,7 @@ tests_requires = [
 
 install_requires = [
     "requests>=2.20",
+    "errorhandler~=2.0.1",
     "boto3~=1.9",
     "matplotlib~=3.0",
     "simplejson~=3.16",
@@ -41,6 +42,7 @@ install_requires = [
     "numpy~=1.16",
     "scipy~=1.2",
     "tensorflow~=1.14.0",
+
     # absl is a tensorflow dependency, but produces double logging before 0.8
     # should be removed once tensorflow requires absl > 0.8 on its own
     "absl-py>=0.8.0",
