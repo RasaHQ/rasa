@@ -467,15 +467,7 @@ class StoryGraph(object):
         # we need to remove the start steps and replace them with steps ending
         # in a special end checkpoint
 
-        # as in python 3.5, dict is not ordered, in order to generate
-        # reproducible result with random seed in python 3.5, we have
-        # to use OrderedDict
-        if sys.version_info >= (3, 6):
-            story_steps = {s.id: s for s in self.story_steps}
-        else:
-            from collections import OrderedDict
-
-            story_steps = OrderedDict([(s.id, s) for s in self.story_steps])
+        story_steps = {s.id: s for s in self.story_steps}
 
         # collect all overlapping checkpoints
         # we will remove unused start ones
