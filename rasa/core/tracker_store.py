@@ -6,13 +6,13 @@ import pickle
 import typing
 from datetime import datetime, timezone
 from typing import Iterator, Optional, Text, Iterable, Union, Dict
+
+import boto3
 import itertools
+from boto3.dynamodb.conditions import Key
 
 # noinspection PyPep8Naming
 from time import sleep
-
-import boto3
-from boto3.dynamodb.conditions import Key
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.event_channel import EventChannel
@@ -156,20 +156,34 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     @staticmethod
-    def serialise_tracker(tracker):
-        """Serializes the tracker, returns representation of the tracker"""
+    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
+        """Serializes the tracker, returns representation of the tracker."""
         dialogue = tracker.as_dialogue()
-        return pickle.dumps(dialogue)
 
-    def deserialise_tracker(self, sender_id, _json) -> Optional[DialogueStateTracker]:
-        """Deserializes the tracker and returns it"""
-        dialogue = pickle.loads(_json)
+        return json.dumps(dialogue)
+
+    def deserialise_tracker(
+        self, sender_id: Text, serialised_tracker: Union[Text, bytes]
+    ) -> Optional[DialogueStateTracker]:
+        """Deserializes the tracker and returns it."""
+
         tracker = self.init_tracker(sender_id)
-        if tracker:
-            tracker.recreate_from_dialogue(dialogue)
-            return tracker
-        else:
+        if not tracker:
             return None
+
+        try:
+            dialogue = json.loads(serialised_tracker)
+        except UnicodeDecodeError:
+            dialogue = pickle.loads(serialised_tracker)
+            logger.warning(
+                "DEPRECATION warning: Deserialisation of pickled trackers will be "
+                "deprecated in a future version. Rasa will perform any future save "
+                "operations of this tracker using json."
+            )
+
+        tracker.recreate_from_dialogue(dialogue)
+
+        return tracker
 
 
 class InMemoryTrackerStore(TrackerStore):
