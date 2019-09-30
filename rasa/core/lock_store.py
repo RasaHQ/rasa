@@ -2,9 +2,9 @@ import asyncio
 import json
 import logging
 import os
-from typing import Text, Optional, Union
+from typing import Text, Optional, Union, AsyncGenerator, Coroutine
 
-from async_generator import asynccontextmanager, async_generator, yield_
+from async_generator import asynccontextmanager
 
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock, NO_TICKET_ISSUED
@@ -124,13 +124,12 @@ class LockStore:
         return ticket
 
     @asynccontextmanager
-    @async_generator
     async def lock(
         self,
         conversation_id: Text,
         lock_lifetime: int = LOCK_LIFETIME,
         wait_time_in_seconds: Union[int, float] = 1,
-    ) -> None:
+    ) -> AsyncGenerator[TicketLock, None]:
         """Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
 
         Try acquiring lock with a wait time of `wait_time_in_seconds` seconds
@@ -140,10 +139,10 @@ class LockStore:
         ticket = self.issue_ticket(conversation_id, lock_lifetime)
 
         try:
-            # have to use async_generator.yield_() for py 3.5 compatibility
-            await yield_(
-                await self._acquire_lock(conversation_id, ticket, wait_time_in_seconds)
+            yield await self._acquire_lock(
+                conversation_id, ticket, wait_time_in_seconds
             )
+
         finally:
             self.cleanup(conversation_id, ticket)
 
