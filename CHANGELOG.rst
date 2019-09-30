@@ -15,6 +15,11 @@ Changed
 - Policies now only get imported if they are actually used. This removes
   TensorFlow warnings when starting Rasa X
 
+Fixed
+-----
+- Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
+  when running ``rasa train core``
+
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^
 

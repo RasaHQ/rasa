@@ -276,6 +276,8 @@ class PolicyEnsemble(object):
 
     @classmethod
     def from_dict(cls, policy_configuration: Dict[Text, Any]) -> List[Policy]:
+        import copy
+
         policies = policy_configuration.get("policies") or policy_configuration.get(
             "policy"
         )
@@ -290,10 +292,10 @@ class PolicyEnsemble(object):
                 "The policy configuration file has to include at least one policy."
             )
 
+        policies = copy.deepcopy(policies)  # don't manipulate passed `Dict`
         parsed_policies = []
 
         for policy in policies:
-
             policy_name = policy.pop("name")
             if policy.get("featurizer"):
                 featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
