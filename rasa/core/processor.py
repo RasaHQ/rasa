@@ -296,13 +296,14 @@ class MessageProcessor(object):
         entities = parse_data["entities"]
         if not len(entities):
             return
-            
+
         for element in entities:
-            entity = element['entity']
+            entity = element["entity"]
             if entity is "" or entity not in self.domain.entities:
                 logger.warning(
                     "Interpreter parsed an entity '{}' "
-                    "that is not defined in the domain.".format(entity))
+                    "that is not defined in the domain.".format(entity)
+                )
 
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
@@ -327,7 +328,7 @@ class MessageProcessor(object):
             )
         )
         # check if we pick up intents that aren't in the domain
-        intent = parse_data['intent']['name']
+        intent = parse_data["intent"]["name"]
         if intent is "" or intent not in self.domain.intents:
             logger.warning(
                 "Interpreter parsed an intent '{}' "
@@ -335,7 +336,7 @@ class MessageProcessor(object):
             )
         # check if we pick up entities that aren't in the domain
         self._log_unseen_enitites(parse_data)
-        
+
         return parse_data
 
     async def _handle_message_with_tracker(
@@ -361,7 +362,7 @@ class MessageProcessor(object):
             ),
             self.domain,
         )
-        
+
         if parse_data["entities"]:
             self._log_slots(tracker)
 
