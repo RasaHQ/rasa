@@ -5,6 +5,7 @@ import uuid
 
 import pytest
 from aioresponses import aioresponses
+
 from unittest.mock import patch
 
 import rasa.utils.io
@@ -26,6 +27,9 @@ from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
+
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
+from rasa.core.domain import Domain
 
 import logging
 
@@ -71,6 +75,15 @@ async def test_parsing(default_processor: MessageProcessor):
     assert parsed["intent"]["name"] == "greet"
     assert parsed["entities"][0]["entity"] == "name"
 
+async def test_log_unseen_enitites(default_processor: MessageProcessor):
+    test_logger = logging.getLogger("rasa.core.processor")
+    with patch.object(test_logger, 'warning') as mock_warning:
+        message = UserMessage('/love{"test_entity": "RASA"}')
+        parsed = await default_processor._parse_message(message)
+        default_processor._log_unseen_enitites(parsed)
+        mock_warning.assert_called_with("Interpreter parsed an entity 'test_entity' that is not defined in the domain.")
+        
+        
 
 async def test_http_parsing():
     message = UserMessage("lunch?")
