@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- Added the logging mechanism, to give a warning if the NLU picks up intent or entitites
+- Added the logging mechanism, to give a warning if the NLU picks up intent or entities
   that are not exist in the domain. The logic of this warning is implemented in a function called
   `_log_unseen_enitites` in rasa/core/processor.py.
 
