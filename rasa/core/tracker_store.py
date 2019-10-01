@@ -16,6 +16,7 @@ from time import sleep
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.event_channel import EventChannel
+from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.core.utils import replace_floats_with_decimals
@@ -160,7 +161,20 @@ class TrackerStore(object):
         """Serializes the tracker, returns representation of the tracker."""
         dialogue = tracker.as_dialogue()
 
-        return json.dumps(dialogue)
+        return json.dumps(dialogue.as_dict())
+
+    @staticmethod
+    def _deserialise_dialogue_from_pickle(
+        tracker: DialogueStateTracker, serialised_tracker: bytes
+    ) -> Dialogue:
+
+        logger.warning(
+            f"DEPRECATION warning: Found pickled tracker for "
+            f"conversation ID '{tracker.sender_id}'. Deserialisation of pickled "
+            f"trackers will be deprecated in a future version. Rasa will perform any "
+            f"future save operations of this tracker using json serialisation."
+        )
+        return pickle.loads(serialised_tracker)
 
     def deserialise_tracker(
         self, sender_id: Text, serialised_tracker: Union[Text, bytes]
@@ -172,13 +186,10 @@ class TrackerStore(object):
             return None
 
         try:
-            dialogue = json.loads(serialised_tracker)
+            dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
         except UnicodeDecodeError:
-            dialogue = pickle.loads(serialised_tracker)
-            logger.warning(
-                "DEPRECATION warning: Deserialisation of pickled trackers will be "
-                "deprecated in a future version. Rasa will perform any future save "
-                "operations of this tracker using json."
+            dialogue = self._deserialise_dialogue_from_pickle(
+                tracker, serialised_tracker
             )
 
         tracker.recreate_from_dialogue(dialogue)
@@ -337,7 +348,8 @@ class DynamoTrackerStore(TrackerStore):
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
-        # Retrieve dialogues for a sender_id in reverse chronological order based on the session_date sort key
+        # Retrieve dialogues for a sender_id in reverse chronological order based on
+        # the session_date sort key
         dialogues = self.db.query(
             KeyConditionExpression=Key("sender_id").eq(sender_id),
             Limit=1,

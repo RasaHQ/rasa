@@ -1,8 +1,12 @@
+import logging
 import tempfile
+from typing import Tuple
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from moto import mock_dynamodb2
 
+import rasa.core.tracker_store
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, Restarted
@@ -13,7 +17,7 @@ from rasa.core.tracker_store import (
     SQLTrackerStore,
     DynamoTrackerStore,
 )
-
+from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
@@ -139,21 +143,50 @@ def test_tracker_store_from_invalid_string(default_domain):
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
-def test_tracker_serialisation():
-    slot_key = "location"
-    slot_val = "Easter Island"
+def _tracker_store_and_tracker_with_slot_set() -> Tuple[
+    InMemoryTrackerStore, DialogueStateTracker
+]:
+    # returns an InMemoryTrackerStore containing a tracker with a slot set
 
-    store = InMemoryTrackerStore(domain)
+    slot_key = "cuisine"
+    slot_val = "French"
 
-    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    _store = InMemoryTrackerStore(domain)
+    _tracker = _store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
-    tracker.update(ev)
+    _tracker.update(ev)
 
-    serialised = store.serialise_tracker(tracker)
+    return _store, _tracker
 
-    assert tracker == store.deserialise_tracker(
+
+def test_tracker_serialisation():
+    _store, _tracker = _tracker_store_and_tracker_with_slot_set()
+    serialised = _store.serialise_tracker(_tracker)
+
+    assert _tracker == _store.deserialise_tracker(
         UserMessage.DEFAULT_SENDER_ID, serialised
     )
+
+
+def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
+    def pickle_serialise_tracker(_tracker):
+        # mocked version of TrackerStore.serialise_tracker() that uses
+        # the deprecated pickle serialisation
+        import pickle
+
+        dialogue = _tracker.as_dialogue()
+
+        return pickle.dumps(dialogue)
+
+    _store, _tracker = _tracker_store_and_tracker_with_slot_set()
+
+    serialised = pickle_serialise_tracker(_tracker)
+
+    # deprecation warning should be emitted
+    with caplog.at_level(logging.WARNING, rasa.core.tracker_store.logger.name):
+        assert _tracker == _store.deserialise_tracker(
+            UserMessage.DEFAULT_SENDER_ID, serialised
+        )
 
 
 @pytest.mark.parametrize(
