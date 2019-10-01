@@ -576,7 +576,7 @@ async def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
     domain = Domain.from_dict(serialised_domain)
 
     await _write_stories_to_file(story_path, events, domain)
-    await _write_nlu_to_file(nlu_path, events, serialised_domain)
+    await _write_nlu_to_file(nlu_path, events)
     await _write_domain_to_file(domain_path, events, domain)
 
     logger.info("Successfully wrote stories and NLU data")
@@ -803,37 +803,24 @@ async def _write_stories_to_file(
                 f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
 
 
-def _retrieve_intents_from_domain(serialised_domain: Dict[Text, Any]) -> List[Text]:
-    """Retrieve the intents from the serialised domain"""
-
-    intents = [next(iter(i)) for i in (serialised_domain.get("intents") or [])]
-    return intents
-
-
-def _remove_intent_payload_input(
-    msgs: List[Message], intents: List[Text]
-) -> List[Message]:
-    """Filter messages removing intents before write nlu to file"""
+def _filter_messages(msgs: List[Message]) -> List[Message]:
+    """Filter messages removing those that start with INTENT_MESSAGE_PREFIX"""
 
     filtered_messages = []
     for msg in msgs:
-        if not (msg.text.startswith(INTENT_MESSAGE_PREFIX) and msg.text[1:] in intents):
+        if not msg.text.startswith(INTENT_MESSAGE_PREFIX):
             filtered_messages.append(msg)
     return filtered_messages
 
 
 async def _write_nlu_to_file(
-    export_nlu_path: Text,
-    events: List[Dict[Text, Any]],
-    serialised_domain: Dict[Text, Any],
+    export_nlu_path: Text, events: List[Dict[Text, Any]]
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
     from rasa.nlu.training_data import TrainingData
 
     msgs = _collect_messages(events)
-
-    intents = _retrieve_intents_from_domain(serialised_domain)
-    msgs = _remove_intent_payload_input(msgs, intents)
+    msgs = _filter_messages(msgs)
 
     # noinspection PyBroadException
     try:

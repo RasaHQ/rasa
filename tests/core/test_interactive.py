@@ -327,7 +327,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
 
 
 async def test_filter_intents_before_save_nlu_file():
-    # Test method interactive._remove_intent_payload_input
+    # Test method interactive._filter_messages
     from random import choice
 
     greet = {"intent": "greet", "text_features": [0.5]}
@@ -342,15 +342,4 @@ async def test_filter_intents_before_save_nlu_file():
     if intents:
         msgs.append(Message("/" + choice(intents), greet))
 
-    assert test_msgs == interactive._remove_intent_payload_input(msgs, intents)
-
-
-async def test_retrieve_intents_from_domain():
-    # Test method interactive._retrieve_intents_from_domain
-    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
-    domain = Domain.load(domain_file)
-    intents = set(domain.intents)
-
-    intents_retrieved = set(interactive._retrieve_intents_from_domain(domain.as_dict()))
-
-    assert intents == intents_retrieved
+    assert test_msgs == interactive._filter_messages(msgs)
