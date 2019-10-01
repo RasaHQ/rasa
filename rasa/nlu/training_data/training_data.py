@@ -119,10 +119,7 @@ class TrainingData(object):
             if ex.get("response"):
                 ex.set("response", ex.get("response").strip())
 
-        # this check is necessary because test_markdown_entity_regex() definition assumes order (but test case has no
-        # duplicates)
-        if len(set(examples)) != len(examples):
-            examples = list(set(examples))
+        examples = list(set(examples))
 
         return examples
 
