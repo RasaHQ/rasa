@@ -36,6 +36,7 @@ Fixed
 -----
 - fixed missing ``tkinter`` dependency for running tests on Ubuntu
 - fixed issue with ``conversation`` JSON serialization
+- fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
 
 [Unreleased 1.3.7]
 ^^^^^^^^^^^^^^^^^^

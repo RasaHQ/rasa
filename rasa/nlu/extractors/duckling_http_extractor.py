@@ -62,6 +62,9 @@ class DucklingHTTPExtractor(EntityExtractor):
         # timezone like Europe/Berlin
         # if not set the default timezone of Duckling is going to be used
         "timezone": None,
+        # Timeout for receiving response from http url of the running duckling server
+        # if not set the default timeout of duckling http url is set to 3 seconds.
+        "timeout": 3,
     }
 
     def __init__(
@@ -113,7 +116,10 @@ class DucklingHTTPExtractor(EntityExtractor):
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
             response = requests.post(
-                self._url() + "/parse", data=payload, headers=headers
+                self._url() + "/parse",
+                data=payload,
+                headers=headers,
+                timeout=self.component_config.get("timeout"),
             )
             if response.status_code == 200:
                 return response.json()
@@ -124,10 +130,13 @@ class DucklingHTTPExtractor(EntityExtractor):
                     "".format(response.status_code, response.text)
                 )
                 return []
-        except requests.exceptions.ConnectionError as e:
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ReadTimeout,
+        ) as e:
             logger.error(
                 "Failed to connect to duckling http server. Make sure "
-                "the duckling server is running and the proper host "
+                "the duckling server is running/healthy/not stale and the proper host "
                 "and port are set in the configuration. More "
                 "information on how to run the server can be found on "
                 "github: "
