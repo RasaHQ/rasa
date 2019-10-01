@@ -38,10 +38,10 @@ RedisLockStore
     This is the recommended lock store for running a replicated set of Rasa servers.
 
 :Configuration:
-    To set up Rasa Core with Redis the following steps are required:
+    To set up Rasa with Redis the following steps are required:
 
     1. Start your Redis instance
-    2. Add required configuration to your `endpoints.yml`
+    2. Add required configuration to your ``endpoints.yml``
 
         .. code-block:: yaml
 
