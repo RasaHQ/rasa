@@ -151,19 +151,19 @@ def _tracker_store_and_tracker_with_slot_set() -> Tuple[
     slot_key = "cuisine"
     slot_val = "French"
 
-    _store = InMemoryTrackerStore(domain)
-    _tracker = _store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    store = InMemoryTrackerStore(domain)
+    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
-    _tracker.update(ev)
+    tracker.update(ev)
 
-    return _store, _tracker
+    return store, tracker
 
 
 def test_tracker_serialisation():
-    _store, _tracker = _tracker_store_and_tracker_with_slot_set()
-    serialised = _store.serialise_tracker(_tracker)
+    store, tracker = _tracker_store_and_tracker_with_slot_set()
+    serialised = store.serialise_tracker(tracker)
 
-    assert _tracker == _store.deserialise_tracker(
+    assert tracker == store.deserialise_tracker(
         UserMessage.DEFAULT_SENDER_ID, serialised
     )
 
@@ -178,13 +178,13 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
 
         return pickle.dumps(dialogue)
 
-    _store, _tracker = _tracker_store_and_tracker_with_slot_set()
+    store, tracker = _tracker_store_and_tracker_with_slot_set()
 
-    serialised = pickle_serialise_tracker(_tracker)
+    serialised = pickle_serialise_tracker(tracker)
 
     # deprecation warning should be emitted
     with caplog.at_level(logging.WARNING, rasa.core.tracker_store.logger.name):
-        assert _tracker == _store.deserialise_tracker(
+        assert tracker == store.deserialise_tracker(
             UserMessage.DEFAULT_SENDER_ID, serialised
         )
 
