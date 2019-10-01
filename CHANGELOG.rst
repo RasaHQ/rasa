@@ -7,11 +7,22 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.7]
+[Unreleased 1.3.8]
 ^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
+  when running ``rasa train core``
+
+[1.3.7] - 2019-09-27
+^^^^^^^^^^^^^^^^^^^^
+
 Fixed
 -----
 - re-added TLS, SRV dependencies for PyMongo
+- socketio can now be run without turning on the ``--enable-api`` flag
+- MappingPolicy no longer fails when the latest action doesn't have a policy
 
 [1.3.6] - 2019-09-21
 ^^^^^^^^^^^^^^^^^^^^
@@ -55,6 +66,15 @@ Changed
   want to save the trained model in the default model directory (``models``)
   (default behavior) or in a temporary directory by specifying the
   ``save_to_default_model_directory`` field in the training request.
+
+[1.3.4]
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- asyncio warnings are now only printed if the callback takes more than 100ms
+  (up from 1ms)
+- ``agent.load_model_from_server`` no longer affects logging
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
