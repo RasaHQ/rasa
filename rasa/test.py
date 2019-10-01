@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 def test_core_models_in_directory(model_directory: Text, stories: Text, output: Text):
     from rasa.core.test import compare_models_in_dir, plot_core_results
 
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
     number_of_stories = io_utils.read_json_file(story_n_path)

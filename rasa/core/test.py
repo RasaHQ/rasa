@@ -114,7 +114,9 @@ class WronglyPredictedAction(ActionExecuted):
     type_name = "wrong_action"
 
     def __init__(
-        self, correct_label, predicted_label, correct_action, predicted_action, policy, confidence, timestamp=None
+        self,
+        correct_label, predicted_label,
+        correct_action, predicted_action, policy, confidence, timestamp=None
     ):
         self.predicted_action = predicted_action
         self.correct_label = correct_label
@@ -124,6 +126,9 @@ class WronglyPredictedAction(ActionExecuted):
         )
 
     def as_story_string(self):
+        # return "{}   <!-- predicted: {} -->".format(
+        #     self.action_name, self.predicted_action
+        # )
         return "{}: {}   <!-- predicted: {}: {} -->".format(
             self.correct_label, self.action_name, self.predicted_label, self.predicted_action
         )
@@ -285,9 +290,9 @@ def _collect_action_executed_predictions(
     action_executed_eval_store = EvaluationStore()
 
     import json
-    with open("multiwoz/data/action_map.json", "r") as file:
-        action_map = json.load(file)
-        action_map['action_listen'] = ['action_listen']
+    # with open("self-dialogs-action_map.json", "r") as file:
+    #     action_map = json.load(file)
+    #     action_map['action_listen'] = ['action_listen', 'action_listen']
 
     # for k, v in action_map.items():
     #     if not v:
@@ -295,9 +300,18 @@ def _collect_action_executed_predictions(
     #         exit()
 
     gold = event.action_name
+    gold_label = gold
+    # gold_label = "_".join(action_map[gold]) or "general"
+    # gold_label = action_map[gold][0] if action_map[gold] else "general"
 
     action, policy, confidence = processor.predict_next_action(partial_tracker)
     predicted = action.name()
+    predicted_label = predicted
+    # predicted_label = "_".join(action_map[predicted]) or "general"
+    # predicted_label = action_map[predicted][1] if action_map[predicted] else "general"
+
+    # if predicted_label == "general":
+    #     predicted_label = gold_label
 
     # if policy and predicted != gold and FormPolicy.__name__ in policy:
     #     # FormPolicy predicted wrong action
@@ -308,13 +322,14 @@ def _collect_action_executed_predictions(
     #     predicted = action.name()
 
     action_executed_eval_store.add_to_store(
-        action_predictions="_".join(action_map[predicted]), action_targets="_".join(action_map[gold])
+        # action_predictions=predicted, action_targets=gold
+        action_predictions=predicted_label, action_targets=gold_label
     )
 
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
-                "_".join(action_map[gold]), "_".join(action_map[predicted]),
+                gold_label, predicted_label,
                 gold, predicted, event.policy, event.confidence, event.timestamp
             )
         )
@@ -511,6 +526,7 @@ async def test(
         warnings.simplefilter("ignore", UndefinedMetricWarning)
 
         targets, predictions = evaluation_store.serialise()
+        # exclude action_listen from accuracy numbers
         report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions, exclude_label='action_listen')
 
     if out_directory:
