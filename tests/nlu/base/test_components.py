@@ -64,18 +64,22 @@ def test_builder_create_by_module_path(component_builder, default_config):
 
 
 @pytest.mark.parametrize(
-    "test_input, expected_output",
+    "test_input, expected_output, error",
     [
-        ("my_made_up_component", "Cannot find class"),
-        ("rasa.nlu.featurizers.regex_featurizer.MadeUpClass", "Failed to find class"),
-        ("made.up.path.RegexFeaturizer", "No module named"),
+        ("my_made_up_component", "Cannot find class", Exception),
+        (
+            "rasa.nlu.featurizers.regex_featurizer.MadeUpClass",
+            "Failed to find class",
+            Exception,
+        ),
+        ("made.up.path.RegexFeaturizer", "No module named", ModuleNotFoundError),
     ],
 )
 def test_create_component_exception_messages(
-    component_builder, default_config, test_input, expected_output
+    component_builder, default_config, test_input, expected_output, error
 ):
 
-    with pytest.raises(Exception):
+    with pytest.raises(error):
         component_config = {"name": test_input}
         component_builder.create_component(component_config, default_config)
 

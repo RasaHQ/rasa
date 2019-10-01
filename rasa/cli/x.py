@@ -79,6 +79,9 @@ def _rasa_service(
         enable_api=True,
         jwt_secret=args.jwt_secret,
         jwt_method=args.jwt_method,
+        ssl_certificate=args.ssl_certificate,
+        ssl_keyfile=args.ssl_keyfile,
+        ssl_password=args.ssl_password,
     )
 
 

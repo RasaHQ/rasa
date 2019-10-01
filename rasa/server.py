@@ -2,6 +2,7 @@ import logging
 import os
 import tempfile
 import traceback
+import multiprocessing
 from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
@@ -13,10 +14,13 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
-import rasa.core.brokers.utils as broker_utils
+import rasa.core.brokers.utils
+import rasa.core.utils
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
+
+from rasa import model
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
     DEFAULT_MODELS_PATH,
@@ -35,8 +39,7 @@ from rasa.core.lock_store import LockStore
 from rasa.core.test import test
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.core.utils import dump_obj_as_str_to_file, AvailableEndpoints
-from rasa.model import get_model_subdirectories, fingerprint_from_path
+from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
@@ -280,7 +283,9 @@ async def _load_agent(
         action_endpoint = None
 
         if endpoints:
-            _broker = broker_utils.from_endpoint_config(endpoints.event_broker)
+            _broker = rasa.core.brokers.utils.from_endpoint_config(
+                endpoints.event_broker
+            )
             tracker_store = TrackerStore.find_tracker_store(
                 None, endpoints.tracker_store, _broker
             )
@@ -315,6 +320,17 @@ async def _load_agent(
     return loaded_agent
 
 
+def configure_cors(app: Sanic, cors_origins: Union[Text, List[Text]] = "") -> None:
+    """Configure CORS origins for the given app."""
+
+    # Workaround so that socketio works with requests from other origins.
+    # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
+    app.config.CORS_AUTOMATIC_OPTIONS = True
+    app.config.CORS_SUPPORTS_CREDENTIALS = True
+
+    CORS(app, resources={r"/*": {"origins": cors_origins}}, automatic_options=True)
+
+
 def add_root_route(app: Sanic):
     @app.get("/")
     async def hello(request: Request):
@@ -334,14 +350,7 @@ def create_app(
 
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = 60 * 60
-    # Workaround so that socketio works with requests from other origins.
-    # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
-    app.config.CORS_AUTOMATIC_OPTIONS = True
-    app.config.CORS_SUPPORTS_CREDENTIALS = True
-
-    CORS(
-        app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
-    )
+    configure_cors(app, cors_origins)
 
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:
@@ -358,6 +367,9 @@ def create_app(
         )
 
     app.agent = agent
+    # Initialize shared object of type unsigned int for tracking
+    # the number of active training processes
+    app.active_training_processes = multiprocessing.Value("I", 0)
 
     @app.exception(ErrorResponse)
     async def handle_error_response(request: Request, exception: ErrorResponse):
@@ -385,7 +397,8 @@ def create_app(
         return response.json(
             {
                 "model_file": app.agent.model_directory,
-                "fingerprint": fingerprint_from_path(app.agent.model_directory),
+                "fingerprint": model.fingerprint_from_path(app.agent.model_directory),
+                "num_active_training_jobs": app.active_training_processes.value,
             }
         )
 
@@ -650,27 +663,35 @@ def create_app(
         temp_dir = tempfile.mkdtemp()
 
         config_path = os.path.join(temp_dir, "config.yml")
-        dump_obj_as_str_to_file(config_path, rjs["config"])
+        rasa.core.utils.dump_obj_as_str_to_file(config_path, rjs["config"])
 
         if "nlu" in rjs:
             nlu_path = os.path.join(temp_dir, "nlu.md")
-            dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
+            rasa.core.utils.dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
 
         if "stories" in rjs:
             stories_path = os.path.join(temp_dir, "stories.md")
-            dump_obj_as_str_to_file(stories_path, rjs["stories"])
+            rasa.core.utils.dump_obj_as_str_to_file(stories_path, rjs["stories"])
 
         domain_path = DEFAULT_DOMAIN_PATH
         if "domain" in rjs:
             domain_path = os.path.join(temp_dir, "domain.yml")
-            dump_obj_as_str_to_file(domain_path, rjs["domain"])
+            rasa.core.utils.dump_obj_as_str_to_file(domain_path, rjs["domain"])
+
+        if rjs.get("save_to_default_model_directory", True) is True:
+            model_output_directory = DEFAULT_MODELS_PATH
+        else:
+            model_output_directory = tempfile.gettempdir()
 
         try:
+            with app.active_training_processes.get_lock():
+                app.active_training_processes.value += 1
+
             model_path = await train_async(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
-                output_path=rjs.get("out", DEFAULT_MODELS_PATH),
+                output_path=model_output_directory,
                 force_training=rjs.get("force", False),
             )
 
@@ -692,6 +713,9 @@ def create_app(
                 "TrainingError",
                 "An unexpected error occurred during training. Error: {}".format(e),
             )
+        finally:
+            with app.active_training_processes.get_lock():
+                app.active_training_processes.value -= 1
 
     def validate_request(rjs):
         if "config" not in rjs:
@@ -773,7 +797,7 @@ def create_app(
             raise ErrorResponse(409, "Conflict", "Loaded model file not found.")
 
         model_directory = eval_agent.model_directory
-        _, nlu_model = get_model_subdirectories(model_directory)
+        _, nlu_model = model.get_model_subdirectories(model_directory)
 
         try:
             evaluation = run_evaluation(data_path, nlu_model)

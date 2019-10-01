@@ -61,6 +61,8 @@ async def train_async(
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
+        persist_nlu_training_data: `True` if the NLU training data should be persisted
+                                   with the model.
         kwargs: Additional training parameters.
 
     Returns:
@@ -115,11 +117,8 @@ async def _train_async_internal(
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
 
     Args:
-        domain: Path to the domain file.
-        config: Path to the config for Core and NLU.
+        file_importer: `TrainingDataImporter` which supplies the training data.
         train_path: Directory in which to train the model.
-        nlu_data_directory: Path to NLU training files.
-        story_directory: Path to Core training files.
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.

@@ -29,6 +29,31 @@ def test_spacy_featurizer(sentence, expected, spacy_nlp):
     assert np.allclose(vecs, doc.vector, atol=1e-5)
 
 
+def test_spacy_training_sample_alignment(spacy_nlp_component):
+    from spacy.tokens import Doc
+
+    m1 = Message.build(text="I have a feeling", intent="feeling")
+    m2 = Message.build(text="", intent="feeling")
+    m3 = Message.build(text="I am the last message", intent="feeling")
+    td = TrainingData(training_examples=[m1, m2, m3])
+
+    attribute_docs = spacy_nlp_component.docs_for_training_data(td)
+
+    assert isinstance(attribute_docs["text"][0], Doc)
+    assert isinstance(attribute_docs["text"][1], Doc)
+    assert isinstance(attribute_docs["text"][2], Doc)
+
+    assert [t.text for t in attribute_docs["text"][0]] == ["i", "have", "a", "feeling"]
+    assert [t.text for t in attribute_docs["text"][1]] == []
+    assert [t.text for t in attribute_docs["text"][2]] == [
+        "i",
+        "am",
+        "the",
+        "last",
+        "message",
+    ]
+
+
 def test_spacy_intent_featurizer(spacy_nlp_component):
     from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 
