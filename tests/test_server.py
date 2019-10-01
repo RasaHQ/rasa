@@ -25,7 +25,7 @@ from rasa.utils.endpoints import EndpointConfig
 from sanic import Sanic
 from sanic.testing import SanicTestClient, PORT
 from tests.nlu.utilities import ResponseTest
-from .conftest import get_test_client
+from tests.conftest import get_test_client
 
 
 # a couple of event instances that we can use for testing

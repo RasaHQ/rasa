@@ -32,7 +32,7 @@ Removed
 
 Fixed
 -----
-- Fix missing ``tkinter`` dependency for running tests on Ubuntu
+- fixed missing ``tkinter`` dependency for running tests on Ubuntu
 - fixed issue with ``conversation`` JSON serialization
 - fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
 
