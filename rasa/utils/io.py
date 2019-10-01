@@ -1,5 +1,6 @@
 import asyncio
 import errno
+import json
 import logging
 import os
 import tarfile
@@ -13,7 +14,6 @@ from io import BytesIO as IOReader
 from typing import Text, Any, Dict, Union, List, Type, Callable
 
 import ruamel.yaml as yaml
-import simplejson
 
 from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 
@@ -39,7 +39,9 @@ def configure_colored_logging(loglevel):
     )
 
 
-def enable_async_loop_debugging(event_loop: AbstractEventLoop) -> AbstractEventLoop:
+def enable_async_loop_debugging(
+    event_loop: AbstractEventLoop, slow_callback_duration: float = 0.1
+) -> AbstractEventLoop:
     logging.info(
         "Enabling coroutine debugging. Loop id {}.".format(id(asyncio.get_event_loop()))
     )
@@ -49,7 +51,7 @@ def enable_async_loop_debugging(event_loop: AbstractEventLoop) -> AbstractEventL
 
     # Make the threshold for "slow" tasks very very small for
     # illustration. The default is 0.1 (= 100 milliseconds).
-    event_loop.slow_callback_duration = 0.001
+    event_loop.slow_callback_duration = slow_callback_duration
 
     # Report all mistakes managing asynchronous resources.
     warnings.simplefilter("always", ResourceWarning)
@@ -138,7 +140,7 @@ def read_json_file(filename: Text) -> Any:
     """Read json from a file."""
     content = read_file(filename)
     try:
-        return simplejson.loads(content)
+        return json.loads(content)
     except ValueError as e:
         raise ValueError(
             "Failed to read json from '{}'. Error: "

@@ -69,9 +69,9 @@ paths:
       operationId: getStatus
       tags:
       - Server Information
-      summary: Status of the currently loaded Rasa model
+      summary: Status of the Rasa server
       description: >-
-        Information about the currently loaded Rasa model.
+        Information about the server and the currently loaded Rasa model.
       responses:
         200:
           description: Success
@@ -98,6 +98,10 @@ paths:
                     type: string
                     description: Path of the loaded model
                     example: 20190429-103105.tar.gz
+                  num_active_training_jobs:
+                    type: integer
+                    description: Number of running training processes
+                    example: 2
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
@@ -1224,15 +1228,16 @@ components:
           $ref: '#/components/schemas/NLUTrainingData'
         stories:
           $ref: '#/components/schemas/StoriesTrainingData'
-        out:
-          type: string
-          description: Output directory
-          example: models
         force:
           type: boolean
           description: >-
             Force a model training even if the data has not changed
           example: false
+        save_to_default_model_directory:
+          type: boolean
+          description:  >-
+            If `true` (default) the trained model will be saved in the default model
+            directory, if `false` it will be saved in a temporary directory
       required: ["config"]
 
     NLUTrainingData:

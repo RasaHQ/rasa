@@ -29,6 +29,31 @@ def test_spacy_featurizer(sentence, expected, spacy_nlp):
     assert np.allclose(vecs, doc.vector, atol=1e-5)
 
 
+def test_spacy_training_sample_alignment(spacy_nlp_component):
+    from spacy.tokens import Doc
+
+    m1 = Message.build(text="I have a feeling", intent="feeling")
+    m2 = Message.build(text="", intent="feeling")
+    m3 = Message.build(text="I am the last message", intent="feeling")
+    td = TrainingData(training_examples=[m1, m2, m3])
+
+    attribute_docs = spacy_nlp_component.docs_for_training_data(td)
+
+    assert isinstance(attribute_docs["text"][0], Doc)
+    assert isinstance(attribute_docs["text"][1], Doc)
+    assert isinstance(attribute_docs["text"][2], Doc)
+
+    assert [t.text for t in attribute_docs["text"][0]] == ["i", "have", "a", "feeling"]
+    assert [t.text for t in attribute_docs["text"][1]] == []
+    assert [t.text for t in attribute_docs["text"][2]] == [
+        "i",
+        "am",
+        "the",
+        "last",
+        "message",
+    ]
+
+
 def test_spacy_intent_featurizer(spacy_nlp_component):
     from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 
@@ -46,6 +71,44 @@ def test_spacy_intent_featurizer(spacy_nlp_component):
 
     # no intent features should have been set
     assert not any(intent_features_exist)
+
+
+@pytest.mark.parametrize(
+    "sentence, expected",
+    [("hey how are you today", [-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])],
+)
+def test_spacy_ner_featurizer(sentence, expected, spacy_nlp):
+    from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+
+    doc = spacy_nlp(sentence)
+    token_vectors = [t.vector for t in doc]
+    spacy_config = {"ner_feature_vectors": True}
+    ftr = SpacyFeaturizer.create(spacy_config, RasaNLUModelConfig())
+    greet = {"intent": "greet", "text_features": [0.5]}
+    message = Message(sentence, greet)
+    message.set("spacy_doc", doc)
+    ftr._set_spacy_features(message)
+    ftr._set_spacy_ner_features(message)
+    vecs = message.get("ner_features")[0][:5]
+    assert np.allclose(token_vectors[0][:5], vecs, atol=1e-4)
+    assert np.allclose(vecs, expected, atol=1e-4)
+
+
+def test_spacy_ner_featurizer_config(spacy_nlp):
+    from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+
+    sentence = "hi there friend"
+    doc = spacy_nlp(sentence)
+    spacy_config = {"ner_feature_vectors": False}
+    ftr = SpacyFeaturizer.create(spacy_config, RasaNLUModelConfig())
+    greet = {"intent": "greet", "text_features": [0.5]}
+    message = Message(sentence, greet)
+    message.set("spacy_doc", doc)
+    ftr._set_spacy_features(message)
+    ftr._set_spacy_ner_features(message)
+    vecs = np.array(message.get("ner_features"))
+    assert vecs.shape[0] == len(doc)
+    assert vecs.shape[1] == 0
 
 
 def test_mitie_featurizer(mitie_feature_extractor, default_config):
