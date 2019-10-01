@@ -24,7 +24,8 @@ InMemoryLockStore (default)
     ``InMemoryLockStore`` is the default lock store. It maintains conversation locks
     within a single process.
 
-    .. note:: This lock store should not be used when multiple Rasa servers are run
+    .. note::
+      This lock store should not be used when multiple Rasa servers are run
       parallel.
 
 :Configuration:
