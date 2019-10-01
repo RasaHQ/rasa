@@ -290,9 +290,9 @@ def _collect_action_executed_predictions(
     action_executed_eval_store = EvaluationStore()
 
     import json
-    # with open("self-dialogs-action_map.json", "r") as file:
-    #     action_map = json.load(file)
-    #     action_map['action_listen'] = ['action_listen', 'action_listen']
+    with open("action_map.json", "r") as file:
+        action_map = json.load(file)
+        action_map['action_listen'] = ['action_listen']#, 'action_listen']
 
     # for k, v in action_map.items():
     #     if not v:
@@ -300,14 +300,14 @@ def _collect_action_executed_predictions(
     #         exit()
 
     gold = event.action_name
-    gold_label = gold
-    # gold_label = "_".join(action_map[gold]) or "general"
+    # gold_label = gold
+    gold_label = "_".join(action_map[gold]) or "general"
     # gold_label = action_map[gold][0] if action_map[gold] else "general"
 
     action, policy, confidence = processor.predict_next_action(partial_tracker)
     predicted = action.name()
-    predicted_label = predicted
-    # predicted_label = "_".join(action_map[predicted]) or "general"
+    # predicted_label = predicted
+    predicted_label = "_".join(action_map[predicted]) or "general"
     # predicted_label = action_map[predicted][1] if action_map[predicted] else "general"
 
     # if predicted_label == "general":
