@@ -4,10 +4,20 @@ import os
 import pickle
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
+import warnings
 
-from rasa.nlu.classifiers import INTENT_RANKING_LENGTH
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
+from rasa.nlu.constants import (
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+)
 
 import tensorflow as tf
 
@@ -44,7 +54,7 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = ["text_features"]
+    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -55,6 +65,8 @@ class EmbeddingIntentClassifier(Component):
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_b": [],
+        # Whether to share the hidden layer weights between input words and labels
+        "share_hidden_layers": False,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -91,11 +103,6 @@ class EmbeddingIntentClassifier(Component):
         "C_emb": 0.8,
         # dropout rate for rnn
         "droprate": 0.2,
-        # flag: if true, the algorithm will split the labels into tokens
-        #       and use bag-of-words representations for them
-        "label_tokenization_flag": False,
-        # delimiter string to split the labels
-        "label_split_symbol": "_",
         # visualization of accuracy
         # how often to calculate training accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
@@ -107,7 +114,7 @@ class EmbeddingIntentClassifier(Component):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        inv_label_dict: Optional[Dict[int, Text]] = None,
+        inverted_label_dict: Optional[Dict[int, Text]] = None,
         session: Optional["tf.Session"] = None,
         graph: Optional["tf.Graph"] = None,
         message_placeholder: Optional["tf.Tensor"] = None,
@@ -126,7 +133,7 @@ class EmbeddingIntentClassifier(Component):
         self._load_params()
 
         # transform numbers to labels
-        self.inv_label_dict = inv_label_dict
+        self.inverted_label_dict = inverted_label_dict
         # encode all label_ids with numbers
         self._encoded_all_label_ids = None
 
@@ -149,12 +156,37 @@ class EmbeddingIntentClassifier(Component):
         self._train_op = None
         self._is_training = None
 
+    # config migration warning
+    def _check_old_config_variables(self, config: Dict[Text, Any]) -> None:
+
+        removed_tokenization_params = [
+            "intent_tokenization_flag",
+            "intent_split_symbol",
+        ]
+        for removed_param in removed_tokenization_params:
+            if removed_param in config:
+                warnings.warn(
+                    "Intent tokenization has been moved to Tokenizer components. "
+                    "Your config still mentions '{}'. Tokenization may fail if you specify the parameter here."
+                    "Please specify the parameter 'intent_tokenization_flag' and 'intent_split_symbol' in the "
+                    "tokenizer of your NLU pipeline".format(removed_param)
+                )
+
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layer_sizes = {
             "a": config["hidden_layers_sizes_a"],
             "b": config["hidden_layers_sizes_b"],
         }
+        self.share_hidden_layers = config["share_hidden_layers"]
+        if (
+            self.share_hidden_layers
+            and self.hidden_layer_sizes["a"] != self.hidden_layer_sizes["b"]
+        ):
+            raise ValueError(
+                "If hidden layer weights are shared,"
+                "hidden_layer_sizes for a and b must coincide"
+            )
 
         self.batch_size = config["batch_size"]
         self.batch_strategy = config["batch_strategy"]
@@ -186,16 +218,6 @@ class EmbeddingIntentClassifier(Component):
         self.C_emb = config["C_emb"]
         self.droprate = config["droprate"]
 
-    def _load_flag_if_tokenize_labels(self, config: Dict[Text, Any]) -> None:
-        self.label_tokenization_flag = config["label_tokenization_flag"]
-        self.label_split_symbol = config["label_split_symbol"]
-        if self.label_tokenization_flag and not self.label_split_symbol:
-            logger.warning(
-                "label_split_symbol was not specified, "
-                "so label tokenization will be ignored"
-            )
-            self.label_tokenization_flag = False
-
     def _load_visual_params(self, config: Dict[Text, Any]) -> None:
         self.evaluate_every_num_epochs = config["evaluate_every_num_epochs"]
         if self.evaluate_every_num_epochs < 1:
@@ -204,11 +226,11 @@ class EmbeddingIntentClassifier(Component):
 
     def _load_params(self) -> None:
 
+        self._check_old_config_variables(self.component_config)
         self._tf_config = train_utils.load_tf_config(self.component_config)
         self._load_nn_architecture_params(self.component_config)
         self._load_embedding_params(self.component_config)
         self._load_regularization_params(self.component_config)
-        self._load_flag_if_tokenize_labels(self.component_config)
         self._load_visual_params(self.component_config)
 
     # package safety checks
@@ -218,84 +240,125 @@ class EmbeddingIntentClassifier(Component):
 
     # training data helpers:
     @staticmethod
-    def _create_label_id_dict(training_data: "TrainingData") -> Dict[Text, int]:
+    def _create_label_id_dict(
+        training_data: "TrainingData", attribute: Text
+    ) -> Dict[Text, int]:
         """Create label_id dictionary"""
 
         distinct_label_ids = set(
-            [example.get("intent") for example in training_data.intent_examples]
-        )
+            [example.get(attribute) for example in training_data.intent_examples]
+        ) - {None}
         return {
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
         }
 
     @staticmethod
-    def _create_label_id_token_dict(
-        label_ids: List[Text], label_split_symbol: Text
-    ) -> Dict[Text, int]:
-        """Create label_id token dictionary"""
+    def _find_example_for_label(label, examples, attribute):
+        for ex in examples:
+            if ex.get(attribute) == label:
+                return ex
+        return None
 
-        distinct_tokens = set(
-            [
-                token
-                for label_id in label_ids
-                for token in label_id.split(label_split_symbol)
-            ]
-        )
-        return {token: idx for idx, token in enumerate(sorted(distinct_tokens))}
+    @staticmethod
+    def _check_labels_features_exist(
+        labels_example: List[Tuple[int, "Message"]], attribute_feature_name: Text
+    ) -> bool:
+        """Check if all labels have features set"""
+        for (label_idx, label_example) in labels_example:
+            if label_example.get(attribute_feature_name) is None:
+                return False
+        return True
 
-    def _create_encoded_label_ids(self, label_id_dict: Dict[Text, int]) -> np.ndarray:
-        """Create matrix with label_ids encoded in rows as bag of words.
+    @staticmethod
+    def _extract_labels_precomputed_features(
+        label_examples: List[Tuple[int, "Message"]], attribute_feature_name: Text
+    ) -> np.ndarray:
 
-        If label_tokenization_flag is off, returns identity matrix.
-        """
+        # Collect precomputed encodings
+        encoded_id_labels = [
+            (label_idx, label_example.get(attribute_feature_name))
+            for (label_idx, label_example) in label_examples
+        ]
 
-        if self.label_tokenization_flag:
-            label_id_token_dict = self._create_label_id_token_dict(
-                list(label_id_dict.keys()), self.label_split_symbol
+        # Sort the list of tuples based on label_idx
+        encoded_id_labels = sorted(encoded_id_labels, key=lambda x: x[0])
+
+        encoded_all_labels = [encoding for (index, encoding) in encoded_id_labels]
+
+        return np.array(encoded_all_labels)
+
+    def _compute_default_label_features(
+        self, labels_example: List[Tuple[int, "Message"]]
+    ) -> np.ndarray:
+        """Compute one-hot representation for the labels"""
+
+        return np.eye(len(labels_example))
+
+    def _create_encoded_label_ids(
+        self,
+        training_data: "TrainingData",
+        label_id_dict: Dict[Text, int],
+        attribute: Text,
+        attribute_feature_name: Text,
+    ) -> np.ndarray:
+        """Create matrix with label_ids encoded in rows as bag of words. If the features are already computed, fetch
+        them from the message object else compute a one hot encoding for the label as the feature vector
+        Find a training example for each label and get the encoded features from the corresponding Message object"""
+
+        labels_example = []
+
+        # Collect one example for each label
+        for label_name, idx in label_id_dict.items():
+            label_example = self._find_example_for_label(
+                label_name, training_data.intent_examples, attribute
             )
+            labels_example.append((idx, label_example))
 
-            encoded_all_label_ids = np.zeros(
-                (len(label_id_dict), len(label_id_token_dict))
+        # Collect features, precomputed if they exist, else compute on the fly
+        if self._check_labels_features_exist(labels_example, attribute_feature_name):
+            encoded_id_labels = self._extract_labels_precomputed_features(
+                labels_example, attribute_feature_name
             )
-            for key, idx in label_id_dict.items():
-                for t in key.split(self.label_split_symbol):
-                    encoded_all_label_ids[idx, label_id_token_dict[t]] = 1
-
-            return encoded_all_label_ids
         else:
-            return np.eye(len(label_id_dict))
+            encoded_id_labels = self._compute_default_label_features(labels_example)
 
-    # noinspection PyPep8Naming
-    def _create_all_Y(self, size: int) -> np.ndarray:
-        """Stack encoded_all_label_ids on top of each other
-
-        to create candidates for training examples and
-        to calculate training accuracy
-        """
-
-        return np.stack([self._encoded_all_label_ids] * size)
+        return encoded_id_labels
 
     # noinspection PyPep8Naming
     def _create_session_data(
-        self, training_data: "TrainingData", label_id_dict: Dict[Text, int]
+        self,
+        training_data: "TrainingData",
+        label_id_dict: Dict[Text, int],
+        attribute: Text,
     ) -> "train_utils.SessionData":
-        """Prepare data for training"""
+        """Prepare data for training and create a SessionData object"""
 
-        X = np.stack([e.get("text_features") for e in training_data.intent_examples])
+        X = []
+        label_ids = []
+        Y = []
 
-        label_ids = np.array(
-            [label_id_dict[e.get("intent")] for e in training_data.intent_examples]
-        )
+        for e in training_data.intent_examples:
+            if e.get(attribute):
+                X.append(e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]))
+                label_ids.append(label_id_dict[e.get(attribute)])
 
-        Y = np.stack(
-            [self._encoded_all_label_ids[label_id_idx] for label_id_idx in label_ids]
-        )
+        X = np.array(X)
+        label_ids = np.array(label_ids)
+
+        for label_id_idx in label_ids:
+            Y.append(self._encoded_all_label_ids[label_id_idx])
+
+        Y = np.array(Y)
 
         return train_utils.SessionData(X=X, Y=Y, label_ids=label_ids)
 
     # tf helpers:
     def _create_tf_embed_fnn(
-        self, x_in: "tf.Tensor", layer_sizes: List[int], name: Text
+        self,
+        x_in: "tf.Tensor",
+        layer_sizes: List[int],
+        fnn_name: Text,
+        embed_name: Text,
     ) -> "tf.Tensor":
         """Create nn with hidden layers and name"""
 
@@ -305,10 +368,14 @@ class EmbeddingIntentClassifier(Component):
             self.droprate,
             self.C2,
             self._is_training,
-            layer_name_suffix=name,
+            layer_name_suffix=fnn_name,
         )
         return train_utils.create_tf_embed(
-            x, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix=name
+            x,
+            self.embed_dim,
+            self.C2,
+            self.similarity_type,
+            layer_name_suffix=embed_name,
         )
 
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
@@ -319,14 +386,23 @@ class EmbeddingIntentClassifier(Component):
         )
 
         self.message_embed = self._create_tf_embed_fnn(
-            self.a_in, self.hidden_layer_sizes["a"], name="a"
+            self.a_in,
+            self.hidden_layer_sizes["a"],
+            fnn_name="a_b" if self.share_hidden_layers else "a",
+            embed_name="a",
         )
 
         self.label_embed = self._create_tf_embed_fnn(
-            self.b_in, self.hidden_layer_sizes["b"], name="b"
+            self.b_in,
+            self.hidden_layer_sizes["b"],
+            fnn_name="a_b" if self.share_hidden_layers else "b",
+            embed_name="b",
         )
         self.all_labels_embed = self._create_tf_embed_fnn(
-            all_label_ids, self.hidden_layer_sizes["b"], name="b"
+            all_label_ids,
+            self.hidden_layer_sizes["b"],
+            fnn_name="a_b" if self.share_hidden_layers else "b",
+            embed_name="b",
         )
 
         return train_utils.calculate_loss_acc(
@@ -356,7 +432,10 @@ class EmbeddingIntentClassifier(Component):
         )
 
         self.message_embed = self._create_tf_embed_fnn(
-            self.a_in, self.hidden_layer_sizes["a"], name="a"
+            self.a_in,
+            self.hidden_layer_sizes["a"],
+            fnn_name="a_b" if self.share_hidden_layers else "a",
+            embed_name="a",
         )
 
         self.sim_all = train_utils.tf_raw_sim(
@@ -366,7 +445,10 @@ class EmbeddingIntentClassifier(Component):
         )
 
         self.label_embed = self._create_tf_embed_fnn(
-            self.b_in, self.hidden_layer_sizes["b"], name="b"
+            self.b_in,
+            self.hidden_layer_sizes["b"],
+            fnn_name="a_b" if self.share_hidden_layers else "b",
+            embed_name="b",
         )
 
         self.sim = train_utils.tf_raw_sim(
@@ -374,6 +456,55 @@ class EmbeddingIntentClassifier(Component):
         )
 
         return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
+
+    def check_input_dimension_consistency(self, session_data):
+
+        if self.share_hidden_layers:
+            if session_data.X[0].shape[-1] != session_data.Y[0].shape[-1]:
+                raise ValueError(
+                    "If embeddings are shared "
+                    "text features and label features "
+                    "must coincide. Check the output dimensions of previous components."
+                )
+
+    def preprocess_train_data(self, training_data):
+        """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
+
+        label_id_dict = self._create_label_id_dict(
+            training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
+        )
+
+        self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
+        self._encoded_all_label_ids = self._create_encoded_label_ids(
+            training_data,
+            label_id_dict,
+            attribute=MESSAGE_INTENT_ATTRIBUTE,
+            attribute_feature_name=MESSAGE_VECTOR_FEATURE_NAMES[
+                MESSAGE_INTENT_ATTRIBUTE
+            ],
+        )
+
+        # check if number of negatives is less than number of label_ids
+        logger.debug(
+            "Check if num_neg {} is smaller than "
+            "number of label_ids {}, "
+            "else set num_neg to the number of label_ids - 1"
+            "".format(self.num_neg, self._encoded_all_label_ids.shape[0])
+        )
+        # noinspection PyAttributeOutsideInit
+        self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
+
+        session_data = self._create_session_data(
+            training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
+        )
+
+        self.check_input_dimension_consistency(session_data)
+
+        return session_data
+
+    def _check_enough_labels(self, session_data) -> bool:
+
+        return len(np.unique(session_data.label_ids)) >= 2
 
     def train(
         self,
@@ -388,29 +519,17 @@ class EmbeddingIntentClassifier(Component):
         # set numpy random seed
         np.random.seed(self.random_seed)
 
-        label_id_dict = self._create_label_id_dict(training_data)
-        if len(label_id_dict) < 2:
+        session_data = self.preprocess_train_data(training_data)
+
+        possible_to_train = self._check_enough_labels(session_data)
+
+        if not possible_to_train:
             logger.error(
-                "Can not train an intent classifier. "
+                "Can not train a classifier. "
                 "Need at least 2 different classes. "
-                "Skipping training of intent classifier."
+                "Skipping training of classifier."
             )
             return
-
-        self.inv_label_dict = {v: k for k, v in label_id_dict.items()}
-        self._encoded_all_label_ids = self._create_encoded_label_ids(label_id_dict)
-
-        # check if number of negatives is less than number of label_ids
-        logger.debug(
-            "Check if num_neg {} is smaller than "
-            "number of label_ids {}, "
-            "else set num_neg to the number of label_ids - 1"
-            "".format(self.num_neg, self._encoded_all_label_ids.shape[0])
-        )
-        # noinspection PyAttributeOutsideInit
-        self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
-
-        session_data = self._create_session_data(training_data, label_id_dict)
 
         if self.evaluate_on_num_examples:
             session_data, eval_session_data = train_utils.train_val_split(
@@ -477,12 +596,10 @@ class EmbeddingIntentClassifier(Component):
         # transform sim to python list for JSON serializing
         return label_ids, message_sim.tolist()
 
-    def process(self, message: "Message", **kwargs: Any) -> None:
-        """Return the most likely label and its similarity to the input."""
+    def predict_label(self, message):
 
-        intent = {"name": None, "confidence": 0.0}
-        intent_ranking = []
-
+        label = {"name": None, "confidence": 0.0}
+        label_ranking = []
         if self.session is None:
             logger.error(
                 "There is no trained tf.session: "
@@ -493,27 +610,35 @@ class EmbeddingIntentClassifier(Component):
         else:
             # get features (bag of words) for a message
             # noinspection PyPep8Naming
-            X = message.get("text_features").reshape(1, -1)
+            X = message.get(
+                MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            ).reshape(1, -1)
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)
 
             # if X contains all zeros do not predict some label
             if X.any() and label_ids.size > 0:
-                intent = {
-                    "name": self.inv_label_dict[label_ids[0]],
+                label = {
+                    "name": self.inverted_label_dict[label_ids[0]],
                     "confidence": message_sim[0],
                 }
 
                 ranking = list(zip(list(label_ids), message_sim))
-                ranking = ranking[:INTENT_RANKING_LENGTH]
-                intent_ranking = [
-                    {"name": self.inv_label_dict[label_idx], "confidence": score}
+                ranking = ranking[:LABEL_RANKING_LENGTH]
+                label_ranking = [
+                    {"name": self.inverted_label_dict[label_idx], "confidence": score}
                     for label_idx, score in ranking
                 ]
+        return label, label_ranking
 
-        message.set("intent", intent, add_to_output=True)
-        message.set("intent_ranking", intent_ranking, add_to_output=True)
+    def process(self, message: "Message", **kwargs: Any) -> None:
+        """Return the most likely label and its similarity to the input."""
+
+        label, label_ranking = self.predict_label(message)
+
+        message.set("intent", label, add_to_output=True)
+        message.set("intent_ranking", label_ranking, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
@@ -556,7 +681,7 @@ class EmbeddingIntentClassifier(Component):
         with open(
             os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "wb"
         ) as f:
-            pickle.dump(self.inv_label_dict, f)
+            pickle.dump(self.inverted_label_dict, f)
 
         with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
             pickle.dump(self._tf_config, f)
@@ -605,7 +730,7 @@ class EmbeddingIntentClassifier(Component):
 
             return cls(
                 component_config=meta,
-                inv_label_dict=inv_label_dict,
+                inverted_label_dict=inv_label_dict,
                 session=session,
                 graph=graph,
                 message_placeholder=a_in,

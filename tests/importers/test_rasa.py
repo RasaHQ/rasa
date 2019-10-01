@@ -19,18 +19,18 @@ async def test_rasa_file_importer(project: Text):
     importer = RasaFileImporter(config_path, domain_path, [default_data_path])
 
     domain = await importer.get_domain()
-    assert len(domain.intents) == 6
+    assert len(domain.intents) == 7
     assert domain.slots == []
     assert domain.entities == []
-    assert len(domain.action_names) == 13
-    assert len(domain.templates) == 5
+    assert len(domain.action_names) == 14
+    assert len(domain.templates) == 6
 
     stories = await importer.get_stories()
-    assert len(stories.story_steps) == 4
+    assert len(stories.story_steps) == 5
 
     nlu_data = await importer.get_nlu_data("en")
-    assert len(nlu_data.intents) == 6
-    assert len(nlu_data.intent_examples) == 39
+    assert len(nlu_data.intents) == 7
+    assert len(nlu_data.intent_examples) == 43
 
 
 async def test_rasa_file_importer_with_invalid_config():

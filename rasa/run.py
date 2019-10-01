@@ -4,6 +4,7 @@ from typing import Dict, Text
 
 from rasa.cli.utils import print_warning
 from rasa.constants import DOCS_BASE_URL
+from rasa.core.lock_store import LockStore
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +70,12 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     _tracker_store = TrackerStore.find_tracker_store(
         None, _endpoints.tracker_store, _broker
     )
+    _lock_store = LockStore.find_lock_store(_endpoints.lock_store)
 
     return Agent.load(
         model,
         generator=_endpoints.nlg,
         tracker_store=_tracker_store,
+        lock_store=_lock_store,
         action_endpoint=_endpoints.action,
     )

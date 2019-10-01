@@ -53,7 +53,9 @@ class PolicyEnsemble(object):
         self._check_for_important_policies()
 
     def _check_for_important_policies(self):
-        if "MappingPolicy" not in self.policies:
+        from rasa.core.policies.mapping_policy import MappingPolicy
+
+        if not any(isinstance(policy, MappingPolicy) for policy in self.policies):
             logger.info(
                 "MappingPolicy not included in policy ensemble. Default intents "
                 "'{} and {} will not trigger actions '{}' and '{}'."
@@ -232,9 +234,9 @@ class PolicyEnsemble(object):
         model_version = metadata.get("rasa", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedDialogueModelError(
-                "The model version is to old to be "
+                "The model version is too old to be "
                 "loaded by this Rasa Core instance. "
-                "Either retrain the model, or run with"
+                "Either retrain the model, or run with "
                 "an older version. "
                 "Model version: {} Instance version: {} "
                 "Minimal compatible version: {}"

@@ -33,6 +33,7 @@ General
   The meaning of ``evaluate_on_num_examples`` is changed. If it is non zero, random examples will be
   picked by stratified split and used as **hold out** validation set, so they will be excluded from training data.
   We suggest to set it to zero (default) if data set contains a lot of unique examples of dialogue turns.
+  Removed ``label_tokenization_flag`` and ``label_split_symbol`` from component. Instead moved intent splitting to ``Tokenizer`` components via ``intent_tokenization_flag`` and ``intent_split_symbol`` flag.
 - Default ``max_history`` for ``EmbeddingPolicy`` is ``None`` which means it'll use
   the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
   some finite value in order to use ``MaxHistoryTrackerFeaturizer``
@@ -49,6 +50,8 @@ General
   an entity set, this will influence the weighted precision and f1-score quite a bit. From now on we
   exclude ``no-entity`` from the evaluation. The overall metrics now only include proper entities. You
   might see a drop in the performance scores when running the evaluation again.
+- ``/`` is reserved as a delimiter token to distinguish between retrieval intent and the corresponding response text
+  identifier. Make sure you don't include ``/`` symbol in the name of your intents.
 
 .. _migration-to-rasa-1.0:
 

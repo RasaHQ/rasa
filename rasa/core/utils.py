@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import argparse
-import asyncio
 import json
 import logging
 import re
 import sys
 from asyncio import Future
+from decimal import Decimal
 from hashlib import md5, sha1
 from io import StringIO
 from pathlib import Path
@@ -259,7 +259,7 @@ def list_routes(app: Sanic):
 def cap_length(s, char_limit=20, append_ellipsis=True):
     """Makes sure the string doesn't exceed the passed char limit.
 
-    Appends an ellipsis if the string is to long."""
+    Appends an ellipsis if the string is too long."""
 
     if len(s) > char_limit:
         if append_ellipsis:
@@ -321,6 +321,15 @@ def file_as_bytes(path: Text) -> bytes:
     """Read in a file as a byte array."""
     with open(path, "rb") as f:
         return f.read()
+
+
+def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
+    """Convert `data` to string if it is a bytes-like object."""
+
+    if isinstance(data, (bytes, bytearray)):
+        return data.decode("utf-8")
+
+    return data
 
 
 def get_file_hash(path: Text) -> Text:
@@ -387,9 +396,10 @@ class AvailableEndpoints(object):
         tracker_store = read_endpoint_config(
             endpoint_file, endpoint_type="tracker_store"
         )
+        lock_store = read_endpoint_config(endpoint_file, endpoint_type="lock_store")
         event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
 
-        return cls(nlg, nlu, action, model, tracker_store, event_broker)
+        return cls(nlg, nlu, action, model, tracker_store, lock_store, event_broker)
 
     def __init__(
         self,
@@ -398,6 +408,7 @@ class AvailableEndpoints(object):
         action=None,
         model=None,
         tracker_store=None,
+        lock_store=None,
         event_broker=None,
     ):
         self.model = model
@@ -405,6 +416,7 @@ class AvailableEndpoints(object):
         self.nlu = nlu
         self.nlg = nlg
         self.tracker_store = tracker_store
+        self.lock_store = lock_store
         self.event_broker = event_broker
 
 
@@ -448,27 +460,25 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
     return handler
 
 
-class LockCounter(asyncio.Lock):
-    """Decorated asyncio lock that counts how many coroutines are waiting.
+def replace_floats_with_decimals(obj: Union[List, Dict]) -> Any:
+    """
+    Utility method to recursively walk a dictionary or list converting all `float` to `Decimal` as required by DynamoDb.
 
-    The counter can be used to discard the lock when there is no coroutine
-    waiting for it. For this to work, there should not be any execution yield
-    between retrieving the lock and acquiring it, otherwise there might be
-    race conditions."""
+    Args:
+        obj: A `List` or `Dict` object.
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.wait_counter = 0
+    Returns: An object with all matching values and `float` type replaced by `Decimal`.
 
-    async def acquire(self) -> bool:
-        """Acquire the lock, makes sure only one coroutine can retrieve it."""
-
-        self.wait_counter += 1
-        try:
-            return await super(LockCounter, self).acquire()  # type: ignore
-        finally:
-            self.wait_counter -= 1
-
-    def is_someone_waiting(self) -> bool:
-        """Check if a coroutine is waiting for this lock to be freed."""
-        return self.wait_counter != 0
+    """
+    if isinstance(obj, list):
+        for i in range(len(obj)):
+            obj[i] = replace_floats_with_decimals(obj[i])
+        return obj
+    elif isinstance(obj, dict):
+        for j in obj:
+            obj[j] = replace_floats_with_decimals(obj[j])
+        return obj
+    elif isinstance(obj, float):
+        return Decimal(obj)
+    else:
+        return obj

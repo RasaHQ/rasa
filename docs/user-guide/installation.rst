@@ -4,6 +4,7 @@
 
 .. _installation:
 
+============
 Installation
 ============
 
@@ -12,32 +13,34 @@ Installation
 Quick Installation
 ~~~~~~~~~~~~~~~~~~
 
-You can install both Rasa and Rasa X using pip with the following command (requires Python 3.5.4 or higher).
+You can install both Rasa and Rasa X using pip (requires Python 3.6.0 or higher).
 
 .. code-block:: bash
 
-    $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
+    $ pip3 install rasa-x --extra-index-url https://pypi.rasa.com/simple
 
-Once you're done with this, you can head over to the tutorial!
+- Having trouble installing? Read our :ref:`step-by-step installation guide <installation_guide>`.
+- You can also :ref:`build Rasa from source <build_from_source>`.
+- For advanced installation options such as building from source and installation instructions for
+  custom pipelines, head over :ref:`here <pipeline_dependencies>`.
+
+
+When you're done installing, you can head over to the tutorial!
 
 .. button::
    :text: Next Step: Tutorial
    :link: ../rasa-tutorial/
 
+
+
 |
 
 -------------------------------------------
 
-For a more detailed guide on setting up Rasa with pip, follow along the :ref:`installation guide <installation_guide>`. You can also :ref:`build Rasa from source <build_from_source>`.
-
-If you have a specific pipeline in mind and want to install dependencies for that,
-head over to the section on :ref:`pipeline dependencies <pipeline_dependencies>`.
-
-
 .. _installation_guide:
 
-Installation Guide with pip
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step-by-step Installation Guide
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Install the Python development environment
 ---------------------------------------------
@@ -48,7 +51,6 @@ Check if your Python environment is already configured:
 
     $ python3 --version
     $ pip3 --version
-    $ virtualenv --version
 
 If these packages are already installed, these commands should display version
 numbers for each step, and you can skip to the next step.
@@ -65,19 +67,17 @@ Otherwise, proceed with the instructions below to install them.
 
             $ sudo apt update
             $ sudo apt install python3-dev python3-pip
-            $ sudo pip3 install -U virtualenv
 
     .. tab:: macOS
 
         Install the `Homebrew <https://brew.sh>`_ package manager if you haven't already.
 
-        Once you're done, you can install Python and virtualenv.
+        Once you're done, you can install Python3.
 
         .. code-block:: bash
 
             $ brew update
-            $ brew install python  # Python 3
-            $ sudo pip3 install -U virtualenv  # system-wide install
+            $ brew install python
 
     .. tab:: Windows
 
@@ -93,13 +93,17 @@ Otherwise, proceed with the instructions below to install them.
 
         .. code-block:: bat
 
-            C:\> pip3 install -U pip virtualenv
+            C:\> pip3 install -U pip
+
+.. note::
+   Note that `pip` in this refers to `pip3` as Rasa requires python3. To see which version the `pip` 
+   command on your machine calls use `pip --version`.
 
 
 2. Create a virtual environment (strongly recommended)
 ------------------------------------------------------
 
-Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_ provide isolated Python environments, which are cleaner than installing packages systemwide. They also let you install packages without root privileges.
+Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_ provide isolated Python environments, which are cleaner than installing packages systemwide (as they prevent dependency conflicts). They also let you install packages without root privileges.
 
 .. tabs::
 
@@ -109,7 +113,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
         .. code-block:: bash
 
-            $ virtualenv --system-site-packages -p python3 ./venv
+            $ python3 -m venv --system-site-packages ./venv
 
         Activate the virtual environment:
 
@@ -123,7 +127,7 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
         .. code-block:: bat
 
-            C:\> virtualenv --system-site-packages -p python3 ./venv
+            C:\> python3 -m venv --system-site-packages ./venv
 
         Activate the virtual environment:
 
@@ -151,15 +155,20 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
         .. code-block:: bash
 
-            $ pip3 install rasa
+            $ pip install rasa
 
-.. admonition:: Congratulations! You have successfully installed Rasa!
+**Congratulations! You have successfully installed Rasa!**
 
-    You can now head over to the :ref:`tutorial <rasa-tutorial>`.
+You can now head over to the tutorial.
+
+.. button::
+   :text: Next Step: Tutorial
+   :link: ../rasa-tutorial/
 
 |
 
 -------------------------------------------
+
 
 .. _build_from_source:
 
@@ -175,23 +184,33 @@ If you want to use the development version of Rasa, you can get it from GitHub:
     $ pip install -r requirements.txt
     $ pip install -e .
 
+--------------------------------
+
 .. _pipeline_dependencies:
 
 NLU Pipeline Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Rasa NLU has different components for recognizing intents and entities,
-most of which have some additional dependencies.
+Several NLU components have additional dependencies that need to
+be installed separately.
 
-When you train your NLU model, Rasa will check if all required dependencies are
-installed and tell you if any are missing. The page on :ref:`choosing-a-pipeline`
-will help you pick which pipeline to use.
+Here, you will find installation instructions for each of them below.
 
-.. note::
+How do I choose a pipeline?
+---------------------------
 
-    If you want to make sure you have the dependencies
-    installed for any component you might ever need, and you
-    don't mind the additional dependencies lying around, you can use
+The page on :ref:`choosing-a-pipeline` will help you pick the right pipeline
+for your assistant.
+
+I have decided on a pipeline. How do I install the dependencies for it?
+-----------------------------------------------------------------------
+
+When you install Rasa, the dependencies for the ``supervised_embeddings`` - TensorFlow
+and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need to be separately installed if you want to use pipelines containing components from those libraries.
+
+.. admonition:: Just give me everything!
+
+    If you don't mind the additional dependencies lying around, you can use
     this to install everything.
 
     You'll first need to clone the repository and then run the following
@@ -202,13 +221,11 @@ will help you pick which pipeline to use.
         $ pip install -r alt_requirements/requirements_full.txt
 
 
-Great for getting started: pretrained embeddings from spaCy
------------------------------------------------------------
+Dependencies for spaCy
+######################
 
 
-The ``pretrained_embeddings_spacy`` pipeline combines a few different libraries and
-is a popular option. For more information
-check out the `spaCy docs <https://spacy.io/usage/models>`_.
+For more information on spaCy, check out the `spaCy docs <https://spacy.io/usage/models>`_.
 
 You can install it with the following commands:
 
@@ -224,27 +241,10 @@ for the English language. We recommend using at least the
 default small ``en_core_web_sm`` model. Small models require less
 memory to run, but will somewhat reduce intent classification performance.
 
-
-First Alternative: TensorFlow
------------------------------
-
-The ``supervised_embeddings`` pipeline uses TensorFlow and the sklearn-crfsuite
-library as dependencies. However, these are installed automatically along
-with a standard Rasa installation that you get from doing:
-
-.. code-block:: bash
-    
-    $ pip install rasa
-
-
 .. _install-mitie:
 
-Second Alternative: MITIE
--------------------------
-
-The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend performs well for
-small datasets, but training can take very long if you have more than a
-couple of hundred examples. We may deprecate the MITIE backend in the future.
+Dependencies for MITIE
+######################
 
 First, run
 
@@ -260,12 +260,6 @@ anywhere. If you want to use MITIE, you need to
 tell it where to find this file (in this example it was saved in the
 ``data`` folder of the project directory).
 
-
-Next Step
-~~~~~~~~~
-
-Now that you have everything installed, head over to the tutorial!
-
-.. button::
-   :text: Next Step: Tutorial
-   :link: ../rasa-tutorial/
+.. warning::
+    
+    Mitie support is likely to be deprecated in a future release.

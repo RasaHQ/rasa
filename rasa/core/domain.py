@@ -5,6 +5,7 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
+import rasa.core.constants
 import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.cli.utils import bcolors
@@ -897,7 +898,11 @@ class Domain(object):
     def check_missing_templates(self) -> None:
         """Warn user of utterance names which have no specified template."""
 
-        utterances = [a for a in self.action_names if a.startswith(action.UTTER_PREFIX)]
+        utterances = [
+            a
+            for a in self.action_names
+            if a.startswith(rasa.core.constants.UTTER_PREFIX)
+        ]
 
         missing_templates = [t for t in utterances if t not in self.templates.keys()]
 

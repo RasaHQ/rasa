@@ -9,17 +9,17 @@ import time
 
 from rasa.core import jobs
 from rasa.core.actions.action import Action
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ActionExecutionRejection,
-    UTTER_PREFIX,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     UserMessage,
     OutputChannel,
 )
-from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
+from rasa.core.constants import (
+    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    USER_INTENT_RESTART,
+    UTTER_PREFIX,
+)
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
@@ -108,6 +108,13 @@ class MessageProcessor(object):
             logger.warning(
                 "Failed to retrieve or create tracker for sender "
                 "'{}'.".format(sender_id)
+            )
+            return None
+
+        if not self.policy_ensemble or not self.domain:
+            # save tracker state to continue conversation from this state
+            logger.warning(
+                "No policy ensemble or domain set. Skipping action prediction "
             )
             return None
 

@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional, Text
 
 from rasa.core.brokers.event_channel import EventChannel
 from rasa.utils.endpoints import EndpointConfig
+import contextlib
 
 logger = logging.getLogger(__name__)
 
@@ -47,17 +48,27 @@ class SQLProducer(EventChannel):
 
         self.engine = sqlalchemy.create_engine(engine_url)
         self.Base.metadata.create_all(self.engine)
-        self.session = sqlalchemy.orm.sessionmaker(bind=self.engine)()
+        self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine)
 
     @classmethod
     def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventChannel":
         return cls(host=broker_config.url, **broker_config.kwargs)
 
+    @contextlib.contextmanager
+    def session_scope(self):
+        """Provide a transactional scope around a series of operations."""
+        session = self.sessionmaker()
+        try:
+            yield session
+        finally:
+            session.close()
+
     def publish(self, event: Dict[Text, Any]) -> None:
         """Publishes a json-formatted Rasa Core event into an event queue."""
-        self.session.add(
-            self.SQLBrokerEvent(
-                sender_id=event.get("sender_id"), data=json.dumps(event)
+        with self.session_scope() as session:
+            session.add(
+                self.SQLBrokerEvent(
+                    sender_id=event.get("sender_id"), data=json.dumps(event)
+                )
             )
-        )
-        self.session.commit()
+            session.commit()

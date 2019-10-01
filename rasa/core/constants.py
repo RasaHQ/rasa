@@ -12,6 +12,8 @@ DEFAULT_FALLBACK_ACTION = "action_default_fallback"
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
+DEFAULT_LOCK_LIFETIME = 60  # in seconds
+
 REQUESTED_SLOT = "requested_slot"
 
 # slots for knowledge base
@@ -46,3 +48,5 @@ FALLBACK_POLICY_PRIORITY = 4
 # the priority intended to be used by form policies
 # it is the highest to prioritize form to the rest of the policies
 FORM_POLICY_PRIORITY = 5
+UTTER_PREFIX = "utter_"
+RESPOND_PREFIX = "respond_"

@@ -122,7 +122,8 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
             e.message += (
                 ". Failed to validate NLG response from API, make sure your "
                 "response from the NLG endpoint is valid. "
-                "For more information about the format visit "
-                "https://nlu.rasa.com/..."
+                "For more information about the format please consult the "
+                "`nlg_response_format_spec` function from this same module: "
+                "https://github.com/RasaHQ/rasa/blob/master/rasa/core/nlg/callback.py#L12"
             )
             raise e

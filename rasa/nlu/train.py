@@ -53,6 +53,7 @@ async def train(
     storage: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
+    persist_nlu_training_data: bool = False,
     **kwargs: Any
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
@@ -79,7 +80,9 @@ async def train(
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
-        persisted_path = trainer.persist(path, persistor, fixed_model_name)
+        persisted_path = trainer.persist(
+            path, persistor, fixed_model_name, persist_nlu_training_data
+        )
     else:
         persisted_path = None
 

@@ -2,20 +2,18 @@ import asyncio
 from typing import Text
 
 import pytest
-from async_generator import async_generator, yield_
 from sanic import Sanic, response
 
-import rasa.utils.io
 import rasa.core
-from rasa.core import config, jobs, utils
+import rasa.utils.io
+from rasa.core import jobs, utils
 from rasa.core.agent import Agent, load_agent
-from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.channels.channel import UserMessage
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
-
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
@@ -51,13 +49,27 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
 
 
 @pytest.fixture
-@async_generator
 async def model_server(test_server, trained_moodbot_path):
     server = await test_server(
         model_server_app(trained_moodbot_path, model_hash="somehash")
     )
-    await yield_(server)  # python 3.5 compatibility
+    yield server
     await server.close()
+
+
+async def test_training_data_is_reproducible(tmpdir, default_domain):
+    training_data_file = "examples/moodbot/data/stories.md"
+    agent = Agent(
+        "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
+    )
+
+    training_data = await agent.load_data(training_data_file)
+    # make another copy of training data
+    same_training_data = await agent.load_data(training_data_file)
+
+    # test if both datasets are identical (including in the same order)
+    for i, x in enumerate(training_data):
+        assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
 
 
 async def test_agent_train(tmpdir, default_domain):
@@ -67,6 +79,7 @@ async def test_agent_train(tmpdir, default_domain):
     )
 
     training_data = await agent.load_data(training_data_file)
+
     agent.train(training_data)
     agent.persist(tmpdir.strpath)
 
@@ -174,7 +187,6 @@ async def test_agent_with_model_server_in_thread(
 
 
 async def test_wait_time_between_pulls_without_interval(model_server, monkeypatch):
-
     monkeypatch.setattr(
         "rasa.core.agent.schedule_model_pulling", lambda *args: 1 / 0
     )  # will raise an exception

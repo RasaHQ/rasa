@@ -79,3 +79,8 @@ def test_validate_with_invalid_directory_if_default_is_valid(caplog: LogCaptureF
         assert get_validated_path(invalid_directory, "out", tempdir) == tempdir
 
     assert "'{}' does not exist".format(invalid_directory) in caplog.text
+
+
+def test_print_error_and_exit():
+    with pytest.raises(SystemExit):
+        rasa.cli.utils.print_error_and_exit("")

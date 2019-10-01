@@ -55,10 +55,11 @@ def test_sql_broker_logs_to_sql_db():
     for e in TEST_EVENTS:
         actual.publish(e.as_dict())
 
-    events_types = [
-        json.loads(event.data)["event"]
-        for event in actual.session.query(actual.SQLBrokerEvent).all()
-    ]
+    with actual.session_scope() as session:
+        events_types = [
+            json.loads(event.data)["event"]
+            for event in session.query(actual.SQLBrokerEvent).all()
+        ]
 
     assert events_types == ["user", "slot", "restart"]
 

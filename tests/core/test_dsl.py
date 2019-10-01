@@ -207,7 +207,8 @@ async def test_read_story_file_with_cycles(tmpdir, default_domain):
     graph_without_cycles = graph.with_cycles_removed()
 
     assert graph.cyclic_edge_ids != set()
-    assert graph_without_cycles.cyclic_edge_ids == set()
+    # sorting removed_edges converting set converting it to list
+    assert graph_without_cycles.cyclic_edge_ids == list()
 
     assert len(graph.story_steps) == len(graph_without_cycles.story_steps) == 5
 

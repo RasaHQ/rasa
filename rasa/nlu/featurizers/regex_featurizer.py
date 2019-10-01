@@ -11,6 +11,11 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.io
+from rasa.nlu.constants import (
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +25,9 @@ if typing.TYPE_CHECKING:
 
 class RegexFeaturizer(Featurizer):
 
-    provides = ["text_features"]
+    provides = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
-    requires = ["tokens"]
+    requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
 
@@ -41,19 +46,19 @@ class RegexFeaturizer(Featurizer):
 
         for example in training_data.training_examples:
             updated = self._text_features_with_regex(example)
-            example.set("text_features", updated)
+            example.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         updated = self._text_features_with_regex(message)
-        message.set("text_features", updated)
+        message.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
 
     def _text_features_with_regex(self, message):
         if self.known_patterns:
             extras = self.features_for_patterns(message)
-            return self._combine_with_existing_text_features(message, extras)
+            return self._combine_with_existing_features(message, extras)
         else:
-            return message.get("text_features")
+            return message.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
     def _add_lookup_table_regexes(self, lookup_tables):
         # appends the regex features from the lookup tables to
@@ -76,7 +81,9 @@ class RegexFeaturizer(Featurizer):
             matches = re.finditer(exp["pattern"], message.text)
             matches = list(matches)
             found_patterns.append(False)
-            for token_index, t in enumerate(message.get("tokens", [])):
+            for token_index, t in enumerate(
+                message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
+            ):
                 patterns = t.get("pattern", default={})
                 patterns[exp["name"]] = False
 

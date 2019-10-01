@@ -10,7 +10,7 @@ help:
 	@echo "    types"
 	@echo "        Check for type errors using pytype."
 	@echo "    prepare-tests-ubuntu"
-	@echo "        Install system requirements for running tests on Ubuntu."
+	@echo "        Install system requirements for running tests on Ubuntu and Debian based systems."
 	@echo "    prepare-tests-macos"
 	@echo "        Install system requirements for running tests on macOS."
 	@echo "    prepare-tests-files"
@@ -47,12 +47,12 @@ prepare-tests-macos: prepare-tests-files
 	brew install graphviz
 
 prepare-tests-ubuntu: prepare-tests-files
-	sudo apt-get install graphviz graphviz-dev
+	sudo apt-get -y install graphviz graphviz-dev python3-tk
 
 prepare-tests-files:
-	pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir -q
+	pip3 install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir -q
 	python -m spacy link en_core_web_md en --force
-	pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir -q
+	pip3 install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir -q
 	python -m spacy link de_core_news_sm de --force
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 

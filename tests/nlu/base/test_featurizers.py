@@ -29,6 +29,88 @@ def test_spacy_featurizer(sentence, expected, spacy_nlp):
     assert np.allclose(vecs, doc.vector, atol=1e-5)
 
 
+def test_spacy_training_sample_alignment(spacy_nlp_component):
+    from spacy.tokens import Doc
+
+    m1 = Message.build(text="I have a feeling", intent="feeling")
+    m2 = Message.build(text="", intent="feeling")
+    m3 = Message.build(text="I am the last message", intent="feeling")
+    td = TrainingData(training_examples=[m1, m2, m3])
+
+    attribute_docs = spacy_nlp_component.docs_for_training_data(td)
+
+    assert isinstance(attribute_docs["text"][0], Doc)
+    assert isinstance(attribute_docs["text"][1], Doc)
+    assert isinstance(attribute_docs["text"][2], Doc)
+
+    assert [t.text for t in attribute_docs["text"][0]] == ["i", "have", "a", "feeling"]
+    assert [t.text for t in attribute_docs["text"][1]] == []
+    assert [t.text for t in attribute_docs["text"][2]] == [
+        "i",
+        "am",
+        "the",
+        "last",
+        "message",
+    ]
+
+
+def test_spacy_intent_featurizer(spacy_nlp_component):
+    from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+
+    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    spacy_nlp_component.train(td, config=None)
+    spacy_featurizer = SpacyFeaturizer()
+    spacy_featurizer.train(td, config=None)
+
+    intent_features_exist = np.array(
+        [
+            True if example.get("intent_features") is not None else False
+            for example in td.intent_examples
+        ]
+    )
+
+    # no intent features should have been set
+    assert not any(intent_features_exist)
+
+
+@pytest.mark.parametrize(
+    "sentence, expected",
+    [("hey how are you today", [-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])],
+)
+def test_spacy_ner_featurizer(sentence, expected, spacy_nlp):
+    from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+
+    doc = spacy_nlp(sentence)
+    token_vectors = [t.vector for t in doc]
+    spacy_config = {"ner_feature_vectors": True}
+    ftr = SpacyFeaturizer.create(spacy_config, RasaNLUModelConfig())
+    greet = {"intent": "greet", "text_features": [0.5]}
+    message = Message(sentence, greet)
+    message.set("spacy_doc", doc)
+    ftr._set_spacy_features(message)
+    ftr._set_spacy_ner_features(message)
+    vecs = message.get("ner_features")[0][:5]
+    assert np.allclose(token_vectors[0][:5], vecs, atol=1e-4)
+    assert np.allclose(vecs, expected, atol=1e-4)
+
+
+def test_spacy_ner_featurizer_config(spacy_nlp):
+    from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+
+    sentence = "hi there friend"
+    doc = spacy_nlp(sentence)
+    spacy_config = {"ner_feature_vectors": False}
+    ftr = SpacyFeaturizer.create(spacy_config, RasaNLUModelConfig())
+    greet = {"intent": "greet", "text_features": [0.5]}
+    message = Message(sentence, greet)
+    message.set("spacy_doc", doc)
+    ftr._set_spacy_features(message)
+    ftr._set_spacy_ner_features(message)
+    vecs = np.array(message.get("ner_features"))
+    assert vecs.shape[0] == len(doc)
+    assert vecs.shape[1] == 0
+
+
 def test_mitie_featurizer(mitie_feature_extractor, default_config):
     from rasa.nlu.featurizers.mitie_featurizer import MitieFeaturizer
 
@@ -196,6 +278,69 @@ def test_count_vector_featurizer(sentence, expected):
 
 
 @pytest.mark.parametrize(
+    "sentence, intent, response, intent_features, response_features",
+    [
+        ("hello hello hello hello hello ", "greet", None, [1], None),
+        ("hello goodbye hello", "greet", None, [1], None),
+        ("a 1 2", "char", "char char", [1], [2]),
+    ],
+)
+def test_count_vector_featurizer_attribute_featurization(
+    sentence, intent, response, intent_features, response_features
+):
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    train_message = Message(sentence)
+
+    # this is needed for a valid training example
+    train_message.set("intent", intent)
+    train_message.set("response", response)
+
+    data = TrainingData([train_message])
+    ftr.train(data)
+
+    assert train_message.get("intent_features") == intent_features
+    assert train_message.get("response_features") == response_features
+
+
+@pytest.mark.parametrize(
+    "sentence, intent, response, text_features, intent_features, response_features",
+    [
+        ("hello hello greet ", "greet", "hello", [1, 2], [1, 0], [0, 1]),
+        (
+            "I am fine",
+            "acknowledge",
+            "good",
+            [0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0],
+        ),
+    ],
+)
+def test_count_vector_featurizer_shared_vocab(
+    sentence, intent, response, text_features, intent_features, response_features
+):
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer(
+        {"token_pattern": r"(?u)\b\w+\b", "use_shared_vocab": True}
+    )
+    train_message = Message(sentence)
+
+    # this is needed for a valid training example
+    train_message.set("intent", intent)
+    train_message.set("response", response)
+
+    data = TrainingData([train_message])
+    ftr.train(data)
+
+    assert np.all(train_message.get("text_features") == text_features)
+    assert np.all(train_message.get("intent_features") == intent_features)
+    assert np.all(train_message.get("response_features") == response_features)
+
+
+@pytest.mark.parametrize(
     "sentence, expected",
     [
         ("hello hello hello hello hello __OOV__", [1, 5]),
@@ -346,15 +491,25 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     train_ftr.train(data)
     # persist featurizer
     file_dict = train_ftr.persist("ftr", tmpdir.strpath)
-    train_vect_params = train_ftr.vectorizer.get_params()
+    train_vect_params = {
+        attribute: vectorizer.get_params()
+        for attribute, vectorizer in train_ftr.vectorizers.items()
+    }
     # add trained vocabulary to vectorizer params
-    train_vect_params.update({"vocabulary": train_ftr.vectorizer.vocabulary_})
+    for attribute, attribute_vect_params in train_vect_params.items():
+        if hasattr(train_ftr.vectorizers[attribute], "vocabulary_"):
+            train_vect_params[attribute].update(
+                {"vocabulary": train_ftr.vectorizers[attribute].vocabulary_}
+            )
 
     # load featurizer
     meta = train_ftr.component_config.copy()
     meta.update(file_dict)
     test_ftr = CountVectorsFeaturizer.load(meta, tmpdir.strpath)
-    test_vect_params = test_ftr.vectorizer.get_params()
+    test_vect_params = {
+        attribute: vectorizer.get_params()
+        for attribute, vectorizer in test_ftr.vectorizers.items()
+    }
 
     assert train_vect_params == test_vect_params
 
