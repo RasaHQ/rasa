@@ -19,7 +19,8 @@ Added
 - `CRFEntityExtractor` updated to accept arbitrary token-level features like word vectors (issues/4214)
 - `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
 - Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com> 
-  or <http://url.com|url.com> and substitute it with original content 
+  or <http://url.com|url.com> and substitute it with original content
+- Remove duplicate messages when creating training data (issues/1446)
 
 Changed
 -------
