@@ -26,7 +26,8 @@ Changed
 - Unknown sections in markdown format (NLU data) are not ignored anymore, but instead an error is raised.
 - Serialise ``DialogueStateTracker`` as json instead of pickle. **DEPRECATION warning**:
   Deserialisation of pickled trackers will be deprecated in a future version. For now,
-  trackers loaded from pickle will be dumped as json.
+  trackers are still loaded from pickle but will be dumped as json in any subsequent
+  save operations.
 
 Removed
 -------

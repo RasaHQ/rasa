@@ -165,12 +165,12 @@ class TrackerStore(object):
 
     @staticmethod
     def _deserialise_dialogue_from_pickle(
-        tracker: DialogueStateTracker, serialised_tracker: bytes
+        sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
 
         logger.warning(
             f"DEPRECATION warning: Found pickled tracker for "
-            f"conversation ID '{tracker.sender_id}'. Deserialisation of pickled "
+            f"conversation ID '{sender_id}'. Deserialisation of pickled "
             f"trackers will be deprecated in a future version. Rasa will perform any "
             f"future save operations of this tracker using json serialisation."
         )
@@ -189,7 +189,7 @@ class TrackerStore(object):
             dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
         except UnicodeDecodeError:
             dialogue = self._deserialise_dialogue_from_pickle(
-                tracker, serialised_tracker
+                sender_id, serialised_tracker
             )
 
         tracker.recreate_from_dialogue(dialogue)
