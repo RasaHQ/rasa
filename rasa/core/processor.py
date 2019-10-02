@@ -308,8 +308,6 @@ class MessageProcessor(object):
         entities = parse_data["entities"]
         for element in entities:
             entity = element["entity"]
-            if not entity or entity == "":
-                continue
             if entity not in self.domain.entities and self.domain:
                 logger.warning(
                     "Interpreter parsed an entity '{}' "
