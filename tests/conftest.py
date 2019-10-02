@@ -1,4 +1,5 @@
 import logging
+from contextlib import contextmanager
 from typing import Text, List
 
 import pytest
@@ -209,3 +210,26 @@ def clean_folder(folder: Text) -> None:
         import shutil
 
         shutil.rmtree(folder)
+
+
+@contextmanager
+def log_emitted(
+    _caplog: LogCaptureFixture, logger_name: Text, log_level: int, text: Text = None
+) -> bool:
+    yield
+
+    record_tuples = _caplog.record_tuples
+
+    if not any(
+        (
+            record[0] == logger_name
+            and record[1] == log_level
+            and (text in record[2] if text else True)
+        )
+        for record in record_tuples
+    ):
+        raise AssertionError(
+            f"Did not detect expected logging output.\nExpected output is (logger "
+            f"name, log level, text): ({logger_name}, {log_level}, {text})\n"
+            f"Instead found records:\n{record_tuples}"
+        )
