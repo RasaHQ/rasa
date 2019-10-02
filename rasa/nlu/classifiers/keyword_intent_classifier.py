@@ -40,10 +40,6 @@ class KeywordIntentClassifier(Component):
 
         self.intent_keyword_map = intent_keyword_map or {}
 
-        self.re_case_flag = (
-            0 if self.component_config["case_sensitive"] else re.IGNORECASE
-        )
-
     def train(
         self,
         training_data: "TrainingData",
