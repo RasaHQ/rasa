@@ -190,7 +190,7 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
         x.message for x in caplog.get_records("call") if x.levelno == logging.WARNING
     ]
     assert any(
-        ("DEPRECATION" in message and "Deserialisation") in message
+        "DEPRECATION" in message and "Deserialisation" in message
         for message in messages
     )
 
