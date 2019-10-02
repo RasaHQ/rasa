@@ -24,8 +24,7 @@ from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
-    Event,INTENT_MESSAGE_PREFIX = "/"
-
+    Event,
     ReminderCancelled,
     ReminderScheduled,
     SlotSet,
