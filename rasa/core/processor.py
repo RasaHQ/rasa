@@ -24,7 +24,8 @@ from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
-    Event,
+    Event,INTENT_MESSAGE_PREFIX = "/"
+
     ReminderCancelled,
     ReminderScheduled,
     SlotSet,
@@ -297,7 +298,7 @@ class MessageProcessor(object):
         # for testing - you can short-cut the NLU part with a message
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
-        if message.text.startswith(INTENT_MESSAGE_PREFIX):
+        if message.text.startswith(INTENT_MESSAGE_PREFIX) or message.text.startswith('!' + INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(
                 message.text, message.message_id, tracker
             )
