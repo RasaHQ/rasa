@@ -294,9 +294,7 @@ class MessageProcessor(object):
         """check if the NLU picks up intent that aren't in the domain.
         """
         intent = parse_data["intent"]["name"]
-        if not intent or intent == "":
-            return
-        if intent not in self.domain.intents and self.domain:
+        if intent and self.domain and intent not in self.domain.intents:
             logger.warning(
                 "Interpreter parsed an intent '{}' "
                 "that is not defined in the domain.".format(intent)
@@ -308,7 +306,7 @@ class MessageProcessor(object):
         entities = parse_data["entities"]
         for element in entities:
             entity = element["entity"]
-            if entity not in self.domain.entities and self.domain:
+            if entity and self.domain and entity not in self.domain.entities:
                 logger.warning(
                     "Interpreter parsed an entity '{}' "
                     "that is not defined in the domain.".format(entity)
