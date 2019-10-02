@@ -6,7 +6,6 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from moto import mock_dynamodb2
 
-import rasa.core.tracker_store
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, Restarted
@@ -182,11 +181,18 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
 
     serialised = pickle_serialise_tracker(tracker)
 
+    assert tracker == store.deserialise_tracker(
+        UserMessage.DEFAULT_SENDER_ID, serialised
+    )
+
     # deprecation warning should be emitted
-    with caplog.at_level(logging.WARNING, rasa.core.tracker_store.logger.name):
-        assert tracker == store.deserialise_tracker(
-            UserMessage.DEFAULT_SENDER_ID, serialised
-        )
+    messages = [
+        x.message for x in caplog.get_records("call") if x.levelno == logging.WARNING
+    ]
+    assert any(
+        ("DEPRECATION" in message and "Deserialisation") in message
+        for message in messages
+    )
 
 
 @pytest.mark.parametrize(
