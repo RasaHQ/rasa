@@ -12,10 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- Added the logging mechanism, to give a warning if the NLU picks up intent or entities
-  that are not exist in the domain. The logic of this warning is implemented in a function called
-  `_log_unseen_enitites` in rasa/core/processor.py.
-
+- log a warning if the ``Interpreter`` picks up an intent or an entity that does not exist in the domain file.
 - added ``DynamoTrackerStore`` to support persistence of agents running on AWS
 - added docstrings for ``TrackerStore`` classes
 - added buttons and images to mattermost.
