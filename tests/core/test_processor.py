@@ -32,15 +32,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 async def test_message_processor(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -215,7 +206,7 @@ async def test_reminder_cancelled(
     assert len((await jobs.scheduler()).get_jobs()) == 1
 
     # execute the jobs
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
 
     tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
