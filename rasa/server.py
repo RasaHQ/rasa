@@ -880,7 +880,6 @@ def create_app(
                 entMap.append(resMap)
                 resMap = {}
         if intent == "searchintent" or intent == "cancelholdintent" or intent == "renewintent" or intent == "listcheckOutintent":
-            print("enitity map revised ",entMap)
             for data in entMap:
                 if data["name"] == "WORK_OF_ART":
                     data["name"] = "stitle"
@@ -991,7 +990,7 @@ def create_app(
                     data['value'] = str(data['value'])
                     entityArray.append(data)
                 elif data["name"] == 'number':
-                    data["name"] = 'options'
+                    data["name"] = 'option'
                     data['value'] = str(data['value'])
                     entityArray.append(data)
         elif intent == "PickUpIntent":
