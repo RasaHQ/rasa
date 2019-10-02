@@ -492,9 +492,10 @@ KeywordIntentClassifier
     The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user message.
     The keywords for an intent are the examples of that intent in the NLU training data.
     This means the entire example is the keyword, not the individual words in the example.
+
     .. note:: This classifier is intended only for small projects or to get started. If
-     you have few NLU training data you can use one of our pipelines
-    :ref:`choosing-a-pipeline`.
+              you have few NLU training data you can use one of our pipelines
+              :ref:`choosing-a-pipeline`.
 
 :Configuration:
 
