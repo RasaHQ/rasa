@@ -824,7 +824,6 @@ def create_app(
             data = emulator.normalise_request_json(request.json)
             try:
                 data['text'] = data['text'].lower()
-                print(data['text'])
                 parsed_data = await app.agent.parse_message_using_nlu_interpreter(
                     data.get("text")
                 )
@@ -836,15 +835,16 @@ def create_app(
                     "An unexpected error occurred. Error: {}".format(e),
                 )
             response_data = emulator.normalise_response_json(parsed_data)
-            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",response_data,"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
             if response_data['intent']['confidence'] >= 0.9:
                 narrowedEntity = entitySerializer(response_data['entities'])
                 entMap = entityMapper(narrowedEntity, response_data['intent']['name'],response_data['text'])
-                response_data['entities'] = entMap
+                response_data['slotvalues'] = entMap
             else:
                 response_data['intent'] = {}
                 response_data['intent']['name'] = 'AMAZON.FallbackIntent'
             del[response_data['intent_ranking']]
+            response_data['intent'] = response_data['intent']['name']
+            response_data['reqtype'] = respFinder(response_data['intent'])
             return response.json(response_data)
 
         except Exception as e:
@@ -852,6 +852,12 @@ def create_app(
             raise ErrorResponse(
                 500, "ParsingError", "An unexpected error occurred. Error: {}".format(e)
             )
+        
+    def respFinder(intent):
+        if intent == "AMAZON.StopIntent":
+            return 'SessionEndedRequest'
+        else:
+            return 'IntentRequest'
 
     def entityMapper(entMap, intent, utterence):
         intent = intent.lower()
@@ -878,14 +884,10 @@ def create_app(
             for data in entMap:
                 if data["name"] == "WORK_OF_ART":
                     data["name"] = "stitle"
-                    print("###############################################", data["value"],
-                          "##########################################################")
                     data["value"] = data["value"].lower().replace("search for a book", "").replace(
                         "search for the book", "").replace("serach for title", "").replace("search for a title",
                                                                                            "").replace(
                         "serach for the title", "")
-                    print("###############################################", data["value"],
-                          "##########################################################")
                     if data["value"] != "":
                         entityArray.append(data)
                         conditionMap["stitle"] = data["value"]
