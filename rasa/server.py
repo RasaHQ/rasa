@@ -905,7 +905,7 @@ def create_app(
                         conditionMap["stitle"] = data["value"]
                 elif data["name"] == 'type' or data["name"] == 'timeline' or data["name"] == 'filterphrase' or data[
                     "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data[
-                    "name"] == 'subject':
+                    "name"] == 'subject' or data["name"] == 'pubyear':
                     data["name"] = data["name"].lower()
                     entityArray.append(data)
                 else:
