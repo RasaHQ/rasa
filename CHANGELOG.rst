@@ -12,18 +12,23 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- log a warning if the ``Interpreter`` picks up an intent or an entity that does not
+  exist in the domain file.
 - added ``DynamoTrackerStore`` to support persistence of agents running on AWS
 - added docstrings for ``TrackerStore`` classes
 - added buttons and images to mattermost.
-- `CRFEntityExtractor` updated to accept arbitrary token-level features like word vectors (issues/4214)
+- `CRFEntityExtractor` updated to accept arbitrary token-level features like word
+  vectors (issues/4214)
 - `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
-- Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com> 
-  or <http://url.com|url.com> and substitute it with original content 
+- Sanitizing incoming messages from slack to remove slack formatting
+  like <mailto:xyz@rasa.com|xyz@rasa.com>
+  or <http://url.com|url.com> and substitute it with original content
 
 Changed
 -------
-- Unknown sections in markdown format (NLU data) are not ignored anymore, but instead an error is raised.
+- Unknown sections in markdown format (NLU data) are not ignored anymore,
+  but instead an error is raised.
+- Tests can now be run in parallel.
 - Serialise ``DialogueStateTracker`` as json instead of pickle. **DEPRECATION warning**:
   Deserialisation of pickled trackers will be deprecated in a future version. For now,
   trackers are still loaded from pickle but will be dumped as json in any subsequent

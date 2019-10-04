@@ -5,6 +5,7 @@ import uuid
 
 import pytest
 from aioresponses import aioresponses
+
 from unittest.mock import patch
 
 import rasa.utils.io
@@ -27,18 +28,12 @@ from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
+from rasa.core.domain import Domain
+
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
 
 
 async def test_message_processor(
@@ -70,6 +65,28 @@ async def test_parsing(default_processor: MessageProcessor):
     parsed = await default_processor._parse_message(message)
     assert parsed["intent"]["name"] == "greet"
     assert parsed["entities"][0]["entity"] == "name"
+
+
+async def test_log_unseen_intent(default_processor: MessageProcessor):
+    test_logger = logging.getLogger("rasa.core.processor")
+    with patch.object(test_logger, "warning") as mock_warning:
+        message = UserMessage('/love{"name": "RASA"}')
+        parsed = await default_processor._parse_message(message)
+        default_processor._log_unseen_intent(parsed)
+        mock_warning.assert_called_with(
+            "Interpreter parsed an intent 'love' that is not defined in the domain."
+        )
+
+
+async def test_log_unseen_enitites(default_processor: MessageProcessor):
+    test_logger = logging.getLogger("rasa.core.processor")
+    with patch.object(test_logger, "warning") as mock_warning:
+        message = UserMessage('/love{"test_entity": "RASA"}')
+        parsed = await default_processor._parse_message(message)
+        default_processor._log_unseen_enitites(parsed)
+        mock_warning.assert_called_with(
+            "Interpreter parsed an entity 'test_entity' that is not defined in the domain."
+        )
 
 
 async def test_http_parsing():
@@ -215,7 +232,7 @@ async def test_reminder_cancelled(
     assert len((await jobs.scheduler()).get_jobs()) == 1
 
     # execute the jobs
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
 
     tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
