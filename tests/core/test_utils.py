@@ -143,7 +143,7 @@ def test_get_number_of_sanic_workers(
     if env_value is not None:
         os.environ[ENV_SANIC_WORKERS] = str(env_value)
 
-    # store_type may be string or LockStore object
+    # lock_store may be string or LockStore object
     # create EndpointConfig if it's a string, otherwise pass the object
     if isinstance(lock_store, str):
         lock_store = EndpointConfig(type=lock_store)
