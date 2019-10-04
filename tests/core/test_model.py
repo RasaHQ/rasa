@@ -110,9 +110,7 @@ def _fingerprint(
         if config_core is not None
         else ["test"],
         FINGERPRINT_CONFIG_NLU_KEY: config_nlu if config_nlu is not None else ["test"],
-        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain
-        if domain is not None
-        else ["test"],
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain if domain is not None else ["test"],
         FINGERPRINT_NLG_KEY: nlg if nlg is not None else ["test"],
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa_version,

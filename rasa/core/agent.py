@@ -756,11 +756,7 @@ class Agent(object):
                 "overwritten.".format(model_path)
             )
 
-    def persist(
-        self,
-        model_path: Text,
-        dump_flattened_stories: bool = False,
-    ) -> None:
+    def persist(self, model_path: Text, dump_flattened_stories: bool = False) -> None:
         """Persists this agent into a directory for later loading and usage."""
 
         if not self.is_core_ready():

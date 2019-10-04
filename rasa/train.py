@@ -205,9 +205,7 @@ async def _do_training(
 ):
 
     if retrain_core or retrain_nlg or force_training:
-        retrain_nlg_only = (
-            retrain_nlg and not retrain_core and not force_training
-        )
+        retrain_nlg_only = retrain_nlg and not retrain_core and not force_training
         if retrain_nlg_only:
             print_color(
                 "Core stories/configuration did not change. "
