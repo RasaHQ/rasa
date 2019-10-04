@@ -9,12 +9,20 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 [Unreleased 1.3.8]
 ^^^^^^^^^^^^^^^^^^
+Added
+-----
+- Added the ability to configure the number of Sanic worker processes in the HTTP
+  server (``rasa.server``) and input channel server
+  (``rasa.core.agent.handle_channels()``). The number of workers can be set using the
+  environment variable ``SANIC_WORKERS`` (default: 1). A value of >1 is allowed only in
+  combination with ``RedisLockStore`` as the lock store.
 
 Fixed
 -----
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
-  when running ``rasa train core``
-- Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channelss
+  when running ``rasa train core``.
+- Default channel ``send_`` methods no longer support kwargs as they caused issues
+  in incompatible channels.
 
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^

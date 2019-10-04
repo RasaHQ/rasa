@@ -11,7 +11,8 @@ from sanic import Sanic
 
 import rasa
 import rasa.utils.io
-from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL
+import rasa.core.utils
+from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL, ENV_SANIC_BACKLOG
 from rasa.core import constants, jobs, training
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -713,7 +714,8 @@ class Agent(object):
         app.run(
             host="0.0.0.0",
             port=http_port,
-            backlog=int(os.environ.get("SANIC_BACKLOG", "100")),
+            backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
+            workers=rasa.core.utils.number_of_sanic_workers(self.lock_store),
         )
 
         # this might seem unnecessary (as run does not return until the server
