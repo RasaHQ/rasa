@@ -9,7 +9,7 @@ Cloud Storage
 .. edit-link::
 
 Rasa supports using `S3 <https://aws.amazon.com/s3/>`_ ,
-`GCS <https://cloud.google.com/storage/>`_ and `Azure Storage <https://azure.microsoft.com/services/storage/>` to save your models.
+`GCS <https://cloud.google.com/storage/>`_ and `Azure Storage <https://azure.microsoft.com/services/storage/>`_ to save your models.
 
 * Amazon S3 Storage
     S3 is supported using the ``boto3`` module which you can

@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- log a warning if the ``Interpreter`` picks up an intent or an entity that does not exist in the domain file.
 - added ``DynamoTrackerStore`` to support persistence of agents running on AWS
 - added docstrings for ``TrackerStore`` classes
 - added buttons and images to mattermost.
@@ -24,6 +24,7 @@ Added
 Changed
 -------
 - Unknown sections in markdown format (NLU data) are not ignored anymore, but instead an error is raised.
+- Tests can now be run in parallel
 
 Removed
 -------
