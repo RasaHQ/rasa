@@ -1,4 +1,3 @@
-import asyncio
 import os
 from decimal import Decimal
 from typing import Optional, Text, Union
@@ -12,15 +11,6 @@ from rasa.core import utils
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.core.utils import replace_floats_with_decimals
 from rasa.utils.endpoints import EndpointConfig
-
-
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
 
 
 def test_is_int():
