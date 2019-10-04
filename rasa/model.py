@@ -35,8 +35,8 @@ FINGERPRINT_FILE_PATH = "fingerprint.json"
 FINGERPRINT_CONFIG_KEY = "config"
 FINGERPRINT_CONFIG_CORE_KEY = "core-config"
 FINGERPRINT_CONFIG_NLU_KEY = "nlu-config"
-FINGERPRINT_DOMAIN_WITHOUT_TEMPLATES_KEY = "domain"
-FINGERPRINT_TEMPLATES_KEY = "templates"
+FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY = "domain"
+FINGERPRINT_NLG_KEY = "templates"
 FINGERPRINT_RASA_VERSION_KEY = "version"
 FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
@@ -50,7 +50,7 @@ SECTION_CORE = Section(
     relevant_keys=[
         FINGERPRINT_CONFIG_KEY,
         FINGERPRINT_CONFIG_CORE_KEY,
-        FINGERPRINT_DOMAIN_WITHOUT_TEMPLATES_KEY,
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY,
         FINGERPRINT_STORIES_KEY,
         FINGERPRINT_RASA_VERSION_KEY,
     ],
@@ -64,7 +64,7 @@ SECTION_NLU = Section(
         FINGERPRINT_RASA_VERSION_KEY,
     ],
 )
-SECTION_TEMPLATES = Section(name="Templates", relevant_keys=[FINGERPRINT_TEMPLATES_KEY])
+SECTION_TEMPLATES = Section(name="Templates", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
@@ -240,7 +240,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
 
     domain_dict = domain.as_dict()
     templates = domain_dict.pop("templates")
-    domain_without_templates = Domain.from_dict(domain_dict)
+    domain_without_nlg = Domain.from_dict(domain_dict)
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_hash_of_config(
@@ -252,8 +252,8 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         FINGERPRINT_CONFIG_NLU_KEY: _get_hash_of_config(
             config, include_keys=CONFIG_MANDATORY_KEYS_NLU
         ),
-        FINGERPRINT_DOMAIN_WITHOUT_TEMPLATES_KEY: hash(domain_without_templates),
-        FINGERPRINT_TEMPLATES_KEY: get_dict_hash(templates),
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: hash(domain_without_nlg),
+        FINGERPRINT_NLG_KEY: get_dict_hash(templates),
         FINGERPRINT_NLU_DATA_KEY: hash(nlu_data),
         FINGERPRINT_STORIES_KEY: hash(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
@@ -353,10 +353,10 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
         to be retrained or not.
 
     """
-    retrain_nlu = retrain_core = replace_templates = True
+    retrain_nlu = retrain_core = retrain_nlg = True
 
     if old_model is None or not os.path.exists(old_model):
-        return retrain_core, retrain_nlu, replace_templates
+        return retrain_core, retrain_nlu, retrain_nlg
 
     with unpack_model(old_model) as unpacked:
         last_fingerprint = fingerprint_from_path(unpacked)
@@ -365,7 +365,7 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
         retrain_core = section_fingerprint_changed(
             last_fingerprint, new_fingerprint, SECTION_CORE
         )
-        replace_templates = section_fingerprint_changed(
+        retrain_nlg = section_fingerprint_changed(
             last_fingerprint, new_fingerprint, SECTION_TEMPLATES
         )
         retrain_nlu = section_fingerprint_changed(
@@ -377,16 +377,16 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
             target_path = os.path.join(train_path, "core")
             retrain_core = not merge_model(old_core, target_path)
         else:
-            # In the case of replace_templates, only do it if the whole
+            # In the case of retrain_nlg, only do it if the whole
             # of Core is not being retrained. If it is, then replacing of
             # templates will be automatically taken care of during that process.
             target_path = os.path.join(train_path, "core")
-            replace_templates = not merge_model(old_core, target_path)
+            retrain_nlg = not merge_model(old_core, target_path)
         if not retrain_nlu:
             target_path = os.path.join(train_path, "nlu")
             retrain_nlu = not merge_model(old_nlu, target_path)
 
-        return retrain_core, retrain_nlu, replace_templates
+        return retrain_core, retrain_nlu, retrain_nlg
 
 
 def package_model(

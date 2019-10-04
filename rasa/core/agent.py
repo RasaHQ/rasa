@@ -760,7 +760,6 @@ class Agent(object):
         self,
         model_path: Text,
         dump_flattened_stories: bool = False,
-        replace_templates_only: bool = False,
     ) -> None:
         """Persists this agent into a directory for later loading and usage."""
 
@@ -772,8 +771,7 @@ class Agent(object):
 
         self._clear_model_directory(model_path)
 
-        if not replace_templates_only:
-            self.policy_ensemble.persist(model_path, dump_flattened_stories)
+        self.policy_ensemble.persist(model_path, dump_flattened_stories)
         self.domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
         self.domain.persist_specification(model_path)
 

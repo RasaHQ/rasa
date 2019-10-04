@@ -6,6 +6,7 @@ from typing import Text, Optional, List, Union, Dict
 
 from rasa.importers.importer import TrainingDataImporter
 from rasa import model
+from rasa.constants import DEFAULT_DOMAIN_PATH
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
 
@@ -158,11 +159,11 @@ async def _train_async_internal(
         )
 
     old_model = model.get_latest_model(output_path)
-    retrain_core, retrain_nlu, replace_templates = model.should_retrain(
+    retrain_core, retrain_nlu, retrain_nlg = model.should_retrain(
         new_fingerprint, old_model, train_path
     )
 
-    if force_training or retrain_core or retrain_nlu or replace_templates:
+    if force_training or retrain_core or retrain_nlu or retrain_nlg:
         await _do_training(
             file_importer,
             output_path=output_path,
@@ -170,7 +171,7 @@ async def _train_async_internal(
             force_training=force_training,
             retrain_core=retrain_core,
             retrain_nlu=retrain_nlu,
-            replace_templates=replace_templates,
+            retrain_nlg=retrain_nlg,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             kwargs=kwargs,
@@ -197,31 +198,35 @@ async def _do_training(
     force_training: bool = False,
     retrain_core: bool = True,
     retrain_nlu: bool = True,
-    replace_templates: bool = True,
+    retrain_nlg: bool = True,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     kwargs: Optional[Dict] = None,
 ):
 
-    if retrain_core or replace_templates or force_training:
-        replace_templates_only = (
-            replace_templates and not retrain_core and not force_training
+    if retrain_core or retrain_nlg or force_training:
+        retrain_nlg_only = (
+            retrain_nlg and not retrain_core and not force_training
         )
-        if replace_templates_only:
+        if retrain_nlg_only:
             print_color(
                 "Core stories/configuration did not change. "
                 "Only the templates section has been changed. A new model with "
                 "the updated templates will be created.",
                 color=bcolors.OKBLUE,
             )
-        await _train_core_with_validated_data(
-            file_importer,
-            output=output_path,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            replace_templates_only=replace_templates_only,
-            kwargs=kwargs,
-        )
+            model_path = os.path.join(train_path, "core")
+            domain = await file_importer.get_domain()
+            domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
+            domain.persist_specification(model_path)
+        else:
+            await _train_core_with_validated_data(
+                file_importer,
+                output=output_path,
+                train_path=train_path,
+                fixed_model_name=fixed_model_name,
+                kwargs=kwargs,
+            )
     else:
         print_color(
             "Core stories/configuration did not change. No need to retrain Core model.",
@@ -326,7 +331,6 @@ async def _train_core_with_validated_data(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
-    replace_templates_only: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
@@ -350,7 +354,6 @@ async def _train_core_with_validated_data(
             training_resource=file_importer,
             output_path=os.path.join(_train_path, "core"),
             policy_config=config,
-            replace_templates_only=replace_templates_only,
             kwargs=kwargs,
         )
         print_color("Core model training completed.", color=bcolors.OKBLUE)

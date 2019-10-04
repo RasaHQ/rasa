@@ -16,8 +16,8 @@ from rasa.core.domain import Domain
 from rasa.core.utils import get_dict_hash
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
-    FINGERPRINT_DOMAIN_WITHOUT_TEMPLATES_KEY,
-    FINGERPRINT_TEMPLATES_KEY,
+    FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY,
+    FINGERPRINT_NLG_KEY,
     FINGERPRINT_FILE_PATH,
     FINGERPRINT_NLU_DATA_KEY,
     FINGERPRINT_RASA_VERSION_KEY,
@@ -110,10 +110,10 @@ def _fingerprint(
         if config_core is not None
         else ["test"],
         FINGERPRINT_CONFIG_NLU_KEY: config_nlu if config_nlu is not None else ["test"],
-        FINGERPRINT_DOMAIN_WITHOUT_TEMPLATES_KEY: domain
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain
         if domain is not None
         else ["test"],
-        FINGERPRINT_TEMPLATES_KEY: templates if templates is not None else ["test"],
+        FINGERPRINT_NLG_KEY: templates if templates is not None else ["test"],
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa_version,
         FINGERPRINT_STORIES_KEY: stories if stories is not None else ["test"],
@@ -260,62 +260,62 @@ async def test_rasa_packaging(trained_model, project, use_fingerprint):
             "old": _fingerprint(stories=["others"]),
             "retrain_core": True,
             "retrain_nlu": False,
-            "replace_templates": False,
+            "retrain_nlg": False,
         },
         {
             "new": _fingerprint(nlu=["others"]),
             "old": _fingerprint(),
             "retrain_core": False,
             "retrain_nlu": True,
-            "replace_templates": False,
+            "retrain_nlg": False,
         },
         {
             "new": _fingerprint(config="others"),
             "old": _fingerprint(),
             "retrain_core": True,
             "retrain_nlu": True,
-            "replace_templates": False,
+            "retrain_nlg": False,
         },
         {
             "new": _fingerprint(config_core="others"),
             "old": _fingerprint(),
             "retrain_core": True,
             "retrain_nlu": False,
-            "replace_templates": False,
+            "retrain_nlg": False,
         },
         {
             "new": _fingerprint(),
             "old": _fingerprint(config_nlu="others"),
             "retrain_core": False,
             "retrain_nlu": True,
-            "replace_templates": False,
+            "retrain_nlg": False,
         },
         {
             "new": _fingerprint(),
             "old": _fingerprint(),
             "retrain_core": False,
             "retrain_nlu": False,
-            "replace_templates": False,
+            "retrain_nlg": False,
         },
         {
             "new": _fingerprint(),
             "old": _fingerprint(templates=["others"]),
             "retrain_core": False,
             "retrain_nlu": False,
-            "replace_templates": True,
+            "retrain_nlg": True,
         },
     ],
 )
 def test_should_retrain(trained_model: Text, fingerprint: Fingerprint):
     old_model = set_fingerprint(trained_model, fingerprint["old"])
 
-    retrain_core, retrain_nlu, replace_templates = should_retrain(
+    retrain_core, retrain_nlu, retrain_nlg = should_retrain(
         fingerprint["new"], old_model, tempfile.mkdtemp()
     )
 
     assert retrain_core == fingerprint["retrain_core"]
     assert retrain_nlu == fingerprint["retrain_nlu"]
-    assert replace_templates == fingerprint["replace_templates"]
+    assert retrain_nlg == fingerprint["retrain_nlg"]
 
 
 def set_fingerprint(trained_model: Text, fingerprint: Fingerprint) -> Text:

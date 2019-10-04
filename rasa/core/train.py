@@ -27,7 +27,6 @@ async def train(
     dump_stories: bool = False,
     policy_config: Optional[Union[Text, Dict]] = None,
     exclusion_percentage: int = None,
-    replace_templates_only: bool = False,
     kwargs: Optional[Dict] = None,
 ):
     from rasa.core.agent import Agent
@@ -64,7 +63,7 @@ async def train(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
     agent.train(training_data, **kwargs)
-    agent.persist(output_path, dump_stories, replace_templates_only)
+    agent.persist(output_path, dump_stories)
 
     return agent
 
