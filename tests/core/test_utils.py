@@ -179,7 +179,7 @@ def test_get_number_of_sanic_workers(
     ],
 )
 def test_lock_store_is_redis_lock_store(
-    lock_store: Union[EndpointConfig, Text, None], expected: bool
+    lock_store: Union[EndpointConfig, LockStore, None], expected: bool
 ):
     # noinspection PyProtectedMember
     assert rasa.core.utils._lock_store_is_redis_lock_store(lock_store) == expected
