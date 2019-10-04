@@ -36,7 +36,7 @@ FINGERPRINT_CONFIG_KEY = "config"
 FINGERPRINT_CONFIG_CORE_KEY = "core-config"
 FINGERPRINT_CONFIG_NLU_KEY = "nlu-config"
 FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY = "domain"
-FINGERPRINT_NLG_KEY = "templates"
+FINGERPRINT_NLG_KEY = "nlg"
 FINGERPRINT_RASA_VERSION_KEY = "version"
 FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
@@ -64,7 +64,7 @@ SECTION_NLU = Section(
         FINGERPRINT_RASA_VERSION_KEY,
     ],
 )
-SECTION_TEMPLATES = Section(name="Templates", relevant_keys=[FINGERPRINT_NLG_KEY])
+SECTION_NLG = Section(name="NLG Templates", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
@@ -366,7 +366,7 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
             last_fingerprint, new_fingerprint, SECTION_CORE
         )
         retrain_nlg = section_fingerprint_changed(
-            last_fingerprint, new_fingerprint, SECTION_TEMPLATES
+            last_fingerprint, new_fingerprint, SECTION_NLG
         )
         retrain_nlu = section_fingerprint_changed(
             last_fingerprint, new_fingerprint, SECTION_NLU
