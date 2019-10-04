@@ -198,7 +198,9 @@ def serve_application(
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
-        workers=rasa.core.utils.number_of_sanic_workers(endpoints.lock_store),
+        workers=rasa.core.utils.number_of_sanic_workers(
+            endpoints.lock_store if endpoints else None
+        ),
     )
 
 
