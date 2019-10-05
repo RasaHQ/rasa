@@ -10,6 +10,11 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 [Unreleased 1.3.8]
 ^^^^^^^^^^^^^^^^^^
 
+Changed
+-------
+- Policies now only get imported if they are actually used. This removes
+  TensorFlow warnings when starting Rasa X
+
 Fixed
 -----
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
