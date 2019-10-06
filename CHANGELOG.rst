@@ -19,7 +19,7 @@ Fixed
 -----
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
   when running ``rasa train core``
-- Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channelss
+- Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channels
 
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^
