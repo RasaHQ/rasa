@@ -21,6 +21,11 @@ Fixed
   when running ``rasa train core``
 - Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channels
 
+Added
+-----
+- Link to detailed blog post about ``Retrieval Actions`` on its corresponding page in docs.
+- Warning inside ``Retrieval Actions`` docs page concerning usage of Rasa X with it.
+
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^
 
