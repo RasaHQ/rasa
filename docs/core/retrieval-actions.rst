@@ -242,4 +242,4 @@ the corresponding response selector will be identified as ``default`` in the ret
 
 .. warning::
 
-   Since the feature is experimental, retrieval actions are not supported by Rasa-X and interactive learning within Rasa. Using them may lead to unexpected behaviour.
+   Since the feature is experimental, retrieval actions are not currently supported by Rasa-X and interactive learning within Rasa. Using them may lead to unexpected behaviour.
