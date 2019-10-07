@@ -13,6 +13,8 @@ Retrieval Actions
    We introduce experimental features to get feedback from our community, so we encourage you to try it out!
    However, the functionality might be changed or removed in the future.
    If you have feedback (positive or negative) please share it with us on the `forum <https://forum.rasa.com>`_.
+   Also, currently we do not support adding new annotations in Rasa X if your training data contains retrieval actions.
+   Once we have gathered enough feedback on the feature in terms of the training data format, we'll tightly integrate these for better support.
 
 .. note::
    There is an in-depth blog post `here <https://blog.rasa.com/response-retrieval-models/>`_ about how to use retrieval
@@ -239,7 +241,3 @@ Example result:
 
 If the ``retrieval_intent`` parameter of a particular response selector was left to its default value,
 the corresponding response selector will be identified as ``default`` in the returned output.
-
-.. warning::
-
-   Since the feature is experimental, retrieval actions are currently not supported by Rasa-X and interactive learning within Rasa. Using them may lead to unexpected behaviour.
