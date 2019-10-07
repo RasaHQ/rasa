@@ -14,6 +14,10 @@ Retrieval Actions
    However, the functionality might be changed or removed in the future.
    If you have feedback (positive or negative) please share it with us on the `forum <https://forum.rasa.com>`_.
 
+.. note::
+   There is an in-depth blog post `here <https://blog.rasa.com/response-retrieval-models/>`_ about how to use retrieval
+   actions for handling single turn interactions.
+
 .. contents::
    :local:
 
@@ -235,3 +239,7 @@ Example result:
 
 If the ``retrieval_intent`` parameter of a particular response selector was left to its default value,
 the corresponding response selector will be identified as ``default`` in the returned output.
+
+.. warning::
+
+   Since the feature is experimental, retrieval actions are not supported by Rasa-X and interactive learning within Rasa. Using them may lead to unexpected behaviour.
