@@ -691,7 +691,7 @@ class Agent(object):
         channels: List[InputChannel],
         http_port: int = constants.DEFAULT_SERVER_PORT,
         route: Text = "/webhooks/",
-        cors=None,
+        cors: Union[Text, List[Text], None] = None,
     ) -> Sanic:
         """Start a webserver attaching the input channels and handling msgs."""
 
