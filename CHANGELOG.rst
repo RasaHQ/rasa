@@ -20,6 +20,8 @@ Fixed
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
   when running ``rasa train core``
 - Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channels
+- Fixed ``argument of type 'NoneType' is not iterable`` when using ``rasa shell``,
+  ``rasa interactive`` / ``rasa run``
 
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^
