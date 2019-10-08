@@ -181,6 +181,7 @@ in open source bot framework Rasa." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/featurization/">Featurization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
@@ -203,12 +204,13 @@ in open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.3.7
+          viewing: 1.3.8
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.3.8/core/retrieval-actions/">1.3.8</a>
               <a href="../.././1.3.7/core/retrieval-actions/">1.3.7</a>
               <a href="../.././1.3.6/core/retrieval-actions/">1.3.6</a>
               <a href="../.././1.3.5/core/retrieval-actions/">1.3.5</a>
@@ -259,7 +261,14 @@ in open source bot framework Rasa." />
 <p class="last">This feature is experimental.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
-If you have feedback (positive or negative) please share it with us on the <a class="reference external" href="https://forum.rasa.com">forum</a>.</p>
+If you have feedback (positive or negative) please share it with us on the <a class="reference external" href="https://forum.rasa.com">forum</a>.
+Also, currently we do not support adding new annotations in Rasa X if your training data contains retrieval actions.
+Once we have gathered enough feedback and we’re happy with the training data format, we’ll add support for training response retrieval models in Rasa X.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is an in-depth blog post <a class="reference external" href="https://blog.rasa.com/response-retrieval-models/">here</a> about how to use retrieval
+actions for handling single turn interactions.</p>
 </div>
 <div class="contents local topic" id="contents">
 <ul class="simple">
