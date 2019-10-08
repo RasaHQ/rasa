@@ -64,8 +64,6 @@ def get_core_nlu_files(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files
-                        should be loaded.
 
     Returns:
         Tuple of paths to story and NLU files.

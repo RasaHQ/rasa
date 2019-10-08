@@ -9,17 +9,17 @@ import time
 
 from rasa.core import jobs
 from rasa.core.actions.action import Action
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ActionExecutionRejection,
-    UTTER_PREFIX,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     UserMessage,
     OutputChannel,
 )
-from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
+from rasa.core.constants import (
+    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    USER_INTENT_RESTART,
+    UTTER_PREFIX,
+)
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
@@ -77,13 +77,16 @@ class MessageProcessor(object):
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
-        tracker = await self.log_message(message)
+        tracker = await self.log_message(message, should_save_tracker=False)
         if not tracker:
             return None
 
         if not self.policy_ensemble or not self.domain:
+            # save tracker state to continue conversation from this state
+            self._save_tracker(tracker)
             logger.warning(
-                "No policy ensemble or domain set. Skipping action prediction and execution."
+                "No policy ensemble or domain set. Skipping action prediction "
+                "and execution."
             )
             return None
 
@@ -108,6 +111,13 @@ class MessageProcessor(object):
             )
             return None
 
+        if not self.policy_ensemble or not self.domain:
+            # save tracker state to continue conversation from this state
+            logger.warning(
+                "No policy ensemble or domain set. Skipping action prediction "
+            )
+            return None
+
         probabilities, policy = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -122,7 +132,15 @@ class MessageProcessor(object):
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
         }
 
-    async def log_message(self, message: UserMessage) -> Optional[DialogueStateTracker]:
+    async def log_message(
+        self, message: UserMessage, should_save_tracker: bool = True
+    ) -> Optional[DialogueStateTracker]:
+        """Log `message` on tracker belonging to the message's conversation_id.
+
+        Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
+        can be skipped if the tracker returned by this method is used for further
+        processing and saved at a later stage.
+        """
 
         # preprocess message if necessary
         if self.message_preprocessor is not None:
@@ -132,8 +150,10 @@ class MessageProcessor(object):
         tracker = self._get_tracker(message.sender_id)
         if tracker:
             await self._handle_message_with_tracker(message, tracker)
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
+
+            if should_save_tracker:
+                # save tracker state to continue conversation from this state
+                self._save_tracker(tracker)
         else:
             logger.warning(
                 "Failed to retrieve or create tracker for sender "
@@ -270,6 +290,28 @@ class MessageProcessor(object):
         if slot_values.strip():
             logger.debug("Current slot values: \n{}".format(slot_values))
 
+    def _log_unseen_intent(self, parse_data: Dict[Text, Any]) -> None:
+        """check if the NLU picks up intent that aren't in the domain.
+        """
+        intent = parse_data["intent"]["name"]
+        if intent and self.domain and intent not in self.domain.intents:
+            logger.warning(
+                "Interpreter parsed an intent '{}' "
+                "that is not defined in the domain.".format(intent)
+            )
+
+    def _log_unseen_enitites(self, parse_data: Dict[Text, Any]) -> None:
+        """check if the NLU picks up entities that aren't in the domain.
+        """
+        entities = parse_data["entities"]
+        for element in entities:
+            entity = element["entity"]
+            if entity and self.domain and entity not in self.domain.entities:
+                logger.warning(
+                    "Interpreter parsed an entity '{}' "
+                    "that is not defined in the domain.".format(entity)
+                )
+
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
@@ -292,6 +334,11 @@ class MessageProcessor(object):
                 message.text, parse_data["intent"], parse_data["entities"]
             )
         )
+        # check if we pick up intents that aren't in the domain
+        self._log_unseen_intent(parse_data)
+        # check if we pick up entities that aren't in the domain
+        self._log_unseen_enitites(parse_data)
+
         return parse_data
 
     async def _handle_message_with_tracker(

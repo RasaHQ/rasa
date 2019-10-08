@@ -58,13 +58,12 @@ class SlackBot(SlackClient, OutputChannel):
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        text = attachment.get("text", "Attachment")
         return super(SlackBot, self).api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
-            text=text,
             attachments=[attachment],
+            **kwargs
         )
 
     async def send_text_with_buttons(
@@ -181,7 +180,6 @@ class SlackInput(InputChannel):
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
         """Remove superfluous/wrong/problematic tokens from a message.
-
         Probably a good starting point for pre-formatting of user-provided text
         to make NLU's life easier in case they go funky to the power of extreme
 
@@ -194,18 +192,32 @@ class SlackInput(InputChannel):
         Returns:
             str: parsed and cleaned version of the input text
         """
+
         for uid_to_remove in uids_to_remove:
             # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,
             # but is a good first approximation
             for regex, replacement in [
                 (r"<@{}>\s".format(uid_to_remove), ""),
-                (r"\s<@{}>".format(uid_to_remove), ""),
-                # a bit arbitrary but probably OK
+                (
+                    r"\s<@{}>".format(uid_to_remove),
+                    "",
+                ),  # a bit arbitrary but probably OK
                 (r"<@{}>".format(uid_to_remove), " "),
             ]:
                 text = re.sub(regex, replacement, text)
 
+        """Find mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and substitute it with original content
+        """
+
+        pattern = r"\<(mailto:|(http|https):\/\/).*\|.*\>"
+        match = re.search(pattern, text)
+
+        if match:
+            regex = match.group(0)
+            replacement = regex.split("|")[1]
+            replacement = replacement.replace(">", "")
+            text = text.replace(regex, replacement)
         return text.strip()
 
     @staticmethod

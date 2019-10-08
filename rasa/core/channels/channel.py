@@ -9,6 +9,7 @@ from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 
 import rasa.utils.endpoints
+from rasa.cli import utils as cli_utils
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 
@@ -87,41 +88,6 @@ def register(
         app.blueprint(channel.blueprint(handler), url_prefix=p)
 
     app.input_channels = input_channels
-
-
-def button_to_string(button, idx=0):
-    """Create a string representation of a button."""
-
-    title = button.pop("title", "")
-
-    if "payload" in button:
-        payload = " ({})".format(button.pop("payload"))
-    else:
-        payload = ""
-
-    # if there are any additional attributes, we append them to the output
-    if button:
-        details = " - {}".format(json.dumps(button, sort_keys=True))
-    else:
-        details = ""
-
-    button_string = "{idx}: {title}{payload}{details}".format(
-        idx=idx + 1, title=title, payload=payload, details=details
-    )
-
-    return button_string
-
-
-def element_to_string(element, idx=0):
-    """Create a string representation of an element."""
-
-    title = element.pop("title", "")
-
-    element_string = "{idx}: {title} - {element}".format(
-        idx=idx + 1, title=title, element=json.dumps(element, sort_keys=True)
-    )
-
-    return element_string
 
 
 class InputChannel(object):
@@ -255,7 +221,7 @@ class OutputChannel(object):
 
         await self.send_text_message(recipient_id, text, **kwargs)
         for idx, button in enumerate(buttons):
-            button_msg = button_to_string(button, idx)
+            button_msg = cli_utils.button_to_string(button, idx)
             await self.send_text_message(recipient_id, button_msg, **kwargs)
 
     async def send_quick_replies(
@@ -278,12 +244,15 @@ class OutputChannel(object):
 
         Default implementation will just post the elements as a string."""
 
+        # we can't pass the empty "buttons" key of the message through to send_text_with_buttons()
+        kwargs.pop("buttons", None)
+
         for element in elements:
             element_msg = "{title} : {subtitle}".format(
                 title=element.get("title", ""), subtitle=element.get("subtitle", "")
             )
             await self.send_text_with_buttons(
-                recipient_id, element_msg, element.get("buttons", [], **kwargs)
+                recipient_id, element_msg, element.get("buttons", []), **kwargs
             )
 
     async def send_custom_json(

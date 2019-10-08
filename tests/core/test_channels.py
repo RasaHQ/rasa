@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Dict
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -9,7 +10,13 @@ from sanic import Sanic
 
 import rasa.core.run
 from rasa.core import utils
+from rasa.core.channels import RasaChatInput
 from rasa.core.channels.channel import UserMessage
+from rasa.core.channels.rasa_chat import (
+    JWT_USERNAME_KEY,
+    CONVERSATION_ID_KEY,
+    INTERACTIVE_LEARNING_PERMISSION,
+)
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
@@ -203,11 +210,12 @@ def test_mattermost_channel():
         url="http://chat.example.com/api/v4",
         # the name of your team for mattermost
         team="community",
-        # the username of your bot user that will post
+        # the username of your bot user that will post messages
         user="user@email.com",
-        # messages
-        pw="password"
         # the password of your bot user that will post messages
+        pw="password",
+        # the webhook-url your bot should listen for messages
+        webhook_url="YOUR_WEBHOOK_URL",
     )
 
     s = rasa.core.run.configure_app([input_channel], port=5004)
@@ -803,3 +811,59 @@ def test_extract_input_channel(test_input, expected):
     fake_request.json = test_input
 
     assert input_channel._extract_input_channel(fake_request) == expected
+
+
+async def test_rasa_chat_input():
+    from rasa.core.channels import RasaChatInput
+
+    rasa_x_api_url = "https://rasa-x.com:5002"
+    rasa_chat_input = RasaChatInput(rasa_x_api_url)
+    public_key = "random_key123"
+    jwt_algorithm = "RS256"
+    with aioresponses() as mocked:
+        mocked.get(
+            rasa_x_api_url + "/version",
+            payload={"keys": [{"key": public_key, "alg": jwt_algorithm}]},
+            repeat=True,
+            status=200,
+        )
+        await rasa_chat_input._fetch_public_key()
+        assert rasa_chat_input.jwt_key == public_key
+        assert rasa_chat_input.jwt_algorithm == jwt_algorithm
+
+
+@pytest.mark.parametrize(
+    "jwt, message",
+    [
+        ({JWT_USERNAME_KEY: "abc"}, {CONVERSATION_ID_KEY: "abc"}),
+        (
+            {
+                JWT_USERNAME_KEY: "abc",
+                "scopes": ["a", "b", INTERACTIVE_LEARNING_PERMISSION],
+            },
+            {CONVERSATION_ID_KEY: "test"},
+        ),
+    ],
+)
+def test_has_user_permission_to_send_messages_to_conversation(jwt: Dict, message: Dict):
+    assert RasaChatInput._has_user_permission_to_send_messages_to_conversation(
+        jwt, message
+    )
+
+
+@pytest.mark.parametrize(
+    "jwt, message",
+    [
+        ({JWT_USERNAME_KEY: "abc"}, {CONVERSATION_ID_KEY: "xyz"}),
+        (
+            {JWT_USERNAME_KEY: "abc", "scopes": ["a", "b"]},
+            {CONVERSATION_ID_KEY: "test"},
+        ),
+    ],
+)
+def test_has_user_permission_to_send_messages_to_conversation_without_permission(
+    jwt: Dict, message: Dict
+):
+    assert not RasaChatInput._has_user_permission_to_send_messages_to_conversation(
+        jwt, message
+    )

@@ -98,6 +98,12 @@ class SocketIOOutput(OutputChannel):
 
         await self.sio.emit(self.bot_message_evt, **json_message)
 
+    async def send_attachment(
+        self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
+    ) -> None:
+        """Sends an attachment to the user."""
+        await self._send_message(self.sid, {"attachment": attachment})
+
 
 class SocketIOInput(InputChannel):
     """A socket.io input channel."""
@@ -132,7 +138,9 @@ class SocketIOInput(InputChannel):
         self.socketio_path = socketio_path
 
     def blueprint(self, on_new_message):
-        sio = AsyncServer(async_mode="sanic")
+        # Workaround so that socketio works with requests from other origins.
+        # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
+        sio = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
         socketio_webhook = SocketBlueprint(
             sio, self.socketio_path, "socketio_webhook", __name__
         )

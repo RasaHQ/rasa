@@ -18,6 +18,7 @@ from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.policy import confidence_scores_for
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -50,7 +51,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
     def __init__(
         self,
-        priority: int = 4,
+        priority: int = FALLBACK_POLICY_PRIORITY,
         nlu_threshold: float = 0.3,
         ambiguity_threshold: float = 0.1,
         core_threshold: float = 0.3,

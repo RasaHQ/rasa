@@ -99,7 +99,7 @@ example:
         # RabbitMQ credentials with username and password
         credentials = pika.PlainCredentials('username', 'password')
 
-        # pika connection to the RabbitMQ host - typically 'rabbit' in a
+        # Pika connection to the RabbitMQ host - typically 'rabbit' in a
         # docker environment, or 'localhost' in a local environment
         connection = pika.BlockingConnection(
             pika.ConnectionParameters('rabbit', credentials=credentials))

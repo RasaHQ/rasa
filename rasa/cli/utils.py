@@ -1,12 +1,18 @@
 import os
 import sys
-from typing import Any, Optional, Text, List
+import json
+from typing import Any, Optional, Text, List, Dict, TYPE_CHECKING
 import logging
-from questionary import Question
+
+if TYPE_CHECKING:
+    from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
 logger = logging.getLogger(__name__)
+
+
+FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
 
 
 def get_validated_path(
@@ -28,12 +34,17 @@ def get_validated_path(
         The current value if it was valid, else the default value of the
         argument if it is valid, else `None`.
     """
-
     if current is None or current is not None and not os.path.exists(current):
         if default is not None and os.path.exists(default):
             reason_str = "'{}' not found.".format(current)
             if current is None:
                 reason_str = "Parameter '{}' not set.".format(parameter)
+            else:
+                logger.warning(
+                    "'{}' does not exist. Using default value '{}' instead.".format(
+                        current, default
+                    )
+                )
 
             logger.debug(
                 "{} Using default location '{}' instead.".format(reason_str, default)
@@ -124,6 +135,67 @@ def create_output_path(
         return os.path.join(output_path, file_name)
 
 
+def button_to_string(button: Dict[Text, Any], idx: int = 0) -> Text:
+    """Create a string representation of a button."""
+
+    title = button.pop("title", "")
+
+    if "payload" in button:
+        payload = " ({})".format(button.pop("payload"))
+    else:
+        payload = ""
+
+    # if there are any additional attributes, we append them to the output
+    if button:
+        details = " - {}".format(json.dumps(button, sort_keys=True))
+    else:
+        details = ""
+
+    button_string = "{idx}: {title}{payload}{details}".format(
+        idx=idx + 1, title=title, payload=payload, details=details
+    )
+
+    return button_string
+
+
+def element_to_string(element: Dict[Text, Any], idx: int = 0) -> Text:
+    """Create a string representation of an element."""
+    title = element.pop("title", "")
+
+    element_string = "{idx}: {title} - {element}".format(
+        idx=idx + 1, title=title, element=json.dumps(element, sort_keys=True)
+    )
+
+    return element_string
+
+
+def button_choices_from_message_data(
+    message: Dict[Text, Any], allow_free_text_input: bool = True
+) -> "Question":
+    """Return list of choices to present to the user.
+
+    If allow_free_text_input is True, an additional option is added
+    at the end along with the template buttons that allows the user
+    to type in free text.
+    """
+    choices = [
+        button_to_string(button, idx)
+        for idx, button in enumerate(message.get("buttons"))
+    ]
+    if allow_free_text_input:
+        choices.append(FREE_TEXT_INPUT_PROMPT)
+    return choices
+
+
+def payload_from_button_question(button_question: "Question") -> Text:
+    """Prompt user with a button question and returns the nlu payload."""
+    response = button_question.ask()
+    if response != FREE_TEXT_INPUT_PROMPT:
+        # Extract intent slash command if it's a button
+        response = response[response.find("(") + 1 : response.find(")")]
+    return response
+
+
 class bcolors(object):
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
@@ -159,14 +231,13 @@ def print_error(*args: Any):
     print_color(*args, color=bcolors.FAIL)
 
 
+def print_error_and_exit(message: Text, exit_code: int = 1) -> None:
+    """Print error message and exit the application."""
+
+    print_error(message)
+    sys.exit(exit_code)
+
+
 def signal_handler(sig, frame):
     print ("Goodbye 👋")
     sys.exit(0)
-
-
-def payload_from_button_question(button_question: Question) -> Text:
-    """Prompts user with a button question and returns the nlu payload."""
-    response = button_question.ask()
-    payload = response[response.find("(") + 1 : response.find(")")]
-
-    return payload

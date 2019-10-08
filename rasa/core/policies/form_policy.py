@@ -8,6 +8,7 @@ from rasa.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import FORM_POLICY_PRIORITY
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -24,7 +25,7 @@ class FormPolicy(MemoizationPolicy):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = 5,
+        priority: int = FORM_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
     ) -> None:
 

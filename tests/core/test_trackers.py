@@ -1,16 +1,15 @@
 import asyncio
 import json
+import logging
+import os
+import tempfile
 
 import fakeredis
 import pytest
-import tempfile
-import os
-import logging
 
 import rasa.utils.io
 from rasa.core import training, restore
 from rasa.core import utils
-from rasa.core.slots import Slot
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -37,15 +36,6 @@ from tests.core.utilities import (
 )
 
 domain = Domain.load("examples/moodbot/domain.yml")
-
-
-@pytest.fixture(scope="module")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
 
 
 class MockRedisTrackerStore(RedisTrackerStore):

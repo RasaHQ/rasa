@@ -111,9 +111,9 @@ and apply your changes.
 In order to run the tests, make sure that you have the development requirements installed:
 ```bash
 export PIP_USE_PEP517=false
-pip install -r requirements-dev.txt
-pip install -e .
-make prepare-tests-ubuntu # Only on Ubuntu
+pip3 install -r requirements-dev.txt
+pip3 install -e .
+make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
 make prepare-tests-macos  # Only on macOS
 ```
 
@@ -121,6 +121,13 @@ Then, run the tests:
 ```bash
 make test
 ```
+
+They can also be run at multiple jobs to save some time:
+```bash
+make test -j [n]
+```
+
+Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
 
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by travis.

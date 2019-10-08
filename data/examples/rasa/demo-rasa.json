@@ -117,6 +117,26 @@
         "entities": []
       },
       {
+        "text": "What's your name?",
+        "intent": "chitchat/ask_name",
+        "entitites": []
+      },
+      {
+        "text": "What can I call you?",
+        "intent": "chitchat/ask_name",
+        "entitites": []
+      },
+      {
+        "text": "How's the weather?",
+        "intent": "chitchat/ask_weather",
+        "entitites": []
+      },
+      {
+        "text": "Is it too hot outside?",
+        "intent": "chitchat/ask_weather",
+        "entitites": []
+      },
+      {
         "text": "i'm looking for a place to eat",
         "intent": "restaurant_search",
         "entities": []

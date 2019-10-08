@@ -16,6 +16,7 @@ from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import is_logging_disabled
+from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class MemoizationPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = 2,
+        priority: int = MEMOIZATION_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         lookup: Optional[Dict] = None,
     ) -> None:

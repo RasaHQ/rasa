@@ -1,18 +1,10 @@
 import asyncio
-import os
 import pytest
+from decimal import Decimal
 
 import rasa.utils.io
 from rasa.core import utils
-
-
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
+from rasa.core.utils import replace_floats_with_decimals
 
 
 def test_is_int():
@@ -63,15 +55,6 @@ def test_cap_length_with_short_string():
     assert utils.cap_length("my", 3) == "my"
 
 
-def test_pad_list_to_size():
-    assert utils.pad_list_to_size(["e1", "e2"], 4, "other") == [
-        "e1",
-        "e2",
-        "other",
-        "other",
-    ]
-
-
 def test_read_lines():
     lines = utils.read_lines(
         "data/test_stories/stories.md", max_line_limit=2, line_pattern=r"\*.*"
@@ -80,3 +63,45 @@ def test_read_lines():
     lines = list(lines)
 
     assert len(lines) == 2
+
+
+def test_pad_lists_to_size():
+    list_x = [1, 2, 3]
+    list_y = ["a", "b"]
+    list_z = [None, None, None]
+
+    assert utils.pad_lists_to_size(list_x, list_y) == (list_x, ["a", "b", None])
+    assert utils.pad_lists_to_size(list_y, list_x, "c") == (["a", "b", "c"], list_x)
+    assert utils.pad_lists_to_size(list_z, list_x) == (list_z, list_x)
+
+
+def test_convert_bytes_to_string():
+    # byte string will be decoded
+    byte_string = b"\xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
+    decoded_string = "τoρνoς"
+    assert utils.convert_bytes_to_string(byte_string) == decoded_string
+
+    # string remains string
+    assert utils.convert_bytes_to_string(decoded_string) == decoded_string
+
+
+def test_float_conversion_to_decimal():
+    # Create test objects
+    d = {
+        "int": -1,
+        "float": 2.1,
+        "list": ["one", "two"],
+        "list_of_floats": [1.0, -2.1, 3.2],
+        "nested_dict_with_floats": {"list_with_floats": [4.5, -5.6], "float": 6.7},
+    }
+    d_replaced = replace_floats_with_decimals(d)
+
+    assert isinstance(d_replaced["int"], int)
+    assert isinstance(d_replaced["float"], Decimal)
+    for t in d_replaced["list"]:
+        assert isinstance(t, str)
+    for f in d_replaced["list_of_floats"]:
+        assert isinstance(f, Decimal)
+    for f in d_replaced["nested_dict_with_floats"]["list_with_floats"]:
+        assert isinstance(f, Decimal)
+    assert isinstance(d_replaced["nested_dict_with_floats"]["float"], Decimal)

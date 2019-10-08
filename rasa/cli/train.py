@@ -91,6 +91,7 @@ def train_core(
     story_file = get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
+    kwargs = extract_additional_arguments(args)
 
     # Policies might be a list for the compare training. Do normal training
     # if only list item was passed.
@@ -107,12 +108,12 @@ def train_core(
             output=output,
             train_path=train_path,
             fixed_model_name=args.fixed_model_name,
-            kwargs=extract_additional_arguments(args),
+            kwargs=kwargs,
         )
     else:
         from rasa.core.train import do_compare_training
 
-        loop.run_until_complete(do_compare_training(args, story_file))
+        loop.run_until_complete(do_compare_training(args, story_file, kwargs))
 
 
 def train_nlu(

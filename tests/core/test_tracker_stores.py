@@ -1,4 +1,7 @@
+import tempfile
+
 import pytest
+from moto import mock_dynamodb2
 
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
@@ -8,17 +11,18 @@ from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     RedisTrackerStore,
     SQLTrackerStore,
+    DynamoTrackerStore,
 )
+
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 domain = Domain.load("data/test_domains/default.yml")
 
 
-def test_get_or_create():
+def get_or_create_tracker_store(store: "TrackerStore"):
     slot_key = "location"
     slot_val = "Easter Island"
-    store = InMemoryTrackerStore(domain)
 
     tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
@@ -29,6 +33,16 @@ def test_get_or_create():
 
     again = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     assert again.get_slot(slot_key) == slot_val
+
+
+def test_get_or_create():
+    get_or_create_tracker_store(InMemoryTrackerStore(domain))
+
+
+# noinspection PyPep8Naming
+@mock_dynamodb2
+def test_dynamo_get_or_create():
+    get_or_create_tracker_store(DynamoTrackerStore(domain))
 
 
 def test_restart_after_retrieval_from_tracker_store(default_domain):
@@ -125,6 +139,23 @@ def test_tracker_store_from_invalid_string(default_domain):
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
+def test_tracker_serialisation():
+    slot_key = "location"
+    slot_val = "Easter Island"
+
+    store = InMemoryTrackerStore(domain)
+
+    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
+    ev = SlotSet(slot_key, slot_val)
+    tracker.update(ev)
+
+    serialised = store.serialise_tracker(tracker)
+
+    assert tracker == store.deserialise_tracker(
+        UserMessage.DEFAULT_SENDER_ID, serialised
+    )
+
+
 @pytest.mark.parametrize(
     "full_url",
     [
@@ -160,4 +191,54 @@ def test_get_db_url_with_correct_host():
             )
         )
         == expected
+    )
+
+
+def test_get_db_url_with_query():
+    expected = "postgresql://localhost:5005/mydb?driver=my-driver"
+
+    assert (
+        str(
+            SQLTrackerStore.get_db_url(
+                dialect="postgresql",
+                host="localhost",
+                port=5005,
+                db="mydb",
+                query={"driver": "my-driver"},
+            )
+        )
+        == expected
+    )
+
+
+def test_db_url_with_query_from_endpoint_config():
+    endpoint_config = """
+    tracker_store:
+      dialect: postgresql
+      url: localhost
+      port: 5123
+      username: user
+      password: pw
+      login_db: login-db
+      query:
+        driver: my-driver
+        another: query
+    """
+
+    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.yml") as f:
+        f.write(endpoint_config)
+        f.flush()
+        store_config = read_endpoint_config(f.name, "tracker_store")
+
+    url = SQLTrackerStore.get_db_url(**store_config.kwargs)
+
+    import itertools
+
+    # order of query dictionary in yaml is random, test against both permutations
+    connection_url = "postgresql://user:pw@:5123/login-db?"
+    assert any(
+        str(url) == connection_url + "&".join(permutation)
+        for permutation in (
+            itertools.permutations(("another=query", "driver=my-driver"))
+        )
     )

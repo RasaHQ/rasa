@@ -145,6 +145,91 @@ def test_crf_json_from_non_BILOU(spacy_nlp, ner_crf_pos_feature_config):
     assert rs[4] == {"start": 29, "end": 31, "value": "by", "entity": "where"}
 
 
+def test_crf_create_entity_dict(spacy_nlp):
+    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+    from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+
+    crf_extractor = CRFEntityExtractor()
+    spacy_tokenizer = SpacyTokenizer()
+    white_space_tokenizer = WhitespaceTokenizer()
+
+    examples = [
+        {
+            "message": Message(
+                "where is St. Michael's Hospital?",
+                {
+                    "intent": "search_location",
+                    "entities": [
+                        {
+                            "start": 9,
+                            "end": 31,
+                            "value": "St. Michael's Hospital",
+                            "entity": "hospital",
+                            "SpacyTokenizer": {
+                                "entity_start_token_idx": 2,
+                                "entity_end_token_idx": 5,
+                            },
+                            "WhitespaceTokenizer": {
+                                "entity_start_token_idx": 2,
+                                "entity_end_token_idx": 5,
+                            },
+                        }
+                    ],
+                },
+            )
+        },
+        {
+            "message": Message(
+                "where is Children's Hospital?",
+                {
+                    "intent": "search_location",
+                    "entities": [
+                        {
+                            "start": 9,
+                            "end": 28,
+                            "value": "Children's Hospital",
+                            "entity": "hospital",
+                            "SpacyTokenizer": {
+                                "entity_start_token_idx": 2,
+                                "entity_end_token_idx": 4,
+                            },
+                            "WhitespaceTokenizer": {
+                                "entity_start_token_idx": 2,
+                                "entity_end_token_idx": 4,
+                            },
+                        }
+                    ],
+                },
+            )
+        },
+    ]
+    for ex in examples:
+        # spacy tokenizers receives a Doc as input and whitespace tokenizer receives a text
+        spacy_tokens = spacy_tokenizer.tokenize(spacy_nlp(ex["message"].text))
+        white_space_tokens = white_space_tokenizer.tokenize(ex["message"].text)
+        for tokenizer, tokens in [
+            ("SpacyTokenizer", spacy_tokens),
+            ("WhitespaceTokenizer", white_space_tokens),
+        ]:
+            for entity in ex["message"].get("entities"):
+                parsed_entities = crf_extractor._create_entity_dict(
+                    ex["message"],
+                    tokens,
+                    entity[tokenizer]["entity_start_token_idx"],
+                    entity[tokenizer]["entity_end_token_idx"],
+                    entity["entity"],
+                    0.8,
+                )
+                assert parsed_entities == {
+                    "start": entity["start"],
+                    "end": entity["end"],
+                    "value": entity["value"],
+                    "entity": entity["entity"],
+                    "confidence": 0.8,
+                }
+
+
 def test_duckling_entity_extractor(component_builder):
     with responses.RequestsMock() as rsps:
         rsps.add(

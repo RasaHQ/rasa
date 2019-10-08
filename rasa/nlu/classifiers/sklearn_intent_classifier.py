@@ -5,11 +5,12 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu import utils
-from rasa.nlu.classifiers import INTENT_RANKING_LENGTH
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.constants import MESSAGE_VECTOR_FEATURE_NAMES, MESSAGE_TEXT_ATTRIBUTE
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = ["text_features"]
+    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -151,7 +152,7 @@ class SklearnIntentClassifier(Component):
 
             if intents.size > 0 and probabilities.size > 0:
                 ranking = list(zip(list(intents), list(probabilities)))[
-                    :INTENT_RANKING_LENGTH
+                    :LABEL_RANKING_LENGTH
                 ]
 
                 intent = {"name": intents[0], "confidence": probabilities[0]}

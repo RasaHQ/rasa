@@ -118,6 +118,28 @@ You can also configure the Rasa server to fetch your model from a remote storage
 The model will be downloaded and stored in a temporary directory on your local storage system.
 For more information see :ref:`cloud-storage`.
 
+.. _server_ssl:
+
+Configuring SSL / HTTPS
+-----------------------
+
+By default the Rasa server is using HTTP for its communication. To secure the
+communication with SSL, you need to provide a valid certificate and the corresponding
+private key file.
+
+You can specify these files as part of the ``rasa run`` command:
+
+.. code-block:: bash
+
+    rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key
+
+If you encrypted your keyfile with a password during creation, you need to add
+this password to the command:
+
+.. code-block:: bash
+
+    rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key --ssl-password mypassword
+
 
 .. _server_security:
 
