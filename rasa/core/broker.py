@@ -64,7 +64,7 @@ class EventChannel(object):
 
 
 def create_rabbitmq_ssl_options(
-    rabbitmq_host: Text = None
+    rabbitmq_host: Optional[Text] = None
 ) -> Optional["pika.SSLOptions"]:
     """Create RabbitMQ SSL options.
 
