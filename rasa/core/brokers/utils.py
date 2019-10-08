@@ -60,19 +60,25 @@ def create_rabbitmq_ssl_options(
     rabbitmq_host: Optional[Text] = None
 ) -> Optional["pika.SSLOptions"]:
     """Create RabbitMQ SSL options.
+
     Requires the following environment variables to be set:
-    RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate (required)
-    RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key (required)
-    RABBITMQ_SSL_CA_FILE - path to the SSL CA file for verification (optional)
-    RABBITMQ_SSL_KEY_PASSWORD - SSL private key password (optional)
+
+        RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate (required)
+        RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key (required)
+        RABBITMQ_SSL_CA_FILE - path to the SSL CA file for verification (optional)
+        RABBITMQ_SSL_KEY_PASSWORD - SSL private key password (optional)
+
     Details on how to enable RabbitMQ TLS support can be found here:
     https://www.rabbitmq.com/ssl.html#enabling-tls
+
     Args:
         rabbitmq_host: RabbitMQ hostname
+
     Returns:
         Pika SSL context of type `pika.SSLOptions` if
         the RABBITMQ_SSL_CLIENT_CERTIFICATE and RABBITMQ_SSL_CLIENT_KEY
         environment variables are valid paths, else `None`.
+
     """
 
     client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
