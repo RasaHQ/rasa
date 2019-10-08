@@ -73,6 +73,7 @@ def create_rabbitmq_ssl_options(
     RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate (required)
     RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key (required)
     RABBITMQ_SSL_CA_FILE - path to the SSL CA file for verification (optional)
+    RABBITMQ_SSL_KEY_PASSWORD - SSL private key password (optional)
 
     Details on how to enable RabbitMQ TLS support can be found here:
     https://www.rabbitmq.com/ssl.html#enabling-tls
@@ -87,27 +88,24 @@ def create_rabbitmq_ssl_options(
 
     """
 
-    import pika
-
     client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
     client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY")
 
     if client_certificate_path and client_key_path:
+        import pika
+        import rasa.server
+
         logger.debug(
             "Configuring SSL context for RabbitMQ host '{}'.".format(rabbitmq_host)
         )
 
         ca_file_path = os.environ.get("RABBITMQ_SSL_CA_FILE")
+        key_password = os.environ.get("RABBITMQ_SSL_KEY_PASSWORD")
 
-        if ca_file_path:
-            logger.debug("Using certificate verification with provided CA file.")
-            context = ssl.create_default_context(cafile=ca_file_path)
-        else:
-            context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
-
-        context.load_cert_chain(client_certificate_path, client_key_path)
-
-        return pika.SSLOptions(context, rabbitmq_host)
+        ssl_context = rasa.server.create_ssl_context(
+            client_certificate_path, client_key_path, ca_file_path, key_password
+        )
+        return pika.SSLOptions(ssl_context, rabbitmq_host)
     else:
         return None
 
