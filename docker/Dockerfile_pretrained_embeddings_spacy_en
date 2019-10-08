@@ -47,7 +47,7 @@ RUN pip install --no-cache-dir -r alt_requirements/requirements_pretrained_embed
 
 # Install Rasa as package
 COPY rasa ./rasa
-RUN pip install .
+RUN pip install .[sql,spacy]
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
