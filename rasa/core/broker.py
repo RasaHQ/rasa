@@ -4,7 +4,10 @@ import os
 import ssl
 from typing import Any, Dict, Optional, Text, Union
 
-import pika
+import typing
+
+if typing.TYPE_CHECKING:
+    import pika
 
 from rasa.utils.common import class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
@@ -62,7 +65,7 @@ class EventChannel(object):
 
 def create_rabbitmq_ssl_options(
     rabbitmq_host: Text = None
-) -> Optional[pika.SSLOptions]:
+) -> Optional["pika.SSLOptions"]:
     """Create RabbitMQ SSL options.
 
     Requires the following environment variables to be set:
@@ -83,7 +86,8 @@ def create_rabbitmq_ssl_options(
 
     """
 
-    ca_file_path = os.environ.get("RABBITMQ_SSL_CA_FILE", None)
+    import pika
+
     client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE", None)
     client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY", None)
 
@@ -91,6 +95,8 @@ def create_rabbitmq_ssl_options(
         logger.debug(
             "Configuring SSL context for RabbitMQ host '{}'.".format(rabbitmq_host)
         )
+
+        ca_file_path = os.environ.get("RABBITMQ_SSL_CA_FILE", None)
 
         if ca_file_path:
             logger.debug("Using certificate verification with provided CA file.")
@@ -102,10 +108,6 @@ def create_rabbitmq_ssl_options(
 
         return pika.SSLOptions(context, rabbitmq_host)
     else:
-        logger.debug(
-            "Cannot find SSL context for RabbitMQ host '{}'.".format(rabbitmq_host)
-        )
-
         return None
 
 
@@ -122,6 +124,7 @@ class PikaProducer(EventChannel):
         import pika
 
         logging.getLogger("pika").setLevel(loglevel)
+
         self.queue = queue
         self.host = host
         self.port = port
