@@ -318,6 +318,7 @@ class SQLProducer(EventChannel):
         password: Optional[Text] = None,
     ):
         from rasa.core.tracker_store import SQLTrackerStore
+        import sqlalchemy
         import sqlalchemy.orm
 
         engine_url = SQLTrackerStore.get_db_url(
