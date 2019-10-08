@@ -1,12 +1,15 @@
 import logging
+import multiprocessing
 import os
 import tempfile
 import traceback
-import multiprocessing
+import typing
 from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
-from ssl import SSLContext
+
+if typing.TYPE_CHECKING:
+    from ssl import SSLContext
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -226,14 +229,28 @@ async def authenticate(request: Request):
 def create_ssl_context(
     ssl_certificate: Optional[Text],
     ssl_keyfile: Optional[Text],
-    ssl_password: Optional[Text],
-) -> Optional[SSLContext]:
-    """Create a SSL context (for the sanic server) if a proper certificate is passed."""
+    ssl_ca_file: Optional[Text] = None,
+    ssl_password: Optional[Text] = None,
+) -> Optional["SSLContext"]:
+    """Create an SSL context if a proper certificate is passed.
+
+    Args:
+        ssl_certificate: path to the SSL client certificate
+        ssl_keyfile: path to the SSL key file
+        ssl_ca_file: path to the SSL CA file for verification (optional)
+        ssl_password: SSL private key password (optional)
+
+    Returns:
+        SSL context if a valid certificate chain can be loaded, `None` otherwise.
+
+    """
 
     if ssl_certificate:
         import ssl
 
-        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ssl_context = ssl.create_default_context(
+            purpose=ssl.Purpose.CLIENT_AUTH, cafile=ssl_ca_file
+        )
         ssl_context.load_cert_chain(
             ssl_certificate, keyfile=ssl_keyfile, password=ssl_password
         )

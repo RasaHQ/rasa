@@ -10,6 +10,18 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 [Unreleased 1.3.8]
 ^^^^^^^^^^^^^^^^^^
 
+Added
+-----
+- Added support for RabbitMQ TLS authentication. The following environment variables
+  need to be set:
+  ``RABBITMQ_SSL_CLIENT_CERTIFICATE`` - path to the SSL client certificate (required)
+  ``RABBITMQ_SSL_CLIENT_KEY`` - path to the SSL client key (required)
+  ``RABBITMQ_SSL_CA_FILE`` - path to the SSL CA file (optional, for certificate
+  verification)
+  ``RABBITMQ_SSL_KEY_PASSWORD`` - SSL private key password (optional)
+- Added ability to define the RabbitMQ port using the ``port`` key in the
+  ``event_broker`` endpoint config.
+
 Changed
 -------
 - Policies now only get imported if they are actually used. This removes
