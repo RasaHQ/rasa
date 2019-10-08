@@ -23,14 +23,19 @@ Removed
 -------
 
 
-[1.3.8] - 2019-10-02
+[1.3.8] - 2019-10-08
 ^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Policies now only get imported if they are actually used. This removes
+  TensorFlow warnings when starting Rasa X
 
 Fixed
 -----
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
   when running ``rasa train core``
-- Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channelss
+- Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channels
 
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^

@@ -17,7 +17,9 @@ def policy_from_module_path(module_path: Text) -> Type["Policy"]:
     from rasa.utils.common import class_from_module_path
 
     try:
-        return class_from_module_path(module_path, lookup_path="rasa.core.policies")
+        return class_from_module_path(
+            module_path, lookup_path="rasa.core.policies.registry"
+        )
     except ImportError:
         raise ImportError("Cannot retrieve policy from path '{}'".format(module_path))
 
