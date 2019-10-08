@@ -226,12 +226,13 @@ def test_single_additional_file(tmpdir_factory):
     assert selector.is_imported(str(additional_file))
 
 
-async def test_multi_project_training():
+async def test_multi_project_training(trained_async):
     example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
     domain_file = os.path.join(example_directory, "domain.yml")
     files_of_root_project = os.path.join(example_directory, "data")
-    trained_stack_model_path = await train_async(
+
+    trained_stack_model_path = await trained_async(
         config=config_file,
         domain=domain_file,
         training_files=files_of_root_project,

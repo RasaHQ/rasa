@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-
+- log a warning if the ``Interpreter`` picks up an intent or an entity that does not exist in the domain file.
 - added ``DynamoTrackerStore`` to support persistence of agents running on AWS
 - added docstrings for ``TrackerStore`` classes
 - added buttons and images to mattermost.
@@ -27,6 +27,7 @@ Changed
 - It is now easier to add metadata to a ``UserMessage`` in existing channels.
   You can do so by overwriting the method ``get_metadata``. The return value of this
   method will be passed to the ``UserMessage`` object.
+- Tests can now be run in parallel
 
 Removed
 -------
@@ -36,6 +37,7 @@ Fixed
 -----
 - fixed missing ``tkinter`` dependency for running tests on Ubuntu
 - fixed issue with ``conversation`` JSON serialization
+- fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
 
 [Unreleased 1.3.7]
 ^^^^^^^^^^^^^^^^^^
