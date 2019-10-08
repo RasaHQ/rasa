@@ -88,7 +88,7 @@ def create_rabbitmq_ssl_options(
     client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY", None)
 
     if ca_file_path and client_certificate_path and client_key_path:
-        logger.info(
+        logger.debug(
             "Configuring SSL context for RabbitMQ host '{}'.".format(rabbitmq_host)
         )
         context = ssl.create_default_context(cafile=ca_file_path)
@@ -96,7 +96,7 @@ def create_rabbitmq_ssl_options(
 
         return pika.SSLOptions(context, rabbitmq_host)
     else:
-        logger.info(
+        logger.debug(
             "Cannot find SSL context for RabbitMQ host '{}'.".format(rabbitmq_host)
         )
 
