@@ -1,6 +1,10 @@
 import json
 import logging
-from typing import Any, Dict, Optional, Text
+import os
+import ssl
+from typing import Any, Dict, Optional, Text, Union
+
+import pika
 
 from rasa.utils.common import class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
@@ -56,21 +60,65 @@ class EventChannel(object):
         raise NotImplementedError("Event broker must implement the `publish` method.")
 
 
+def create_rabbitmq_ssl_options(
+    rabbitmq_host: Text = None
+) -> Optional[pika.SSLOptions]:
+    """Create RabbitMQ SSL options.
+
+    Requires the following environment variables to be set:
+
+    RABBITMQ_SSL_CA_FILE - path to the SSL CA file
+    RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate
+    RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key
+
+    Details on how to enable RabbitMQ TLS support can be found here:
+    https://www.rabbitmq.com/ssl.html#enabling-tls
+
+    Args:
+        rabbitmq_host: RabbitMQ hostname
+
+    Returns:
+        Pika SSL context of type `pika.SSLOptions` if all three paths are provided,
+        else `None`.
+
+    """
+
+    ca_file_path = os.environ.get("RABBITMQ_SSL_CA_FILE", None)
+    client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE", None)
+    client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY", None)
+
+    if ca_file_path and client_certificate_path and client_key_path:
+        logger.info(
+            "Configuring SSL context for RabbitMQ host '{}'.".format(rabbitmq_host)
+        )
+        context = ssl.create_default_context(cafile=ca_file_path)
+        context.load_cert_chain(client_certificate_path, client_key_path)
+
+        return pika.SSLOptions(context, rabbitmq_host)
+    else:
+        logger.info(
+            "Cannot find SSL context for RabbitMQ host '{}'.".format(rabbitmq_host)
+        )
+
+        return None
+
+
 class PikaProducer(EventChannel):
     def __init__(
         self,
         host: Text,
         username: Optional[Text],
         password: Optional[Text],
+        port: Union[int, Text] = 5672,
         queue: Text = "rasa_core_events",
         loglevel: Text = logging.WARNING,
     ):
         import pika
 
         logging.getLogger("pika").setLevel(loglevel)
-
         self.queue = queue
         self.host = host
+        self.port = port
         self.connection = None
         self.channel = None
         if username and password:
@@ -106,9 +154,11 @@ class PikaProducer(EventChannel):
             # host seems to be just the host, so we use our parameters
             parameters = pika.ConnectionParameters(
                 self.host,
+                port=self.port,
                 credentials=self.credentials,
                 connection_attempts=20,
                 retry_delay=5,
+                ssl_options=create_rabbitmq_ssl_options(self.host),
             )
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
@@ -268,7 +318,6 @@ class SQLProducer(EventChannel):
         password: Optional[Text] = None,
     ):
         from rasa.core.tracker_store import SQLTrackerStore
-        import sqlalchemy
         import sqlalchemy.orm
 
         engine_url = SQLTrackerStore.get_db_url(

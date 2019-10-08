@@ -12,6 +12,13 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Added support for RabbitMQ TLS authentication. Requires the following environment
+  variables to be set:
+  ``RABBITMQ_SSL_CA_FILE`` - path to the SSL CA file
+  ``RABBITMQ_SSL_CLIENT_CERTIFICATE`` - path to the SSL client certificate
+  ``RABBITMQ_SSL_CLIENT_KEY`` - path to the SSL client key
+- Added ability to define the RabbitMQ port using the ``port`` key in the
+  ``event_broker`` endpoint config.
 
 Changed
 -------
