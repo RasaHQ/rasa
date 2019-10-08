@@ -42,7 +42,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Rasa as package
 COPY rasa ./rasa
-RUN pip install .
+RUN pip install .[sql]
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
