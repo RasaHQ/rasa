@@ -79,6 +79,7 @@ class CRFEntityExtractor(EntityExtractor):
         "upper": lambda doc: doc[0].isupper(),  # pytype: disable=attribute-error
         "digit": lambda doc: doc[0].isdigit(),  # pytype: disable=attribute-error
         "pattern": lambda doc: doc[3],
+        "ner_features": lambda doc: doc[4],
     }
 
     def __init__(
@@ -94,6 +95,8 @@ class CRFEntityExtractor(EntityExtractor):
         self._validate_configuration()
 
         self._check_pos_features_and_spacy()
+        # possibly add a check here to ensure ner_features iff custom_extractor
+        self._check_ner_features()
 
     def _check_pos_features_and_spacy(self):
         import itertools
@@ -113,6 +116,13 @@ class CRFEntityExtractor(EntityExtractor):
                 "See https://spacy.io/usage/ for installation"
                 "instructions."
             )
+
+    def _check_ner_features(self):
+        import itertools
+
+        features = self.component_config.get("features", [])
+        used_features = set(itertools.chain.from_iterable(features))
+        self.use_ner_features = "ner_features" in used_features
 
     def _validate_configuration(self):
         if len(self.component_config.get("features", [])) % 2 != 1:
@@ -147,7 +157,17 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _create_dataset(
         self, examples: List[Message]
-    ) -> List[List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]]:
+    ) -> List[
+        List[
+            Tuple[
+                Optional[Text],
+                Optional[Text],
+                Text,
+                Dict[Text, Any],
+                Optional[Dict[Text, Any]],
+            ]
+        ]
+    ]:
         dataset = []
         for example in examples:
             entity_offsets = self._convert_example(example)
@@ -412,7 +432,15 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _sentence_to_features(
         self,
-        sentence: List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]],
+        sentence: List[
+            Tuple[
+                Optional[Text],
+                Optional[Text],
+                Text,
+                Dict[Text, Any],
+                Optional[Dict[Text, Any]],
+            ]
+        ],
     ) -> List[Dict[Text, Any]]:
         """Convert a word into discrete features in self.crf_features,
         including word before and word after."""
@@ -457,14 +485,30 @@ class CRFEntityExtractor(EntityExtractor):
 
     @staticmethod
     def _sentence_to_labels(
-        sentence: List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]],
+        sentence: List[
+            Tuple[
+                Optional[Text],
+                Optional[Text],
+                Text,
+                Dict[Text, Any],
+                Optional[Dict[str, Any]],
+            ]
+        ],
     ) -> List[Text]:
 
-        return [label for _, _, label, _ in sentence]
+        return [label for _, _, label, _, _ in sentence]
 
     def _from_json_to_crf(
         self, message: Message, entity_offsets: List[Tuple[int, int, Text]]
-    ) -> List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]:
+    ) -> List[
+        Tuple[
+            Optional[Text],
+            Optional[Text],
+            Text,
+            Dict[Text, Any],
+            Optional[Dict[Text, Any]],
+        ]
+    ]:
         """Convert json examples to format of underlying crfsuite."""
 
         if self.pos_features:
@@ -550,9 +594,37 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return token.tag_
 
+    @staticmethod
+    def __additional_ner_features(message: Message) -> List[Any]:
+        features = message.get("ner_features", [])
+        tokens = message.get("tokens", [])
+        if len(tokens) != len(features):
+            warn_string = "Number of custom NER features ({}) does not match number of tokens ({})".format(
+                len(features), len(tokens)
+            )
+            raise Exception(warn_string)
+        # convert to python-crfsuite feature format
+        features_out = []
+        for feature in features:
+            feature_dict = {
+                str(index): token_features
+                for index, token_features in enumerate(feature)
+            }
+            converted = {"custom_ner_features": feature_dict}
+            features_out.append(converted)
+        return features_out
+
     def _from_text_to_crf(
         self, message: Message, entities: List[Text] = None
-    ) -> List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]:
+    ) -> List[
+        Tuple[
+            Optional[Text],
+            Optional[Text],
+            Text,
+            Dict[Text, Any],
+            Optional[Dict[Text, Any]],
+        ]
+    ]:
         """Takes a sentence and switches it to crfsuite format."""
 
         crf_format = []
@@ -560,17 +632,29 @@ class CRFEntityExtractor(EntityExtractor):
             tokens = message.get("spacy_doc")
         else:
             tokens = message.get("tokens")
+        ner_features = (
+            self.__additional_ner_features(message) if self.use_ner_features else None
+        )
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
             tag = self.__tag_of_token(token) if self.pos_features else None
-            crf_format.append((token.text, tag, entity, pattern))
+            custom_ner_features = ner_features[i] if self.use_ner_features else None
+            crf_format.append((token.text, tag, entity, pattern, custom_ner_features))
         return crf_format
 
     def _train_model(
         self,
         df_train: List[
-            List[Tuple[Optional[Text], Optional[Text], Text, Dict[Text, Any]]]
+            List[
+                Tuple[
+                    Optional[Text],
+                    Optional[Text],
+                    Text,
+                    Dict[Text, Any],
+                    Optional[Dict[Text, Any]],
+                ]
+            ]
         ],
     ) -> None:
         """Train the crf tagger based on the training data."""

@@ -24,16 +24,12 @@ tests_requires = [
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
     "fakeredis~=1.0",
-    # upstream dep from fakeredis, should be removed if fakeredis properly depends on
-    # at least 1.12
-    "six>=1.12.0",
 ]
 
 install_requires = [
     "requests>=2.20",
     "boto3~=1.9",
     "matplotlib~=3.0",
-    "simplejson~=3.16",
     "attrs>=18",
     "jsonpickle~=1.1",
     "redis~=3.3.5",
@@ -74,8 +70,8 @@ install_requires = [
     "rasa-sdk~=1.3.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "sanic~=19.3.1",
-    "sanic-cors~=0.9.0",
+    "sanic~=19.6",
+    "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
     "aiohttp~=3.5",
     "questionary>=1.1.0",
@@ -108,11 +104,11 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
+    python_requires=">=3.6",
     packages=find_packages(exclude=["tests", "tools", "docs", "contrib"]),
     entry_points={"console_scripts": ["rasa=rasa.__main__:main"]},
     version=__version__,

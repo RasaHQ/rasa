@@ -39,13 +39,10 @@ jobs:
     - make types
   - &run-tests
     stage: test
-    name: "Test 3.5"
-    python: "3.5"
-    script:
-      - make test
-  - <<: *run-tests
     name: "Test 3.6"
-    python: '3.6'
+    python: "3.6"
+    script:
+      - make test -j 4
   - <<: *run-tests
     name: "Test 3.7"
     python: '3.7'

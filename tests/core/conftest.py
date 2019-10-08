@@ -23,6 +23,7 @@ from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.train import train_async
 
+
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
@@ -70,7 +71,7 @@ class ExamplePolicy(Policy):
         pass
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def loop():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -164,9 +165,14 @@ def moodbot_metadata(unpacked_trained_moodbot_path):
 
 @pytest.fixture()
 async def trained_stack_model(
-    default_domain_path, default_stack_config, default_nlu_data, default_stories_file
+    trained_async,
+    default_domain_path,
+    default_stack_config,
+    default_nlu_data,
+    default_stories_file,
 ):
-    trained_stack_model_path = await train_async(
+
+    trained_stack_model_path = await trained_async(
         domain=default_domain_path,
         config=default_stack_config,
         training_files=[default_nlu_data, default_stories_file],
@@ -211,7 +217,7 @@ def project() -> Text:
     return directory
 
 
-def train_model(project: Text, filename: Text = "test.tar.gz"):
+def train_model(loop, project: Text, filename: Text = "test.tar.gz"):
     from rasa.constants import (
         DEFAULT_CONFIG_PATH,
         DEFAULT_DATA_PATH,
@@ -225,24 +231,21 @@ def train_model(project: Text, filename: Text = "test.tar.gz"):
     config = os.path.join(project, DEFAULT_CONFIG_PATH)
     training_files = os.path.join(project, DEFAULT_DATA_PATH)
 
-    rasa.train(domain, config, training_files, output)
+    rasa.train(domain, config, training_files, output, loop=loop)
 
     return output
 
 
 @pytest.fixture(scope="session")
-def trained_model(project) -> Text:
-    return train_model(project)
+def trained_model(loop, project) -> Text:
+    return train_model(loop, project)
 
 
 @pytest.fixture
-async def restaurantbot(tmpdir_factory) -> Text:
-    model_path = tmpdir_factory.mktemp("model").strpath
+async def restaurantbot(trained_async, tmpdir_factory) -> Text:
     restaurant_domain = os.path.join(RESTAURANTBOT_PATH, "domain.yml")
     restaurant_config = os.path.join(RESTAURANTBOT_PATH, "config.yml")
     restaurant_data = os.path.join(RESTAURANTBOT_PATH, "data/")
 
-    agent = await train_async(
-        restaurant_domain, restaurant_config, restaurant_data, model_path
-    )
+    agent = await trained_async(restaurant_domain, restaurant_config, restaurant_data)
     return agent

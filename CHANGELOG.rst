@@ -7,6 +7,35 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[Unreleased 1.4.0] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- log a warning if the ``Interpreter`` picks up an intent or an entity that does not exist in the domain file.
+- added ``DynamoTrackerStore`` to support persistence of agents running on AWS
+- added docstrings for ``TrackerStore`` classes
+- added buttons and images to mattermost.
+- `CRFEntityExtractor` updated to accept arbitrary token-level features like word vectors (issues/4214)
+- `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
+- Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com> 
+  or <http://url.com|url.com> and substitute it with original content 
+
+Changed
+-------
+- Unknown sections in markdown format (NLU data) are not ignored anymore, but instead an error is raised.
+- Tests can now be run in parallel
+
+Removed
+-------
+- Removed Python 3.5 support
+
+Fixed
+-----
+- fixed missing ``tkinter`` dependency for running tests on Ubuntu
+- fixed issue with ``conversation`` JSON serialization
+- fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
+
 [Unreleased 1.3.9]
 ^^^^^^^^^^^^^^^^^^
 
@@ -15,6 +44,8 @@ Added
 
 Fixed
 -----
+- Fixed ``argument of type 'NoneType' is not iterable`` when using ``rasa shell``,
+  ``rasa interactive`` / ``rasa run``
 
 Changed
 -------
@@ -36,8 +67,6 @@ Fixed
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
   when running ``rasa train core``
 - Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channels
-- Fixed ``argument of type 'NoneType' is not iterable`` when using ``rasa shell``,
-  ``rasa interactive`` / ``rasa run``
 
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^
@@ -82,6 +111,9 @@ Fixed
   for every given attribute. Non-content-bearing samples are converted to empty
   ``Doc``-objects. The resulting lists are merged with their preserved order and
   properly returned.
+- asyncio warnings are now only printed if the callback takes more than 100ms
+  (up from 1ms)
+- ``agent.load_model_from_server`` no longer affects logging
 
 Changed
 -------
@@ -91,21 +123,14 @@ Changed
   (default behavior) or in a temporary directory by specifying the
   ``save_to_default_model_directory`` field in the training request.
 
-[1.3.4]
-^^^^^^^^^^^^^^^^^^^^
-
-Fixed
------
-- asyncio warnings are now only printed if the callback takes more than 100ms
-  (up from 1ms)
-- ``agent.load_model_from_server`` no longer affects logging
-
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
-- Added a check to avoid training CountVectorizer for a particular attribute of a message if no text is provided for that attribute across the training data.
+- Added a check to avoid training ``CountVectorizer`` for a particular
+  attribute of a message if no text is provided for that attribute across
+  the training data.
 - Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
 - Policy ensemble no longer incorrectly wrings "missing mapping policy" when
   mapping policy is present.
