@@ -7,8 +7,8 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
-[Unreleased 1.2.11] - `1.2.x`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.2.11] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
