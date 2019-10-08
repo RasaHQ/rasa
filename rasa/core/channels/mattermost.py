@@ -18,7 +18,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
         return "mattermost"
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict]) -> OutputChannel:
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> OutputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
@@ -112,7 +112,7 @@ class MattermostInput(InputChannel):
         return "mattermost"
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 

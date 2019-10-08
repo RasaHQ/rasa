@@ -114,7 +114,7 @@ class SocketIOInput(InputChannel):
         return "socketio"
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         credentials = credentials or {}
         return cls(
             credentials.get("user_message_evt", "user_uttered"),

@@ -1,5 +1,5 @@
 import json
-from typing import Text, Optional, Dict
+from typing import Text, Optional, Dict, Any
 
 import aiohttp
 import logging
@@ -26,7 +26,7 @@ class RasaChatInput(RestInput):
         return "rasa"
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 

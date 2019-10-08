@@ -71,7 +71,9 @@ class Messenger:
                 elif message.get("postback"):
                     return await self.postback(message, metadata)
 
-    async def message(self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]) -> None:
+    async def message(
+        self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
+    ) -> None:
         """Handle an incoming event from the fb webhook."""
 
         # quick reply and user message both share 'text' attribute

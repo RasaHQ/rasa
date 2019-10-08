@@ -79,7 +79,7 @@ class TwilioInput(InputChannel):
         return "twilio"
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
