@@ -49,7 +49,7 @@ RUN pip install --no-cache-dir -r alt_requirements/requirements_full.txt
 
 # Install Rasa as package
 COPY rasa ./rasa
-RUN pip install .
+RUN pip install .[sql,spacy,mitie]
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
