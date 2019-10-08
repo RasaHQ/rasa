@@ -26,7 +26,7 @@ class CallbackOutput(CollectingOutputChannel):
         self.callback_endpoint = endpoint
         super(CallbackOutput, self).__init__()
 
-    async def _persist_message(self, message: Dict) -> None:
+    async def _persist_message(self, message: Dict[Text, Any]) -> None:
         await super(CallbackOutput, self)._persist_message(message)
 
         try:
@@ -52,7 +52,7 @@ class CallbackInput(RestInput):
         return "callback"
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         return cls(EndpointConfig.from_dict(credentials))
 
     def __init__(self, endpoint: EndpointConfig) -> None:

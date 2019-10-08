@@ -62,7 +62,7 @@ class Messenger:
             and message["message"]["quick_reply"].get("payload")
         )
 
-    async def handle(self, payload: Dict, metadata: Optional[Dict]) -> None:
+    async def handle(self, payload: Dict, metadata: Optional[Dict[Text, Any]]) -> None:
         for entry in payload["entry"]:
             for message in entry["messaging"]:
                 self.last_message = message
@@ -71,7 +71,7 @@ class Messenger:
                 elif message.get("postback"):
                     return await self.postback(message, metadata)
 
-    async def message(self, message: Dict[Text, Any], metadata: Optional[Dict]) -> None:
+    async def message(self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]) -> None:
         """Handle an incoming event from the fb webhook."""
 
         # quick reply and user message both share 'text' attribute
@@ -93,7 +93,7 @@ class Messenger:
         await self._handle_user_message(text, self.get_user_id(), metadata)
 
     async def postback(
-        self, message: Dict[Text, Any], metadata: Optional[Dict]
+        self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
     ) -> None:
         """Handle a postback (e.g. quick reply button)."""
 
@@ -101,7 +101,7 @@ class Messenger:
         await self._handle_user_message(text, self.get_user_id(), metadata)
 
     async def _handle_user_message(
-        self, text: Text, sender_id: Text, metadata: Optional[Dict]
+        self, text: Text, sender_id: Text, metadata: Optional[Dict[Text, Any]]
     ) -> None:
         """Pass on the text to the dialogue engine for processing."""
 
@@ -263,7 +263,7 @@ class FacebookInput(InputChannel):
         return "facebook"
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict]) -> InputChannel:
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 

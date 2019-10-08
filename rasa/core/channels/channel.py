@@ -98,7 +98,7 @@ class InputChannel:
         return cls.__name__
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict]) -> "InputChannel":
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> "InputChannel":
         return cls()
 
     def url_prefix(self) -> Text:
@@ -140,7 +140,7 @@ class InputChannel:
         """
         pass
 
-    def get_metadata(self, request: Request) -> Optional[Dict]:
+    def get_metadata(self, request: Request) -> Optional[Dict[Text, Any]]:
         """Extracts additional information from the incoming request.
 
          Implementing this function is not required. However, it can be used to extract
@@ -317,13 +317,13 @@ class CollectingOutputChannel(OutputChannel):
         # filter out any values that are `None`
         return utils.remove_none_values(obj)
 
-    def latest_output(self) -> Optional[Dict]:
+    def latest_output(self) -> Optional[Dict[Text, Any]]:
         if self.messages:
             return self.messages[-1]
         else:
             return None
 
-    async def _persist_message(self, message: Dict) -> None:
+    async def _persist_message(self, message: Dict[Text, Any]) -> None:
         self.messages.append(message)  # pytype: disable=bad-return-type
 
     async def send_text_message(
@@ -402,7 +402,7 @@ class RestInput(InputChannel):
         queue: Queue,
         sender_id: Text,
         input_channel: Text,
-        metadata: Optional[Dict],
+        metadata: Optional[Dict[Text, Any]],
     ) -> None:
         collector = QueueOutputChannel(queue)
 
@@ -429,7 +429,7 @@ class RestInput(InputChannel):
         text: Text,
         sender_id: Text,
         input_channel: Text,
-        metadata: Optional[Dict],
+        metadata: Optional[Dict[Text, Any]],
     ) -> Callable[[Any], Awaitable[None]]:
         async def stream(resp: Any) -> None:
             q = Queue()
