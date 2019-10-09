@@ -68,6 +68,11 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         "--ssl-keyfile", help="Set the SSL Keyfile to create a TLS secured server."
     )
     server_arguments.add_argument(
+        "--ssl-ca-file",
+        help="If your SSL certificate needs to be verified, you can specify the CA file "
+        "using this parameter.",
+    )
+    server_arguments.add_argument(
         "--ssl-password",
         help="If your ssl-keyfile is protected by a password, you can specify it "
         "using this paramer.",

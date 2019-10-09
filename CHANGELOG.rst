@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
-[Unreleased 1.2.11] - `master`_
+[Unreleased 1.2.12] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -21,6 +21,14 @@ Removed
 
 Fixed
 -----
+
+[1.2.11] - 2019-10-09
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Support for passing a CA file for SSL certificate verification via the
+  --ssl-ca-file flag
 
 
 [1.2.10] - 2019-10-08
