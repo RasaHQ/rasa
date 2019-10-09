@@ -21,9 +21,9 @@ def test_run_help(run):
                 [--remote-storage REMOTE_STORAGE]
                 [--ssl-certificate SSL_CERTIFICATE]
                 [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
-                [--ssl-password SSL_PASSWORD]
-                [--credentials CREDENTIALS] [--connector CONNECTOR]
-                [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]
+                [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
+                [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
+                [--jwt-method JWT_METHOD]
                 {actions} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
