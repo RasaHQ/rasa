@@ -77,7 +77,7 @@ def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
 
 def configure_app(
     input_channels: Optional[List["InputChannel"]] = None,
-    cors: Optional[Union[Text, List[Text]]] = None,
+    cors: Optional[Union[Text, List[Text], None]] = None,
     auth_token: Optional[Text] = None,
     enable_api: bool = True,
     jwt_secret: Optional[Text] = None,
