@@ -6,16 +6,16 @@ import pickle
 import typing
 from datetime import datetime, timezone
 from typing import Iterator, Optional, Text, Iterable, Union, Dict
+
 import itertools
+from boto3.dynamodb.conditions import Key
 
 # noinspection PyPep8Naming
 from time import sleep
 
-import boto3
-from boto3.dynamodb.conditions import Key
-
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.event_channel import EventChannel
+from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.core.utils import replace_floats_with_decimals
@@ -26,6 +26,7 @@ if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
     from sqlalchemy.orm import Session
+    import boto3
 
 logger = logging.getLogger(__name__)
 
@@ -156,20 +157,44 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     @staticmethod
-    def serialise_tracker(tracker):
-        """Serializes the tracker, returns representation of the tracker"""
+    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
+        """Serializes the tracker, returns representation of the tracker."""
         dialogue = tracker.as_dialogue()
-        return pickle.dumps(dialogue)
 
-    def deserialise_tracker(self, sender_id, _json) -> Optional[DialogueStateTracker]:
-        """Deserializes the tracker and returns it"""
-        dialogue = pickle.loads(_json)
+        return json.dumps(dialogue.as_dict())
+
+    @staticmethod
+    def _deserialise_dialogue_from_pickle(
+        sender_id: Text, serialised_tracker: bytes
+    ) -> Dialogue:
+
+        logger.warning(
+            f"DEPRECATION warning: Found pickled tracker for "
+            f"conversation ID '{sender_id}'. Deserialisation of pickled "
+            f"trackers will be deprecated in version 2.0. Rasa will perform any "
+            f"future save operations of this tracker using json serialisation."
+        )
+        return pickle.loads(serialised_tracker)
+
+    def deserialise_tracker(
+        self, sender_id: Text, serialised_tracker: Union[Text, bytes]
+    ) -> Optional[DialogueStateTracker]:
+        """Deserializes the tracker and returns it."""
+
         tracker = self.init_tracker(sender_id)
-        if tracker:
-            tracker.recreate_from_dialogue(dialogue)
-            return tracker
-        else:
+        if not tracker:
             return None
+
+        try:
+            dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
+        except UnicodeDecodeError:
+            dialogue = self._deserialise_dialogue_from_pickle(
+                sender_id, serialised_tracker
+            )
+
+        tracker.recreate_from_dialogue(dialogue)
+
+        return tracker
 
 
 class InMemoryTrackerStore(TrackerStore):
@@ -274,6 +299,8 @@ class DynamoTrackerStore(TrackerStore):
             table_name: The name of the DynamoDb table, does not need to be present a priori.
             event_broker:
         """
+        import boto3
+
         self.client = boto3.client("dynamodb", region_name=region)
         self.region = region
         self.table_name = table_name
@@ -284,6 +311,8 @@ class DynamoTrackerStore(TrackerStore):
         self, table_name: Text
     ) -> "boto3.resources.factory.dynamodb.Table":
         """Returns table or creates one if the table name is not in the table list"""
+        import boto3
+
         dynamo = boto3.resource("dynamodb", region_name=self.region)
         if self.table_name not in self.client.list_tables()["TableNames"]:
             table = dynamo.create_table(
@@ -323,7 +352,8 @@ class DynamoTrackerStore(TrackerStore):
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
-        # Retrieve dialogues for a sender_id in reverse chronological order based on the session_date sort key
+        # Retrieve dialogues for a sender_id in reverse chronological order based on
+        # the session_date sort key
         dialogues = self.db.query(
             KeyConditionExpression=Key("sender_id").eq(sender_id),
             Limit=1,
