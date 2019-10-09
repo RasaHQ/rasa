@@ -15,6 +15,7 @@ Added
 
 Fixed
 -----
+- Fixed text processing of ``intent`` attribute inside ``CountVectorFeaturizer``.
 
 Changed
 -------
