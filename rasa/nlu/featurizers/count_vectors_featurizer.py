@@ -224,7 +224,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         tokens = self._get_message_tokens_by_attribute(message, attribute)
 
-        text = self.process_text(tokens, attribute)
+        text = self._process_text(tokens, attribute)
 
         text = self._replace_with_oov_token(text, attribute)
 
