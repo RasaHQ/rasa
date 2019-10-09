@@ -267,6 +267,11 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <li><cite>SpacyFeaturizer</cite> updated to add <cite>ner_features</cite> for <cite>CRFEntityExtractor</cite></li>
 <li>Sanitizing incoming messages from slack to remove slack formatting like &lt;<a class="reference external" href="mailto:xyz&#37;&#52;&#48;rasa">mailto:xyz<span>&#64;</span>rasa</a>.com|xyz&#64;rasa.com&gt;
 or &lt;<a class="reference external" href="http://url">http://url</a>.com|url.com&gt; and substitute it with original content</li>
+<li>Added the ability to configure the number of Sanic worker processes in the HTTP
+server (<code class="docutils literal notranslate"><span class="pre">rasa.server</span></code>) and input channel server
+(<code class="docutils literal notranslate"><span class="pre">rasa.core.agent.handle_channels()</span></code>). The number of workers can be set using the
+environment variable <code class="docutils literal notranslate"><span class="pre">SANIC_WORKERS</span></code> (default: 1). A value of &gt;1 is allowed only in
+combination with <code class="docutils literal notranslate"><span class="pre">RedisLockStore</span></code> as the lock store.</li>
 </ul>
 </div>
 <div class="section" id="changed">
