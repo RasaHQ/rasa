@@ -230,7 +230,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         return text
 
-    def process_text(
+    def _process_text(
         self, tokens: List[Text], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
     ) -> Text:
         """Apply an processing, cleaning steps to text"""
