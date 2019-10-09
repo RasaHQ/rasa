@@ -823,7 +823,7 @@ def create_app(
         try:
             data = emulator.normalise_request_json(request.json)
             try:
-                data['text'] = data['text'].lower()
+                data['text'] = data['text'].lower().replace("\'","")
                 parsed_data = await app.agent.parse_message_using_nlu_interpreter(
                     data.get("text")
                 )
@@ -843,6 +843,7 @@ def create_app(
                 response_data['intent'] = {}
                 response_data['intent']['name'] = 'AMAZON.FallbackIntent'
             del[response_data['intent_ranking']]
+            del[response_data['entities']]
             response_data['intent'] = response_data['intent']['name']
             response_data['reqtype'] = respFinder(response_data['intent'])
             return response.json(response_data)
