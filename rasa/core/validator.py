@@ -7,6 +7,7 @@ from rasa.nlu.training_data import TrainingData
 from rasa.core.training.dsl import StoryStep
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
+from rasa.core.training.dsl import SlotSet
 from rasa.core.constants import UTTER_PREFIX
 
 logger = logging.getLogger(__name__)
@@ -162,6 +163,33 @@ class Validator(object):
 
         return everything_is_alright
 
+    def verify_story_structure(self, ignore_warnings: bool = True) -> bool:
+        """Verifies that bot behaviour in stories is deterministic."""
+
+        from rasa.utils.story_tree import Tree
+        # Generate the story tree
+        n = 0
+        tree = Tree()
+        slots = {}
+        for story in self.stories:
+            n += 1
+            tree.reset(story=story.block_name)
+            for event in story.events:
+                print(event)
+                if isinstance(event, ActionExecuted):
+                    tree.add_or_goto("W: " + event.as_story_string())
+                elif isinstance(event, UserUttered):
+                    tree.add_or_goto("U: " + event.as_story_string())
+                elif isinstance(event, SlotSet):
+                    tree.add_or_goto("S: " + event.as_story_string())
+                else:
+                    logger.error("JJJ: event is neither action, nor a slot, nor a user utterance")
+
+        stats = tree.stats()
+        logger.info(tree.to_string(show_labels=True))
+
+        return True
+
     def verify_all(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
 
@@ -169,5 +197,9 @@ class Validator(object):
         intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
 
         logger.info("Validating utterances...")
-        stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
-        return intents_are_valid and stories_are_valid
+        utterances_are_valid = self.verify_utterances_in_stories(ignore_warnings)
+
+        logger.info("Validating story-structure...")
+        stories_are_valid = self.verify_story_structure(ignore_warnings)
+
+        return intents_are_valid and utterances_are_valid and stories_are_valid
