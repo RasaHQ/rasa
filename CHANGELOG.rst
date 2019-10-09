@@ -24,6 +24,9 @@ Added
 Changed
 -------
 - Unknown sections in markdown format (NLU data) are not ignored anymore, but instead an error is raised.
+- It is now easier to add metadata to a ``UserMessage`` in existing channels.
+  You can do so by overwriting the method ``get_metadata``. The return value of this
+  method will be passed to the ``UserMessage`` object.
 - Tests can now be run in parallel
 
 Removed
