@@ -311,6 +311,8 @@ class DynamoTrackerStore(TrackerStore):
         self, table_name: Text
     ) -> "boto3.resources.factory.dynamodb.Table":
         """Returns table or creates one if the table name is not in the table list"""
+        import boto3
+
         dynamo = boto3.resource("dynamodb", region_name=self.region)
         if self.table_name not in self.client.list_tables()["TableNames"]:
             table = dynamo.create_table(
