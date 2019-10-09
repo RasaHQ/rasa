@@ -223,19 +223,6 @@ Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
-[1.2.10] - 2019-09-17
-^^^^^^^^^^^^^^^^^^^^
-
-- Added support for RabbitMQ TLS authentication. The following environment variables
-  need to be set:
-  ``RABBITMQ_SSL_CLIENT_CERTIFICATE`` - path to the SSL client certificate (required)
-  ``RABBITMQ_SSL_CLIENT_KEY`` - path to the SSL client key (required)
-  ``RABBITMQ_SSL_CA_FILE`` - path to the SSL CA file (optional, for certificate
-  verification)
-  ``RABBITMQ_SSL_KEY_PASSWORD`` - SSL private key password (optional)
-- Added ability to define the RabbitMQ port using the ``port`` key in the
-  ``event_broker`` endpoint config.
-
 [1.2.11] - 2019-10-09
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -243,7 +230,6 @@ Added
 -----
 - Support for passing a CA file for SSL certificate verification via the
   --ssl-ca-file flag
-
 
 [1.2.10] - 2019-10-08
 ^^^^^^^^^^^^^^^^^^^^^
@@ -259,7 +245,6 @@ Added
   ``RABBITMQ_SSL_KEY_PASSWORD`` - SSL private key password (optional)
 - Added ability to define the RabbitMQ port using the ``port`` key in the
   ``event_broker`` endpoint config.
-
 
 [1.2.9] - 2019-09-17
 ^^^^^^^^^^^^^^^^^^^^
