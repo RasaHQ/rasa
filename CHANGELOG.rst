@@ -7,13 +7,11 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.9]
-^^^^^^^^^^^^^^^^^^
+[Unreleased 1.3.10]
+^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- port of 1.2.10 (support for RabbitMQ TLS authentication and ``port`` key in
-  event broker endpoint config)
 
 Fixed
 -----
@@ -23,6 +21,16 @@ Changed
 
 Removed
 -------
+
+[1.3.9] - 2019-10-09
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- port of 1.2.10 (support for RabbitMQ TLS authentication and ``port`` key in
+  event broker endpoint config)
+- port of 1.2.11 (support for passing a CA file for SSL certificate verification via the
+  --ssl-ca-file flag)
 
 [1.3.8] - 2019-10-08
 ^^^^^^^^^^^^^^^^^^^^
@@ -51,7 +59,6 @@ Fixed
 
 [1.3.6] - 2019-09-21
 ^^^^^^^^^^^^^^^^^^^^
-
 Added
 -----
 - Added the ability for users to specify a conversation id to send a message to when
@@ -91,9 +98,6 @@ Changed
   want to save the trained model in the default model directory (``models``)
   (default behavior) or in a temporary directory by specifying the
   ``save_to_default_model_directory`` field in the training request.
-
-[1.3.4]
-^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
@@ -231,6 +235,31 @@ Removed
   ``RABBITMQ_SSL_KEY_PASSWORD`` - SSL private key password (optional)
 - Added ability to define the RabbitMQ port using the ``port`` key in the
   ``event_broker`` endpoint config.
+
+[1.2.11] - 2019-10-09
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Support for passing a CA file for SSL certificate verification via the
+  --ssl-ca-file flag
+
+
+[1.2.10] - 2019-10-08
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added support for RabbitMQ TLS authentication. The following environment variables
+  need to be set:
+  ``RABBITMQ_SSL_CLIENT_CERTIFICATE`` - path to the SSL client certificate (required)
+  ``RABBITMQ_SSL_CLIENT_KEY`` - path to the SSL client key (required)
+  ``RABBITMQ_SSL_CA_FILE`` - path to the SSL CA file (optional, for certificate
+  verification)
+  ``RABBITMQ_SSL_KEY_PASSWORD`` - SSL private key password (optional)
+- Added ability to define the RabbitMQ port using the ``port`` key in the
+  ``event_broker`` endpoint config.
+
 
 [1.2.9] - 2019-09-17
 ^^^^^^^^^^^^^^^^^^^^

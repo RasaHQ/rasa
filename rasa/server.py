@@ -8,9 +8,6 @@ from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
 
-if typing.TYPE_CHECKING:
-    from ssl import SSLContext
-
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic_cors import CORS
@@ -22,7 +19,6 @@ import rasa.core.utils
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
-
 from rasa import model
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
@@ -46,6 +42,9 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
+
+if typing.TYPE_CHECKING:
+    from ssl import SSLContext
 
 logger = logging.getLogger(__name__)
 
