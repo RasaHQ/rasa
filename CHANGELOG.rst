@@ -7,7 +7,7 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.8]
+[Unreleased 1.3.9]
 ^^^^^^^^^^^^^^^^^^
 
 Added
@@ -22,6 +22,19 @@ Added
 - Added ability to define the RabbitMQ port using the ``port`` key in the
   ``event_broker`` endpoint config.
 
+Fixed
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+
+[1.3.8] - 2019-10-08
+^^^^^^^^^^^^^^^^^^^^
+
 Changed
 -------
 - Policies now only get imported if they are actually used. This removes
@@ -32,6 +45,8 @@ Fixed
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
   when running ``rasa train core``
 - Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channels
+- Fixed ``argument of type 'NoneType' is not iterable`` when using ``rasa shell``,
+  ``rasa interactive`` / ``rasa run``
 
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^

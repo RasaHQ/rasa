@@ -337,7 +337,9 @@ async def _load_agent(
     return loaded_agent
 
 
-def configure_cors(app: Sanic, cors_origins: Union[Text, List[Text]] = "") -> None:
+def configure_cors(
+    app: Sanic, cors_origins: Union[Text, List[Text], None] = ""
+) -> None:
     """Configure CORS origins for the given app."""
 
     # Workaround so that socketio works with requests from other origins.
@@ -345,7 +347,9 @@ def configure_cors(app: Sanic, cors_origins: Union[Text, List[Text]] = "") -> No
     app.config.CORS_AUTOMATIC_OPTIONS = True
     app.config.CORS_SUPPORTS_CREDENTIALS = True
 
-    CORS(app, resources={r"/*": {"origins": cors_origins}}, automatic_options=True)
+    CORS(
+        app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
+    )
 
 
 def add_root_route(app: Sanic):
@@ -357,7 +361,7 @@ def add_root_route(app: Sanic):
 
 def create_app(
     agent: Optional["Agent"] = None,
-    cors_origins: Union[Text, List[Text]] = "*",
+    cors_origins: Union[Text, List[Text], None] = "*",
     auth_token: Optional[Text] = None,
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
