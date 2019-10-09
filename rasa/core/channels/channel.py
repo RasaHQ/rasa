@@ -213,16 +213,14 @@ class OutputChannel:
     ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        await self.send_text_message(recipient_id, "Image: {}".format(image), **kwargs)
+        await self.send_text_message(recipient_id, "Image: {}".format(image))
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Text, **kwargs: Any
     ) -> None:
         """Sends an attachment. Default will just post as a string."""
 
-        await self.send_text_message(
-            recipient_id, "Attachment: {}".format(attachment), **kwargs
-        )
+        await self.send_text_message(recipient_id, "Attachment: {}".format(attachment))
 
     async def send_text_with_buttons(
         self,
@@ -235,10 +233,10 @@ class OutputChannel:
 
         Default implementation will just post the buttons as a string."""
 
-        await self.send_text_message(recipient_id, text, **kwargs)
+        await self.send_text_message(recipient_id, text)
         for idx, button in enumerate(buttons):
             button_msg = cli_utils.button_to_string(button, idx)
-            await self.send_text_message(recipient_id, button_msg, **kwargs)
+            await self.send_text_message(recipient_id, button_msg)
 
     async def send_quick_replies(
         self,
@@ -251,7 +249,7 @@ class OutputChannel:
 
         Default implementation will just send as buttons."""
 
-        await self.send_text_with_buttons(recipient_id, text, quick_replies, **kwargs)
+        await self.send_text_with_buttons(recipient_id, text, quick_replies)
 
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
@@ -260,16 +258,12 @@ class OutputChannel:
 
         Default implementation will just post the elements as a string."""
 
-        # we can't pass the empty "buttons" key of the message through to send_text_
-        # with_buttons()
-        kwargs.pop("buttons", None)
-
         for element in elements:
             element_msg = "{title} : {subtitle}".format(
                 title=element.get("title", ""), subtitle=element.get("subtitle", "")
             )
             await self.send_text_with_buttons(
-                recipient_id, element_msg, element.get("buttons", []), **kwargs
+                recipient_id, element_msg, element.get("buttons", [])
             )
 
     async def send_custom_json(
@@ -279,7 +273,7 @@ class OutputChannel:
 
         Default implementation will just post the json contents as a string."""
 
-        await self.send_text_message(recipient_id, json.dumps(json_message), **kwargs)
+        await self.send_text_message(recipient_id, json.dumps(json_message))
 
 
 class CollectingOutputChannel(OutputChannel):
