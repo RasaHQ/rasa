@@ -509,7 +509,7 @@ def _lock_store_is_redis_lock_store(
     return lock_store is not None and lock_store.type == "redis"
 
 
-def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore]) -> int:
+def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) -> int:
     """Get the number of Sanic workers to use in `app.run()`.
 
     If the environment variable constants.ENV_SANIC_WORKERS is set and is not equal to
