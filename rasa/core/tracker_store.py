@@ -7,7 +7,6 @@ import typing
 from datetime import datetime, timezone
 from typing import Iterator, Optional, Text, Iterable, Union, Dict
 
-import boto3
 import itertools
 from boto3.dynamodb.conditions import Key
 
@@ -27,6 +26,7 @@ if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
     from sqlalchemy.orm import Session
+    import boto3
 
 logger = logging.getLogger(__name__)
 
@@ -299,6 +299,8 @@ class DynamoTrackerStore(TrackerStore):
             table_name: The name of the DynamoDb table, does not need to be present a priori.
             event_broker:
         """
+        import boto3
+
         self.client = boto3.client("dynamodb", region_name=region)
         self.region = region
         self.table_name = table_name

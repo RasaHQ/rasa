@@ -26,9 +26,11 @@ Added
 
 Changed
 -------
-- Unknown sections in markdown format (NLU data) are not ignored anymore,
-  but instead an error is raised.
-- Tests can now be run in parallel.
+- Unknown sections in markdown format (NLU data) are not ignored anymore, but instead an error is raised.
+- It is now easier to add metadata to a ``UserMessage`` in existing channels.
+  You can do so by overwriting the method ``get_metadata``. The return value of this
+  method will be passed to the ``UserMessage`` object.
+- Tests can now be run in parallel
 - Serialise ``DialogueStateTracker`` as json instead of pickle. **DEPRECATION warning**:
   Deserialisation of pickled trackers will be deprecated in a future version. For now,
   trackers are still loaded from pickle but will be dumped as json in any subsequent
@@ -43,14 +45,48 @@ Fixed
 - fixed missing ``tkinter`` dependency for running tests on Ubuntu
 - fixed issue with ``conversation`` JSON serialization
 - fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
+- fixed Interactive Learning intent payload messages saving in nlu files
 
-[Unreleased 1.3.7]
+[Unreleased 1.3.9]
 ^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Fixed
+-----
+- Fixed ``argument of type 'NoneType' is not iterable`` when using ``rasa shell``,
+  ``rasa interactive`` / ``rasa run``
+
+Changed
+-------
+
+Removed
+-------
+
+
+[1.3.8] - 2019-10-08
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Policies now only get imported if they are actually used. This removes
+  TensorFlow warnings when starting Rasa X
+
+Fixed
+-----
+- Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
+  when running ``rasa train core``
+- Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channels
+
+[1.3.7] - 2019-09-27
+^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - re-added TLS, SRV dependencies for PyMongo
 - socketio can now be run without turning on the ``--enable-api`` flag
+- MappingPolicy no longer fails when the latest action doesn't have a policy
 
 [1.3.6] - 2019-09-21
 ^^^^^^^^^^^^^^^^^^^^
