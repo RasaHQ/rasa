@@ -118,7 +118,6 @@ registered_pipeline_templates = {
         {"name": "RegexFeaturizer"},
         {"name": "CRFEntityExtractor"},
         {"name": "EntitySynonymMapper"},
-        {"name": "CountVectorsFeaturizer"},
         {
             "name": "CountVectorsFeaturizer",
             "analyzer": "char_wb",
