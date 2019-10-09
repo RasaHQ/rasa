@@ -15,6 +15,7 @@ Added
 
 Fixed
 -----
+- Removed duplicated entry of ``CountVectorsFeaturizer`` for ``supervised_embeddings`` pipeline.
 
 Changed
 -------
