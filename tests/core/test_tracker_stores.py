@@ -19,7 +19,7 @@ from rasa.core.tracker_store import (
 import rasa.core.tracker_store
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from tests.conftest import log_emitted
+from tests.conftest import assert_log_emitted
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 domain = Domain.load("data/test_domains/default.yml")
@@ -184,7 +184,7 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
     serialised = pickle_serialise_tracker(tracker)
 
     # deprecation warning should be emitted
-    with log_emitted(
+    with assert_log_emitted(
         caplog, rasa.core.tracker_store.logger.name, logging.WARNING, "DEPRECATION"
     ):
         assert tracker == store.deserialise_tracker(

@@ -223,9 +223,33 @@ def get_test_client(server):
 
 
 @contextmanager
-def log_emitted(
+def assert_log_emitted(
     _caplog: LogCaptureFixture, logger_name: Text, log_level: int, text: Text = None
-) -> bool:
+) -> None:
+    """Context manager testing whether a logging message has been emitted.
+
+    Provides a context in which an assertion is made about a logging message.
+    Raises an `AssertionError` if the log isn't emitted as expected.
+
+    Example usage:
+
+    ```
+    with assert_log_emitted(caplog, LOGGER_NAME, LOGGING_LEVEL, TEXT):
+        <method supposed to emit TEXT at level LOGGING_LEVEL>
+    ```
+
+    Args:
+        _caplog: `LogCaptureFixture` used to capture logs.
+        logger_name: Name of the logger being examined.
+        log_level: Log level to be tested.
+        text: Logging message to be tested (optional). If left blank, assertion is made
+            only about `log_level` and `logger_name`.
+
+    Yields:
+        `None`
+
+    """
+
     yield
 
     record_tuples = _caplog.record_tuples

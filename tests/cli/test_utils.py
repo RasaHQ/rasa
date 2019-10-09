@@ -10,7 +10,7 @@ from rasa.cli.utils import (
     parse_last_positional_argument_as_model_path,
     get_validated_path,
 )
-from tests.conftest import log_emitted
+from tests.conftest import assert_log_emitted
 
 
 @pytest.mark.parametrize(
@@ -93,7 +93,7 @@ def test_logging_capture(caplog: LogCaptureFixture):
     # make a random INFO log and ensure it passes decorator
     info_text = "SOME INFO"
     logger.info(info_text)
-    with log_emitted(caplog, logger.name, logging.INFO, info_text):
+    with assert_log_emitted(caplog, logger.name, logging.INFO, info_text):
         pass
 
 
@@ -105,5 +105,5 @@ def test_logging_capture_failure(caplog: LogCaptureFixture):
 
     # test for string in log that wasn't emitted
     with pytest.raises(AssertionError):
-        with log_emitted(caplog, logger.name, logging.INFO, "NONONO"):
+        with assert_log_emitted(caplog, logger.name, logging.INFO, "NONONO"):
             pass

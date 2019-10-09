@@ -32,7 +32,7 @@ Changed
   method will be passed to the ``UserMessage`` object.
 - Tests can now be run in parallel
 - Serialise ``DialogueStateTracker`` as json instead of pickle. **DEPRECATION warning**:
-  Deserialisation of pickled trackers will be deprecated in a future version. For now,
+  Deserialisation of pickled trackers will be deprecated in version 2.0. For now,
   trackers are still loaded from pickle but will be dumped as json in any subsequent
   save operations.
 

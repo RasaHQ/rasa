@@ -171,7 +171,7 @@ class TrackerStore(object):
         logger.warning(
             f"DEPRECATION warning: Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
-            f"trackers will be deprecated in a future version. Rasa will perform any "
+            f"trackers will be deprecated in version 2.0. Rasa will perform any "
             f"future save operations of this tracker using json serialisation."
         )
         return pickle.loads(serialised_tracker)
