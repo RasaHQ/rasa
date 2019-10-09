@@ -259,11 +259,13 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <div class="section" id="added">
 <h3>Added<a class="headerlink" href="#added" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>log a warning if the <code class="docutils literal notranslate"><span class="pre">Interpreter</span></code> picks up an intent or an entity that does not exist in the domain file.</li>
+<li>log a warning if the <code class="docutils literal notranslate"><span class="pre">Interpreter</span></code> picks up an intent or an entity that does not
+exist in the domain file.</li>
 <li>added <code class="docutils literal notranslate"><span class="pre">DynamoTrackerStore</span></code> to support persistence of agents running on AWS</li>
 <li>added docstrings for <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code> classes</li>
 <li>added buttons and images to mattermost.</li>
-<li><cite>CRFEntityExtractor</cite> updated to accept arbitrary token-level features like word vectors (issues/4214)</li>
+<li><cite>CRFEntityExtractor</cite> updated to accept arbitrary token-level features like word
+vectors (issues/4214)</li>
 <li><cite>SpacyFeaturizer</cite> updated to add <cite>ner_features</cite> for <cite>CRFEntityExtractor</cite></li>
 <li>Sanitizing incoming messages from slack to remove slack formatting like &lt;<a class="reference external" href="mailto:xyz&#37;&#52;&#48;rasa">mailto:xyz<span>&#64;</span>rasa</a>.com|xyz&#64;rasa.com&gt;
 or &lt;<a class="reference external" href="http://url">http://url</a>.com|url.com&gt; and substitute it with original content</li>
@@ -282,6 +284,10 @@ combination with <code class="docutils literal notranslate"><span class="pre">Re
 You can do so by overwriting the method <code class="docutils literal notranslate"><span class="pre">get_metadata</span></code>. The return value of this
 method will be passed to the <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code> object.</li>
 <li>Tests can now be run in parallel</li>
+<li>Serialise <code class="docutils literal notranslate"><span class="pre">DialogueStateTracker</span></code> as json instead of pickle. <strong>DEPRECATION warning</strong>:
+Deserialisation of pickled trackers will be deprecated in version 2.0. For now,
+trackers are still loaded from pickle but will be dumped as json in any subsequent
+save operations.</li>
 </ul>
 </div>
 <div class="section" id="removed">
