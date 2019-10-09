@@ -68,7 +68,7 @@ SECTION_NLG = Section(name="NLG Templates", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
-    """Get a model and unpacks it. Raises a `ModelNotFound` exception if
+    """Get a model and unpack it. Raises a `ModelNotFound` exception if
     no model could be found at the provided path.
 
     Args:
