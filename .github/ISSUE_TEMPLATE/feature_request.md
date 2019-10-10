@@ -27,5 +27,6 @@ Or might there be any potential blockers on the way? -->
 **Definition of Done**:
 <!-- What needs to be there to consider this feature as done?
 - [ ] Tests are added
-- [ ] Feature is documented
+- [ ] Feature described the docs
+- [ ] Feature mentioned in the changlog
 - [ ] ... -->

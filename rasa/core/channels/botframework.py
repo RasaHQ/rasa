@@ -6,9 +6,10 @@ import logging
 import requests
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, Dict, Any, List, Iterable
+from typing import Text, Dict, Any, List, Iterable, Callable, Awaitable, Optional
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
+from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class BotFramework(OutputChannel):
     headers = None
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "botframework"
 
     def __init__(
@@ -165,15 +166,17 @@ class BotFrameworkInput(InputChannel):
     """Bot Framework input channel implementation."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "botframework"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
+        # pytype: disable=attribute-error
         return cls(credentials.get("app_id"), credentials.get("app_password"))
+        # pytype: enable=attribute-error
 
     def __init__(self, app_id: Text, app_password: Text) -> None:
         """Create a Bot Framework input channel.
@@ -186,18 +189,21 @@ class BotFrameworkInput(InputChannel):
         self.app_id = app_id
         self.app_password = app_password
 
-    def blueprint(self, on_new_message):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
 
         botframework_webhook = Blueprint("botframework_webhook", __name__)
 
         # noinspection PyUnusedLocal
         @botframework_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(request: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @botframework_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request: Request):
+        async def webhook(request: Request) -> HTTPResponse:
             postdata = request.json
+            metadata = self.get_metadata(request)
 
             try:
                 if postdata["type"] == "message":
@@ -214,6 +220,7 @@ class BotFrameworkInput(InputChannel):
                         output_channel=out_channel,
                         sender_id=postdata["from"]["id"],
                         input_channel=self.name(),
+                        metadata=metadata,
                     )
                     if postdata.get('attachments'):
                         user_msg.metadata = {

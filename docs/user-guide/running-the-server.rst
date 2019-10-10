@@ -59,6 +59,17 @@ storage system if no model server and no remote storage were configured.
     Core model is needed to process the request.
 
 
+.. note::
+
+    By default, the HTTP server runs as a single process. You can change the number
+    of worker processes using the ``SANIC_WORKERS`` environment variable. It is
+    recommended that you set the number of workers to the number of available CPU cores
+    (check out the
+    `Sanic docs <https://sanic.readthedocs.io/en/latest/sanic/deploying.html#workers>`_
+    for more details). This will only work in combination with the
+    ``RedisLockStore`` (see :ref:`lock-stores`).
+
+
 .. _server_fetch_from_server:
 
 Fetching Models from a Server
@@ -117,6 +128,28 @@ You can also configure the Rasa server to fetch your model from a remote storage
 
 The model will be downloaded and stored in a temporary directory on your local storage system.
 For more information see :ref:`cloud-storage`.
+
+.. _server_ssl:
+
+Configuring SSL / HTTPS
+-----------------------
+
+By default the Rasa server is using HTTP for its communication. To secure the
+communication with SSL, you need to provide a valid certificate and the corresponding
+private key file.
+
+You can specify these files as part of the ``rasa run`` command:
+
+.. code-block:: bash
+
+    rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key
+
+If you encrypted your keyfile with a password during creation, you need to add
+this password to the command:
+
+.. code-block:: bash
+
+    rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key --ssl-password mypassword
 
 
 .. _server_security:

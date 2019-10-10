@@ -1,9 +1,8 @@
-import errno
 import io
 import json
 import os
 import re
-from typing import Any, Callable, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
@@ -17,24 +16,6 @@ def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
         return os.path.normpath(os.path.relpath(f, path))
     else:
         return None
-
-
-def lazyproperty(fn: Callable) -> Any:
-    """Allows to avoid recomputing a property over and over.
-
-    The result gets stored in a local var. Computation of the property
-    will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property."""
-
-    attr_name = "_lazy_" + fn.__name__
-
-    @property
-    def _lazyprop(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
-        return getattr(self, attr_name)
-
-    return _lazyprop
 
 
 def list_to_str(l: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:

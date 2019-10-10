@@ -1,13 +1,13 @@
 import logging
 import asyncio
-from typing import List
+from typing import List, Set, Text
 from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.dsl import StoryStep
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
-from rasa.core.actions.action import UTTER_PREFIX
+from rasa.core.constants import UTTER_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -32,78 +32,85 @@ class Validator(object):
 
         return cls(domain, intents, stories.story_steps)
 
-    def verify_intents(self):
+    def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
 
-        domain_intents = set()
-        nlu_data_intents = set()
+        everything_is_alright = True
 
-        for intent in self.domain.intent_properties:
-            domain_intents.add(intent)
+        nlu_data_intents = {e.data["intent"] for e in self.intents.intent_examples}
 
-        for intent in self.intents.intent_examples:
-            nlu_data_intents.add(intent.data["intent"])
-
-        for intent in domain_intents:
+        for intent in self.domain.intents:
             if intent not in nlu_data_intents:
                 logger.warning(
                     "The intent '{}' is listed in the domain file, but "
                     "is not found in the NLU training data.".format(intent)
                 )
+                everything_is_alright = ignore_warnings and everything_is_alright
 
         for intent in nlu_data_intents:
-            if intent not in domain_intents:
+            if intent not in self.domain.intents:
                 logger.error(
                     "The intent '{}' is in the NLU training data, but "
                     "is not listed in the domain.".format(intent)
                 )
+                everything_is_alright = False
 
-        return domain_intents
+        return everything_is_alright
 
-    def verify_intents_in_stories(self):
+    def verify_intents_in_stories(self, ignore_warnings: bool = True) -> bool:
         """Checks intents used in stories.
 
         Verifies if the intents used in the stories are valid, and whether
         all valid intents are used in the stories."""
 
-        domain_intents = self.verify_intents()
+        everything_is_alright = self.verify_intents()
 
-        stories_intents = set()
-        for story in self.stories:
-            for event in story.events:
-                if type(event) == UserUttered:
-                    intent = event.intent["name"]
-                    stories_intents.add(intent)
-                    if intent not in domain_intents:
-                        logger.error(
-                            "The intent '{}' is used in stories, but is not "
-                            "listed in the domain file.".format(intent)
-                        )
+        stories_intents = {
+            event.intent["name"]
+            for story in self.stories
+            for event in story.events
+            if type(event) == UserUttered
+        }
 
-        for intent in domain_intents:
+        for story_intent in stories_intents:
+            if story_intent not in self.domain.intents:
+                logger.error(
+                    "The intent '{}' is used in stories, but is not "
+                    "listed in the domain file.".format(story_intent)
+                )
+                everything_is_alright = False
+
+        for intent in self.domain.intents:
             if intent not in stories_intents:
                 logger.warning(
                     "The intent '{}' is not used in any story.".format(intent)
                 )
+                everything_is_alright = ignore_warnings and everything_is_alright
 
-    def verify_utterances(self):
+        return everything_is_alright
+
+    def _gather_utterance_actions(self) -> Set[Text]:
+        """Return all utterances which are actions."""
+        return {
+            utterance
+            for utterance in self.domain.templates.keys()
+            if utterance in self.domain.action_names
+        }
+
+    def verify_utterances(self, ignore_warnings: bool = True) -> bool:
         """Compares list of utterances in actions with utterances in templates."""
 
         actions = self.domain.action_names
-        utterance_templates = set()
-        valid_utterances = set()
-
-        for utterance in self.domain.templates:
-            utterance_templates.add(utterance)
+        utterance_templates = set(self.domain.templates)
+        everything_is_alright = True
 
         for utterance in utterance_templates:
-            if utterance in actions:
-                valid_utterances.add(utterance)
-            else:
-                logger.error(
+            if utterance not in actions:
+                logger.warning(
                     "The utterance '{}' is not listed under 'actions' in the "
-                    "domain file.".format(utterance)
+                    "domain file. It can only be used as a template.".format(utterance)
                 )
+                everything_is_alright = ignore_warnings and everything_is_alright
 
         for action in actions:
             if action.startswith(UTTER_PREFIX):
@@ -111,45 +118,56 @@ class Validator(object):
                     logger.error(
                         "There is no template for utterance '{}'.".format(action)
                     )
+                    everything_is_alright = False
 
-        return valid_utterances
+        return everything_is_alright
 
-    def verify_utterances_in_stories(self):
+    def verify_utterances_in_stories(self, ignore_warnings: bool = True) -> bool:
         """Verifies usage of utterances in stories.
 
         Checks whether utterances used in the stories are valid,
         and whether all valid utterances are used in stories."""
 
-        valid_utterances = self.verify_utterances()
+        everything_is_alright = self.verify_utterances()
+
+        utterance_actions = self._gather_utterance_actions()
         stories_utterances = set()
 
         for story in self.stories:
             for event in story.events:
-                if isinstance(event, ActionExecuted) and event.action_name.startswith(
-                    UTTER_PREFIX
-                ):
-                    utterance = event.action_name
-                    if (
-                        utterance not in valid_utterances
-                        and utterance not in stories_utterances
-                    ):
-                        logger.error(
-                            "The utterance '{}' is used in stories, but is not a "
-                            "valid utterance.".format(utterance)
-                        )
-                    stories_utterances.add(utterance)
+                if not isinstance(event, ActionExecuted):
+                    continue
+                if not event.action_name.startswith(UTTER_PREFIX):
+                    # we are only interested in utter actions
+                    continue
 
-        for utterance in valid_utterances:
+                if event.action_name in stories_utterances:
+                    # we already processed this one before, we only want to warn once
+                    continue
+
+                if event.action_name not in utterance_actions:
+                    logger.error(
+                        "The utterance '{}' is used in stories, but is not a "
+                        "valid utterance.".format(event.action_name)
+                    )
+                    everything_is_alright = False
+                stories_utterances.add(event.action_name)
+
+        for utterance in utterance_actions:
             if utterance not in stories_utterances:
                 logger.warning(
                     "The utterance '{}' is not used in any story.".format(utterance)
                 )
+                everything_is_alright = ignore_warnings and everything_is_alright
 
-    def verify_all(self):
+        return everything_is_alright
+
+    def verify_all(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
 
         logger.info("Validating intents...")
-        self.verify_intents_in_stories()
+        intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
 
         logger.info("Validating utterances...")
-        self.verify_utterances_in_stories()
+        stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
+        return intents_are_valid and stories_are_valid

@@ -47,5 +47,12 @@ def set_split_arguments(parser: argparse.ArgumentParser):
 
 
 def set_validator_arguments(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "--fail-on-warnings",
+        default=False,
+        action="store_true",
+        help="Fail validation on warnings and errors. "
+        "If omitted only errors will result in a non zero exit code.",
+    )
     add_domain_param(parser)
     add_data_param(parser)

@@ -27,8 +27,11 @@ def train(
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     kwargs: Optional[Dict] = None,
+    loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> Optional[Text]:
-    loop = asyncio.get_event_loop()
+    if loop is None:
+        loop = asyncio.get_event_loop()
+
     return loop.run_until_complete(
         train_async(
             domain=domain,
@@ -49,6 +52,7 @@ async def train_async(
     output_path: Text = DEFAULT_MODELS_PATH,
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
+    persist_nlu_training_data: bool = False,
     kwargs: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
@@ -60,6 +64,8 @@ async def train_async(
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
+        persist_nlu_training_data: `True` if the NLU training data should be persisted
+                                   with the model.
         kwargs: Additional training parameters.
 
     Returns:
@@ -84,6 +90,7 @@ async def train_async(
             output_path,
             force_training,
             fixed_model_name,
+            persist_nlu_training_data,
             kwargs,
         )
 
@@ -107,16 +114,14 @@ async def _train_async_internal(
     output_path: Text,
     force_training: bool,
     fixed_model_name: Optional[Text],
+    persist_nlu_training_data: bool,
     kwargs: Optional[Dict],
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
 
     Args:
-        domain: Path to the domain file.
-        config: Path to the config for Core and NLU.
+        file_importer: `TrainingDataImporter` which supplies the training data.
         train_path: Directory in which to train the model.
-        nlu_data_directory: Path to NLU training files.
-        story_directory: Path to Core training files.
         output_path: Output path.
         force_training: If `True` retrain model even if data has not changed.
         fixed_model_name: Name of model to be stored.
@@ -140,7 +145,10 @@ async def _train_async_internal(
     if stories.is_empty():
         print_warning("No stories present. Just a Rasa NLU model will be trained.")
         return await _train_nlu_with_validated_data(
-            file_importer, output=output_path, fixed_model_name=fixed_model_name
+            file_importer,
+            output=output_path,
+            fixed_model_name=fixed_model_name,
+            persist_nlu_training_data=persist_nlu_training_data,
         )
 
     if nlu_data.is_empty():
@@ -166,6 +174,7 @@ async def _train_async_internal(
             retrain_core=retrain_core,
             retrain_nlu=retrain_nlu,
             fixed_model_name=fixed_model_name,
+            persist_nlu_training_data=persist_nlu_training_data,
             kwargs=kwargs,
         )
 
@@ -191,6 +200,7 @@ async def _do_training(
     retrain_core: bool = True,
     retrain_nlu: bool = True,
     fixed_model_name: Optional[Text] = None,
+    persist_nlu_training_data: bool = False,
     kwargs: Optional[Dict] = None,
 ):
 
@@ -214,6 +224,7 @@ async def _do_training(
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
+            persist_nlu_training_data=persist_nlu_training_data,
         )
     else:
         print_color(
@@ -382,6 +393,7 @@ async def _train_nlu_async(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
+    persist_nlu_training_data: bool = False,
 ):
     # training NLU only hence the training files still have to be selected
     file_importer = TrainingDataImporter.load_nlu_importer_from_config(
@@ -401,6 +413,7 @@ async def _train_nlu_async(
         output=output,
         train_path=train_path,
         fixed_model_name=fixed_model_name,
+        persist_nlu_training_data=persist_nlu_training_data,
     )
 
 
@@ -409,6 +422,7 @@ async def _train_nlu_with_validated_data(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
+    persist_nlu_training_data: bool = False,
 ) -> Optional[Text]:
     """Train NLU with validated training and config data."""
 
@@ -424,7 +438,11 @@ async def _train_nlu_with_validated_data(
         config = await file_importer.get_config()
         print_color("Training NLU model...", color=bcolors.OKBLUE)
         _, nlu_model, _ = await rasa.nlu.train(
-            config, file_importer, _train_path, fixed_model_name="nlu"
+            config,
+            file_importer,
+            _train_path,
+            fixed_model_name="nlu",
+            persist_nlu_training_data=persist_nlu_training_data,
         )
         print_color("NLU model training completed.", color=bcolors.OKBLUE)
 

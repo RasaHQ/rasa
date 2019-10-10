@@ -24,8 +24,8 @@ def test_node_ordering():
         "f": [],
     }
     sorted_nodes, removed_edges = StoryGraph.topological_sort(example_graph)
-
-    assert removed_edges == set()
+    # sorting removed_edges converting set converting it to list
+    assert removed_edges == list()
     check_graph_is_sorted(example_graph, sorted_nodes, removed_edges)
 
 

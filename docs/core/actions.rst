@@ -10,12 +10,13 @@ Actions
 .. edit-link::
 
 Actions are the things your bot runs in response to user input.
-There are three kinds of actions in Rasa:
+There are four kinds of actions in Rasa:
 
- 1. **Utterance actions**: start with ``utter_``, just send a message
+ 1. **Utterance actions**: start with ``utter_`` and send a specific message
     to the user
- 2. **Custom actions**: any other action, these actions can run arbitrary code
- 3. **Default actions**: e.g. ``action_listen``, ``action_restart``,
+ 2. **Retrieval actions**: start with ``respond_`` and send a message selected by a retrieval model
+ 3. **Custom actions**: run arbitrary code and send any number of messages (or none).
+ 4. **Default actions**: e.g. ``action_listen``, ``action_restart``,
     ``action_default_fallback``
 
 .. contents::
@@ -41,6 +42,13 @@ See :ref:`responses` for more details.
 If you use an external NLG service, you don't need to specify the
 templates in the domain, but you still need to add the utterance names
 to the actions list of the domain.
+
+
+Retrieval Actions
+-----------------
+
+Retrieval actions make it easier to work with a large number of similar intents like chitchat and FAQs.
+See :ref:`retrieval-actions` to learn moree.
 
 .. _custom-actions:
 
@@ -68,6 +76,13 @@ And pass it to the scripts using ``--endpoints endpoints.yml``.
 You can create an action server in node.js, .NET, java, or any
 other language and define your actions there - but we provide
 a small python SDK to make development there even easier.
+
+.. note::
+
+    Rasa uses a ticket lock mechanism to ensure incoming messages from the same
+    conversation ID do not interfere with each other and are processed in the right
+    order. If you expect your custom action to take more than 60 seconds to run, please
+    set the ``TICKET_LOCK_LIFETIME`` environment variable to your expected value.
 
 Custom Actions Written in Python
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -190,6 +205,7 @@ using the :ref:`callbackInput` channel to send messages to a webhook.
    reverts itself by appending a ``ActionReverted`` event to the end of the
    conversation tracker.
 
+.. _default-actions:
 
 Default Actions
 ---------------

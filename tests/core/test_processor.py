@@ -1,3 +1,4 @@
+import aiohttp
 import asyncio
 import datetime
 import uuid
@@ -5,8 +6,11 @@ import uuid
 import pytest
 from aioresponses import aioresponses
 
+from unittest.mock import patch
+
 import rasa.utils.io
 from rasa.core import jobs
+from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
     ActionExecuted,
@@ -16,19 +20,20 @@ from rasa.core.events import (
     Restarted,
     UserUttered,
 )
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.slots import Slot
+from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
+from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
+from rasa.core.domain import Domain
 
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def test_message_processor(
@@ -62,6 +67,28 @@ async def test_parsing(default_processor: MessageProcessor):
     assert parsed["entities"][0]["entity"] == "name"
 
 
+async def test_log_unseen_intent(default_processor: MessageProcessor):
+    test_logger = logging.getLogger("rasa.core.processor")
+    with patch.object(test_logger, "warning") as mock_warning:
+        message = UserMessage('/love{"name": "RASA"}')
+        parsed = await default_processor._parse_message(message)
+        default_processor._log_unseen_intent(parsed)
+        mock_warning.assert_called_with(
+            "Interpreter parsed an intent 'love' that is not defined in the domain."
+        )
+
+
+async def test_log_unseen_enitites(default_processor: MessageProcessor):
+    test_logger = logging.getLogger("rasa.core.processor")
+    with patch.object(test_logger, "warning") as mock_warning:
+        message = UserMessage('/love{"test_entity": "RASA"}')
+        parsed = await default_processor._parse_message(message)
+        default_processor._log_unseen_enitites(parsed)
+        mock_warning.assert_called_with(
+            "Interpreter parsed an entity 'test_entity' that is not defined in the domain."
+        )
+
+
 async def test_http_parsing():
     message = UserMessage("lunch?")
 
@@ -80,6 +107,37 @@ async def test_http_parsing():
         r = latest_request(mocked, "POST", "https://interpreter.com/model/parse")
 
         assert r
+
+
+async def mocked_parse(self, text, message_id=None, tracker=None):
+    """Mock parsing a text message and augment it with the slot
+    value from the tracker's state."""
+
+    return {
+        "intent": {"name": "", "confidence": 0.0},
+        "entities": [],
+        "text": text,
+        "requested_language": tracker.get_slot("requested_language"),
+    }
+
+
+async def test_parsing_with_tracker():
+    tracker = DialogueStateTracker.from_dict("1", [], [Slot("requested_language")])
+
+    # we'll expect this value 'en' to be part of the result from the interpreter
+    tracker._set_slot("requested_language", "en")
+
+    endpoint = EndpointConfig("https://interpreter.com")
+    with aioresponses() as mocked:
+        mocked.post("https://interpreter.com/parse", repeat=True, status=200)
+
+        # mock the parse function with the one defined for this test
+        with patch.object(RasaNLUHttpInterpreter, "parse", mocked_parse):
+            interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
+            agent = Agent(None, None, interpreter)
+            result = await agent.parse_message_using_nlu_interpreter("lunch?", tracker)
+
+            assert result["requested_language"] == "en"
 
 
 async def test_reminder_scheduled(
@@ -174,7 +232,7 @@ async def test_reminder_cancelled(
     assert len((await jobs.scheduler()).get_jobs()) == 1
 
     # execute the jobs
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
 
     tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action

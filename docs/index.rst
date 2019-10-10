@@ -59,8 +59,10 @@ Understand messages, hold conversations, and connect to messaging channels and A
    core/policies
    core/slots
    core/forms
+   core/retrieval-actions
    core/interactive-learning
    core/fallback-actions
+   core/knowledge-bases
 
 .. toctree::
    :maxdepth: 1
@@ -86,6 +88,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/tracker
    api/tracker-stores
    api/event-brokers
+   api/lock-stores
    api/training-data-importers
    api/featurization
    migration-guide
@@ -100,3 +103,10 @@ Understand messages, hold conversations, and connect to messaging channels and A
    Wit.ai <migrate-from/facebook-wit-ai-to-rasa>
    LUIS <migrate-from/microsoft-luis-to-rasa>
    IBM Watson <migrate-from/ibm-watson-to-rasa>
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Reference
+
+   glossary

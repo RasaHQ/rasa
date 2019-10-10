@@ -8,6 +8,7 @@ import os
 from typing import Text, List, Dict, Any, Union, Optional, Tuple
 
 from rasa.core import constants
+from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.utils.endpoints import EndpointConfig
 
@@ -16,7 +17,10 @@ logger = logging.getLogger(__name__)
 
 class NaturalLanguageInterpreter(object):
     async def parse(
-        self, text: Text, message_id: Optional[Text] = None
+        self,
+        text: Text,
+        message_id: Optional[Text] = None,
+        tracker: DialogueStateTracker = None,
     ) -> Dict[Text, Any]:
         raise NotImplementedError(
             "Interpreter needs to be able to parse messages into structured output."
@@ -153,7 +157,10 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             return None, 0.0, []
 
     async def parse(
-        self, text: Text, message_id: Optional[Text] = None
+        self,
+        text: Text,
+        message_id: Optional[Text] = None,
+        tracker: DialogueStateTracker = None,
     ) -> Dict[Text, Any]:
         """Parse a text message."""
 
@@ -180,7 +187,10 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
     async def parse(
-        self, text: Text, message_id: Optional[Text] = None
+        self,
+        text: Text,
+        message_id: Optional[Text] = None,
+        tracker: DialogueStateTracker = None,
     ) -> Dict[Text, Any]:
         """Parse a text message.
 
@@ -191,12 +201,15 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "entities": [],
             "text": "",
         }
-        result = await self._rasa_http_parse(text, message_id)
+        result = await self._rasa_http_parse(text, message_id, tracker)
 
         return result if result is not None else default_return
 
     async def _rasa_http_parse(
-        self, text: Text, message_id: Optional[Text] = None
+        self,
+        text: Text,
+        message_id: Optional[Text] = None,
+        tracker: DialogueStateTracker = None,
     ) -> Optional[Dict[Text, Any]]:
         """Send a text message to a running rasa NLU http server.
         Return `None` on failure."""
@@ -252,7 +265,10 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
             self.interpreter = None
 
     async def parse(
-        self, text: Text, message_id: Optional[Text] = None
+        self,
+        text: Text,
+        message_id: Optional[Text] = None,
+        tracker: DialogueStateTracker = None,
     ) -> Dict[Text, Any]:
         """Parse a text message.
 

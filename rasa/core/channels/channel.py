@@ -9,8 +9,10 @@ from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
 
 import rasa.utils.endpoints
+from rasa.cli import utils as cli_utils
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
+from sanic.response import HTTPResponse
 
 try:
     from urlparse import urljoin  # pytype: disable=import-error
@@ -20,7 +22,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class UserMessage(object):
+class UserMessage:
     """Represents an incoming message.
 
      Includes the channel the responses should be sent to."""
@@ -89,56 +91,21 @@ def register(
     app.input_channels = input_channels
 
 
-def button_to_string(button, idx=0):
-    """Create a string representation of a button."""
-
-    title = button.pop("title", "")
-
-    if "payload" in button:
-        payload = " ({})".format(button.pop("payload"))
-    else:
-        payload = ""
-
-    # if there are any additional attributes, we append them to the output
-    if button:
-        details = " - {}".format(json.dumps(button, sort_keys=True))
-    else:
-        details = ""
-
-    button_string = "{idx}: {title}{payload}{details}".format(
-        idx=idx + 1, title=title, payload=payload, details=details
-    )
-
-    return button_string
-
-
-def element_to_string(element, idx=0):
-    """Create a string representation of an element."""
-
-    title = element.pop("title", "")
-
-    element_string = "{idx}: {title} - {element}".format(
-        idx=idx + 1, title=title, element=json.dumps(element, sort_keys=True)
-    )
-
-    return element_string
-
-
-class InputChannel(object):
+class InputChannel:
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         """Every input channel needs a name to identify it."""
         return cls.__name__
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> "InputChannel":
         return cls()
 
-    def url_prefix(self):
+    def url_prefix(self) -> Text:
         return self.name()
 
     def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[None]]
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
         """Defines a Sanic blueprint.
 
@@ -147,7 +114,7 @@ class InputChannel(object):
         raise NotImplementedError("Component listener needs to provide blueprint.")
 
     @classmethod
-    def raise_missing_credentials_exception(cls):
+    def raise_missing_credentials_exception(cls) -> None:
         raise Exception(
             "To use the {} input channel, you need to "
             "pass a credentials file using '--credentials'. "
@@ -173,15 +140,30 @@ class InputChannel(object):
         """
         pass
 
+    def get_metadata(self, request: Request) -> Optional[Dict[Text, Any]]:
+        """Extracts additional information from the incoming request.
 
-class OutputChannel(object):
+         Implementing this function is not required. However, it can be used to extract
+         metadata from the request. The return value is passed on to the
+         ``UserMessage`` object and stored in the conversation tracker.
+
+        Args:
+            request: incoming request with the message of the user
+
+        Returns:
+            Metadata which was extracted from the request.
+        """
+        pass
+
+
+class OutputChannel:
     """Output channel base class.
 
     Provides sane implementation of the send methods
     for text only output channels."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         """Every output channel needs a name to identify it."""
         return cls.__name__
 
@@ -231,16 +213,14 @@ class OutputChannel(object):
     ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        await self.send_text_message(recipient_id, "Image: {}".format(image), **kwargs)
+        await self.send_text_message(recipient_id, "Image: {}".format(image))
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Text, **kwargs: Any
     ) -> None:
         """Sends an attachment. Default will just post as a string."""
 
-        await self.send_text_message(
-            recipient_id, "Attachment: {}".format(attachment), **kwargs
-        )
+        await self.send_text_message(recipient_id, "Attachment: {}".format(attachment))
 
     async def send_text_with_buttons(
         self,
@@ -253,10 +233,10 @@ class OutputChannel(object):
 
         Default implementation will just post the buttons as a string."""
 
-        await self.send_text_message(recipient_id, text, **kwargs)
+        await self.send_text_message(recipient_id, text)
         for idx, button in enumerate(buttons):
-            button_msg = button_to_string(button, idx)
-            await self.send_text_message(recipient_id, button_msg, **kwargs)
+            button_msg = cli_utils.button_to_string(button, idx)
+            await self.send_text_message(recipient_id, button_msg)
 
     async def send_quick_replies(
         self,
@@ -269,7 +249,7 @@ class OutputChannel(object):
 
         Default implementation will just send as buttons."""
 
-        await self.send_text_with_buttons(recipient_id, text, quick_replies, **kwargs)
+        await self.send_text_with_buttons(recipient_id, text, quick_replies)
 
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
@@ -283,7 +263,7 @@ class OutputChannel(object):
                 title=element.get("title", ""), subtitle=element.get("subtitle", "")
             )
             await self.send_text_with_buttons(
-                recipient_id, element_msg, element.get("buttons", [], **kwargs)
+                recipient_id, element_msg, element.get("buttons", [])
             )
 
     async def send_custom_json(
@@ -293,7 +273,7 @@ class OutputChannel(object):
 
         Default implementation will just post the json contents as a string."""
 
-        await self.send_text_message(recipient_id, json.dumps(json_message), **kwargs)
+        await self.send_text_message(recipient_id, json.dumps(json_message))
 
 
 class CollectingOutputChannel(OutputChannel):
@@ -301,17 +281,22 @@ class CollectingOutputChannel(OutputChannel):
 
     (doesn't send them anywhere, just collects them)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.messages = []
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "collector"
 
     @staticmethod
     def _message(
-        recipient_id, text=None, image=None, buttons=None, attachment=None, custom=None
-    ):
+        recipient_id: Text,
+        text: Text = None,
+        image: Text = None,
+        buttons: List[Dict[Text, Any]] = None,
+        attachment: Text = None,
+        custom: Dict[Text, Any] = None,
+    ) -> Dict:
         """Create a message object that will be stored."""
 
         obj = {
@@ -326,13 +311,13 @@ class CollectingOutputChannel(OutputChannel):
         # filter out any values that are `None`
         return utils.remove_none_values(obj)
 
-    def latest_output(self):
+    def latest_output(self) -> Optional[Dict[Text, Any]]:
         if self.messages:
             return self.messages[-1]
         else:
             return None
 
-    async def _persist_message(self, message) -> None:
+    async def _persist_message(self, message: Dict[Text, Any]) -> None:
         self.messages.append(message)  # pytype: disable=bad-return-type
 
     async def send_text_message(
@@ -378,7 +363,7 @@ class QueueOutputChannel(CollectingOutputChannel):
     (doesn't send them anywhere, just collects them)."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "queue"
 
     # noinspection PyMissingConstructor
@@ -401,20 +386,23 @@ class RestInput(InputChannel):
     retrieve responses from the agent."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "rest"
 
     @staticmethod
     async def on_message_wrapper(
-        on_new_message: Callable[[UserMessage], Awaitable[None]],
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
         text: Text,
         queue: Queue,
         sender_id: Text,
         input_channel: Text,
+        metadata: Optional[Dict[Text, Any]],
     ) -> None:
         collector = QueueOutputChannel(queue)
 
-        message = UserMessage(text, collector, sender_id, input_channel=input_channel)
+        message = UserMessage(
+            text, collector, sender_id, input_channel=input_channel, metadata=metadata
+        )
         await on_new_message(message)
 
         await queue.put("DONE")  # pytype: disable=bad-return-type
@@ -435,12 +423,13 @@ class RestInput(InputChannel):
         text: Text,
         sender_id: Text,
         input_channel: Text,
+        metadata: Optional[Dict[Text, Any]],
     ) -> Callable[[Any], Awaitable[None]]:
         async def stream(resp: Any) -> None:
             q = Queue()
             task = asyncio.ensure_future(
                 self.on_message_wrapper(
-                    on_new_message, text, q, sender_id, input_channel
+                    on_new_message, text, q, sender_id, input_channel, metadata
                 )
             )
             result = None  # declare variable up front to avoid pytype error
@@ -454,7 +443,9 @@ class RestInput(InputChannel):
 
         return stream  # pytype: disable=bad-return-type
 
-    def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[None]]):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[None]]
+    ) -> Blueprint:
         custom_webhook = Blueprint(
             "custom_webhook_{}".format(type(self).__name__),
             inspect.getmodule(self).__name__,
@@ -462,22 +453,23 @@ class RestInput(InputChannel):
 
         # noinspection PyUnusedLocal
         @custom_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(request: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @custom_webhook.route("/webhook", methods=["POST"])
-        async def receive(request: Request):
+        async def receive(request: Request) -> HTTPResponse:
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
             should_use_stream = rasa.utils.endpoints.bool_arg(
                 request, "stream", default=False
             )
             input_channel = self._extract_input_channel(request)
+            metadata = self.get_metadata(request)
 
             if should_use_stream:
                 return response.stream(
                     self.stream_response(
-                        on_new_message, text, sender_id, input_channel
+                        on_new_message, text, sender_id, input_channel, metadata
                     ),
                     content_type="text/event-stream",
                 )
@@ -487,7 +479,11 @@ class RestInput(InputChannel):
                 try:
                     await on_new_message(
                         UserMessage(
-                            text, collector, sender_id, input_channel=input_channel
+                            text,
+                            collector,
+                            sender_id,
+                            input_channel=input_channel,
+                            metadata=metadata,
                         )
                     )
                 except CancelledError:

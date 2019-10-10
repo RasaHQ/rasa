@@ -5,7 +5,6 @@ import os
 import tensorflow as tf
 import numpy as np
 import warnings
-import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 import rasa.utils.io
@@ -20,6 +19,7 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import obtain_verbosity
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
 # pytype: disable=import-error
@@ -55,10 +55,10 @@ class KerasPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = 1,
+        priority: int = DEFAULT_POLICY_PRIORITY,
         model: Optional[tf.keras.models.Sequential] = None,
         graph: Optional[tf.Graph] = None,
-        session: Optional[tf.Session] = None,
+        session: Optional[tf.compat.v1.Session] = None,
         current_epoch: int = 0,
         max_history: Optional[int] = None,
         **kwargs: Any
@@ -77,11 +77,13 @@ class KerasPolicy(Policy):
         self.current_epoch = current_epoch
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
+        from rasa.utils.train_utils import load_tf_config
+
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
         # filter out kwargs that are used explicitly
-        self._tf_config = self._load_tf_config(config)
+        self._tf_config = load_tf_config(config)
         self.rnn_size = config.pop("rnn_size")
         self.epochs = config.pop("epochs")
         self.batch_size = config.pop("batch_size")
@@ -181,7 +183,7 @@ class KerasPolicy(Policy):
         with self.graph.as_default():
             # set random seed in tf
             tf.set_random_seed(self.random_seed)
-            self.session = tf.Session(config=self._tf_config)
+            self.session = tf.compat.v1.Session(config=self._tf_config)
 
             with self.session.as_default():
                 if self.model is None:
@@ -313,7 +315,7 @@ class KerasPolicy(Policy):
 
                 graph = tf.Graph()
                 with graph.as_default():
-                    session = tf.Session(config=_tf_config)
+                    session = tf.compat.v1.Session(config=_tf_config)
                     with session.as_default():
                         with warnings.catch_warnings():
                             warnings.simplefilter("ignore")

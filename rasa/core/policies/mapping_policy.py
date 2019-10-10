@@ -1,7 +1,8 @@
 import logging
 import json
 import os
-from typing import Any, List, Text
+import typing
+from typing import Any, List, Text, Optional
 
 import rasa.utils.io
 
@@ -12,10 +13,15 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
 )
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import MAPPING_POLICY_PRIORITY
+
+if typing.TYPE_CHECKING:
+    from rasa.core.policies.ensemble import PolicyEnsemble
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +33,38 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
-    def __init__(self, priority: int = 3) -> None:
+    @staticmethod
+    def _standard_featurizer():
+        return None
+
+    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
         """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__(priority=priority)
+
+    @classmethod
+    def validate_against_domain(
+        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ) -> None:
+        if not domain:
+            return
+
+        has_mapping_policy = ensemble is not None and any(
+            isinstance(p, cls) for p in ensemble.policies
+        )
+        has_triggers_in_domain = any(
+            [
+                "triggers" in properties
+                for intent, properties in domain.intent_properties.items()
+            ]
+        )
+        if has_triggers_in_domain and not has_mapping_policy:
+            raise InvalidDomain(
+                "You have defined triggers in your domain, but haven't "
+                "added the MappingPolicy to your policy ensemble. "
+                "Either remove the triggers from your domain or "
+                "exclude the MappingPolicy from your policy configuration."
+            )
 
     def train(
         self,
@@ -80,9 +114,9 @@ class MappingPolicy(Policy):
         elif tracker.latest_action_name == action and action is not None:
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.action_name == action
-            if latest_action.policy == type(
-                self
-            ).__name__ or latest_action.policy.endswith("_" + type(self).__name__):
+            if latest_action.policy and latest_action.policy.endswith(
+                type(self).__name__
+            ):
                 # this ensures that we only predict listen, if we predicted
                 # the mapped action
                 logger.debug(
@@ -101,6 +135,10 @@ class MappingPolicy(Policy):
                         action, intent, latest_action.policy
                     )
                 )
+        elif action == ACTION_RESTART_NAME:
+            idx = domain.index_for_action(ACTION_RESTART_NAME)
+            prediction[idx] = 1
+            logger.debug("Restarting the conversation with action_restart.")
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "

@@ -1,3 +1,3 @@
-# How many intents are at max put into the output intent
+# How many labels are at max put into the output
 # ranking, everything else will be cut off
-INTENT_RANKING_LENGTH = 10
+LABEL_RANKING_LENGTH = 10

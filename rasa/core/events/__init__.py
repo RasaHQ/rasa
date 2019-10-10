@@ -184,7 +184,7 @@ class UserUttered(Event):
         intent=None,
         entities=None,
         parse_data: Optional[Dict[Text, Any]] = None,
-        timestamp: int = time.time(),
+        timestamp: Optional[int] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
@@ -377,6 +377,7 @@ class BotUttered(Event):
 
         m = self.data.copy()
         m["text"] = self.text
+        m["timestamp"] = self.timestamp
         m.update(self.metadata)
 
         if m.get("image") == m.get("attachment"):

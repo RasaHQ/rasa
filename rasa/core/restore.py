@@ -8,7 +8,7 @@ import rasa.utils.io
 import typing
 from typing import List, Text, Tuple
 
-from rasa.cli import utils as cliutils
+from rasa.cli import utils as cli_utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.channels import console
 from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
@@ -93,7 +93,7 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
             )
 
             actions_between_utterances = []
-            cliutils.print_success(event.text)
+            cli_utils.print_success(event.text)
             out = CollectingOutputChannel()
             await agent.handle_text(
                 event.text, sender_id=tracker.sender_id, output_channel=out
@@ -107,7 +107,7 @@ async def replay_events(tracker: DialogueStateTracker, agent: "Agent") -> None:
                     rasa.cli.utils.print_color("Buttons:", color=color)
                     for idx, button in enumerate(buttons):
                         rasa.cli.utils.print_color(
-                            console.button_to_string(button, idx), color=color
+                            cli_utils.button_to_string(button, idx), color=color
                         )
 
             tracker = agent.tracker_store.retrieve(tracker.sender_id)
