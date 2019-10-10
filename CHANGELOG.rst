@@ -27,6 +27,7 @@ Added
   (``rasa.core.agent.handle_channels()``). The number of workers can be set using the
   environment variable ``SANIC_WORKERS`` (default: 1). A value of >1 is allowed only in
   combination with ``RedisLockStore`` as the lock store.
+- The Rasa Docker image includes a Health check.
 
 Changed
 -------
@@ -39,6 +40,8 @@ Changed
   Deserialisation of pickled trackers will be deprecated in version 2.0. For now,
   trackers are still loaded from pickle but will be dumped as json in any subsequent
   save operations.
+- Don't run the Rasa Docker image as ``root``.
+- Use multi-stage builds to reduce the size of the Rasa Docker image.
 
 Removed
 -------
