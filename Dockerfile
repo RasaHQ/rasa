@@ -4,7 +4,7 @@ FROM python:3.6-slim as base
 WORKDIR /build
 
 # Create virtualenv to isolate builds
-RUN python -m venv /build
+#RUN python -m venv --copies /build
 
 # Make sure we use the virtualenv
 ENV PATH="/build/bin:$PATH"
@@ -30,6 +30,10 @@ RUN apt-get update -qq && \
   libpng-dev \
   libpq-dev \
   curl
+
+ENV VIRTUAL_ENV=/build
+RUN pip3 install virtualenv && python3 -m virtualenv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Copy only what we really need
 COPY README.md .
@@ -59,9 +63,12 @@ VOLUME /tmp
 RUN chgrp -R 0 . && chmod -R g=u .
 
 # Don't run as root
-USER 1001
+#USER 1001
 
 EXPOSE 5005
+
+HEALTHCHECK --start-period=30s \
+  CMD curl -f http://localhost:5005 || exit 1
 
 ENTRYPOINT ["rasa"]
 CMD ["--help"]
