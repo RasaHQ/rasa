@@ -191,9 +191,7 @@ async def _train_async_internal(
     return old_model
 
 
-async def _update_domain(
-    file_importer: TrainingDataImporter, train_path: Text
-) -> None:
+async def _update_domain(file_importer: TrainingDataImporter, train_path: Text) -> None:
     model_path = os.path.join(train_path, "core")
     domain = await file_importer.get_domain()
     domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
