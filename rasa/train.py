@@ -191,6 +191,15 @@ async def _train_async_internal(
     return old_model
 
 
+async def _update_domain(
+    file_importer: TrainingDataImporter, train_path: Text
+) -> None:
+    model_path = os.path.join(train_path, "core")
+    domain = await file_importer.get_domain()
+    domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
+    domain.persist_specification(model_path)
+
+
 async def _do_training(
     file_importer: TrainingDataImporter,
     output_path: Text,
@@ -213,10 +222,7 @@ async def _do_training(
                 "the updated templates will be created.",
                 color=bcolors.OKBLUE,
             )
-            model_path = os.path.join(train_path, "core")
-            domain = await file_importer.get_domain()
-            domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
-            domain.persist_specification(model_path)
+            await _update_domain(file_importer, train_path)
         else:
             await _train_core_with_validated_data(
                 file_importer,
