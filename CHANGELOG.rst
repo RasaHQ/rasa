@@ -15,8 +15,6 @@ Added
 
 Fixed
 -----
-- fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
-- Fixed text processing of ``intent`` attribute inside ``CountVectorFeaturizer``.
 
 Changed
 -------
@@ -24,15 +22,20 @@ Changed
 Removed
 -------
 
-[1.3.9] - 2019-10-09
+[1.3.9] - 2019-10-10
 ^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- port of 1.2.10 (support for RabbitMQ TLS authentication and ``port`` key in
-  event broker endpoint config)
-- port of 1.2.11 (support for passing a CA file for SSL certificate verification via the
-  --ssl-ca-file flag)
+- Port of 1.2.10 (support for RabbitMQ TLS authentication and ``port`` key in
+  event broker endpoint config).
+- Port of 1.2.11 (support for passing a CA file for SSL certificate verification via the
+  --ssl-ca-file flag).
+
+Fixed
+-----
+- Fixed the hanging HTTP call with ``ner_duckling_http`` pipeline.
+- Fixed text processing of ``intent`` attribute inside ``CountVectorFeaturizer``.
 
 [1.3.8] - 2019-10-08
 ^^^^^^^^^^^^^^^^^^^^
@@ -61,6 +64,7 @@ Fixed
 
 [1.3.6] - 2019-09-21
 ^^^^^^^^^^^^^^^^^^^^
+
 Added
 -----
 - Added the ability for users to specify a conversation id to send a message to when
@@ -92,6 +96,9 @@ Fixed
   for every given attribute. Non-content-bearing samples are converted to empty
   ``Doc``-objects. The resulting lists are merged with their preserved order and
   properly returned.
+- asyncio warnings are now only printed if the callback takes more than 100ms
+  (up from 1ms).
+- ``agent.load_model_from_server`` no longer affects logging.
 
 Changed
 -------
@@ -100,12 +107,6 @@ Changed
   want to save the trained model in the default model directory (``models``)
   (default behavior) or in a temporary directory by specifying the
   ``save_to_default_model_directory`` field in the training request.
-
-Fixed
------
-- asyncio warnings are now only printed if the callback takes more than 100ms
-  (up from 1ms)
-- ``agent.load_model_from_server`` no longer affects logging
 
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
