@@ -803,6 +803,16 @@ async def _write_stories_to_file(
                 f.write("\n" + tracker.export_stories(SAVE_IN_E2E))
 
 
+def _filter_messages(msgs: List[Message]) -> List[Message]:
+    """Filter messages removing those that start with INTENT_MESSAGE_PREFIX"""
+
+    filtered_messages = []
+    for msg in msgs:
+        if not msg.text.startswith(INTENT_MESSAGE_PREFIX):
+            filtered_messages.append(msg)
+    return filtered_messages
+
+
 async def _write_nlu_to_file(
     export_nlu_path: Text, events: List[Dict[Text, Any]]
 ) -> None:
@@ -810,6 +820,7 @@ async def _write_nlu_to_file(
     from rasa.nlu.training_data import TrainingData
 
     msgs = _collect_messages(events)
+    msgs = _filter_messages(msgs)
 
     # noinspection PyBroadException
     try:

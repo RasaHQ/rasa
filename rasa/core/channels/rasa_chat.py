@@ -1,5 +1,5 @@
 import json
-from typing import Text, Optional, Dict
+from typing import Text, Optional, Dict, Any
 
 import aiohttp
 import logging
@@ -7,7 +7,7 @@ from sanic.exceptions import abort
 import jwt
 
 from rasa.core import constants
-from rasa.core.channels.channel import RestInput
+from rasa.core.channels.channel import RestInput, InputChannel
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from sanic.request import Request
 
@@ -22,17 +22,17 @@ class RasaChatInput(RestInput):
     """Chat input channel for Rasa X"""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "rasa"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(credentials.get("url"))
+        return cls(credentials.get("url"))  # pytype: disable=attribute-error
 
-    def __init__(self, url):
+    def __init__(self, url: Optional[Text]) -> None:
         self.base_url = url
         self.jwt_key = None
         self.jwt_algorithm = None

@@ -146,8 +146,8 @@ async def record_messages(
 
 class CmdlineInput(RestInput):
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "cmdline"
 
-    def url_prefix(self):
+    def url_prefix(self) -> Text:
         return RestInput.name()

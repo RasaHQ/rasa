@@ -1,4 +1,5 @@
 import pytest
+import copy
 
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.ensemble import (
@@ -158,3 +159,25 @@ def test_valid_policy_configurations(valid_config):
 def test_invalid_policy_configurations(invalid_config):
     with pytest.raises(InvalidPolicyConfig):
         PolicyEnsemble.from_dict(invalid_config)
+
+
+def test_from_dict_does_not_change_passed_dict_parameter():
+    config = {
+        "policies": [
+            {
+                "name": "KerasPolicy",
+                "featurizer": [
+                    {
+                        "name": "MaxHistoryTrackerFeaturizer",
+                        "max_history": 5,
+                        "state_featurizer": [{"name": "BinarySingleStateFeaturizer"}],
+                    }
+                ],
+            }
+        ]
+    }
+
+    config_copy = copy.deepcopy(config)
+    PolicyEnsemble.from_dict(config_copy)
+
+    assert config == config_copy

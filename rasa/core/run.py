@@ -9,10 +9,10 @@ from sanic import Sanic
 
 import rasa.core.utils
 import rasa.utils
-import rasa.utils.io
 import rasa.utils.common
-from rasa import model
-from rasa import server
+import rasa.utils.io
+from rasa import model, server
+from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.channels import console
@@ -77,7 +77,7 @@ def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
 
 def configure_app(
     input_channels: Optional[List["InputChannel"]] = None,
-    cors: Optional[Union[Text, List[Text]]] = None,
+    cors: Optional[Union[Text, List[Text], None]] = None,
     auth_token: Optional[Text] = None,
     enable_api: bool = True,
     jwt_secret: Optional[Text] = None,
@@ -184,9 +184,10 @@ def serve_application(
         "before_server_start",
     )
 
-    async def clear_model_files(app: Sanic, _loop: Text) -> None:
+    # noinspection PyUnresolvedReferences
+    async def clear_model_files(_app: Sanic, _loop: Text) -> None:
         if app.agent.model_directory:
-            shutil.rmtree(app.agent.model_directory)
+            shutil.rmtree(_app.agent.model_directory)
 
     app.register_listener(clear_model_files, "after_server_stop")
 
@@ -196,7 +197,10 @@ def serve_application(
         host="0.0.0.0",
         port=port,
         ssl=ssl_context,
-        backlog=int(os.environ.get("SANIC_BACKLOG", "100")),
+        backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
+        workers=rasa.core.utils.number_of_sanic_workers(
+            endpoints.lock_store if endpoints else None
+        ),
     )
 
 
@@ -214,6 +218,7 @@ async def load_agent_on_start(
     (hence the `app` and `loop` arguments)."""
     import rasa.core.brokers.utils as broker_utils
 
+    # noinspection PyBroadException
     try:
         with model.get_model(model_path) as unpacked_model:
             _, nlu_model = model.get_model_subdirectories(unpacked_model)
