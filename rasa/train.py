@@ -163,7 +163,7 @@ async def _train_async_internal(
         new_fingerprint, old_model, train_path
     )
 
-    if force_training or retrain_core or retrain_nlu or retrain_nlg:
+    if any([force_training, retrain_core, retrain_nlu, retrain_nlg]):
         await _do_training(
             file_importer,
             output_path=output_path,

@@ -68,7 +68,7 @@ SECTION_NLG = Section(name="NLG Templates", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
-    """Get a model and unpacks it. Raises a `ModelNotFound` exception if
+    """Get a model and unpack it. Raises a `ModelNotFound` exception if
     no model could be found at the provided path.
 
     Args:
@@ -340,7 +340,7 @@ def merge_model(source: Text, target: Text) -> bool:
         return False
 
 
-def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text):
+def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text) -> Tuple[bool, bool, bool]: 
     """Check which components of a model should be retrained.
 
     Args:

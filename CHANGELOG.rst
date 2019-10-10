@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Fixed
 -----
-- Do not retrain the entire Core model if only the Templates section of the domain is changed.
+- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
   when running ``rasa train core``
 

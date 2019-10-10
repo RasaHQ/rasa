@@ -2,7 +2,7 @@ import os
 import tempfile
 import time
 import shutil
-from typing import Text, Optional, List, Any
+from typing import Text, Optional, Any
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -27,7 +27,6 @@ from rasa.model import (
     FINGERPRINT_CONFIG_NLU_KEY,
     SECTION_CORE,
     SECTION_NLU,
-    SECTION_NLG,
     create_package_rasa,
     get_latest_model,
     get_model,
