@@ -2,9 +2,10 @@ import logging
 import asyncio
 from typing import List, Set, Text
 from rasa.core.domain import Domain
+from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
-from rasa.core.training.dsl import StoryStep
+from rasa.core.training.structures import StoryGraph
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
 from rasa.core.training.dsl import SlotSet
@@ -16,22 +17,22 @@ logger = logging.getLogger(__name__)
 class Validator(object):
     """A class used to verify usage of intents and utterances."""
 
-    def __init__(self, domain: Domain, intents: TrainingData, stories: List[StoryStep]):
+    def __init__(self, domain: Domain, intents: TrainingData, story_graph: StoryGraph):
         """Initializes the Validator object. """
 
         self.domain = domain
         self.intents = intents
-        self.stories = stories
+        self.story_graph = story_graph
 
     @classmethod
     async def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
 
         domain = await importer.get_domain()
-        stories = await importer.get_stories()
+        story_graph = await importer.get_stories()
         intents = await importer.get_nlu_data()
 
-        return cls(domain, intents, stories.story_steps)
+        return cls(domain, intents, story_graph)
 
     def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
@@ -68,7 +69,7 @@ class Validator(object):
 
         stories_intents = {
             event.intent["name"]
-            for story in self.stories
+            for story in self.story_graph.story_steps
             for event in story.events
             if type(event) == UserUttered
         }
@@ -134,7 +135,7 @@ class Validator(object):
         utterance_actions = self._gather_utterance_actions()
         stories_utterances = set()
 
-        for story in self.stories:
+        for story in self.story_graph.story_steps:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
                     continue
@@ -166,18 +167,33 @@ class Validator(object):
     def verify_story_structure(self, ignore_warnings: bool = True) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
+        return True
+
         from rasa.utils.story_tree import Tree
         # Generate the story tree
-        n = 0
         tree = Tree()
-        slots = {}
-        for story in self.stories:
-            n += 1
+        trackers = TrainingDataGenerator(
+            self.story_graph,
+            domain=self.domain,
+            remove_duplicates=False,
+            augmentation_factor=0).generate()
+        for story, tracker in zip(self.story_graph.story_steps, trackers):
+            if story.block_name not in tracker.sender_id.split(" > "):
+                # tracker = search(trackers)
+                logger.error(f"Story <{story.block_name}> not in tracker with id <{tracker.sender_id}>")
             tree.reset(story=story.block_name)
+            states = tracker.past_states(self.domain)
+            idx = 0
+            print("\nTracker:")
+            print(tracker)
+            print("\nState list:")
+            print(states)
             for event in story.events:
                 print(event)
                 if isinstance(event, ActionExecuted):
                     tree.add_or_goto("W: " + event.as_story_string())
+                    idx += 1
+                    states[: idx + 1]
                 elif isinstance(event, UserUttered):
                     tree.add_or_goto("U: " + event.as_story_string())
                 elif isinstance(event, SlotSet):
@@ -186,7 +202,8 @@ class Validator(object):
                     logger.error("JJJ: event is neither action, nor a slot, nor a user utterance")
 
         stats = tree.stats()
-        logger.info(tree.to_string(show_labels=True))
+        logger.info(tree.to_string(show_labels=True, only_ambiguous=False))
+        logger.info(stats)
 
         return True
 
