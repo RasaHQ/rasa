@@ -6,6 +6,7 @@ from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
+from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
 from rasa.core.training.dsl import SlotSet
@@ -167,39 +168,40 @@ class Validator(object):
     def verify_story_structure(self, ignore_warnings: bool = True) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
-        return True
+        max_history = 2
 
-        from rasa.utils.story_tree import Tree
         # Generate the story tree
+        from rasa.utils.story_tree import Tree
         tree = Tree()
         trackers = TrainingDataGenerator(
             self.story_graph,
             domain=self.domain,
             remove_duplicates=False,
             augmentation_factor=0).generate()
-        for story, tracker in zip(self.story_graph.story_steps, trackers):
-            if story.block_name not in tracker.sender_id.split(" > "):
-                # tracker = search(trackers)
-                logger.error(f"Story <{story.block_name}> not in tracker with id <{tracker.sender_id}>")
-            tree.reset(story=story.block_name)
-            states = tracker.past_states(self.domain)
-            idx = 0
-            print("\nTracker:")
-            print(tracker)
-            print("\nState list:")
-            print(states)
-            for event in story.events:
-                print(event)
-                if isinstance(event, ActionExecuted):
-                    tree.add_or_goto("W: " + event.as_story_string())
-                    idx += 1
-                    states[: idx + 1]
-                elif isinstance(event, UserUttered):
-                    tree.add_or_goto("U: " + event.as_story_string())
-                elif isinstance(event, SlotSet):
-                    tree.add_or_goto("S: " + event.as_story_string())
-                else:
-                    logger.error("JJJ: event is neither action, nor a slot, nor a user utterance")
+        for story in self.story_graph.story_steps:
+            for tracker in trackers:
+                if story.block_name in tracker.sender_id.split(" > "):
+                    tree.reset(story=tracker.sender_id)
+                    states = tracker.past_states(self.domain)
+                    states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
+                    idx = 0
+                    for event in story.events:
+                        print(event)
+                        if isinstance(event, ActionExecuted):
+                            # only actions which can be
+                            # predicted at a story's start
+                            sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                                states[: idx + 1], max_history
+                            )
+                            print(sliced_states)
+                            idx += 1
+                            tree.add_or_goto("W: " + event.as_story_string())
+                        elif isinstance(event, UserUttered):
+                            tree.add_or_goto("U: " + event.as_story_string())
+                        elif isinstance(event, SlotSet):
+                            tree.add_or_goto("S: " + event.as_story_string())
+                        else:
+                            logger.error("JJJ: event is neither action, nor a slot, nor a user utterance")
 
         stats = tree.stats()
         logger.info(tree.to_string(show_labels=True, only_ambiguous=False))
