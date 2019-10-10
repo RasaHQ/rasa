@@ -15,6 +15,8 @@ Added
 
 Fixed
 -----
+- fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
+- Fixed text processing of ``intent`` attribute inside ``CountVectorFeaturizer``.
 
 Changed
 -------
