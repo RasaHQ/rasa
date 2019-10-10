@@ -6,6 +6,15 @@ WORKDIR /build
 # Create virtualenv to isolate builds
 RUN python -m venv /build
 
+# Install common libraries
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    # required by psycopg2 at build and runtime
+    libpq-dev \
+     # required for health check
+    curl \
+ && apt-get autoremove -y
+
 # Make sure we use the virtualenv
 ENV PATH="/build/bin:$PATH"
 
@@ -15,21 +24,19 @@ FROM base as builder
 WORKDIR /src
 
 # Install all required build libraries
-RUN apt-get update -qq && \
-  apt-get install -y --no-install-recommends \
-  build-essential \
-  wget \
-  openssh-client \
-  graphviz-dev \
-  pkg-config \
-  git-core \
-  openssl \
-  libssl-dev \
-  libffi6 \
-  libffi-dev \
-  libpng-dev \
-  libpq-dev \
-  curl
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    openssh-client \
+    graphviz-dev \
+    pkg-config \
+    git-core \
+    openssl \
+    libssl-dev \
+    libffi6 \
+    libffi-dev \
+    libpng-dev
 
 # Copy only what we really need
 COPY README.md .
@@ -50,10 +57,10 @@ FROM base AS runner
 
 # Install mitie model
 RUN apt-get update -qq \
-    && apt-get install -y --no-install-recommends wget \
-    && wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
-    && apt-get remove -y wget \
-    && apt-get autoremove -y
+ && apt-get install -y --no-install-recommends wget \
+ && wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
+ && apt-get remove -y wget \
+ && apt-get autoremove -y
 
 # Copy over default pipeline config
 COPY sample_configs/config_pretrained_embeddings_mitie.yml /app/config.yml
@@ -79,3 +86,5 @@ HEALTHCHECK --start-period=10s \
 
 ENTRYPOINT ["rasa"]
 CMD ["--help"]
+
+

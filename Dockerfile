@@ -4,7 +4,16 @@ FROM python:3.6-slim as base
 WORKDIR /build
 
 # Create virtualenv to isolate builds
-#RUN python -m venv --copies /build
+RUN python -m venv /build
+
+# Install common libraries
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    # required by psycopg2 at build and runtime
+    libpq-dev \
+     # required for health check
+    curl \
+ && apt-get autoremove -y
 
 # Make sure we use the virtualenv
 ENV PATH="/build/bin:$PATH"
@@ -15,25 +24,19 @@ FROM base as builder
 WORKDIR /src
 
 # Install all required build libraries
-RUN apt-get update -qq && \
-  apt-get install -y --no-install-recommends \
-  build-essential \
-  wget \
-  openssh-client \
-  graphviz-dev \
-  pkg-config \
-  git-core \
-  openssl \
-  libssl-dev \
-  libffi6 \
-  libffi-dev \
-  libpng-dev \
-  libpq-dev \
-  curl
-
-ENV VIRTUAL_ENV=/build
-RUN pip3 install virtualenv && python3 -m virtualenv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    openssh-client \
+    graphviz-dev \
+    pkg-config \
+    git-core \
+    openssl \
+    libssl-dev \
+    libffi6 \
+    libffi-dev \
+    libpng-dev
 
 # Copy only what we really need
 COPY README.md .
@@ -63,7 +66,7 @@ VOLUME /tmp
 RUN chgrp -R 0 . && chmod -R g=u .
 
 # Don't run as root
-#USER 1001
+USER 1001
 
 EXPOSE 5005
 

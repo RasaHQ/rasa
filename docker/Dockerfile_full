@@ -6,6 +6,15 @@ WORKDIR /build
 # Create virtualenv to isolate builds
 RUN python -m venv /build
 
+# Install common libraries
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    # required by psycopg2 at build and runtime
+    libpq-dev \
+     # required for health check
+    curl \
+ && apt-get autoremove -y
+
 # Make sure we use the virtualenv
 ENV PATH="/build/bin:$PATH"
 
@@ -15,27 +24,25 @@ FROM base as builder
 WORKDIR /src
 
 # Install all required build libraries
-RUN apt-get update -qq && \
-  apt-get install -y --no-install-recommends \
-  build-essential \
-  wget \
-  openssh-client \
-  graphviz-dev \
-  pkg-config \
-  git-core \
-  openssl \
-  libssl-dev \
-  libffi6 \
-  libffi-dev \
-  libpng-dev \
-  libpq-dev \
-  curl
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    openssh-client \
+    graphviz-dev \
+    pkg-config \
+    git-core \
+    openssl \
+    libssl-dev \
+    libffi6 \
+    libffi-dev \
+    libpng-dev
 
 # Install spacy models
 RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
-    && python -m spacy link en_core_web_md en \
-    && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > /dev/null \
-    && python -m spacy link de_core_news_sm de
+ && python -m spacy link en_core_web_md en \
+ && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > /dev/null \
+ && python -m spacy link de_core_news_sm de
 
 # Copy only what we really need
 COPY README.md .
@@ -56,10 +63,10 @@ FROM base AS runner
 
 # Install mitie model
 RUN apt-get update -qq \
-    && apt-get install -y --no-install-recommends wget \
-    && wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
-    && apt-get remove -y wget \
-    && apt-get autoremove -y
+ && apt-get install -y --no-install-recommends wget \
+ && wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
+ && apt-get remove -y wget \
+ && apt-get autoremove -y
 
 # Copy over default pipeline config
 COPY sample_configs/config_pretrained_embeddings_spacy_duckling.yml /app/config.yml

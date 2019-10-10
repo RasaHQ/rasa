@@ -6,6 +6,15 @@ WORKDIR /build
 # Create virtualenv to isolate builds
 RUN python -m venv /build
 
+# Install common libraries
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    # required by psycopg2 at build and runtime
+    libpq-dev \
+     # required for health check
+    curl \
+ && apt-get autoremove -y
+
 # Make sure we use the virtualenv
 ENV PATH="/build/bin:$PATH"
 
@@ -15,21 +24,19 @@ FROM base as builder
 WORKDIR /src
 
 # Install all required build libraries
-RUN apt-get update -qq && \
-  apt-get install -y --no-install-recommends \
-  build-essential \
-  wget \
-  openssh-client \
-  graphviz-dev \
-  pkg-config \
-  git-core \
-  openssl \
-  libssl-dev \
-  libffi6 \
-  libffi-dev \
-  libpng-dev \
-  libpq-dev \
-  curl
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    openssh-client \
+    graphviz-dev \
+    pkg-config \
+    git-core \
+    openssl \
+    libssl-dev \
+    libffi6 \
+    libffi-dev \
+    libpng-dev
 
 # Install spacy model
 RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
