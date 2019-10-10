@@ -128,8 +128,6 @@ async def _train_async_internal(
     Returns:
         Path of the trained model archive.
     """
-    new_fingerprint = await model.model_fingerprint(file_importer)
-
     stories = await file_importer.get_stories()
     nlu_data = await file_importer.get_nlu_data()
 
@@ -158,10 +156,13 @@ async def _train_async_internal(
             kwargs=kwargs,
         )
 
+    new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
-    retrain_core, retrain_nlu, retrain_nlg = model.should_retrain(
-        new_fingerprint, old_model, train_path
-    )
+    retrain_core = retrain_nlu = retrain_nlg = False
+    if not force_training:
+        retrain_core, retrain_nlu, retrain_nlg = model.should_retrain(
+            new_fingerprint, old_model, train_path
+        )
 
     if any([force_training, retrain_core, retrain_nlu, retrain_nlg]):
         await _do_training(
@@ -211,24 +212,22 @@ async def _do_training(
     kwargs: Optional[Dict] = None,
 ):
 
-    if retrain_core or retrain_nlg or force_training:
-        retrain_nlg_only = retrain_nlg and not retrain_core and not force_training
-        if retrain_nlg_only:
-            print_color(
-                "Core stories/configuration did not change. "
-                "Only the templates section has been changed. A new model with "
-                "the updated templates will be created.",
-                color=bcolors.OKBLUE,
-            )
-            await _update_domain(file_importer, train_path)
-        else:
-            await _train_core_with_validated_data(
-                file_importer,
-                output=output_path,
-                train_path=train_path,
-                fixed_model_name=fixed_model_name,
-                kwargs=kwargs,
-            )
+    if force_training or retrain_core:
+        await _train_core_with_validated_data(
+            file_importer,
+            output=output_path,
+            train_path=train_path,
+            fixed_model_name=fixed_model_name,
+            kwargs=kwargs,
+        )
+    elif retrain_nlg:
+        print_color(
+            "Core stories/configuration did not change. "
+            "Only the templates section has been changed. A new model with "
+            "the updated templates will be created.",
+            color=bcolors.OKBLUE,
+        )
+        await _update_domain(file_importer, train_path)
     else:
         print_color(
             "Core stories/configuration did not change. No need to retrain Core model.",
