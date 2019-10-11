@@ -69,7 +69,7 @@ RUN apt-get update -qq \
  && apt-get autoremove -y
 
 # Copy over default pipeline config
-COPY sample_configs/config_pretrained_embeddings_spacy_duckling.yml /app/config.yml
+ COPY sample_configs/config_pretrained_embeddings_spacy_duckling.yml config.yml
 
 # Copy virtualenv from previous stage
 COPY --from=builder /build /build
