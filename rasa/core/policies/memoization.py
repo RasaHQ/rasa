@@ -131,7 +131,7 @@ class MemoizationPolicy(Policy):
                     self.lookup[feature_key] = feature_item
             pbar.set_postfix({"# examples": "{:d}".format(len(self.lookup))})
 
-    def _create_feature_key(self, states: Dict) -> Text:
+    def _create_feature_key(self, states: List[Dict]) -> Text:
         from rasa.utils import io
 
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")

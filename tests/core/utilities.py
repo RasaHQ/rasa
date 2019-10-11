@@ -30,7 +30,7 @@ def tracker_from_dialogue_file(
     return tracker
 
 
-def read_dialogue_file(filename: Text) -> Dialogue:
+def read_dialogue_file(filename: Text) -> "Dialogue":
     return jsonpickle.loads(rasa.utils.io.read_file(filename))
 
 
