@@ -15,6 +15,8 @@ Added
 
 Fixed
 -----
+- Fixed visualization of stories with entities which led to a failing
+  visualization in Rasa X
 
 Changed
 -------
