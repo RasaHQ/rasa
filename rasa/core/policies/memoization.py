@@ -234,7 +234,7 @@ class MemoizationPolicy(Policy):
             "lookup": self.lookup,
         }
         rasa.utils.io.create_directory_for_file(memorized_file)
-        utils.dump_obj_as_json_to_file(memorized_file, data)
+        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
     def load(cls, path: Text) -> "MemoizationPolicy":

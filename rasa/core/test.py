@@ -5,6 +5,7 @@ import typing
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+import rasa.utils.io
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
@@ -607,7 +608,9 @@ async def compare_models_in_dir(
         for k, v in number_correct_in_run.items():
             number_correct[k].append(v)
 
-    utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), number_correct)
+    rasa.utils.io.dump_obj_as_json_to_file(
+        os.path.join(output, RESULTS_FILE), number_correct
+    )
 
 
 async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
@@ -620,7 +623,9 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
         number_of_correct_stories = await _evaluate_core_model(model, stories_file)
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
 
-    utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), number_correct)
+    rasa.utils.io.dump_obj_as_json_to_file(
+        os.path.join(output, RESULTS_FILE), number_correct
+    )
 
 
 async def _evaluate_core_model(model: Text, stories_file: Text) -> int:

@@ -1,5 +1,6 @@
 import asyncio
 import errno
+import json
 import logging
 import os
 import tarfile
@@ -150,6 +151,12 @@ def read_json_file(filename: Text) -> Any:
         )
 
 
+def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
+    """Dump an object as a json string to a file."""
+
+    write_text_file(json.dumps(obj, indent=2), filename)
+
+
 def read_config_file(filename: Text) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary
 
@@ -252,7 +259,7 @@ def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Te
     return f.name
 
 
-def create_path(file_path: Text):
+def create_path(file_path: Text) -> None:
     """Makes sure all directories in the 'file_path' exists."""
 
     parent_dir = os.path.dirname(os.path.abspath(file_path))
@@ -263,12 +270,7 @@ def create_path(file_path: Text):
 def create_directory_for_file(file_path: Text) -> None:
     """Creates any missing parent directories of this file path."""
 
-    try:
-        os.makedirs(os.path.dirname(file_path))
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
+    create_directory(os.path.dirname(file_path))
 
 
 def file_type_validator(

@@ -45,20 +45,6 @@ def module_path_from_instance(inst: Any) -> Text:
     return inst.__module__ + "." + inst.__class__.__name__
 
 
-def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
-    """Dump an object as a json string to a file."""
-
-    dump_obj_as_str_to_file(filename, json.dumps(obj, indent=2))
-
-
-def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
-    """Dump a text to a file."""
-
-    from rasa.utils import io
-
-    io.write_text_file(text, filename)
-
-
 def subsample_array(
     arr: List[Any],
     max_values: int,

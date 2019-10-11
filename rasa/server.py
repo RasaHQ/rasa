@@ -683,20 +683,21 @@ def create_app(
         temp_dir = tempfile.mkdtemp()
 
         config_path = os.path.join(temp_dir, "config.yml")
-        rasa.core.utils.dump_obj_as_str_to_file(config_path, rjs["config"])
+
+        rasa.utils.io.write_text_file(rjs["config"], config_path)
 
         if "nlu" in rjs:
             nlu_path = os.path.join(temp_dir, "nlu.md")
-            rasa.core.utils.dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
+            rasa.utils.io.write_text_file(rjs["nlu"], nlu_path)
 
         if "stories" in rjs:
             stories_path = os.path.join(temp_dir, "stories.md")
-            rasa.core.utils.dump_obj_as_str_to_file(stories_path, rjs["stories"])
+            rasa.utils.io.write_text_file(rjs["stories"], stories_path)
 
         domain_path = DEFAULT_DOMAIN_PATH
         if "domain" in rjs:
             domain_path = os.path.join(temp_dir, "domain.yml")
-            rasa.core.utils.dump_obj_as_str_to_file(domain_path, rjs["domain"])
+            rasa.utils.io.write_text_file(rjs["domain"], domain_path)
 
         if rjs.get("save_to_default_model_directory", True) is True:
             model_output_directory = DEFAULT_MODELS_PATH
