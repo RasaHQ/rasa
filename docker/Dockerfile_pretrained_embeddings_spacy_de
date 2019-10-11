@@ -59,13 +59,13 @@ RUN pip install .[sql,spacy]
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
 
+WORKDIR /app
+
 # Copy over default pipeline config
-COPY sample_configs/config_pretrained_embeddings_spacy_de.yml /app/config.yml
+COPY sample_configs/config_pretrained_embeddings_spacy_de.yml config.yml
 
 # Copy virtualenv from previous stage
 COPY --from=builder /build /build
-
-WORKDIR /app
 
 # Create a volume for temporary data
 VOLUME /tmp

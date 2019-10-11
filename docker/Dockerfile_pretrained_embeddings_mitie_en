@@ -38,6 +38,9 @@ RUN apt-get update -qq \
     libffi-dev \
     libpng-dev
 
+# Download mitie model
+RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+
 # Copy only what we really need
 COPY README.md .
 COPY setup.py .
@@ -55,20 +58,16 @@ RUN pip install .[sql,mitie]
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
 
-# Install mitie model
-RUN apt-get update -qq \
- && apt-get install -y --no-install-recommends wget \
- && wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
- && apt-get remove -y wget \
- && apt-get autoremove -y
+WORKDIR /app
 
 # Copy over default pipeline config
-COPY sample_configs/config_pretrained_embeddings_mitie.yml /app/config.yml
+COPY sample_configs/config_pretrained_embeddings_mitie.yml config.yml
+
+# Copy over mitie model
+COPY --from=builder /app/data/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
 
 # Copy virtualenv from previous stage
 COPY --from=builder /build /build
-
-WORKDIR /app
 
 # Create a volume for temporary data
 VOLUME /tmp
@@ -86,5 +85,3 @@ HEALTHCHECK --start-period=10s \
 
 ENTRYPOINT ["rasa"]
 CMD ["--help"]
-
-

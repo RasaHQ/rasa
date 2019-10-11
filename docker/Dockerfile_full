@@ -38,6 +38,9 @@ RUN apt-get update -qq \
     libffi-dev \
     libpng-dev
 
+# Download mitie model
+RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+
 # Install spacy models
 RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
  && python -m spacy link en_core_web_md en \
@@ -61,20 +64,16 @@ RUN pip install .[sql,spacy,mitie]
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
 
-# Install mitie model
-RUN apt-get update -qq \
- && apt-get install -y --no-install-recommends wget \
- && wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
- && apt-get remove -y wget \
- && apt-get autoremove -y
+WORKDIR /app
 
 # Copy over default pipeline config
-COPY sample_configs/config_pretrained_embeddings_spacy_duckling.yml /app/config.yml
+COPY sample_configs/config_pretrained_embeddings_spacy_duckling.yml config.yml
+
+# Copy over mitie model
+COPY --from=builder /app/data/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
 
 # Copy virtualenv from previous stage
 COPY --from=builder /build /build
-
-WORKDIR /app
 
 # Create a volume for temporary data
 VOLUME /tmp
