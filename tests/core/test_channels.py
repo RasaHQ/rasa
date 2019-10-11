@@ -417,6 +417,49 @@ async def test_callback_calls_endpoint():
         assert text["text"] == "Hi there!"
 
 
+def test_botframework_attachments():
+    from rasa.core.channels.botframework import BotFrameworkInput, BotFramework
+
+    ch = BotFrameworkInput("app_id", "app_pass")
+
+    payload = {
+        "type": "message",
+        "id": "123",
+        "channelId": "msteams",
+        "serviceUrl": "https://smba.trafficmanager.net/emea/",
+        "from": {
+            "id": "12:123",
+            "name": "Rasa",
+            "aadObjectId": "123"
+        },
+        "conversation": {
+            "conversationType": "personal",
+            "tenantId": "123",
+            "id": "a:123"
+        },
+        "recipient": {
+            "id": "12:123",
+            "name": "Rasa chat"
+        },
+    }
+    assert ch.process_attachments(payload, None) == None
+
+    attachments = [
+        {
+            "contentType": "application/vnd.microsoft.teams.file.download.info",
+            "content": {
+                "downloadUrl": "https://test.sharepoint.com/personal/rasa/123",
+                "uniqueId": "123",
+                "fileType": "csv"
+            },
+            "contentUrl": "https://test.sharepoint.com/personal/rasa/123",
+            "name": "rasa-test.csv"
+        }
+    ]
+    payload["attachments"] = attachments
+
+    assert ch.process_attachments(payload, None) == {"attachments": attachments}
+
 def test_slack_message_sanitization():
     from rasa.core.channels.slack import SlackInput
 

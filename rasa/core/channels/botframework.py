@@ -189,6 +189,23 @@ class BotFrameworkInput(InputChannel):
         self.app_id = app_id
         self.app_password = app_password
 
+    @staticmethod
+    def process_attachments(
+        postdata: Dict[Text, Any], 
+        metadata: Optional[Dict[Text, Any]]
+    ) -> Optional[Dict[Text, Any]]:
+        
+        if postdata.get('attachments'):
+            attachments = {
+                "attachments": postdata['attachments']
+            }
+            if metadata:
+                metadata.extend(attachments)
+            else:
+                metadata = attachments
+        
+        return metadata
+
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -204,6 +221,8 @@ class BotFrameworkInput(InputChannel):
         async def webhook(request: Request) -> HTTPResponse:
             postdata = request.json
             metadata = self.get_metadata(request)
+
+            metadata = self.process_attachments(postdata, metadata)
 
             try:
                 if postdata["type"] == "message":
@@ -222,10 +241,6 @@ class BotFrameworkInput(InputChannel):
                         input_channel=self.name(),
                         metadata=metadata,
                     )
-                    if postdata.get('attachments'):
-                        user_msg.metadata = {
-                            "attachments": postdata['attachments']
-                        }
 
                     await on_new_message(user_msg)
                 else:
