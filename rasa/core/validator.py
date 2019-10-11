@@ -1,5 +1,6 @@
 import logging
 import asyncio
+from collections import defaultdict
 from typing import List, Set, Text
 from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
@@ -57,13 +58,43 @@ class Validator(object):
 
         return everything_is_alright
 
+    def verify_example_repetition_in_intents(
+        self, ignore_warnings: bool = True
+    ) -> bool:
+        """Checks if there is no duplicated example in different intents."""
+
+        everything_is_alright = True
+
+        duplication_hash = defaultdict(set)
+        duplicated_examples = []
+        for msg in self.intents.intent_examples:
+            msg_dict = msg.as_dict_nlu()
+            text = msg_dict.get("text")
+            duplication_hash[text].add(msg_dict.get("intent"))
+
+            if len(duplication_hash[text]) > 1:
+                duplicated_examples.append((text, duplication_hash[text]))
+                everything_is_alright = ignore_warnings and everything_is_alright
+
+        for text, intents in duplicated_examples:
+            logger.warning(
+                "The example '{}' was found in these multiples intents: {}".format(
+                    text, ", ".join(intents)
+                )
+            )
+        return everything_is_alright
+
     def verify_intents_in_stories(self, ignore_warnings: bool = True) -> bool:
         """Checks intents used in stories.
 
         Verifies if the intents used in the stories are valid, and whether
         all valid intents are used in the stories."""
 
-        everything_is_alright = self.verify_intents()
+        everything_is_alright = self.verify_intents(ignore_warnings)
+        everything_is_alright = (
+            self.verify_example_repetition_in_intents(ignore_warnings)
+            and everything_is_alright
+        )
 
         stories_intents = {
             event.intent["name"]
