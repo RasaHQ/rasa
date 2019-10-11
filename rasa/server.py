@@ -835,7 +835,8 @@ def create_app(
                     "An unexpected error occurred. Error: {}".format(e),
                 )
             response_data = emulator.normalise_response_json(parsed_data)
-            if response_data['intent']['confidence'] >= 0.9:
+            print(response_data)
+            if response_data['intent']['confidence'] >= 0.75:
                 narrowedEntity = entitySerializer(response_data['entities'])
                 entMap = entityMapper(narrowedEntity, response_data['intent']['name'],response_data['text'])
                 response_data['slotvalues'] = entMap
@@ -892,8 +893,13 @@ def create_app(
                         entityArray.append(data)
                         conditionMap["stitle"] = data["value"]
                 elif data["name"] == "person":
-                    data["name"] = "sauthor"
-                    entityArray.append(data)
+                    if "stitle" in conditionMap:
+                        if data["value"] != conditionMap["stitle"]:
+                            data["name"] = "sauthor"
+                            entityArray.append(data)
+                    else:
+                        data["name"] = "sauthor"
+                        entityArray.append(data)
                 elif data["name"] == "sBook":
                     if "stitle" not in conditionMap:
                         data["name"] = "stitle"
@@ -901,12 +907,29 @@ def create_app(
                         conditionMap["stitle"] = data["value"]
                 elif data["name"] == "sbook":
                     if "stitle" not in conditionMap:
-                        data["name"] = "stitle"
+                        if len(data["value"])<=50:
+                            data["name"] = "stitle"
+                            entityArray.append(data)
+                            conditionMap["stitle"] = data["value"]
+                        else:
+                            if "subject" not in conditionMap:
+                                data["name"] = "subject"
+                                data["name"] = data["name"].lower()
+                                entityArray.append(data)
+                                conditionMap["subject"] = data["value"]
+                elif data["name"] == "subject":
+                    if "subject" not in conditionMap:
+                        data["name"] = data["name"].lower()
                         entityArray.append(data)
-                        conditionMap["stitle"] = data["value"]
-                elif data["name"] == 'type' or data["name"] == 'timeline' or data["name"] == 'filterphrase' or data[
-                    "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data[
-                    "name"] == 'subject' or data["name"] == 'pubyear':
+                        conditionMap["subject"] = data["value"]
+                elif data["name"] == "filterphrase":
+                    if data["value"] in conditionMap.values():
+                        pass
+                    else:
+                        data["name"] = data["name"].lower()
+                        entityArray.append(data)
+                elif data["name"] == 'type' or data["name"] == 'timeline' or data[
+                    "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or  data["name"] == 'pubyear':
                     data["name"] = data["name"].lower()
                     entityArray.append(data)
                 else:
