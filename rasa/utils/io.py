@@ -20,6 +20,8 @@ from rasa.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 if typing.TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
 
+DEFAULT_ENCODING = "utf-8"
+
 
 def configure_colored_logging(loglevel):
     import coloredlogs
@@ -126,7 +128,7 @@ def read_yaml(content: Text) -> Union[List[Any], Dict[Text, Any]]:
         return yaml_parser.load(content) or {}
 
 
-def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
+def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
     """Read text from a file."""
 
     try:
@@ -154,7 +156,7 @@ def read_config_file(filename: Text) -> Dict[Text, Any]:
      Args:
         filename: The path to the file which should be read.
     """
-    content = read_yaml(read_file(filename, "utf-8"))
+    content = read_yaml(read_file(filename))
 
     if content is None:
         return {}
@@ -174,7 +176,7 @@ def read_yaml_file(filename: Text) -> Union[List[Any], Dict[Text, Any]]:
      Args:
         filename: The path to the file which should be read.
     """
-    return read_yaml(read_file(filename, "utf-8"))
+    return read_yaml(read_file(filename, DEFAULT_ENCODING))
 
 
 def unarchive(byte_array: bytes, directory: Text) -> Text:
@@ -194,15 +196,35 @@ def unarchive(byte_array: bytes, directory: Text) -> Text:
         return directory
 
 
-def write_yaml_file(data: Dict, filename: Text):
+def write_yaml_file(data: Dict, filename: Text) -> None:
     """Writes a yaml file.
 
      Args:
         data: The data to write.
         filename: The path to the file which should be written.
     """
-    with open(filename, "w", encoding="utf-8") as outfile:
+    with open(filename, "w", encoding=DEFAULT_ENCODING) as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
+
+
+def write_text_file(
+    content: Text,
+    file_path: Text,
+    encoding: Text = DEFAULT_ENCODING,
+    append: bool = False,
+) -> None:
+    """Writes text to  a file.
+
+    Args:
+        content: The content to write.
+        file_path: The path to which the content should be written.
+        encoding: The encoding which should be used.
+        append: Whether to append to the file or to truncate the file.
+
+    """
+    mode = "a" if append else "w"
+    with open(file_path, mode, encoding=encoding) as file:
+        file.write(content)
 
 
 def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
@@ -220,7 +242,7 @@ def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Te
 
     mode defines NamedTemporaryFile's  mode parameter in py3."""
 
-    encoding = None if "b" in mode else "utf-8"
+    encoding = None if "b" in mode else DEFAULT_ENCODING
     f = tempfile.NamedTemporaryFile(
         mode=mode, suffix=suffix, delete=False, encoding=encoding
     )

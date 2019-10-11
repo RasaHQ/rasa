@@ -131,11 +131,13 @@ class MemoizationPolicy(Policy):
                     self.lookup[feature_key] = feature_item
             pbar.set_postfix({"# examples": "{:d}".format(len(self.lookup))})
 
-    def _create_feature_key(self, states):
+    def _create_feature_key(self, states: Dict) -> Text:
+        from rasa.utils import io
+
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
-            compressed = zlib.compress(bytes(feature_str, "utf-8"))
-            return base64.b64encode(compressed).decode("utf-8")
+            compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))
+            return base64.b64encode(compressed).decode(io.DEFAULT_ENCODING)
         else:
             return feature_str
 

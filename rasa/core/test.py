@@ -10,6 +10,7 @@ from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -455,7 +456,7 @@ def log_failed_stories(failed, out_directory):
     if not out_directory:
         return
     with open(
-        os.path.join(out_directory, "failed_stories.md"), "w", encoding="utf-8"
+        os.path.join(out_directory, "failed_stories.md"), "w", encoding=DEFAULT_ENCODING
     ) as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")

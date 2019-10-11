@@ -1,7 +1,8 @@
 import itertools
 
 import contextlib
-from typing import Text, List
+import typing
+from typing import Text, List, Optional
 
 import jsonpickle
 import os
@@ -12,8 +13,13 @@ from rasa.core.events import UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
+if typing.TYPE_CHECKING:
+    from rasa.core.conversation import Dialogue
 
-def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
+
+def tracker_from_dialogue_file(
+    filename: Text, domain: Optional[Domain] = None
+) -> DialogueStateTracker:
     dialogue = read_dialogue_file(filename)
 
     if not domain:
@@ -24,14 +30,15 @@ def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
     return tracker
 
 
-def read_dialogue_file(filename: Text):
+def read_dialogue_file(filename: Text) -> Dialogue:
     return jsonpickle.loads(rasa.utils.io.read_file(filename))
 
 
-def write_text_to_file(tmpdir: Text, filename: Text, text: Text):
+def write_text_to_file(tmpdir: Text, filename: Text, text: Text) -> Text:
+    from rasa.utils import io
+
     path = tmpdir.join(filename).strpath
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(text)
+    io.write_text_file(text, path)
     return path
 
 
@@ -47,7 +54,7 @@ def cwd(path: Text):
 
 
 @contextlib.contextmanager
-def mocked_cmd_input(package, text):
+def mocked_cmd_input(package, text: Text):
     if isinstance(text, str):
         text = [text]
 

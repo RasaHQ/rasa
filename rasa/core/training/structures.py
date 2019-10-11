@@ -399,9 +399,12 @@ class Story(object):
         else:
             return story_content
 
-    def dump_to_file(self, filename, flat=False, e2e=False):
-        with open(filename, "a", encoding="utf-8") as f:
-            f.write(self.as_story_string(flat, e2e))
+    def dump_to_file(
+        self, filename: Text, flat: bool = False, e2e: bool = False
+    ) -> None:
+        from rasa.utils import io
+
+        io.write_text_file(self.as_story_string(flat, e2e), filename, append=True)
 
 
 class StoryGraph(object):
