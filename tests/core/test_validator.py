@@ -55,3 +55,23 @@ async def test_fail_on_invalid_utterances(tmpdir):
     importer = RasaFileImporter(domain_path=invalid_domain)
     validator = await Validator.from_importer(importer)
     assert not validator.verify_utterances()
+
+
+async def test_verify_there_is_example_repetition_in_intents():
+    # moodbot nlu data already has duplicated example 'good afternoon'
+    # for intents greet and goodbye
+    importer = RasaFileImporter(
+        domain_path="examples/moodbot/domain.yml",
+        training_data_paths=["examples/moodbot/data/nlu.md"],
+    )
+    validator = await Validator.from_importer(importer)
+    assert not validator.verify_example_repetition_in_intents(False)
+
+
+async def test_verify_there_is_not_example_repetition_in_intents():
+    importer = RasaFileImporter(
+        domain_path="examples/moodbot/domain.yml",
+        training_data_paths=["examples/knowledgebasebot/data/nlu.md"],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_example_repetition_in_intents(False)
