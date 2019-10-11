@@ -11,6 +11,7 @@ import zipfile
 import glob
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
+from pathlib import Path
 from typing import Text, Any, Dict, Union, List, Type, Callable
 
 import ruamel.yaml as yaml
@@ -216,7 +217,7 @@ def write_yaml_file(data: Dict, filename: Text) -> None:
 
 def write_text_file(
     content: Text,
-    file_path: Text,
+    file_path: Union[Text, Path],
     encoding: Text = DEFAULT_ENCODING,
     append: bool = False,
 ) -> None:

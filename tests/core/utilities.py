@@ -34,14 +34,6 @@ def read_dialogue_file(filename: Text) -> "Dialogue":
     return jsonpickle.loads(rasa.utils.io.read_file(filename))
 
 
-def write_text_to_file(tmpdir: Text, filename: Text, text: Text) -> Text:
-    from rasa.utils import io
-
-    path = tmpdir.join(filename).strpath
-    io.write_text_file(text, path)
-    return path
-
-
 @contextlib.contextmanager
 def cwd(path: Text):
     CWD = os.getcwd()

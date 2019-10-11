@@ -15,6 +15,7 @@ from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
 from tests.core import utilities
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
+from rasa.utils import io as io_utils
 
 
 async def test_create_train_data_no_history(default_domain):
@@ -173,8 +174,7 @@ def test_utter_templates():
 
 
 def test_custom_slot_type(tmpdir):
-    domain_path = utilities.write_text_to_file(
-        tmpdir,
+    domain_path = io_utils.write_text_file(
         "domain.yml",
         """
        slots:
@@ -187,6 +187,7 @@ def test_custom_slot_type(tmpdir):
 
        actions:
          - utter_greet """,
+        tmpdir,
     )
     Domain.load(domain_path)
 
@@ -219,9 +220,8 @@ def test_custom_slot_type(tmpdir):
     ],
 )
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
-    domain_path = utilities.write_text_to_file(
-        tmpdir, "domain.yml", domain_unkown_slot_type
-    )
+    domain_path = str(tmpdir / "domain.yml")
+    io_utils.write_text_file(domain_unkown_slot_type, domain_path)
     with pytest.raises(ValueError):
         Domain.load(domain_path)
 
