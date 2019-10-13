@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -13,7 +14,6 @@ from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
-from tests.core import utilities
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 from rasa.utils import io as io_utils
 
@@ -173,9 +173,9 @@ def test_utter_templates():
     assert domain.random_template_for("utter_greet") == expected_template
 
 
-def test_custom_slot_type(tmpdir):
-    domain_path = io_utils.write_text_file(
-        "domain.yml",
+def test_custom_slot_type(tmpdir: Path):
+    domain_path = str(tmpdir / "domain.yml")
+    io_utils.write_text_file(
         """
        slots:
          custom:
@@ -187,7 +187,7 @@ def test_custom_slot_type(tmpdir):
 
        actions:
          - utter_greet """,
-        tmpdir,
+        domain_path,
     )
     Domain.load(domain_path)
 
