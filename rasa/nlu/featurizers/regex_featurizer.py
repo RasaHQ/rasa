@@ -109,7 +109,9 @@ class RegexFeaturizer(Featurizer):
         else:
 
             try:
-                f = io.open(lookup_elements, "r", encoding="utf-8")
+                f = io.open(
+                    lookup_elements, "r", encoding=rasa.utils.io.DEFAULT_ENCODING
+                )
             except IOError:
                 raise ValueError(
                     "Could not load lookup table {}"

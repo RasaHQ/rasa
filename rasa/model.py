@@ -269,10 +269,9 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
         fingerprint: The fingerprint to be persisted.
 
     """
-    from rasa.core.utils import dump_obj_as_json_to_file
 
     path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
-    dump_obj_as_json_to_file(path, fingerprint)
+    rasa.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 
 def core_fingerprint_changed(

@@ -279,7 +279,7 @@ class KerasPolicy(Policy):
             }
 
             meta_file = os.path.join(path, "keras_policy.json")
-            utils.dump_obj_as_json_to_file(meta_file, meta)
+            rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
             model_file = os.path.join(path, meta["model"])
             # makes sure the model directory exists

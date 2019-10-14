@@ -175,7 +175,7 @@ class SklearnPolicy(Policy):
             meta = {"priority": self.priority}
 
             meta_file = os.path.join(path, "sklearn_policy.json")
-            utils.dump_obj_as_json_to_file(meta_file, meta)
+            rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
             filename = os.path.join(path, "sklearn_model.pkl")
             with open(filename, "wb") as f:

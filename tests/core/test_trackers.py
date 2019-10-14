@@ -399,7 +399,7 @@ async def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
         out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")
 
         dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
-        utils.dump_obj_as_json_to_file(out_path.strpath, dumped)
+        rasa.utils.io.dump_obj_as_json_to_file(out_path.strpath, dumped)
 
         restored_tracker = restore.load_tracker_from_json(
             out_path.strpath, default_agent.domain
