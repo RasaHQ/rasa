@@ -190,10 +190,12 @@ class BotFrameworkInput(InputChannel):
         self.app_password = app_password
 
     @staticmethod
-    def process_attachments(
+    def add_attachments_to_metadata(
         postdata: Dict[Text, Any], 
         metadata: Optional[Dict[Text, Any]]
     ) -> Optional[Dict[Text, Any]]:
+        """ Parse the message for the attachments values to add it to metadata
+        """
         
         if postdata.get('attachments'):
             attachments = {
@@ -222,7 +224,8 @@ class BotFrameworkInput(InputChannel):
             postdata = request.json
             metadata = self.get_metadata(request)
 
-            metadata = self.process_attachments(postdata, metadata)
+            metadata_with_attachments = self.add_attachments_to_metadata(
+                postdata, metadata)
 
             try:
                 if postdata["type"] == "message":
@@ -239,7 +242,7 @@ class BotFrameworkInput(InputChannel):
                         output_channel=out_channel,
                         sender_id=postdata["from"]["id"],
                         input_channel=self.name(),
-                        metadata=metadata,
+                        metadata=metadata_with_attachments,
                     )
 
                     await on_new_message(user_msg)
