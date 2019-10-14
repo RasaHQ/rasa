@@ -221,7 +221,7 @@ def write_text_file(
     encoding: Text = DEFAULT_ENCODING,
     append: bool = False,
 ) -> None:
-    """Writes text to  a file.
+    """Writes text to a file.
 
     Args:
         content: The content to write.
