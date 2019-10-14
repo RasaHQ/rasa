@@ -204,14 +204,14 @@ def unarchive(byte_array: bytes, directory: Text) -> Text:
         return directory
 
 
-def write_yaml_file(data: Dict, filename: Text) -> None:
+def write_yaml_file(data: Dict, filename: Union[Text, Path]) -> None:
     """Writes a yaml file.
 
      Args:
         data: The data to write.
         filename: The path to the file which should be written.
     """
-    with open(filename, "w", encoding=DEFAULT_ENCODING) as outfile:
+    with open(str(filename), "w", encoding=DEFAULT_ENCODING) as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
 
 
