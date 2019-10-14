@@ -419,6 +419,7 @@ async def test_callback_calls_endpoint():
 
 def test_botframework_attachments():
     from rasa.core.channels.botframework import BotFrameworkInput, BotFramework
+    from copy import deepcopy
 
     ch = BotFrameworkInput("app_id", "app_pass")
 
@@ -442,7 +443,7 @@ def test_botframework_attachments():
             "name": "Rasa chat"
         },
     }
-    assert ch.process_attachments(payload, None) == None
+    assert ch.add_attachments_to_metadata(payload, None) == None
 
     attachments = [
         {
@@ -458,7 +459,15 @@ def test_botframework_attachments():
     ]
     payload["attachments"] = attachments
 
-    assert ch.process_attachments(payload, None) == {"attachments": attachments}
+    assert ch.add_attachments_to_metadata(payload, None) == {"attachments": attachments}
+
+    metadata = {"test": 1, "bigger_test": {"key": "value"}}
+    updated_metadata = deepcopy(metadata)
+    updated_metadata.update({
+        "attachments": attachments
+    })
+    
+    assert ch.add_attachments_to_metadata(payload, metadata) == updated_metadata
 
 def test_slack_message_sanitization():
     from rasa.core.channels.slack import SlackInput

@@ -202,7 +202,7 @@ class BotFrameworkInput(InputChannel):
                 "attachments": postdata['attachments']
             }
             if metadata:
-                metadata.extend(attachments)
+                metadata.update(attachments)
             else:
                 metadata = attachments
         
