@@ -440,7 +440,9 @@ class DialogueStateTracker(object):
         """Dump the tracker as a story to a file."""
         import rasa.utils.io
 
-        rasa.utils.io.write_text_file(self.export_stories() + "\n", export_path, append=True)
+        rasa.utils.io.write_text_file(
+            self.export_stories() + "\n", export_path, append=True
+        )
 
     def get_last_event_for(
         self,
