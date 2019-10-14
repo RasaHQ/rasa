@@ -194,8 +194,7 @@ class BotFrameworkInput(InputChannel):
         postdata: Dict[Text, Any], 
         metadata: Optional[Dict[Text, Any]]
     ) -> Optional[Dict[Text, Any]]:
-        """ Parse the message for the attachments values to add it to metadata
-        """
+        """Merge the values of `postdata['attachments']` with `metadata`."""
         
         if postdata.get('attachments'):
             attachments = {
