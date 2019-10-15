@@ -68,6 +68,26 @@ async def test_verify_there_is_example_repetition_in_intents():
     assert not validator.verify_example_repetition_in_intents(False)
 
 
+async def test_verify_logging_message_for_repetition_in_intents(caplog):
+    # moodbot nlu data already has duplicated example 'good afternoon'
+    # for intents greet and goodbye
+    importer = RasaFileImporter(
+        domain_path="examples/moodbot/domain.yml",
+        training_data_paths=["examples/moodbot/data/nlu.md"],
+    )
+    validator = await Validator.from_importer(importer)
+    validator.verify_example_repetition_in_intents(False)
+    log_object = caplog.records[-1]
+    level = log_object.levelname
+    message = log_object.message
+    assert "WARNING" == level
+    assert (
+        "The example 'good afternoon' was found in these "
+        + "multiples intents: greet, goodbye"
+        == message
+    )
+
+
 async def test_verify_there_is_not_example_repetition_in_intents():
     importer = RasaFileImporter(
         domain_path="examples/moodbot/domain.yml",
