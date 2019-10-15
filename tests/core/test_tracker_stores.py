@@ -91,25 +91,6 @@ def test_find_tracker_store(default_domain):
     )
 
 
-def test_find_redis_tracker_store_with_ssl(default_domain):
-    store = read_endpoint_config(
-        "data/test_endpoints/example_redis_ssl_endpoints.yml", "tracker_store"
-    )
-    tracker_store = RedisTrackerStore(
-        domain=default_domain,
-        host="localhost",
-        port=6379,
-        db=0,
-        password="password",
-        record_exp=3000,
-        ssl=True,
-    )
-
-    assert isinstance(
-        tracker_store, type(TrackerStore.find_tracker_store(default_domain, store))
-    )
-
-
 class ExampleTrackerStore(RedisTrackerStore):
     def __init__(self, domain, url, port, db, password, record_exp):
         super(ExampleTrackerStore, self).__init__(
