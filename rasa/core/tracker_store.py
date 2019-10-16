@@ -169,7 +169,7 @@ class RedisTrackerStore(TrackerStore):
         password: Optional[Text] = None,
         event_broker: Optional[EventChannel] = None,
         record_exp: Optional[float] = None,
-        use_ssl: bool =False,
+        use_ssl: bool = False,
     ):
 
         import redis
