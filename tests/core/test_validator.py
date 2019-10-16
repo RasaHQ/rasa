@@ -83,7 +83,7 @@ async def test_verify_logging_message_for_repetition_in_intents(caplog):
     assert "WARNING" == level
     assert (
         "The example 'good afternoon' was found in these "
-        + "multiples intents: greet, goodbye"
+        + "multiples intents: goodbye, greet"
         == message
     )
 

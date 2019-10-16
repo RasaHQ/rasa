@@ -78,7 +78,7 @@ class Validator(object):
         for text, intents in duplicated_examples.items():
             logger.warning(
                 "The example '{}' was found in these multiples intents: {}".format(
-                    text, ", ".join(intents)
+                    text, ", ".join(sorted(intents))
                 )
             )
         return everything_is_alright
