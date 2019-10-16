@@ -91,7 +91,7 @@ RedisTrackerStore
                 port: <port of your redis instance, usually 6379>
                 db: <number of your database within redis, e.g. 0>
                 password: <password used for authentication>
-                ssl: <whether or not the communication is encrypted, default false>
+                use_ssl: <whether or not the communication is encrypted, default `false`>
 
     3. To start the Rasa Core server using your configured Redis instance,
        add the :code:`--endpoints` flag, e.g.:
