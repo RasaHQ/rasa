@@ -27,7 +27,7 @@ Fixed
 
 Added
 -----
-- Support for transit encryption with Redis via `ssl: True` in the tracker store config in endpoints.yml
+- Support for transit encryption with Redis via ``use_ssl: True`` in the tracker store config in endpoints.yml
 
 [1.2.11] - 2019-10-09
 ^^^^^^^^^^^^^^^^^^^^^
