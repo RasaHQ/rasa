@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 
-[Unreleased 1.2.12] - `master`_
+[Unreleased 1.2.13] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -21,6 +21,13 @@ Removed
 
 Fixed
 -----
+
+[1.2.12] - 2019-10-16
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Support for transit encryption with Redis via ``use_ssl: True`` in the tracker store config in endpoints.yml
 
 [1.2.11] - 2019-10-09
 ^^^^^^^^^^^^^^^^^^^^^
