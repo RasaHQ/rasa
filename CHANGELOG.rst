@@ -39,6 +39,7 @@ Changed
   Deserialisation of pickled trackers will be deprecated in version 2.0. For now,
   trackers are still loaded from pickle but will be dumped as json in any subsequent
   save operations.
+- Event brokers are now also passed to custom tracker stores (using the ``event_broker`` parameter)
 
 Removed
 -------
