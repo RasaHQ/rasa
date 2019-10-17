@@ -398,6 +398,8 @@ def create_app(
     async def status(request: Request):
         """Respond with the model name and the fingerprint of that model."""
 
+        
+
         return response.json(
             {
                 "model_file": app.agent.model_directory,
