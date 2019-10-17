@@ -27,6 +27,7 @@ Added
   (``rasa.core.agent.handle_channels()``). The number of workers can be set using the
   environment variable ``SANIC_WORKERS`` (default: 1). A value of >1 is allowed only in
   combination with ``RedisLockStore`` as the lock store.
+- Updated the /status api route to include the original location of the model file.
 
 Changed
 -------
