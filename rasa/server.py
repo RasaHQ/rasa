@@ -400,6 +400,7 @@ def create_app(
 
         return response.json(
             {
+                "latest_model": model.get_latest_model(),
                 "model_file": app.agent.model_directory,
                 "fingerprint": model.fingerprint_from_path(app.agent.model_directory),
                 "num_active_training_jobs": app.active_training_processes.value,
