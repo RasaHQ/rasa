@@ -53,6 +53,7 @@ def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
 
+
 def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
     parser.add_argument(
         "--force",
@@ -141,7 +142,9 @@ def add_model_name_param(parser: argparse.ArgumentParser):
     )
 
 
-def add_persist_nlu_data_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
+def add_persist_nlu_data_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
     parser.add_argument(
         "--persist-nlu-data",
         action="store_true",

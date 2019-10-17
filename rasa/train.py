@@ -390,7 +390,14 @@ def train_nlu(
 
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        _train_nlu_async(config, nlu_data, output, train_path, fixed_model_name, persist_nlu_training_data)
+        _train_nlu_async(
+            config,
+            nlu_data,
+            output,
+            train_path,
+            fixed_model_name,
+            persist_nlu_training_data,
+        )
     )
 
 
