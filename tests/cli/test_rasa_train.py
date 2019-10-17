@@ -16,8 +16,6 @@ from rasa.constants import (
 import rasa.utils.io as io_utils
 
 
-
-
 def test_train(run_in_default_project):
     temp_dir = os.getcwd()
 
@@ -41,9 +39,11 @@ def test_train(run_in_default_project):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
     model_dir = model.get_model("train_models")
     assert model_dir is not None
-    metadata = Metadata.load(os.path.join(model_dir,"nlu"))
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
     assert metadata.get("training_data") is None
-    assert not os.path.exists(os.path.join(model_dir,"nlu",training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH))
+    assert not os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
 
 
 def test_train_persist_nlu_data(run_in_default_project):
@@ -70,10 +70,11 @@ def test_train_persist_nlu_data(run_in_default_project):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
     model_dir = model.get_model("train_models")
     assert model_dir is not None
-    metadata = Metadata.load(os.path.join(model_dir,"nlu"))
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
     assert metadata.get("training_data") is not None
-    assert os.path.exists(os.path.join(model_dir,"nlu",training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH))
-
+    assert os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
 
 
 def test_train_core_compare(run_in_default_project):
@@ -297,9 +298,12 @@ def test_train_nlu(run_in_default_project):
     assert os.path.basename(files[0]).startswith("nlu-")
     model_dir = model.get_model("train_models")
     assert model_dir is not None
-    metadata = Metadata.load(os.path.join(model_dir,"nlu"))
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
     assert metadata.get("training_data") is None
-    assert not os.path.exists(os.path.join(model_dir,"nlu",training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH))
+    assert not os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
+
 
 def test_train_nlu_persist_nlu_data(run_in_default_project):
     run_in_default_project(
@@ -320,9 +324,12 @@ def test_train_nlu_persist_nlu_data(run_in_default_project):
     assert os.path.basename(files[0]).startswith("nlu-")
     model_dir = model.get_model("train_models")
     assert model_dir is not None
-    metadata = Metadata.load(os.path.join(model_dir,"nlu"))
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
     assert metadata.get("training_data") is not None
-    assert os.path.exists(os.path.join(model_dir,"nlu",training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH))
+    assert os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
+
 
 def test_train_nlu_temp_files(run_in_default_project):
     count = count_rasa_temp_files()
