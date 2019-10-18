@@ -41,6 +41,7 @@ RUN apt-get update -qq \
 # Copy only what we really need
 COPY README.md .
 COPY setup.py .
+COPY setup.cfg .
 COPY MANIFEST.in .
 COPY requirements.txt .
 

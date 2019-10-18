@@ -44,6 +44,7 @@ RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_featu
 # Copy only what we really need
 COPY README.md .
 COPY setup.py .
+COPY setup.cfg .
 COPY MANIFEST.in .
 COPY alt_requirements/ ./alt_requirements
 COPY requirements.txt .
