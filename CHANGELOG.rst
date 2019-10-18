@@ -7,24 +7,18 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.3.10]
-^^^^^^^^^^^^^^^^^^^
+[1.3.10] - 2019-10-18
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- Can now pass a package as an argument to the ``--actions`` parameter of the ``rasa run actions``
-  command.
+- Can now pass a package as an argument to the ``--actions`` parameter of the
+  ``rasa run actions`` command.
 
 Fixed
 -----
 - Fixed visualization of stories with entities which led to a failing
   visualization in Rasa X
-
-Changed
--------
-
-Removed
--------
 
 [1.3.9] - 2019-10-10
 ^^^^^^^^^^^^^^^^^^^^
