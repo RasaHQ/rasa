@@ -175,7 +175,7 @@ class OutputChannel:
                 recipient_id,
                 message.pop("text"),
                 message.pop("quick_replies"),
-                **message
+                **message,
             )
         elif message.get("buttons"):
             await self.send_text_with_buttons(
@@ -227,7 +227,7 @@ class OutputChannel:
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends buttons to the output.
 
@@ -243,7 +243,7 @@ class OutputChannel:
         recipient_id: Text,
         text: Text,
         quick_replies: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends quick replies to the output.
 
@@ -345,7 +345,7 @@ class CollectingOutputChannel(OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         await self._persist_message(
             self._message(recipient_id, text=text, buttons=buttons)

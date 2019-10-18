@@ -212,7 +212,7 @@ def wrap_with_color(*args: Any, color: Text):
 
 
 def print_color(*args: Any, color: Text):
-    print (wrap_with_color(*args, color=color))
+    print(wrap_with_color(*args, color=color))
 
 
 def print_success(*args: Any):
@@ -239,5 +239,5 @@ def print_error_and_exit(message: Text, exit_code: int = 1) -> None:
 
 
 def signal_handler(sig, frame):
-    print ("Goodbye 👋")
+    print("Goodbye 👋")
     sys.exit(0)
