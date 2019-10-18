@@ -51,6 +51,7 @@ Fixed
 - fixed issue with ``conversation`` JSON serialization
 - fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
 - fixed Interactive Learning intent payload messages saving in nlu files
+- fixed DucklingHTTPExtractor dimensions by actually applying to the request
 
 [Unreleased 1.3.9]
 ^^^^^^^^^^^^^^^^^^
