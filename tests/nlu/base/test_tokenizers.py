@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from unittest.mock import patch
+
+from rasa.nlu.constants import CLS_TOKEN
 from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
 from rasa.nlu import training_data
@@ -75,6 +77,21 @@ def test_whitespace():
             "components/#tokenizer-whitespace"
         )
     ] == [0, 83]
+
+
+def test_whitespace_cls_token():
+    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+
+    component_config = {"add_cls_token": True}
+
+    tk = WhitespaceTokenizer(component_config)
+
+    assert [t.text for t in tk.tokenize("Forecast for lunch")] == [
+        "Forecast",
+        "for",
+        "lunch",
+        CLS_TOKEN,
+    ]
 
 
 def test_whitespace_custom_intent_symbol():
