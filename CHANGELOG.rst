@@ -41,6 +41,8 @@ Changed
   trackers are still loaded from pickle but will be dumped as json in any subsequent
   save operations.
 - Event brokers are now also passed to custom tracker stores (using the ``event_broker`` parameter)
+- Updated the ``/status`` api route to use the actual model file location instead of the ``tmp`` location.
+
 
 Removed
 -------
