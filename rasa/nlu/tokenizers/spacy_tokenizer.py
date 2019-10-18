@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
 
 
-class SpacyTokenizer(Component, Tokenizer):
+class SpacyTokenizer(Tokenizer):
 
     provides = [
         MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
@@ -28,15 +28,9 @@ class SpacyTokenizer(Component, Tokenizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
-    defaults = {
-        # Add a __cls__ token to the end of the list of tokens
-        "use_cls_token": False
-    }
-
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         """Construct a new tokenizer using the SpacyTokenizer framework."""
         super(SpacyTokenizer, self).__init__(component_config)
-        self.use_cls_token = self.component_config["use_cls_token"]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any

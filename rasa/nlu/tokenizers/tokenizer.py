@@ -1,5 +1,6 @@
 from typing import Text, List, Optional, Dict, Any
 
+from rasa.nlu.components import Component
 from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
@@ -21,9 +22,14 @@ class Token(object):
         return self.data.get(prop, default)
 
 
-class Tokenizer(object):
-    def __init__(self) -> None:
-        self.use_cls_token = False
+class Tokenizer(Component):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        super(Tokenizer, self).__init__(component_config)
+
+        if "use_cls_token" in self.component_config:
+            self.use_cls_token = self.component_config["use_cls_token"]
+        else:
+            self.use_cls_token = False
 
     def add_cls_token(
         self, tokens: List[Token], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
