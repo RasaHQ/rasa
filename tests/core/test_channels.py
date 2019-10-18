@@ -436,7 +436,7 @@ def test_botframework_attachments():
         },
         "recipient": {"id": "12:123", "name": "Rasa chat"},
     }
-    assert ch.add_attachments_to_metadata(payload, None) == None
+    assert ch.add_attachments_to_metadata(payload, None) is None
 
     attachments = [
         {
