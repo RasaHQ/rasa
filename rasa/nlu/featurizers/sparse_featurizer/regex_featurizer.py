@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Text
 
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers import Featurizer
+from rasa.nlu.featurizers.featurzier import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.io
 from rasa.nlu.constants import (

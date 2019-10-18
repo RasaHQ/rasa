@@ -21,7 +21,7 @@ from rasa.nlu.config import RasaNLUModelConfig
     ],
 )
 def test_spacy_featurizer(sentence, expected, spacy_nlp):
-    from rasa.nlu.featurizers import spacy_featurizer
+    from nlu.featurizers.dense_featurizer import spacy_featurizer
 
     doc = spacy_nlp(sentence)
     vecs = spacy_featurizer.features_for_doc(doc)
@@ -55,7 +55,7 @@ def test_spacy_training_sample_alignment(spacy_nlp_component):
 
 
 def test_spacy_intent_featurizer(spacy_nlp_component):
-    from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+    from nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
     spacy_nlp_component.train(td, config=None)
@@ -78,7 +78,7 @@ def test_spacy_intent_featurizer(spacy_nlp_component):
     [("hey how are you today", [-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])],
 )
 def test_spacy_ner_featurizer(sentence, expected, spacy_nlp):
-    from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+    from nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
     doc = spacy_nlp(sentence)
     token_vectors = [t.vector for t in doc]
@@ -95,7 +95,7 @@ def test_spacy_ner_featurizer(sentence, expected, spacy_nlp):
 
 
 def test_spacy_ner_featurizer_config(spacy_nlp):
-    from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+    from nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
     sentence = "hi there friend"
     doc = spacy_nlp(sentence)
@@ -112,7 +112,7 @@ def test_spacy_ner_featurizer_config(spacy_nlp):
 
 
 def test_mitie_featurizer(mitie_feature_extractor, default_config):
-    from rasa.nlu.featurizers.mitie_featurizer import MitieFeaturizer
+    from nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
 
     mitie_component_config = {"name": "MitieFeaturizer"}
     ftr = MitieFeaturizer.create(mitie_component_config, RasaNLUModelConfig())
@@ -124,7 +124,7 @@ def test_mitie_featurizer(mitie_feature_extractor, default_config):
 
 
 def test_ngram_featurizer(spacy_nlp):
-    from rasa.nlu.featurizers.ngram_featurizer import NGramFeaturizer
+    from nlu.featurizers.sparse_featurizer.ngram_featurizer import NGramFeaturizer
 
     ftr = NGramFeaturizer({"max_number_of_ngrams": 10})
 
@@ -163,7 +163,7 @@ def test_ngram_featurizer(spacy_nlp):
     ],
 )
 def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
-    from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
+    from nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
@@ -200,7 +200,7 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     ],
 )
 def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
-    from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
+    from nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 
     lookups = [
         {
@@ -230,7 +230,7 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
 
 
 def test_spacy_featurizer_casing(spacy_nlp):
-    from rasa.nlu.featurizers import spacy_featurizer
+    from nlu.featurizers.dense_featurizer import spacy_featurizer
 
     # if this starts failing for the default model, we should think about
     # removing the lower casing the spacy nlp component does when it
@@ -262,7 +262,9 @@ def test_spacy_featurizer_casing(spacy_nlp):
     ],
 )
 def test_count_vector_featurizer(sentence, expected):
-    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        CountVectorsFeaturizer,
+    )
 
     ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
     train_message = Message(sentence)
@@ -288,7 +290,9 @@ def test_count_vector_featurizer(sentence, expected):
 def test_count_vector_featurizer_attribute_featurization(
     sentence, intent, response, intent_features, response_features
 ):
-    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        CountVectorsFeaturizer,
+    )
 
     ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
     train_message = Message(sentence)
@@ -321,7 +325,9 @@ def test_count_vector_featurizer_attribute_featurization(
 def test_count_vector_featurizer_shared_vocab(
     sentence, intent, response, text_features, intent_features, response_features
 ):
-    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        CountVectorsFeaturizer,
+    )
 
     ftr = CountVectorsFeaturizer(
         {"token_pattern": r"(?u)\b\w+\b", "use_shared_vocab": True}
@@ -350,7 +356,9 @@ def test_count_vector_featurizer_shared_vocab(
     ],
 )
 def test_count_vector_featurizer_oov_token(sentence, expected):
-    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        CountVectorsFeaturizer,
+    )
 
     ftr = CountVectorsFeaturizer(
         {"token_pattern": r"(?u)\b\w+\b", "OOV_token": "__oov__"}
@@ -377,7 +385,9 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     ],
 )
 def test_count_vector_featurizer_oov_words(sentence, expected):
-    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        CountVectorsFeaturizer,
+    )
 
     ftr = CountVectorsFeaturizer(
         {
@@ -411,7 +421,9 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     ],
 )
 def test_count_vector_featurizer_using_tokens(tokens, expected):
-    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        CountVectorsFeaturizer,
+    )
 
     ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
 
@@ -446,7 +458,9 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     ],
 )
 def test_count_vector_featurizer_char(sentence, expected):
-    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        CountVectorsFeaturizer,
+    )
 
     ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char"})
     train_message = Message(sentence)
@@ -462,7 +476,9 @@ def test_count_vector_featurizer_char(sentence, expected):
 
 
 def test_count_vector_featurizer_persist_load(tmpdir):
-    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        CountVectorsFeaturizer,
+    )
 
     # set non default values to config
     config = {
