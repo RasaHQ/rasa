@@ -29,6 +29,7 @@ Added
   environment variable ``SANIC_WORKERS`` (default: 1). A value of >1 is allowed only in
   combination with ``RedisLockStore`` as the lock store.
 - Botframework channel can handle uploaded files in ``UserMessage`` metadata.
+- Added data validator that checks there is no duplicated example data across multiples intents
 
 Changed
 -------
