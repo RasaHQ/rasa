@@ -311,7 +311,7 @@ class CountVectorsFeaturizer(Featurizer):
             # create bag for each example
             example.set(
                 MESSAGE_VECTOR_FEATURE_NAMES[attribute],
-                self._combine_with_existing_features(
+                self._combine_with_existing_sparse_features(
                     example,
                     attribute_features[i],
                     MESSAGE_VECTOR_FEATURE_NAMES[attribute],
@@ -547,7 +547,7 @@ class CountVectorsFeaturizer(Featurizer):
 
             message.set(
                 MESSAGE_VECTOR_FEATURE_NAMES[attribute],
-                self._combine_with_existing_features(
+                self._combine_with_existing_sparse_features(
                     message,
                     features[0],
                     feature_name=MESSAGE_VECTOR_FEATURE_NAMES[attribute],

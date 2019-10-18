@@ -56,7 +56,7 @@ class RegexFeaturizer(Featurizer):
     def _text_features_with_regex(self, message):
         if self.known_patterns:
             extras = self.features_for_patterns(message)
-            return self._combine_with_existing_features(message, extras)
+            return self._combine_with_existing_sparse_features(message, extras)
         else:
             return message.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 

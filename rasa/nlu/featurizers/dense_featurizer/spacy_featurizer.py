@@ -79,7 +79,7 @@ class SpacyFeaturizer(Featurizer):
             ner_features = np.array([t.vector for t in doc])
         else:
             ner_features = np.array([[] for t in doc])
-        combined_features = self._combine_with_existing_features(
+        combined_features = self._combine_with_existing_dense_features(
             message,
             ner_features,
             MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_ENTITIES_ATTRIBUTE],
@@ -94,7 +94,7 @@ class SpacyFeaturizer(Featurizer):
         message_attribute_doc = self.get_doc(message, attribute)
         if message_attribute_doc is not None:
             fs = features_for_doc(message_attribute_doc)
-            features = self._combine_with_existing_features(
+            features = self._combine_with_existing_dense_features(
                 message, fs, MESSAGE_VECTOR_FEATURE_NAMES[attribute]
             )
             message.set(MESSAGE_VECTOR_FEATURE_NAMES[attribute], features)

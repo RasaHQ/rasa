@@ -60,7 +60,7 @@ class MitieFeaturizer(Featurizer):
                     )
                     example.set(
                         MESSAGE_VECTOR_FEATURE_NAMES[attribute],
-                        self._combine_with_existing_features(
+                        self._combine_with_existing_dense_features(
                             example, features, MESSAGE_VECTOR_FEATURE_NAMES[attribute]
                         ),
                     )
@@ -74,7 +74,7 @@ class MitieFeaturizer(Featurizer):
         )
         message.set(
             MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-            self._combine_with_existing_features(
+            self._combine_with_existing_dense_features(
                 message, features, MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
             ),
         )
