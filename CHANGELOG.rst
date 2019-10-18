@@ -12,6 +12,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Can now pass a package as an argument to the ``--actions`` parameter of the ``rasa run actions``
+  command.
 
 Fixed
 -----
