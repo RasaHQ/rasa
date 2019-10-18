@@ -206,6 +206,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../1.3.10/changelog/">1.3.10</a>
               <a href="../../1.3.9/changelog/">1.3.9</a>
               <a href="../../1.3.8/changelog/">1.3.8</a>
               <a href="../../1.3.7/changelog/">1.3.7</a>
@@ -250,7 +251,7 @@
 
 
 
-    <p class="scv-banner"><a href="../../1.3.9/changelog/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.3.9.</a></p>
+    <p class="scv-banner"><a href="../../1.3.10/changelog/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.3.10.</a></p>
 <div class="section" id="rasa-change-log">
 <h1>Rasa Change Log<a class="headerlink" href="#rasa-change-log" title="Permalink to this headline">¶</a></h1>
 <p>All notable changes to this project will be documented in this file.
@@ -276,6 +277,8 @@ server (<code class="docutils literal notranslate"><span class="pre">rasa.server
 (<code class="docutils literal notranslate"><span class="pre">rasa.core.agent.handle_channels()</span></code>). The number of workers can be set using the
 environment variable <code class="docutils literal notranslate"><span class="pre">SANIC_WORKERS</span></code> (default: 1). A value of &gt;1 is allowed only in
 combination with <code class="docutils literal notranslate"><span class="pre">RedisLockStore</span></code> as the lock store.</li>
+<li>Botframework channel can handle uploaded files in <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code> metadata.</li>
+<li>Added data validator that checks there is no duplicated example data across multiples intents</li>
 </ul>
 </div>
 <div class="section" id="changed">

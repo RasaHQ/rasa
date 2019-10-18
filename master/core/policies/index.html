@@ -214,6 +214,7 @@ require generalization." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.3.10/core/policies/">1.3.10</a>
               <a href="../../../1.3.9/core/policies/">1.3.9</a>
               <a href="../../../1.3.8/core/policies/">1.3.8</a>
               <a href="../../../1.3.7/core/policies/">1.3.7</a>
@@ -258,7 +259,7 @@ require generalization." />
 
 
 
-    <p class="scv-banner"><a href="../../../1.3.9/core/policies/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.3.9.</a></p>
+    <p class="scv-banner"><a href="../../../1.3.10/core/policies/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.3.10.</a></p>
 <div class="section" id="policies">
 <span id="id1"></span><h1>Policies<a class="headerlink" href="#policies" title="Permalink to this headline">¶</a></h1>
 
@@ -481,7 +482,7 @@ The default architecture is based on an LSTM, but you can override the
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">training_trackers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DialogueStateTracker</span><span class="p">],</span>
     <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
     <span class="c1"># set numpy random seed</span>
@@ -521,7 +522,7 @@ The default architecture is based on an LSTM, but you can override the
                 <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
                 <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">verbose</span><span class="o">=</span><span class="n">obtain_verbosity</span><span class="p">(),</span>
-                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span>
+                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="c1"># the default parameter for epochs in keras fit is 1</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;epochs&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
