@@ -585,7 +585,7 @@ class CountVectorsFeaturizer(Featurizer):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
 
         file_name = meta.get("file")

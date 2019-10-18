@@ -64,7 +64,7 @@ class SlackBot(SlackClient, OutputChannel):
             channel=recipient,
             as_user=True,
             attachments=[attachment],
-            **kwargs
+            **kwargs,
         )
 
     async def send_text_with_buttons(
@@ -72,7 +72,7 @@ class SlackBot(SlackClient, OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         recipient = self.slack_channel or recipient_id
 

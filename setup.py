@@ -7,7 +7,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
 with open("rasa/version.py") as f:
-    exec (f.read())
+    exec(f.read())
 
 # Get the long description from the README file
 with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
@@ -138,8 +138,8 @@ setup(
     },
 )
 
-print ("\nWelcome to Rasa!")
-print (
+print("\nWelcome to Rasa!")
+print(
     "If you have any questions, please visit our documentation page: https://rasa.com/docs/"
 )
-print ("or join the community discussions on https://forum.rasa.com/")
+print("or join the community discussions on https://forum.rasa.com/")

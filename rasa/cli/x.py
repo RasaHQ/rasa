@@ -382,7 +382,7 @@ def run_locally(args: argparse.Namespace):
     try:
         local.main(args, project_path, args.data, token=rasa_x_token)
     except Exception:
-        print (traceback.format_exc())
+        print(traceback.format_exc())
         cli_utils.print_error(
             "Sorry, something went wrong (see error above). Make sure to start "
             "Rasa X with valid data and valid domain and config files. Please, "
