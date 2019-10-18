@@ -92,6 +92,7 @@ def test_whitespace_cls_token():
         "lunch",
         CLS_TOKEN,
     ]
+    assert [t.offset for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13, 19]
 
 
 def test_whitespace_custom_intent_symbol():
@@ -205,6 +206,23 @@ def test_spacy(spacy_nlp):
         "?",
     ]
     assert [t.offset for t in tk.tokenize(spacy_nlp(text))] == [0, 4, 13, 16, 20, 23]
+
+
+def test_spacy_add_cls_token(spacy_nlp):
+    from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+
+    component_config = {"add_cls_token": True}
+
+    tk = SpacyTokenizer(component_config)
+
+    text = "Forecast for lunch"
+    assert [t.text for t in tk.tokenize(spacy_nlp(text))] == [
+        "Forecast",
+        "for",
+        "lunch",
+        CLS_TOKEN,
+    ]
+    assert [t.offset for t in tk.tokenize(spacy_nlp(text))] == [0, 9, 13, 19]
 
 
 def test_spacy_intent_tokenizer(spacy_nlp_component):
