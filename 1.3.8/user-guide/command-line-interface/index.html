@@ -369,7 +369,7 @@ using <code class="docutils literal notranslate"><span class="pre">--fixed-model
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--dump-stories] [--fixed-model-name FIXED_MODEL_NAME]
-                  [--force]
+                  [--persist-nlu-data] [--force]
                   {core,nlu} ...
 
 positional arguments:
@@ -401,6 +401,8 @@ optional arguments:
   --fixed-model-name FIXED_MODEL_NAME
                         If set, the name of the model file/directory will be
                         set to the given name. (default: None)
+  --persist-nlu-data    Persist the nlu training data in the saved model.
+                        (default: False)
   --force               Force a model training even if the data has not
                         changed. (default: False)
 
