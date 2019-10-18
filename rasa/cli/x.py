@@ -113,10 +113,11 @@ def _overwrite_endpoints_for_local_x(
 
     # Checking if endpoint.yml has existing url and wait time values set, if so give warning we are overwriting
     # the endpoint.yml file.
-    custom_wait_time_pulls = endpoints.model.kwargs["wait_time_between_pulls"]
+    custom_wait_time_pulls = endpoints.model.kwargs.get("wait_time_between_pulls")
     custom_url = endpoints.model.url
 
-    if custom_url is not None and custom_url != model_pull_url:
+
+    if custom_url is not None and custom_url != custom_url:
         logger.info(
             "Ignoring url '{0}' from 'endpoints.yml' and using "
             "{1}/projects/default/models/tag/production instead".format(
