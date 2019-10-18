@@ -71,8 +71,5 @@ USER 1001
 
 EXPOSE 5005
 
-HEALTHCHECK --start-period=30s \
-  CMD curl -f http://localhost:5005 || curl -f https://localhost:5005 || exit 1
-
 ENTRYPOINT ["rasa"]
 CMD ["--help"]
