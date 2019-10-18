@@ -2,15 +2,13 @@ from typing import Any, List, Text, Optional, Dict
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    CLS_TOKEN,
 )
 
 
@@ -20,13 +18,13 @@ class MitieTokenizer(Tokenizer, Component):
 
     defaults = {
         # Add a __cls__ token to the end of the list of tokens
-        "add_cls_token": False
+        "use_cls_token": False
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         """Construct a new tokenizer using the SpacyTokenizer framework."""
         super(MitieTokenizer, self).__init__(component_config)
-        self.add_cls_token = self.component_config["add_cls_token"]
+        self.use_cls_token = self.component_config["use_cls_token"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -71,11 +69,7 @@ class MitieTokenizer(Tokenizer, Component):
             for token, offset in tokenized
         ]
 
-        if (
-            attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
-            and self.add_cls_token
-        ):
-            tokens.append(Token(CLS_TOKEN, len(text) + 1))
+        self.add_cls_token(tokens, self.use_cls_token, attribute)
 
         return tokens
 

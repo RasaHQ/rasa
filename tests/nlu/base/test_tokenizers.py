@@ -82,7 +82,7 @@ def test_whitespace():
 def test_whitespace_cls_token():
     from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
-    component_config = {"add_cls_token": True}
+    component_config = {"use_cls_token": True}
 
     tk = WhitespaceTokenizer(component_config)
 
@@ -211,7 +211,7 @@ def test_spacy(spacy_nlp):
 def test_spacy_add_cls_token(spacy_nlp):
     from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 
-    component_config = {"add_cls_token": True}
+    component_config = {"use_cls_token": True}
 
     tk = SpacyTokenizer(component_config)
 
@@ -266,7 +266,7 @@ def test_mitie():
 def test_mitie_add_cls_token():
     from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 
-    component_config = {"add_cls_token": True}
+    component_config = {"use_cls_token": True}
 
     tk = MitieTokenizer(component_config)
 
@@ -313,7 +313,7 @@ def test_jieba_load_dictionary(tmpdir_factory):
 def test_jieba_add_cls_token():
     from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 
-    component_config = {"add_cls_token": True}
+    component_config = {"use_cls_token": True}
 
     tk = JiebaTokenizer(component_config)
 

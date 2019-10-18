@@ -7,16 +7,14 @@ from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    CLS_TOKEN,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,7 +37,7 @@ class JiebaTokenizer(Tokenizer, Component):
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
         # Add a __cls__ token to the end of the list of tokens
-        "add_cls_token": False,
+        "use_cls_token": False,
     }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -62,7 +60,7 @@ class JiebaTokenizer(Tokenizer, Component):
         if self.dictionary_path is not None:
             self.load_custom_dictionary(self.dictionary_path)
 
-        self.add_cls_token = self.component_config["add_cls_token"]
+        self.use_cls_token = self.component_config["use_cls_token"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -120,11 +118,7 @@ class JiebaTokenizer(Tokenizer, Component):
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
 
-        if (
-            attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
-            and self.add_cls_token
-        ):
-            tokens.append(Token(CLS_TOKEN, len(text) + 1))
+        self.add_cls_token(tokens, self.use_cls_token, attribute)
 
         return tokens
 

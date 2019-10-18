@@ -32,7 +32,7 @@ from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
-from rasa.nlu.tokenizers import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.core.constants import RESPOND_PREFIX
 
 logger = logging.getLogger(__name__)
