@@ -428,20 +428,13 @@ def test_botframework_attachments():
         "id": "123",
         "channelId": "msteams",
         "serviceUrl": "https://smba.trafficmanager.net/emea/",
-        "from": {
-            "id": "12:123",
-            "name": "Rasa",
-            "aadObjectId": "123"
-        },
+        "from": {"id": "12:123", "name": "Rasa", "aadObjectId": "123"},
         "conversation": {
             "conversationType": "personal",
             "tenantId": "123",
-            "id": "a:123"
+            "id": "a:123",
         },
-        "recipient": {
-            "id": "12:123",
-            "name": "Rasa chat"
-        },
+        "recipient": {"id": "12:123", "name": "Rasa chat"},
     }
     assert ch.add_attachments_to_metadata(payload, None) == None
 
@@ -451,10 +444,10 @@ def test_botframework_attachments():
             "content": {
                 "downloadUrl": "https://test.sharepoint.com/personal/rasa/123",
                 "uniqueId": "123",
-                "fileType": "csv"
+                "fileType": "csv",
             },
             "contentUrl": "https://test.sharepoint.com/personal/rasa/123",
-            "name": "rasa-test.csv"
+            "name": "rasa-test.csv",
         }
     ]
     payload["attachments"] = attachments
@@ -463,11 +456,10 @@ def test_botframework_attachments():
 
     metadata = {"test": 1, "bigger_test": {"key": "value"}}
     updated_metadata = deepcopy(metadata)
-    updated_metadata.update({
-        "attachments": attachments
-    })
-    
+    updated_metadata.update({"attachments": attachments})
+
     assert ch.add_attachments_to_metadata(payload, metadata) == updated_metadata
+
 
 def test_slack_message_sanitization():
     from rasa.core.channels.slack import SlackInput

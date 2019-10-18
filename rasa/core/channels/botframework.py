@@ -191,20 +191,17 @@ class BotFrameworkInput(InputChannel):
 
     @staticmethod
     def add_attachments_to_metadata(
-        postdata: Dict[Text, Any], 
-        metadata: Optional[Dict[Text, Any]]
+        postdata: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
     ) -> Optional[Dict[Text, Any]]:
         """Merge the values of `postdata['attachments']` with `metadata`."""
-        
-        if postdata.get('attachments'):
-            attachments = {
-                "attachments": postdata['attachments']
-            }
+
+        if postdata.get("attachments"):
+            attachments = {"attachments": postdata["attachments"]}
             if metadata:
                 metadata.update(attachments)
             else:
                 metadata = attachments
-        
+
         return metadata
 
     def blueprint(
@@ -224,7 +221,8 @@ class BotFrameworkInput(InputChannel):
             metadata = self.get_metadata(request)
 
             metadata_with_attachments = self.add_attachments_to_metadata(
-                postdata, metadata)
+                postdata, metadata
+            )
 
             try:
                 if postdata["type"] == "message":
@@ -235,7 +233,7 @@ class BotFrameworkInput(InputChannel):
                         postdata["recipient"],
                         postdata["serviceUrl"],
                     )
-                    
+
                     user_msg = UserMessage(
                         text=postdata.get("text", ""),
                         output_channel=out_channel,
