@@ -66,21 +66,19 @@ class Validator(object):
         everything_is_alright = True
 
         duplication_hash = defaultdict(set)
-        duplicated_examples = {}
         for example in self.intents.intent_examples:
             text = example.text
             duplication_hash[text].add(example.get("intent"))
 
-            if len(duplication_hash[text]) > 1:
-                duplicated_examples[text] = duplication_hash[text]
-                everything_is_alright = ignore_warnings and everything_is_alright
+        for text, intents in duplication_hash.items():
 
-        for text, intents in duplicated_examples.items():
-            logger.warning(
-                "The example '{}' was found in these multiples intents: {}".format(
-                    text, ", ".join(sorted(intents))
+            if len(duplication_hash[text]) > 1:
+                everything_is_alright = ignore_warnings and everything_is_alright
+                logger.warning(
+                    "The example '{}' was found in these multiples intents: {}".format(
+                        text, ", ".join(sorted(intents))
+                    )
                 )
-            )
         return everything_is_alright
 
     def verify_intents_in_stories(self, ignore_warnings: bool = True) -> bool:
