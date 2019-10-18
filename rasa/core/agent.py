@@ -444,7 +444,7 @@ class Agent(object):
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs
+        **kwargs,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
 
@@ -482,7 +482,7 @@ class Agent(object):
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
 

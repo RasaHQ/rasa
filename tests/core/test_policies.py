@@ -387,7 +387,7 @@ class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
         p = EmbeddingPolicy(
             featurizer=featurizer,
             priority=priority,
-            **{"scale_loss": False, "evaluate_on_num_examples": 4}
+            **{"scale_loss": False, "evaluate_on_num_examples": 4},
         )
         return p
 

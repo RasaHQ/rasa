@@ -129,7 +129,7 @@ class EmbeddingPolicy(Policy):
         all_bot_embed: Optional["tf.Tensor"] = None,
         attention_weights: Optional["tf.Tensor"] = None,
         max_history: Optional[int] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Declare instant variables with default values"""
 
@@ -409,7 +409,7 @@ class EmbeddingPolicy(Policy):
         self,
         training_trackers: List["DialogueStateTracker"],
         domain: "Domain",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
 
@@ -498,7 +498,7 @@ class EmbeddingPolicy(Policy):
         self,
         training_trackers: List["DialogueStateTracker"],
         domain: "Domain",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Continue training an already trained policy."""
 

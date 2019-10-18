@@ -53,7 +53,7 @@ def nlg_request_format(
     template_name: Text,
     tracker: DialogueStateTracker,
     output_channel: Text,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
 
@@ -84,7 +84,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         template_name: Text,
         tracker: DialogueStateTracker,
         output_channel: Text,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[Text, Any]:
         """Retrieve a named template from the domain using an endpoint."""
 

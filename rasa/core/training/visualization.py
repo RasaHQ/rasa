@@ -223,7 +223,7 @@ def _merge_equivalent_nodes(graph, max_history):
                                 succ_node,
                                 k,
                                 d.get("label"),
-                                **{"class": d.get("class", "")}
+                                **{"class": d.get("class", "")},
                             )
                             graph.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
@@ -235,7 +235,7 @@ def _merge_equivalent_nodes(graph, max_history):
                                 i,
                                 k,
                                 d.get("label"),
-                                **{"class": d.get("class", "")}
+                                **{"class": d.get("class", "")},
                             )
                             graph.remove_edge(prev_node, j)
                         graph.remove_node(j)
@@ -273,7 +273,7 @@ async def _replace_edge_labels_with_nodes(
                 shape="rect",
                 style="filled",
                 fillcolor="lightblue",
-                **_transfer_style(d, {"class": "intent"})
+                **_transfer_style(d, {"class": "intent"}),
             )
             graph.add_edge(s, next_id, **{"class": d.get("class", "")})
             graph.add_edge(next_id, e, **{"class": d.get("class", "")})
@@ -336,7 +336,7 @@ def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> No
         fillcolor="green",
         style="filled",
         fontsize=fontsize,
-        **{"class": "start active"}
+        **{"class": "start active"},
     )
     graph.add_node(
         END_NODE_ID,
@@ -344,7 +344,7 @@ def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> No
         fillcolor="red",
         style="filled",
         fontsize=fontsize,
-        **{"class": "end"}
+        **{"class": "end"},
     )
     graph.add_node(TMP_NODE_ID, label="TMP", style="invis", **{"class": "invisible"})
 
@@ -388,7 +388,7 @@ def _add_message_edge(
         next_node_idx,
         message_key,
         message_label,
-        **{"class": "active" if is_current else ""}
+        **{"class": "active" if is_current else ""},
     )
 
 
@@ -440,7 +440,7 @@ async def visualize_neighborhood(
                     next_node_idx,
                     label=el.action_name,
                     fontsize=fontsize,
-                    **{"class": "active" if is_current else ""}
+                    **{"class": "active" if is_current else ""},
                 )
 
                 _add_message_edge(
@@ -466,7 +466,7 @@ async def visualize_neighborhood(
                     if not message
                     else sanitize(message.get("intent", {}).get("name", "  ?  ")),
                     shape="rect",
-                    **{"class": "intent dashed active"}
+                    **{"class": "intent dashed active"},
                 )
                 target = next_node_idx
             elif current_node:

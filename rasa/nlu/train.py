@@ -54,7 +54,7 @@ async def train(
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
     persist_nlu_training_data: bool = False,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
     from rasa.importers.importer import TrainingDataImporter

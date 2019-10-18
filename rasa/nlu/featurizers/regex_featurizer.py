@@ -136,7 +136,7 @@ class RegexFeaturizer(Featurizer):
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["RegexFeaturizer"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "RegexFeaturizer":
 
         file_name = meta.get("file")

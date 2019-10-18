@@ -143,7 +143,7 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers."""
         self.lookup = {}
@@ -164,7 +164,7 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
 
         # add only the last tracker, because it is the only new one
