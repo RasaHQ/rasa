@@ -1,7 +1,6 @@
 import re
 from typing import Any, Dict, List, Text
 
-from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
