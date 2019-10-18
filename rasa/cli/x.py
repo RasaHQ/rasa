@@ -117,7 +117,7 @@ def _overwrite_endpoints_for_local_x(
     custom_url = endpoints.model.url
 
 
-    if custom_url is not None and custom_url != custom_url:
+    if custom_url is not None and custom_url != rasa_x_url:
         logger.info(
             "Ignoring url '{0}' from 'endpoints.yml' and using "
             "{1}/projects/default/models/tag/production instead".format(
@@ -125,18 +125,11 @@ def _overwrite_endpoints_for_local_x(
             )
         )
 
-    if custom_wait_time_pulls:
-        endpoints.model = EndpointConfig(
-            "{}/projects/default/models/tags/production".format(rasa_x_url),
-            token=rasa_x_token,
-            wait_time_between_pulls=custom_wait_time_pulls,
-        )
-    else:
-        endpoints.model = EndpointConfig(
-            "{}/projects/default/models/tags/production".format(rasa_x_url),
-            token=rasa_x_token,
-            wait_time_between_pulls=2,
-        )
+    endpoints.model = EndpointConfig(
+        "{}/projects/default/models/tags/production".format(rasa_x_url),
+        token=rasa_x_token,
+        wait_time_between_pulls=custom_wait_time_pulls,
+    )
 
     overwrite_existing_event_broker = False
     if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
