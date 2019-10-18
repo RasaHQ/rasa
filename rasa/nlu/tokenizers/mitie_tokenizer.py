@@ -17,10 +17,6 @@ class MitieTokenizer(Tokenizer):
 
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        """Construct a new tokenizer using the SpacyTokenizer framework."""
-        super(MitieTokenizer, self).__init__(component_config)
-
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["mitie"]

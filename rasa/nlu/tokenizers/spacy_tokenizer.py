@@ -28,10 +28,6 @@ class SpacyTokenizer(Tokenizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        """Construct a new tokenizer using the SpacyTokenizer framework."""
-        super(SpacyTokenizer, self).__init__(component_config)
-
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
