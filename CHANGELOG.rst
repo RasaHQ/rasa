@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- Added option ``add_cls_token`` to all tokenizers to add the token ``__CLS__`` to the end of the list of tokens.
+- Added option ``use_cls_token`` to all tokenizers to add the token ``__CLS__`` to the end of the list of tokens.
 
 Changed
 -------
