@@ -16,6 +16,11 @@ class MitieTokenizer(Tokenizer):
 
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
+    defaults = {
+        # add __CLS__ token to the end of the list of tokens
+        "use_cls_token": True
+    }
+
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
