@@ -1,7 +1,6 @@
 import typing
-from typing import Any, Dict, Text, List, Optional
+from typing import Any, Text, List
 
-from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
@@ -60,7 +59,9 @@ class SpacyTokenizer(Tokenizer):
             ),
         )
 
-    def tokenize(self, doc: "Doc", attribute: Text) -> List[Token]:
+    def tokenize(
+        self, doc: "Doc", attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+    ) -> List[Token]:
         tokens = [Token(t.text, t.idx) for t in doc]
         self.add_cls_token(tokens, attribute)
         return tokens
