@@ -29,7 +29,7 @@ class Tokenizer(Component):
         if "use_cls_token" in self.component_config:
             self.use_cls_token = self.component_config["use_cls_token"]
         else:
-            self.use_cls_token = False
+            self.use_cls_token = True
 
     def add_cls_token(
         self, tokens: List[Token], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
