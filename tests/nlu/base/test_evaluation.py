@@ -39,7 +39,7 @@ from rasa.nlu.test import align_entity_predictions
 from rasa.nlu.test import determine_intersection
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu import utils
 import json
 import os

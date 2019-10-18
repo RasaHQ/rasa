@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 
-class JiebaTokenizer(Component, Tokenizer):
+class JiebaTokenizer(Tokenizer):
 
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
@@ -36,8 +36,6 @@ class JiebaTokenizer(Component, Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # Add a __cls__ token to the end of the list of tokens
-        "use_cls_token": False,
     }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -59,8 +57,6 @@ class JiebaTokenizer(Component, Tokenizer):
         # load dictionary
         if self.dictionary_path is not None:
             self.load_custom_dictionary(self.dictionary_path)
-
-        self.use_cls_token = self.component_config["use_cls_token"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:

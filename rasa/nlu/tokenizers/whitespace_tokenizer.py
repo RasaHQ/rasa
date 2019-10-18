@@ -13,7 +13,7 @@ from rasa.nlu.constants import (
 )
 
 
-class WhitespaceTokenizer(Component, Tokenizer):
+class WhitespaceTokenizer(Tokenizer):
 
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
@@ -24,8 +24,6 @@ class WhitespaceTokenizer(Component, Tokenizer):
         "intent_split_symbol": "_",
         # Text will be tokenized with case sensitive as default
         "case_sensitive": True,
-        # Add a __cls__ token to the end of the list of tokens
-        "use_cls_token": False,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -39,7 +37,6 @@ class WhitespaceTokenizer(Component, Tokenizer):
         # split symbol for intents
         self.intent_split_symbol = self.component_config["intent_split_symbol"]
         self.case_sensitive = self.component_config["case_sensitive"]
-        self.use_cls_token = self.component_config["use_cls_token"]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
