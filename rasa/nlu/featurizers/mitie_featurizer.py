@@ -4,7 +4,7 @@ from typing import Any, List, Text
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
-from rasa.nlu.tokenizers import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:

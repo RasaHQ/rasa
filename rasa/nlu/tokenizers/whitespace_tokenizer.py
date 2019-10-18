@@ -3,15 +3,13 @@ from typing import Any, Dict, List, Text
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    CLS_TOKEN,
 )
 
 
@@ -27,7 +25,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
         # Text will be tokenized with case sensitive as default
         "case_sensitive": True,
         # Add a __cls__ token to the end of the list of tokens
-        "add_cls_token": False,
+        "use_cls_token": False,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -41,7 +39,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
         # split symbol for intents
         self.intent_split_symbol = self.component_config["intent_split_symbol"]
         self.case_sensitive = self.component_config["case_sensitive"]
-        self.add_cls_token = self.component_config["add_cls_token"]
+        self.use_cls_token = self.component_config["use_cls_token"]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -97,10 +95,6 @@ class WhitespaceTokenizer(Tokenizer, Component):
             running_offset = word_offset + word_len
             tokens.append(Token(word, word_offset))
 
-        if (
-            attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
-            and self.add_cls_token
-        ):
-            tokens.append(Token(CLS_TOKEN, len(text) + 1))
+        self.add_cls_token(tokens, self.use_cls_token, attribute)
 
         return tokens
