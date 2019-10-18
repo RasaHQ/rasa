@@ -269,7 +269,7 @@ async def _replace_edge_labels_with_nodes(
             graph.remove_edge(s, e, k)
             graph.add_node(
                 next_id,
-                label=sanitize(label),
+                label=label,
                 shape="rect",
                 style="filled",
                 fillcolor="lightblue",
@@ -279,29 +279,31 @@ async def _replace_edge_labels_with_nodes(
             graph.add_edge(next_id, e, **{"class": d.get("class", "")})
 
 
-def visualization_html_path():
+def visualization_html_path() -> Text:
     import pkg_resources
 
     return pkg_resources.resource_filename(__name__, VISUALIZATION_TEMPLATE_PATH)
 
 
-def persist_graph(graph, output_file):
+def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
     """Plots the graph and persists it into a html file."""
     import networkx as nx
+    import rasa.utils.io as io_utils
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    with open(visualization_html_path(), "r") as file:
-        template = file.read()
+    template = io_utils.read_file(visualization_html_path())
 
-    # customize content of template by replacing tags
+    # Insert graph into template
     template = template.replace("// { is-client }", "isClient = true", 1)
+    graph_as_text = expg.to_string()
+    # escape backslashes
+    graph_as_text = graph_as_text.replace("\\", "\\\\")
     template = template.replace(
-        "// { graph-content }", "graph = `{}`".format(expg.to_string()), 1
+        "// { graph-content }", "graph = `{}`".format(graph_as_text), 1
     )
 
-    with open(output_file, "w", encoding="utf-8") as file:
-        file.write(template)
+    io_utils.write_text_file(template, output_file)
 
 
 def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> int:
@@ -357,13 +359,6 @@ def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
     graph = nx.MultiDiGraph()
     _add_default_nodes(graph, fontsize)
     return graph
-
-
-def sanitize(s):
-    if s:
-        return re.escape(s)
-    else:
-        return s
 
 
 def _add_message_edge(
@@ -464,7 +459,7 @@ async def visualize_neighborhood(
                     next_node_idx,
                     label="  ?  "
                     if not message
-                    else sanitize(message.get("intent", {}).get("name", "  ?  ")),
+                    else message.get("intent", {}).get("name", "  ?  "),
                     shape="rect",
                     **{"class": "intent dashed active"},
                 )

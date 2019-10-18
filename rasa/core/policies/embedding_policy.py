@@ -577,7 +577,7 @@ class EmbeddingPolicy(Policy):
         meta = {"priority": self.priority}
 
         meta_file = os.path.join(path, "embedding_policy.json")
-        utils.dump_obj_as_json_to_file(meta_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
         file_name = "tensorflow_embedding.ckpt"
         checkpoint = os.path.join(path, file_name)

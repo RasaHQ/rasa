@@ -44,7 +44,6 @@ from rasa.core.events import (
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, NaturalLanguageInterpreter
 from rasa.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.core.training import visualization
-from rasa.core.training.structures import Story
 from rasa.core.training.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
     visualize_neighborhood,
@@ -788,7 +787,7 @@ async def _write_stories_to_file(
     else:
         append_write = "w"  # make a new file if not
 
-    with open(export_story_path, append_write, encoding="utf-8") as f:
+    with open(export_story_path, append_write, encoding=io_utils.DEFAULT_ENCODING) as f:
         i = 1
         for conversation in sub_conversations:
             parsed_events = rasa.core.events.deserialise_events(conversation)
@@ -841,11 +840,12 @@ async def _write_nlu_to_file(
     else:
         fformat = "json"
 
-    with open(export_nlu_path, "w", encoding="utf-8") as f:
-        if fformat == "md":
-            f.write(nlu_data.nlu_as_markdown())
-        else:
-            f.write(nlu_data.nlu_as_json())
+    if fformat == "md":
+        stringified_training_data = nlu_data.nlu_as_markdown()
+    else:
+        stringified_training_data = nlu_data.nlu_as_json()
+
+    io_utils.write_text_file(stringified_training_data, export_nlu_path)
 
 
 def _entities_from_messages(messages):

@@ -224,17 +224,25 @@ class CountVectorsFeaturizer(Featurizer):
 
         tokens = self._get_message_tokens_by_attribute(message, attribute)
 
-        text = self.process_text(tokens)
+        text = self._process_text(tokens, attribute)
 
         text = self._replace_with_oov_token(text, attribute)
 
         return text
 
-    def process_text(self, tokens: List[Text]) -> Text:
-        """Apply an processing, cleaning steps to text"""
+    def _process_text(
+        self, tokens: List[Text], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+    ) -> Text:
+        """Apply processing and cleaning steps to text"""
+
+        text = " ".join(tokens)
+
+        if attribute == MESSAGE_INTENT_ATTRIBUTE:
+            # Don't do any processing for intent attribute. Treat them as whole labels
+            return text
 
         # replace all digits with NUMBER token
-        text = re.sub(r"\b[0-9]+\b", "__NUMBER__", " ".join(tokens))
+        text = re.sub(r"\b[0-9]+\b", "__NUMBER__", text)
 
         # convert to lowercase if necessary
         if self.lowercase:

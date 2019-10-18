@@ -6,14 +6,11 @@ from rasa.nlu.tokenizers import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
 )
+from rasa.utils.io import DEFAULT_ENCODING
 
 
 class MitieTokenizer(Tokenizer, Component):
@@ -46,13 +43,14 @@ class MitieTokenizer(Tokenizer, Component):
 
     def _token_from_offset(self, text, offset, encoded_sentence):
         return Token(
-            text.decode("utf-8"), self._byte_to_char_offset(encoded_sentence, offset)
+            text.decode(DEFAULT_ENCODING),
+            self._byte_to_char_offset(encoded_sentence, offset),
         )
 
     def tokenize(self, text: Text) -> List[Token]:
         import mitie
 
-        encoded_sentence = text.encode("utf-8")
+        encoded_sentence = text.encode(DEFAULT_ENCODING)
         tokenized = mitie.tokenize_with_offsets(encoded_sentence)
         tokens = [
             self._token_from_offset(token, offset, encoded_sentence)
@@ -62,4 +60,4 @@ class MitieTokenizer(Tokenizer, Component):
 
     @staticmethod
     def _byte_to_char_offset(text: bytes, byte_offset: int) -> int:
-        return len(text[:byte_offset].decode("utf-8"))
+        return len(text[:byte_offset].decode(DEFAULT_ENCODING))
