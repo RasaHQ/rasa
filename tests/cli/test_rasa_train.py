@@ -5,7 +5,8 @@ import tempfile
 import pytest
 
 from rasa import model
-
+from rasa.nlu.model import Metadata
+from rasa.nlu.training_data import training_data
 from rasa.cli.train import _get_valid_config
 from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
@@ -36,6 +37,44 @@ def test_train(run_in_default_project):
     files = io_utils.list_files(os.path.join(temp_dir, "train_models"))
     assert len(files) == 1
     assert os.path.basename(files[0]) == "test-model.tar.gz"
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is None
+    assert not os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
+
+
+def test_train_persist_nlu_data(run_in_default_project):
+    temp_dir = os.getcwd()
+
+    run_in_default_project(
+        "train",
+        "-c",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--data",
+        "data",
+        "--out",
+        "train_models",
+        "--fixed-model-name",
+        "test-model",
+        "--persist-nlu-data",
+    )
+
+    assert os.path.exists(os.path.join(temp_dir, "train_models"))
+    files = io_utils.list_files(os.path.join(temp_dir, "train_models"))
+    assert len(files) == 1
+    assert os.path.basename(files[0]) == "test-model.tar.gz"
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is not None
+    assert os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
 
 
 def test_train_core_compare(run_in_default_project):
@@ -257,6 +296,39 @@ def test_train_nlu(run_in_default_project):
     files = io_utils.list_files("train_models")
     assert len(files) == 1
     assert os.path.basename(files[0]).startswith("nlu-")
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is None
+    assert not os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
+
+
+def test_train_nlu_persist_nlu_data(run_in_default_project):
+    run_in_default_project(
+        "train",
+        "nlu",
+        "-c",
+        "config.yml",
+        "--nlu",
+        "data/nlu.md",
+        "--out",
+        "train_models",
+        "--persist-nlu-data",
+    )
+
+    assert os.path.exists("train_models")
+    files = io_utils.list_files("train_models")
+    assert len(files) == 1
+    assert os.path.basename(files[0]).startswith("nlu-")
+    model_dir = model.get_model("train_models")
+    assert model_dir is not None
+    metadata = Metadata.load(os.path.join(model_dir, "nlu"))
+    assert metadata.get("training_data") is not None
+    assert os.path.exists(
+        os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
+    )
 
 
 def test_train_nlu_temp_files(run_in_default_project):
@@ -272,7 +344,7 @@ def test_train_help(run):
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--dump-stories] [--fixed-model-name FIXED_MODEL_NAME]
-                  [--force]
+                  [--persist-nlu-data] [--force]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -285,7 +357,8 @@ def test_train_nlu_help(run):
     output = run("train", "nlu", "--help")
 
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [--out OUT]
-                      [-u NLU] [--fixed-model-name FIXED_MODEL_NAME]"""
+                      [-u NLU] [--fixed-model-name FIXED_MODEL_NAME]
+                      [--persist-nlu-data]"""
 
     lines = help_text.split("\n")
 
