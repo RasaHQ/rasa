@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- add flag to CLI to persist NLU training data if needed
 - log a warning if the ``Interpreter`` picks up an intent or an entity that does not
   exist in the domain file.
 - added ``DynamoTrackerStore`` to support persistence of agents running on AWS
@@ -20,7 +21,7 @@ Added
 - `CRFEntityExtractor` updated to accept arbitrary token-level features like word
   vectors (issues/4214)
 - `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
-- Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com> 
+- Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com>
   or <http://url.com|url.com> and substitute it with original content
 - Added the ability to configure the number of Sanic worker processes in the HTTP
   server (``rasa.server``) and input channel server
@@ -41,6 +42,8 @@ Changed
   save operations.
 - Event brokers are now also passed to custom tracker stores (using the ``event_broker`` parameter)
 - Updated Rasa X model pull interval to be used and give a warning message if the user has a custom url in the ``endpoints.yml`` file.
+- Updated the ``/status`` api route to use the actual model file location instead of the ``tmp`` location.
+
 
 Removed
 -------
@@ -52,6 +55,7 @@ Fixed
 - fixed issue with ``conversation`` JSON serialization
 - fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
 - fixed Interactive Learning intent payload messages saving in nlu files
+- fixed DucklingHTTPExtractor dimensions by actually applying to the request
 
 [Unreleased 1.3.9]
 ^^^^^^^^^^^^^^^^^^
