@@ -128,7 +128,7 @@ def _overwrite_endpoints_for_local_x(
     endpoints.model = EndpointConfig(
         "{}/projects/default/models/tags/production".format(rasa_x_url),
         token=rasa_x_token,
-        wait_time_between_pulls=custom_wait_time_pulls,
+        wait_time_between_pulls=custom_wait_time_pulls or 2,
     )
 
     overwrite_existing_event_broker = False
