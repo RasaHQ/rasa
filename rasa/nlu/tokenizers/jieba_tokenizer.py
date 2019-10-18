@@ -16,8 +16,7 @@ from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    CLS_TOKEN,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,6 +38,8 @@ class JiebaTokenizer(Tokenizer, Component):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # Add a __cls__ token to the end of the list of tokens
+        "add_cls_token": False,
     }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -60,6 +61,8 @@ class JiebaTokenizer(Tokenizer, Component):
         # load dictionary
         if self.dictionary_path is not None:
             self.load_custom_dictionary(self.dictionary_path)
+
+        self.add_cls_token = self.component_config["add_cls_token"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -108,12 +111,21 @@ class JiebaTokenizer(Tokenizer, Component):
         else:
             return text
 
-    def tokenize(self, text: Text, attribute=MESSAGE_TEXT_ATTRIBUTE) -> List[Token]:
+    def tokenize(
+        self, text: Text, attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+    ) -> List[Token]:
         import jieba
 
         text = self.preprocess_text(text, attribute)
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
+
+        if (
+            attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
+            and self.add_cls_token
+        ):
+            tokens.append(Token(CLS_TOKEN, len(text) + 1))
+
         return tokens
 
     @classmethod

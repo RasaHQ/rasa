@@ -67,5 +67,5 @@ class SpacyTokenizer(Tokenizer, Component):
         tokens = [Token(t.text, t.idx) for t in doc]
         if self.add_cls_token:
             idx = doc[-1].idx + len(doc[-1].text) + 1
-            tokens = tokens + [Token(CLS_TOKEN, idx)]
+            tokens.append(Token(CLS_TOKEN, idx))
         return tokens
