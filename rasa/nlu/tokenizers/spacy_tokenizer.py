@@ -28,6 +28,11 @@ class SpacyTokenizer(Tokenizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
+    defaults = {
+        # add __CLS__ token to the end of the list of tokens
+        "use_cls_token": True
+    }
+
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
