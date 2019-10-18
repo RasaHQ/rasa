@@ -117,8 +117,11 @@ def _overwrite_endpoints_for_local_x(
     custom_url = endpoints.model.url
 
     if custom_url is not None:
-        cli_utils.print_warning(
-            "Modifying the endpoints.yml file for Rasa X with our defaults"
+        logger.info(
+            "Ignoring url '{0}' from 'endpoints.yml' and using "
+            "{1}/projects/default/models/tag/production instead".format(
+                custom_url,rasa_x_url
+            )
         )
 
     if custom_wait_time_pulls:
