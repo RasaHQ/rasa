@@ -101,6 +101,6 @@ class WhitespaceTokenizer(Tokenizer, Component):
             attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
             and self.add_cls_token
         ):
-            tokens.append(Token(CLS_TOKEN, len(text)))
+            tokens.append(Token(CLS_TOKEN, len(text) + 1))
 
         return tokens
