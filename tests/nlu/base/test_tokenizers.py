@@ -308,3 +308,21 @@ def test_jieba_load_dictionary(tmpdir_factory):
         tk.tokenize("")
 
     mock_method.assert_called_once_with(dictionary_path)
+
+
+def test_jieba_add_cls_token():
+    from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
+
+    component_config = {"add_cls_token": True}
+
+    tk = JiebaTokenizer(component_config)
+
+    assert [t.text for t in tk.tokenize("Micheal你好吗？")] == [
+        "Micheal",
+        "你好",
+        "吗",
+        "？",
+        CLS_TOKEN,
+    ]
+
+    assert [t.offset for t in tk.tokenize("Micheal你好吗？")] == [0, 7, 9, 10, 12]
