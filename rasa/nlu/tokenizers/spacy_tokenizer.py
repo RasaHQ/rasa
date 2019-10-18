@@ -40,7 +40,8 @@ class SpacyTokenizer(Tokenizer):
 
                 if attribute_doc is not None:
                     example.set(
-                        MESSAGE_TOKENS_NAMES[attribute], self.tokenize(attribute_doc)
+                        MESSAGE_TOKENS_NAMES[attribute],
+                        self.tokenize(attribute_doc, attribute),
                     )
 
     def get_doc(self, message: Message, attribute: Text) -> "Doc":
@@ -49,10 +50,12 @@ class SpacyTokenizer(Tokenizer):
     def process(self, message: Message, **kwargs: Any) -> None:
         message.set(
             MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-            self.tokenize(self.get_doc(message, MESSAGE_TEXT_ATTRIBUTE)),
+            self.tokenize(
+                self.get_doc(message, MESSAGE_TEXT_ATTRIBUTE), MESSAGE_TEXT_ATTRIBUTE
+            ),
         )
 
-    def tokenize(self, doc: "Doc") -> List[Token]:
+    def tokenize(self, doc: "Doc", attribute: Text) -> List[Token]:
         tokens = [Token(t.text, t.idx) for t in doc]
-        self.add_cls_token(tokens)
+        self.add_cls_token(tokens, attribute)
         return tokens
