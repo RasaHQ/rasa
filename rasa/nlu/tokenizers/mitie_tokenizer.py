@@ -12,7 +12,7 @@ from rasa.nlu.constants import (
 )
 
 
-class MitieTokenizer(Tokenizer, Component):
+class MitieTokenizer(Component, Tokenizer):
 
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
@@ -69,7 +69,7 @@ class MitieTokenizer(Tokenizer, Component):
             for token, offset in tokenized
         ]
 
-        self.add_cls_token(tokens, self.use_cls_token, attribute)
+        self.add_cls_token(tokens, attribute)
 
         return tokens
 

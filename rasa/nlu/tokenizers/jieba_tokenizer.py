@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 
-class JiebaTokenizer(Tokenizer, Component):
+class JiebaTokenizer(Component, Tokenizer):
 
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
@@ -118,7 +118,7 @@ class JiebaTokenizer(Tokenizer, Component):
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
 
-        self.add_cls_token(tokens, self.use_cls_token, attribute)
+        self.add_cls_token(tokens, attribute)
 
         return tokens
 

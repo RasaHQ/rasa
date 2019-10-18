@@ -22,15 +22,15 @@ class Token(object):
 
 
 class Tokenizer(object):
+    def __init__(self) -> None:
+        self.use_cls_token = False
+
     def add_cls_token(
-        self,
-        tokens: List[Token],
-        use_cls_token: bool,
-        attribute: Text = MESSAGE_TEXT_ATTRIBUTE,
+        self, tokens: List[Token], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
     ) -> List[Token]:
         if (
             attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
-            and use_cls_token
+            and self.use_cls_token
         ):
             # +1 to have a space between the last token and the __cls__ token
             idx = tokens[-1].offset + len(tokens[-1].text) + 1
