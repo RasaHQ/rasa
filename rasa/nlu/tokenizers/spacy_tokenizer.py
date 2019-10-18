@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
 
 
-class SpacyTokenizer(Tokenizer, Component):
+class SpacyTokenizer(Component, Tokenizer):
 
     provides = [
         MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
@@ -64,5 +64,5 @@ class SpacyTokenizer(Tokenizer, Component):
 
     def tokenize(self, doc: "Doc") -> List[Token]:
         tokens = [Token(t.text, t.idx) for t in doc]
-        self.add_cls_token(tokens, self.use_cls_token)
+        self.add_cls_token(tokens)
         return tokens

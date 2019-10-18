@@ -13,7 +13,7 @@ from rasa.nlu.constants import (
 )
 
 
-class WhitespaceTokenizer(Tokenizer, Component):
+class WhitespaceTokenizer(Component, Tokenizer):
 
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
@@ -95,6 +95,6 @@ class WhitespaceTokenizer(Tokenizer, Component):
             running_offset = word_offset + word_len
             tokens.append(Token(word, word_offset))
 
-        self.add_cls_token(tokens, self.use_cls_token, attribute)
+        self.add_cls_token(tokens, attribute)
 
         return tokens
