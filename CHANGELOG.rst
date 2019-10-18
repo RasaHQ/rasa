@@ -44,6 +44,7 @@ Changed
 - Event brokers are now also passed to custom tracker stores (using the ``event_broker`` parameter)
 - Don't run the Rasa Docker image as ``root``.
 - Use multi-stage builds to reduce the size of the Rasa Docker image.
+- Updated the ``/status`` api route to use the actual model file location instead of the ``tmp`` location.
 
 Removed
 -------
