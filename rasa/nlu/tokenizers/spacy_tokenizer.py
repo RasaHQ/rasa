@@ -3,7 +3,7 @@ from typing import Any, Dict, Text, List, Optional
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
@@ -11,7 +11,6 @@ from rasa.nlu.constants import (
     MESSAGE_TOKENS_NAMES,
     MESSAGE_SPACY_FEATURES_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
-    CLS_TOKEN,
 )
 
 if typing.TYPE_CHECKING:
@@ -31,13 +30,13 @@ class SpacyTokenizer(Tokenizer, Component):
 
     defaults = {
         # Add a __cls__ token to the end of the list of tokens
-        "add_cls_token": False
+        "use_cls_token": False
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         """Construct a new tokenizer using the SpacyTokenizer framework."""
         super(SpacyTokenizer, self).__init__(component_config)
-        self.add_cls_token = self.component_config["add_cls_token"]
+        self.use_cls_token = self.component_config["use_cls_token"]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -65,7 +64,5 @@ class SpacyTokenizer(Tokenizer, Component):
 
     def tokenize(self, doc: "Doc") -> List[Token]:
         tokens = [Token(t.text, t.idx) for t in doc]
-        if self.add_cls_token:
-            idx = doc[-1].idx + len(doc[-1].text) + 1
-            tokens.append(Token(CLS_TOKEN, idx))
+        self.add_cls_token(tokens, self.use_cls_token)
         return tokens
