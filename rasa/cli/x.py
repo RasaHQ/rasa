@@ -111,11 +111,27 @@ def _overwrite_endpoints_for_local_x(
     from rasa.utils.endpoints import EndpointConfig
     import questionary
 
-    endpoints.model = EndpointConfig(
+    # Checking if endpoint.yml has existing url and wait time values set, if so give warning we are overwriting
+    # the endpoint.yml file.
+    custom_wait_time_pulls = endpoints.model.kwargs['wait_time_between_pulls']
+    custom_url = endpoints.model.url
+
+    if custom_url is not None:
+        cli_utils.print_warning("Modifying the endpoints.yml file for Rasa X with our defaults")
+    
+    if custom_wait_time_pulls:
+        endpoints.model = EndpointConfig(
+        "{}/projects/default/models/tags/production".format(rasa_x_url),
+        token=rasa_x_token,
+        wait_time_between_pulls=custom_wait_time_pulls,
+        )
+    else:
+        endpoints.model = EndpointConfig(
         "{}/projects/default/models/tags/production".format(rasa_x_url),
         token=rasa_x_token,
         wait_time_between_pulls=2,
-    )
+        )
+        
 
     overwrite_existing_event_broker = False
     if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):

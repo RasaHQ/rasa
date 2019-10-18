@@ -40,6 +40,7 @@ Changed
   trackers are still loaded from pickle but will be dumped as json in any subsequent
   save operations.
 - Event brokers are now also passed to custom tracker stores (using the ``event_broker`` parameter)
+- Updated Rasa X model pull interval to be used and give a warning message if the user has a custom url in the ``endpoints.yml`` file.
 
 Removed
 -------
