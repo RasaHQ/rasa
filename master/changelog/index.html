@@ -260,6 +260,7 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <div class="section" id="added">
 <h3>Added<a class="headerlink" href="#added" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
+<li>add flag to CLI to persist NLU training data if needed</li>
 <li>log a warning if the <code class="docutils literal notranslate"><span class="pre">Interpreter</span></code> picks up an intent or an entity that does not
 exist in the domain file.</li>
 <li>added <code class="docutils literal notranslate"><span class="pre">DynamoTrackerStore</span></code> to support persistence of agents running on AWS</li>
@@ -305,6 +306,7 @@ save operations.</li>
 <li>fixed issue with <code class="docutils literal notranslate"><span class="pre">conversation</span></code> JSON serialization</li>
 <li>fixed the hanging HTTP call with <code class="docutils literal notranslate"><span class="pre">ner_duckling_http</span></code> pipeline</li>
 <li>fixed Interactive Learning intent payload messages saving in nlu files</li>
+<li>fixed DucklingHTTPExtractor dimensions by actually applying to the request</li>
 </ul>
 </div>
 </div>
