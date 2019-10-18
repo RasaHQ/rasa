@@ -28,7 +28,7 @@ Added
   (``rasa.core.agent.handle_channels()``). The number of workers can be set using the
   environment variable ``SANIC_WORKERS`` (default: 1). A value of >1 is allowed only in
   combination with ``RedisLockStore`` as the lock store.
-- Added option ``add_cls_token`` to all tokenizers to add the token ``__CLS__`` to the end of the list of tokens.
+- Added option ``use_cls_token`` to all tokenizers to add the token ``__CLS__`` to the end of the list of tokens.
 
 Changed
 -------
