@@ -88,10 +88,6 @@ class Validator(object):
         all valid intents are used in the stories."""
 
         everything_is_alright = self.verify_intents(ignore_warnings)
-        everything_is_alright = (
-            self.verify_example_repetition_in_intents(ignore_warnings)
-            and everything_is_alright
-        )
 
         stories_intents = {
             event.intent["name"]
@@ -196,6 +192,11 @@ class Validator(object):
         logger.info("Validating intents...")
         intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
 
+        logger.info("Validating there is no duplications...")
+        there_is_no_duplication = self.verify_example_repetition_in_intents(
+            ignore_warnings
+        )
+
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
-        return intents_are_valid and stories_are_valid
+        return intents_are_valid and stories_are_valid and there_is_no_duplication
