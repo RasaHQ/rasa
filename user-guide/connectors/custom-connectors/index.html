@@ -200,12 +200,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.3.10
+          viewing: 1.4.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.4.0/user-guide/connectors/custom-connectors/">1.4.0</a>
               <a href="../../.././1.3.10/user-guide/connectors/custom-connectors/">1.3.10</a>
               <a href="../../.././1.3.9/user-guide/connectors/custom-connectors/">1.3.9</a>
               <a href="../../.././1.3.8/user-guide/connectors/custom-connectors/">1.3.8</a>
@@ -278,7 +279,9 @@ actions, you can add this information in the <code class="docutils literal notra
 message. This information will accompany the user message through the rasa
 server into the action server when applicable, where you can find it stored in
 the <code class="docutils literal notranslate"><span class="pre">tracker</span></code>. Message metadata will not directly affect NLU classification
-or action prediction.</p>
+or action prediction. If you want to change the way metadata is extracted for an
+existing channel, you can overwrite the function <code class="docutils literal notranslate"><span class="pre">get_metadata</span></code>. The return value
+of this method will be passed to the <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code>.</p>
 <p>Here are all the attributes of <code class="docutils literal notranslate"><span class="pre">UserMessage</span></code>:</p>
 <dl class="class">
 <dt id="rasa.core.channels.UserMessage">
@@ -347,20 +350,23 @@ posted the message to the channel:</p>
 <span class="sd">    retrieve responses from the agent.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Text</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;rest&quot;</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_message_wrapper</span><span class="p">(</span>
-        <span class="n">on_new_message</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UserMessage</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]],</span>
+        <span class="n">on_new_message</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UserMessage</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
         <span class="n">text</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
         <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">,</span>
         <span class="n">sender_id</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
         <span class="n">input_channel</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">collector</span> <span class="o">=</span> <span class="n">QueueOutputChannel</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span>
 
-        <span class="n">message</span> <span class="o">=</span> <span class="n">UserMessage</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">collector</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="o">=</span><span class="n">input_channel</span><span class="p">)</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">UserMessage</span><span class="p">(</span>
+            <span class="n">text</span><span class="p">,</span> <span class="n">collector</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="o">=</span><span class="n">input_channel</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span>
+        <span class="p">)</span>
         <span class="k">await</span> <span class="n">on_new_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
 
         <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;DONE&quot;</span><span class="p">)</span>  <span class="c1"># pytype: disable=bad-return-type</span>
@@ -381,12 +387,13 @@ posted the message to the channel:</p>
         <span class="n">text</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
         <span class="n">sender_id</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
         <span class="n">input_channel</span><span class="p">:</span> <span class="n">Text</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]:</span>
         <span class="k">async</span> <span class="k">def</span> <span class="nf">stream</span><span class="p">(</span><span class="n">resp</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">q</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
             <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">on_message_wrapper</span><span class="p">(</span>
-                    <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span>
+                    <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="p">,</span> <span class="n">metadata</span>
                 <span class="p">)</span>
             <span class="p">)</span>
             <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># declare variable up front to avoid pytype error</span>
@@ -400,7 +407,9 @@ posted the message to the channel:</p>
 
         <span class="k">return</span> <span class="n">stream</span>  <span class="c1"># pytype: disable=bad-return-type</span>
 
-    <span class="k">def</span> <span class="nf">blueprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">on_new_message</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UserMessage</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]):</span>
+    <span class="k">def</span> <span class="nf">blueprint</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">on_new_message</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">UserMessage</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Blueprint</span><span class="p">:</span>
         <span class="n">custom_webhook</span> <span class="o">=</span> <span class="n">Blueprint</span><span class="p">(</span>
             <span class="s2">&quot;custom_webhook_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">),</span>
             <span class="n">inspect</span><span class="o">.</span><span class="n">getmodule</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
@@ -408,22 +417,23 @@ posted the message to the channel:</p>
 
         <span class="c1"># noinspection PyUnusedLocal</span>
         <span class="nd">@custom_webhook</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">])</span>
-        <span class="k">async</span> <span class="k">def</span> <span class="nf">health</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">health</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTTPResponse</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">({</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">})</span>
 
         <span class="nd">@custom_webhook</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/webhook&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
-        <span class="k">async</span> <span class="k">def</span> <span class="nf">receive</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">receive</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTTPResponse</span><span class="p">:</span>
             <span class="n">sender_id</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_sender</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
             <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_message</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
             <span class="n">should_use_stream</span> <span class="o">=</span> <span class="n">rasa</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">endpoints</span><span class="o">.</span><span class="n">bool_arg</span><span class="p">(</span>
                 <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;stream&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span>
             <span class="p">)</span>
             <span class="n">input_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_input_channel</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">should_use_stream</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">stream_response</span><span class="p">(</span>
-                        <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span>
+                        <span class="n">on_new_message</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="p">,</span> <span class="n">metadata</span>
                     <span class="p">),</span>
                     <span class="n">content_type</span><span class="o">=</span><span class="s2">&quot;text/event-stream&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
@@ -433,7 +443,11 @@ posted the message to the channel:</p>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">await</span> <span class="n">on_new_message</span><span class="p">(</span>
                         <span class="n">UserMessage</span><span class="p">(</span>
-                            <span class="n">text</span><span class="p">,</span> <span class="n">collector</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="o">=</span><span class="n">input_channel</span>
+                            <span class="n">text</span><span class="p">,</span>
+                            <span class="n">collector</span><span class="p">,</span>
+                            <span class="n">sender_id</span><span class="p">,</span>
+                            <span class="n">input_channel</span><span class="o">=</span><span class="n">input_channel</span><span class="p">,</span>
+                            <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
                 <span class="k">except</span> <span class="n">CancelledError</span><span class="p">:</span>

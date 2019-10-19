@@ -208,12 +208,13 @@ require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.3.10
+          viewing: 1.4.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.4.0/core/policies/">1.4.0</a>
               <a href="../.././1.3.10/core/policies/">1.3.10</a>
               <a href="../.././1.3.9/core/policies/">1.3.9</a>
               <a href="../.././1.3.8/core/policies/">1.3.8</a>
@@ -479,7 +480,7 @@ The default architecture is based on an LSTM, but you can override the
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">training_trackers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DialogueStateTracker</span><span class="p">],</span>
     <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
     <span class="c1"># set numpy random seed</span>
@@ -519,7 +520,7 @@ The default architecture is based on an LSTM, but you can override the
                 <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
                 <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">verbose</span><span class="o">=</span><span class="n">obtain_verbosity</span><span class="p">(),</span>
-                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span>
+                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="c1"># the default parameter for epochs in keras fit is 1</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;epochs&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -825,11 +826,13 @@ predicts <code class="docutils literal notranslate"><span class="pre">None</span
 </div>
 <div class="section" id="fallback-policy">
 <span id="id4"></span><h2><a class="toc-backref" href="#id13">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if at least one of the following occurs:
-1. The intent recognition has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>.
-2. The highest ranked intent differs in confidence with the second highest ranked intent
-by less than <code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code>.
-3. None of the dialogue policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if at least one of the following occurs:</p>
+<ol class="arabic simple">
+<li>The intent recognition has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>.</li>
+<li>The highest ranked intent differs in confidence with the second highest
+ranked intent by less than <code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code>.</li>
+<li>None of the dialogue policies predict an action with confidence higher than <code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>.</li>
+</ol>
 <p><strong>Configuration:</strong></p>
 <blockquote>
 <div><p>The thresholds and fallback action can be adjusted in the policy configuration
@@ -950,24 +953,14 @@ policy configuration.</p>
 <td>Min confidence needed to accept an NLU
 prediction</td>
 </tr>
-<tr class="row-even"><td colspan="2"><dl class="first last docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code>       | Min amount by which the confidence of the</dt>
-<dd><div class="first last line-block">
-<div class="line">top intent must exceed that of the second</div>
-<div class="line">highest ranked intent.</div>
-</div>
-</dd>
-</dl>
-</td>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">ambiguity_threshold</span></code></td>
+<td>Min amount by which the confidence of the
+top intent must exceed that of the second
+highest ranked intent.</td>
 </tr>
-<tr class="row-odd"><td colspan="2"><dl class="first last docutils">
-<dt><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code>            | Min confidence needed to accept an action</dt>
-<dd><div class="first last line-block">
-<div class="line">prediction from Rasa Core</div>
-</div>
-</dd>
-</dl>
-</td>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">core_threshold</span></code></td>
+<td>Min confidence needed to accept an action
+prediction from Rasa Core</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">fallback_core_action_name</span></code></td>
 <td>Name of the <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a>

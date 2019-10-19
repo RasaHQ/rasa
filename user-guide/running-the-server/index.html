@@ -204,12 +204,13 @@ with your backend components." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.3.10
+          viewing: 1.4.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.4.0/user-guide/running-the-server/">1.4.0</a>
               <a href="../.././1.3.10/user-guide/running-the-server/">1.3.10</a>
               <a href="../.././1.3.9/user-guide/running-the-server/">1.3.9</a>
               <a href="../.././1.3.8/user-guide/running-the-server/">1.3.8</a>
@@ -313,6 +314,16 @@ to update your <code class="docutils literal notranslate"><span class="pre">endp
 <p class="last">If you start the server with an NLU-only model, not all the available endpoints
 can be called. Be aware that some endpoints will return a 409 status code, as a trained
 Core model is needed to process the request.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">By default, the HTTP server runs as a single process. You can change the number
+of worker processes using the <code class="docutils literal notranslate"><span class="pre">SANIC_WORKERS</span></code> environment variable. It is
+recommended that you set the number of workers to the number of available CPU cores
+(check out the
+<a class="reference external" href="https://sanic.readthedocs.io/en/latest/sanic/deploying.html#workers">Sanic docs</a>
+for more details). This will only work in combination with the
+<code class="docutils literal notranslate"><span class="pre">RedisLockStore</span></code> (see <a class="reference internal" href="../../api/lock-stores/#lock-stores"><span class="std std-ref">Lock Stores</span></a>).</p>
 </div>
 <div class="section" id="fetching-models-from-a-server">
 <span id="server-fetch-from-server"></span><h3><a class="toc-backref" href="#id3">Fetching Models from a Server</a><a class="headerlink" href="#fetching-models-from-a-server" title="Permalink to this headline">¶</a></h3>

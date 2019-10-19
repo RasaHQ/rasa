@@ -200,12 +200,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.3.10
+          viewing: 1.4.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.4.0/user-guide/connectors/mattermost/">1.4.0</a>
               <a href="../../.././1.3.10/user-guide/connectors/mattermost/">1.3.10</a>
               <a href="../../.././1.3.9/user-guide/connectors/mattermost/">1.3.9</a>
               <a href="../../.././1.3.8/user-guide/connectors/mattermost/">1.3.8</a>
@@ -291,11 +292,12 @@ run script, e.g. using:</p>
   <span class="l l-Scalar l-Scalar-Plain">team</span><span class="p p-Indicator">:</span> <span class="s">&quot;community&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">user</span><span class="p p-Indicator">:</span> <span class="s">&quot;user@user.com&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">pw</span><span class="p p-Indicator">:</span> <span class="s">&quot;password&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">webhook_url</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://server.example.com/webhooks/mattermost/webhook&quot;</span>
 </pre></div>
 </div>
 <p>The endpoint for receiving Mattermost channel messages
-is <code class="docutils literal notranslate"><span class="pre">/webhooks/mattermost/webhook</span></code>. This is the url you should
-add in the Mattermost outgoing webhook.</p>
+is <code class="docutils literal notranslate"><span class="pre">/webhooks/mattermost/webhook</span></code>, the same as <code class="docutils literal notranslate"><span class="pre">webhook_url</span></code> here. You should
+add this url also in the Mattermost outgoing webhook.</p>
 </div>
 </div>
 

@@ -206,6 +206,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../1.4.0/changelog/">1.4.0</a>
               <a href="../../1.3.10/changelog/">1.3.10</a>
               <a href="../../1.3.9/changelog/">1.3.9</a>
               <a href="../../1.3.8/changelog/">1.3.8</a>
@@ -251,7 +252,7 @@
 
 
 
-    <p class="scv-banner"><a href="../../1.3.10/changelog/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.3.10.</a></p>
+    <p class="scv-banner"><a href="../../1.4.0/changelog/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.4.0.</a></p>
 <div class="section" id="rasa-change-log">
 <h1>Rasa Change Log<a class="headerlink" href="#rasa-change-log" title="Permalink to this headline">¶</a></h1>
 <p>All notable changes to this project will be documented in this file.
@@ -282,9 +283,9 @@ exist in the domain file.</li>
 <li>added <code class="docutils literal notranslate"><span class="pre">DynamoTrackerStore</span></code> to support persistence of agents running on AWS</li>
 <li>added docstrings for <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code> classes</li>
 <li>added buttons and images to mattermost.</li>
-<li><cite>CRFEntityExtractor</cite> updated to accept arbitrary token-level features like word
+<li><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> updated to accept arbitrary token-level features like word
 vectors (issues/4214)</li>
-<li><cite>SpacyFeaturizer</cite> updated to add <cite>ner_features</cite> for <cite>CRFEntityExtractor</cite></li>
+<li><code class="docutils literal notranslate"><span class="pre">SpacyFeaturizer</span></code> updated to add <code class="docutils literal notranslate"><span class="pre">ner_features</span></code> for <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></li>
 <li>Sanitizing incoming messages from slack to remove slack formatting like &lt;<a class="reference external" href="mailto:xyz&#37;&#52;&#48;rasa">mailto:xyz<span>&#64;</span>rasa</a>.com|xyz&#64;rasa.com&gt;
 or &lt;<a class="reference external" href="http://url">http://url</a>.com|url.com&gt; and substitute it with original content</li>
 <li>Added the ability to configure the number of Sanic worker processes in the HTTP
@@ -317,7 +318,7 @@ save operations.</li>
 <div class="section" id="id4">
 <h3>Removed<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Removed Python 3.5 support</li>
+<li><strong>Removed Python 3.5 support</strong></li>
 </ul>
 </div>
 <div class="section" id="id5">

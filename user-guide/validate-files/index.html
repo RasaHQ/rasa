@@ -200,12 +200,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.3.10
+          viewing: 1.4.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.4.0/user-guide/validate-files/">1.4.0</a>
               <a href="../.././1.3.10/user-guide/validate-files/">1.3.10</a>
               <a href="../.././1.3.9/user-guide/validate-files/">1.3.9</a>
               <a href="../.././1.3.8/user-guide/validate-files/">1.3.8</a>
@@ -289,6 +290,7 @@ Python Logging Options:
 which has the following methods:</p>
 <p><strong>from_files():</strong> Creates the instance from string paths to the necessary files.</p>
 <p><strong>verify_intents():</strong> Checks if intents listed in domain file are consistent with the NLU data.</p>
+<p><strong>verify_example_repetition_in_intents():</strong> Checks if there is no duplicated data among distinct intents at NLU data.</p>
 <p><strong>verify_intents_in_stories():</strong> Verification for intents in the stories, to check if they are valid.</p>
 <p><strong>verify_utterances():</strong> Checks domain file for consistency between utterance templates and utterances listed under
 actions.</p>
