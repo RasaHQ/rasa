@@ -891,20 +891,20 @@ class Agent(object):
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
     ) -> "Agent":
-        if get_model_subdirectories(model_path):
-            unpacked_model = model_path
+        if os.path.isfile(model_path):
+            model_archive = model_path
         else:
-            if os.path.isfile(model_path):
-                model_archive = model_path
-            else:
-                model_archive = get_latest_model(model_path)
+            model_archive = get_latest_model(model_path)
 
-            if model_archive is None:
-                logger.warning("Could not load local model in '{}'".format(model_path))
-                return Agent()
-
+        if model_archive is not None:
             working_directory = tempfile.mkdtemp()
             unpacked_model = unpack_model(model_archive, working_directory)
+        else:
+            try:
+                unpacked_model = get_model_subdirectories(model_path)
+            except ModelNotFound:
+                logger.warning("Could not load local model in '{}'".format(model_path))
+                return Agent()
 
         return Agent.load(
             unpacked_model,
