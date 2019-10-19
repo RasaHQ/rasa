@@ -362,30 +362,29 @@ back to the user with the <code class="docutils literal notranslate"><span class
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>dispatcher</strong> (<em>CollectingDispatcher</em>) – the dispatcher which is used to
+<li><strong>dispatcher</strong> – the dispatcher which is used to
 send messages back to the user. Use
 <code class="docutils literal notranslate"><span class="pre">dipatcher.utter_message()</span></code> or any other
 <code class="docutils literal notranslate"><span class="pre">rasa_sdk.executor.CollectingDispatcher</span></code>
 method.</li>
-<li><strong>tracker</strong> (<em>Tracker</em>) – the state tracker for the current
+<li><strong>tracker</strong> – the state tracker for the current
 user. You can access slot values using
 <code class="docutils literal notranslate"><span class="pre">tracker.get_slot(slot_name)</span></code>, the most recent user message
 is <code class="docutils literal notranslate"><span class="pre">tracker.latest_message.text</span></code> and any other
 <code class="docutils literal notranslate"><span class="pre">rasa_sdk.Tracker</span></code> property.</li>
-<li><strong>domain</strong> (<em>Dict</em><em>[</em><em>Text</em><em>, </em><em>Any</em><em>]</em>) – the bot’s domain</li>
+<li><strong>domain</strong> – the bot’s domain</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>A dictionary of</dt>
-<dd><p class="first last"><code class="docutils literal notranslate"><span class="pre">rasa_sdk.events.Event</span></code> instances that is
-returned through the endpoint</p>
+<dt>A dictionary of <code class="docutils literal notranslate"><span class="pre">rasa_sdk.events.Event</span></code> instances that is</dt>
+<dd><p class="first last">returned through the endpoint</p>
 </dd>
 </dl>
 </p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">List[Dict[Text, Any]]</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
 </td>
 </tr>
 </tbody>
