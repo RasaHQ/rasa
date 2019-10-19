@@ -33,9 +33,9 @@ Added
 - added ``DynamoTrackerStore`` to support persistence of agents running on AWS
 - added docstrings for ``TrackerStore`` classes
 - added buttons and images to mattermost.
-- `CRFEntityExtractor` updated to accept arbitrary token-level features like word
+- ``CRFEntityExtractor`` updated to accept arbitrary token-level features like word
   vectors (issues/4214)
-- `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
+- ``SpacyFeaturizer`` updated to add ``ner_features`` for ``CRFEntityExtractor``
 - Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com>
   or <http://url.com|url.com> and substitute it with original content
 - Added the ability to configure the number of Sanic worker processes in the HTTP
@@ -64,7 +64,7 @@ Changed
 
 Removed
 -------
-- Removed Python 3.5 support
+- **Removed Python 3.5 support**
 
 Fixed
 -----
