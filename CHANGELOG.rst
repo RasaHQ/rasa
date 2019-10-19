@@ -7,6 +7,20 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[Unreleased 1.4.1]
+^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Can now upload an unpacked model (alongside ``tar.gz`` model files) through the ``PUT /model`` endpoint.
+
+Changed
+-------
+
+Fixed
+-----
+
+
 [1.4.0] - 2019-10-19
 ^^^^^^^^^^^^^^^^^^^^
 
