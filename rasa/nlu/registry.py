@@ -105,7 +105,7 @@ old_style_names = {
 registered_pipeline_templates = {
     "pretrained_embeddings_spacy": [
         {"name": "SpacyNLP"},
-        {"name": "SpacyTokenizer"},
+        {"name": "SpacyTokenizer", "use_cls_token": False},
         {"name": "SpacyFeaturizer"},
         {"name": "RegexFeaturizer"},
         {"name": "CRFEntityExtractor"},
@@ -114,7 +114,7 @@ registered_pipeline_templates = {
     ],
     "keyword": [{"name": "KeywordIntentClassifier"}],
     "supervised_embeddings": [
-        {"name": "WhitespaceTokenizer"},
+        {"name": "WhitespaceTokenizer", "use_cls_token": False},
         {"name": "RegexFeaturizer"},
         {"name": "CRFEntityExtractor"},
         {"name": "EntitySynonymMapper"},
