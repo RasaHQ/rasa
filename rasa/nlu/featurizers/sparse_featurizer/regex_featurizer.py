@@ -4,6 +4,7 @@ import numpy as np
 import os
 import re
 import typing
+import scipy.sparse
 from typing import Any, Dict, Optional, Text
 
 from rasa.nlu import utils
@@ -82,25 +83,26 @@ class RegexFeaturizer(Featurizer):
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
 
-        found_patterns = []
-        for exp in self.known_patterns:
-            matches = re.finditer(exp["pattern"], message.text)
+        tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
+
+        vec = np.zeros([len(tokens), len(self.known_patterns)])
+
+        for pattern_index, pattern in enumerate(self.known_patterns):
+            matches = re.finditer(pattern["pattern"], message.text)
             matches = list(matches)
-            found_patterns.append(False)
-            for token_index, t in enumerate(
-                message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
-            ):
+
+            for token_index, t in enumerate(tokens):
                 patterns = t.get("pattern", default={})
-                patterns[exp["name"]] = False
+                patterns[pattern["name"]] = False
 
                 for match in matches:
                     if t.offset < match.end() and t.end > match.start():
-                        patterns[exp["name"]] = True
-                        found_patterns[-1] = True
+                        patterns[pattern["name"]] = True
+                        vec[token_index][pattern_index] = 1.0
 
                 t.set("pattern", patterns)
 
-        return np.array(found_patterns).astype(float)
+        return scipy.sparse.csr_matrix(vec)
 
     def _generate_lookup_regex(self, lookup_table):
         """creates a regex out of the contents of a lookup table file"""

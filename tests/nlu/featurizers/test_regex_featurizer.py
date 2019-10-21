@@ -13,10 +13,38 @@ from rasa.nlu.config import RasaNLUModelConfig
 @pytest.mark.parametrize(
     "sentence, expected, labeled_tokens",
     [
-        ("hey how are you today", [0.0, 1.0, 0.0], [0]),
-        ("hey 456 how are you", [1.0, 1.0, 0.0], [1, 0]),
-        ("blah balh random eh", [0.0, 0.0, 0.0], []),
-        ("a 1 digit number", [1.0, 0.0, 1.0], [1, 1]),
+        (
+            "hey how are you today",
+            [
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+            ],
+            [0],
+        ),
+        (
+            "hey 456 how are you",
+            [
+                [0.0, 1.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+            ],
+            [1, 0],
+        ),
+        (
+            "blah balh random eh",
+            [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+            [],
+        ),
+        (
+            "a 1 digit number",
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+            [1, 1],
+        ),
     ],
 )
 def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
@@ -30,13 +58,13 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     ftr = RegexFeaturizer(known_patterns=patterns)
 
     # adds tokens to the message
-    tokenizer = SpacyTokenizer()
+    tokenizer = SpacyTokenizer({"use_cls_token": False})
     message = Message(sentence)
     message.set("spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
     result = ftr.features_for_patterns(message)
-    assert np.allclose(result, expected, atol=1e-10)
+    assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
     assert len(message.get("tokens", [])) > 0
@@ -50,10 +78,18 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
 @pytest.mark.parametrize(
     "sentence, expected, labeled_tokens",
     [
-        ("lemonade and mapo tofu", [1, 1], [0.0, 2.0, 3.0]),
-        ("a cup of tea", [1, 0], [3.0]),
-        ("Is burrito my favorite food?", [0, 1], [1.0]),
-        ("I want club?mate", [1, 0], [2.0, 3.0]),
+        (
+            "lemonade and mapo tofu",
+            [[1.0, 0.0], [0.0, 0.0], [0.0, 1.0], [0.0, 1.0]],
+            [0.0, 2.0, 3.0],
+        ),
+        ("a cup of tea", [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [1.0, 0.0]], [3.0]),
+        (
+            "Is burrito my favorite food?",
+            [[0.0, 0.0], [0.0, 1.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+            [1.0],
+        ),
+        ("I want club?mate", [[0.0, 0.0], [0.0, 0.0], [1.0, 0.0]], [2.0, 3.0]),
     ],
 )
 def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
@@ -76,7 +112,8 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     tokenizer.process(message)
 
     result = ftr.features_for_patterns(message)
-    assert np.allclose(result, expected, atol=1e-10)
+    print(result.toarray())
+    assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
     assert len(message.get("tokens", [])) > 0
