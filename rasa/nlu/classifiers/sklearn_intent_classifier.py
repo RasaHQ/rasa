@@ -10,7 +10,10 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import MESSAGE_VECTOR_FEATURE_NAMES, MESSAGE_TEXT_ATTRIBUTE
+from rasa.nlu.constants import (
+    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
+    MESSAGE_TEXT_ATTRIBUTE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +26,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value

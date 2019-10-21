@@ -12,7 +12,7 @@ from rasa.utils import train_utils
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
 )
 
 import tensorflow as tf
@@ -50,7 +50,7 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -335,7 +335,9 @@ class EmbeddingIntentClassifier(Component):
 
         for e in training_data.intent_examples:
             if e.get(attribute):
-                X.append(e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]))
+                X.append(
+                    e.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                )
                 label_ids.append(label_id_dict[e.get(attribute)])
 
         X = np.array(X)
@@ -475,7 +477,7 @@ class EmbeddingIntentClassifier(Component):
             training_data,
             label_id_dict,
             attribute=MESSAGE_INTENT_ATTRIBUTE,
-            attribute_feature_name=MESSAGE_VECTOR_FEATURE_NAMES[
+            attribute_feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[
                 MESSAGE_INTENT_ATTRIBUTE
             ],
         )
@@ -607,7 +609,7 @@ class EmbeddingIntentClassifier(Component):
             # get features (bag of words) for a message
             # noinspection PyPep8Naming
             X = message.get(
-                MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
             ).reshape(1, -1)
 
             # load tf graph and session

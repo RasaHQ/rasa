@@ -11,7 +11,7 @@ from rasa.nlu.constants import (
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
     OPEN_UTTERANCE_PREDICTION_KEY,
     OPEN_UTTERANCE_RANKING_KEY,
     MESSAGE_SELECTOR_PROPERTY_NAME,
@@ -50,7 +50,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     provides = ["response", "response_ranking"]
 
-    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -152,7 +152,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
             training_data,
             label_id_dict,
             attribute=MESSAGE_RESPONSE_ATTRIBUTE,
-            attribute_feature_name=MESSAGE_VECTOR_FEATURE_NAMES[
+            attribute_feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[
                 MESSAGE_RESPONSE_ATTRIBUTE
             ],
         )

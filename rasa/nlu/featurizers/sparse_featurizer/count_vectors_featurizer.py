@@ -17,7 +17,7 @@ from rasa.nlu.constants import (
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
@@ -38,7 +38,8 @@ class CountVectorsFeaturizer(Featurizer):
     """
 
     provides = [
-        MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+        MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]
+        for attribute in MESSAGE_ATTRIBUTES
     ]
 
     requires = []
@@ -310,11 +311,11 @@ class CountVectorsFeaturizer(Featurizer):
         for i, example in enumerate(training_data.training_examples):
             # create bag for each example
             example.set(
-                MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
                 self._combine_with_existing_sparse_features(
                     example,
                     attribute_features[i],
-                    MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
                 ),
             )
 
@@ -546,11 +547,11 @@ class CountVectorsFeaturizer(Featurizer):
             features = self._create_sequence(attribute, [message_text])
 
             message.set(
-                MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
                 self._combine_with_existing_sparse_features(
                     message,
                     features[0],
-                    feature_name=MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                    feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
                 ),
             )
 

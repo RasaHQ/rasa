@@ -14,7 +14,7 @@ import rasa.utils.io
 from rasa.nlu.constants import (
     MESSAGE_TOKENS_NAMES,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ if typing.TYPE_CHECKING:
 
 class RegexFeaturizer(Featurizer):
 
-    provides = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    provides = [MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
@@ -46,19 +46,25 @@ class RegexFeaturizer(Featurizer):
 
         for example in training_data.training_examples:
             updated = self._text_features_with_regex(example)
-            example.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
+            example.set(
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated
+            )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         updated = self._text_features_with_regex(message)
-        message.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
+        message.set(
+            MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated
+        )
 
     def _text_features_with_regex(self, message):
         if self.known_patterns:
             extras = self.features_for_patterns(message)
             return self._combine_with_existing_sparse_features(message, extras)
         else:
-            return message.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            return message.get(
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            )
 
     def _add_lookup_table_regexes(self, lookup_tables):
         # appends the regex features from the lookup tables to
