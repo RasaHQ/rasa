@@ -99,10 +99,7 @@ class MitieFeaturizer(Featurizer):
         feature_extractor: "mitie.total_word_feature_extractor",
     ) -> np.ndarray:
 
-        vec = np.zeros(self.ndim(feature_extractor))
+        vec = []
         for token in tokens:
-            vec += feature_extractor.get_feature_vector(token.text)
-        if tokens:
-            return vec / len(tokens)
-        else:
-            return vec
+            vec.append(feature_extractor.get_feature_vector(token.text))
+        return np.array(vec)

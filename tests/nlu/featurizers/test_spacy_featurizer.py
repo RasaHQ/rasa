@@ -9,10 +9,12 @@ from rasa.nlu.config import RasaNLUModelConfig
 
 @pytest.mark.parametrize("sentence", ["hey how are you today"])
 def test_spacy_featurizer(sentence, spacy_nlp):
-    from nlu.featurizers.dense_featurizer import spacy_featurizer
+    from nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+
+    ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
 
     doc = spacy_nlp(sentence)
-    vecs = spacy_featurizer.features_for_doc(doc)
+    vecs = ftr._features_for_doc(doc)
     expected = [t.vector for t in doc]
     assert np.allclose(vecs, expected, atol=1e-5)
 
@@ -88,20 +90,22 @@ def test_spacy_ner_featurizer(sentence, expected, spacy_nlp):
 
 
 def test_spacy_featurizer_casing(spacy_nlp):
-    from nlu.featurizers.dense_featurizer import spacy_featurizer
+    from nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
     # if this starts failing for the default model, we should think about
     # removing the lower casing the spacy nlp component does when it
     # retrieves vectors. For compressed spacy models (e.g. models
     # ending in _sm) this test will most likely fail.
 
+    ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
     for e in td.intent_examples:
         doc = spacy_nlp(e.text)
         doc_capitalized = spacy_nlp(e.text.capitalize())
 
-        vecs = spacy_featurizer.features_for_doc(doc)
-        vecs_capitalized = spacy_featurizer.features_for_doc(doc_capitalized)
+        vecs = ftr._features_for_doc(doc)
+        vecs_capitalized = ftr._features_for_doc(doc_capitalized)
 
         assert np.allclose(
             vecs, vecs_capitalized, atol=1e-5

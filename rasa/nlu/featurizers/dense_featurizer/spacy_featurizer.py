@@ -18,16 +18,6 @@ from rasa.nlu.constants import (
 )
 
 
-def ndim(spacy_nlp: "Language") -> int:
-    """Number of features used to represent a document / sentence."""
-    return spacy_nlp.vocab.vectors_length
-
-
-def features_for_doc(doc: "Doc") -> np.ndarray:
-    """Feature vector for a single document / sentence."""
-    return np.array([t.vector for t in doc])
-
-
 class SpacyFeaturizer(Featurizer):
 
     provides = [
@@ -39,6 +29,10 @@ class SpacyFeaturizer(Featurizer):
         MESSAGE_SPACY_FEATURES_NAMES[attribute]
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
+
+    def _features_for_doc(self, doc: "Doc") -> np.ndarray:
+        """Feature vector for a single document / sentence."""
+        return np.array([t.vector for t in doc])
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -61,7 +55,7 @@ class SpacyFeaturizer(Featurizer):
 
         message_attribute_doc = self.get_doc(message, attribute)
         if message_attribute_doc is not None:
-            fs = features_for_doc(message_attribute_doc)
+            fs = self._features_for_doc(message_attribute_doc)
             features = self._combine_with_existing_dense_features(
                 message, fs, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
             )
