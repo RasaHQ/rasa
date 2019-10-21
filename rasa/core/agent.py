@@ -901,7 +901,8 @@ class Agent(object):
             unpacked_model = unpack_model(model_archive, working_directory)
         else:
             try:
-                unpacked_model = get_model_subdirectories(model_path)
+                core_path, nlu_path = get_model_subdirectories(model_path)
+                unpacked_model = model_path
             except ModelNotFound:
                 logger.warning("Could not load local model in '{}'".format(model_path))
                 return Agent()

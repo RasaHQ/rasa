@@ -750,7 +750,7 @@ def test_load_model(rasa_app: SanicTestClient, trained_core_model):
     assert old_fingerprint != response.json["fingerprint"]
 
 
-def test_load_unpacked_model(rasa_app: SanicTestClient, trained_rasa_model):
+def test_load_unpacked_model(rasa_app: SanicTestClient, trained_core_model):
     _, response = rasa_app.get("/status")
 
     assert response.status == 200
@@ -758,7 +758,7 @@ def test_load_unpacked_model(rasa_app: SanicTestClient, trained_rasa_model):
 
     old_fingerprint = response.json["fingerprint"]
 
-    with unpack_model(trained_rasa_model) as unpacked_model:
+    with unpack_model(trained_core_model) as unpacked_model:
         data = {"model_file": unpacked_model}
         _, response = rasa_app.put("/model", json=data)
 
