@@ -271,6 +271,14 @@ async def load_agent(
         raise
 
 
+def _contains_unpacked_model(model_path: Text) -> bool:
+    try:
+        core_path, nlu_path = get_model_subdirectories(model_path)
+        return True
+    except ModelNotFound:
+        return False
+
+
 class Agent(object):
     """The Agent class provides a convenient interface for the most important
      Rasa functionality.
@@ -899,13 +907,11 @@ class Agent(object):
         if model_archive is not None:
             working_directory = tempfile.mkdtemp()
             unpacked_model = unpack_model(model_archive, working_directory)
+        elif _contains_unpacked_model(model_path):
+            unpacked_model = model_path
         else:
-            try:
-                core_path, nlu_path = get_model_subdirectories(model_path)
-                unpacked_model = model_path
-            except ModelNotFound:
-                logger.warning("Could not load local model in '{}'".format(model_path))
-                return Agent()
+            logger.warning("Could not load local model in '{}'".format(model_path))
+            return Agent()
 
         return Agent.load(
             unpacked_model,
