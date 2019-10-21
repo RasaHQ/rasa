@@ -69,7 +69,8 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     ftr = RegexFeaturizer(lookup_tables=lookups)
 
     # adds tokens to the message
-    tokenizer = SpacyTokenizer()
+    component_config = {"name": "SpacyTokenizer", "use_cls_token": False}
+    tokenizer = SpacyTokenizer(component_config)
     message = Message(sentence)
     message.set("spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
