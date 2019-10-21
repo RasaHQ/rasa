@@ -116,7 +116,7 @@ class Domain(object):
             utter_templates,
             data.get("actions", []),
             data.get("forms", []),
-            **additional_arguments
+            **additional_arguments,
         )
 
     @classmethod
@@ -615,7 +615,7 @@ class Domain(object):
         rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         metadata = {"states": self.input_states}
-        utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
     @classmethod
     def load_specification(cls, path: Text) -> Dict[Text, Any]:

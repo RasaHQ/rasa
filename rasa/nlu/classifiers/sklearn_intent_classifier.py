@@ -217,7 +217,7 @@ class SklearnIntentClassifier(Component):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["SklearnIntentClassifier"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "SklearnIntentClassifier":
         from sklearn.preprocessing import LabelEncoder
 

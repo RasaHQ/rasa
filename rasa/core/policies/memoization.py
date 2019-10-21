@@ -131,11 +131,13 @@ class MemoizationPolicy(Policy):
                     self.lookup[feature_key] = feature_item
             pbar.set_postfix({"# examples": "{:d}".format(len(self.lookup))})
 
-    def _create_feature_key(self, states):
+    def _create_feature_key(self, states: List[Dict]) -> Text:
+        from rasa.utils import io
+
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
-            compressed = zlib.compress(bytes(feature_str, "utf-8"))
-            return base64.b64encode(compressed).decode("utf-8")
+            compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))
+            return base64.b64encode(compressed).decode(io.DEFAULT_ENCODING)
         else:
             return feature_str
 
@@ -143,7 +145,7 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers."""
         self.lookup = {}
@@ -164,7 +166,7 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
 
         # add only the last tracker, because it is the only new one
@@ -232,7 +234,7 @@ class MemoizationPolicy(Policy):
             "lookup": self.lookup,
         }
         rasa.utils.io.create_directory_for_file(memorized_file)
-        utils.dump_obj_as_json_to_file(memorized_file, data)
+        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
     def load(cls, path: Text) -> "MemoizationPolicy":
