@@ -7,22 +7,14 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.config import RasaNLUModelConfig
 
 
-@pytest.mark.parametrize(
-    "sentence, expected",
-    [
-        (
-            "hey how are you today",
-            [-0.19649599, 0.32493639, -0.37408298, -0.10622784, 0.062756],
-        )
-    ],
-)
-def test_spacy_featurizer(sentence, expected, spacy_nlp):
+@pytest.mark.parametrize("sentence", ["hey how are you today"])
+def test_spacy_featurizer(sentence, spacy_nlp):
     from nlu.featurizers.dense_featurizer import spacy_featurizer
 
     doc = spacy_nlp(sentence)
     vecs = spacy_featurizer.features_for_doc(doc)
-    assert np.allclose(doc.vector[:5], expected, atol=1e-5)
-    assert np.allclose(vecs, doc.vector, atol=1e-5)
+    expected = [t.vector for t in doc]
+    assert np.allclose(vecs, expected, atol=1e-5)
 
 
 def test_spacy_training_sample_alignment(spacy_nlp_component):
@@ -78,33 +70,21 @@ def test_spacy_ner_featurizer(sentence, expected, spacy_nlp):
 
     doc = spacy_nlp(sentence)
     token_vectors = [t.vector for t in doc]
-    spacy_config = {"ner_feature_vectors": True}
+
+    spacy_config = {}
     ftr = SpacyFeaturizer.create(spacy_config, RasaNLUModelConfig())
+
     greet = {"intent": "greet", "text_features": [0.5]}
+
     message = Message(sentence, greet)
     message.set("spacy_doc", doc)
+
     ftr._set_spacy_features(message)
-    ftr._set_spacy_ner_features(message)
-    vecs = message.get("ner_features")[0][:5]
+
+    vecs = message.get("text_dense_features")[0][:5]
+
     assert np.allclose(token_vectors[0][:5], vecs, atol=1e-4)
     assert np.allclose(vecs, expected, atol=1e-4)
-
-
-def test_spacy_ner_featurizer_config(spacy_nlp):
-    from nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-
-    sentence = "hi there friend"
-    doc = spacy_nlp(sentence)
-    spacy_config = {"ner_feature_vectors": False}
-    ftr = SpacyFeaturizer.create(spacy_config, RasaNLUModelConfig())
-    greet = {"intent": "greet", "text_features": [0.5]}
-    message = Message(sentence, greet)
-    message.set("spacy_doc", doc)
-    ftr._set_spacy_features(message)
-    ftr._set_spacy_ner_features(message)
-    vecs = np.array(message.get("ner_features"))
-    assert vecs.shape[0] == len(doc)
-    assert vecs.shape[1] == 0
 
 
 def test_spacy_featurizer_casing(spacy_nlp):

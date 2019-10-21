@@ -25,7 +25,7 @@ def ndim(spacy_nlp: "Language") -> int:
 
 def features_for_doc(doc: "Doc") -> np.ndarray:
     """Feature vector for a single document / sentence."""
-    return doc.vector
+    return np.array([t.vector for t in doc])
 
 
 class SpacyFeaturizer(Featurizer):
