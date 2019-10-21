@@ -109,8 +109,6 @@ class SklearnIntentClassifier(Component):
 
             self.clf = self._create_classifier(num_threads, y)
 
-            print(X)
-
             self.clf.fit(X, y)
 
     def _num_cv_splits(self, y):
