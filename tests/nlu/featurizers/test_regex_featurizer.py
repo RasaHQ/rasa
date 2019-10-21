@@ -1,13 +1,8 @@
 import numpy as np
 import pytest
 
-from rasa.nlu import training_data
-from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message
-from rasa.nlu.training_data import TrainingData
-from rasa.nlu.config import RasaNLUModelConfig
 
 
 @pytest.mark.parametrize(

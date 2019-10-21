@@ -7,7 +7,6 @@ from rasa.nlu.featurizers.featurzier import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
-    from spacy.language import Language
     from spacy.tokens import Doc
 
 from rasa.nlu.constants import (

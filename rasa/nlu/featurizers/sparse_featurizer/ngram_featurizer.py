@@ -1,6 +1,6 @@
 import logging
 
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, Optional, Text
 
 from rasa.nlu.featurizers.featurzier import Featurizer
 

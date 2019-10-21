@@ -68,7 +68,7 @@ def test_count_vector_featurizer_attribute_featurization(
             train_message.get("intent_sparse_features")[0].toarray() == intent_features
         )
     else:
-        assert train_message.get("intent_sparse_features") == None
+        assert train_message.get("intent_sparse_features") is None
 
     if response_features:
         assert (
@@ -76,7 +76,7 @@ def test_count_vector_featurizer_attribute_featurization(
             == response_features
         )
     else:
-        assert train_message.get("response_sparse_features") == None
+        assert train_message.get("response_sparse_features") is None
 
 
 @pytest.mark.parametrize(

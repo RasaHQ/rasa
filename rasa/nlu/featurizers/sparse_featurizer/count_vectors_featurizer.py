@@ -9,9 +9,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurzier import Featurizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-
-logger = logging.getLogger(__name__)
-
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
@@ -21,6 +18,8 @@ from rasa.nlu.constants import (
     SPACY_FEATURIZABLE_ATTRIBUTES,
     MESSAGE_INTENT_ATTRIBUTE,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CountVectorsFeaturizer(Featurizer):
