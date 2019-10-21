@@ -45,7 +45,7 @@ class MitieTokenizer(Tokenizer):
         )
 
     def _token_from_offset(
-        self, text: Text, offset: int, encoded_sentence: bytes
+        self, text: bytes, offset: int, encoded_sentence: bytes
     ) -> Token:
         return Token(
             text.decode("utf-8"), self._byte_to_char_offset(encoded_sentence, offset)
