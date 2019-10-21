@@ -1,19 +1,16 @@
-import asyncio
-import pytest
+import os
 from decimal import Decimal
+from typing import Optional, Text, Union
 
+import pytest
+
+import rasa.core.lock_store
 import rasa.utils.io
+from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
+from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.core.utils import replace_floats_with_decimals
-
-
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
+from rasa.utils.endpoints import EndpointConfig
 
 
 def test_is_int():
@@ -114,3 +111,65 @@ def test_float_conversion_to_decimal():
     for f in d_replaced["nested_dict_with_floats"]["list_with_floats"]:
         assert isinstance(f, Decimal)
     assert isinstance(d_replaced["nested_dict_with_floats"]["float"], Decimal)
+
+
+@pytest.mark.parametrize(
+    "env_value,lock_store,expected",
+    [
+        (1, "redis", 1),
+        (4, "redis", 4),
+        (None, "redis", 1),
+        (0, "redis", 1),
+        (-4, "redis", 1),
+        ("illegal value", "redis", 1),
+        (None, None, 1),
+        (None, "in_memory", 1),
+        (5, "in_memory", 1),
+        (2, None, 1),
+        (0, "in_memory", 1),
+        (3, RedisLockStore(), 3),
+        (2, InMemoryLockStore(), 1),
+    ],
+)
+def test_get_number_of_sanic_workers(
+    env_value: Optional[Text],
+    lock_store: Union[LockStore, Text, None],
+    expected: Optional[int],
+):
+    # remember pre-test value of SANIC_WORKERS env var
+    pre_test_value = os.environ.get(ENV_SANIC_WORKERS)
+
+    # set env var to desired value and make assertion
+    if env_value is not None:
+        os.environ[ENV_SANIC_WORKERS] = str(env_value)
+
+    # lock_store may be string or LockStore object
+    # create EndpointConfig if it's a string, otherwise pass the object
+    if isinstance(lock_store, str):
+        lock_store = EndpointConfig(type=lock_store)
+
+    assert utils.number_of_sanic_workers(lock_store) == expected
+
+    # reset env var to pre-test value
+    os.environ.pop(ENV_SANIC_WORKERS, None)
+
+    if pre_test_value is not None:
+        os.environ[ENV_SANIC_WORKERS] = pre_test_value
+
+
+@pytest.mark.parametrize(
+    "lock_store,expected",
+    [
+        (EndpointConfig(type="redis"), True),
+        (RedisLockStore(), True),
+        (EndpointConfig(type="in_memory"), False),
+        (EndpointConfig(type="random_store"), False),
+        (None, False),
+        (InMemoryLockStore(), False),
+    ],
+)
+def test_lock_store_is_redis_lock_store(
+    lock_store: Union[EndpointConfig, LockStore, None], expected: bool
+):
+    # noinspection PyProtectedMember
+    assert rasa.core.utils._lock_store_is_redis_lock_store(lock_store) == expected

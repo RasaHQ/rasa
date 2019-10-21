@@ -1,5 +1,7 @@
 from collections import namedtuple
 import logging
+import typing
+from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -11,8 +13,7 @@ from tensor2tensor.models.transformer import (
 )
 from tensor2tensor.layers.common_attention import large_compatible_negative
 from rasa.utils.common import is_logging_disabled
-import typing
-from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
+import tensorflow_probability as tfp
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
@@ -24,11 +25,13 @@ logger = logging.getLogger(__name__)
 # namedtuple for all tf session related data
 SessionData = namedtuple("SessionData", ("X", "Y", "label_ids"))
 
+all_embed_layers = []
 
-def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
-    """Prepare tf.ConfigProto for training"""
+
+def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
+    """Prepare `tf.compat.v1.ConfigProto` for training"""
     if config.get("tf_config") is not None:
-        return tf.ConfigProto(**config.pop("tf_config"))
+        return tf.compat.v1.ConfigProto(**config.pop("tf_config"))
     else:
         return None
 
@@ -340,6 +343,31 @@ def create_tf_embed(
     return tf_normalize_if_cosine(embed_x, similarity_type)
 
 
+def create_tfp_embed_layer(embed_dim: int, layer_name_suffix: Text, use_bias=True):
+    # with tf.variable_scope("embed_layer_{}".format(layer_name_suffix), reuse=tf.AUTO_REUSE):
+    if use_bias:
+        embed_layer = tfp.layers.DenseFlipout(
+            # inputs=x,
+            units=embed_dim,
+            activation=None,
+            # kernel_regularizer=reg,
+            name="embed_layer_{}".format(layer_name_suffix),
+            # reuse=tf.AUTO_REUSE,
+        )
+    else:
+        embed_layer = tfp.layers.DenseFlipout(
+            # inputs=x,
+            units=embed_dim,
+            activation=None,
+            # kernel_regularizer=reg,
+            bias_posterior_fn=None,
+            name="embed_layer_{}".format(layer_name_suffix),
+            # reuse=tf.AUTO_REUSE,
+        )
+    all_embed_layers.append(embed_layer)
+    return embed_layer
+
+
 def create_t2t_hparams(
     num_transformer_layers: int,
     transformer_size: int,
@@ -381,6 +409,7 @@ def create_t2t_hparams(
 # noinspection PyPep8Naming
 def create_t2t_transformer_encoder(
     x_in: "tf.Tensor",
+    pre_embed_layer,
     mask: "tf.Tensor",
     attention_weights: Dict[Text, "tf.Tensor"],
     hparams: "HParams",
@@ -405,6 +434,7 @@ def create_t2t_transformer_encoder(
         )
         if hparams.multiply_embedding_mode == "sqrt_depth":
             x *= hparams.hidden_size ** 0.5
+        # x = pre_embed_layer(x_in)
 
         x *= tf.expand_dims(mask, -1)
         (
@@ -579,13 +609,20 @@ def tf_sim(
     return sim_pos, sim_neg, sim_neg_bot_bot, sim_neg_dial_dial, sim_neg_bot_dial
 
 
-def tf_calc_accuracy(sim_pos: "tf.Tensor", sim_neg: "tf.Tensor") -> "tf.Tensor":
+def tf_calc_accuracy(sim_pos: "tf.Tensor", sim_neg: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
     """Calculate accuracy"""
 
     max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], -1), -1)
-    return tf.reduce_mean(
-        tf.cast(tf.math.equal(max_all_sim, tf.squeeze(sim_pos, -1)), tf.float32)
-    )
+    if mask is not None:
+        return tf.reduce_sum(
+            tf.cast(tf.math.equal(max_all_sim, tf.squeeze(sim_pos, -1)), tf.float32) * mask
+        ) / tf.reduce_sum(mask)
+    else:
+        return tf.reduce_mean(
+            tf.cast(tf.math.equal(max_all_sim, tf.squeeze(sim_pos, -1)), tf.float32)
+        )
+    # return tf.reduce_max(sim_pos) - tf.reduce_min(sim_pos)#[0, 0]
+    # return sim_pos[0, 0, 0]
 
 
 # noinspection PyPep8Naming
@@ -680,6 +717,8 @@ def tf_loss_softmax(
         mask *= tf.pow((1 - pos_pred) / 0.5, 4)
 
     loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
+    # loss = tf.losses.sigmoid_cross_entropy(labels, logits, tf.expand_dims(mask, -1))
+    loss += sum([sum(l.losses) for l in all_embed_layers]) / tf.cast(tf.shape(labels)[0] + tf.shape(labels)[1], tf.float32)
     # add regularization losses
     loss += tf.losses.get_regularization_loss()
 
@@ -772,7 +811,7 @@ def calculate_loss_acc(
         mask,
     )
 
-    acc = tf_calc_accuracy(sim_pos, sim_neg)
+    acc = tf_calc_accuracy(sim_pos, sim_neg, mask)
 
     loss = choose_loss(
         sim_pos,
@@ -788,6 +827,132 @@ def calculate_loss_acc(
         C_emb,
         scale_loss,
     )
+
+    return loss, acc
+
+
+def calculate_prob_loss_acc(
+    a_embed: "tf.Tensor",
+    b_embed: "tf.Tensor",
+    b_raw: "tf.Tensor",
+    all_b_embed: "tf.Tensor",
+    all_b_raw: "tf.Tensor",
+    num_neg: int,
+    mask: Optional["tf.Tensor"],
+    loss_type: Text,
+    mu_pos: float,
+    mu_neg: float,
+    use_max_sim_neg: bool,
+    C_emb: float,
+    scale_loss: bool,
+) -> Tuple["tf.Tensor", "tf.Tensor"]:
+    (
+        pos_dial_embed,
+        pos_bot_embed,
+        neg_dial_embed,
+        neg_bot_embed,
+        dial_bad_negs,
+        bot_bad_negs,
+    ) = sample_negatives(a_embed, b_embed, b_raw, all_b_embed, all_b_raw, num_neg)
+
+    embed_dim = a_embed.shape[-1] // 2
+    # calculate alpha
+    (alpha_pos, alpha_neg,
+     alpha_neg_bot_bot, alpha_neg_dial_dial, alpha_neg_bot_dial) = (sim for sim in tf_sim(
+        pos_dial_embed[..., :embed_dim],
+        pos_bot_embed[..., :embed_dim],
+        neg_dial_embed[..., :embed_dim],
+        neg_bot_embed[..., :embed_dim],
+        dial_bad_negs,
+        bot_bad_negs,
+        mask,
+    ))
+    # calculate beta
+    (beta_pos, beta_neg,
+     beta_neg_bot_bot, beta_neg_dial_dial, beta_neg_bot_dial) = (1e-3 + tf.math.softplus(sim) for sim in tf_sim(
+        pos_dial_embed[..., embed_dim:],
+        pos_bot_embed[..., embed_dim:],
+        neg_dial_embed[..., embed_dim:],
+        neg_bot_embed[..., embed_dim:],
+        dial_bad_negs,
+        bot_bad_negs,
+        mask,
+    ))
+
+    # beta_dist = tfp.layers.DistributionLambda(lambda t: tfd.Beta(t[0], t[1]))
+
+    # logits = tf.concat(
+    #     [alpha_pos, alpha_neg - 5000 * bot_bad_negs,
+    #      # alpha_neg_bot_bot, alpha_neg_dial_dial, alpha_neg_bot_dial
+    #      ], -1
+    # )
+    # beta_all = tf.concat(
+    #     [beta_pos, beta_neg, beta_neg_bot_bot, beta_neg_dial_dial, beta_neg_bot_dial], -1
+    # )
+
+    p_sim_pos = tfd.Normal(alpha_pos, beta_pos)
+    p_sim_neg = tfd.Normal(alpha_neg, beta_neg)
+    p_sim_neg_bot_bot = tfd.Normal(alpha_neg_bot_bot, beta_neg_bot_bot)
+    p_sim_neg_dial_dial = tfd.Normal(alpha_neg_dial_dial, beta_neg_dial_dial)
+    p_sim_neg_bot_dial = tfd.Normal(alpha_neg_bot_dial, beta_neg_bot_dial)
+
+    # p_sim_pos = tfd.TransformedDistribution(p_sim_pos, tfp.bijectors.Sigmoid(), name="pos")
+    # p_sim_neg = tfd.TransformedDistribution(p_sim_neg, tfp.bijectors.Sigmoid(), name="neg")
+    # p_sim_neg_bot_bot = tfd.TransformedDistribution(p_sim_neg_bot_bot,
+    #                                                 tfp.bijectors.Sigmoid(), name="neg_bot_bot")
+    # p_sim_neg_dial_dial = tfd.TransformedDistribution(p_sim_neg_dial_dial,
+    #                                                   tfp.bijectors.Sigmoid(), name="neg_dial_dial")
+    # p_sim_neg_bot_dial = tfd.TransformedDistribution(p_sim_neg_bot_dial,
+    #                                                  tfp.bijectors.Sigmoid(), name="neg_bot_dial")
+
+    logits = tf.concat(
+        [p_sim_pos.sample(), p_sim_neg.sample() - 5000 * bot_bad_negs,
+         p_sim_neg_bot_bot.sample() - 5000 * bot_bad_negs,
+         p_sim_neg_dial_dial.sample() - 5000 * dial_bad_negs, p_sim_neg_bot_dial.sample() - 5000 * dial_bad_negs
+         ], -1
+    )
+
+    # p_sim_all = tfd.Normal(alpha_all, beta_all)
+    # p_sim_all = tfd.Independent(p_sim_all, reinterpreted_batch_ndims=1)
+    # p_sim_all = tfd.TransformedDistribution(p_sim_all, tfp.bijectors.SoftmaxCentered())
+
+    # acc = tf_calc_accuracy(p_sim_all.sample()[..., :1], p_sim_all.sample()[..., 1:-1])
+    acc = tf_calc_accuracy(p_sim_pos.stddev(), p_sim_neg.sample() - 5000 * bot_bad_negs, mask)
+    # acc = tf_calc_accuracy(tf.sigmoid(alpha_pos), tf.sigmoid(alpha_neg) * (1 - bot_bad_negs), mask)
+    # acc = tf_calc_accuracy(alpha_pos, alpha_neg - 5000 * bot_bad_negs, mask)
+
+    # loss_pos = -p_sim_pos.log_prob(0.99 * tf.ones_like(alpha_pos))
+    # # acc = tf_calc_accuracy(tf.concat([alpha_pos, beta_pos], -1), p_sim_pos.prob(0.9 * tf.ones_like(alpha_pos)))
+    #
+    # loss_neg = -p_sim_neg.log_prob(0.01 * tf.ones_like(alpha_neg)) * (1 - bot_bad_negs)
+    # # acc = tf_calc_accuracy(tf.concat([alpha_neg, beta_neg], -1), loss_neg)
+    #
+    # loss_neg_bot_bot = -p_sim_neg_bot_bot.log_prob(0.01 * tf.ones_like(alpha_neg_bot_bot)) * (1 - bot_bad_negs)
+    # loss_neg_dial_dial = -p_sim_neg_dial_dial.log_prob(0.01 * tf.ones_like(alpha_neg_dial_dial)) * (1 - dial_bad_negs)
+    # loss_neg_bot_dial = -p_sim_neg_bot_dial.log_prob(0.01 * tf.ones_like(alpha_neg_bot_dial)) * (1 - dial_bad_negs)
+    #
+    # loss_all = tf.concat(
+    #     [loss_pos, loss_neg,
+    #      #loss_neg_bot_bot, loss_neg_dial_dial, loss_neg_bot_dial
+    #      ], -1
+    # )
+    # loss_all = tf.reduce_sum(loss_all, -1)
+
+    pos_labels = tf.ones_like(logits[..., :1])
+    neg_labels = tf.zeros_like(logits[..., 1:])
+
+    labels = tf.concat([pos_labels, neg_labels], -1)
+    # loss_all = -p_sim_all.log_prob(labels)
+
+    if mask is None:
+        mask = 1.0
+
+    # loss = tf.losses.compute_weighted_loss(loss_all, mask)
+    # loss = tf.losses.sigmoid_cross_entropy(labels, logits, tf.expand_dims(mask, -1))
+    loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
+
+    # add regularization losses
+    loss += tf.losses.get_regularization_loss()
 
     return loss, acc
 

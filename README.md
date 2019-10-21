@@ -122,6 +122,13 @@ Then, run the tests:
 make test
 ```
 
+They can also be run at multiple jobs to save some time:
+```bash
+make test -j [n]
+```
+
+Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
+
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by travis.
 

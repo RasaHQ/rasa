@@ -80,3 +80,7 @@ failed_stories.md
 errors.json
 pip-wheel-metadata/*
 events.db
+*.swp
+*.coverage*
+env
+venv

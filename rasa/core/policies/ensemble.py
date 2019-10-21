@@ -7,8 +7,6 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Text, Optional, Any, List, Dict, Tuple
 
-import numpy as np
-
 import rasa.core
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
@@ -277,8 +275,12 @@ class PolicyEnsemble(object):
         return ensemble
 
     @classmethod
-    def from_dict(cls, dictionary: Dict[Text, Any]) -> List[Policy]:
-        policies = dictionary.get("policies") or dictionary.get("policy")
+    def from_dict(cls, policy_configuration: Dict[Text, Any]) -> List[Policy]:
+        import copy
+
+        policies = policy_configuration.get("policies") or policy_configuration.get(
+            "policy"
+        )
         if policies is None:
             raise InvalidPolicyConfig(
                 "You didn't define any policies. "
@@ -290,10 +292,10 @@ class PolicyEnsemble(object):
                 "The policy configuration file has to include at least one policy."
             )
 
+        policies = copy.deepcopy(policies)  # don't manipulate passed `Dict`
         parsed_policies = []
 
         for policy in policies:
-
             policy_name = policy.pop("name")
             if policy.get("featurizer"):
                 featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
@@ -373,6 +375,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        import numpy as np
+
         result = None
         max_confidence = -1
         best_policy_name = None

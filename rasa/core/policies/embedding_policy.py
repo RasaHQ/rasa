@@ -160,6 +160,9 @@ class EmbeddingPolicy(Policy):
 
         self.attention_weights = attention_weights
         # internal tf instances
+        self.pre_embed_layer = None
+        self.dial_embed_layer = None
+        self.bot_embed_layer = None
         self._iterator = None
         self._train_op = None
         self._is_training = None
@@ -288,6 +291,9 @@ class EmbeddingPolicy(Policy):
             self._is_training,
             layer_name_suffix="bot",
         )
+        # if self.bot_embed_layer is None:
+        #     self.bot_embed_layer = train_utils.create_tfp_embed_layer(self.embed_dim, layer_name_suffix="bot")
+        # return self.bot_embed_layer(b)
         return train_utils.create_tf_embed(
             b, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="bot"
         )
@@ -308,6 +314,9 @@ class EmbeddingPolicy(Policy):
             layer_name_suffix="pre_dial",
         )
 
+        # if self.pre_embed_layer is None:
+        #     self.pre_embed_layer = train_utils.create_tfp_embed_layer(self.transformer_size, layer_name_suffix="pre", use_bias=False)
+
         self.attention_weights = {}
         if self.type == "transformer":
             hparams = train_utils.create_t2t_hparams(
@@ -321,7 +330,7 @@ class EmbeddingPolicy(Policy):
             )
 
             a = train_utils.create_t2t_transformer_encoder(
-                a, mask, self.attention_weights, hparams, self.C2, self._is_training
+                a, None, mask, self.attention_weights, hparams, self.C2, self._is_training
             )
         elif self.type == "lstm":
             a = tf.transpose(a, [1, 0, 2])
@@ -338,9 +347,12 @@ class EmbeddingPolicy(Policy):
             a = a[:, -1:, :]
             mask = mask[:, -1:]
 
-        dial_embed = train_utils.create_tf_embed(
-            a, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="dial"
-        )
+        if self.dial_embed_layer is None:
+            self.dial_embed_layer = train_utils.create_tfp_embed_layer(self.embed_dim, layer_name_suffix="dial")
+        dial_embed = self.dial_embed_layer(a)
+        # dial_embed = train_utils.create_tf_embed(
+        #     a, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="dial"
+        # )
 
         return dial_embed, mask
 
@@ -570,9 +582,26 @@ class EmbeddingPolicy(Policy):
 
         tf_feed_dict = self.tf_feed_dict_for_prediction(tracker, domain)
 
-        confidence = self.session.run(self.pred_confidence, feed_dict=tf_feed_dict)
+        # confidence = self.session.run(self.pred_confidence, feed_dict=tf_feed_dict)
+        xs = []
+        for _ in range(100):
+            xs.append(self.session.run(self.pred_confidence, feed_dict=tf_feed_dict))
+        xs = np.array(xs)
+        self.i_max = xs.argmax(axis=-1)[:, 0, -1]
+        # self.x_i_max = xs.max(axis=-1)[:, 0, -1]
+        # print(self.x_i_max)
+        # print(self.i_max)
+        unique, counts = np.unique(self.i_max, return_counts=True)
+        # print(unique, counts)
+        max_count_i = counts.argmax()
+        self.i_max_mean = unique[max_count_i]
+        self.i_max_err = counts[max_count_i] / np.sum(counts)
+        # exit()
+        self.mean = xs.mean(axis=0)[0, -1, :]
+        self.stds = xs.std(axis=0)[0, -1, :]
 
-        return confidence[0, -1, :].tolist()
+        # return confidence[0, -1, :].tolist()
+        return self.mean.tolist()
 
     def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""

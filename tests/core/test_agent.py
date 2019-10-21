@@ -17,15 +17,6 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 def model_server_app(model_path: Text, model_hash: Text = "somehash"):
     app = Sanic(__name__)
     app.number_of_model_requests = 0
@@ -172,7 +163,7 @@ async def test_agent_with_model_server_in_thread(
         agent, model_server=model_endpoint_config
     )
 
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
     assert hash(agent.domain) == hash(moodbot_domain)
