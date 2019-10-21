@@ -81,9 +81,8 @@ class MultiProjectImporter(TrainingDataImporter):
         # remove duplication
         import_candidates = []
         for i in imports:
-            if i in import_candidates or self._is_explicitly_imported(i):
-                continue
-            import_candidates.append(i)
+            if i not in import_candidates and not self._is_explicitly_imported(i):
+                import_candidates.append(i)
 
         self._imports.extend(import_candidates)
 
