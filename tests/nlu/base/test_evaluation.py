@@ -257,7 +257,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
     data = DEFAULT_DATA_PATH
 
     result = run_evaluation(
-        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=None
+        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=False
     )
     assert result.get("intent_evaluation")
     assert result.get("entity_evaluation").get("CRFEntityExtractor")

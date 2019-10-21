@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any
+from typing import Any, Optional
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurzier import Featurizer
@@ -34,7 +34,10 @@ class SpacyFeaturizer(Featurizer):
         return np.array([t.vector for t in doc])
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig],
+        **kwargs: Any,
     ) -> None:
 
         for example in training_data.intent_examples:
