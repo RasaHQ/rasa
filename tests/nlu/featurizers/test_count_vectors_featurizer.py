@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import scipy.sparse
 
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
@@ -9,10 +10,10 @@ from rasa.nlu.training_data import TrainingData
 @pytest.mark.parametrize(
     "sentence, expected",
     [
-        ("hello hello hello hello hello ", [5]),
-        ("hello goodbye hello", [1, 2]),
-        ("a b c d e f", [1, 1, 1, 1, 1, 1]),
-        ("a 1 2", [2, 1]),
+        ("hello hello hello hello hello ", [[1]]),
+        ("hello goodbye hello", [[0, 1]]),
+        ("a b c d e f", [[1, 0, 0, 0, 0, 0]]),
+        ("a 1 2", [[0, 1]]),
     ],
 )
 def test_count_vector_featurizer(sentence, expected):
@@ -30,15 +31,19 @@ def test_count_vector_featurizer(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert np.all(test_message.get("text_features") == expected)
+    assert isinstance(test_message.get("text_sparse_features"), scipy.sparse.csr_matrix)
+
+    actual = test_message.get("text_sparse_features")[0].toarray()
+
+    assert np.all(actual == expected)
 
 
 @pytest.mark.parametrize(
     "sentence, intent, response, intent_features, response_features",
     [
-        ("hello hello hello hello hello ", "greet", None, [1], None),
-        ("hello goodbye hello", "greet", None, [1], None),
-        ("a 1 2", "char", "char char", [1], [2]),
+        ("hello hello hello hello hello ", "greet", None, [[1]], None),
+        ("hello goodbye hello", "greet", None, [[1]], None),
+        ("a 1 2", "char", "char char", [[1]], [[1]]),
     ],
 )
 def test_count_vector_featurizer_attribute_featurization(
@@ -58,21 +63,33 @@ def test_count_vector_featurizer_attribute_featurization(
     data = TrainingData([train_message])
     ftr.train(data)
 
-    assert train_message.get("intent_features") == intent_features
-    assert train_message.get("response_features") == response_features
+    if intent_features:
+        assert (
+            train_message.get("intent_sparse_features")[0].toarray() == intent_features
+        )
+    else:
+        assert train_message.get("intent_sparse_features") == None
+
+    if response_features:
+        assert (
+            train_message.get("response_sparse_features")[0].toarray()
+            == response_features
+        )
+    else:
+        assert train_message.get("response_sparse_features") == None
 
 
 @pytest.mark.parametrize(
     "sentence, intent, response, text_features, intent_features, response_features",
     [
-        ("hello hello greet ", "greet", "hello", [1, 2], [1, 0], [0, 1]),
+        ("hello hello greet ", "greet", "hello", [[0, 1]], [[1, 0]], [[0, 1]]),
         (
             "I am fine",
             "acknowledge",
             "good",
-            [0, 1, 1, 0, 1],
-            [1, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0],
+            [[0, 0, 0, 0, 1]],
+            [[1, 0, 0, 0, 0]],
+            [[0, 0, 0, 1, 0]],
         ),
     ],
 )
@@ -95,18 +112,24 @@ def test_count_vector_featurizer_shared_vocab(
     data = TrainingData([train_message])
     ftr.train(data)
 
-    assert np.all(train_message.get("text_features") == text_features)
-    assert np.all(train_message.get("intent_features") == intent_features)
-    assert np.all(train_message.get("response_features") == response_features)
+    assert np.all(
+        train_message.get("text_sparse_features")[0].toarray() == text_features
+    )
+    assert np.all(
+        train_message.get("intent_sparse_features")[0].toarray() == intent_features
+    )
+    assert np.all(
+        train_message.get("response_sparse_features")[0].toarray() == response_features
+    )
 
 
 @pytest.mark.parametrize(
     "sentence, expected",
     [
-        ("hello hello hello hello hello __OOV__", [1, 5]),
-        ("hello goodbye hello __oov__", [1, 1, 2]),
-        ("a b c d e f __oov__ __OOV__ __OOV__", [3, 1, 1, 1, 1, 1, 1]),
-        ("__OOV__ a 1 2 __oov__ __OOV__", [2, 3, 1]),
+        ("hello hello hello hello hello __OOV__", [[0, 1]]),
+        ("hello goodbye hello __oov__", [[0, 0, 1]]),
+        ("a b c d e f __oov__ __OOV__ __OOV__", [[0, 1, 0, 0, 0, 0, 0]]),
+        ("__OOV__ a 1 2 __oov__ __OOV__", [[0, 1, 0]]),
     ],
 )
 def test_count_vector_featurizer_oov_token(sentence, expected):
@@ -126,16 +149,16 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert np.all(test_message.get("text_features") == expected)
+    assert np.all(test_message.get("text_sparse_features")[0].toarray() == expected)
 
 
 @pytest.mark.parametrize(
     "sentence, expected",
     [
-        ("hello hello hello hello hello oov_word0", [1, 5]),
-        ("hello goodbye hello oov_word0 OOV_word0", [2, 1, 2]),
-        ("a b c d e f __oov__ OOV_word0 oov_word1", [3, 1, 1, 1, 1, 1, 1]),
-        ("__OOV__ a 1 2 __oov__ OOV_word1", [2, 3, 1]),
+        ("hello hello hello hello hello oov_word0", [[0, 1]]),
+        ("hello goodbye hello oov_word0 OOV_word0", [[0, 0, 1]]),
+        ("a b c d e f __oov__ OOV_word0 oov_word1", [[0, 1, 0, 0, 0, 0, 0]]),
+        ("__OOV__ a 1 2 __oov__ OOV_word1", [[0, 1, 0]]),
     ],
 )
 def test_count_vector_featurizer_oov_words(sentence, expected):
@@ -159,19 +182,19 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert np.all(test_message.get("text_features") == expected)
+    assert np.all(test_message.get("text_sparse_features")[0].toarray() == expected)
 
 
 @pytest.mark.parametrize(
     "tokens, expected",
     [
-        (["hello", "hello", "hello", "hello", "hello"], [5]),
-        (["你好", "你好", "你好", "你好", "你好"], [5]),  # test for unicode chars
-        (["hello", "goodbye", "hello"], [1, 2]),
+        (["hello", "hello", "hello", "hello", "hello"], [[1]]),
+        (["你好", "你好", "你好", "你好", "你好"], [[1]]),  # test for unicode chars
+        (["hello", "goodbye", "hello"], [[0, 1]]),
         # Note: order has changed in Chinese version of "hello" & "goodbye"
-        (["你好", "再见", "你好"], [2, 1]),  # test for unicode chars
-        (["a", "b", "c", "d", "e", "f"], [1, 1, 1, 1, 1, 1]),
-        (["a", "1", "2"], [2, 1]),
+        (["你好", "再见", "你好"], [[1, 0]]),  # test for unicode chars
+        (["a", "b", "c", "d", "e", "f"], [[1, 0, 0, 0, 0, 0]]),
+        (["a", "1", "2"], [[0, 1]]),
     ],
 )
 def test_count_vector_featurizer_using_tokens(tokens, expected):
@@ -200,15 +223,15 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     ftr.process(test_message)
 
-    assert np.all(test_message.get("text_features") == expected)
+    assert np.all(test_message.get("text_sparse_features")[0].toarray() == expected)
 
 
 @pytest.mark.parametrize(
     "sentence, expected",
     [
-        ("ababab", [3, 3, 3, 2]),
-        ("ab ab ab", [2, 2, 3, 3, 3, 2]),
-        ("abc", [1, 1, 1, 1, 1]),
+        ("ababab", [[3, 3, 3, 2]]),
+        ("ab ab ab", [[0, 0, 1, 1, 1, 0]]),
+        ("abc", [[1, 1, 1, 1, 1]]),
     ],
 )
 def test_count_vector_featurizer_char(sentence, expected):
@@ -226,7 +249,7 @@ def test_count_vector_featurizer_char(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert np.all(test_message.get("text_features") == expected)
+    assert np.all(test_message.get("text_sparse_features")[0].toarray() == expected)
 
 
 def test_count_vector_featurizer_persist_load(tmpdir):
