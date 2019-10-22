@@ -17,6 +17,7 @@ from rasa.nlu.constants import (
     MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
     MESSAGE_INTENT_ATTRIBUTE,
+    CLS_TOKEN,
 )
 
 logger = logging.getLogger(__name__)
@@ -279,12 +280,17 @@ class CountVectorsFeaturizer(Featurizer):
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
 
+        tokens = message.get(MESSAGE_TOKENS_NAMES[attribute])
+        cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
+
         if attribute in SPACY_FEATURIZABLE_ATTRIBUTES and message.get(
             MESSAGE_SPACY_FEATURES_NAMES[attribute]
         ):  # if lemmatize is possible
             tokens = [
                 t.lemma_ for t in message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
             ]
+            if cls_token_used:
+                tokens.append(CLS_TOKEN)
         elif message.get(
             MESSAGE_TOKENS_NAMES[attribute]
         ):  # if directly tokens is provided

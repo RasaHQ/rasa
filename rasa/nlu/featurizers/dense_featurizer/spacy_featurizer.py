@@ -14,6 +14,8 @@ from rasa.nlu.constants import (
     MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
+    MESSAGE_TOKENS_NAMES,
+    CLS_TOKEN,
 )
 
 
@@ -27,7 +29,7 @@ class SpacyFeaturizer(Featurizer):
     requires = [
         MESSAGE_SPACY_FEATURES_NAMES[attribute]
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
-    ]
+    ] + [MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES]
 
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
         """Feature vector for a single document / sentence."""
@@ -56,8 +58,17 @@ class SpacyFeaturizer(Featurizer):
         """Adds the spacy word vectors to the messages features."""
 
         message_attribute_doc = self.get_doc(message, attribute)
+        tokens = message.get(MESSAGE_TOKENS_NAMES[attribute])
+        cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
+
         if message_attribute_doc is not None:
             fs = self._features_for_doc(message_attribute_doc)
+
+            if cls_token_used:
+                # cls token is used, need to append a vector
+                cls_token_vec = np.zeros([1, fs.shape[-1]])
+                fs = np.concatenate([fs, cls_token_vec])
+
             features = self._combine_with_existing_dense_features(
                 message, fs, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
             )
