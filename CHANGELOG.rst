@@ -7,23 +7,6 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.4.2]
-~~~~~~~~~~~~~~~~~~
-
-Added
------
-
-Changed
--------
-
-Removed
--------
-
-Fixed
------
-- Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
-  interactive learning
-
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
 Regression: changes from ``1.2.12`` were missing from ``1.4.0``, readded them
