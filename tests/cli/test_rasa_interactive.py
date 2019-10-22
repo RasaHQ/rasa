@@ -17,6 +17,7 @@ def test_interactive_help(run) -> None:
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]
                         [--debug-plots] [--dump-stories] [--force]
+                        [--persist-nlu-data]
                         {core} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
