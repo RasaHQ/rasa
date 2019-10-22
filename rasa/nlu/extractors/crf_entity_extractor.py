@@ -596,6 +596,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     @staticmethod
     def __additional_ner_features(message: Message) -> List[Any]:
+        # TODO use sparse text features
         features = message.get("ner_features", [])
         tokens = message.get("tokens", [])
         if len(tokens) != len(features):
