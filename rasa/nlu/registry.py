@@ -62,7 +62,6 @@ component_classes = [
     # featurizers
     SpacyFeaturizer,
     MitieFeaturizer,
-    NGramFeaturizer,
     RegexFeaturizer,
     CountVectorsFeaturizer,
     # classifiers
