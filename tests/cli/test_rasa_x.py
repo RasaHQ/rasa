@@ -16,9 +16,9 @@ def test_x_help(run):
               [--cors [CORS [CORS ...]]] [--enable-api]
               [--remote-storage REMOTE_STORAGE]
               [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
-              [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
-              [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
-              [--jwt-method JWT_METHOD]"""
+              [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]
+              [--credentials CREDENTIALS] [--connector CONNECTOR]
+              [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]"""
 
     lines = help_text.split("\n")
 

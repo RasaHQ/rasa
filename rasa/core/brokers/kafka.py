@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 from rasa.core.brokers.event_channel import EventChannel
+from rasa.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class KafkaProducer(EventChannel):
         if self.security_protocol == "SASL_PLAINTEXT":
             self.producer = kafka.KafkaProducer(
                 bootstrap_servers=[self.host],
-                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
                 sasl_plain_username=self.sasl_username,
                 sasl_plain_password=self.sasl_password,
                 sasl_mechanism="PLAIN",
@@ -62,7 +63,7 @@ class KafkaProducer(EventChannel):
         elif self.security_protocol == "SSL":
             self.producer = kafka.KafkaProducer(
                 bootstrap_servers=[self.host],
-                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
                 ssl_cafile=self.ssl_cafile,
                 ssl_certfile=self.ssl_certfile,
                 ssl_keyfile=self.ssl_keyfile,

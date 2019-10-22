@@ -61,7 +61,7 @@ class KerasPolicy(Policy):
         session: Optional[tf.compat.v1.Session] = None,
         current_epoch: int = 0,
         max_history: Optional[int] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
@@ -169,7 +169,7 @@ class KerasPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
 
         # set numpy random seed
@@ -209,7 +209,7 @@ class KerasPolicy(Policy):
                     batch_size=self.batch_size,
                     shuffle=False,
                     verbose=obtain_verbosity(),
-                    **self._train_params
+                    **self._train_params,
                 )
                 # the default parameter for epochs in keras fit is 1
                 self.current_epoch = self.defaults.get("epochs", 1)
@@ -219,7 +219,7 @@ class KerasPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Continues training an already trained policy."""
 
@@ -279,7 +279,7 @@ class KerasPolicy(Policy):
             }
 
             meta_file = os.path.join(path, "keras_policy.json")
-            utils.dump_obj_as_json_to_file(meta_file, meta)
+            rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
             model_file = os.path.join(path, meta["model"])
             # makes sure the model directory exists
