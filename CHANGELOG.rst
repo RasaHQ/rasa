@@ -7,6 +7,22 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[Unreleased 1.4.2]
+~~~~~~~~~~~~~~~~~~
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+- TensorFlow deprecation warnings are no longer shown when running ``rasa x``
+
+Fixed
+-----
+
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
 Regression: changes from ``1.2.12`` were missing from ``1.4.0``, readded them
