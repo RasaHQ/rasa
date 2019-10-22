@@ -11,7 +11,7 @@ from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 
 
-def test_x_help(run: Callable[..., RunResult]) -> None:
+def test_x_help(run: Callable[..., RunResult]):
     output = run("x", "--help")
 
     help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
@@ -31,7 +31,7 @@ def test_x_help(run: Callable[..., RunResult]) -> None:
         assert output.outlines[i] == line
 
 
-def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path) -> None:
+def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path):
     credentials_path = str(tmpdir / "credentials.yml")
 
     io_utils.write_yaml_file({}, credentials_path)
@@ -45,7 +45,7 @@ def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path) 
     assert actual["rasa"]["url"] == "http://localhost:5002"
 
 
-def test_prepare_credentials_if_already_valid(tmpdir: Path) -> None:
+def test_prepare_credentials_if_already_valid(tmpdir: Path):
     credentials_path = str(tmpdir / "credentials.yml")
 
     credentials = {
@@ -61,7 +61,7 @@ def test_prepare_credentials_if_already_valid(tmpdir: Path) -> None:
     assert actual == credentials
 
 
-def test_if_endpoint_config_is_valid_in_local_mode() -> None:
+def test_if_endpoint_config_is_valid_in_local_mode():
     config = EndpointConfig(type="sql", dialect="sqlite", db=x.DEFAULT_EVENTS_DB)
 
     assert x._is_correct_event_broker(config)
@@ -75,12 +75,12 @@ def test_if_endpoint_config_is_valid_in_local_mode() -> None:
         {"type": "sql", "dialect": "sqlite", "db": "some.db"},
     ],
 )
-def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict) -> None:
+def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict):
     config = EndpointConfig(**kwargs)
     assert not x._is_correct_event_broker(config)
 
 
-async def test_pull_runtime_config_from_server() -> None:
+async def test_pull_runtime_config_from_server():
     config_url = "http://example.com/api/config?token=token"
     credentials = "rasa: http://example.com:5002/api"
     endpoint_config = """

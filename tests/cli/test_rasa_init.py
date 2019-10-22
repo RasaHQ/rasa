@@ -3,7 +3,7 @@ from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_init(run: Callable[..., RunResult]) -> None:
+def test_init(run: Callable[..., RunResult]):
     run("init", "--no-prompt", "--quiet")
 
     assert os.path.exists("actions.py")
@@ -16,7 +16,7 @@ def test_init(run: Callable[..., RunResult]) -> None:
     assert os.path.exists("data/stories.md")
 
 
-def test_init_help(run: Callable[..., RunResult]) -> None:
+def test_init_help(run: Callable[..., RunResult]):
     output = run("init", "--help")
 
     assert (

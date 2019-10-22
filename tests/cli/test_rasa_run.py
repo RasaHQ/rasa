@@ -4,7 +4,7 @@ from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_run_does_not_start(run_in_default_project: Callable[..., RunResult]) -> None:
+def test_run_does_not_start(run_in_default_project: Callable[..., RunResult]):
     os.remove("domain.yml")
     shutil.rmtree("models")
 
@@ -14,7 +14,7 @@ def test_run_does_not_start(run_in_default_project: Callable[..., RunResult]) ->
     assert "No model found." in output.outlines[0]
 
 
-def test_run_help(run: Callable[..., RunResult]) -> None:
+def test_run_help(run: Callable[..., RunResult]):
     output = run("run", "--help")
 
     help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
@@ -34,7 +34,7 @@ def test_run_help(run: Callable[..., RunResult]) -> None:
         assert output.outlines[i] == line
 
 
-def test_run_action_help(run: Callable[..., RunResult]) -> None:
+def test_run_action_help(run: Callable[..., RunResult]):
     output = run("run", "actions", "--help")
 
     help_text = """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]

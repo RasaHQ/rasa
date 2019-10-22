@@ -2,7 +2,7 @@ from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_visualize_help(run: Callable[..., RunResult]) -> None:
+def test_visualize_help(run: Callable[..., RunResult]):
     output = run("visualize", "--help")
 
     help_text = """usage: rasa visualize [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-s STORIES]

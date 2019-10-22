@@ -2,7 +2,7 @@ from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_shell_help(run: Callable[..., RunResult]) -> None:
+def test_shell_help(run: Callable[..., RunResult]):
     output = run("shell", "--help")
 
     help_text = """usage: rasa shell [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
@@ -22,7 +22,7 @@ def test_shell_help(run: Callable[..., RunResult]) -> None:
         assert output.outlines[i] == line
 
 
-def test_shell_nlu_help(run: Callable[..., RunResult]) -> None:
+def test_shell_nlu_help(run: Callable[..., RunResult]):
     output = run("shell", "nlu", "--help")
 
     help_text = """usage: rasa shell nlu [-h] [-v] [-vv] [--quiet] [-m MODEL]
