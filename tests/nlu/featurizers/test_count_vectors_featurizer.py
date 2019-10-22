@@ -17,7 +17,7 @@ from rasa.nlu.training_data import TrainingData
     ],
 )
 def test_count_vector_featurizer(sentence, expected):
-    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
         CountVectorsFeaturizer,
     )
 
@@ -49,7 +49,7 @@ def test_count_vector_featurizer(sentence, expected):
 def test_count_vector_featurizer_attribute_featurization(
     sentence, intent, response, intent_features, response_features
 ):
-    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
         CountVectorsFeaturizer,
     )
 
@@ -96,7 +96,7 @@ def test_count_vector_featurizer_attribute_featurization(
 def test_count_vector_featurizer_shared_vocab(
     sentence, intent, response, text_features, intent_features, response_features
 ):
-    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
         CountVectorsFeaturizer,
     )
 
@@ -133,7 +133,7 @@ def test_count_vector_featurizer_shared_vocab(
     ],
 )
 def test_count_vector_featurizer_oov_token(sentence, expected):
-    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
         CountVectorsFeaturizer,
     )
 
@@ -162,7 +162,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     ],
 )
 def test_count_vector_featurizer_oov_words(sentence, expected):
-    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
         CountVectorsFeaturizer,
     )
 
@@ -198,7 +198,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     ],
 )
 def test_count_vector_featurizer_using_tokens(tokens, expected):
-    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
         CountVectorsFeaturizer,
     )
 
@@ -235,7 +235,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     ],
 )
 def test_count_vector_featurizer_char(sentence, expected):
-    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
         CountVectorsFeaturizer,
     )
 
@@ -253,7 +253,7 @@ def test_count_vector_featurizer_char(sentence, expected):
 
 
 def test_count_vector_featurizer_persist_load(tmpdir):
-    from nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
         CountVectorsFeaturizer,
     )
 

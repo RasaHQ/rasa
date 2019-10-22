@@ -43,7 +43,7 @@ from rasa.nlu.training_data import Message
     ],
 )
 def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
-    from nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
@@ -88,7 +88,7 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     ],
 )
 def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
-    from nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 
     lookups = [
         {
