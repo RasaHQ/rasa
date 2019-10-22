@@ -9,7 +9,6 @@ from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
 
-from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer

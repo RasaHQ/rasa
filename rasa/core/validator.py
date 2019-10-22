@@ -1,5 +1,4 @@
 import logging
-import asyncio
 from collections import defaultdict
 from typing import List, Set, Text
 from rasa.core.domain import Domain
