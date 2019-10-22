@@ -41,7 +41,7 @@ Changed
   trackers are still loaded from pickle but will be dumped as json in any subsequent
   save operations.
 - Event brokers are now also passed to custom tracker stores (using the ``event_broker`` parameter)
-- Give a info message now if we will be updating the ``endpoints.yml`` file when using Rasa X if custom_url is set.
+- Print info message when running Rasa X and and custom model server url was specified in ``endpoints.yml``
 - If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
   this will be used instead of the default one when running Rasa X
 - Updated the ``/status`` api route to use the actual model file location instead of the ``tmp`` location.
