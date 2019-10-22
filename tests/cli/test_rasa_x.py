@@ -1,4 +1,9 @@
+from pathlib import Path
+
 import pytest
+from typing import Callable, Any, Tuple, Dict
+from _pytest.pytester import RunResult
+
 from aioresponses import aioresponses
 
 import rasa.utils.io as io_utils
@@ -6,7 +11,7 @@ from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 
 
-def test_x_help(run):
+def test_x_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
     output = run("x", "--help")
 
     help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
@@ -26,9 +31,8 @@ def test_x_help(run):
         assert output.outlines[i] == line
 
 
-def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir_factory):
-    directory = tmpdir_factory.mktemp("directory")
-    credentials_path = str(directory / "credentials.yml")
+def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir: Path) -> None:
+    credentials_path = str(tmpdir / "credentials.yml")
 
     io_utils.write_yaml_file({}, credentials_path)
 
@@ -41,9 +45,8 @@ def test_prepare_credentials_for_rasa_x_if_rasa_channel_not_given(tmpdir_factory
     assert actual["rasa"]["url"] == "http://localhost:5002"
 
 
-def test_prepare_credentials_if_already_valid(tmpdir_factory):
-    directory = tmpdir_factory.mktemp("directory")
-    credentials_path = str(directory / "credentials.yml")
+def test_prepare_credentials_if_already_valid(tmpdir: Path) -> None:
+    credentials_path = str(tmpdir / "credentials.yml")
 
     credentials = {
         "rasa": {"url": "my-custom-url"},
@@ -58,7 +61,7 @@ def test_prepare_credentials_if_already_valid(tmpdir_factory):
     assert actual == credentials
 
 
-def test_if_endpoint_config_is_valid_in_local_mode():
+def test_if_endpoint_config_is_valid_in_local_mode() -> None:
     config = EndpointConfig(type="sql", dialect="sqlite", db=x.DEFAULT_EVENTS_DB)
 
     assert x._is_correct_event_broker(config)
@@ -72,12 +75,12 @@ def test_if_endpoint_config_is_valid_in_local_mode():
         {"type": "sql", "dialect": "sqlite", "db": "some.db"},
     ],
 )
-def test_if_endpoint_config_is_invalid_in_local_mode(kwargs):
+def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict) -> None:
     config = EndpointConfig(**kwargs)
     assert not x._is_correct_event_broker(config)
 
 
-async def test_pull_runtime_config_from_server():
+async def test_pull_runtime_config_from_server() -> None:
     config_url = "http://example.com/api/config?token=token"
     credentials = "rasa: http://example.com:5002/api"
     endpoint_config = """

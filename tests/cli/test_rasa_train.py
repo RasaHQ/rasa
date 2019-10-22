@@ -3,6 +3,8 @@ import shutil
 import tempfile
 
 import pytest
+from typing import Callable, Any, Tuple
+from _pytest.pytester import RunResult
 
 from rasa import model
 from rasa.nlu.model import Metadata
@@ -16,7 +18,7 @@ from rasa.constants import (
 import rasa.utils.io as io_utils
 
 
-def test_train(run_in_default_project):
+def test_train(run_in_default_project: Callable[[Tuple[Any]], RunResult]) -> None:
     temp_dir = os.getcwd()
 
     run_in_default_project(
@@ -46,7 +48,9 @@ def test_train(run_in_default_project):
     )
 
 
-def test_train_persist_nlu_data(run_in_default_project):
+def test_train_persist_nlu_data(
+    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+) -> None:
     temp_dir = os.getcwd()
 
     run_in_default_project(
@@ -77,7 +81,9 @@ def test_train_persist_nlu_data(run_in_default_project):
     )
 
 
-def test_train_core_compare(run_in_default_project):
+def test_train_core_compare(
+    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+) -> None:
     temp_dir = os.getcwd()
 
     io_utils.write_yaml_file(
@@ -129,7 +135,9 @@ def test_train_core_compare(run_in_default_project):
     assert model_files[0].endswith("tar.gz")
 
 
-def test_train_no_domain_exists(run_in_default_project):
+def test_train_no_domain_exists(
+    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+) -> None:
 
     os.remove("domain.yml")
     run_in_default_project(
@@ -155,7 +163,9 @@ def test_train_no_domain_exists(run_in_default_project):
     assert os.path.exists(metadata_path)
 
 
-def test_train_skip_on_model_not_changed(run_in_default_project):
+def test_train_skip_on_model_not_changed(
+    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+) -> None:
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
@@ -215,7 +225,7 @@ def test_train_with_only_core_data(run_in_default_project):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train_core(run_in_default_project):
+def test_train_core(run_in_default_project: Callable[[Tuple[Any]], RunResult]) -> None:
     run_in_default_project(
         "train",
         "core",
@@ -235,7 +245,9 @@ def test_train_core(run_in_default_project):
     assert os.path.isfile("train_rasa_models/rasa-model.tar.gz")
 
 
-def test_train_core_no_domain_exists(run_in_default_project):
+def test_train_core_no_domain_exists(
+    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+) -> None:
 
     os.remove("domain.yml")
     run_in_default_project(
@@ -257,7 +269,7 @@ def test_train_core_no_domain_exists(run_in_default_project):
     assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
 
 
-def count_rasa_temp_files():
+def count_rasa_temp_files() -> int:
     count = 0
     for entry in os.scandir(tempfile.gettempdir()):
         if not entry.is_dir():
@@ -274,13 +286,15 @@ def count_rasa_temp_files():
     return count
 
 
-def test_train_core_temp_files(run_in_default_project):
+def test_train_core_temp_files(
+    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+) -> None:
     count = count_rasa_temp_files()
     run_in_default_project("train", "core")
     assert count == count_rasa_temp_files()
 
 
-def test_train_nlu(run_in_default_project):
+def test_train_nlu(run_in_default_project: Callable[[Tuple[Any]], RunResult]) -> None:
     run_in_default_project(
         "train",
         "nlu",
@@ -305,7 +319,9 @@ def test_train_nlu(run_in_default_project):
     )
 
 
-def test_train_nlu_persist_nlu_data(run_in_default_project):
+def test_train_nlu_persist_nlu_data(
+    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+) -> None:
     run_in_default_project(
         "train",
         "nlu",
@@ -331,7 +347,9 @@ def test_train_nlu_persist_nlu_data(run_in_default_project):
     )
 
 
-def test_train_nlu_temp_files(run_in_default_project):
+def test_train_nlu_temp_files(
+    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+) -> None:
     count = count_rasa_temp_files()
     run_in_default_project("train", "nlu")
     assert count == count_rasa_temp_files()
@@ -353,7 +371,7 @@ def test_train_help(run):
         assert output.outlines[i] == line
 
 
-def test_train_nlu_help(run):
+def test_train_nlu_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
     output = run("train", "nlu", "--help")
 
     help_text = """usage: rasa train nlu [-h] [-v] [-vv] [--quiet] [-c CONFIG] [--out OUT]
@@ -480,6 +498,6 @@ def test_get_valid_config(parameters):
             assert k in config_data
 
 
-def test_get_valid_config_with_non_existing_file():
+def test_get_valid_config_with_non_existing_file() -> None:
     with pytest.raises(SystemExit):
         _get_valid_config("non-existing-file.yml", CONFIG_MANDATORY_KEYS)

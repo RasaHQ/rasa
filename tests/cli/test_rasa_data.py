@@ -1,7 +1,9 @@
 import os
+from typing import Callable, Any, Tuple
+from _pytest.pytester import RunResult
 
 
-def test_data_split_nlu(run_in_default_project):
+def test_data_split_nlu(run_in_default_project: Callable[[Tuple[Any]], RunResult]):
     run_in_default_project(
         "data", "split", "nlu", "-u", "data/nlu.md", "--training-fraction", "0.75"
     )
@@ -11,7 +13,7 @@ def test_data_split_nlu(run_in_default_project):
     assert os.path.exists(os.path.join("train_test_split", "training_data.md"))
 
 
-def test_data_convert_nlu(run_in_default_project):
+def test_data_convert_nlu(run_in_default_project: Callable[[Tuple[Any]], RunResult]):
     run_in_default_project(
         "data",
         "convert",
@@ -27,7 +29,7 @@ def test_data_convert_nlu(run_in_default_project):
     assert os.path.exists("out_nlu_data.json")
 
 
-def test_data_split_help(run):
+def test_data_split_help(run: Callable[[Tuple[Any]], RunResult]):
     output = run("data", "split", "nlu", "--help")
 
     help_text = """usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
@@ -39,7 +41,7 @@ def test_data_split_help(run):
         assert output.outlines[i] == line
 
 
-def test_data_convert_help(run):
+def test_data_convert_help(run: Callable[[Tuple[Any]], RunResult]):
     output = run("data", "convert", "nlu", "--help")
 
     help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data DATA --out OUT
@@ -51,7 +53,7 @@ def test_data_convert_help(run):
         assert output.outlines[i] == line
 
 
-def test_data_validate_help(run):
+def test_data_validate_help(run: Callable[[Tuple[Any]], RunResult]):
     output = run("data", "validate", "--help")
 
     help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet] [--fail-on-warnings]
