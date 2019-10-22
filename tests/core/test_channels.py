@@ -210,11 +210,12 @@ def test_mattermost_channel():
         url="http://chat.example.com/api/v4",
         # the name of your team for mattermost
         team="community",
-        # the username of your bot user that will post
+        # the username of your bot user that will post messages
         user="user@email.com",
-        # messages
-        pw="password"
         # the password of your bot user that will post messages
+        pw="password",
+        # the webhook-url your bot should listen for messages
+        webhook_url="YOUR_WEBHOOK_URL",
     )
 
     s = rasa.core.run.configure_app([input_channel], port=5004)
@@ -414,6 +415,50 @@ async def test_callback_calls_endpoint():
 
         assert text["recipient_id"] == "test-id"
         assert text["text"] == "Hi there!"
+
+
+def test_botframework_attachments():
+    from rasa.core.channels.botframework import BotFrameworkInput, BotFramework
+    from copy import deepcopy
+
+    ch = BotFrameworkInput("app_id", "app_pass")
+
+    payload = {
+        "type": "message",
+        "id": "123",
+        "channelId": "msteams",
+        "serviceUrl": "https://smba.trafficmanager.net/emea/",
+        "from": {"id": "12:123", "name": "Rasa", "aadObjectId": "123"},
+        "conversation": {
+            "conversationType": "personal",
+            "tenantId": "123",
+            "id": "a:123",
+        },
+        "recipient": {"id": "12:123", "name": "Rasa chat"},
+    }
+    assert ch.add_attachments_to_metadata(payload, None) is None
+
+    attachments = [
+        {
+            "contentType": "application/vnd.microsoft.teams.file.download.info",
+            "content": {
+                "downloadUrl": "https://test.sharepoint.com/personal/rasa/123",
+                "uniqueId": "123",
+                "fileType": "csv",
+            },
+            "contentUrl": "https://test.sharepoint.com/personal/rasa/123",
+            "name": "rasa-test.csv",
+        }
+    ]
+    payload["attachments"] = attachments
+
+    assert ch.add_attachments_to_metadata(payload, None) == {"attachments": attachments}
+
+    metadata = {"test": 1, "bigger_test": {"key": "value"}}
+    updated_metadata = deepcopy(metadata)
+    updated_metadata.update({"attachments": attachments})
+
+    assert ch.add_attachments_to_metadata(payload, metadata) == updated_metadata
 
 
 def test_slack_message_sanitization():

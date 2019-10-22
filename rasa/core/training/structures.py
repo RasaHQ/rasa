@@ -399,9 +399,12 @@ class Story(object):
         else:
             return story_content
 
-    def dump_to_file(self, filename, flat=False, e2e=False):
-        with open(filename, "a", encoding="utf-8") as f:
-            f.write(self.as_story_string(flat, e2e))
+    def dump_to_file(
+        self, filename: Text, flat: bool = False, e2e: bool = False
+    ) -> None:
+        from rasa.utils import io
+
+        io.write_text_file(self.as_story_string(flat, e2e), filename, append=True)
 
 
 class StoryGraph(object):
@@ -467,15 +470,7 @@ class StoryGraph(object):
         # we need to remove the start steps and replace them with steps ending
         # in a special end checkpoint
 
-        # as in python 3.5, dict is not ordered, in order to generate
-        # reproducible result with random seed in python 3.5, we have
-        # to use OrderedDict
-        if sys.version_info >= (3, 6):
-            story_steps = {s.id: s for s in self.story_steps}
-        else:
-            from collections import OrderedDict
-
-            story_steps = OrderedDict([(s.id, s) for s in self.story_steps])
+        story_steps = {s.id: s for s in self.story_steps}
 
         # collect all overlapping checkpoints
         # we will remove unused start ones

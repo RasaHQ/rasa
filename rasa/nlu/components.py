@@ -234,7 +234,7 @@ class Component(object, metaclass=ComponentMetaclass):
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["Component"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "Component":
         """Load this component from file.
 
@@ -429,7 +429,7 @@ class ComponentBuilder(object):
         component_meta: Dict[Text, Any],
         model_dir: Text,
         model_metadata: "Metadata",
-        **context: Any
+        **context: Any,
     ) -> Component:
         """Tries to retrieve a component from the cache, else calls
         ``load`` to create a new component.

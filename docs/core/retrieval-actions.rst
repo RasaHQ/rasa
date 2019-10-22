@@ -13,6 +13,12 @@ Retrieval Actions
    We introduce experimental features to get feedback from our community, so we encourage you to try it out!
    However, the functionality might be changed or removed in the future.
    If you have feedback (positive or negative) please share it with us on the `forum <https://forum.rasa.com>`_.
+   Also, currently we do not support adding new annotations in Rasa X if your training data contains retrieval actions.
+   Once we have gathered enough feedback and we're happy with the training data format, we'll add support for training response retrieval models in Rasa X.
+
+.. note::
+   There is an in-depth blog post `here <https://blog.rasa.com/response-retrieval-models/>`_ about how to use retrieval
+   actions for handling single turn interactions.
 
 .. contents::
    :local:

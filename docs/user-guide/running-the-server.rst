@@ -59,6 +59,17 @@ storage system if no model server and no remote storage were configured.
     Core model is needed to process the request.
 
 
+.. note::
+
+    By default, the HTTP server runs as a single process. You can change the number
+    of worker processes using the ``SANIC_WORKERS`` environment variable. It is
+    recommended that you set the number of workers to the number of available CPU cores
+    (check out the
+    `Sanic docs <https://sanic.readthedocs.io/en/latest/sanic/deploying.html#workers>`_
+    for more details). This will only work in combination with the
+    ``RedisLockStore`` (see :ref:`lock-stores`).
+
+
 .. _server_fetch_from_server:
 
 Fetching Models from a Server

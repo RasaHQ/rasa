@@ -1,6 +1,10 @@
+import logging
 import tempfile
+from typing import Tuple
 
 import pytest
+from _pytest.logging import LogCaptureFixture
+from moto import mock_dynamodb2
 
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
@@ -10,18 +14,20 @@ from rasa.core.tracker_store import (
     InMemoryTrackerStore,
     RedisTrackerStore,
     SQLTrackerStore,
+    DynamoTrackerStore,
 )
+import rasa.core.tracker_store
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from tests.conftest import assert_log_emitted
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 domain = Domain.load("data/test_domains/default.yml")
 
 
-def test_get_or_create():
+def get_or_create_tracker_store(store: "TrackerStore"):
     slot_key = "location"
     slot_val = "Easter Island"
-    store = InMemoryTrackerStore(domain)
 
     tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
@@ -32,6 +38,16 @@ def test_get_or_create():
 
     again = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     assert again.get_slot(slot_key) == slot_val
+
+
+def test_get_or_create():
+    get_or_create_tracker_store(InMemoryTrackerStore(domain))
+
+
+# noinspection PyPep8Naming
+@mock_dynamodb2
+def test_dynamo_get_or_create():
+    get_or_create_tracker_store(DynamoTrackerStore(domain))
 
 
 def test_restart_after_retrieval_from_tracker_store(default_domain):
@@ -93,9 +109,15 @@ def test_find_tracker_store(default_domain):
 
 
 class ExampleTrackerStore(RedisTrackerStore):
-    def __init__(self, domain, url, port, db, password, record_exp):
+    def __init__(self, domain, url, port, db, password, record_exp, event_broker=None):
         super(ExampleTrackerStore, self).__init__(
-            domain, host=url, port=port, db=db, password=password, record_exp=record_exp
+            domain,
+            event_broker=event_broker,
+            host=url,
+            port=port,
+            db=db,
+            password=password,
+            record_exp=record_exp,
         )
 
 
@@ -128,21 +150,52 @@ def test_tracker_store_from_invalid_string(default_domain):
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
-def test_tracker_serialisation():
-    slot_key = "location"
-    slot_val = "Easter Island"
+def _tracker_store_and_tracker_with_slot_set() -> Tuple[
+    InMemoryTrackerStore, DialogueStateTracker
+]:
+    # returns an InMemoryTrackerStore containing a tracker with a slot set
+
+    slot_key = "cuisine"
+    slot_val = "French"
 
     store = InMemoryTrackerStore(domain)
-
     tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
 
+    return store, tracker
+
+
+def test_tracker_serialisation():
+    store, tracker = _tracker_store_and_tracker_with_slot_set()
     serialised = store.serialise_tracker(tracker)
 
     assert tracker == store.deserialise_tracker(
         UserMessage.DEFAULT_SENDER_ID, serialised
     )
+
+
+def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
+    def pickle_serialise_tracker(_tracker):
+        # mocked version of TrackerStore.serialise_tracker() that uses
+        # the deprecated pickle serialisation
+        import pickle
+
+        dialogue = _tracker.as_dialogue()
+
+        return pickle.dumps(dialogue)
+
+    store, tracker = _tracker_store_and_tracker_with_slot_set()
+
+    serialised = pickle_serialise_tracker(tracker)
+
+    # deprecation warning should be emitted
+    with assert_log_emitted(
+        caplog, rasa.core.tracker_store.logger.name, logging.WARNING, "DEPRECATION"
+    ):
+        assert tracker == store.deserialise_tracker(
+            UserMessage.DEFAULT_SENDER_ID, serialised
+        )
 
 
 @pytest.mark.parametrize(
