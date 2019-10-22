@@ -368,7 +368,7 @@ def should_retrain(
         train_path: Path to the directory in which the new model will be trained.
 
     Returns:
-        A tuple of boolean values indicating whether Rasa Core and/or Rasa NLU needs
+        A ShouldRetrain object indicating whether Rasa Core and/or Rasa NLU needs
         to be retrained or not.
 
     """
@@ -398,6 +398,7 @@ def should_retrain(
         if not retrain.core:
             target_path = os.path.join(train_path, "core")
             core_merge_failed = not merge_model(old_core, target_path)
+
         if not retrain.nlg:
             retrain.nlg = core_merge_failed
 
