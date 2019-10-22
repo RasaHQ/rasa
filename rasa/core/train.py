@@ -5,6 +5,7 @@ import tempfile
 import typing
 from typing import Dict, Optional, Text, Union, List
 
+import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
@@ -167,7 +168,7 @@ async def do_compare_training(
     training_stories_per_model_file = os.path.join(
         args.out, NUMBER_OF_TRAINING_STORIES_FILE
     )
-    utils.dump_obj_as_json_to_file(training_stories_per_model_file, story_range)
+    rasa.utils.io.dump_obj_as_json_to_file(training_stories_per_model_file, story_range)
 
 
 def do_interactive_learning(

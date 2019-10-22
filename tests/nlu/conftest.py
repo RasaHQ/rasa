@@ -14,10 +14,6 @@ DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 NLU_MODEL_NAME = "nlu_model.tar.gz"
 
-TEST_MODEL_DIR = "test_models"
-
-NLU_MODEL_PATH = os.path.join(TEST_MODEL_DIR, "nlu")
-
 MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 

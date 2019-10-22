@@ -17,15 +17,6 @@ from rasa.core.lock import TicketLock, Ticket
 from rasa.core.lock_store import InMemoryLockStore, LockError, TicketExistsError
 
 
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 def test_issue_ticket():
     lock = TicketLock("random id 0")
 

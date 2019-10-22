@@ -7,8 +7,6 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Text, Optional, Any, List, Dict, Tuple
 
-import numpy as np
-
 import rasa.core
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
@@ -122,7 +120,7 @@ class PolicyEnsemble(object):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if training_trackers:
             for policy in self.policies:
@@ -201,7 +199,7 @@ class PolicyEnsemble(object):
 
         self._add_package_version_info(metadata)
 
-        utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
         # if there are lots of stories, saving flattened stories takes a long
         # time, so this is turned off by default
@@ -377,6 +375,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        import numpy as np
+
         result = None
         max_confidence = -1
         best_policy_name = None

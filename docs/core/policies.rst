@@ -424,9 +424,10 @@ Fallback Policy
 
 The ``FallbackPolicy`` invokes a :ref:`fallback action
 <fallback-actions>` if at least one of the following occurs:
+
 1. The intent recognition has a confidence below ``nlu_threshold``.
-2. The highest ranked intent differs in confidence with the second highest ranked intent
-by less than ``ambiguity_threshold``.
+2. The highest ranked intent differs in confidence with the second highest 
+   ranked intent by less than ``ambiguity_threshold``.
 3. None of the dialogue policies predict an action with confidence higher than ``core_threshold``.
 
 **Configuration:**
@@ -533,7 +534,7 @@ by trying to disambiguate the user input.
     | ``ambiguity_threshold``       | Min amount by which the confidence of the|
     |                               | top intent must exceed that of the second|
     |                               | highest ranked intent.                   |
-    +--------------------------------------------------------------------------+
+    +-------------------------------+------------------------------------------+
     | ``core_threshold``            | Min confidence needed to accept an action|
     |                               | prediction from Rasa Core                |
     +-------------------------------+------------------------------------------+

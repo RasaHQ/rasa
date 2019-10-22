@@ -570,3 +570,23 @@ def test_load_data_from_non_existing_file():
 
 def test_is_empty():
     assert TrainingData().is_empty()
+
+
+def test_markdown_empty_section():
+    data = training_data.load_data(
+        "data/test/markdown_single_sections/empty_section.md"
+    )
+    assert data.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
+
+    assert not data.entity_synonyms
+    assert len(data.lookup_tables) == 1
+    assert data.lookup_tables[0]["name"] == "chinese"
+    assert "Chinese" in data.lookup_tables[0]["elements"]
+    assert "Chines" in data.lookup_tables[0]["elements"]
+
+
+def test_markdown_not_existing_section():
+    with pytest.raises(ValueError):
+        training_data.load_data(
+            "data/test/markdown_single_sections/not_existing_section.md"
+        )

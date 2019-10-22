@@ -47,7 +47,7 @@ def chat(
         )
         return
 
-    print ("Your bot is ready to talk! Type your messages here or send '/stop'.")
+    print("Your bot is ready to talk! Type your messages here or send '/stop'.")
     loop = asyncio.get_event_loop()
     while True:
         message = input()

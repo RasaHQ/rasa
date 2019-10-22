@@ -30,6 +30,8 @@ which has the following methods:
 
 **verify_intents():** Checks if intents listed in domain file are consistent with the NLU data.
 
+**verify_example_repetition_in_intents():** Checks if there is no duplicated data among distinct intents at NLU data.
+
 **verify_intents_in_stories():** Verification for intents in the stories, to check if they are valid.
 
 **verify_utterances():** Checks domain file for consistency between utterance templates and utterances listed under

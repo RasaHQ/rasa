@@ -1,24 +1,22 @@
 # this builtin is needed so we can overwrite in test
-import aiohttp
 import json
 import logging
-import questionary
 from typing import Text, Optional
 
+import aiohttp
+import questionary
 from aiohttp import ClientTimeout
-from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
 from rasa.cli import utils as cli_utils
-
 from rasa.core import utils
-from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.channel import RestInput
+from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
+from rasa.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
-
 
 DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
@@ -88,7 +86,6 @@ async def send_message_receive_block(server_url, auth_token, sender_id, message)
             return await resp.json()
 
 
-@async_generator  # needed for python 3.5 compatibility
 async def send_message_receive_stream(server_url, auth_token, sender_id, message):
     payload = {"sender": sender_id, "message": message}
 
@@ -102,7 +99,7 @@ async def send_message_receive_stream(server_url, auth_token, sender_id, message
 
             async for line in resp.content:
                 if line:
-                    await yield_(json.loads(line.decode("utf-8")))
+                    yield json.loads(line.decode(DEFAULT_ENCODING))
 
 
 async def record_messages(
@@ -150,8 +147,8 @@ async def record_messages(
 
 class CmdlineInput(RestInput):
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "cmdline"
 
-    def url_prefix(self):
+    def url_prefix(self) -> Text:
         return RestInput.name()

@@ -2,8 +2,9 @@ import logging
 import uuid
 from sanic import Blueprint, response
 from sanic.request import Request
+from sanic.response import HTTPResponse
 from socketio import AsyncServer
-from typing import Optional, Text, Any, List, Dict, Iterable
+from typing import Optional, Text, Any, List, Dict, Iterable, Callable, Awaitable
 
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
@@ -57,7 +58,7 @@ class SocketIOOutput(OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
 
@@ -109,11 +110,11 @@ class SocketIOInput(InputChannel):
     """A socket.io input channel."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "socketio"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         credentials = credentials or {}
         return cls(
             credentials.get("user_message_evt", "user_uttered"),
@@ -137,7 +138,9 @@ class SocketIOInput(InputChannel):
         self.namespace = namespace
         self.socketio_path = socketio_path
 
-    def blueprint(self, on_new_message):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
         # Workaround so that socketio works with requests from other origins.
         # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
         sio = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
@@ -146,19 +149,19 @@ class SocketIOInput(InputChannel):
         )
 
         @socketio_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
-        async def connect(sid, environ):
+        async def connect(sid: Text, _) -> None:
             logger.debug("User {} connected to socketIO endpoint.".format(sid))
 
         @sio.on("disconnect", namespace=self.namespace)
-        async def disconnect(sid):
+        async def disconnect(sid: Text) -> None:
             logger.debug("User {} disconnected from socketIO endpoint.".format(sid))
 
         @sio.on("session_request", namespace=self.namespace)
-        async def session_request(sid, data):
+        async def session_request(sid: Text, data: Optional[Dict]):
             if data is None:
                 data = {}
             if "session_id" not in data or data["session_id"] is None:
@@ -167,7 +170,7 @@ class SocketIOInput(InputChannel):
             logger.debug("User {} connected to socketIO endpoint.".format(sid))
 
         @sio.on(self.user_message_evt, namespace=self.namespace)
-        async def handle_message(sid, data):
+        async def handle_message(sid: Text, data: Dict) -> Any:
             output_channel = SocketIOOutput(sio, sid, self.bot_message_evt)
 
             if self.session_persistence:

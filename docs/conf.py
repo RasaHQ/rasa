@@ -62,7 +62,7 @@ author = "Rasa Technologies"
 #
 # The short X.Y version.
 __version__ = None
-exec (open("../rasa/version.py").read())
+exec(open("../rasa/version.py").read())
 version = ".".join(__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
 release = __version__
@@ -336,7 +336,14 @@ scv_sort = ("semver",)
 scv_whitelist_branches = (re.compile("^master$"),)
 # scv_whitelist_tags = ('None',)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
-scv_whitelist_tags = (re.compile(r"^[1-9]+\.[0-9]+\.\d+$"),)
+scv_whitelist_tags = (
+    re.compile(r"^[2-9]+\.\d+\.\d+$"),
+    re.compile(r"^1\.[456789]+\.\d+$"),
+    re.compile(r"^1\.3\.\d+$"),
+    re.compile("^1\.2\.9$"),
+    re.compile("^1\.1\.8$"),
+    re.compile("^1\.0\.9$"),
+)
 scv_greatest_tag = True
 
 # type classes for nitpicky to ignore
@@ -392,4 +399,4 @@ def setup(sphinx):
 
         sphinx.add_lexer("story", StoryLexer())
     except ImportError:
-        print ("No Story Lexer :( Sad times!")
+        print("No Story Lexer :( Sad times!")
