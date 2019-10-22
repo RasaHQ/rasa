@@ -1,12 +1,12 @@
 import logging
+import multiprocessing
 import os
 import tempfile
 import traceback
-import multiprocessing
+import typing
 from functools import wraps, reduce
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
-from ssl import SSLContext
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -19,7 +19,6 @@ import rasa.core.utils
 import rasa.utils.common
 import rasa.utils.endpoints
 import rasa.utils.io
-
 from rasa import model
 from rasa.constants import (
     MINIMUM_COMPATIBLE_VERSION,
@@ -43,6 +42,9 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
+
+if typing.TYPE_CHECKING:
+    from ssl import SSLContext
 
 logger = logging.getLogger(__name__)
 
@@ -226,14 +228,28 @@ async def authenticate(request: Request):
 def create_ssl_context(
     ssl_certificate: Optional[Text],
     ssl_keyfile: Optional[Text],
-    ssl_password: Optional[Text],
-) -> Optional[SSLContext]:
-    """Create a SSL context (for the sanic server) if a proper certificate is passed."""
+    ssl_ca_file: Optional[Text] = None,
+    ssl_password: Optional[Text] = None,
+) -> Optional["SSLContext"]:
+    """Create an SSL context if a proper certificate is passed.
+
+    Args:
+        ssl_certificate: path to the SSL client certificate
+        ssl_keyfile: path to the SSL key file
+        ssl_ca_file: path to the SSL CA file for verification (optional)
+        ssl_password: SSL private key password (optional)
+
+    Returns:
+        SSL context if a valid certificate chain can be loaded, `None` otherwise.
+
+    """
 
     if ssl_certificate:
         import ssl
 
-        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ssl_context = ssl.create_default_context(
+            purpose=ssl.Purpose.CLIENT_AUTH, cafile=ssl_ca_file
+        )
         ssl_context.load_cert_chain(
             ssl_certificate, keyfile=ssl_keyfile, password=ssl_password
         )
@@ -667,20 +683,21 @@ def create_app(
         temp_dir = tempfile.mkdtemp()
 
         config_path = os.path.join(temp_dir, "config.yml")
-        rasa.core.utils.dump_obj_as_str_to_file(config_path, rjs["config"])
+
+        rasa.utils.io.write_text_file(rjs["config"], config_path)
 
         if "nlu" in rjs:
             nlu_path = os.path.join(temp_dir, "nlu.md")
-            rasa.core.utils.dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
+            rasa.utils.io.write_text_file(rjs["nlu"], nlu_path)
 
         if "stories" in rjs:
             stories_path = os.path.join(temp_dir, "stories.md")
-            rasa.core.utils.dump_obj_as_str_to_file(stories_path, rjs["stories"])
+            rasa.utils.io.write_text_file(rjs["stories"], stories_path)
 
         domain_path = DEFAULT_DOMAIN_PATH
         if "domain" in rjs:
             domain_path = os.path.join(temp_dir, "domain.yml")
-            rasa.core.utils.dump_obj_as_str_to_file(domain_path, rjs["domain"])
+            rasa.utils.io.write_text_file(rjs["domain"], domain_path)
 
         if rjs.get("save_to_default_model_directory", True) is True:
             model_output_directory = DEFAULT_MODELS_PATH

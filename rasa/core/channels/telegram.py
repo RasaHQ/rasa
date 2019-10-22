@@ -46,7 +46,7 @@ class TelegramOutput(Bot, OutputChannel):
         text: Text,
         buttons: List[Dict[Text, Any]],
         button_type: Optional[Text] = "inline",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends a message with keyboard.
 

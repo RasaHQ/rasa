@@ -267,11 +267,12 @@ class RedisLockStore(LockStore):
         port: int = 6379,
         db: int = 1,
         password: Optional[Text] = None,
+        use_ssl: bool = False,
     ):
         import redis
 
         self.red = redis.StrictRedis(
-            host=host, port=int(port), db=int(db), password=password
+            host=host, port=int(port), db=int(db), password=password, ssl=use_ssl
         )
         super().__init__()
 

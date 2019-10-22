@@ -7,8 +7,23 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.4.0] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.5.0a1] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[1.4.0] - 2019-10-19
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -18,9 +33,9 @@ Added
 - added ``DynamoTrackerStore`` to support persistence of agents running on AWS
 - added docstrings for ``TrackerStore`` classes
 - added buttons and images to mattermost.
-- `CRFEntityExtractor` updated to accept arbitrary token-level features like word
+- ``CRFEntityExtractor`` updated to accept arbitrary token-level features like word
   vectors (issues/4214)
-- `SpacyFeaturizer` updated to add `ner_features` for `CRFEntityExtractor`
+- ``SpacyFeaturizer`` updated to add ``ner_features`` for ``CRFEntityExtractor``
 - Sanitizing incoming messages from slack to remove slack formatting like <mailto:xyz@rasa.com|xyz@rasa.com>
   or <http://url.com|url.com> and substitute it with original content
 - Added the ability to configure the number of Sanic worker processes in the HTTP
@@ -28,6 +43,8 @@ Added
   (``rasa.core.agent.handle_channels()``). The number of workers can be set using the
   environment variable ``SANIC_WORKERS`` (default: 1). A value of >1 is allowed only in
   combination with ``RedisLockStore`` as the lock store.
+- Botframework channel can handle uploaded files in ``UserMessage`` metadata.
+- Added data validator that checks there is no duplicated example data across multiples intents
 
 Changed
 -------
@@ -44,12 +61,13 @@ Changed
 - Print info message when running Rasa X and and custom model server url was specified in ``endpoints.yml``
 - If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
   this will be used instead of the default one when running Rasa X
+- Don't run the Rasa Docker image as ``root``.
+- Use multi-stage builds to reduce the size of the Rasa Docker image.
 - Updated the ``/status`` api route to use the actual model file location instead of the ``tmp`` location.
-
 
 Removed
 -------
-- Removed Python 3.5 support
+- **Removed Python 3.5 support**
 
 Fixed
 -----
@@ -59,23 +77,36 @@ Fixed
 - fixed Interactive Learning intent payload messages saving in nlu files
 - fixed DucklingHTTPExtractor dimensions by actually applying to the request
 
-[Unreleased 1.3.9]
-^^^^^^^^^^^^^^^^^^
+
+[1.3.10] - 2019-10-18
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+- Can now pass a package as an argument to the ``--actions`` parameter of the
+  ``rasa run actions`` command.
 
 Fixed
 -----
+- Fixed visualization of stories with entities which led to a failing
+  visualization in Rasa X
+
+[1.3.9] - 2019-10-10
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Port of 1.2.10 (support for RabbitMQ TLS authentication and ``port`` key in
+  event broker endpoint config).
+- Port of 1.2.11 (support for passing a CA file for SSL certificate verification via the
+  --ssl-ca-file flag).
+
+Fixed
+-----
+- Fixed the hanging HTTP call with ``ner_duckling_http`` pipeline.
+- Fixed text processing of ``intent`` attribute inside ``CountVectorFeaturizer``.
 - Fixed ``argument of type 'NoneType' is not iterable`` when using ``rasa shell``,
   ``rasa interactive`` / ``rasa run``
-
-Changed
--------
-
-Removed
--------
-
 
 [1.3.8] - 2019-10-08
 ^^^^^^^^^^^^^^^^^^^^
@@ -135,8 +166,8 @@ Fixed
   ``Doc``-objects. The resulting lists are merged with their preserved order and
   properly returned.
 - asyncio warnings are now only printed if the callback takes more than 100ms
-  (up from 1ms)
-- ``agent.load_model_from_server`` no longer affects logging
+  (up from 1ms).
+- ``agent.load_model_from_server`` no longer affects logging.
 
 Changed
 -------
@@ -266,6 +297,35 @@ Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
+[1.2.12] - 2019-10-16
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Support for transit encryption with Redis via ``use_ssl: True`` in the tracker store config in endpoints.yml
+
+[1.2.11] - 2019-10-09
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Support for passing a CA file for SSL certificate verification via the
+  --ssl-ca-file flag
+
+[1.2.10] - 2019-10-08
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added support for RabbitMQ TLS authentication. The following environment variables
+  need to be set:
+  ``RABBITMQ_SSL_CLIENT_CERTIFICATE`` - path to the SSL client certificate (required)
+  ``RABBITMQ_SSL_CLIENT_KEY`` - path to the SSL client key (required)
+  ``RABBITMQ_SSL_CA_FILE`` - path to the SSL CA file (optional, for certificate
+  verification)
+  ``RABBITMQ_SSL_KEY_PASSWORD`` - SSL private key password (optional)
+- Added ability to define the RabbitMQ port using the ``port`` key in the
+  ``event_broker`` endpoint config.
 
 [1.2.9] - 2019-09-17
 ^^^^^^^^^^^^^^^^^^^^

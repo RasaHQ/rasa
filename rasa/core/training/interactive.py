@@ -44,7 +44,6 @@ from rasa.core.events import (
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, NaturalLanguageInterpreter
 from rasa.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.core.training import visualization
-from rasa.core.training.structures import Story
 from rasa.core.training.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
     visualize_neighborhood,
@@ -449,15 +448,15 @@ async def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
     table = _chat_history_table(events)
     slot_strs = _slot_history(tracker_dump)
 
-    print ("------")
-    print ("Chat History\n")
-    print (table)
+    print("------")
+    print("Chat History\n")
+    print(table)
 
     if slot_strs:
-        print ("\n")
-        print ("Current slots: \n\t{}\n".format(", ".join(slot_strs)))
+        print("\n")
+        print("Current slots: \n\t{}\n".format(", ".join(slot_strs)))
 
-    print ("------")
+    print("------")
 
 
 def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
@@ -662,7 +661,7 @@ async def _request_action_from_user(
         is_new_action = True
         action_name = action_name[32:]
 
-    print ("Thanks! The bot will now run {}.\n".format(action_name))
+    print("Thanks! The bot will now run {}.\n".format(action_name))
     return action_name, is_new_action
 
 
@@ -788,7 +787,7 @@ async def _write_stories_to_file(
     else:
         append_write = "w"  # make a new file if not
 
-    with open(export_story_path, append_write, encoding="utf-8") as f:
+    with open(export_story_path, append_write, encoding=io_utils.DEFAULT_ENCODING) as f:
         i = 1
         for conversation in sub_conversations:
             parsed_events = rasa.core.events.deserialise_events(conversation)
@@ -841,11 +840,12 @@ async def _write_nlu_to_file(
     else:
         fformat = "json"
 
-    with open(export_nlu_path, "w", encoding="utf-8") as f:
-        if fformat == "md":
-            f.write(nlu_data.nlu_as_markdown())
-        else:
-            f.write(nlu_data.nlu_as_json())
+    if fformat == "md":
+        stringified_training_data = nlu_data.nlu_as_markdown()
+    else:
+        stringified_training_data = nlu_data.nlu_as_json()
+
+    io_utils.write_text_file(stringified_training_data, export_nlu_path)
 
 
 def _entities_from_messages(messages):
@@ -1144,7 +1144,7 @@ async def _validate_user_text(
         )
 
     if intent is None:
-        print ("The NLU classification for '{}' returned '{}'".format(text, intent))
+        print("The NLU classification for '{}' returned '{}'".format(text, intent))
         return False
     else:
         question = questionary.confirm(message)

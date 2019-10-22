@@ -14,6 +14,7 @@ from rasa.core.channels.channel import RestInput
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
+from rasa.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ async def send_message_receive_stream(server_url, auth_token, sender_id, message
 
             async for line in resp.content:
                 if line:
-                    yield json.loads(line.decode("utf-8"))
+                    yield json.loads(line.decode(DEFAULT_ENCODING))
 
 
 async def record_messages(

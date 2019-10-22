@@ -66,3 +66,4 @@ RedisLockStore
     - ``db`` (default: ``0``): The number of your redis database
     - ``password`` (default: ``None``): Password used for authentication
       (``None`` equals no authentication)
+    - ``use_ssl`` (default: ``False``): Whether or not the communication is encrypted

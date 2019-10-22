@@ -5,11 +5,13 @@ import typing
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+import rasa.utils.io
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -455,7 +457,7 @@ def log_failed_stories(failed, out_directory):
     if not out_directory:
         return
     with open(
-        os.path.join(out_directory, "failed_stories.md"), "w", encoding="utf-8"
+        os.path.join(out_directory, "failed_stories.md"), "w", encoding=DEFAULT_ENCODING
     ) as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")
@@ -606,7 +608,9 @@ async def compare_models_in_dir(
         for k, v in number_correct_in_run.items():
             number_correct[k].append(v)
 
-    utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), number_correct)
+    rasa.utils.io.dump_obj_as_json_to_file(
+        os.path.join(output, RESULTS_FILE), number_correct
+    )
 
 
 async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
@@ -619,7 +623,9 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
         number_of_correct_stories = await _evaluate_core_model(model, stories_file)
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
 
-    utils.dump_obj_as_json_to_file(os.path.join(output, RESULTS_FILE), number_correct)
+    rasa.utils.io.dump_obj_as_json_to_file(
+        os.path.join(output, RESULTS_FILE), number_correct
+    )
 
 
 async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
