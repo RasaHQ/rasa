@@ -116,7 +116,6 @@ def _overwrite_endpoints_for_local_x(
     custom_wait_time_pulls = endpoints.model.kwargs.get("wait_time_between_pulls")
     custom_url = endpoints.model.url
 
-
     if custom_url and custom_url != rasa_x_url:
         logger.info(
             f"Ignoring url '{custom_url}' from 'endpoints.yml' and using "
