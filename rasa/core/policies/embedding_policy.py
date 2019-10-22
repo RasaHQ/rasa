@@ -103,6 +103,7 @@ class EmbeddingPolicy(Policy):
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for hold out validation set
         "evaluate_on_num_examples": 0,  # large values may hurt performance
+        "var_layers": ["dial"]  # ["pre", "dial", "bot"]
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -228,6 +229,8 @@ class EmbeddingPolicy(Policy):
         self._load_regularization_params(config)
         self._load_visual_params(config)
 
+        self.var_layers = config["var_layers"]
+
     # data helpers
     # noinspection PyPep8Naming
     @staticmethod
@@ -291,12 +294,14 @@ class EmbeddingPolicy(Policy):
             self._is_training,
             layer_name_suffix="bot",
         )
-        # if self.bot_embed_layer is None:
-        #     self.bot_embed_layer = train_utils.create_tfp_embed_layer(self.embed_dim, layer_name_suffix="bot")
-        # return self.bot_embed_layer(b)
-        return train_utils.create_tf_embed(
-            b, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="bot"
-        )
+        if "bot" in self.var_layers:
+            if self.bot_embed_layer is None:
+                self.bot_embed_layer = train_utils.create_tfp_embed_layer(self.embed_dim, layer_name_suffix="bot")
+            return self.bot_embed_layer(b)
+        else:
+            return train_utils.create_tf_embed(
+                b, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="bot"
+            )
 
     def _create_tf_dial(self, a_in) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Create dialogue level embedding and mask."""
@@ -314,8 +319,8 @@ class EmbeddingPolicy(Policy):
             layer_name_suffix="pre_dial",
         )
 
-        # if self.pre_embed_layer is None:
-        #     self.pre_embed_layer = train_utils.create_tfp_embed_layer(self.transformer_size, layer_name_suffix="pre", use_bias=False)
+        if "pre" in self.var_layers and self.pre_embed_layer is None:
+            self.pre_embed_layer = train_utils.create_tfp_embed_layer(self.transformer_size, layer_name_suffix="pre", use_bias=False)
 
         self.attention_weights = {}
         if self.type == "transformer":
@@ -347,12 +352,14 @@ class EmbeddingPolicy(Policy):
             a = a[:, -1:, :]
             mask = mask[:, -1:]
 
-        if self.dial_embed_layer is None:
-            self.dial_embed_layer = train_utils.create_tfp_embed_layer(self.embed_dim, layer_name_suffix="dial")
-        dial_embed = self.dial_embed_layer(a)
-        # dial_embed = train_utils.create_tf_embed(
-        #     a, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="dial"
-        # )
+        if "dial" in self.var_layers:
+            if self.dial_embed_layer is None:
+                self.dial_embed_layer = train_utils.create_tfp_embed_layer(self.embed_dim, layer_name_suffix="dial")
+            dial_embed = self.dial_embed_layer(a)
+        else:
+            dial_embed = train_utils.create_tf_embed(
+                a, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="dial"
+            )
 
         return dial_embed, mask
 
@@ -388,6 +395,7 @@ class EmbeddingPolicy(Policy):
             self.use_max_sim_neg,
             self.C_emb,
             self.scale_loss,
+            [self.pre_embed_layer, self.dial_embed_layer, self.bot_embed_layer]
         )
 
     # prepare for prediction
