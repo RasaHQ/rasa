@@ -382,16 +382,15 @@ def should_retrain(
         old_core, old_nlu = get_model_subdirectories(unpacked)
 
         retrain = ShouldRetrain(
-            **{
-                key: section_fingerprint_changed(
-                    last_fingerprint, new_fingerprint, section
-                )
-                for (key, section) in [
-                    ("core", SECTION_CORE),
-                    ("nlu", SECTION_NLU),
-                    ("nlg", SECTION_NLG),
-                ]
-            }
+            core=section_fingerprint_changed(
+                last_fingerprint, new_fingerprint, SECTION_CORE
+            ),
+            nlu=section_fingerprint_changed(
+                last_fingerprint, new_fingerprint, SECTION_NLU
+            ),
+            nlg=section_fingerprint_changed(
+                last_fingerprint, new_fingerprint, SECTION_NLG
+            ),
         )
 
         core_merge_failed = False
