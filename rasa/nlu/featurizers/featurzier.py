@@ -5,6 +5,7 @@ from rasa.nlu.training_data import Message
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
     MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
+    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
     MESSAGE_TEXT_ATTRIBUTE,
 )
 
@@ -14,9 +15,7 @@ class Featurizer(Component):
     def _combine_with_existing_dense_features(
         message: Message,
         additional_features: Any,
-        feature_name: Text = MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[
-            MESSAGE_TEXT_ATTRIBUTE
-        ],
+        feature_name: Text = MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
     ) -> Any:
         if message.get(feature_name) is not None:
             return np.concatenate(
