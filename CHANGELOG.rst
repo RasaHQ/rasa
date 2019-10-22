@@ -22,6 +22,10 @@ Removed
 Fixed
 -----
 
+[1.4.1] - 2019-10-22
+^^^^^^^^^^^^^^^^^^^^
+Regression: changes from ``1.2.12`` were missing from ``1.4.0``, readded them
+
 [1.4.0] - 2019-10-19
 ^^^^^^^^^^^^^^^^^^^^
 
