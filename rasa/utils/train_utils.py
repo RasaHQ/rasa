@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # namedtuple for all tf session related data
 SessionData = namedtuple("SessionData", ("X", "Y", "label_ids"))
 
-all_embed_layers = []
+# all_embed_layers = []
 
 
 def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
@@ -364,7 +364,7 @@ def create_tfp_embed_layer(embed_dim: int, layer_name_suffix: Text, use_bias=Tru
             name="embed_layer_{}".format(layer_name_suffix),
             # reuse=tf.AUTO_REUSE,
         )
-    all_embed_layers.append(embed_layer)
+    # all_embed_layers.append(embed_layer)
     return embed_layer
 
 
@@ -419,22 +419,24 @@ def create_t2t_transformer_encoder(
     """Create t2t transformer encoder."""
 
     with tf.variable_scope("transformer", reuse=tf.AUTO_REUSE):
-        x = create_tf_fnn(
-            x_in,
-            [hparams.hidden_size],
-            hparams.layer_prepostprocess_dropout,
-            C2,
-            is_training,
-            layer_name_suffix="pre_embed",
-            activation=None,
-            use_bias=False,
-            kernel_initializer=tf.random_normal_initializer(
-                0.0, hparams.hidden_size ** -0.5
-            ),
-        )
-        if hparams.multiply_embedding_mode == "sqrt_depth":
-            x *= hparams.hidden_size ** 0.5
-        # x = pre_embed_layer(x_in)
+        if pre_embed_layer is not None:
+            x = pre_embed_layer(x_in)
+        else:
+            x = create_tf_fnn(
+                x_in,
+                [hparams.hidden_size],
+                hparams.layer_prepostprocess_dropout,
+                C2,
+                is_training,
+                layer_name_suffix="pre_embed",
+                activation=None,
+                use_bias=False,
+                kernel_initializer=tf.random_normal_initializer(
+                    0.0, hparams.hidden_size ** -0.5
+                ),
+            )
+            if hparams.multiply_embedding_mode == "sqrt_depth":
+                x *= hparams.hidden_size ** 0.5
 
         x *= tf.expand_dims(mask, -1)
         (
@@ -685,6 +687,7 @@ def tf_loss_softmax(
     sim_neg_bot_dial: "tf.Tensor",
     mask: Optional["tf.Tensor"],
     scale_loss: bool,
+    all_embed_layers,
 ) -> "tf.Tensor":
     """Define softmax loss."""
 
@@ -715,7 +718,8 @@ def tf_loss_softmax(
 
     loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
     # loss = tf.losses.sigmoid_cross_entropy(labels, logits, tf.expand_dims(mask, -1))
-    loss += sum([sum(l.losses) for l in all_embed_layers]) / tf.cast(tf.shape(labels)[0] + tf.shape(labels)[1], tf.float32)
+    if all_embed_layers:
+        loss += sum([sum(l.losses) for l in all_embed_layers if l is not None]) / tf.cast(tf.shape(labels)[0] + tf.shape(labels)[1], tf.float32)
     # add regularization losses
     loss += tf.losses.get_regularization_loss()
 
@@ -736,6 +740,7 @@ def choose_loss(
     use_max_sim_neg: bool,
     C_emb: float,
     scale_loss: bool,
+    all_embed_layers,
 ) -> "tf.Tensor":
     """Use loss depending on given option."""
 
@@ -761,6 +766,7 @@ def choose_loss(
             sim_neg_bot_dial,
             mask,
             scale_loss,
+            all_embed_layers,
         )
     else:
         raise ValueError(
@@ -785,6 +791,7 @@ def calculate_loss_acc(
     use_max_sim_neg: bool,
     C_emb: float,
     scale_loss: bool,
+    all_embed_layers=None,
 ) -> Tuple["tf.Tensor", "tf.Tensor"]:
     """Calculate loss and accuracy."""
 
@@ -823,6 +830,7 @@ def calculate_loss_acc(
         use_max_sim_neg,
         C_emb,
         scale_loss,
+        all_embed_layers,
     )
 
     return loss, acc
