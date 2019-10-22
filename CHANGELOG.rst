@@ -294,6 +294,13 @@ Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
+[1.2.12] - 2019-10-16
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Support for transit encryption with Redis via ``use_ssl: True`` in the tracker store config in endpoints.yml
+
 [1.2.11] - 2019-10-09
 ^^^^^^^^^^^^^^^^^^^^^
 
