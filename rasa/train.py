@@ -6,6 +6,7 @@ from typing import Text, Optional, List, Union, Dict
 
 from rasa.importers.importer import TrainingDataImporter
 from rasa import model
+from rasa.model import ShouldRetrain
 from rasa.constants import DEFAULT_DOMAIN_PATH
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
@@ -165,21 +166,18 @@ async def _train_async_internal(
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
-    retrain_core = retrain_nlu = retrain_nlg = False
-    if not force_training:
-        retrain_core, retrain_nlu, retrain_nlg = model.should_retrain(
-            new_fingerprint, old_model, train_path
-        )
+    retrain = ShouldRetrain(
+        core=False, nlu=False, nlg=False, force_train=force_training
+    )
+    if not retrain.force_train:
+        retrain = model.should_retrain(new_fingerprint, old_model, train_path)
 
-    if any([force_training, retrain_core, retrain_nlu, retrain_nlg]):
+    if retrain.any():
         await _do_training(
             file_importer,
             output_path=output_path,
             train_path=train_path,
-            force_training=force_training,
-            retrain_core=retrain_core,
-            retrain_nlu=retrain_nlu,
-            retrain_nlg=retrain_nlg,
+            retrain=retrain,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             kwargs=kwargs,
@@ -210,16 +208,13 @@ async def _do_training(
     file_importer: TrainingDataImporter,
     output_path: Text,
     train_path: Text,
-    force_training: bool = False,
-    retrain_core: bool = True,
-    retrain_nlu: bool = True,
-    retrain_nlg: bool = True,
+    retrain: ShouldRetrain = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     kwargs: Optional[Dict] = None,
 ):
 
-    if force_training or retrain_core:
+    if any([retrain.force_train, retrain.core]):
         await _train_core_with_validated_data(
             file_importer,
             output=output_path,
@@ -227,7 +222,7 @@ async def _do_training(
             fixed_model_name=fixed_model_name,
             kwargs=kwargs,
         )
-    elif retrain_nlg:
+    elif retrain.nlg:
         print_color(
             "Core stories/configuration did not change. "
             "Only the templates section has been changed. A new model with "
@@ -241,7 +236,7 @@ async def _do_training(
             color=bcolors.OKBLUE,
         )
 
-    if retrain_nlu or force_training:
+    if any([retrain.nlu, retrain.force_train]):
         await _train_nlu_with_validated_data(
             file_importer,
             output=output_path,

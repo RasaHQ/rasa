@@ -67,6 +67,29 @@ SECTION_NLU = Section(
 SECTION_NLG = Section(name="NLG Templates", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
+class ShouldRetrain(object):
+    def __init__(self, nlu: bool, core: bool, nlg: bool, force_train: bool = False):
+        self.nlu = nlu
+        self.core = core
+        self.nlg = nlg
+        self.force_train = force_train
+
+    def any(self) -> bool:
+        return any([self.nlu, self.core, self.nlg, self.force_train])
+
+    def __eq__(self, obj) -> bool:
+        if not isinstance(obj, ShouldRetrain):
+            return False
+        return all(
+            [
+                self.nlu == obj.nlu,
+                self.core == obj.core,
+                self.nlg == obj.nlg,
+                self.force_train == obj.force_train,
+            ]
+        )
+
+
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
     """Get a model and unpack it. Raises a `ModelNotFound` exception if
     no model could be found at the provided path.
@@ -334,7 +357,9 @@ def merge_model(source: Text, target: Text) -> bool:
         return False
 
 
-def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text) -> Tuple[bool, bool, bool]: 
+def should_retrain(
+    new_fingerprint: Fingerprint, old_model: Text, train_path: Text
+) -> ShouldRetrain:
     """Check which components of a model should be retrained.
 
     Args:
@@ -347,40 +372,40 @@ def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Te
         to be retrained or not.
 
     """
-    retrain_nlu = retrain_core = retrain_nlg = True
+    retrain = ShouldRetrain(core=True, nlu=True, nlg=True)
 
     if old_model is None or not os.path.exists(old_model):
-        return retrain_core, retrain_nlu, retrain_nlg
+        return retrain
 
     with unpack_model(old_model) as unpacked:
         last_fingerprint = fingerprint_from_path(unpacked)
         old_core, old_nlu = get_model_subdirectories(unpacked)
 
-        retrain_core = section_fingerprint_changed(
-            last_fingerprint, new_fingerprint, SECTION_CORE
-        )
-        retrain_nlg = section_fingerprint_changed(
-            last_fingerprint, new_fingerprint, SECTION_NLG
-        )
-        retrain_nlu = section_fingerprint_changed(
-            last_fingerprint, new_fingerprint, SECTION_NLU
+        retrain = ShouldRetrain(
+            **{
+                key: section_fingerprint_changed(
+                    last_fingerprint, new_fingerprint, section
+                )
+                for (key, section) in [
+                    ("core", SECTION_CORE),
+                    ("nlu", SECTION_NLU),
+                    ("nlg", SECTION_NLG),
+                ]
+            }
         )
 
-        # If merging directories fails, force retrain.
-        if not retrain_core:
+        core_merge_failed = False
+        if not retrain.core:
             target_path = os.path.join(train_path, "core")
-            retrain_core = not merge_model(old_core, target_path)
-        else:
-            # In the case of retrain_nlg, only do it if the whole
-            # of Core is not being retrained. If it is, then replacing of
-            # templates will be automatically taken care of during that process.
-            target_path = os.path.join(train_path, "core")
-            retrain_nlg = not merge_model(old_core, target_path)
-        if not retrain_nlu:
+            core_merge_failed = not merge_model(old_core, target_path)
+        if not retrain.nlg:
+            retrain.nlg = core_merge_failed
+
+        if not retrain.nlu:
             target_path = os.path.join(train_path, "nlu")
-            retrain_nlu = not merge_model(old_nlu, target_path)
+            retrain.nlu = not merge_model(old_nlu, target_path)
 
-        return retrain_core, retrain_nlu, retrain_nlg
+        return retrain
 
 
 def package_model(
