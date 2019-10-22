@@ -1,9 +1,8 @@
-from typing import Callable, Tuple, Text, Any
-from typing import Callable, Any, Tuple
+from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_interactive_help(run: Callable[[Tuple[Any]], Text]) -> None:
+def test_interactive_help(run: Callable[..., RunResult]) -> None:
     output = run("interactive", "--help")
 
     help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
@@ -19,7 +18,7 @@ def test_interactive_help(run: Callable[[Tuple[Any]], Text]) -> None:
         assert output.outlines[i] == line
 
 
-def test_interactive_core_help(run: Callable[[Tuple[Any]], Text]) -> None:
+def test_interactive_core_help(run: Callable[..., RunResult]) -> None:
     output = run("interactive", "core", "--help")
 
     help_text = """usage: rasa interactive core [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]

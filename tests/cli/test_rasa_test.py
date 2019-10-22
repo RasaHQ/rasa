@@ -2,17 +2,17 @@ import os
 from shutil import copyfile
 from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.utils.io import list_files, write_yaml_file
-from typing import Callable, Any, Tuple
+from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_test_core(run_in_default_project: Callable[[Tuple[Any]], RunResult]) -> None:
+def test_test_core(run_in_default_project: Callable[..., RunResult]) -> None:
     run_in_default_project("test", "core", "--stories", "data")
 
     assert os.path.exists("results")
 
 
-def test_test(run_in_default_project: Callable[[Tuple[Any]], RunResult]) -> None:
+def test_test(run_in_default_project: Callable[..., RunResult]) -> None:
     run_in_default_project("test")
 
     assert os.path.exists("results")
@@ -20,7 +20,7 @@ def test_test(run_in_default_project: Callable[[Tuple[Any]], RunResult]) -> None
     assert os.path.exists("results/confmat.png")
 
 
-def test_test_nlu(run_in_default_project: Callable[[Tuple[Any]], RunResult]) -> None:
+def test_test_nlu(run_in_default_project: Callable[..., RunResult]) -> None:
     run_in_default_project("test", "nlu", "--nlu", "data", "--successes")
 
     assert os.path.exists("results/hist.png")
@@ -29,7 +29,7 @@ def test_test_nlu(run_in_default_project: Callable[[Tuple[Any]], RunResult]) -> 
 
 
 def test_test_nlu_cross_validation(
-    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+    run_in_default_project: Callable[..., RunResult]
 ) -> None:
     run_in_default_project(
         "test", "nlu", "--cross-validation", "-c", "config.yml", "-f", "2"
@@ -39,9 +39,7 @@ def test_test_nlu_cross_validation(
     assert os.path.exists("results/confmat.png")
 
 
-def test_test_nlu_comparison(
-    run_in_default_project: Callable[[Tuple[Any]], RunResult]
-) -> None:
+def test_test_nlu_comparison(run_in_default_project: Callable[..., RunResult]) -> None:
     copyfile("config.yml", "nlu-config.yml")
 
     run_in_default_project(
@@ -52,9 +50,7 @@ def test_test_nlu_comparison(
     assert os.path.exists("results/run_2")
 
 
-def test_test_core_comparison(
-    run_in_default_project: Callable[[Tuple[Any]], RunResult]
-) -> None:
+def test_test_core_comparison(run_in_default_project: Callable[..., RunResult]) -> None:
     files = list_files("models")
     copyfile(files[0], "models/copy-model.tar.gz")
 
@@ -72,7 +68,7 @@ def test_test_core_comparison(
 
 
 def test_test_core_comparison_after_train(
-    run_in_default_project: Callable[[Tuple[Any]], RunResult]
+    run_in_default_project: Callable[..., RunResult]
 ) -> None:
     write_yaml_file(
         {
@@ -130,7 +126,7 @@ def test_test_core_comparison_after_train(
     )
 
 
-def test_test_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
+def test_test_help(run: Callable[..., RunResult]) -> None:
     output = run("test", "--help")
 
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
@@ -149,7 +145,7 @@ def test_test_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
         assert output.outlines[i] == line
 
 
-def test_test_nlu_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
+def test_test_nlu_help(run: Callable[..., RunResult]) -> None:
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
@@ -164,7 +160,7 @@ def test_test_nlu_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
         assert output.outlines[i] == line
 
 
-def test_test_core_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
+def test_test_core_help(run: Callable[..., RunResult]) -> None:
     output = run("test", "core", "--help")
 
     help_text = """usage: rasa test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]

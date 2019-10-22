@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from typing import Callable, Any, Tuple, Dict
+from typing import Callable, Dict
 from _pytest.pytester import RunResult
 
 from aioresponses import aioresponses
@@ -11,7 +11,7 @@ from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 
 
-def test_x_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
+def test_x_help(run: Callable[..., RunResult]) -> None:
     output = run("x", "--help")
 
     help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]

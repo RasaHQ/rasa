@@ -1,12 +1,10 @@
 import os
 import shutil
-from typing import Callable, Any, Tuple
+from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_run_does_not_start(
-    run_in_default_project: Callable[[Tuple[Any]], RunResult]
-) -> None:
+def test_run_does_not_start(run_in_default_project: Callable[..., RunResult]) -> None:
     os.remove("domain.yml")
     shutil.rmtree("models")
 
@@ -16,7 +14,7 @@ def test_run_does_not_start(
     assert "No model found." in output.outlines[0]
 
 
-def test_run_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
+def test_run_help(run: Callable[..., RunResult]) -> None:
     output = run("run", "--help")
 
     help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
@@ -36,7 +34,7 @@ def test_run_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
         assert output.outlines[i] == line
 
 
-def test_run_action_help(run: Callable[[Tuple[Any]], RunResult]) -> None:
+def test_run_action_help(run: Callable[..., RunResult]) -> None:
     output = run("run", "actions", "--help")
 
     help_text = """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
