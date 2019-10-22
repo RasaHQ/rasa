@@ -334,7 +334,9 @@ def merge_model(source: Text, target: Text) -> bool:
         return False
 
 
-def should_retrain(new_fingerprint: Fingerprint, old_model: Text, train_path: Text) -> Tuple[bool, bool, bool]: 
+def should_retrain(
+    new_fingerprint: Fingerprint, old_model: Text, train_path: Text
+) -> Tuple[bool, bool, bool]:
     """Check which components of a model should be retrained.
 
     Args:
