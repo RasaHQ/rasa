@@ -273,7 +273,7 @@ async def load_agent(
 
 def _contains_unpacked_model(model_path: Text) -> bool:
     try:
-        core_path, nlu_path = get_model_subdirectories(model_path)
+        _ = get_model_subdirectories(model_path)
         return True
     except ModelNotFound:
         return False
