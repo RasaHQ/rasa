@@ -7,6 +7,10 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[1.4.1] - 2019-10-22
+^^^^^^^^^^^^^^^^^^^^
+Regression: changes from ``1.2.12`` were missing from ``1.4.0``, readded them
+
 [1.4.0] - 2019-10-19
 ^^^^^^^^^^^^^^^^^^^^
 
