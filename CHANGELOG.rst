@@ -18,6 +18,7 @@ Changed
 
 Removed
 -------
+- TensorFlow deprecation warnings are no longer shown when running ``rasa x``
 
 Fixed
 -----
