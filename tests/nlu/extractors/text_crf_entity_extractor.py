@@ -236,9 +236,9 @@ def test_crf_use_dense_features(ner_crf_pos_feature_config, spacy_nlp):
     crf_extractor = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
 
     spacy_featurizer = SpacyFeaturizer()
-    white_space_tokenizer = WhitespaceTokenizer()
+    white_space_tokenizer = WhitespaceTokenizer({"use_cls_token": False})
 
-    text = "Rasa is a company in Berlin."
+    text = "Rasa is a company in Berlin"
     message = Message(text)
     message.set("spacy_doc", spacy_nlp(text))
 
@@ -249,6 +249,8 @@ def test_crf_use_dense_features(ner_crf_pos_feature_config, spacy_nlp):
     features = crf_extractor._sentence_to_features(text_data)
 
     assert "0:word_embedding" in features[0]
-    assert np.all(
-        features[0]["0:word_embedding"] == message.data.get("text_dense_features")[0]
-    )
+    for i in range(0, len(message.data.get("text_dense_features")[0])):
+        assert (
+            features[0]["0:word_embedding"]["word_embeddings"][str(i)]
+            == message.data.get("text_dense_features")[0][i]
+        )

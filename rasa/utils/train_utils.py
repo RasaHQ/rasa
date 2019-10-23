@@ -1,18 +1,7 @@
 from collections import namedtuple
 import logging
 import typing
-from typing import (
-    List,
-    Optional,
-    Text,
-    Dict,
-    Tuple,
-    Union,
-    Generator,
-    Callable,
-    Any,
-    NamedTuple,
-)
+from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split

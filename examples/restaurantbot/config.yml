@@ -7,6 +7,24 @@ pipeline:
   - name: "SpacyFeaturizer"
   - name: "SklearnIntentClassifier"
   - name: "CRFEntityExtractor"
+    features: [
+      ["low", "title", "upper"],
+      [
+        "bias",
+        "low",
+        "prefix5",
+        "prefix2",
+        "suffix5",
+        "suffix3",
+        "suffix2",
+        "upper",
+        "title",
+        "digit",
+        "pattern",
+        "word_embedding"
+      ],
+      ["low", "title", "upper"],
+    ]
   - name: "EntitySynonymMapper"
 
 policies:

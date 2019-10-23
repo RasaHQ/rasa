@@ -584,6 +584,31 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return token.tag_
 
+    @staticmethod
+    def __get_word_embeddings(message: Message) -> Optional[List[Any]]:
+        features = message.get(
+            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+        )
+
+        if features is None:
+            return features
+
+        tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
+        if len(tokens) != len(features):
+            warn_string = f"Number of word embeddings ({len(features)}) does not match number of tokens ({len(tokens)})"
+            raise Exception(warn_string)
+
+        # convert to python-crfsuite feature format
+        features_out = []
+        for feature in features:
+            feature_dict = {
+                str(index): token_features
+                for index, token_features in enumerate(feature)
+            }
+            converted = {"word_embeddings": feature_dict}
+            features_out.append(converted)
+        return features_out
+
     def _from_text_to_crf(
         self, message: Message, entities: List[Text] = None
     ) -> List[CRFToken]:
@@ -595,9 +620,7 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
-        word_embeddings = message.get(
-            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-        )
+        word_embeddings = self.__get_word_embeddings(message)
 
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
