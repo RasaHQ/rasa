@@ -14,6 +14,7 @@ from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
     MESSAGE_SPACY_FEATURES_NAMES,
+    MESSAGE_ENTITIES_ATTRIBUTE,
 )
 from rasa.constants import DOCS_BASE_URL
 
@@ -39,7 +40,7 @@ class CRFToken(NamedTuple):
 
 class CRFEntityExtractor(EntityExtractor):
 
-    provides = ["entities"]
+    provides = [MESSAGE_ENTITIES_ATTRIBUTE]
 
     requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
@@ -171,7 +172,11 @@ class CRFEntityExtractor(EntityExtractor):
         return dataset
 
     def _check_spacy_doc(self, message):
-        if self.pos_features and message.get("spacy_doc") is None:
+        if (
+            self.pos_features
+            and message.get(MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            is None
+        ):
             raise InvalidConfigError(
                 "Could not find `spacy_doc` attribute for "
                 "message {}\n"
@@ -187,7 +192,9 @@ class CRFEntityExtractor(EntityExtractor):
 
         extracted = self.add_extractor_name(self.extract_entities(message))
         message.set(
-            "entities", message.get("entities", []) + extracted, add_to_output=True
+            MESSAGE_ENTITIES_ATTRIBUTE,
+            message.get(MESSAGE_ENTITIES_ATTRIBUTE, []) + extracted,
+            add_to_output=True,
         )
 
     @staticmethod
@@ -195,7 +202,9 @@ class CRFEntityExtractor(EntityExtractor):
         def convert_entity(entity):
             return entity["start"], entity["end"], entity["entity"]
 
-        return [convert_entity(ent) for ent in example.get("entities", [])]
+        return [
+            convert_entity(ent) for ent in example.get(MESSAGE_ENTITIES_ATTRIBUTE, [])
+        ]
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Take a sentence and return entities in json format"""
@@ -330,9 +339,9 @@ class CRFEntityExtractor(EntityExtractor):
     ) -> List[Dict[Text, Any]]:
 
         if self.pos_features:
-            tokens = message.get("spacy_doc")
+            tokens = message.get(MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE])
         else:
-            tokens = message.get("tokens")
+            tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
         if len(tokens) != len(entities):
             raise Exception(
@@ -491,11 +500,13 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             from spacy.gold import GoldParse  # pytype: disable=import-error
 
-            doc_or_tokens = message.get("spacy_doc")
+            doc_or_tokens = message.get(
+                MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            )
             gold = GoldParse(doc_or_tokens, entities=entity_offsets)
             ents = [l[5] for l in gold.orig_annot]
         else:
-            doc_or_tokens = message.get("tokens")
+            doc_or_tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
             ents = self._bilou_tags_from_offsets(doc_or_tokens, entity_offsets)
 
         # collect badly annotated examples
@@ -559,8 +570,10 @@ class CRFEntityExtractor(EntityExtractor):
 
     @staticmethod
     def __pattern_of_token(message, i):
-        if message.get("tokens") is not None:
-            return message.get("tokens")[i].get("pattern", {})
+        if message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]) is not None:
+            return message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])[i].get(
+                "pattern", {}
+            )
         else:
             return {}
 
@@ -570,27 +583,6 @@ class CRFEntityExtractor(EntityExtractor):
             return token._.get("tag")
         else:
             return token.tag_
-
-    @staticmethod
-    def __additional_ner_features(message: Message) -> List[Any]:
-        features = message.get("text_sparse_features", [])
-        tokens = message.get("tokens", [])
-        if len(tokens) != len(features):
-            warn_string = "Number of sparse features ({}) does not match number of tokens ({})".format(
-                len(features), len(tokens)
-            )
-            raise Exception(warn_string)
-
-        # convert to python-crfsuite feature format
-        features_out = []
-        for feature in features:
-            feature_dict = {
-                str(index): token_features
-                for index, token_features in enumerate(feature)
-            }
-            converted = {"sparse_features": feature_dict}
-            features_out.append(converted)
-        return features_out
 
     def _from_text_to_crf(
         self, message: Message, entities: List[Text] = None
@@ -603,7 +595,7 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
-        dense_features = message.get(
+        word_embeddings = message.get(
             MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
         )
 
@@ -611,12 +603,10 @@ class CRFEntityExtractor(EntityExtractor):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
             tag = self.__tag_of_token(token) if self.pos_features else None
-            token_sparse_features = (
-                dense_features[i] if dense_features is not None else []
-            )
+            word_embedding = word_embeddings[i] if word_embeddings is not None else []
 
             crf_format.append(
-                CRFToken(token.text, tag, entity, pattern, token_sparse_features)
+                CRFToken(token.text, tag, entity, pattern, word_embedding)
             )
 
         return crf_format
