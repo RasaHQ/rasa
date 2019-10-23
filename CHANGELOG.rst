@@ -18,6 +18,8 @@ Changed
 -------
 - Divided featurizers in ``rasa.nlu`` into sparse and dense featurizers
 - All featurizers in ``rasa.nlu`` return a sequence
+- Renamed the feature name ``ner_features`` to ``word_embedding`` in ``CRFEntityExtractor``. The ``word_embedding`` are
+  extracted form the dense features created by any featurizer.
 
 Removed
 -------
