@@ -4,8 +4,9 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+from nlu.featurizers.featurzier import sequence_to_sentence_embedding
 from rasa.nlu import utils
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH, convert_dense_back
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
@@ -98,7 +99,7 @@ class SklearnIntentClassifier(Component):
             y = self.transform_labels_str2num(labels)
             X = np.stack(
                 [
-                    convert_dense_back(
+                    sequence_to_sentence_embedding(
                         example.get(
                             MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
                         )
@@ -150,7 +151,7 @@ class SklearnIntentClassifier(Component):
             intent = None
             intent_ranking = []
         else:
-            X = convert_dense_back(
+            X = sequence_to_sentence_embedding(
                 message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
             ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)

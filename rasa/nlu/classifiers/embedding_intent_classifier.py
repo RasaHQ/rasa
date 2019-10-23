@@ -6,7 +6,8 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 import warnings
 
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH, convert_sparse_back
+from nlu.featurizers.featurzier import sequence_to_sentence_embedding
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
 from rasa.nlu.constants import (
@@ -272,7 +273,12 @@ class EmbeddingIntentClassifier(Component):
 
         # Collect precomputed encodings
         encoded_id_labels = [
-            (label_idx, convert_sparse_back(label_example.get(attribute_feature_name)))
+            (
+                label_idx,
+                sequence_to_sentence_embedding(
+                    label_example.get(attribute_feature_name)
+                ),
+            )
             for (label_idx, label_example) in label_examples
         ]
 
@@ -336,7 +342,7 @@ class EmbeddingIntentClassifier(Component):
         for e in training_data.intent_examples:
             if e.get(attribute):
                 X.append(
-                    convert_sparse_back(
+                    sequence_to_sentence_embedding(
                         e.get(
                             MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
                         )
@@ -612,7 +618,7 @@ class EmbeddingIntentClassifier(Component):
         else:
             # get features (bag of words) for a message
             # noinspection PyPep8Naming
-            X = convert_sparse_back(
+            X = sequence_to_sentence_embedding(
                 message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
             ).reshape(1, -1)
 

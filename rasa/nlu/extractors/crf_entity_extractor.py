@@ -625,14 +625,14 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             tokens = message.get("tokens")
 
-        sparse_features = message.get("text_sparse_features")
+        dense_features = message.get("text_dense_features")
 
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
             tag = self.__tag_of_token(token) if self.pos_features else None
             token_sparse_features = (
-                sparse_features[i] if sparse_features is not None else []
+                dense_features[i] if dense_features is not None else []
             )
 
             crf_format.append((token.text, tag, entity, pattern, token_sparse_features))
