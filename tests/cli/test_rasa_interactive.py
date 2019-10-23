@@ -1,5 +1,12 @@
-from typing import Callable
+import argparse
+from typing import Callable, Text
+from unittest.mock import Mock
+
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
+
+import rasa
+from rasa.cli import interactive, train
 
 
 def test_interactive_help(run: Callable[..., RunResult]):
@@ -10,6 +17,7 @@ def test_interactive_help(run: Callable[..., RunResult]):
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]
                         [--debug-plots] [--dump-stories] [--force]
+                        [--persist-nlu-data]
                         {core} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
@@ -32,3 +40,26 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
 
     for i, line in enumerate(lines):
         assert output.outlines[i] == line
+
+
+def test_pass_arguments_to_rasa_train(
+    default_stack_config: Text, monkeypatch: MonkeyPatch
+) -> None:
+    # Create parser
+    parser = argparse.ArgumentParser()
+    sub_parser = parser.add_subparsers()
+    interactive.add_subparser(sub_parser, [])
+
+    # Parse interactive command
+    args = parser.parse_args(["interactive", "--config", default_stack_config])
+    interactive._set_not_required_args(args)
+
+    # Mock actual training
+    mock = Mock()
+    monkeypatch.setattr(rasa, "train", mock.method)
+
+    # If the `Namespace` object does not have all required fields this will throw
+    train.train(args)
+
+    # Assert `train` was actually code
+    mock.method.assert_called_once()

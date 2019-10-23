@@ -22,6 +22,8 @@ Removed
 
 Fixed
 -----
+- Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
+  interactive learning
 
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
