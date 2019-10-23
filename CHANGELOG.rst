@@ -7,6 +7,23 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+
+[Unreleased 1.5.0a1] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+- ``MultiProjectImporter`` now imports files in the order of the import statements
+
 [Unreleased 1.4.2]
 ~~~~~~~~~~~~~~~~~~
 
