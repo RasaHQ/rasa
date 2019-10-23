@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- ``MultiProjectImporter`` now imports files in the order of the import statements
 
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
