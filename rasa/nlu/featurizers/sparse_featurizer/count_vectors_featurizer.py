@@ -1,8 +1,8 @@
 import logging
 import os
 import re
+import scipy.sparse
 from typing import Any, Dict, List, Optional, Text
-
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -24,9 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 class CountVectorsFeaturizer(Featurizer):
-    """Bag of words featurizer.
-
-    Creates bag-of-words representation of features
+    """
+    Creates a sequence of features
     using sklearn's `CountVectorizer`.
     All tokens which consist only of digits (e.g. 123 and 99
     but not ab12d) will be represented by a single feature.
@@ -34,8 +33,6 @@ class CountVectorsFeaturizer(Featurizer):
     Set `analyzer` to 'char_wb'
     to use the idea of Subword Semantic Hashing
     from https://arxiv.org/abs/1810.07150.
-
-    The featurizer returns a sequence.
     """
 
     provides = [
@@ -481,7 +478,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _get_featurized_attribute(
         self, attribute: Text, attribute_texts: List[Text]
-    ) -> Optional[List]:
+    ) -> Optional[List[scipy.sparse.csr_matrix]]:
         """Return features of a particular attribute for complete data"""
 
         if self._check_attribute_vocabulary(attribute):
@@ -491,10 +488,12 @@ class CountVectorsFeaturizer(Featurizer):
             return None
 
     @staticmethod
-    def _get_text_sequence(text):
+    def _get_text_sequence(text: Text) -> List[Text]:
         return text.split()
 
-    def _create_sequence(self, attribute: Text, attribute_texts: List[Text]) -> List:
+    def _create_sequence(
+        self, attribute: Text, attribute_texts: List[Text]
+    ) -> List[scipy.sparse.csr_matrix]:
         texts = [self._get_text_sequence(text) for text in attribute_texts]
 
         X = []
@@ -558,13 +557,14 @@ class CountVectorsFeaturizer(Featurizer):
         message_text = self._get_message_text_by_attribute(message, attribute=attribute)
 
         if self._check_attribute_vocabulary(attribute):
+            # features shape (1, seq, dim)
             features = self._create_sequence(attribute, [message_text])
 
             message.set(
                 MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
                 self._combine_with_existing_sparse_features(
                     message,
-                    features[0],
+                    features[0],  # 0 -> batch dimension
                     feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
                 ),
             )

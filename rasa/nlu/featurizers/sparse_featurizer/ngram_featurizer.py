@@ -13,5 +13,13 @@ class NGramFeaturizer(Featurizer):
 
         logger.warning(
             "DEPRECATION warning: Using `NGramFeaturizer` is deprecated. "
-            "Please use `CountVectorsFeaturizer`."
+            "Please use `CountVectorsFeaturizer` instead. The following settings"
+            "should match the previous `NGramFeaturizer`:"
+            ""
+            "- name: 'CountVectorsFeaturizer'"
+            "  analyzer: 'char_wb'"
+            "  min_ngram: 3"
+            "  max_ngram: 17"
+            "  max_features: 10"
+            "  min_df: 5"
         )
