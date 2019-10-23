@@ -79,7 +79,7 @@ class CRFEntityExtractor(EntityExtractor):
         "upper": lambda doc: doc[0].isupper(),  # pytype: disable=attribute-error
         "digit": lambda doc: doc[0].isdigit(),  # pytype: disable=attribute-error
         "pattern": lambda doc: doc[3],
-        "ner_features": lambda doc: doc[4],
+        "sparse_features": lambda doc: doc[4],
     }
 
     def __init__(
@@ -95,8 +95,6 @@ class CRFEntityExtractor(EntityExtractor):
         self._validate_configuration()
 
         self._check_pos_features_and_spacy()
-        # possibly add a check here to ensure ner_features iff custom_extractor
-        self._check_ner_features()
 
     def _check_pos_features_and_spacy(self):
         import itertools
@@ -116,13 +114,6 @@ class CRFEntityExtractor(EntityExtractor):
                 "See https://spacy.io/usage/ for installation"
                 "instructions."
             )
-
-    def _check_ner_features(self):
-        import itertools
-
-        features = self.component_config.get("features", [])
-        used_features = set(itertools.chain.from_iterable(features))
-        self.use_ner_features = "ner_features" in used_features
 
     def _validate_configuration(self):
         if len(self.component_config.get("features", [])) % 2 != 1:
@@ -596,14 +587,14 @@ class CRFEntityExtractor(EntityExtractor):
 
     @staticmethod
     def __additional_ner_features(message: Message) -> List[Any]:
-        # TODO use sparse text features
-        features = message.get("ner_features", [])
+        features = message.get("text_sparse_features", [])
         tokens = message.get("tokens", [])
         if len(tokens) != len(features):
-            warn_string = "Number of custom NER features ({}) does not match number of tokens ({})".format(
+            warn_string = "Number of sparse features ({}) does not match number of tokens ({})".format(
                 len(features), len(tokens)
             )
             raise Exception(warn_string)
+
         # convert to python-crfsuite feature format
         features_out = []
         for feature in features:
@@ -611,7 +602,7 @@ class CRFEntityExtractor(EntityExtractor):
                 str(index): token_features
                 for index, token_features in enumerate(feature)
             }
-            converted = {"custom_ner_features": feature_dict}
+            converted = {"sparse_features": feature_dict}
             features_out.append(converted)
         return features_out
 
@@ -633,15 +624,19 @@ class CRFEntityExtractor(EntityExtractor):
             tokens = message.get("spacy_doc")
         else:
             tokens = message.get("tokens")
-        ner_features = (
-            self.__additional_ner_features(message) if self.use_ner_features else None
-        )
+
+        sparse_features = message.get("text_sparse_features")
+
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
             tag = self.__tag_of_token(token) if self.pos_features else None
-            custom_ner_features = ner_features[i] if self.use_ner_features else None
-            crf_format.append((token.text, tag, entity, pattern, custom_ner_features))
+            token_sparse_features = (
+                sparse_features[i] if sparse_features is not None else []
+            )
+
+            crf_format.append((token.text, tag, entity, pattern, token_sparse_features))
+
         return crf_format
 
     def _train_model(

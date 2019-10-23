@@ -275,10 +275,9 @@ class CountVectorsFeaturizer(Featurizer):
         message: "Message", attribute: Text
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
-
         if message.get(
             MESSAGE_TOKENS_NAMES[attribute]
-        ):  # if directly tokens is provided
+        ):
             return [t.lemma for t in message.get(MESSAGE_TOKENS_NAMES[attribute])]
 
         return message.get(attribute).split()
