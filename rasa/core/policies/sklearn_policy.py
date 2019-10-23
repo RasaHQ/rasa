@@ -15,7 +15,6 @@ from sklearn.utils import shuffle as sklearn_shuffle
 from typing import Optional, Any, List, Text, Dict, Callable
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy

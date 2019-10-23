@@ -1,15 +1,15 @@
 import argparse
-from typing import Text
+from typing import Callable, Text
 from unittest.mock import Mock
 
 from _pytest.monkeypatch import MonkeyPatch
+from _pytest.pytester import RunResult
 
 import rasa
-import rasa.cli.train as train
-from rasa.cli import interactive
+from rasa.cli import interactive, train
 
 
-def test_interactive_help(run) -> None:
+def test_interactive_help(run: Callable[..., RunResult]):
     output = run("interactive", "--help")
 
     help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
@@ -26,7 +26,7 @@ def test_interactive_help(run) -> None:
         assert output.outlines[i] == line
 
 
-def test_interactive_core_help(run) -> None:
+def test_interactive_core_help(run: Callable[..., RunResult]):
     output = run("interactive", "core", "--help")
 
     help_text = """usage: rasa interactive core [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]

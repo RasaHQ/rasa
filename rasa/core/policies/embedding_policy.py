@@ -1,4 +1,3 @@
-from collections import namedtuple
 import copy
 import json
 import logging
@@ -10,7 +9,6 @@ import numpy as np
 from typing import Any, List, Optional, Text, Dict, Tuple
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     TrackerFeaturizer,
