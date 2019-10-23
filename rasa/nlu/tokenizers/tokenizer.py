@@ -13,16 +13,23 @@ logger = logging.getLogger(__name__)
 
 
 class Token(object):
-    def __init__(self, text, offset, data=None):
+    def __init__(
+        self,
+        text: Text,
+        offset: int,
+        data: Optional[Dict[Text, Any]] = None,
+        lemma: Optional[Text] = None,
+    ):
         self.offset = offset
         self.text = text
         self.end = offset + len(text)
         self.data = data if data else {}
+        self.lemma = lemma or text
 
-    def set(self, prop, info):
+    def set(self, prop: Text, info: Any):
         self.data[prop] = info
 
-    def get(self, prop, default=None):
+    def get(self, prop: Text, default: Optional[Any] = None):
         return self.data.get(prop, default)
 
 

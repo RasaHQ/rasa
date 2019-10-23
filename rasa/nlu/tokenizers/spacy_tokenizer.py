@@ -62,6 +62,6 @@ class SpacyTokenizer(Tokenizer):
     def tokenize(
         self, doc: "Doc", attribute: Text = MESSAGE_TEXT_ATTRIBUTE
     ) -> List[Token]:
-        tokens = [Token(t.text, t.idx) for t in doc]
+        tokens = [Token(t.text, t.idx, lemma=t.lemma_) for t in doc]
         self.add_cls_token(tokens, attribute)
         return tokens

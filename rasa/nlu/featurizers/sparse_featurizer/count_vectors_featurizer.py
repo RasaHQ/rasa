@@ -40,7 +40,7 @@ class CountVectorsFeaturizer(Featurizer):
         for attribute in MESSAGE_ATTRIBUTES
     ]
 
-    requires = []
+    requires = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     defaults = {
         # whether to use a shared vocab
@@ -277,24 +277,12 @@ class CountVectorsFeaturizer(Featurizer):
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
 
-        tokens = message.get(MESSAGE_TOKENS_NAMES[attribute])
-        cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
-
-        if attribute in SPACY_FEATURIZABLE_ATTRIBUTES and message.get(
-            MESSAGE_SPACY_FEATURES_NAMES[attribute]
-        ):  # if lemmatize is possible
-            tokens = [
-                t.lemma_ for t in message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
-            ]
-            if cls_token_used:
-                tokens.append(CLS_TOKEN)
-        elif message.get(
+        if message.get(
             MESSAGE_TOKENS_NAMES[attribute]
         ):  # if directly tokens is provided
-            tokens = [t.text for t in message.get(MESSAGE_TOKENS_NAMES[attribute])]
-        else:
-            tokens = message.get(attribute).split()
-        return tokens
+            return [t.lemma for t in message.get(MESSAGE_TOKENS_NAMES[attribute])]
+
+        return message.get(attribute).split()
 
     # noinspection PyPep8Naming
     def _check_OOV_present(self, examples):
