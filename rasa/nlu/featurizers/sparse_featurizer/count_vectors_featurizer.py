@@ -1,35 +1,31 @@
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional, Text, Union
-import numpy as np
-
+import scipy.sparse
+from typing import Any, Dict, List, Optional, Text
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers import Featurizer
+from rasa.nlu.featurizers.featurzier import Featurizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-
-logger = logging.getLogger(__name__)
-
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
+    MESSAGE_INTENT_ATTRIBUTE,
+    CLS_TOKEN,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CountVectorsFeaturizer(Featurizer):
-    """Bag of words featurizer
-
-    Creates bag-of-words representation of intent features
-    using sklearn's `CountVectorizer`.
+    """Creates a sequence of token counts features
+    based on sklearn's `CountVectorizer`.
     All tokens which consist only of digits (e.g. 123 and 99
     but not ab12d) will be represented by a single feature.
 
@@ -39,10 +35,11 @@ class CountVectorsFeaturizer(Featurizer):
     """
 
     provides = [
-        MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+        MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]
+        for attribute in MESSAGE_ATTRIBUTES
     ]
 
-    requires = []
+    requires = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     defaults = {
         # whether to use a shared vocab
@@ -219,7 +216,8 @@ class CountVectorsFeaturizer(Featurizer):
         """Get processed text of attribute of a message"""
 
         if message.get(attribute) is None:
-            # return empty string since sklearn countvectorizer does not like None object while training and predicting
+            # return empty string since sklearn countvectorizer does not like None
+            # object while training and predicting
             return ""
 
         tokens = self._get_message_tokens_by_attribute(message, attribute)
@@ -278,19 +276,12 @@ class CountVectorsFeaturizer(Featurizer):
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
 
-        if attribute in SPACY_FEATURIZABLE_ATTRIBUTES and message.get(
-            MESSAGE_SPACY_FEATURES_NAMES[attribute]
-        ):  # if lemmatize is possible
-            tokens = [
-                t.lemma_ for t in message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
-            ]
-        elif message.get(
+        if message.get(
             MESSAGE_TOKENS_NAMES[attribute]
         ):  # if directly tokens is provided
-            tokens = [t.text for t in message.get(MESSAGE_TOKENS_NAMES[attribute])]
-        else:
-            tokens = message.get(attribute).split()
-        return tokens
+            return [t.lemma for t in message.get(MESSAGE_TOKENS_NAMES[attribute])]
+
+        return message.get(attribute).split()
 
     # noinspection PyPep8Naming
     def _check_OOV_present(self, examples):
@@ -312,20 +303,17 @@ class CountVectorsFeaturizer(Featurizer):
             )
 
     def _set_attribute_features(
-        self,
-        attribute: Text,
-        attribute_features: np.ndarray,
-        training_data: "TrainingData",
+        self, attribute: Text, attribute_features: List, training_data: "TrainingData"
     ):
         """Set computed features of the attribute to corresponding message objects"""
-        for i, example in enumerate(training_data.intent_examples):
+        for i, example in enumerate(training_data.training_examples):
             # create bag for each example
             example.set(
-                MESSAGE_VECTOR_FEATURE_NAMES[attribute],
-                self._combine_with_existing_features(
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+                self._combine_with_existing_sparse_features(
                     example,
                     attribute_features[i],
-                    MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
                 ),
             )
 
@@ -338,7 +326,7 @@ class CountVectorsFeaturizer(Featurizer):
         for attribute in MESSAGE_ATTRIBUTES:
             attribute_texts = [
                 self._get_message_text_by_attribute(example, attribute)
-                for example in training_data.intent_examples
+                for example in training_data.training_examples
             ]
             self._check_OOV_present(attribute_texts)
             processed_attribute_texts[attribute] = attribute_texts
@@ -371,7 +359,6 @@ class CountVectorsFeaturizer(Featurizer):
             analyzer=analyzer,
             vocabulary=vocabulary,
         )
-
         attribute_vectorizers = {}
 
         for attribute in MESSAGE_ATTRIBUTES:
@@ -478,17 +465,32 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _get_featurized_attribute(
         self, attribute: Text, attribute_texts: List[Text]
-    ) -> Optional[np.ndarray]:
+    ) -> Optional[List[scipy.sparse.csr_matrix]]:
         """Return features of a particular attribute for complete data"""
 
         if self._check_attribute_vocabulary(attribute):
             # count vectorizer was trained
-            featurized_attributes = (
-                self.vectorizers[attribute].transform(attribute_texts).toarray()
-            )
-            return featurized_attributes
+            return self._create_sequence(attribute, attribute_texts)
         else:
             return None
+
+    @staticmethod
+    def _get_text_sequence(text: Text) -> List[Text]:
+        return text.split()
+
+    def _create_sequence(
+        self, attribute: Text, attribute_texts: List[Text]
+    ) -> List[scipy.sparse.csr_matrix]:
+        texts = [self._get_text_sequence(text) for text in attribute_texts]
+
+        X = []
+
+        for i, tokens in enumerate(texts):
+            x = self.vectorizers[attribute].transform(tokens)
+            x.sort_indices()
+            X.append(x)
+
+        return X
 
     def train(
         self, training_data: TrainingData, cfg: RasaNLUModelConfig = None, **kwargs: Any
@@ -536,25 +538,22 @@ class CountVectorsFeaturizer(Featurizer):
                 "component is either not trained or "
                 "didn't receive enough training data"
             )
-        else:
-            message_text = self._get_message_text_by_attribute(
-                message, attribute=MESSAGE_TEXT_ATTRIBUTE
-            )
+            return
 
-            bag = (
-                self.vectorizers[MESSAGE_TEXT_ATTRIBUTE]
-                .transform([message_text])
-                .toarray()
-                .squeeze()
-            )
-            message.set(
-                MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-                self._combine_with_existing_features(
-                    message,
-                    bag,
-                    feature_name=MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-                ),
-            )
+        attribute = MESSAGE_TEXT_ATTRIBUTE
+        message_text = self._get_message_text_by_attribute(message, attribute=attribute)
+
+        # features shape (1, seq, dim)
+        features = self._create_sequence(attribute, [message_text])
+
+        message.set(
+            MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+            self._combine_with_existing_sparse_features(
+                message,
+                features[0],  # 0 -> batch dimension
+                feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+            ),
+        )
 
     @staticmethod
     def _is_any_model_trained(attribute_vocabularies) -> bool:
@@ -579,11 +578,12 @@ class CountVectorsFeaturizer(Featurizer):
 
                 if self.use_shared_vocab:
                     # Only persist vocabulary from one attribute. Can be loaded and distributed to all attributes.
-                    utils.json_pickle(
-                        featurizer_file, attribute_vocabularies[MESSAGE_TEXT_ATTRIBUTE]
-                    )
+                    vocab = attribute_vocabularies[MESSAGE_TEXT_ATTRIBUTE]
                 else:
-                    utils.json_pickle(featurizer_file, attribute_vocabularies)
+                    vocab = attribute_vocabularies
+
+                utils.json_pickle(featurizer_file, vocab)
+
         return {"file": file_name}
 
     @classmethod

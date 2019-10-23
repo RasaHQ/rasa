@@ -15,6 +15,11 @@ def test_whitespace():
         "for",
         "lunch",
     ]
+    assert [t.lemma for t in tk.tokenize("Forecast for lunch")] == [
+        "Forecast",
+        "for",
+        "lunch",
+    ]
 
     assert [t.offset for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13]
 

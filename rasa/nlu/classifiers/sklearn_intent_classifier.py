@@ -5,12 +5,15 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu import utils
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH, convert_dense_back
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import MESSAGE_VECTOR_FEATURE_NAMES, MESSAGE_TEXT_ATTRIBUTE
+from rasa.nlu.constants import (
+    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
+    MESSAGE_TEXT_ATTRIBUTE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +26,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -95,7 +98,11 @@ class SklearnIntentClassifier(Component):
             y = self.transform_labels_str2num(labels)
             X = np.stack(
                 [
-                    example.get("text_features")
+                    convert_dense_back(
+                        example.get(
+                            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                        )
+                    )
                     for example in training_data.intent_examples
                 ]
             )
@@ -143,7 +150,9 @@ class SklearnIntentClassifier(Component):
             intent = None
             intent_ranking = []
         else:
-            X = message.get("text_features").reshape(1, -1)
+            X = convert_dense_back(
+                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
             # `predict` returns a matrix as it is supposed

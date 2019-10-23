@@ -16,9 +16,12 @@ Added
 
 Changed
 -------
+- Divided featurizers in ``rasa.nlu`` into sparse and dense featurizers
+- All featurizers in ``rasa.nlu`` return a sequence
 
 Removed
 -------
+- Deprecated ``NGramFeaturizer`` in ``rasa.nlu.featurizers`` (removed functionality and print deprecation warning instead)
 
 Fixed
 -----

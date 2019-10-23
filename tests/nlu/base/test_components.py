@@ -55,9 +55,9 @@ def test_find_unavailable_packages():
 
 
 def test_builder_create_by_module_path(component_builder, default_config):
-    from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
+    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 
-    path = "rasa.nlu.featurizers.regex_featurizer.RegexFeaturizer"
+    path = "rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer"
     component_config = {"name": path}
     component = component_builder.create_component(component_config, default_config)
     assert type(component) == RegexFeaturizer

@@ -18,11 +18,13 @@ from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
-from rasa.nlu.featurizers.mitie_featurizer import MitieFeaturizer
-from rasa.nlu.featurizers.ngram_featurizer import NGramFeaturizer
-from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
-from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    CountVectorsFeaturizer,
+)
+from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
+from rasa.nlu.featurizers.sparse_featurizer.ngram_featurizer import NGramFeaturizer
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
@@ -60,7 +62,6 @@ component_classes = [
     # featurizers
     SpacyFeaturizer,
     MitieFeaturizer,
-    NGramFeaturizer,
     RegexFeaturizer,
     CountVectorsFeaturizer,
     # classifiers
