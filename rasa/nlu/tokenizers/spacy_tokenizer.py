@@ -52,11 +52,12 @@ class SpacyTokenizer(Tokenizer):
         return message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
-            message.set(
-                MESSAGE_TOKENS_NAMES[attribute],
-                self.tokenize(self.get_doc(message, attribute), attribute),
-            )
+        message.set(
+            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self.tokenize(
+                self.get_doc(message, MESSAGE_TEXT_ATTRIBUTE), MESSAGE_TEXT_ATTRIBUTE
+            ),
+        )
 
     def tokenize(
         self, doc: "Doc", attribute: Text = MESSAGE_TEXT_ATTRIBUTE

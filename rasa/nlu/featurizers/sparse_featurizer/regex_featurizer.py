@@ -52,17 +52,17 @@ class RegexFeaturizer(Featurizer):
         self._add_lookup_table_regexes(training_data.lookup_tables)
 
         for example in training_data.training_examples:
-            self._text_features_with_regex(example)
+            for attribute in [MESSAGE_TEXT_ATTRIBUTE, MESSAGE_RESPONSE_ATTRIBUTE]:
+                self._text_features_with_regex(example, attribute)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        self._text_features_with_regex(message)
+        self._text_features_with_regex(message, MESSAGE_TEXT_ATTRIBUTE)
 
-    def _text_features_with_regex(self, message: Message) -> None:
+    def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
-            for attribute in [MESSAGE_TEXT_ATTRIBUTE, MESSAGE_RESPONSE_ATTRIBUTE]:
-                extras = self._features_for_patterns(message, attribute)
-                features = self._combine_with_existing_sparse_features(message, extras)
-                message.set(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute], features)
+            extras = self._features_for_patterns(message, attribute)
+            features = self._combine_with_existing_sparse_features(message, extras)
+            message.set(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute], features)
 
     def _add_lookup_table_regexes(
         self, lookup_tables: List[Dict[Text, Union[Text, List]]]

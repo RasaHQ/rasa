@@ -63,15 +63,9 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     message.set(
         MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE], spacy_nlp(sentence)
     )
-    message.set(
-        MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_RESPONSE_ATTRIBUTE], spacy_nlp(sentence)
-    )
     tokenizer.process(message)
 
     result = ftr._features_for_patterns(message, MESSAGE_TEXT_ATTRIBUTE)
-    assert np.allclose(result.toarray(), expected, atol=1e-10)
-
-    result = ftr._features_for_patterns(message, MESSAGE_RESPONSE_ATTRIBUTE)
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
