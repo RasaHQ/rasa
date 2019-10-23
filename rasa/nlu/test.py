@@ -786,7 +786,7 @@ def determine_token_labels(
         entity type
     """
 
-    if len(entities) == 0:
+    if entities is None or len(entities) == 0:
         return "O"
     if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
         raise ValueError("The possible entities should not overlap")

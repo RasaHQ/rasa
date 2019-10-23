@@ -16,6 +16,7 @@ from rasa.nlu.constants import (
     OPEN_UTTERANCE_RANKING_KEY,
     MESSAGE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
+    MESSAGE_ENTITIES_ATTRIBUTE,
 )
 
 logger = logging.getLogger(__name__)
@@ -138,14 +139,18 @@ class ResponseSelector(EmbeddingIntentClassifier):
         )
 
     def preprocess_train_data(self, training_data):
-        """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
-
+        """Performs sanity checks on training data, extracts encodings for labels
+        and prepares data for training"""
         if self.retrieval_intent:
             training_data = training_data.filter_by_intent(self.retrieval_intent)
 
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_RESPONSE_ATTRIBUTE
         )
+        tag_id_dict = self._create_tag_id_dict(
+            training_data, attribute=MESSAGE_ENTITIES_ATTRIBUTE
+        )
+        self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
         self._encoded_all_label_ids = self._create_encoded_label_ids(
@@ -168,7 +173,10 @@ class ResponseSelector(EmbeddingIntentClassifier):
         self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
         session_data = self._create_session_data(
-            training_data, label_id_dict, attribute=MESSAGE_RESPONSE_ATTRIBUTE
+            training_data,
+            label_id_dict,
+            tag_id_dict,
+            attribute=MESSAGE_RESPONSE_ATTRIBUTE,
         )
 
         self.check_input_dimension_consistency(session_data)

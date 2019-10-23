@@ -270,7 +270,7 @@ class EmbeddingPolicy(Policy):
             label_ids = None
             Y = None
 
-        return train_utils.SessionData(X=data_X, Y=Y, label_ids=label_ids)
+        return train_utils.SessionData(X_dense=data_X, Y=Y, labels=label_ids)
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
         """Create embedding bot vector."""
@@ -370,7 +370,7 @@ class EmbeddingPolicy(Policy):
         dialogue_len = None  # use dynamic time
         self.a_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, session_data.X.shape[-1]),
+            shape=(None, dialogue_len, session_data.X_dense.shape[-1]),
             name="a",
         )
         self.b_in = tf.placeholder(
@@ -535,7 +535,7 @@ class EmbeddingPolicy(Policy):
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
 
-        return {self.a_in: session_data.X}
+        return {self.a_in: session_data.X_dense}
 
     def predict_action_probabilities(
         self, tracker: "DialogueStateTracker", domain: "Domain"

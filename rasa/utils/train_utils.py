@@ -1,7 +1,19 @@
 from collections import namedtuple
 import logging
+import scipy.sparse
 import typing
-from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
+from typing import (
+    List,
+    Optional,
+    Text,
+    Dict,
+    Tuple,
+    Union,
+    Generator,
+    Callable,
+    Any,
+    NamedTuple,
+)
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -24,7 +36,12 @@ logger = logging.getLogger(__name__)
 
 
 # namedtuple for all tf session related data
-SessionData = namedtuple("SessionData", ("X", "Y", "label_ids"))
+class SessionData(NamedTuple):
+    X_dense: Optional[np.ndarray] = None
+    X_sparse: Optional[np.ndarray] = None
+    Y: Optional[np.ndarray] = None
+    tags: Optional[np.ndarray] = None
+    labels: Optional[np.ndarray] = None
 
 
 def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
@@ -42,10 +59,10 @@ def train_val_split(
     """Create random hold out validation set using stratified split."""
 
     label_counts = dict(
-        zip(*np.unique(session_data.label_ids, return_counts=True, axis=0))
+        zip(*np.unique(session_data.labels, return_counts=True, axis=0))
     )
 
-    if evaluate_on_num_examples >= len(session_data.X) - len(label_counts):
+    if evaluate_on_num_examples >= len(session_data.X_dense) - len(label_counts):
         raise ValueError(
             "Validation set of {} is too large. Remaining train set "
             "should be at least equal to number of classes {}."
@@ -58,42 +75,75 @@ def train_val_split(
             "".format(evaluate_on_num_examples, len(label_counts))
         )
 
-    counts = np.array([label_counts[label] for label in session_data.label_ids])
+    counts = np.array([label_counts[label] for label in session_data.labels])
 
-    multi_X = session_data.X[counts > 1]
+    multi_X_dense = session_data.X_dense[counts > 1]
+    multi_X_sparse = session_data.X_sparse[counts > 1]
     multi_Y = session_data.Y[counts > 1]
-    multi_label_ids = session_data.label_ids[counts > 1]
+    multi_labels = session_data.labels[counts > 1]
+    multi_tags = session_data.tags[counts > 1]
 
-    solo_X = session_data.X[counts == 1]
+    solo_X_sparse = session_data.X_sparse[counts == 1]
+    solo_X_dense = session_data.X_dense[counts == 1]
     solo_Y = session_data.Y[counts == 1]
-    solo_label_ids = session_data.label_ids[counts == 1]
+    solo_labels = session_data.labels[counts == 1]
+    solo_tags = session_data.tags[counts == 1]
 
-    (X_train, X_val, Y_train, Y_val, label_ids_train, label_ids_val) = train_test_split(
-        multi_X,
+    (
+        X_dense_train,
+        X_dense_val,
+        X_sparse_train,
+        X_sparse_val,
+        Y_train,
+        Y_val,
+        labels_train,
+        labels_val,
+        tags_train,
+        tags_val,
+    ) = train_test_split(
+        multi_X_dense,
+        multi_X_sparse,
         multi_Y,
-        multi_label_ids,
+        multi_labels,
+        multi_tags,
         test_size=evaluate_on_num_examples,
         random_state=random_seed,
-        stratify=multi_label_ids,
+        stratify=multi_labels,
     )
-    X_train = np.concatenate([X_train, solo_X])
+    X_dense_train = np.concatenate([X_dense_train, solo_X_dense])
+    X_sparse_train = np.concatenate([X_sparse_train, solo_X_sparse])
     Y_train = np.concatenate([Y_train, solo_Y])
-    label_ids_train = np.concatenate([label_ids_train, solo_label_ids])
+    labels_train = np.concatenate([labels_train, solo_labels])
+    tags_train = np.concatenate([tags_train, solo_tags])
 
     return (
-        SessionData(X=X_train, Y=Y_train, label_ids=label_ids_train),
-        SessionData(X=X_val, Y=Y_val, label_ids=label_ids_val),
+        SessionData(
+            X_sparse=X_sparse_train,
+            X_dense=X_dense_train,
+            Y=Y_train,
+            labels=labels_train,
+            tags=tags_train,
+        ),
+        SessionData(
+            X_sparse=X_sparse_val,
+            X_dense=X_dense_val,
+            Y=Y_val,
+            labels=labels_val,
+            tags=tags_val,
+        ),
     )
 
 
 def shuffle_session_data(session_data: "SessionData") -> "SessionData":
     """Shuffle session data."""
 
-    ids = np.random.permutation(len(session_data.X))
+    ids = np.random.permutation(len(session_data.X_dense))
     return SessionData(
-        X=session_data.X[ids],
+        X_dense=session_data.X_dense[ids],
+        X_sparse=session_data.X_sparse[ids],
         Y=session_data.Y[ids],
-        label_ids=session_data.label_ids[ids],
+        labels=session_data.labels[ids],
+        tags=session_data.tags[ids],
     )
 
 
@@ -106,9 +156,11 @@ def split_session_data_by_label(
     for label_id in unique_label_ids:
         label_data.append(
             SessionData(
-                X=session_data.X[session_data.label_ids == label_id],
-                Y=session_data.Y[session_data.label_ids == label_id],
-                label_ids=session_data.label_ids[session_data.label_ids == label_id],
+                X_sparse=session_data.X_sparse[session_data.labels == label_id],
+                X_dense=session_data.X_dense[session_data.labels == label_id],
+                Y=session_data.Y[session_data.labels == label_id],
+                labels=session_data.labels[session_data.labels == label_id],
+                tags=session_data.tags[session_data.tags == label_id],
             )
         )
     return label_data
@@ -125,9 +177,9 @@ def balance_session_data(
     that more populated classes should appear more often.
     """
 
-    num_examples = len(session_data.X)
+    num_examples = len(session_data.X_dense)
     unique_label_ids, counts_label_ids = np.unique(
-        session_data.label_ids, return_counts=True, axis=0
+        session_data.labels, return_counts=True, axis=0
     )
     num_label_ids = len(unique_label_ids)
 
@@ -137,9 +189,13 @@ def balance_session_data(
     data_idx = [0] * num_label_ids
     num_data_cycles = [0] * num_label_ids
     skipped = [False] * num_label_ids
-    new_X = []
+
+    new_X_sparse = []
+    new_X_dense = []
     new_Y = []
-    new_label_ids = []
+    new_labels = []
+    new_tags = []
+
     while min(num_data_cycles) == 0:
         if shuffle:
             indices_of_labels = np.random.permutation(num_label_ids)
@@ -157,8 +213,13 @@ def balance_session_data(
                 int(counts_label_ids[index] / num_examples * batch_size) + 1
             )
 
-            new_X.append(
-                label_data[index].X[
+            new_X_dense.append(
+                label_data[index].X_dense[
+                    data_idx[index] : data_idx[index] + index_batch_size
+                ]
+            )
+            new_X_sparse.append(
+                label_data[index].X_sparse[
                     data_idx[index] : data_idx[index] + index_batch_size
                 ]
             )
@@ -167,8 +228,13 @@ def balance_session_data(
                     data_idx[index] : data_idx[index] + index_batch_size
                 ]
             )
-            new_label_ids.append(
-                label_data[index].label_ids[
+            new_tags.append(
+                label_data[index].tags[
+                    data_idx[index] : data_idx[index] + index_batch_size
+                ]
+            )
+            new_labels.append(
+                label_data[index].labels[
                     data_idx[index] : data_idx[index] + index_batch_size
                 ]
             )
@@ -182,9 +248,11 @@ def balance_session_data(
                 break
 
     return SessionData(
-        X=np.concatenate(new_X),
+        X_dense=np.concatenate(new_X_dense),
+        X_sparse=np.concatenate(new_X_sparse),
         Y=np.concatenate(new_Y),
-        label_ids=np.concatenate(new_label_ids),
+        tags=np.concatenate(new_tags),
+        labels=np.concatenate(new_labels),
     )
 
 
@@ -202,15 +270,41 @@ def gen_batch(
     if batch_strategy == "balanced":
         session_data = balance_session_data(session_data, batch_size, shuffle)
 
-    num_batches = session_data.X.shape[0] // batch_size + int(
-        session_data.X.shape[0] % batch_size > 0
+    num_batches = session_data.X_sparse.shape[0] // batch_size + int(
+        session_data.X_sparse.shape[0] % batch_size > 0
     )
 
     for batch_num in range(num_batches):
-        batch_x = session_data.X[batch_num * batch_size : (batch_num + 1) * batch_size]
-        batch_y = session_data.Y[batch_num * batch_size : (batch_num + 1) * batch_size]
+        start = batch_num * batch_size
+        end = (batch_num + 1) * batch_size
 
-        yield batch_x, batch_y
+        batch_x_sparse = convert_sparse_to_dense(session_data.X_sparse[start:end])
+        batch_x_dense = convert_sparse_to_dense(
+            session_data.X_dense[start:end], init_with_zero=True
+        )
+        batch_y = convert_sparse_to_dense(session_data.Y[start:end])
+        batch_tags = convert_sparse_to_dense(session_data.tags[start:end])
+
+        yield batch_x_sparse, batch_x_dense, batch_y, batch_tags
+
+
+def convert_sparse_to_dense(
+    data_sparse: Union[np.ndarray, List[scipy.sparse.csr_matrix]],
+    init_with_zero: bool = False,
+):
+    data_size = len(data_sparse)
+    max_seq_len = max([x.shape[0] for x in data_sparse])
+    feature_len = max([x.shape[-1] for x in data_sparse])
+
+    if init_with_zero:
+        data_dense = np.zeros([data_size, max_seq_len, feature_len], dtype=np.float)
+    else:
+        data_dense = np.ones([data_size, max_seq_len, feature_len], dtype=np.float) * -1
+
+    for i in range(data_size):
+        data_dense[i, : data_sparse[i].shape[0], :] = data_sparse[i].toarray()
+
+    return data_dense
 
 
 # noinspection PyPep8Naming
@@ -223,24 +317,29 @@ def create_tf_dataset(
     """Create tf dataset."""
 
     # set batch and sequence length to None
-    if session_data.X[0].ndim == 1:
-        shape_X = (None, session_data.X[0].shape[-1])
-    else:
-        shape_X = (None, None, session_data.X[0].shape[-1])
-
-    if session_data.Y[0].ndim == 1:
-        shape_Y = (None, session_data.Y[0].shape[-1])
-    else:
-        shape_Y = (None, None, session_data.Y[0].shape[-1])
+    shape_X_dense = _get_shape(session_data.X_dense)
+    shape_X_sparse = _get_shape(session_data.X_sparse)
+    shape_Y = _get_shape(session_data.Y)
+    shape_tags = _get_shape(session_data.tags)
 
     return tf.data.Dataset.from_generator(
         lambda batch_size_: gen_batch(
             session_data, batch_size_, batch_strategy, shuffle
         ),
-        output_types=(tf.float32, tf.float32),
-        output_shapes=(shape_X, shape_Y),
+        output_types=(tf.float32, tf.float32, tf.float32, tf.float32),
+        output_shapes=(shape_X_sparse, shape_X_dense, shape_Y, shape_tags),
         args=([batch_size]),
     )
+
+
+def _get_shape(data: Union[np.ndarray, List[scipy.sparse.csr_matrix]]) -> Tuple:
+    if data is None:
+        return ()
+
+    if data[0].ndim == 1:
+        return None, data[0].shape[-1]
+
+    return None, None, data[0].shape[-1]
 
 
 def create_iterator_init_datasets(
