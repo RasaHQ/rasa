@@ -10,8 +10,8 @@ from rasa.nlu.constants import (
 )
 
 
-def sequence_to_sentence_embedding(
-    features: Union[List[List[float]], scipy.sparse.spmatrix], method: Text = "mean"
+def sequence_to_sentence_features(
+    features: Union[np.ndarray, scipy.sparse.spmatrix], method: Text = "mean"
 ) -> Optional[np.ndarray]:
     if features is None:
         return None
@@ -19,10 +19,10 @@ def sequence_to_sentence_embedding(
     if isinstance(features, scipy.sparse.spmatrix):
         features = features.toarray()
 
-    if method == "mean" or method == "avg":
+    if method == "mean":
         return np.mean(features, axis=0)
-    if method == "sum":
-        return np.sum(features, axis=0)
+
+    raise ValueError(f"Provided method '{method}' is not supported.")
 
 
 class Featurizer(Component):

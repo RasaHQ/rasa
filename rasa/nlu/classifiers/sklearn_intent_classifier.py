@@ -4,7 +4,7 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa.nlu.featurizers.featurzier import sequence_to_sentence_embedding
+from rasa.nlu.featurizers.featurzier import sequence_to_sentence_features
 from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
@@ -28,7 +28,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = []
+    requires = [MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -81,22 +81,6 @@ class SklearnIntentClassifier(Component):
 
         return self.le.inverse_transform(y)
 
-    def combine_features(self, message: Message) -> np.ndarray:
-        features_1 = sequence_to_sentence_embedding(
-            message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-        )
-        features_2 = sequence_to_sentence_embedding(
-            message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-        )
-
-        if features_1 is not None and features_2 is not None:
-            return np.concatenate((features_1, features_2), axis=-1)
-
-        if features_1 is not None and features_2 is None:
-            return features_1
-
-        return features_2
-
     def train(
         self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
@@ -116,7 +100,11 @@ class SklearnIntentClassifier(Component):
             y = self.transform_labels_str2num(labels)
             X = np.stack(
                 [
-                    self.combine_features(example)
+                    sequence_to_sentence_features(
+                        example.get(
+                            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                        )
+                    )
                     for example in training_data.intent_examples
                 ]
             )
@@ -164,7 +152,9 @@ class SklearnIntentClassifier(Component):
             intent = None
             intent_ranking = []
         else:
-            X = self.combine_features(message).reshape(1, -1)
+            X = sequence_to_sentence_features(
+                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
             # `predict` returns a matrix as it is supposed
