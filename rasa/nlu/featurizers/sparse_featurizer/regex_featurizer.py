@@ -59,56 +59,49 @@ class RegexFeaturizer(Featurizer):
 
     def _text_features_with_regex(self, message: Message) -> None:
         if self.known_patterns:
-            extras = self.features_for_patterns(message)
-            features = self._combine_with_existing_sparse_features(message, extras)
-        else:
-            features = message.get(
-                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-            )
-
-        message.set(
-            MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], features
-        )
+            for attribute in [MESSAGE_TEXT_ATTRIBUTE, MESSAGE_RESPONSE_ATTRIBUTE]:
+                extras = self._features_for_patterns(message, attribute)
+                features = self._combine_with_existing_sparse_features(message, extras)
+                message.set(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute], features)
 
     def _add_lookup_table_regexes(
         self, lookup_tables: List[Dict[Text, Union[Text, List]]]
     ) -> None:
-        # appends the regex features from the lookup tables to
-        # self.known_patterns
+        """appends the regex features from the lookup tables to self.known_patterns"""
         for table in lookup_tables:
             regex_pattern = self._generate_lookup_regex(table)
             lookup_regex = {"name": table["name"], "pattern": regex_pattern}
             self.known_patterns.append(lookup_regex)
 
-    def features_for_patterns(self, message: Message) -> scipy.sparse.csr_matrix:
+    def _features_for_patterns(
+        self, message: Message, attribute: Text
+    ) -> scipy.sparse.csr_matrix:
         """Checks which known patterns match the message.
 
         Given a sentence, returns a vector of {1,0} values indicating which
         regexes did match. Furthermore, if the
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
+        tokens = message.get(MESSAGE_TOKENS_NAMES[attribute], [])
 
-        for attribute in [MESSAGE_TEXT_ATTRIBUTE, MESSAGE_RESPONSE_ATTRIBUTE]:
-            tokens = message.get(MESSAGE_TOKENS_NAMES[attribute], [])
+        vec = np.zeros([len(tokens), len(self.known_patterns)])
 
-            vec = np.zeros([len(tokens), len(self.known_patterns)])
+        for pattern_index, pattern in enumerate(self.known_patterns):
+            matches = re.finditer(pattern["pattern"], message.text)
+            matches = list(matches)
 
-            for pattern_index, pattern in enumerate(self.known_patterns):
-                matches = re.finditer(pattern["pattern"], message.text)
-                matches = list(matches)
+            for token_index, t in enumerate(tokens):
+                patterns = t.get("pattern", default={})
+                patterns[pattern["name"]] = False
 
-                for token_index, t in enumerate(tokens):
-                    patterns = t.get("pattern", default={})
-                    patterns[pattern["name"]] = False
+                for match in matches:
+                    if t.offset < match.end() and t.end > match.start():
+                        patterns[pattern["name"]] = True
+                        vec[token_index][pattern_index] = 1.0
 
-                    for match in matches:
-                        if t.offset < match.end() and t.end > match.start():
-                            patterns[pattern["name"]] = True
-                            vec[token_index][pattern_index] = 1.0
+                t.set("pattern", patterns)
 
-                    t.set("pattern", patterns)
-
-            return scipy.sparse.csr_matrix(vec)
+        return scipy.sparse.csr_matrix(vec)
 
     def _generate_lookup_regex(
         self, lookup_table: Dict[Text, Union[Text, List]]

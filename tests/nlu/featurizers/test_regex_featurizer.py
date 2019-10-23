@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from rasa.nlu.constants import MESSAGE_TEXT_ATTRIBUTE
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message
 
@@ -58,7 +59,7 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     message.set("spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr.features_for_patterns(message)
+    result = ftr._features_for_patterns(message, MESSAGE_TEXT_ATTRIBUTE)
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
@@ -106,7 +107,7 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     message.set("spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr.features_for_patterns(message)
+    result = ftr._features_for_patterns(message, MESSAGE_TEXT_ATTRIBUTE)
     print(result.toarray())
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
