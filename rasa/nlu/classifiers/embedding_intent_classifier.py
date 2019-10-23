@@ -6,7 +6,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 import warnings
 
-from nlu.featurizers.featurzier import sequence_to_sentence_embedding
+from rasa.nlu.featurizers.featurzier import sequence_to_sentence_embedding
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
