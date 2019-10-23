@@ -20,6 +20,7 @@ def test_spacy(spacy_nlp):
         "for",
         "lunch",
     ]
+
     assert [t.offset for t in tk.tokenize(spacy_nlp(text))] == [0, 9, 13]
 
     text = "hey ńöñàśçií how're you?"

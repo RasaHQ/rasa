@@ -25,6 +25,11 @@ Removed
 
 Fixed
 -----
+- ``MultiProjectImporter`` now imports files in the order of the import statements
+
+[1.4.1] - 2019-10-22
+^^^^^^^^^^^^^^^^^^^^
+Regression: changes from ``1.2.12`` were missing from ``1.4.0``, readded them
 
 [1.4.0] - 2019-10-19
 ^^^^^^^^^^^^^^^^^^^^
@@ -297,6 +302,13 @@ Fixed
 Removed
 -------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
+
+[1.2.12] - 2019-10-16
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Support for transit encryption with Redis via ``use_ssl: True`` in the tracker store config in endpoints.yml
 
 [1.2.11] - 2019-10-09
 ^^^^^^^^^^^^^^^^^^^^^
