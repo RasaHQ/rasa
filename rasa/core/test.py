@@ -290,7 +290,7 @@ def _collect_action_executed_predictions(
     action_executed_eval_store = EvaluationStore()
 
     import json
-    with open("action_map.json", "r") as file:
+    with open("compute/SUBMIT-e2e-mh10-status/action_map.json", "r") as file:
         action_map = json.load(file)
         action_map['action_listen'] = ['action_listen']#, 'action_listen']
 
