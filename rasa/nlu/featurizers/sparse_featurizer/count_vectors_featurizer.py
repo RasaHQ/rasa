@@ -544,18 +544,17 @@ class CountVectorsFeaturizer(Featurizer):
         attribute = MESSAGE_TEXT_ATTRIBUTE
         message_text = self._get_message_text_by_attribute(message, attribute=attribute)
 
-        if self._check_attribute_vocabulary(attribute):
-            # features shape (1, seq, dim)
-            features = self._create_sequence(attribute, [message_text])
+        # features shape (1, seq, dim)
+        features = self._create_sequence(attribute, [message_text])
 
-            message.set(
-                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
-                self._combine_with_existing_sparse_features(
-                    message,
-                    features[0],  # 0 -> batch dimension
-                    feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
-                ),
-            )
+        message.set(
+            MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+            self._combine_with_existing_sparse_features(
+                message,
+                features[0],  # 0 -> batch dimension
+                feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+            ),
+        )
 
     @staticmethod
     def _is_any_model_trained(attribute_vocabularies) -> bool:
@@ -632,9 +631,6 @@ class CountVectorsFeaturizer(Featurizer):
                     analyzer=meta["analyzer"],
                     vocabulary=vocabulary,
                 )
-
-            for v in vectorizers.values():
-                v.vocabulary_ = v.vocabulary
 
             return cls(meta, vectorizers)
         else:
