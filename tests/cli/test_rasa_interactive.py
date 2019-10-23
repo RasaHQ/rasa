@@ -1,4 +1,8 @@
-def test_interactive_help(run):
+from typing import Callable
+from _pytest.pytester import RunResult
+
+
+def test_interactive_help(run: Callable[..., RunResult]):
     output = run("interactive", "--help")
 
     help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
@@ -14,7 +18,7 @@ def test_interactive_help(run):
         assert output.outlines[i] == line
 
 
-def test_interactive_core_help(run):
+def test_interactive_core_help(run: Callable[..., RunResult]):
     output = run("interactive", "core", "--help")
 
     help_text = """usage: rasa interactive core [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]

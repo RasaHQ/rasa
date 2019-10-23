@@ -6,7 +6,6 @@ from typing import Any, List, Text, Optional
 
 import rasa.utils.io
 
-from rasa.core import utils
 from rasa.core.actions.action import (
     ACTION_BACK_NAME,
     ACTION_LISTEN_NAME,

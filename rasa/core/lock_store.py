@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Text, Optional, Union, AsyncGenerator, Coroutine
+from typing import Text, Optional, Union, AsyncGenerator
 
 from async_generator import asynccontextmanager
 
