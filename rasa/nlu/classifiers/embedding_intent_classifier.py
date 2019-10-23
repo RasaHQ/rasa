@@ -703,8 +703,8 @@ class EmbeddingIntentClassifier(Component):
 
             graph = tf.Graph()
             with graph.as_default():
-                session = tf.Session(config=_tf_config)
-                saver = tf.train.import_meta_graph(checkpoint + ".meta")
+                session = tf.compat.v1.Session(config=_tf_config)
+                saver = tf.compat.v1.train.import_meta_graph(checkpoint + ".meta")
 
                 saver.restore(session, checkpoint)
 
