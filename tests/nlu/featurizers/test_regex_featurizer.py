@@ -1,7 +1,11 @@
 import numpy as np
 import pytest
 
-from rasa.nlu.constants import MESSAGE_TEXT_ATTRIBUTE
+from rasa.nlu.constants import (
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_SPACY_FEATURES_NAMES,
+)
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message
 
@@ -55,11 +59,19 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer({"use_cls_token": False})
-    message = Message(sentence)
-    message.set("spacy_doc", spacy_nlp(sentence))
+    message = Message(sentence, data={MESSAGE_RESPONSE_ATTRIBUTE: sentence})
+    message.set(
+        MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE], spacy_nlp(sentence)
+    )
+    message.set(
+        MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_RESPONSE_ATTRIBUTE], spacy_nlp(sentence)
+    )
     tokenizer.process(message)
 
     result = ftr._features_for_patterns(message, MESSAGE_TEXT_ATTRIBUTE)
+    assert np.allclose(result.toarray(), expected, atol=1e-10)
+
+    result = ftr._features_for_patterns(message, MESSAGE_RESPONSE_ATTRIBUTE)
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
