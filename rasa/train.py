@@ -213,6 +213,8 @@ async def _do_training(
     persist_nlu_training_data: bool = False,
     kwargs: Optional[Dict] = None,
 ):
+    if not retrain:
+        retrain = ShouldRetrain()
 
     if any([retrain.force_train, retrain.core]):
         await _train_core_with_validated_data(
