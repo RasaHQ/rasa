@@ -214,7 +214,7 @@ async def _do_training(
     kwargs: Optional[Dict] = None,
 ):
     if not retrain:
-        retrain = ShouldRetrain()
+        retrain = ShouldRetrain(nlu=True, core=True, nlg=True)
 
     if any([retrain.force_train, retrain.core]):
         await _train_core_with_validated_data(
