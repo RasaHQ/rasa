@@ -21,8 +21,6 @@ class WhitespaceTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # Text will be tokenized with case sensitive as default
-        "case_sensitive": True,
         # add __CLS__ token to the end of the list of tokens
         "use_cls_token": True,
     }
@@ -37,7 +35,6 @@ class WhitespaceTokenizer(Tokenizer):
         )
         # split symbol for intents
         self.intent_split_symbol = self.component_config["intent_split_symbol"]
-        self.case_sensitive = self.component_config["case_sensitive"]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -60,8 +57,6 @@ class WhitespaceTokenizer(Tokenizer):
         self, text: Text, attribute: Text = MESSAGE_TEXT_ATTRIBUTE
     ) -> List[Token]:
 
-        if not self.case_sensitive:
-            text = text.lower()
         # remove 'not a word character' if
         if attribute != MESSAGE_INTENT_ATTRIBUTE:
             words = re.sub(

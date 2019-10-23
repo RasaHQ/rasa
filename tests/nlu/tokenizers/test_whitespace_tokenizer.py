@@ -122,22 +122,6 @@ def test_whitespace_custom_intent_symbol():
 def test_whitespace_with_case():
     from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
-    component_config = {"case_sensitive": False, "use_cls_token": False}
-    tk = WhitespaceTokenizer(component_config)
-    assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
-        "forecast",
-        "for",
-        "lunch",
-    ]
-
-    component_config = {"case_sensitive": True, "use_cls_token": False}
-    tk = WhitespaceTokenizer(component_config)
-    assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
-        "Forecast",
-        "for",
-        "LUNCH",
-    ]
-
     component_config = {"use_cls_token": False}
     tk = WhitespaceTokenizer(component_config)
     assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
@@ -145,14 +129,6 @@ def test_whitespace_with_case():
         "for",
         "LUNCH",
     ]
-
-    component_config = {"case_sensitive": False, "use_cls_token": False}
-    tk = WhitespaceTokenizer(component_config)
-    message = Message("Forecast for LUNCH")
-    tk.process(message)
-    assert message.data.get("tokens")[0].text == "forecast"
-    assert message.data.get("tokens")[1].text == "for"
-    assert message.data.get("tokens")[2].text == "lunch"
 
     _config = utilities.base_test_conf("supervised_embeddings")
     examples = [
@@ -176,14 +152,14 @@ def test_whitespace_with_case():
         ),
     ]
 
-    component_config = {"case_sensitive": False}
+    component_config = {}
     tk = WhitespaceTokenizer(component_config)
     tk.train(TrainingData(training_examples=examples), _config)
-    assert examples[0].data.get("tokens")[0].text == "any"
-    assert examples[0].data.get("tokens")[1].text == "mexican"
+    assert examples[0].data.get("tokens")[0].text == "Any"
+    assert examples[0].data.get("tokens")[1].text == "Mexican"
     assert examples[0].data.get("tokens")[2].text == "restaurant"
     assert examples[0].data.get("tokens")[3].text == "will"
     assert examples[0].data.get("tokens")[4].text == "do"
-    assert examples[1].data.get("tokens")[0].text == "i"
+    assert examples[1].data.get("tokens")[0].text == "I"
     assert examples[1].data.get("tokens")[1].text == "want"
-    assert examples[1].data.get("tokens")[2].text == "tacos"
+    assert examples[1].data.get("tokens")[2].text == "Tacos"

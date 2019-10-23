@@ -24,6 +24,7 @@ Changed
 Removed
 -------
 - Deprecated ``NGramFeaturizer`` in ``rasa.nlu.featurizers`` (removed functionality and print deprecation warning instead)
+- Removed ``case_sensitive`` option from ``WhitespaceTokenizer`` as it is covered by ``CountVectorsFeaturizer``
 
 Fixed
 -----
