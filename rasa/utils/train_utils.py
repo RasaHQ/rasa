@@ -1,7 +1,18 @@
 from collections import namedtuple
 import logging
 import typing
-from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
+from typing import (
+    List,
+    Optional,
+    Text,
+    Dict,
+    Tuple,
+    Union,
+    Generator,
+    Callable,
+    Any,
+    NamedTuple,
+)
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -21,6 +32,7 @@ if typing.TYPE_CHECKING:
 # avoid warning println on contrib import - remove for tf 2
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
+
 
 # namedtuple for all tf session related data
 SessionData = namedtuple("SessionData", ("X", "Y", "label_ids"))

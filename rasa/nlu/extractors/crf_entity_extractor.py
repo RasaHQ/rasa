@@ -1,13 +1,20 @@
 import logging
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+import numpy as np
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple
 
 from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.constants import (
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
+    MESSAGE_SPACY_FEATURES_NAMES,
+)
 from rasa.constants import DOCS_BASE_URL
 
 try:
@@ -22,11 +29,19 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 
+class CRFToken(NamedTuple):
+    text: Text
+    tag: Text
+    entity: Text
+    pattern: Dict[Text, Any]
+    word_embedding: np.ndarray
+
+
 class CRFEntityExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    requires = ["tokens"]
+    requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     defaults = {
         # BILOU_flag determines whether to use BILOU tagging or not.
@@ -65,21 +80,21 @@ class CRFEntityExtractor(EntityExtractor):
     }
 
     function_dict = {
-        "low": lambda doc: doc[0].lower(),  # pytype: disable=attribute-error
-        "title": lambda doc: doc[0].istitle(),  # pytype: disable=attribute-error
-        "prefix5": lambda doc: doc[0][:5],
-        "prefix2": lambda doc: doc[0][:2],
-        "suffix5": lambda doc: doc[0][-5:],
-        "suffix3": lambda doc: doc[0][-3:],
-        "suffix2": lambda doc: doc[0][-2:],
-        "suffix1": lambda doc: doc[0][-1:],
-        "pos": lambda doc: doc[1],
-        "pos2": lambda doc: doc[1][:2],
-        "bias": lambda doc: "bias",
-        "upper": lambda doc: doc[0].isupper(),  # pytype: disable=attribute-error
-        "digit": lambda doc: doc[0].isdigit(),  # pytype: disable=attribute-error
-        "pattern": lambda doc: doc[3],
-        "sparse_features": lambda doc: doc[4],
+        "low": lambda crf_token: crf_token.text.lower(),  # pytype: disable=attribute-error
+        "title": lambda crf_token: crf_token.text.istitle(),  # pytype: disable=attribute-error
+        "prefix5": lambda crf_token: crf_token.text[:5],
+        "prefix2": lambda crf_token: crf_token.text[:2],
+        "suffix5": lambda crf_token: crf_token.text[-5:],
+        "suffix3": lambda crf_token: crf_token.text[-3:],
+        "suffix2": lambda crf_token: crf_token.text[-2:],
+        "suffix1": lambda crf_token: crf_token.text[-1:],
+        "pos": lambda crf_token: crf_token.tag,
+        "pos2": lambda crf_token: crf_token.tag[:2],
+        "bias": lambda crf_token: "bias",
+        "upper": lambda crf_token: crf_token.text.isupper(),  # pytype: disable=attribute-error
+        "digit": lambda crf_token: crf_token.text.isdigit(),  # pytype: disable=attribute-error
+        "pattern": lambda crf_token: crf_token.pattern,
+        "word_embedding": lambda crf_token: crf_token.word_embedding,
     }
 
     def __init__(
@@ -146,23 +161,13 @@ class CRFEntityExtractor(EntityExtractor):
 
             self._train_model(dataset)
 
-    def _create_dataset(
-        self, examples: List[Message]
-    ) -> List[
-        List[
-            Tuple[
-                Optional[Text],
-                Optional[Text],
-                Text,
-                Dict[Text, Any],
-                Optional[Dict[Text, Any]],
-            ]
-        ]
-    ]:
+    def _create_dataset(self, examples: List[Message]) -> List[List[CRFToken]]:
         dataset = []
+
         for example in examples:
             entity_offsets = self._convert_example(example)
             dataset.append(self._from_json_to_crf(example, entity_offsets))
+
         return dataset
 
     def _check_spacy_doc(self, message):
@@ -421,18 +426,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         return {"file": file_name}
 
-    def _sentence_to_features(
-        self,
-        sentence: List[
-            Tuple[
-                Optional[Text],
-                Optional[Text],
-                Text,
-                Dict[Text, Any],
-                Optional[Dict[Text, Any]],
-            ]
-        ],
-    ) -> List[Dict[Text, Any]]:
+    def _sentence_to_features(self, sentence: List[CRFToken]) -> List[Dict[Text, Any]]:
         """Convert a word into discrete features in self.crf_features,
         including word before and word after."""
 
@@ -491,15 +485,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _from_json_to_crf(
         self, message: Message, entity_offsets: List[Tuple[int, int, Text]]
-    ) -> List[
-        Tuple[
-            Optional[Text],
-            Optional[Text],
-            Text,
-            Dict[Text, Any],
-            Optional[Dict[Text, Any]],
-        ]
-    ]:
+    ) -> List[CRFToken]:
         """Convert json examples to format of underlying crfsuite."""
 
         if self.pos_features:
@@ -608,24 +594,18 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _from_text_to_crf(
         self, message: Message, entities: List[Text] = None
-    ) -> List[
-        Tuple[
-            Optional[Text],
-            Optional[Text],
-            Text,
-            Dict[Text, Any],
-            Optional[Dict[Text, Any]],
-        ]
-    ]:
+    ) -> List[CRFToken]:
         """Takes a sentence and switches it to crfsuite format."""
 
         crf_format = []
         if self.pos_features:
-            tokens = message.get("spacy_doc")
+            tokens = message.get(MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE])
         else:
-            tokens = message.get("tokens")
+            tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
-        dense_features = message.get("text_dense_features")
+        dense_features = message.get(
+            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+        )
 
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
@@ -635,24 +615,13 @@ class CRFEntityExtractor(EntityExtractor):
                 dense_features[i] if dense_features is not None else []
             )
 
-            crf_format.append((token.text, tag, entity, pattern, token_sparse_features))
+            crf_format.append(
+                CRFToken(token.text, tag, entity, pattern, token_sparse_features)
+            )
 
         return crf_format
 
-    def _train_model(
-        self,
-        df_train: List[
-            List[
-                Tuple[
-                    Optional[Text],
-                    Optional[Text],
-                    Text,
-                    Dict[Text, Any],
-                    Optional[Dict[Text, Any]],
-                ]
-            ]
-        ],
-    ) -> None:
+    def _train_model(self, df_train: List[List[CRFToken]]) -> None:
         """Train the crf tagger based on the training data."""
         import sklearn_crfsuite
 
