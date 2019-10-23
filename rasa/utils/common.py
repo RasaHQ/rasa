@@ -72,12 +72,13 @@ def set_log_level(log_level: Optional[int] = None):
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
 
 
-def update_apscheduler_log_level():
+def update_apscheduler_log_level() -> None:
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
     apscheduler_loggers = [
         "apscheduler",
         "apscheduler.scheduler",
+        "apscheduler.executors",
         "apscheduler.executors.default",
     ]
 
