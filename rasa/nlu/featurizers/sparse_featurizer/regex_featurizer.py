@@ -61,7 +61,11 @@ class RegexFeaturizer(Featurizer):
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
             extras = self._features_for_patterns(message, attribute)
-            features = self._combine_with_existing_sparse_features(message, extras)
+            features = self._combine_with_existing_sparse_features(
+                message,
+                extras,
+                feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+            )
             message.set(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute], features)
 
     def _add_lookup_table_regexes(
