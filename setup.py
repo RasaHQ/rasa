@@ -47,7 +47,7 @@ install_requires = [
     "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
-    "networkx==2.3",
+    "networkx~=2.3.0",
     "fbmessenger~=6.0",
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
