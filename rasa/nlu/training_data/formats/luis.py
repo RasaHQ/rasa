@@ -1,5 +1,6 @@
 import logging
 import typing
+import warnings
 from typing import Any, Dict, Text
 
 from rasa.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
@@ -21,11 +22,10 @@ class LuisReader(JsonTrainingDataReader):
         version = int(js["luis_schema_version"][0])
 
         if version > 5:
-            raise Exception(
-                "Invalid luis data schema version {}, "
-                "should be 2.x.x or 3.x.x."
-                "Make sure to use one of those versions"
-                "(e.g. by downloading your data again)."
+            warnings.warn(
+                "Your luis data schema version {} "
+                "is higher than 5.x.x. "
+                "Traning may not be performed correctly. "
                 "".format(js["luis_schema_version"])
             )
 
