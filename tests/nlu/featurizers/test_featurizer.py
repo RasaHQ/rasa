@@ -53,13 +53,18 @@ def test_combine_with_existing_sparse_features():
 @pytest.mark.parametrize(
     "features, expected, method",
     [
-        ([[1, 0, 2, 3], [2, 0, 0, 1]], [3, 0, 2, 4], "sum"),
-        ([[1, 0, 2, 3], [2, 0, 0, 1]], [1.5, 0, 1, 2], "avg"),
-        (scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]), [1.5, 0, 1, 2], "avg"),
-        (None, None, "avg"),
+        ([[1, 0, 2, 3], [2, 0, 0, 1]], [1.5, 0, 1, 2], "mean"),
+        (scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]), [1.5, 0, 1, 2], "mean"),
+        (None, None, "mean"),
     ],
 )
-def test_sequence_to_sentence_embedding(features, expected, method):
+def test_sequence_to_sentence_features(features, expected, method):
     actual = sequence_to_sentence_features(features, method=method)
 
     assert np.all(expected == actual)
+
+
+def test_sequence_to_sentence_features_raise_value_error():
+    featuers = np.array([[1, 0, 2, 3], [2, 0, 0, 1]])
+    with pytest.raises(ValueError):
+        sequence_to_sentence_features(featuers, method="sum")
