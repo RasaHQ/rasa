@@ -227,12 +227,11 @@ def test_crf_create_entity_dict(spacy_nlp):
 
 
 def test_crf_use_dense_features(ner_crf_pos_feature_config, spacy_nlp):
-    import numpy as np
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
     from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
     from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
-    ner_crf_pos_feature_config["features"][1].append("word_embedding")
+    ner_crf_pos_feature_config["features"][1].append("text_dense_features")
     crf_extractor = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
 
     spacy_featurizer = SpacyFeaturizer()
@@ -248,9 +247,9 @@ def test_crf_use_dense_features(ner_crf_pos_feature_config, spacy_nlp):
     text_data = crf_extractor._from_text_to_crf(message)
     features = crf_extractor._sentence_to_features(text_data)
 
-    assert "0:word_embedding" in features[0]
+    assert "0:text_dense_features" in features[0]
     for i in range(0, len(message.data.get("text_dense_features")[0])):
         assert (
-            features[0]["0:word_embedding"]["word_embeddings"][str(i)]
+            features[0]["0:text_dense_features"]["text_dense_features"][str(i)]
             == message.data.get("text_dense_features")[0][i]
         )

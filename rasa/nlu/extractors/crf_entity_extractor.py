@@ -35,7 +35,7 @@ class CRFToken(NamedTuple):
     tag: Text
     entity: Text
     pattern: Dict[Text, Any]
-    word_embedding: np.ndarray
+    dense_features: np.ndarray
 
 
 class CRFEntityExtractor(EntityExtractor):
@@ -95,7 +95,7 @@ class CRFEntityExtractor(EntityExtractor):
         "upper": lambda crf_token: crf_token.text.isupper(),  # pytype: disable=attribute-error
         "digit": lambda crf_token: crf_token.text.isdigit(),  # pytype: disable=attribute-error
         "pattern": lambda crf_token: crf_token.pattern,
-        "word_embedding": lambda crf_token: crf_token.word_embedding,
+        "text_dense_features": lambda crf_token: crf_token.dense_features,
     }
 
     def __init__(
@@ -585,7 +585,7 @@ class CRFEntityExtractor(EntityExtractor):
             return token.tag_
 
     @staticmethod
-    def __get_word_embeddings(message: Message) -> Optional[List[Any]]:
+    def __get_dense_features(message: Message) -> Optional[List[Any]]:
         features = message.get(
             MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
         )
@@ -605,7 +605,7 @@ class CRFEntityExtractor(EntityExtractor):
                 str(index): token_features
                 for index, token_features in enumerate(feature)
             }
-            converted = {"word_embeddings": feature_dict}
+            converted = {"text_dense_features": feature_dict}
             features_out.append(converted)
         return features_out
 
@@ -620,16 +620,18 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
-        word_embeddings = self.__get_word_embeddings(message)
+        text_dense_features = self.__get_dense_features(message)
 
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
             tag = self.__tag_of_token(token) if self.pos_features else None
-            word_embedding = word_embeddings[i] if word_embeddings is not None else []
+            dense_features = (
+                text_dense_features[i] if text_dense_features is not None else []
+            )
 
             crf_format.append(
-                CRFToken(token.text, tag, entity, pattern, word_embedding)
+                CRFToken(token.text, tag, entity, pattern, dense_features)
             )
 
         return crf_format

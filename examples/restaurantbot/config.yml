@@ -21,7 +21,7 @@ pipeline:
         "title",
         "digit",
         "pattern",
-        "word_embedding"
+        "text_dense_features"
       ],
       ["low", "title", "upper"],
     ]
