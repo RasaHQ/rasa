@@ -38,13 +38,14 @@ class KeywordIntentClassifier(Component):
 
         super(KeywordIntentClassifier, self).__init__(component_config)
 
+        self.case_sensitive = self.component_config.get("case_sensitive")
         self.intent_keyword_map = intent_keyword_map or {}
 
     def train(
         self,
         training_data: "TrainingData",
         cfg: Optional["RasaNLUModelConfig"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
 
         duplicate_examples = set()
@@ -75,7 +76,7 @@ class KeywordIntentClassifier(Component):
         self._validate_keyword_map()
 
     def _validate_keyword_map(self):
-        re_flag = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
+        re_flag = 0 if self.case_sensitive else re.IGNORECASE
 
         ambiguous_mappings = []
         for keyword1, intent1 in self.intent_keyword_map.items():
@@ -109,7 +110,7 @@ class KeywordIntentClassifier(Component):
             message.set("intent", intent, add_to_output=True)
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
-        re_flag = 0 if self.component_config["case_sensitive"] else re.IGNORECASE
+        re_flag = 0 if self.case_sensitive else re.IGNORECASE
         for keyword, intent in self.intent_keyword_map.items():
             if re.search(r"\b" + keyword + r"\b", text, flags=re_flag):
                 logger.debug(
@@ -139,7 +140,7 @@ class KeywordIntentClassifier(Component):
         model_dir: Optional[Text] = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["KeywordIntentClassifier"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "KeywordIntentClassifier":
 
         if model_dir and meta.get("file"):
