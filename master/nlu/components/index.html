@@ -290,10 +290,10 @@ out <a class="reference internal" href="../../api/custom-nlu-components/#custom-
 </ul>
 </li>
 <li><a class="reference internal" href="#intent-classifiers" id="id16">Intent Classifiers</a><ul>
-<li><a class="reference internal" href="#keywordintentclassifier" id="id17">KeywordIntentClassifier</a></li>
-<li><a class="reference internal" href="#mitieintentclassifier" id="id18">MitieIntentClassifier</a></li>
-<li><a class="reference internal" href="#sklearnintentclassifier" id="id19">SklearnIntentClassifier</a></li>
-<li><a class="reference internal" href="#embeddingintentclassifier" id="id20">EmbeddingIntentClassifier</a></li>
+<li><a class="reference internal" href="#mitieintentclassifier" id="id17">MitieIntentClassifier</a></li>
+<li><a class="reference internal" href="#sklearnintentclassifier" id="id18">SklearnIntentClassifier</a></li>
+<li><a class="reference internal" href="#embeddingintentclassifier" id="id19">EmbeddingIntentClassifier</a></li>
+<li><a class="reference internal" href="#keywordintentclassifier" id="id20">KeywordIntentClassifier</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#selectors" id="id21">Selectors</a><ul>
@@ -651,37 +651,8 @@ Unseen words will be substituted with <code class="docutils literal notranslate"
 </div>
 <div class="section" id="intent-classifiers">
 <h2><a class="toc-backref" href="#id16">Intent Classifiers</a><a class="headerlink" href="#intent-classifiers" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="keywordintentclassifier">
-<h3><a class="toc-backref" href="#id17">KeywordIntentClassifier</a><a class="headerlink" href="#keywordintentclassifier" title="Permalink to this headline">¶</a></h3>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Simple keyword matching intent classifier. Not intended to be used.</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">intent</span></code></p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">nothing</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.98343</span><span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">This classifier is mostly used as a placeholder. It is able to recognize <cite>hello</cite> and
-<cite>goodbye</cite> intents by searching for these keywords in the passed messages.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
 <div class="section" id="mitieintentclassifier">
-<h3><a class="toc-backref" href="#id18">MitieIntentClassifier</a><a class="headerlink" href="#mitieintentclassifier" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17">MitieIntentClassifier</a><a class="headerlink" href="#mitieintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -716,7 +687,7 @@ is using a multi-class linear SVM with a sparse linear kernel (see <a class="ref
 </table>
 </div>
 <div class="section" id="sklearnintentclassifier">
-<h3><a class="toc-backref" href="#id19">SklearnIntentClassifier</a><a class="headerlink" href="#sklearnintentclassifier" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">SklearnIntentClassifier</a><a class="headerlink" href="#sklearnintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -772,7 +743,7 @@ that will get tried</p>
 </table>
 </div>
 <div class="section" id="embeddingintentclassifier">
-<h3><a class="toc-backref" href="#id20">EmbeddingIntentClassifier</a><a class="headerlink" href="#embeddingintentclassifier" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">EmbeddingIntentClassifier</a><a class="headerlink" href="#embeddingintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -966,6 +937,50 @@ The default values are defined in <code class="docutils literal notranslate"><sp
 <p class="last">Parameter <code class="docutils literal notranslate"><span class="pre">mu_neg</span></code> is set to a negative value to mimic the original
 starspace algorithm in the case <code class="docutils literal notranslate"><span class="pre">mu_neg</span> <span class="pre">=</span> <span class="pre">mu_pos</span></code> and <code class="docutils literal notranslate"><span class="pre">use_max_sim_neg</span> <span class="pre">=</span> <span class="pre">False</span></code>.
 See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace paper</a> for details.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="keywordintentclassifier">
+<span id="keyword-intent-classifier"></span><h3><a class="toc-backref" href="#id20">KeywordIntentClassifier</a><a class="headerlink" href="#keywordintentclassifier" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Simple keyword matching intent classifier, intended for small, short-term projects.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">intent</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">This classifier works by searching a message for keywords.
+The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user message.
+The keywords for an intent are the examples of that intent in the NLU training data.
+This means the entire example is the keyword, not the individual words in the example.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This classifier is intended only for small projects or to get started. If
+you have few NLU training data you can use one of our pipelines
+<a class="reference internal" href="../choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">Choosing a Pipeline</span></a>.</p>
+</div>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;KeywordIntentClassifier&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">case_sensitive</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
 </div>
 </td>
 </tr>
