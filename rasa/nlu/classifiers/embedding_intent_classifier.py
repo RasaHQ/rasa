@@ -275,9 +275,9 @@ class EmbeddingIntentClassifier(Component):
         encoded_id_labels = [
             (
                 label_idx,
-                sequence_to_sentence_features(
-                    label_example.get(attribute_feature_name)
-                ).toarray(),
+                sequence_to_sentence_features(label_example.get(attribute_feature_name))
+                .toarray()
+                .squeeze(),
             )
             for (label_idx, label_example) in label_examples
         ]
@@ -346,7 +346,9 @@ class EmbeddingIntentClassifier(Component):
                         e.get(
                             MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
                         )
-                    ).toarray()
+                    )
+                    .toarray()
+                    .squeeze()
                 )
                 label_ids.append(label_id_dict[e.get(attribute)])
 
@@ -625,6 +627,7 @@ class EmbeddingIntentClassifier(Component):
                     )
                 )
                 .toarray()
+                .squeeze()
                 .reshape(1, -1)
             )
 
