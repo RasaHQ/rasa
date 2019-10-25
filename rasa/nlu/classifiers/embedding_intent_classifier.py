@@ -14,7 +14,6 @@ from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
 )
 
 import tensorflow as tf
@@ -278,7 +277,7 @@ class EmbeddingIntentClassifier(Component):
                 label_idx,
                 sequence_to_sentence_features(
                     label_example.get(attribute_feature_name)
-                ),
+                ).toarray(),
             )
             for (label_idx, label_example) in label_examples
         ]
@@ -345,9 +344,9 @@ class EmbeddingIntentClassifier(Component):
                 X.append(
                     sequence_to_sentence_features(
                         e.get(
-                            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                            MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
                         )
-                    )
+                    ).toarray()
                 )
                 label_ids.append(label_id_dict[e.get(attribute)])
 
@@ -619,9 +618,15 @@ class EmbeddingIntentClassifier(Component):
         else:
             # get features (bag of words) for a message
             # noinspection PyPep8Naming
-            X = sequence_to_sentence_features(
-                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-            ).reshape(1, -1)
+            X = (
+                sequence_to_sentence_features(
+                    message.get(
+                        MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                    )
+                )
+                .toarray()
+                .reshape(1, -1)
+            )
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)

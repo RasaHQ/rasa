@@ -24,7 +24,7 @@ Changed
 Removed
 -------
 - Deprecated ``NGramFeaturizer`` in ``rasa.nlu.featurizers`` (removed functionality and print deprecation warning instead)
-w
+
 Fixed
 -----
 - ``MultiProjectImporter`` now imports files in the order of the import statements

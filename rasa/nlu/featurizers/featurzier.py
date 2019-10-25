@@ -16,18 +16,18 @@ def sequence_to_sentence_features(
     if features is None:
         return None
 
+    if method != "mean":
+        raise ValueError(f"Provided method '{method}' is not supported.")
+
     sparse_features = False
     if isinstance(features, scipy.sparse.spmatrix):
         features = features.toarray()
         sparse_features = True
 
-    if method == "mean":
-        sentence_features = np.mean(features, axis=0)
-        if sparse_features:
-            return scipy.sparse.csr_matrix(sentence_features)
-        return sentence_features
-
-    raise ValueError(f"Provided method '{method}' is not supported.")
+    sentence_features = np.mean(features, axis=0)
+    if sparse_features:
+        return scipy.sparse.coo_matrix(sentence_features)
+    return sentence_features
 
 
 class Featurizer(Component):
