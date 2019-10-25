@@ -11,16 +11,13 @@ from rasa.nlu.constants import (
 
 
 def sequence_to_sentence_features(
-    features: Union[np.ndarray, scipy.sparse.spmatrix], method: Text = "mean"
+    features: Union[np.ndarray, scipy.sparse.spmatrix]
 ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
     if features is None:
         return None
 
-    if method != "mean":
-        raise ValueError(f"Provided method '{method}' is not supported.")
-
     if isinstance(features, scipy.sparse.spmatrix):
-        return scipy.sparse.csr_matrix(features.mean(axis=0))
+        return scipy.sparse.csr_matrix(features.sum(axis=0))
 
     return np.mean(features, axis=0)
 
