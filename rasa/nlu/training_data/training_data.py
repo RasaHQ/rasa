@@ -216,7 +216,7 @@ class TrainingData(object):
         warnings.warn(
             "Function as_json() is deprecated and will be removed "
             "in future versions. Use nlu_as_json() instead.",
-            DeprecationWarning
+            DeprecationWarning,
         )
 
         return self.nlu_as_json()
@@ -244,7 +244,8 @@ class TrainingData(object):
         warnings.warn(
             "Function as_markdown() is deprecated and will be removed "
             "in future versions. Use nlu_as_markdown() and nlg_as_markdown() "
-            "instead.", DeprecationWarning
+            "instead.",
+            DeprecationWarning,
         )
 
         return self.nlu_as_markdown()

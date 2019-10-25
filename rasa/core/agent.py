@@ -453,7 +453,7 @@ class Agent(object):
             warnings.warn(
                 "Passing a text to `agent.handle_message(...)` is "
                 "deprecated. Rather use `agent.handle_text(...)`.",
-                DeprecationWarning
+                DeprecationWarning,
             )
             # noinspection PyTypeChecker
             return await self.handle_text(
@@ -704,7 +704,7 @@ class Agent(object):
             "Please use `rasa.run(...)` or see "
             "`rasa.core.run.configure_app(...)` if you want to implement "
             "this on a more detailed level.",
-            DeprecationWarning
+            DeprecationWarning,
         )
 
         app = run.configure_app(channels, cors, None, enable_api=False, route=route)

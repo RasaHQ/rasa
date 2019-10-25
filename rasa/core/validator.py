@@ -83,9 +83,7 @@ class Validator(object):
 
         for intent in self.domain.intents:
             if intent not in stories_intents:
-                warnings.warn(
-                    f"The intent '{intent}' is not used in any story."
-                )
+                warnings.warn(f"The intent '{intent}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -116,9 +114,7 @@ class Validator(object):
         for action in actions:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
-                    logger.error(
-                        f"There is no template for utterance '{action}'."
-                    )
+                    logger.error(f"There is no template for utterance '{action}'.")
                     everything_is_alright = False
 
         return everything_is_alright
@@ -156,9 +152,7 @@ class Validator(object):
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                warnings.warn(
-                    f"The utterance '{utterance}' is not used in any story."
-                )
+                warnings.warn(f"The utterance '{utterance}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright

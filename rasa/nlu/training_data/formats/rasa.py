@@ -50,7 +50,7 @@ class RasaReader(JsonTrainingDataReader):
                 "removed in the future. Consider "
                 "putting all your examples "
                 "into the 'common_examples' section.",
-                DeprecationWarning
+                DeprecationWarning,
             )
 
         all_examples = common_examples + intent_examples + entity_examples

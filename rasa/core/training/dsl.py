@@ -285,9 +285,7 @@ class StoryFileReader(object):
             parameters = StoryFileReader._parameters_from_json_string(slots_str, line)
             return event_name, parameters
         else:
-            warnings.warn(
-                f"Failed to parse action line '{line}'. Ignoring this line."
-            )
+            warnings.warn(f"Failed to parse action line '{line}'. Ignoring this line.")
             return "", {}
 
     async def process_lines(self, lines: List[Text]) -> List[StoryStep]:

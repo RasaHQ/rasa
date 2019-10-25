@@ -108,7 +108,8 @@ class RasaNLUModelConfig(object):
                     f"'{new_names[template_name]}'. "
                     "Please update your code as it will no "
                     "longer work with future versions of "
-                    "Rasa", DeprecationWarning
+                    "Rasa",
+                    DeprecationWarning,
                 )
                 template_name = new_names[template_name]
 

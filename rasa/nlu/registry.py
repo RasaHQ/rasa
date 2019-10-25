@@ -181,7 +181,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                 f"contains old style component name `{component_name}`, "
                 f"you should change it to its class name: "
                 f"`{old_style_names[component_name]}`.",
-                DeprecationWarning
+                DeprecationWarning,
             )
             component_name = old_style_names[component_name]
 

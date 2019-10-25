@@ -253,7 +253,8 @@ class Domain(object):
                         "Deprecated: Templates should not be strings anymore. "
                         f"Utterance template '{template_key}' should contain either '- text: ' or "
                         "'- custom: ' attribute to be a proper template.",
-                        DeprecationWarning)
+                        DeprecationWarning,
+                    )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(

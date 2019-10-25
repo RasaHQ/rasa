@@ -214,5 +214,5 @@ def float_arg(
     try:
         return float(str(arg))
     except (ValueError, TypeError):
-        logger.warning(f"Failed to convert '{arg}' to float."
+        logger.warning(f"Failed to convert '{arg}' to float.")
         return default
