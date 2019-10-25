@@ -6,7 +6,8 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 import warnings
 
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH, convert_sparse_back
+from rasa.nlu.featurizers.featurzier import sequence_to_sentence_features
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
 from rasa.nlu.constants import (
@@ -272,7 +273,12 @@ class EmbeddingIntentClassifier(Component):
 
         # Collect precomputed encodings
         encoded_id_labels = [
-            (label_idx, convert_sparse_back(label_example.get(attribute_feature_name)))
+            (
+                label_idx,
+                sequence_to_sentence_features(label_example.get(attribute_feature_name))
+                .toarray()
+                .squeeze(),
+            )
             for (label_idx, label_example) in label_examples
         ]
 
@@ -336,11 +342,13 @@ class EmbeddingIntentClassifier(Component):
         for e in training_data.intent_examples:
             if e.get(attribute):
                 X.append(
-                    convert_sparse_back(
+                    sequence_to_sentence_features(
                         e.get(
                             MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
                         )
                     )
+                    .toarray()
+                    .squeeze()
                 )
                 label_ids.append(label_id_dict[e.get(attribute)])
 
@@ -612,9 +620,16 @@ class EmbeddingIntentClassifier(Component):
         else:
             # get features (bag of words) for a message
             # noinspection PyPep8Naming
-            X = convert_sparse_back(
-                message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-            ).reshape(1, -1)
+            X = (
+                sequence_to_sentence_features(
+                    message.get(
+                        MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                    )
+                )
+                .toarray()
+                .squeeze()
+                .reshape(1, -1)
+            )
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)

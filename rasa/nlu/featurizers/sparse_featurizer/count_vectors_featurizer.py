@@ -13,19 +13,16 @@ from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
     MESSAGE_INTENT_ATTRIBUTE,
-    CLS_TOKEN,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class CountVectorsFeaturizer(Featurizer):
-    """Creates a sequence of token counts features
-    based on sklearn's `CountVectorizer`.
+    """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
+
     All tokens which consist only of digits (e.g. 123 and 99
     but not ab12d) will be represented by a single feature.
 
@@ -275,10 +272,7 @@ class CountVectorsFeaturizer(Featurizer):
         message: "Message", attribute: Text
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
-
-        if message.get(
-            MESSAGE_TOKENS_NAMES[attribute]
-        ):  # if directly tokens is provided
+        if message.get(MESSAGE_TOKENS_NAMES[attribute]):
             return [t.lemma for t in message.get(MESSAGE_TOKENS_NAMES[attribute])]
 
         return message.get(attribute).split()

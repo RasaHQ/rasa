@@ -22,6 +22,7 @@ if typing.TYPE_CHECKING:
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
+
 # namedtuple for all tf session related data
 SessionData = namedtuple("SessionData", ("X", "Y", "label_ids"))
 

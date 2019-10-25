@@ -3,6 +3,11 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text
 
+from rasa.nlu.constants import (
+    MESSAGE_ENTITIES_ATTRIBUTE,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_TEXT_ATTRIBUTE,
+)
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -16,9 +21,13 @@ if typing.TYPE_CHECKING:
 
 class MitieEntityExtractor(EntityExtractor):
 
-    provides = ["entities"]
+    provides = [MESSAGE_ENTITIES_ATTRIBUTE]
 
-    requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
+    requires = [
+        MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+        "mitie_feature_extractor",
+        "mitie_file",
+    ]
 
     def __init__(self, component_config: Dict[Text, Any] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
@@ -88,9 +97,9 @@ class MitieEntityExtractor(EntityExtractor):
         import mitie
 
         text = training_example.text
-        tokens = training_example.get("tokens")
+        tokens = training_example.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
         sample = mitie.ner_training_instance([t.text for t in tokens])
-        for ent in training_example.get("entities", []):
+        for ent in training_example.get(MESSAGE_ENTITIES_ATTRIBUTE, []):
             try:
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
@@ -120,11 +129,15 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text, message.get("tokens"), mitie_feature_extractor
+            message.text,
+            message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]),
+            mitie_feature_extractor,
         )
         extracted = self.add_extractor_name(ents)
         message.set(
-            "entities", message.get("entities", []) + extracted, add_to_output=True
+            MESSAGE_ENTITIES_ATTRIBUTE,
+            message.get(MESSAGE_ENTITIES_ATTRIBUTE, []) + extracted,
+            add_to_output=True,
         )
 
     @classmethod

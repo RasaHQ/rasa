@@ -1,6 +1,6 @@
 import numpy as np
-
-from typing import Any, Text
+import scipy.sparse
+from typing import Any, Text, List, Union, Optional
 from rasa.nlu.training_data import Message
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
@@ -8,6 +8,18 @@ from rasa.nlu.constants import (
     MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
     MESSAGE_TEXT_ATTRIBUTE,
 )
+
+
+def sequence_to_sentence_features(
+    features: Union[np.ndarray, scipy.sparse.spmatrix]
+) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
+    if features is None:
+        return None
+
+    if isinstance(features, scipy.sparse.spmatrix):
+        return scipy.sparse.csr_matrix(features.sum(axis=0))
+
+    return np.mean(features, axis=0)
 
 
 class Featurizer(Component):

@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
+from rasa.nlu.constants import MESSAGE_TOKENS_NAMES, MESSAGE_TEXT_ATTRIBUTE
 from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
@@ -15,7 +16,11 @@ class MitieIntentClassifier(Component):
 
     provides = ["intent"]
 
-    requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
+    requires = [
+        MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+        "mitie_feature_extractor",
+        "mitie_file",
+    ]
 
     def __init__(
         self, component_config: Optional[Dict[Text, Any]] = None, clf=None
@@ -78,7 +83,10 @@ class MitieIntentClassifier(Component):
 
     @staticmethod
     def _tokens_of_message(message):
-        return [token.text for token in message.get("tokens", [])]
+        return [
+            token.text
+            for token in message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
+        ]
 
     @classmethod
     def load(

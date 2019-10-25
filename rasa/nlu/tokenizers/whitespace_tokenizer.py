@@ -62,6 +62,7 @@ class WhitespaceTokenizer(Tokenizer):
 
         if not self.case_sensitive:
             text = text.lower()
+
         # remove 'not a word character' if
         if attribute != MESSAGE_INTENT_ATTRIBUTE:
             words = re.sub(
