@@ -60,7 +60,7 @@ class FallbackPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
 
@@ -177,7 +177,7 @@ class FallbackPolicy(Policy):
             "fallback_action_name": self.fallback_action_name,
         }
         rasa.utils.io.create_directory_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

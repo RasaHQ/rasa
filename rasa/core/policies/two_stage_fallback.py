@@ -5,7 +5,6 @@ import typing
 from typing import List, Text, Optional
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.actions.action import (
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
@@ -214,7 +213,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
         }
         rasa.utils.io.create_directory_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

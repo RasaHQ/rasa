@@ -7,9 +7,10 @@ from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable
+from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
+from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +19,13 @@ class Messenger:
     """Implement a fbmessenger to parse incoming webhooks and send msgs."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "facebook"
 
     def __init__(
         self,
         page_access_token: Text,
-        on_new_message: Callable[[UserMessage], Awaitable[None]],
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
     ) -> None:
 
         self.on_new_message = on_new_message
@@ -61,16 +62,18 @@ class Messenger:
             and message["message"]["quick_reply"].get("payload")
         )
 
-    async def handle(self, payload):
+    async def handle(self, payload: Dict, metadata: Optional[Dict[Text, Any]]) -> None:
         for entry in payload["entry"]:
             for message in entry["messaging"]:
                 self.last_message = message
                 if message.get("message"):
-                    return await self.message(message)
+                    return await self.message(message, metadata)
                 elif message.get("postback"):
-                    return await self.postback(message)
+                    return await self.postback(message, metadata)
 
-    async def message(self, message: Dict[Text, Any]) -> None:
+    async def message(
+        self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
+    ) -> None:
         """Handle an incoming event from the fb webhook."""
 
         # quick reply and user message both share 'text' attribute
@@ -89,19 +92,25 @@ class Messenger:
             )
             return
 
-        await self._handle_user_message(text, self.get_user_id())
+        await self._handle_user_message(text, self.get_user_id(), metadata)
 
-    async def postback(self, message: Dict[Text, Any]) -> None:
+    async def postback(
+        self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
+    ) -> None:
         """Handle a postback (e.g. quick reply button)."""
 
         text = message["postback"]["payload"]
-        await self._handle_user_message(text, self.get_user_id())
+        await self._handle_user_message(text, self.get_user_id(), metadata)
 
-    async def _handle_user_message(self, text: Text, sender_id: Text) -> None:
+    async def _handle_user_message(
+        self, text: Text, sender_id: Text, metadata: Optional[Dict[Text, Any]]
+    ) -> None:
         """Pass on the text to the dialogue engine for processing."""
 
         out_channel = MessengerBot(self.client)
-        user_msg = UserMessage(text, out_channel, sender_id, input_channel=self.name())
+        user_msg = UserMessage(
+            text, out_channel, sender_id, input_channel=self.name(), metadata=metadata
+        )
 
         # noinspection PyBroadException
         try:
@@ -117,7 +126,7 @@ class MessengerBot(OutputChannel):
     """A bot that uses fb-messenger to communicate."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "facebook"
 
     def __init__(self, messenger_client: MessengerClient) -> None:
@@ -153,7 +162,7 @@ class MessengerBot(OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
 
@@ -187,7 +196,7 @@ class MessengerBot(OutputChannel):
         recipient_id: Text,
         text: Text,
         quick_replies: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends quick replies to the output."""
 
@@ -252,19 +261,21 @@ class FacebookInput(InputChannel):
     """Facebook input channel implementation. Based on the HTTPInputChannel."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "facebook"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
+        # pytype: disable=attribute-error
         return cls(
             credentials.get("verify"),
             credentials.get("secret"),
             credentials.get("page-access-token"),
         )
+        # pytype: enable=attribute-error
 
     def __init__(self, fb_verify: Text, fb_secret: Text, fb_access_token: Text) -> None:
         """Create a facebook input channel.
@@ -284,17 +295,19 @@ class FacebookInput(InputChannel):
         self.fb_secret = fb_secret
         self.fb_access_token = fb_access_token
 
-    def blueprint(self, on_new_message):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
 
         fb_webhook = Blueprint("fb_webhook", __name__)
 
         # noinspection PyUnusedLocal
         @fb_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(request: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @fb_webhook.route("/webhook", methods=["GET"])
-        async def token_verification(request: Request):
+        async def token_verification(request: Request) -> HTTPResponse:
             if request.args.get("hub.verify_token") == self.fb_verify:
                 return response.text(request.args.get("hub.challenge"))
             else:
@@ -305,7 +318,7 @@ class FacebookInput(InputChannel):
                 return response.text("failure, invalid token")
 
         @fb_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request: Request):
+        async def webhook(request: Request) -> HTTPResponse:
             signature = request.headers.get("X-Hub-Signature") or ""
             if not self.validate_hub_signature(self.fb_secret, request.body, signature):
                 logger.warning(
@@ -316,7 +329,8 @@ class FacebookInput(InputChannel):
 
             messenger = Messenger(self.fb_access_token, on_new_message)
 
-            await messenger.handle(request.json)
+            metadata = self.get_metadata(request)
+            await messenger.handle(request.json, metadata)
             return response.text("success")
 
         return fb_webhook
