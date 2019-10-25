@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 import shutil
 import tempfile
@@ -263,7 +264,7 @@ async def load_agent(
             )
 
         else:
-            logger.warning("No valid configuration given to load agent.")
+            warnings.warn("No valid configuration given to load agent.")
             return None
 
     except Exception as e:
@@ -449,9 +450,10 @@ class Agent(object):
         """Handle a single message."""
 
         if not isinstance(message, UserMessage):
-            logger.warning(
+            warnings.warn(
                 "Passing a text to `agent.handle_message(...)` is "
-                "deprecated. Rather use `agent.handle_text(...)`."
+                "deprecated. Rather use `agent.handle_text(...)`.",
+                DeprecationWarning
             )
             # noinspection PyTypeChecker
             return await self.handle_text(
@@ -615,14 +617,13 @@ class Agent(object):
                 unique_last_num_states = max_history
         elif unique_last_num_states < max_history:
             # possibility of data loss
-            logger.warning(
-                "unique_last_num_states={} but "
-                "maximum max_history={}."
-                "Possibility of data loss. "
-                "It is recommended to set "
-                "unique_last_num_states to "
-                "at least maximum max_history."
-                "".format(unique_last_num_states, max_history)
+            warnings.warn(
+                f"unique_last_num_states={unique_last_num_states} but "
+                f"maximum max_history={max_history}."
+                f"Possibility of data loss. "
+                f"It is recommended to set "
+                f"unique_last_num_states to "
+                f"at least maximum max_history."
             )
 
         return await training.load_data(
@@ -698,11 +699,12 @@ class Agent(object):
 
         from rasa.core import run
 
-        logger.warning(
-            "DEPRECATION warning: Using `handle_channels` is deprecated. "
+        warnings.warn(
+            "Using `handle_channels` is deprecated. "
             "Please use `rasa.run(...)` or see "
             "`rasa.core.run.configure_app(...)` if you want to implement "
-            "this on a more detailed level."
+            "this on a more detailed level.",
+            DeprecationWarning
         )
 
         app = run.configure_app(channels, cors, None, enable_api=False, route=route)
@@ -897,7 +899,7 @@ class Agent(object):
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            logger.warning("Could not load local model in '{}'".format(model_path))
+            warnings.warn(f"Could not load local model in '{model_path}'")
             return Agent()
 
         working_directory = tempfile.mkdtemp()

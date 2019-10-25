@@ -1,4 +1,5 @@
 import json
+import warnings
 import logging
 import os
 from types import LambdaType
@@ -84,7 +85,7 @@ class MessageProcessor(object):
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
-            logger.warning(
+            warnings.warn(
                 "No policy ensemble or domain set. Skipping action prediction "
                 "and execution."
             )
@@ -107,13 +108,13 @@ class MessageProcessor(object):
         if not tracker:
             logger.warning(
                 "Failed to retrieve or create tracker for sender "
-                "'{}'.".format(sender_id)
+                f"'{sender_id}'."
             )
             return None
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            logger.warning(
+            warnings.warn(
                 "No policy ensemble or domain set. Skipping action prediction "
             )
             return None
@@ -157,7 +158,7 @@ class MessageProcessor(object):
         else:
             logger.warning(
                 "Failed to retrieve or create tracker for sender "
-                "'{}'.".format(message.sender_id)
+                f"'{message.sender_id}'."
             )
         return tracker
 
@@ -185,7 +186,7 @@ class MessageProcessor(object):
         else:
             logger.warning(
                 "Failed to retrieve or create tracker for sender "
-                "'{}'.".format(sender_id)
+                f"'{sender_id}'."
             )
         return tracker
 
@@ -252,7 +253,7 @@ class MessageProcessor(object):
         if not tracker:
             logger.warning(
                 "Failed to retrieve or create tracker for sender "
-                "'{}'.".format(sender_id)
+                f"'{sender_id}'."
             )
             return None
 
@@ -295,9 +296,9 @@ class MessageProcessor(object):
         """
         intent = parse_data["intent"]["name"]
         if intent and self.domain and intent not in self.domain.intents:
-            logger.warning(
-                "Interpreter parsed an intent '{}' "
-                "that is not defined in the domain.".format(intent)
+            warnings.warn(
+                f"Interpreter parsed an intent '{intent}' "
+                "that is not defined in the domain."
             )
 
     def _log_unseen_enitites(self, parse_data: Dict[Text, Any]) -> None:
@@ -307,9 +308,9 @@ class MessageProcessor(object):
         for element in entities:
             entity = element["entity"]
             if entity and self.domain and entity not in self.domain.entities:
-                logger.warning(
-                    "Interpreter parsed an entity '{}' "
-                    "that is not defined in the domain.".format(entity)
+                warnings.warn(
+                    f"Interpreter parsed an entity '{entity}' "
+                    "that is not defined in the domain."
                 )
 
     def _get_action(self, action_name):
@@ -411,7 +412,7 @@ class MessageProcessor(object):
             # circuit breaker was tripped
             logger.warning(
                 "Circuit breaker tripped. Stopped predicting "
-                "more actions for sender '{}'".format(tracker.sender_id)
+                f"more actions for sender '{tracker.sender_id}'"
             )
             if self.on_circuit_break:
                 # call a registered callback
@@ -534,17 +535,16 @@ class MessageProcessor(object):
                     if e.key == "requested_slot" and tracker.active_form:
                         pass
                     else:
-                        logger.warning(
-                            "Action '{0}' set a slot type '{1}' that "
-                            "it never set during the training. This "
-                            "can throw of the prediction. Make sure to "
-                            "include training examples in your stories "
-                            "for the different types of slots this "
-                            "action can return. Remember: you need to "
-                            "set the slots manually in the stories by "
-                            "adding '- slot{{\"{1}\": {2}}}' "
-                            "after the action."
-                            "".format(action_name, e.key, json.dumps(e.value))
+                        warnings.warn(
+                            f"Action '{action_name}' set a slot type '{e.key}' that "
+                            f"it never set during the training. This "
+                            f"can throw of the prediction. Make sure to "
+                            f"include training examples in your stories "
+                            f"for the different types of slots this "
+                            f"action can return. Remember: you need to "
+                            f"set the slots manually in the stories by "
+                            f"adding '- slot{{\"{e.key}\": {e.value}}}' "
+                            f"after the action."
                         )
 
     def _log_action_on_tracker(self, tracker, action_name, events, policy, confidence):

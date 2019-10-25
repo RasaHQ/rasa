@@ -1,4 +1,5 @@
 import os
+import warnings
 import sys
 import json
 from typing import Any, Optional, Text, List, Dict, TYPE_CHECKING
@@ -40,10 +41,8 @@ def get_validated_path(
             if current is None:
                 reason_str = "Parameter '{}' not set.".format(parameter)
             else:
-                logger.warning(
-                    "'{}' does not exist. Using default value '{}' instead.".format(
-                        current, default
-                    )
+                warnings.warn(
+                    f"'{current}' does not exist. Using default value '{default}' instead."
                 )
 
             logger.debug(

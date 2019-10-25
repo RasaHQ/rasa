@@ -2,6 +2,7 @@ import time
 import typing
 
 import json
+import warnings
 import jsonpickle
 import logging
 import uuid
@@ -32,7 +33,7 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
                 deserialised.append(event)
             else:
                 logger.warning(
-                    "Ignoring event ({}) while deserialising "
+                    f"Ignoring event ({event}) while deserialising "
                     "events. Couldn't parse it."
                 )
 
@@ -141,11 +142,11 @@ class Event(object):
 
         result = cls._from_story_string(parameters)
         if len(result) > 1:
-            logger.warning(
+            warnings.warn(
                 "Event from parameters called with parameters "
                 "for multiple events. This is not supported, "
                 "only the first event will be returned. "
-                "Parameters: {}".format(parameters)
+                f"Parameters: {parameters}"
             )
         return result[0] if result else None
 

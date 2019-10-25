@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 import logging
+import warnings
 import typing
 from typing import Any, Dict, Text, Tuple
 
@@ -42,13 +43,14 @@ class RasaReader(JsonTrainingDataReader):
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
         if intent_examples or entity_examples:
-            logger.warning(
-                "DEPRECATION warning: your rasa data "
+            warnings.warn(
+                "Your rasa data "
                 "contains 'intent_examples' "
                 "or 'entity_examples' which will be "
                 "removed in the future. Consider "
                 "putting all your examples "
-                "into the 'common_examples' section."
+                "into the 'common_examples' section.",
+                DeprecationWarning
             )
 
         all_examples = common_examples + intent_examples + entity_examples

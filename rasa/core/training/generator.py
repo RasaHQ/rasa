@@ -2,6 +2,7 @@
 from collections import defaultdict, namedtuple, deque
 
 import copy
+import warnings
 import logging
 import random
 from tqdm import tqdm
@@ -657,7 +658,7 @@ class TrainingDataGenerator(object):
         that no one provided."""
 
         if STORY_START in unused_checkpoints:
-            logger.warning(
+            warnings.warn(
                 "There is no starting story block "
                 "in the training data. "
                 "All your story blocks start with some checkpoint. "
@@ -684,20 +685,20 @@ class TrainingDataGenerator(object):
 
         for cp, block_name in collected_start:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                logger.warning(
-                    "Unsatisfied start checkpoint '{}' "
-                    "in block '{}'. "
+                warnings.warn(
+                    f"Unsatisfied start checkpoint '{cp}' "
+                    f"in block '{block_name}'. "
                     "Remove this checkpoint or add "
                     "story blocks that end "
-                    "with this checkpoint.".format(cp, block_name)
+                    "with this checkpoint."
                 )
 
         for cp, block_name in collected_end:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                logger.warning(
-                    "Unsatisfied end checkpoint '{}' "
-                    "in block '{}'. "
+                warnings.warn(
+                    f"Unsatisfied end checkpoint '{cp}' "
+                    f"in block '{block_name}'. "
                     "Remove this checkpoint or add "
                     "story blocks that start "
-                    "with this checkpoint.".format(cp, block_name)
+                    "with this checkpoint."
                 )

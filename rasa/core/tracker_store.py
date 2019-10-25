@@ -1,4 +1,5 @@
 import contextlib
+import warnings
 import json
 import logging
 import os
@@ -91,9 +92,9 @@ class TrackerStore(object):
         try:
             custom_tracker = class_from_module_path(store.type)
         except (AttributeError, ImportError):
-            logger.warning(
-                "Store type '{}' not found. "
-                "Using InMemoryTrackerStore instead".format(store.type)
+            warnings.warn(
+                f"Store type '{store.type}' not found. "
+                "Using InMemoryTrackerStore instead"
             )
 
         if custom_tracker:
@@ -168,11 +169,12 @@ class TrackerStore(object):
         sender_id: Text, serialised_tracker: bytes
     ) -> Dialogue:
 
-        logger.warning(
-            f"DEPRECATION warning: Found pickled tracker for "
+        warnings.warn(
+            f"Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
             f"trackers will be deprecated in version 2.0. Rasa will perform any "
-            f"future save operations of this tracker using json serialisation."
+            f"future save operations of this tracker using json serialisation.",
+            DeprecationWarning
         )
         return pickle.loads(serialised_tracker)
 
@@ -458,6 +460,7 @@ class MongoTrackerStore(TrackerStore):
                     sender_id, stored.get("events"), self.domain.slots
                 )
             else:
+                # should this be warnings.warn?
                 logger.warning(
                     "Can't recreate tracker from mongo storage "
                     "because no domain is set. Returning `None` "
@@ -555,9 +558,9 @@ class SQLTrackerStore(TrackerStore):
             except (
                 sqlalchemy.exc.OperationalError,
                 sqlalchemy.exc.IntegrityError,
-            ) as e:
+            ) as error:
 
-                logger.warning(e)
+                logger.error(error)
                 sleep(5)
 
         logger.debug("Connection to SQL database '{}' successful.".format(db))

@@ -1,4 +1,5 @@
 import logging
+import warnings
 import typing
 from typing import Optional
 
@@ -47,8 +48,8 @@ def load_event_channel_from_module_string(
         event_channel = rasa_utils.class_from_module_path(broker_config.type)
         return event_channel.from_endpoint_config(broker_config)
     except (AttributeError, ImportError) as e:
-        logger.warning(
-            "EventChannel type '{}' not found. "
-            "Not using any event channel. Error: {}".format(broker_config.type, e)
+        warnings.warn(
+            f"EventChannel type '{broker_config.type}' not found. "
+            f"Not using any event channel. Error: {e}"
         )
         return None

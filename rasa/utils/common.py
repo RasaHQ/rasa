@@ -225,7 +225,7 @@ def write_global_config_value(name: Text, value: Any) -> None:
         rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
     except Exception as e:
         logger.warning(
-            "Failed to write global config. Error: {}. Skipping." "".format(e)
+            f"Failed to write global config. Error: {e}. Skipping." ""
         )
 
 
@@ -253,10 +253,10 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
     """Warns users that they are using an experimental feature."""
 
     logger.warning(
-        "The {} is currently experimental and might change or be "
+        f"The {feature_name} is currently experimental and might change or be "
         "removed in the future 🔬 Please share your feedback on it in the "
         "forum (https://forum.rasa.com) to help us make this feature "
-        "ready for production.".format(feature_name)
+        "ready for production."
     )
 
 

@@ -1,4 +1,5 @@
 import logging
+import warnings
 import numpy as np
 import os
 import typing
@@ -86,7 +87,7 @@ class SklearnIntentClassifier(Component):
         labels = [e.get("intent") for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            logger.warning(
+            warnings.warn(
                 "Can not train an intent classifier. "
                 "Need at least 2 different classes. "
                 "Skipping training of intent classifier."

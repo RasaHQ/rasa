@@ -1,4 +1,5 @@
 import logging
+import warnings
 from functools import reduce
 from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
@@ -68,8 +69,8 @@ class MultiProjectImporter(TrainingDataImporter):
             parent_directory = os.path.dirname(path)
             self._init_from_dict(config, parent_directory)
         else:
-            logger.warning(
-                "'{}' does not exist or is not a valid config file.".format(path)
+            warnings.warn(
+                f"'{path}' does not exist or is not a valid config file."
             )
 
     def _init_from_dict(self, _dict: Dict[Text, Any], parent_directory: Text) -> None:

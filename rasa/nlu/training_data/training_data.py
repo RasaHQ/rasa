@@ -213,9 +213,10 @@ class TrainingData(object):
 
     def as_json(self) -> Text:
 
-        logger.warning(
-            "DEPRECATION warning: function as_json() is deprecated and will be removed "
-            "in future versions. Use nlu_as_json() instead."
+        warnings.warn(
+            "Function as_json() is deprecated and will be removed "
+            "in future versions. Use nlu_as_json() instead.",
+            DeprecationWarning
         )
 
         return self.nlu_as_json()
@@ -240,9 +241,10 @@ class TrainingData(object):
 
     def as_markdown(self) -> Text:
 
-        logger.warning(
-            "DEPRECATION warning: function as_markdown() is deprecated and will be removed "
-            "in future versions. Use nlu_as_markdown() and nlg_as_markdown() instead"
+        warnings.warn(
+            "Function as_markdown() is deprecated and will be removed "
+            "in future versions. Use nlu_as_markdown() and nlg_as_markdown() "
+            "instead.", DeprecationWarning
         )
 
         return self.nlu_as_markdown()
@@ -331,19 +333,16 @@ class TrainingData(object):
         for intent, count in self.examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
                 warnings.warn(
-                    "Intent '{}' has only {} training examples! "
-                    "Minimum is {}, training may fail.".format(
-                        intent, count, self.MIN_EXAMPLES_PER_INTENT
-                    )
+                    f"Intent '{intent}' has only {count} training examples! "
+                    f"Minimum is {self.MIN_EXAMPLES_PER_INTENT}, training may fail."
                 )
 
         # emit warnings for entities with only a few training samples
         for entity_type, count in self.examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
                 warnings.warn(
-                    "Entity '{}' has only {} training examples! "
-                    "minimum is {}, training may fail."
-                    "".format(entity_type, count, self.MIN_EXAMPLES_PER_ENTITY)
+                    f"Entity '{entity_type}' has only {count} training examples! "
+                    f"minimum is {self.MIN_EXAMPLES_PER_ENTITY}, training may fail."
                 )
 
     def train_test_split(

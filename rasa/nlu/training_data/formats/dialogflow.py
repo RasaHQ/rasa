@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 import typing
 from typing import Any, Text, Optional
@@ -39,8 +40,8 @@ class DialogflowReader(TrainingDataReader):
         examples_js = self._read_examples_js(fn, language, fformat)
 
         if not examples_js:
-            logger.warning(
-                "No training examples found for dialogflow file {}!".format(fn)
+            warnings.warn(
+                f"No training examples found for dialogflow file {fn}!"
             )
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:

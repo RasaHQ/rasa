@@ -1,4 +1,5 @@
 import logging
+import warnings
 import json
 import os
 import typing
@@ -98,9 +99,10 @@ class MappingPolicy(Policy):
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
-                    logger.warning(
+                    warnings.warn(
                         "MappingPolicy tried to predict unknown "
-                        "action '{}'.".format(action)
+                        f"action '{action}'. Make sure all mapped actions are "
+                        "listed in the domain"
                     )
                 else:
                     prediction[idx] = 1

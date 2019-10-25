@@ -452,7 +452,7 @@ def create_app(
         if not events:
             logger.warning(
                 "Append event called, but could not extract a valid event. "
-                "Request JSON: {}".format(request.json)
+                f"Request JSON: {request.json}"
             )
             raise ErrorResponse(
                 400,

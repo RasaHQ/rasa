@@ -1,4 +1,5 @@
 import logging
+import warnings
 import uuid
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -175,7 +176,7 @@ class SocketIOInput(InputChannel):
 
             if self.session_persistence:
                 if not data.get("session_id"):
-                    logger.warning(
+                    warnings.warn(
                         "A message without a valid sender_id "
                         "was received. This message will be "
                         "ignored. Make sure to set a proper "

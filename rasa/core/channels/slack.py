@@ -1,4 +1,5 @@
 import json
+import warnings
 import logging
 import re
 from sanic import Blueprint, response
@@ -79,7 +80,7 @@ class SlackBot(SlackClient, OutputChannel):
         text_block = {"type": "section", "text": {"type": "plain_text", "text": text}}
 
         if len(buttons) > 5:
-            logger.warning(
+            warnings.warn(
                 "Slack API currently allows only up to 5 buttons. "
                 "If you add more, all will be ignored."
             )
@@ -247,9 +248,7 @@ class SlackInput(InputChannel):
             elif action_type:
                 logger.warning(
                     "Received input from a Slack interactive component of type "
-                    + "'{}', for which payload parsing is not yet supported.".format(
-                        payload["actions"][0]["type"]
-                    )
+                    f"'{payload['actions'][0]['type']}', for which payload parsing is not yet supported."
                 )
         return False
 
@@ -292,8 +291,8 @@ class SlackInput(InputChannel):
         retry_count = request.headers.get(self.retry_num_header)
         if retry_count and retry_reason in self.errors_ignore_retry:
             logger.warning(
-                "Received retry #{} request from slack"
-                " due to {}".format(retry_count, retry_reason)
+                f"Received retry #{retry_count} request from slack"
+                f" due to {retry_reason}"
             )
 
             return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})

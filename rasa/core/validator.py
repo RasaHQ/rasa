@@ -1,4 +1,5 @@
 import logging
+import warnings
 import asyncio
 from typing import List, Set, Text
 from rasa.core.domain import Domain
@@ -41,17 +42,17 @@ class Validator(object):
 
         for intent in self.domain.intents:
             if intent not in nlu_data_intents:
-                logger.warning(
-                    "The intent '{}' is listed in the domain file, but "
-                    "is not found in the NLU training data.".format(intent)
+                warnings.warn(
+                    f"The intent '{intent}' is listed in the domain file, but "
+                    "is not found in the NLU training data."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
                 logger.error(
-                    "The intent '{}' is in the NLU training data, but "
-                    "is not listed in the domain.".format(intent)
+                    f"The intent '{intent}' is in the NLU training data, but "
+                    "is not listed in the domain."
                 )
                 everything_is_alright = False
 
@@ -82,8 +83,8 @@ class Validator(object):
 
         for intent in self.domain.intents:
             if intent not in stories_intents:
-                logger.warning(
-                    "The intent '{}' is not used in any story.".format(intent)
+                warnings.warn(
+                    f"The intent '{intent}' is not used in any story."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
@@ -106,9 +107,9 @@ class Validator(object):
 
         for utterance in utterance_templates:
             if utterance not in actions:
-                logger.warning(
-                    "The utterance '{}' is not listed under 'actions' in the "
-                    "domain file. It can only be used as a template.".format(utterance)
+                warnings.warn(
+                    f"The utterance '{utterance}' is not listed under 'actions' in the "
+                    "domain file. It can only be used as a template."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
@@ -116,7 +117,7 @@ class Validator(object):
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
                     logger.error(
-                        "There is no template for utterance '{}'.".format(action)
+                        f"There is no template for utterance '{action}'."
                     )
                     everything_is_alright = False
 
@@ -155,8 +156,8 @@ class Validator(object):
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                logger.warning(
-                    "The utterance '{}' is not used in any story.".format(utterance)
+                warnings.warn(
+                    f"The utterance '{utterance}' is not used in any story."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
