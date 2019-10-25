@@ -54,14 +54,21 @@ def test_combine_with_existing_sparse_features():
     "features, expected, method",
     [
         ([[1, 0, 2, 3], [2, 0, 0, 1]], [1.5, 0, 1, 2], "mean"),
-        (scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]), [1.5, 0, 1, 2], "mean"),
+        (
+            scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
+            scipy.sparse.csr_matrix([1.5, 0, 1, 2]),
+            "mean",
+        ),
         (None, None, "mean"),
     ],
 )
 def test_sequence_to_sentence_features(features, expected, method):
     actual = sequence_to_sentence_features(features, method=method)
 
-    assert np.all(expected == actual)
+    if isinstance(expected, scipy.sparse.spmatrix):
+        assert np.all(expected.toarray() == actual.toarray())
+    else:
+        assert np.all(expected == actual)
 
 
 def test_sequence_to_sentence_features_raise_value_error():
