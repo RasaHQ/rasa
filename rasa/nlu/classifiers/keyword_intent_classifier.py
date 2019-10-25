@@ -1,4 +1,5 @@
 import os
+import warnings
 import logging
 import typing
 import re
@@ -55,22 +56,19 @@ class KeywordIntentClassifier(Component):
                 and ex.get("intent") != self.intent_keyword_map[ex.text]
             ):
                 duplicate_examples.add(ex.text)
-                logger.warning(
-                    "Keyword '{}' is a keyword of intent '{}' and of "
-                    "intent '{}', it will be removed from the list of "
+                warnings.warn(
+                    f"Keyword '{ex.text}' is a keyword of intent '{self.intent_keyword_map[ex.text]}' and of "
+                    f"intent '{ex.get('intent')}', it will be removed from the list of "
                     "keyword.\n"
                     "Remove (one of) the duplicates from the training data."
-                    "".format(
-                        ex.text, self.intent_keyword_map[ex.text], ex.get("intent")
-                    )
                 )
             else:
                 self.intent_keyword_map[ex.text] = ex.get("intent")
         for keyword in duplicate_examples:
             self.intent_keyword_map.pop(keyword)
             logger.debug(
-                "Removed '{}' from the list of keywords because it was "
-                "a keyword for more than one intent.".format(keyword)
+                f"Removed '{keyword}' from the list of keywords because it was "
+                "a keyword for more than one intent."
             )
 
         self._validate_keyword_map()
@@ -86,20 +84,19 @@ class KeywordIntentClassifier(Component):
                     and intent1 != intent2
                 ):
                     ambiguous_mappings.append((intent1, keyword1))
-                    logger.warning(
-                        "Keyword '{}' is a keyword of intent '{}', "
-                        "but also a substring of '{}', which is a "
-                        "keyword of intent '{}."
-                        " '{}' will be removed from the list of keywords.\n"
-                        "Remove (one of) the conflicting keywords for the"
+                    warnings.warn(
+                        f"Keyword '{keyword1}' is a keyword of intent '{intent1}', "
+                        f"but also a substring of '{keyword2}', which is a "
+                        f"keyword of intent '{intent2}."
+                        f" '{keyword1}' will be removed from the list of keywords.\n"
+                        "Remove (one of) the conflicting keywords from the"
                         " training data."
-                        "".format(keyword1, intent1, keyword2, intent2, keyword1)
                     )
         for intent, keyword in ambiguous_mappings:
             self.intent_keyword_map.pop(keyword)
             logger.debug(
-                "Removed keyword '{}' from intent '{}' because it matched a "
-                "keyword of another intent.".format(keyword, intent)
+                f"Removed keyword '{keyword}' from intent '{intent}' because it matched a "
+                "keyword of another intent."
             )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -114,8 +111,8 @@ class KeywordIntentClassifier(Component):
         for keyword, intent in self.intent_keyword_map.items():
             if re.search(r"\b" + keyword + r"\b", text, flags=re_flag):
                 logger.debug(
-                    "KeywordClassifier matched keyword '{}' to"
-                    " intent '{}'.".format(keyword, intent)
+                    f"KeywordClassifier matched keyword '{keyword}' to"
+                    f" intent '{intent}'."
                 )
                 return intent
         logger.debug("KeywordClassifier did not find any keywords in the message.")
@@ -149,8 +146,8 @@ class KeywordIntentClassifier(Component):
             if os.path.exists(keyword_file):
                 intent_keyword_map = utils.read_json_file(keyword_file)
             else:
-                logger.warning(
-                    "Failed to load IntentKeywordClassifier, maybe "
-                    "{} does not exist.".format(keyword_file)
+                warnings.warn(
+                    f"Failed to load IntentKeywordClassifier, maybe "
+                    "{keyword_file} does not exist."
                 )
         return cls(meta, intent_keyword_map)
