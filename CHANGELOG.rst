@@ -24,6 +24,7 @@ Fixed
 -----
 - Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
   interactive learning
+- Pinned `networkx~=2.3.0` to fix visualization in `rasa interactive` and Rasa X
 
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
