@@ -127,6 +127,7 @@ class TestKeywordClassifier(ClassifierTestCollection):
             self._train_classifier(classifier_class, data, component_config, **kwargs)
         assert len(caplog.records) == 0
 
+    @pytest.mark.filterwarnings("ignore:Keyword.* of keywords:UserWarning")
     def test_identical_data(
         self, caplog, classifier_class, training_data, component_config, **kwargs
     ):
@@ -145,8 +146,9 @@ class TestKeywordClassifier(ClassifierTestCollection):
             logging.DEBUG, logger="rasa.nlu.classifiers.keyword__intent_classifer"
         ):
             self._train_classifier(classifier_class, data, component_config, **kwargs)
-        assert len(caplog.records) == 2
+        assert len(caplog.records) == 1
 
+    @pytest.mark.filterwarnings("ignore:Keyword.* of keywords:UserWarning")
     def test_ambiguous_data(
         self, caplog, classifier_class, training_data, component_config, **kwargs
     ):
@@ -167,4 +169,4 @@ class TestKeywordClassifier(ClassifierTestCollection):
             logging.DEBUG, logger="rasa.nlu.classifiers.keyword__intent_classifer"
         ):
             self._train_classifier(classifier_class, data, component_config, **kwargs)
-        assert len(caplog.records) == 4
+        assert len(caplog.records) == 2

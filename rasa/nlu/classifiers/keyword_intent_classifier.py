@@ -59,7 +59,7 @@ class KeywordIntentClassifier(Component):
                 warnings.warn(
                     f"Keyword '{ex.text}' is a keyword of intent '{self.intent_keyword_map[ex.text]}' and of "
                     f"intent '{ex.get('intent')}', it will be removed from the list of "
-                    "keyword.\n"
+                    "keywords.\n"
                     "Remove (one of) the duplicates from the training data."
                 )
             else:

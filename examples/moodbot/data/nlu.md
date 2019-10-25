@@ -14,6 +14,7 @@
 - good afternoon
 
 ## intent:goodbye
+- good afternoon
 - cu
 - good by
 - cee you later
