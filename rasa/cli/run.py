@@ -30,6 +30,8 @@ def add_subparser(
     )
     run_parser.set_defaults(func=run)
 
+    # NOTE: subparsers here need special handling in
+    # `parse_last_positional_argument_as_model_path`
     run_subparsers = run_parser.add_subparsers()
     sdk_subparser = run_subparsers.add_parser(
         "actions",

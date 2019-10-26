@@ -98,6 +98,7 @@ def parse_last_positional_argument_as_model_path() -> None:
     if (
         len(sys.argv) >= 2
         and sys.argv[1] in ["run", "shell", "interactive"]
+        and sys.argv[1:] != ["run", "actions"]
         and not sys.argv[-2].startswith("-")
         and os.path.exists(sys.argv[-1])
     ):
