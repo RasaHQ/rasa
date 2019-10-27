@@ -1,5 +1,4 @@
 import logging
-import asyncio
 from collections import defaultdict
 from typing import List, Set, Text
 from rasa.core.domain import Domain
@@ -13,7 +12,7 @@ from rasa.core.constants import UTTER_PREFIX
 logger = logging.getLogger(__name__)
 
 
-class Validator(object):
+class Validator:
     """A class used to verify usage of intents and utterances."""
 
     def __init__(self, domain: Domain, intents: TrainingData, stories: List[StoryStep]):

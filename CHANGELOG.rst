@@ -7,11 +7,13 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+
 [Unreleased 1.5.0a1] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+- Added the KeywordIntentClassifier
 
 Changed
 -------
@@ -21,6 +23,25 @@ Removed
 
 Fixed
 -----
+- ``MultiProjectImporter`` now imports files in the order of the import statements
+
+[Unreleased 1.4.2]
+~~~~~~~~~~~~~~~~~~
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+- TensorFlow deprecation warnings are no longer shown when running ``rasa x``
+
+Fixed
+-----
+- Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
+  interactive learning
 
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
