@@ -6,31 +6,23 @@ from typing import Any, Dict, List, Optional, Text
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers import Featurizer
+from rasa.nlu.featurizers.featurzier import Featurizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-
-logger = logging.getLogger(__name__)
-
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
     MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
     MESSAGE_INTENT_ATTRIBUTE,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class CountVectorsFeaturizer(Featurizer):
-    """Bag of words featurizer
+    """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
-    Creates bag-of-words representation of intent features
-    using sklearn's `CountVectorizer`.
     All tokens which consist only of digits (e.g. 123 and 99
     but not ab12d) will be represented by a single feature.
 
@@ -545,12 +537,6 @@ class CountVectorsFeaturizer(Featurizer):
         attribute = MESSAGE_TEXT_ATTRIBUTE
         message_text = self._get_message_text_by_attribute(message, attribute=attribute)
 
-        #bag = (
-        #    self.vectorizers[MESSAGE_TEXT_ATTRIBUTE]
-        #    .transform([message_text])
-        #    .toarray()
-        #    .squeeze()
-        #)
         # features shape (1, seq, dim)
         features = self._create_sequence(attribute, [message_text])
 
