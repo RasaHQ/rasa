@@ -394,7 +394,11 @@ class EmbeddingIntentClassifier(Component):
             Y.append(self._encoded_all_label_ids[label_id_idx])
         Y = np.array(Y)
 
-        return train_utils.SessionData(X_dense, X_sparse, Y, tags, labels)
+        return train_utils.SessionData(
+            {"dense": X_dense, "sparse": X_sparse},
+            {"Y": Y},
+            {"tags": tags, "labels": labels},
+        )
 
     # tf helpers:
     def _create_tf_embed_fnn(
