@@ -2,7 +2,8 @@ import logging
 import os
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text
+import numpy as np
+from typing import Any, Dict, List, Optional, Text, Union
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -24,6 +25,18 @@ from rasa.nlu.constants import (
     MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
     MESSAGE_INTENT_ATTRIBUTE,
 )
+
+
+def sequence_to_sentence_features(
+    features: Union[np.ndarray, scipy.sparse.spmatrix]
+) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
+    if features is None:
+        return None
+
+    if isinstance(features, scipy.sparse.spmatrix):
+        return scipy.sparse.csr_matrix(features.sum(axis=0))
+
+    return np.mean(features, axis=0)
 
 
 class CountVectorsFeaturizer(Featurizer):
@@ -488,6 +501,7 @@ class CountVectorsFeaturizer(Featurizer):
         X = []
 
         for i, tokens in enumerate(texts):
+            # Create a sparse matrix, [n_samples, n_features], that counts tokens
             x = self.vectorizers[attribute].transform(tokens)
             x.sort_indices()
             X.append(x)
@@ -553,6 +567,7 @@ class CountVectorsFeaturizer(Featurizer):
         #)
         # features shape (1, seq, dim)
         features = self._create_sequence(attribute, [message_text])
+        features = sequence_to_sentence_features(features)
 
         message.set(
             MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
