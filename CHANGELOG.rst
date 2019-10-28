@@ -7,21 +7,25 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.5.0a1] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 1.4.2]
+~~~~~~~~~~~~~~~~~~
 
 Added
 -----
 
 Changed
 -------
-- updated the mattermost connector documentation to be a little more clear.
+- updated the mattermost connector documentation to be more clear.
 
 Removed
 -------
+- TensorFlow deprecation warnings are no longer shown when running ``rasa x``
 
 Fixed
 -----
+- Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
+  interactive learning
+- Pinned `networkx~=2.3.0` to fix visualization in `rasa interactive` and Rasa X
 
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
