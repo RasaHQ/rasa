@@ -58,6 +58,8 @@ def train_val_split(
     label_key: Text = "labels",
 ) -> Tuple["SessionData", "SessionData"]:
     """Create random hold out validation set using stratified split."""
+    if label_key not in session_data.labels:
+        raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
 
     label_counts = dict(
         zip(*np.unique(session_data.labels[label_key], return_counts=True, axis=0))
@@ -158,6 +160,8 @@ def split_session_data_by_label(
     session_data: "SessionData", label_key: Text, unique_label_ids: "np.ndarray"
 ) -> List["SessionData"]:
     """Reorganize session data into a list of session data with the same labels."""
+    if label_key not in session_data.labels:
+        raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
 
     label_data = []
     for label_id in unique_label_ids:
@@ -179,15 +183,11 @@ def balance_session_data(
     by repeating them. Mimics stratified batching, but also takes into account
     that more populated classes should appear more often.
     """
-    example_lengths = [len(x) for x in session_data.X.values()]
-
-    if not all(l == example_lengths[0] for l in example_lengths):
-        raise ValueError("Number of examples in X differ.")
-
     if label_key not in session_data.labels:
-        raise ValueError(f"{label_key} not in SessionData.labels.")
+        raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
 
-    num_examples = example_lengths[0]
+    num_examples = get_number_of_examples(session_data)
+
     unique_label_ids, counts_label_ids = np.unique(
         session_data.labels[label_key], return_counts=True, axis=0
     )
@@ -249,7 +249,7 @@ def get_number_of_examples(session_data: SessionData):
     example_lengths = [len(v) for v in session_data.X.values()]
 
     # check if number of examples is the same for all X
-    if len(set(example_lengths)) != 1:
+    if not all(l == example_lengths[0] for l in example_lengths):
         raise ValueError(
             f"Number of examples differs for X ({session_data.X.keys()}). There should "
             f"be the same."

@@ -3,12 +3,10 @@ import numpy as np
 import os
 import pickle
 import typing
-import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Tuple
 import warnings
 
 from rasa.nlu.featurizers.featurzier import sequence_to_sentence_features
-from rasa.nlu.test import determine_token_labels
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
@@ -16,9 +14,6 @@ from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
-    MESSAGE_ENTITIES_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
 )
 
 import tensorflow as tf
@@ -343,7 +338,7 @@ class EmbeddingIntentClassifier(Component):
         Y = []
         labels = []
 
-        for e in training_data.training_examples:
+        for e in training_data.intent_examples:
             if e.get(attribute):
                 X.append(
                     sequence_to_sentence_features(
@@ -474,7 +469,7 @@ class EmbeddingIntentClassifier(Component):
     def check_input_dimension_consistency(self, session_data):
 
         if self.share_hidden_layers:
-            if session_data.X["X"].shape[-1] != session_data.Y["Y"].shape[-1]:
+            if session_data.X["X"][0].shape[-1] != session_data.Y["Y"][0].shape[-1]:
                 raise ValueError(
                     "If embeddings are shared "
                     "text features and label features "
