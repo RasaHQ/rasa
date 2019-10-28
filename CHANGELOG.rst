@@ -25,12 +25,6 @@ Fixed
 [1.4.2] - 2019-10-28
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
-
-Changed
--------
-
 Removed
 -------
 - TensorFlow deprecation warnings are no longer shown when running ``rasa x``
