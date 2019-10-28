@@ -16,6 +16,11 @@ from rasa.utils.io import DEFAULT_ENCODING
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
 
+import matplotlib
+
+matplotlib.use("TkAgg")
+
+
 logger = logging.getLogger(__name__)
 
 StoryEvalution = namedtuple(

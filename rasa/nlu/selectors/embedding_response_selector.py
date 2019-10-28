@@ -1,22 +1,14 @@
 import logging
 import typing
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Text
 
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
-from rasa.core.actions.action import RESPOND_PREFIX
 from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    OPEN_UTTERANCE_PREDICTION_KEY,
-    OPEN_UTTERANCE_RANKING_KEY,
     MESSAGE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
-    MESSAGE_ENTITIES_ATTRIBUTE,
 )
 
 logger = logging.getLogger(__name__)
@@ -147,10 +139,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_RESPONSE_ATTRIBUTE
         )
-        tag_id_dict = self._create_tag_id_dict(
-            training_data, attribute=MESSAGE_ENTITIES_ATTRIBUTE
-        )
-        self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
         self._encoded_all_label_ids = self._create_encoded_label_ids(
@@ -173,10 +161,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
         session_data = self._create_session_data(
-            training_data,
-            label_id_dict,
-            tag_id_dict,
-            attribute=MESSAGE_RESPONSE_ATTRIBUTE,
+            training_data, label_id_dict, attribute=MESSAGE_RESPONSE_ATTRIBUTE
         )
 
         self.check_input_dimension_consistency(session_data)

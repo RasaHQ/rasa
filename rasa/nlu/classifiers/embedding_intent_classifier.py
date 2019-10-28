@@ -331,31 +331,11 @@ class EmbeddingIntentClassifier(Component):
 
         return encoded_id_labels
 
-    # training data helpers:
-    @staticmethod
-    def _create_tag_id_dict(
-        training_data: "TrainingData", attribute: Text
-    ) -> Dict[Text, int]:
-        """Create label_id dictionary"""
-        distinct_tag_ids = set(
-            [
-                e["entity"]
-                for example in training_data.entity_examples
-                for e in example.get(attribute)
-            ]
-        ) - {None}
-        tag_id_dict = {
-            tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tag_ids), 1)
-        }
-        tag_id_dict["O"] = 0
-        return tag_id_dict
-
     # noinspection PyPep8Naming
     def _create_session_data(
         self,
         training_data: "TrainingData",
         label_id_dict: Dict[Text, int],
-        tag_id_dict: Dict[Text, int],
         attribute: Text,
     ) -> "train_utils.SessionData":
         """Prepare data for training and create a SessionData object"""
@@ -363,7 +343,6 @@ class EmbeddingIntentClassifier(Component):
         X_dense = []
         Y = []
         labels = []
-        tags = []
 
         for e in training_data.training_examples:
             if e.get(attribute):
@@ -376,28 +355,16 @@ class EmbeddingIntentClassifier(Component):
                 # every example should have an intent
                 labels.append(label_id_dict[e.get(MESSAGE_INTENT_ATTRIBUTE)])
 
-        for e in training_data.training_examples:
-            _tags = []
-            for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
-                _tag = determine_token_labels(
-                    t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
-                )
-                _tags.append(tag_id_dict[_tag])
-            tags.append(scipy.sparse.csr_matrix(np.array([_tags]).T))
-
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
         labels = np.array(labels)
-        tags = np.array(tags)
 
         for label_id_idx in labels:
             Y.append(self._encoded_all_label_ids[label_id_idx])
         Y = np.array(Y)
 
         return train_utils.SessionData(
-            {"dense": X_dense, "sparse": X_sparse},
-            {"Y": Y},
-            {"tags": tags, "labels": labels},
+            {"dense": X_dense, "sparse": X_sparse}, {"Y": Y}, {"labels": labels}
         )
 
     # tf helpers:
@@ -473,10 +440,10 @@ class EmbeddingIntentClassifier(Component):
         self, session_data: "train_utils.SessionData"
     ) -> "tf.Tensor":
         self.a_in = tf.placeholder(
-            tf.float32, (None, session_data.X.shape[-1]), name="a"
+            tf.float32, (None, session_data.X["sparse"].shape[-1]), name="a"
         )
         self.b_in = tf.placeholder(
-            tf.float32, (None, None, session_data.Y.shape[-1]), name="b"
+            tf.float32, (None, None, session_data.Y["Y"].shape[-1]), name="b"
         )
 
         self.message_embed = self._create_tf_embed_fnn(
@@ -508,7 +475,7 @@ class EmbeddingIntentClassifier(Component):
     def check_input_dimension_consistency(self, session_data):
 
         if self.share_hidden_layers:
-            if session_data.X[0].shape[-1] != session_data.Y[0].shape[-1]:
+            if session_data.X["sparse"].shape[-1] != session_data.Y["Y"].shape[-1]:
                 raise ValueError(
                     "If embeddings are shared "
                     "text features and label features "
@@ -521,10 +488,6 @@ class EmbeddingIntentClassifier(Component):
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
-        tag_id_dict = self._create_tag_id_dict(
-            training_data, attribute=MESSAGE_ENTITIES_ATTRIBUTE
-        )
-        self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
         self._encoded_all_label_ids = self._create_encoded_label_ids(
@@ -547,10 +510,7 @@ class EmbeddingIntentClassifier(Component):
         self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
         session_data = self._create_session_data(
-            training_data,
-            label_id_dict,
-            tag_id_dict,
-            attribute=MESSAGE_INTENT_ATTRIBUTE,
+            training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
 
         self.check_input_dimension_consistency(session_data)
@@ -558,8 +518,7 @@ class EmbeddingIntentClassifier(Component):
         return session_data
 
     def _check_enough_labels(self, session_data) -> bool:
-
-        return len(np.unique(session_data.labels)) >= 2
+        return len(np.unique(session_data.labels["labels"])) >= 2
 
     def train(
         self,
