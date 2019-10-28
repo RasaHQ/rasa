@@ -121,7 +121,7 @@ async def record_messages(
 
     num_messages = 0
     button_question = None
-    await asyncio.sleep(0.5)  # Wait for server beggining
+    await asyncio.sleep(0.5)  # Wait for server to start
     while not utils.is_limit_reached(num_messages, max_message_limit):
         text = get_user_input(button_question)
 
