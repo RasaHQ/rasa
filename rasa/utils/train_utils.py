@@ -109,35 +109,49 @@ def train_val_split(
     # order is kept, so first session_data.X values, then session_data.Y values, and
     # finally session_data.labels values
     for i in range(len(session_data.X)):
-        X_train[keys[i]] = np.concatenate([output_values[i * 2], solo_values[i]])
+        X_train[keys[i]] = combine_features(output_values[i * 2], solo_values[i])
 
     for i in range(len(session_data.X), len(session_data.X) + len(session_data.Y)):
-        Y_train[keys[i]] = np.concatenate([output_values[i * 2], solo_values[i]])
+        Y_train[keys[i]] = combine_features(output_values[i * 2], solo_values[i])
 
     for i in range(
         len(session_data.X) + len(session_data.Y),
         len(session_data.X) + len(session_data.Y) + len(session_data.labels),
     ):
-        labels_train[keys[i]] = np.concatenate([output_values[i * 2], solo_values[i]])
+        labels_train[keys[i]] = combine_features(output_values[i * 2], solo_values[i])
 
     for i in range(len(session_data.X)):
-        X_val[keys[i]] = np.concatenate([output_values[(i * 2) + 1], solo_values[i]])
+        X_val[keys[i]] = output_values[(i * 2) + 1]
 
     for i in range(len(session_data.X), len(session_data.X) + len(session_data.Y)):
-        Y_val[keys[i]] = np.concatenate([output_values[(i * 2) + 1], solo_values[i]])
+        Y_val[keys[i]] = output_values[(i * 2) + 1]
 
     for i in range(
         len(session_data.X) + len(session_data.Y),
         len(session_data.X) + len(session_data.Y) + len(session_data.labels),
     ):
-        labels_val[keys[i]] = np.concatenate(
-            [output_values[(i * 2) + 1], solo_values[i]]
-        )
+        labels_val[keys[i]] = output_values[(i * 2) + 1]
 
     return (
         SessionData(X_train, Y_train, labels_train),
         SessionData(X_val, Y_val, labels_val),
     )
+
+
+def combine_features(
+    feature_1: Union[np.ndarray, scipy.sparse.spmatrix],
+    feature_2: Union[np.ndarray, scipy.sparse.spmatrix],
+) -> Union[np.ndarray, scipy.sparse.spmatrix]:
+    if isinstance(feature_1, scipy.sparse.spmatrix) and isinstance(
+        feature_2, scipy.sparse.spmatrix
+    ):
+        if feature_2.shape[0] == 0:
+            return feature_1
+        if feature_1.shape[0] == 0:
+            return feature_2
+        return scipy.sparse.vstack([feature_1, feature_2])
+
+    return np.concatenate([feature_1, feature_2])
 
 
 def shuffle_session_data(session_data: "SessionData") -> "SessionData":
@@ -246,7 +260,7 @@ def balance_session_data(
 
 
 def get_number_of_examples(session_data: SessionData):
-    example_lengths = [len(v) for v in session_data.X.values()]
+    example_lengths = [v.shape[0] for v in session_data.X.values()]
 
     # check if number of examples is the same for all X
     if not all(l == example_lengths[0] for l in example_lengths):
@@ -279,23 +293,21 @@ def gen_batch(
         start = batch_num * batch_size
         end = (batch_num + 1) * batch_size
 
-        batch_data = []
-        for v in session_data.X.values():
-            batch_data.append(convert_to_batch(v[start:end]))
-        for v in session_data.Y.values():
-            batch_data.append(convert_to_batch(v[start:end]))
-        for v in session_data.labels.values():
-            batch_data.append(convert_to_batch(v[start:end]))
+        batch_data = [sparse_to_dense(v[start:end]) for v in session_data.X.values()]
+        batch_data = batch_data + [
+            sparse_to_dense(v[start:end]) for v in session_data.Y.values()
+        ]
+        batch_data = batch_data + [
+            sparse_to_dense(v[start:end]) for v in session_data.labels.values()
+        ]
 
         yield tuple(batch_data)
 
 
-def convert_to_batch(data_points: Union[np.ndarray, scipy.sparse.csr_matrix],):
-    is_sparse = isinstance(data_points[0], scipy.sparse.spmatrix)
-
-    if is_sparse:
-        return data_points.toarray()
-    return data_points
+def sparse_to_dense(examples: Union[np.ndarray, scipy.sparse.csr_matrix]):
+    if isinstance(examples[0], scipy.sparse.spmatrix):
+        return examples.toarray()
+    return examples
 
 
 # noinspection PyPep8Naming

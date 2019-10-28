@@ -1,4 +1,5 @@
 import pytest
+import scipy.sparse
 import numpy as np
 
 from rasa.utils.train_utils import (
@@ -15,11 +16,11 @@ from rasa.utils.train_utils import (
 async def session_data() -> SessionData:
     return SessionData(
         X={
-            "sparse": np.random.rand(5, 10),
-            "dense": np.random.randint(5, size=(5, 10)),
+            "dense": np.random.rand(5, 10),
+            "sparse": scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
         },
         Y={"Y": np.random.randint(2, size=(5, 10))},
-        labels={"labels": np.random.randint(2, size=(5))},
+        labels={"labels": np.array([0, 1, 0, 0, 0])},
     )
 
 
@@ -60,17 +61,17 @@ def test_train_val_split(session_data: SessionData):
     )
 
     for v in train_session_data.X.values():
-        assert len(v) == 3
+        assert v.shape[0] == 3
 
     for v in val_session_data.X.values():
-        assert len(v) == 2
+        assert v.shape[0] == 2
 
 
 def test_session_data_for_ids(session_data: SessionData):
     filtered_session_data = session_data_for_ids(session_data, np.array([0, 1]))
 
     for v in filtered_session_data.X.values():
-        assert len(v) == 2
+        assert v.shape[0] == 2
 
     k = list(session_data.X.keys())[0]
 
