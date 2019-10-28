@@ -17,7 +17,7 @@ tensorflow-probability==0.7.0
 tensor2tensor==1.14.0
 apscheduler==3.6.0
 tqdm==4.31.0
-networkx==2.3
+networkx~=2.3.0
 fbmessenger==6.0.0
 pykwalify==1.7.0
 coloredlogs==10.0

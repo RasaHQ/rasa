@@ -5,7 +5,6 @@ import typing
 from typing import List, Text, Optional
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.actions.action import (
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
