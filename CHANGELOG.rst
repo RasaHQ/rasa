@@ -7,20 +7,16 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-<<<<<<< HEAD
 [Unreleased 1.5.0a1] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-=======
 [Unreleased 1.4.2]
 ~~~~~~~~~~~~~~~~~~
->>>>>>> origin/1.4.x
 
 Added
 -----
 
 Changed
 -------
-<<<<<<< HEAD
 - updated mattermost connector documentation to be more clear
 
 Removed
@@ -28,7 +24,6 @@ Removed
 
 Fixed
 -----
-=======
 
 Removed
 -------
@@ -39,7 +34,6 @@ Fixed
 - Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
   interactive learning
 - Pinned `networkx~=2.3.0` to fix visualization in `rasa interactive` and Rasa X
->>>>>>> origin/1.4.x
 
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
