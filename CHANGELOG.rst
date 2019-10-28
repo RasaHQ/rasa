@@ -7,8 +7,8 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.4.2]
-~~~~~~~~~~~~~~~~~~
+[1.4.2] - 2019-10-28
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
