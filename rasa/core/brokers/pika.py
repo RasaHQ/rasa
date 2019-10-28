@@ -161,7 +161,9 @@ class PikaProducer(EventChannel):
         password: Text,
         port: Union[int, Text] = 5672,
         queue: Text = "rasa_core_events",
-        loglevel: Union[Text, int] = logging.WARNING,
+        loglevel: Union[Text, int] = os.environ.get(
+            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
+        ),
     ):
         logging.getLogger("pika").setLevel(loglevel)
 
