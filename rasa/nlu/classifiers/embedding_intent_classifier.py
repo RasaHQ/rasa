@@ -339,33 +339,32 @@ class EmbeddingIntentClassifier(Component):
         attribute: Text,
     ) -> "train_utils.SessionData":
         """Prepare data for training and create a SessionData object"""
-        X_sparse = []
-        X_dense = []
+        X = []
         Y = []
         labels = []
 
         for e in training_data.training_examples:
             if e.get(attribute):
-                X_sparse.append(
-                    e.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-                )
-                X_dense.append(
-                    e.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                X.append(
+                    sequence_to_sentence_features(
+                        e.get(
+                            MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                        )
+                    )
+                    .toarray()
+                    .squeeze()
                 )
                 # every example should have an intent
                 labels.append(label_id_dict[e.get(MESSAGE_INTENT_ATTRIBUTE)])
 
-        X_sparse = np.array(X_sparse)
-        X_dense = np.array(X_dense)
+        X = np.array(X)
         labels = np.array(labels)
 
         for label_id_idx in labels:
             Y.append(self._encoded_all_label_ids[label_id_idx])
         Y = np.array(Y)
 
-        return train_utils.SessionData(
-            {"dense": X_dense, "sparse": X_sparse}, {"Y": Y}, {"labels": labels}
-        )
+        return train_utils.SessionData({"X": X}, {"Y": Y}, {"labels": labels})
 
     # tf helpers:
     def _create_tf_embed_fnn(
@@ -394,7 +393,7 @@ class EmbeddingIntentClassifier(Component):
         )
 
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        self.a_in, self.b_in = self._iterator.get_next()
+        self.a_in, self.b_in, _ = self._iterator.get_next()
 
         all_label_ids = tf.constant(
             self._encoded_all_label_ids, dtype=tf.float32, name="all_label_ids"
@@ -440,7 +439,7 @@ class EmbeddingIntentClassifier(Component):
         self, session_data: "train_utils.SessionData"
     ) -> "tf.Tensor":
         self.a_in = tf.placeholder(
-            tf.float32, (None, session_data.X["sparse"].shape[-1]), name="a"
+            tf.float32, (None, session_data.X["X"].shape[-1]), name="a"
         )
         self.b_in = tf.placeholder(
             tf.float32, (None, None, session_data.Y["Y"].shape[-1]), name="b"
@@ -475,7 +474,7 @@ class EmbeddingIntentClassifier(Component):
     def check_input_dimension_consistency(self, session_data):
 
         if self.share_hidden_layers:
-            if session_data.X["sparse"].shape[-1] != session_data.Y["Y"].shape[-1]:
+            if session_data.X["X"].shape[-1] != session_data.Y["Y"].shape[-1]:
                 raise ValueError(
                     "If embeddings are shared "
                     "text features and label features "

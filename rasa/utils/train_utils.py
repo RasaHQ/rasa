@@ -281,32 +281,21 @@ def gen_batch(
 
         batch_data = []
         for v in session_data.X.values():
-            batch_data.append(convert_sparse_to_dense(v[start:end]))
+            batch_data.append(convert_to_batch(v[start:end]))
         for v in session_data.Y.values():
-            batch_data.append(convert_sparse_to_dense(v[start:end]))
+            batch_data.append(convert_to_batch(v[start:end]))
         for v in session_data.labels.values():
-            batch_data.append(convert_sparse_to_dense(v[start:end]))
+            batch_data.append(convert_to_batch(v[start:end]))
 
         yield tuple(batch_data)
 
 
-def convert_sparse_to_dense(
-    data_sparse: Union[np.ndarray, List[scipy.sparse.csr_matrix]],
-    init_with_zero: bool = False,
-):
-    data_size = len(data_sparse)
-    max_seq_len = max([x.shape[0] for x in data_sparse])
-    feature_len = max([x.shape[-1] for x in data_sparse])
+def convert_to_batch(data_points: Union[np.ndarray, scipy.sparse.csr_matrix],):
+    is_sparse = isinstance(data_points[0], scipy.sparse.spmatrix)
 
-    if init_with_zero:
-        data_dense = np.zeros([data_size, max_seq_len, feature_len], dtype=np.float)
-    else:
-        data_dense = np.ones([data_size, max_seq_len, feature_len], dtype=np.float) * -1
-
-    for i in range(data_size):
-        data_dense[i, : data_sparse[i].shape[0], :] = data_sparse[i].toarray()
-
-    return data_dense
+    if is_sparse:
+        return data_points.toarray()
+    return data_points
 
 
 # noinspection PyPep8Naming
@@ -336,9 +325,12 @@ def _get_shape(session_data: SessionData) -> Tuple:
     shapes = []
 
     def append_shape(v: Union[np.ndarray, scipy.sparse.spmatrix]):
-        if v[0].ndim == 1:
-            shapes.append((None, v[0].shape[-1]))
-        shapes.append((None, None, v[0].shape[-1]))
+        if v[0].ndim == 0:
+            shapes.append((v.shape[-1]))
+        elif v[0].ndim == 1:
+            shapes.append((None, v.shape[-1]))
+        else:
+            shapes.append((None, None, v.shape[-1]))
 
     for v in session_data.X.values():
         append_shape(v)

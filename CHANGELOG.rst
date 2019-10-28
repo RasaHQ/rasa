@@ -22,6 +22,7 @@ Changed
 - All featurizers in ``rasa.nlu`` return a sequence
 - Renamed the feature name ``ner_features`` to ``text_dense_features`` in ``CRFEntityExtractor``.
   The ``text_dense_features`` are created by any dense featurizer.
+- Values of ``SessionData`` are dictionaries instead of ``np.ndarray``
 
 Removed
 -------
