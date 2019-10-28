@@ -210,12 +210,12 @@ class PikaProducer(EventChannel):
         )
 
     def _on_open_connection(self, connection: "SelectConnection") -> None:
-        logger.debug("Rabbit MQ connection was established.")
+        logger.debug(f"Rabbit MQ connection to '{self.host}' was established.")
         connection.channel(on_open_callback=self._on_channel_open)
 
     def _on_open_connection_error(self, _, error: Text) -> None:
         logger.warning(
-            f"Connecting to '{self.host}' failed with error '{error}. " f"Trying again."
+            f"Connecting to '{self.host}' failed with error '{error}. Trying again."
         )
 
     def _on_channel_open(self, channel: "Channel") -> None:
