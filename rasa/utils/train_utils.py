@@ -335,9 +335,9 @@ def sparse_to_dense(
 def create_tf_dataset(
     session_data: "SessionData",
     batch_size: Union["tf.Tensor", int],
+    label_key: Text,
     batch_strategy: Text = "sequence",
     shuffle: bool = False,
-    label_key: Text = "labels",
 ) -> "tf.data.Dataset":
     """Create tf dataset."""
 
@@ -391,9 +391,9 @@ def create_iterator_init_datasets(
     train_dataset = create_tf_dataset(
         session_data,
         batch_size,
+        label_key=label_key,
         batch_strategy=batch_strategy,
         shuffle=True,
-        label_key=label_key,
     )
 
     iterator = tf.data.Iterator.from_structure(
