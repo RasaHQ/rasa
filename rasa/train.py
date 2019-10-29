@@ -223,7 +223,7 @@ async def _do_training(
             "the updated templates will be created.",
             color=bcolors.OKBLUE,
         )
-        await model.update_with_new_domain(file_importer, train_path)
+        await model.update_model_with_new_domain(file_importer, train_path)
     else:
         print_color(
             "Core stories/configuration did not change. No need to retrain Core model.",

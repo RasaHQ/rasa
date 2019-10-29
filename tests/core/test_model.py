@@ -391,7 +391,7 @@ async def test_update_with_new_domain(trained_model: Text, tmpdir: Path):
 
     mocked_importer.get_domain = get_domain
 
-    await model.update_with_new_domain(mocked_importer, tmpdir)
+    await model.update_model_with_new_domain(mocked_importer, tmpdir)
 
     actual = Domain.load(tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME / DEFAULT_DOMAIN_PATH)
 

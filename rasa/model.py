@@ -464,7 +464,7 @@ def package_model(
     return output_directory
 
 
-async def update_with_new_domain(
+async def update_model_with_new_domain(
     importer: "TrainingDataImporter", unpacked_model_path: Union[Path, Text]
 ) -> None:
     """Overwrites the domain of an unpacked model with a new domain.
