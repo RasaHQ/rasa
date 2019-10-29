@@ -335,7 +335,7 @@ class EmbeddingPolicy(Policy):
         """Bulid train graph using iterator."""
 
         # session data are int counts but we need a float tensors
-        self.a_in, self.b_in = self._iterator.get_next()
+        self.a_in, self.b_in, _ = self._iterator.get_next()
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
             # add time dimension if max history featurizer is used
             self.b_in = self.b_in[:, tf.newaxis, :]
