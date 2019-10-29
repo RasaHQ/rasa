@@ -7,8 +7,8 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.4.2]
-~~~~~~~~~~~~~~~~~~
+[Unreleased 1.4.3]
+^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -18,12 +18,22 @@ Changed
 
 Removed
 -------
+
+Fixed
+-----
+
+[1.4.2] - 2019-10-28
+^^^^^^^^^^^^^^^^^^^^
+
+Removed
+-------
 - TensorFlow deprecation warnings are no longer shown when running ``rasa x``
 
 Fixed
 -----
 - Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
   interactive learning
+- Pinned `networkx~=2.3.0` to fix visualization in `rasa interactive` and Rasa X
 - Fixed ``No model found`` error when using ``rasa run actions`` with "actions"
   as a directory.
 
