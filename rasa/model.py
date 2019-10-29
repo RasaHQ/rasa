@@ -78,33 +78,37 @@ class FingerprintComparisonResult:
         nlg: bool = True,
         force_train: bool = False,
     ):
+        """Creates a `FingerprintComparisonResult` instance.
+
+        Args:
+            nlu: `True` if the NLU model should be retrained.
+            core: `True` if the Core model should be retrained.
+            nlg: `True` if the templates in the domain should be updated.
+            force_train: `True` if a training of all parts is forced.
+        """
         self.nlu = nlu
         self.core = core
         self.nlg = nlg
         self.force_train = force_train
 
-    def __eq__(self, obj: Any) -> bool:
-        if not isinstance(obj, FingerprintComparisonResult):
-            return False
-        return all(
-            [
-                self.nlu == obj.nlu,
-                self.core == obj.core,
-                self.nlg == obj.nlg,
-                self.force_train == obj.force_train,
-            ]
-        )
-
     def is_training_required(self) -> bool:
+        """Check if anything has to be retrained."""
+
         return any([self.nlg, self.nlu, self.core, self.force_train])
 
     def should_retrain_core(self) -> bool:
+        """Check if the Core model has to be updated."""
+
         return self.force_train or self.core
 
     def should_retrain_nlg(self) -> bool:
+        """Check if the templates have to be updated."""
+
         return self.force_train or self.nlg
 
     def should_retrain_nlu(self) -> bool:
+        """Check if the NLU model has to be updated."""
+
         return self.force_train or self.nlu
 
 
