@@ -177,7 +177,7 @@ async def _train_async_internal(
             file_importer,
             output_path=output_path,
             train_path=train_path,
-            retrain=retrain,
+            fingerprint_comparison_result=retrain,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             kwargs=kwargs,
@@ -208,15 +208,17 @@ async def _do_training(
     file_importer: TrainingDataImporter,
     output_path: Text,
     train_path: Text,
-    retrain: FingerprintComparisonResult = None,
+    fingerprint_comparison_result: FingerprintComparisonResult = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     kwargs: Optional[Dict] = None,
 ):
-    if not retrain:
-        retrain = FingerprintComparisonResult(nlu=True, core=True, nlg=True)
+    if not fingerprint_comparison_result:
+        fingerprint_comparison_result = FingerprintComparisonResult(
+            nlu=True, core=True, nlg=True
+        )
 
-    if any([retrain.force_train, retrain.core]):
+    if fingerprint_comparison_result.should_retrain_core():
         await _train_core_with_validated_data(
             file_importer,
             output=output_path,
@@ -224,7 +226,7 @@ async def _do_training(
             fixed_model_name=fixed_model_name,
             kwargs=kwargs,
         )
-    elif retrain.nlg:
+    elif fingerprint_comparison_result.should_retrain_nlg():
         print_color(
             "Core stories/configuration did not change. "
             "Only the templates section has been changed. A new model with "
@@ -238,7 +240,7 @@ async def _do_training(
             color=bcolors.OKBLUE,
         )
 
-    if any([retrain.nlu, retrain.force_train]):
+    if fingerprint_comparison_result.should_retrain_nlu():
         await _train_nlu_with_validated_data(
             file_importer,
             output=output_path,

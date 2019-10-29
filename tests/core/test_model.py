@@ -327,3 +327,43 @@ def set_fingerprint(trained_model: Text, fingerprint: Fingerprint) -> Text:
     create_package_rasa(unpacked_model_path, output_path, fingerprint)
 
     return output_path
+
+
+@pytest.mark.parametrize(
+    "comparison_result,retrain_all,retrain_core,retrain_nlg,retrain_nlu",
+    [
+        (FingerprintComparisonResult(force_train=True), True, True, True, True),
+        (
+            FingerprintComparisonResult(core=True, nlu=False, nlg=False),
+            True,
+            True,
+            False,
+            False,
+        ),
+        (
+            FingerprintComparisonResult(core=False, nlu=True, nlg=False),
+            True,
+            False,
+            False,
+            True,
+        ),
+        (
+            FingerprintComparisonResult(core=True, nlu=True, nlg=False),
+            True,
+            True,
+            False,
+            True,
+        ),
+    ],
+)
+def test_fingerprint_comparison_result(
+    comparison_result: FingerprintComparisonResult,
+    retrain_all: bool,
+    retrain_core: bool,
+    retrain_nlg: bool,
+    retrain_nlu: bool,
+):
+    assert comparison_result.is_training_required() == retrain_all
+    assert comparison_result.should_retrain_core() == retrain_core
+    assert comparison_result.should_retrain_nlg() == retrain_nlg
+    assert comparison_result.should_retrain_nlu() == retrain_nlu

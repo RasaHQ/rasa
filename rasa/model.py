@@ -74,9 +74,6 @@ class FingerprintComparisonResult:
         self.nlg = nlg
         self.force_train = force_train
 
-    def any(self) -> bool:
-        return any([self.nlu, self.core, self.nlg, self.force_train])
-
     def __eq__(self, obj: Any) -> bool:
         if not isinstance(obj, FingerprintComparisonResult):
             return False
@@ -88,6 +85,18 @@ class FingerprintComparisonResult:
                 self.force_train == obj.force_train,
             ]
         )
+
+    def is_training_required(self) -> bool:
+        return any([self.nlg, self.nlu, self.core, self.force_train])
+
+    def should_retrain_core(self) -> bool:
+        return self.force_train or self.core
+
+    def should_retrain_nlg(self) -> bool:
+        return self.force_train or self.nlg
+
+    def should_retrain_nlu(self) -> bool:
+        return self.force_train or self.nlu
 
 
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
