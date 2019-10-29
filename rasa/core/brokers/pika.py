@@ -3,7 +3,7 @@ import logging
 import typing
 import os
 from threading import Thread
-from typing import Dict, Optional, Text, Union, List
+from typing import Dict, Optional, Text, Union, List, Callable
 
 import time
 
@@ -98,6 +98,32 @@ def _get_pika_parameters(
         )
 
     return parameters
+
+
+def initialise_pika_select_connection(
+    parameters: "Parameters",
+    on_open_callback: Callable[["SelectConnection"], None],
+    on_open_error_callback: Callable[["SelectConnection", Text], None],
+) -> "SelectConnection":
+    """Create a non-blocking Pika `SelectConnection`.
+
+    Args:
+        parameters: Parameters which should be used to connect.
+        on_open_callback: Callback which is called when the connection was established.
+        on_open_error_callback: Callback which is called when connecting to the broker
+            failed.
+
+    Returns:
+        An callback based connection to the RabbitMQ event broker.
+    """
+
+    import pika
+
+    return pika.SelectConnection(
+        parameters,
+        on_open_callback=on_open_callback,
+        on_open_error_callback=on_open_error_callback,
+    )
 
 
 def initialise_pika_channel(
@@ -207,21 +233,14 @@ class PikaProducer(EventChannel):
         return cls(broker_config.url, **broker_config.kwargs)
 
     def _run_pika(self) -> None:
-        self._pika_connection = self._get_connection()
-        # Run Pika io loop in extra thread so it's not blocking
-        self._run_pika_io_loop_in_thread()
-
-    def _get_connection(self) -> "Connection":
-        import pika
-
         parameters = _get_pika_parameters(
             self.host, self.username, self.password, self.port
         )
-        return pika.SelectConnection(
-            parameters,
-            on_open_callback=self._on_open_connection,
-            on_open_error_callback=self._on_open_connection_error,
+        self._pika_connection = initialise_pika_select_connection(
+            parameters, self._on_open_connection, self._on_open_connection_error
         )
+        # Run Pika io loop in extra thread so it's not blocking
+        self._run_pika_io_loop_in_thread()
 
     def _on_open_connection(self, connection: "SelectConnection") -> None:
         logger.debug(f"RabbitMQ connection to '{self.host}' was established.")
@@ -283,8 +302,7 @@ class PikaProducer(EventChannel):
     def _publish(self, body: Text) -> None:
         if self._pika_connection.is_closed:
             # Try to reset connection
-            self._pika_connection = self._get_connection()
-            self._run_pika_io_loop_in_thread()
+            self._run_pika()
         elif not self.channel:
             logger.warning(
                 "RabbitMQ channel has not been assigned. Adding message to "
