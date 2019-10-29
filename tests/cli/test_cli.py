@@ -1,8 +1,10 @@
 import pytest
+from typing import Callable
+from _pytest.pytester import RunResult
 
 
 @pytest.mark.repeat(3)
-def test_cli_start(run):
+def test_cli_start(run: Callable[..., RunResult]):
     """
     Startup of cli should not take longer than n seconds
     """
@@ -18,7 +20,7 @@ def test_cli_start(run):
     assert duration <= 5
 
 
-def test_data_convert_help(run):
+def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("--help")
 
     help_text = """usage: rasa [-h] [--version]

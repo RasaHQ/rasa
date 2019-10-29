@@ -59,11 +59,11 @@ def _rasa_service(
 ):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
+    import rasa.utils.common
 
     # needs separate logging configuration as it is started in its own process
-    logging.basicConfig(level=args.loglevel)
+    rasa.utils.common.set_log_level(args.loglevel)
     io_utils.configure_colored_logging(args.loglevel)
-    logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
     if not credentials_path:
         credentials_path = _prepare_credentials_for_rasa_x(

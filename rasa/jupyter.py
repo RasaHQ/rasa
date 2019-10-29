@@ -4,7 +4,6 @@ import typing
 from typing import Any, Dict, Text, Optional
 from rasa.cli.utils import print_success, print_error
 from rasa.core.interpreter import NaturalLanguageInterpreter, RasaNLUInterpreter
-import rasa.model as model
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
