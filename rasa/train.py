@@ -17,7 +17,7 @@ from rasa.cli.utils import (
     bcolors,
     print_color,
 )
-from rasa.constants import DEFAULT_MODELS_PATH
+from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CORE_SUBDIRECTORY_NAME
 
 
 def train(
@@ -349,7 +349,7 @@ async def _train_core_with_validated_data(
         await rasa.core.train(
             domain_file=domain,
             training_resource=file_importer,
-            output_path=os.path.join(_train_path, "core"),
+            output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
             policy_config=config,
             kwargs=kwargs,
         )

@@ -16,6 +16,7 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
     DEFAULT_DOMAIN_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
 
 from rasa.core.utils import get_dict_hash
@@ -200,7 +201,7 @@ def get_model_subdirectories(
                path to NLU subdirectory if it exists or `None` otherwise).
 
     """
-    core_path = os.path.join(unpacked_model_path, "core")
+    core_path = os.path.join(unpacked_model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
     nlu_path = os.path.join(unpacked_model_path, "nlu")
 
     if not os.path.isdir(core_path):
@@ -412,7 +413,7 @@ def should_retrain(
 
         core_merge_failed = False
         if not retrain.core:
-            target_path = os.path.join(train_path, "core")
+            target_path = os.path.join(train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
             core_merge_failed = not merge_model(old_core, target_path)
             retrain.core = core_merge_failed
 
@@ -469,7 +470,7 @@ async def update_with_new_domain(
         unpacked_model_path: Path to the unpacked model.
     """
 
-    model_path = Path(unpacked_model_path) / "core"
+    model_path = Path(unpacked_model_path) / DEFAULT_CORE_SUBDIRECTORY_NAME
     domain = await importer.get_domain()
 
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)

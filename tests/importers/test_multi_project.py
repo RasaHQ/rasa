@@ -4,12 +4,12 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 import os
 
+from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME
 from rasa.nlu.training_data.formats import RasaReader
 from rasa import model
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.importers.multi_project import MultiProjectImporter
-from rasa.train import train_async
 
 
 def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
@@ -242,7 +242,7 @@ async def test_multi_project_training(trained_async):
 
     unpacked = model.unpack_model(trained_stack_model_path)
 
-    domain_file = os.path.join(unpacked, "core", "domain.yml")
+    domain_file = os.path.join(unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME, "domain.yml")
     domain = Domain.load(domain_file)
 
     expected_intents = {

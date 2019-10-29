@@ -13,7 +13,12 @@ import rasa
 import rasa.core
 import rasa.nlu
 from rasa.importers.rasa import RasaFileImporter
-from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.constants import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
 from rasa.core.domain import Domain
 from rasa.core.utils import get_dict_hash
 from rasa import model
@@ -57,7 +62,7 @@ def test_get_latest_model(trained_model):
 def test_get_model_from_directory(trained_model):
     unpacked = get_model(trained_model)
 
-    assert os.path.exists(os.path.join(unpacked, "core"))
+    assert os.path.exists(os.path.join(unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME))
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
 
@@ -90,7 +95,7 @@ def test_get_model_from_directory_with_subdirectories(
 
 def test_get_model_from_directory_nlu_only(trained_model):
     unpacked = get_model(trained_model)
-    shutil.rmtree(os.path.join(unpacked, "core"))
+    shutil.rmtree(os.path.join(unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME))
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
 
     assert not unpacked_core
@@ -247,7 +252,7 @@ async def test_rasa_packaging(trained_model, project, use_fingerprint):
     assert (
         os.path.exists(os.path.join(unpacked, FINGERPRINT_FILE_PATH)) == use_fingerprint
     )
-    assert os.path.exists(os.path.join(unpacked, "core"))
+    assert os.path.exists(os.path.join(unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME))
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
     assert not os.path.exists(unpacked_model_path)
@@ -386,6 +391,6 @@ async def test_update_with_new_domain(trained_model: Text, tmpdir: Path):
 
     await model.update_with_new_domain(mocked_importer, tmpdir)
 
-    actual = Domain.load(tmpdir / "core" / DEFAULT_DOMAIN_PATH)
+    actual = Domain.load(tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME / DEFAULT_DOMAIN_PATH)
 
     assert actual.is_empty()
