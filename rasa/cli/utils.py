@@ -97,7 +97,10 @@ def parse_last_positional_argument_as_model_path() -> None:
 
     if (
         len(sys.argv) >= 2
+        # support relevant commands ...
         and sys.argv[1] in ["run", "shell", "interactive"]
+        # but avoid interpreting subparser commands as model paths
+        and sys.argv[1:] != ["run", "actions"]
         and not sys.argv[-2].startswith("-")
         and os.path.exists(sys.argv[-1])
     ):
