@@ -21,6 +21,8 @@ Removed
 
 Fixed
 -----
+- Fixed ``Connection reset by peer`` errors and bot response delays when using the
+  RabbitMQ event broker.
 
 [1.4.2] - 2019-10-28
 ^^^^^^^^^^^^^^^^^^^^
