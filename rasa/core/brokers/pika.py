@@ -60,6 +60,20 @@ def _get_pika_parameters(
     connection_attempts: int = 20,
     retry_delay_in_seconds: Union[int, float] = 5,
 ) -> "Parameters":
+    """Create Pika `Parameters`.
+
+    Args:
+        host: Pika host
+        username: username for authentication with Pika host
+        password: password for authentication with Pika host
+        port: port of the Pika host
+        connection_attempts: number of channel attempts before giving up
+        retry_delay_in_seconds: delay in seconds between channel attempts
+
+    Returns:
+        Pika `Paramaters` which can be used to create a new connection to a broker.
+    """
+
     import pika
 
     if host.startswith("amqp"):
