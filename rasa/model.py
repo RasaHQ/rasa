@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import typing
 from collections import namedtuple
+from pathlib import Path
 from typing import Text, Tuple, Union, Optional, List, Dict, Any
 
 import rasa.utils.io
@@ -14,6 +15,7 @@ from rasa.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
+    DEFAULT_DOMAIN_PATH,
 )
 
 from rasa.core.utils import get_dict_hash
@@ -68,7 +70,13 @@ SECTION_NLG = Section(name="NLG Templates", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
 class FingerprintComparisonResult:
-    def __init__(self, nlu: bool, core: bool, nlg: bool, force_train: bool = False):
+    def __init__(
+        self,
+        nlu: bool = True,
+        core: bool = True,
+        nlg: bool = True,
+        force_train: bool = False,
+    ):
         self.nlu = nlu
         self.core = core
         self.nlg = nlg
@@ -152,7 +160,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 
 def unpack_model(
-    model_file: Text, working_directory: Optional[Text] = None
+    model_file: Text, working_directory: Optional[Union[Path, Text]] = None
 ) -> TempDirectoryPath:
     """Unpack a zipped Rasa model.
 
@@ -381,7 +389,7 @@ def should_retrain(
         to be retrained or not.
 
     """
-    retrain = FingerprintComparisonResult(core=True, nlu=True, nlg=True)
+    retrain = FingerprintComparisonResult()
 
     if old_model is None or not os.path.exists(old_model):
         return retrain
@@ -449,3 +457,20 @@ def package_model(
     )
 
     return output_directory
+
+
+async def update_with_new_domain(
+    importer: "TrainingDataImporter", unpacked_model_path: Union[Path, Text]
+) -> None:
+    """Overwrites the domain of an unpacked model with a new domain.
+    
+    Args:
+        importer: Importer which provides the new domain.
+        unpacked_model_path: Path to the unpacked model.
+    """
+
+    model_path = Path(unpacked_model_path) / "core"
+    domain = await importer.get_domain()
+
+    domain.persist(model_path / DEFAULT_DOMAIN_PATH)
+    domain.persist_specification(str(model_path))

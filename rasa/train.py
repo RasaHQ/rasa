@@ -7,7 +7,6 @@ from typing import Text, Optional, List, Union, Dict
 from rasa.importers.importer import TrainingDataImporter
 from rasa import model
 from rasa.model import FingerprintComparisonResult
-from rasa.constants import DEFAULT_DOMAIN_PATH
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
 
@@ -166,13 +165,11 @@ async def _train_async_internal(
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
-    retrain = FingerprintComparisonResult(
-        core=False, nlu=False, nlg=False, force_train=force_training
-    )
+    retrain = FingerprintComparisonResult(force_train=force_training)
     if not retrain.force_train:
         retrain = model.should_retrain(new_fingerprint, old_model, train_path)
 
-    if retrain.any():
+    if retrain.is_training_required():
         await _do_training(
             file_importer,
             output_path=output_path,
@@ -197,18 +194,11 @@ async def _train_async_internal(
     return old_model
 
 
-async def _update_domain(file_importer: TrainingDataImporter, train_path: Text) -> None:
-    model_path = os.path.join(train_path, "core")
-    domain = await file_importer.get_domain()
-    domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
-    domain.persist_specification(model_path)
-
-
 async def _do_training(
     file_importer: TrainingDataImporter,
     output_path: Text,
     train_path: Text,
-    fingerprint_comparison_result: FingerprintComparisonResult = None,
+    fingerprint_comparison_result: Optional[FingerprintComparisonResult] = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     kwargs: Optional[Dict] = None,
@@ -233,7 +223,7 @@ async def _do_training(
             "the updated templates will be created.",
             color=bcolors.OKBLUE,
         )
-        await _update_domain(file_importer, train_path)
+        await model.update_with_new_domain(file_importer, train_path)
     else:
         print_color(
             "Core stories/configuration did not change. No need to retrain Core model.",

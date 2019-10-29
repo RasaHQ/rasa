@@ -2,7 +2,9 @@ import os
 import tempfile
 import time
 import shutil
+from pathlib import Path
 from typing import Text, Optional, Any
+from unittest.mock import Mock
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -14,6 +16,7 @@ from rasa.importers.rasa import RasaFileImporter
 from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 from rasa.core.domain import Domain
 from rasa.core.utils import get_dict_hash
+from rasa import model
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
     FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY,
@@ -367,3 +370,22 @@ def test_fingerprint_comparison_result(
     assert comparison_result.should_retrain_core() == retrain_core
     assert comparison_result.should_retrain_nlg() == retrain_nlg
     assert comparison_result.should_retrain_nlu() == retrain_nlu
+
+
+async def test_update_with_new_domain(trained_model: Text, tmpdir: Path):
+    _ = model.unpack_model(trained_model, tmpdir)
+
+    new_domain = Domain.empty()
+
+    mocked_importer = Mock()
+
+    async def get_domain() -> Domain:
+        return new_domain
+
+    mocked_importer.get_domain = get_domain
+
+    await model.update_with_new_domain(mocked_importer, tmpdir)
+
+    actual = Domain.load(tmpdir / "core" / DEFAULT_DOMAIN_PATH)
+
+    assert actual.is_empty()
