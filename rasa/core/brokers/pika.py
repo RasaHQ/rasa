@@ -310,9 +310,10 @@ class PikaProducer(EventChannel):
             self._run_pika()
         elif not self.channel:
             logger.warning(
-                "RabbitMQ channel has not been assigned. Adding message to "
-                "list of unpublished messages and trying to publish them "
-                "later."
+                f"RabbitMQ channel has not been assigned. Adding message to "
+                f"list of unpublished messages and trying to publish them "
+                f"later. Current number of unpublished messages is "
+                f"{len(self._unpublished_messages)}."
             )
             self._unpublished_messages.append(body)
         else:
