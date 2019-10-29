@@ -35,7 +35,7 @@ from rasa.model import (
     Fingerprint,
     section_fingerprint_changed,
     should_retrain,
-    ShouldRetrain,
+    FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
 
@@ -309,7 +309,7 @@ def test_should_retrain(trained_model: Text, fingerprint: Fingerprint):
 
     retrain = should_retrain(fingerprint["new"], old_model, tempfile.mkdtemp())
 
-    assert retrain == ShouldRetrain(
+    assert retrain == FingerprintComparisonResult(
         core=fingerprint["retrain_core"],
         nlu=fingerprint["retrain_nlu"],
         nlg=fingerprint["retrain_nlg"],

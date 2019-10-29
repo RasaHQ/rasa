@@ -5,7 +5,7 @@ import shutil
 import tempfile
 import typing
 from collections import namedtuple
-from typing import Text, Tuple, Union, Optional, List, Dict
+from typing import Text, Tuple, Union, Optional, List, Dict, Any
 
 import rasa.utils.io
 from rasa.cli.utils import print_success, create_output_path
@@ -67,7 +67,7 @@ SECTION_NLU = Section(
 SECTION_NLG = Section(name="NLG Templates", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
-class ShouldRetrain(object):
+class FingerprintComparisonResult:
     def __init__(self, nlu: bool, core: bool, nlg: bool, force_train: bool = False):
         self.nlu = nlu
         self.core = core
@@ -77,8 +77,8 @@ class ShouldRetrain(object):
     def any(self) -> bool:
         return any([self.nlu, self.core, self.nlg, self.force_train])
 
-    def __eq__(self, obj) -> bool:
-        if not isinstance(obj, ShouldRetrain):
+    def __eq__(self, obj: Any) -> bool:
+        if not isinstance(obj, FingerprintComparisonResult):
             return False
         return all(
             [
@@ -359,7 +359,7 @@ def merge_model(source: Text, target: Text) -> bool:
 
 def should_retrain(
     new_fingerprint: Fingerprint, old_model: Text, train_path: Text
-) -> ShouldRetrain:
+) -> FingerprintComparisonResult:
     """Check which components of a model should be retrained.
 
     Args:
@@ -372,7 +372,7 @@ def should_retrain(
         to be retrained or not.
 
     """
-    retrain = ShouldRetrain(core=True, nlu=True, nlg=True)
+    retrain = FingerprintComparisonResult(core=True, nlu=True, nlg=True)
 
     if old_model is None or not os.path.exists(old_model):
         return retrain
@@ -381,7 +381,7 @@ def should_retrain(
         last_fingerprint = fingerprint_from_path(unpacked)
         old_core, old_nlu = get_model_subdirectories(unpacked)
 
-        retrain = ShouldRetrain(
+        retrain = FingerprintComparisonResult(
             core=section_fingerprint_changed(
                 last_fingerprint, new_fingerprint, SECTION_CORE
             ),

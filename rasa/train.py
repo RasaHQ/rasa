@@ -6,7 +6,7 @@ from typing import Text, Optional, List, Union, Dict
 
 from rasa.importers.importer import TrainingDataImporter
 from rasa import model
-from rasa.model import ShouldRetrain
+from rasa.model import FingerprintComparisonResult
 from rasa.constants import DEFAULT_DOMAIN_PATH
 from rasa.core.domain import Domain
 from rasa.utils.common import TempDirectoryPath
@@ -166,7 +166,7 @@ async def _train_async_internal(
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
-    retrain = ShouldRetrain(
+    retrain = FingerprintComparisonResult(
         core=False, nlu=False, nlg=False, force_train=force_training
     )
     if not retrain.force_train:
@@ -208,13 +208,13 @@ async def _do_training(
     file_importer: TrainingDataImporter,
     output_path: Text,
     train_path: Text,
-    retrain: ShouldRetrain = None,
+    retrain: FingerprintComparisonResult = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
     kwargs: Optional[Dict] = None,
 ):
     if not retrain:
-        retrain = ShouldRetrain(nlu=True, core=True, nlg=True)
+        retrain = FingerprintComparisonResult(nlu=True, core=True, nlg=True)
 
     if any([retrain.force_train, retrain.core]):
         await _train_core_with_validated_data(
