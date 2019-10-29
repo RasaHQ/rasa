@@ -323,9 +323,11 @@ def gen_batch(
         yield tuple(batch_data)
 
 
-def sparse_to_dense(examples: Union[np.ndarray, scipy.sparse.csr_matrix]):
+def sparse_to_dense(
+    examples: List[Union[np.ndarray, scipy.sparse.csr_matrix]]
+) -> List[np.ndarray]:
     if isinstance(examples[0], scipy.sparse.spmatrix):
-        return examples.toarray()
+        return [e.toarray() for e in examples]
     return examples
 
 
@@ -356,13 +358,13 @@ def _get_shape_and_types(session_data: SessionData) -> Tuple[Tuple, Tuple]:
     shapes = []
     types = []
 
-    def append_shape(v: Union[np.ndarray, scipy.sparse.spmatrix]):
+    def append_shape(v: np.ndarray):
         if v[0].ndim == 0:
             shapes.append((None))
         elif v[0].ndim == 1:
-            shapes.append((None, v.shape[-1]))
+            shapes.append((None, v[0].shape[-1]))
         else:
-            shapes.append((None, None, v.shape[-1]))
+            shapes.append((None, None, v[0].shape[-1]))
 
     for v in session_data.X.values():
         append_shape(v)

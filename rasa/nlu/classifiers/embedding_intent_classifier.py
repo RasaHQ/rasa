@@ -14,6 +14,7 @@ from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
+    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
 )
 
 import tensorflow as tf
@@ -334,33 +335,58 @@ class EmbeddingIntentClassifier(Component):
         attribute: Text,
     ) -> "train_utils.SessionData":
         """Prepare data for training and create a SessionData object"""
-        X = []
+        X_sparse = []
+        X_dense = []
         Y = []
         label_ids = []
 
         for e in training_data.intent_examples:
             if e.get(attribute):
-                X.append(
-                    sequence_to_sentence_features(
-                        e.get(
-                            MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                if (
+                    e.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                    is not None
+                ):
+                    X_sparse.append(
+                        sequence_to_sentence_features(
+                            e.get(
+                                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[
+                                    MESSAGE_TEXT_ATTRIBUTE
+                                ]
+                            )
                         )
                     )
-                    .toarray()
-                    .squeeze()
-                )
+                if (
+                    e.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                    is not None
+                ):
+                    X_dense.append(
+                        sequence_to_sentence_features(
+                            e.get(
+                                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[
+                                    MESSAGE_TEXT_ATTRIBUTE
+                                ]
+                            )
+                        )
+                    )
                 # every example should have an intent
                 label_ids.append(label_id_dict[e.get(MESSAGE_INTENT_ATTRIBUTE)])
 
-        X = np.array(X)
+        X_sparse = np.array(X_sparse)
+        X_dense = np.array(X_dense)
         label_ids = np.array(label_ids)
 
         for label_id_idx in label_ids:
             Y.append(self._encoded_all_label_ids[label_id_idx])
         Y = np.array(Y)
 
+        X = {}
+        if X_sparse.size > 0:
+            X["text_features_sparse"] = X_sparse
+        if X_dense.size > 0:
+            X["text_features_dense"] = X_dense
+
         return train_utils.SessionData(
-            {"text_features": X}, {"intent_features": Y}, {"intent_ids": label_ids}
+            X, {"intent_features": Y}, {"intent_ids": label_ids}
         )
 
     # tf helpers:
@@ -390,7 +416,9 @@ class EmbeddingIntentClassifier(Component):
         )
 
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        self.a_in, self.b_in, _ = self._iterator.get_next()
+        batch = self._iterator.get_next()
+
+        self.a_in, self.b_in = self.batch_to_input(batch)
 
         all_label_ids = tf.constant(
             self._encoded_all_label_ids, dtype=tf.float32, name="all_label_ids"
@@ -432,15 +460,52 @@ class EmbeddingIntentClassifier(Component):
             self.scale_loss,
         )
 
+    def batch_to_input(self, batch: Tuple) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Convert batch input into correct tensors.
+
+        As we do not know what features (sparse and/or dense) were used, we need to
+        check what features are provided and parse them accordingly.
+        """
+        b_in = batch[-2]
+
+        if len(batch) == 3:
+            a_in = batch[0]
+            # Needed if a_in comes from a csr_matrix (e.g. sparse features)
+            if len(a_in.shape) == 3:
+                a_in = tf.squeeze(a_in, axis=1)
+
+        elif len(batch) == 4:
+            a_in_sparse = batch[0]
+            a_in_dense = batch[1]
+
+            # Needed as a_in_sparse comes from a csr_matrix
+            a_in_sparse = tf.squeeze(a_in_sparse, axis=1)
+            # Concatenate sparse and dense features
+            a_in = tf.concat([a_in_sparse, a_in_dense], axis=1)
+        else:
+            raise ValueError("Iterator return unexpected number of tensors.")
+
+        return a_in, b_in
+
     def _build_tf_pred_graph(
         self, session_data: "train_utils.SessionData"
     ) -> "tf.Tensor":
+        n_features_1 = (
+            session_data.X["text_features_sparse"][0].shape[-1]
+            if "text_features_sparse" in session_data.X
+            else 0
+        )
+        n_features_2 = (
+            session_data.X["text_features_dense"][0].shape[-1]
+            if "text_features_dense" in session_data.X
+            else 0
+        )
         self.a_in = tf.placeholder(
-            tf.float32, (None, session_data.X["text_features"].shape[-1]), name="a"
+            tf.float32, (None, n_features_1 + n_features_2), name="a"
         )
         self.b_in = tf.placeholder(
             tf.float32,
-            (None, None, session_data.Y["intent_features"].shape[-1]),
+            (None, None, session_data.Y["intent_features"][0].shape[-1]),
             name="b",
         )
 
@@ -618,7 +683,7 @@ class EmbeddingIntentClassifier(Component):
         # transform sim to python list for JSON serializing
         return label_ids, message_sim.tolist()
 
-    def predict_label(self, message):
+    def predict_label(self, message: "Message"):
 
         label = {"name": None, "confidence": 0.0}
         label_ranking = []
@@ -630,18 +695,9 @@ class EmbeddingIntentClassifier(Component):
             )
 
         else:
-            # get features (bag of words) for a message
+            # get features (bag of words/embeddings) for a message
             # noinspection PyPep8Naming
-            X = (
-                sequence_to_sentence_features(
-                    message.get(
-                        MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-                    )
-                )
-                .toarray()
-                .squeeze()
-                .reshape(1, -1)
-            )
+            X = self._extract_features(message)
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)
@@ -660,6 +716,44 @@ class EmbeddingIntentClassifier(Component):
                     for label_idx, score in ranking
                 ]
         return label, label_ranking
+
+    def _extract_features(self, message: "Message") -> np.ndarray:
+        X_sparse = None
+        X_dense = None
+
+        if (
+            message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            is not None
+        ):
+            X_sparse = (
+                sequence_to_sentence_features(
+                    message.get(
+                        MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                    )
+                )
+                .toarray()
+                .squeeze()
+                .reshape(1, -1)
+            )
+
+        if (
+            message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            is not None
+        ):
+            X_dense = sequence_to_sentence_features(
+                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            ).reshape(1, -1)
+
+        if X_sparse is not None and X_dense is not None:
+            return np.concatenate((X_sparse, X_dense), axis=1)
+
+        if X_sparse is None and X_dense is not None:
+            return X_dense
+
+        if X_sparse is not None and X_dense is None:
+            return X_sparse
+
+        raise ValueError("No features found for X.")
 
     def process(self, message: "Message", **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
