@@ -165,16 +165,20 @@ async def _train_async_internal(
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
-    retrain = FingerprintComparisonResult(force_train=force_training)
-    if not retrain.force_train:
-        retrain = model.should_retrain(new_fingerprint, old_model, train_path)
+    fingerprint_comparison = FingerprintComparisonResult(
+        force_trainining=force_training
+    )
+    if not force_training:
+        fingerprint_comparison = model.should_retrain(
+            new_fingerprint, old_model, train_path
+        )
 
-    if retrain.is_training_required():
+    if fingerprint_comparison.is_training_required():
         await _do_training(
             file_importer,
             output_path=output_path,
             train_path=train_path,
-            fingerprint_comparison_result=retrain,
+            fingerprint_comparison_result=fingerprint_comparison,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
             kwargs=kwargs,

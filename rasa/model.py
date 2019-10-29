@@ -76,7 +76,7 @@ class FingerprintComparisonResult:
         nlu: bool = True,
         core: bool = True,
         nlg: bool = True,
-        force_train: bool = False,
+        force_trainining: bool = False,
     ):
         """Creates a `FingerprintComparisonResult` instance.
 
@@ -84,22 +84,22 @@ class FingerprintComparisonResult:
             nlu: `True` if the NLU model should be retrained.
             core: `True` if the Core model should be retrained.
             nlg: `True` if the templates in the domain should be updated.
-            force_train: `True` if a training of all parts is forced.
+            force_trainining: `True` if a training of all parts is forced.
         """
         self.nlu = nlu
         self.core = core
         self.nlg = nlg
-        self.force_train = force_train
+        self.force_training = force_trainining
 
     def is_training_required(self) -> bool:
         """Check if anything has to be retrained."""
 
-        return any([self.nlg, self.nlu, self.core, self.force_train])
+        return any([self.nlg, self.nlu, self.core, self.force_training])
 
     def should_retrain_core(self) -> bool:
         """Check if the Core model has to be updated."""
 
-        return self.force_train or self.core
+        return self.force_training or self.core
 
     def should_retrain_nlg(self) -> bool:
         """Check if the templates have to be updated."""
@@ -109,7 +109,7 @@ class FingerprintComparisonResult:
     def should_retrain_nlu(self) -> bool:
         """Check if the NLU model has to be updated."""
 
-        return self.force_train or self.nlu
+        return self.force_training or self.nlu
 
 
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
