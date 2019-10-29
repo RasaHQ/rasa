@@ -478,4 +478,3 @@ async def update_model_with_new_domain(
     domain = await importer.get_domain()
 
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)
-    domain.persist_specification(str(model_path))
