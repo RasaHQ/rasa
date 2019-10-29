@@ -355,6 +355,7 @@ class EmbeddingIntentClassifier(Component):
                             )
                         )
                     )
+
                 if (
                     e.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
                     is not None
@@ -368,7 +369,7 @@ class EmbeddingIntentClassifier(Component):
                             )
                         )
                     )
-                # every example should have an intent
+
                 label_ids.append(label_id_dict[e.get(MESSAGE_INTENT_ATTRIBUTE)])
 
         X_sparse = np.array(X_sparse)
@@ -538,10 +539,12 @@ class EmbeddingIntentClassifier(Component):
     def check_input_dimension_consistency(self, session_data):
 
         if self.share_hidden_layers:
-            if (
-                session_data.X["text_features"][0].shape[-1]
-                != session_data.Y["intent_features"][0].shape[-1]
-            ):
+            dim = (
+                session_data.X["text_features_sparse"][0].shape[-1]
+                if "text_features_sparse" in session_data.X
+                else session_data.X["text_features_dense"][0].shape[-1]
+            )
+            if dim != session_data.Y["intent_features"][0].shape[-1]:
                 raise ValueError(
                     "If embeddings are shared "
                     "text features and label features "
