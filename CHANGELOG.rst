@@ -17,6 +17,9 @@ Added
 
 Changed
 -------
+- Print info message when running Rasa X and and custom model server url was specified in ``endpoints.yml``
+- If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
+  this will be used instead of the default one when running Rasa X
 
 Removed
 -------
@@ -80,9 +83,6 @@ Changed
   trackers are still loaded from pickle but will be dumped as json in any subsequent
   save operations.
 - Event brokers are now also passed to custom tracker stores (using the ``event_broker`` parameter)
-- Print info message when running Rasa X and and custom model server url was specified in ``endpoints.yml``
-- If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
-  this will be used instead of the default one when running Rasa X
 - Don't run the Rasa Docker image as ``root``.
 - Use multi-stage builds to reduce the size of the Rasa Docker image.
 - Updated the ``/status`` api route to use the actual model file location instead of the ``tmp`` location.
