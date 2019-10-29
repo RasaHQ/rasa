@@ -465,7 +465,11 @@ class EmbeddingPolicy(Policy):
                 train_init_op,
                 eval_init_op,
             ) = train_utils.create_iterator_init_datasets(
-                session_data, eval_session_data, batch_size_in, self.batch_strategy
+                session_data,
+                eval_session_data,
+                batch_size_in,
+                self.batch_strategy,
+                label_key="action_ids",
             )
 
             self._is_training = tf.placeholder_with_default(False, shape=())
@@ -519,7 +523,9 @@ class EmbeddingPolicy(Policy):
                 session_data = self._create_session_data(
                     training_data.X, training_data.y
                 )
-                train_dataset = train_utils.create_tf_dataset(session_data, batch_size)
+                train_dataset = train_utils.create_tf_dataset(
+                    session_data, batch_size, label_key="action_ids"
+                )
                 train_init_op = self._iterator.make_initializer(train_dataset)
                 self.session.run(train_init_op)
 

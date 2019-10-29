@@ -569,7 +569,11 @@ class EmbeddingIntentClassifier(Component):
                 train_init_op,
                 eval_init_op,
             ) = train_utils.create_iterator_init_datasets(
-                session_data, eval_session_data, batch_size_in, self.batch_strategy
+                session_data,
+                eval_session_data,
+                batch_size_in,
+                self.batch_strategy,
+                label_key="intent_ids",
             )
 
             self._is_training = tf.placeholder_with_default(False, shape=())

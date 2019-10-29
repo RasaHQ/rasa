@@ -55,7 +55,7 @@ def train_val_split(
     session_data: "SessionData",
     evaluate_on_num_examples: int,
     random_seed: int,
-    label_key: Text = "labels",
+    label_key: Text,
 ) -> Tuple["SessionData", "SessionData"]:
     """Create random hold out validation set using stratified split."""
     if label_key not in session_data.labels:
@@ -205,10 +205,7 @@ def split_session_data_by_label(
 
 # noinspection PyPep8Naming
 def balance_session_data(
-    session_data: "SessionData",
-    batch_size: int,
-    shuffle: bool,
-    label_key: Text = "labels",
+    session_data: "SessionData", batch_size: int, shuffle: bool, label_key: Text
 ) -> "SessionData":
     """Mix session data to account for class imbalance.
 
@@ -294,16 +291,19 @@ def get_number_of_examples(session_data: SessionData):
 def gen_batch(
     session_data: "SessionData",
     batch_size: int,
+    label_key: Text,
     batch_strategy: Text = "sequence",
     shuffle: bool = False,
-) -> Generator[Tuple["np.ndarray", "np.ndarray"], None, None]:
+) -> Generator[Tuple, None, None]:
     """Generate batches."""
 
     if shuffle:
         session_data = shuffle_session_data(session_data)
 
     if batch_strategy == "balanced":
-        session_data = balance_session_data(session_data, batch_size, shuffle)
+        session_data = balance_session_data(
+            session_data, batch_size, shuffle, label_key
+        )
 
     num_examples = get_number_of_examples(session_data)
     num_batches = num_examples // batch_size + int(num_examples % batch_size > 0)
@@ -335,16 +335,16 @@ def create_tf_dataset(
     batch_size: Union["tf.Tensor", int],
     batch_strategy: Text = "sequence",
     shuffle: bool = False,
+    label_key: Text = "labels",
 ) -> "tf.data.Dataset":
     """Create tf dataset."""
 
     # set batch and sequence length to None
-    shapes = _get_shape(session_data)
-    types = tuple([np.float32] * len(shapes))
+    shapes, types = _get_shape_and_types(session_data)
 
     return tf.data.Dataset.from_generator(
         lambda batch_size_: gen_batch(
-            session_data, batch_size_, batch_strategy, shuffle
+            session_data, batch_size_, label_key, batch_strategy, shuffle
         ),
         output_types=types,
         output_shapes=shapes,
@@ -352,8 +352,9 @@ def create_tf_dataset(
     )
 
 
-def _get_shape(session_data: SessionData) -> Tuple:
+def _get_shape_and_types(session_data: SessionData) -> Tuple[Tuple, Tuple]:
     shapes = []
+    types = []
 
     def append_shape(v: Union[np.ndarray, scipy.sparse.spmatrix]):
         if v[0].ndim == 0:
@@ -365,12 +366,15 @@ def _get_shape(session_data: SessionData) -> Tuple:
 
     for v in session_data.X.values():
         append_shape(v)
+        types.append(np.float32)
     for v in session_data.Y.values():
         append_shape(v)
+        types.append(np.float32)
     for v in session_data.labels.values():
         append_shape(v)
+        types.append(v.dtype)
 
-    return tuple(shapes)
+    return tuple(shapes), tuple(types)
 
 
 def create_iterator_init_datasets(
@@ -378,11 +382,16 @@ def create_iterator_init_datasets(
     eval_session_data: "SessionData",
     batch_size: Union["tf.Tensor", int],
     batch_strategy: Text,
+    label_key: Text,
 ) -> Tuple["tf.data.Iterator", "tf.Operation", "tf.Operation"]:
     """Create iterator and init datasets."""
 
     train_dataset = create_tf_dataset(
-        session_data, batch_size, batch_strategy=batch_strategy, shuffle=True
+        session_data,
+        batch_size,
+        batch_strategy=batch_strategy,
+        shuffle=True,
+        label_key=label_key,
     )
 
     iterator = tf.data.Iterator.from_structure(
@@ -395,7 +404,7 @@ def create_iterator_init_datasets(
 
     if eval_session_data is not None:
         eval_init_op = iterator.make_initializer(
-            create_tf_dataset(eval_session_data, batch_size)
+            create_tf_dataset(eval_session_data, batch_size, label_key=label_key)
         )
     else:
         eval_init_op = None
