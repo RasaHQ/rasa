@@ -271,7 +271,9 @@ class EmbeddingPolicy(Policy):
             Y = None
 
         return train_utils.SessionData(
-            X={"X": data_X}, Y={"Y": Y}, labels={"labels": label_ids}
+            X={"dialogue_features": data_X},
+            Y={"bot_features": Y},
+            labels={"action_ids": label_ids},
         )
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
@@ -372,12 +374,12 @@ class EmbeddingPolicy(Policy):
         dialogue_len = None  # use dynamic time
         self.a_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, session_data.X["X"].shape[-1]),
+            shape=(None, dialogue_len, session_data.X["dialogue_features"].shape[-1]),
             name="a",
         )
         self.b_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, None, session_data.Y["Y"].shape[-1]),
+            shape=(None, dialogue_len, None, session_data.Y["bot_features"].shape[-1]),
             name="b",
         )
 
@@ -442,7 +444,10 @@ class EmbeddingPolicy(Policy):
 
         if self.evaluate_on_num_examples:
             session_data, eval_session_data = train_utils.train_val_split(
-                session_data, self.evaluate_on_num_examples, self.random_seed
+                session_data,
+                self.evaluate_on_num_examples,
+                self.random_seed,
+                label_key="action_ids",
             )
         else:
             eval_session_data = None
@@ -537,7 +542,7 @@ class EmbeddingPolicy(Policy):
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
 
-        return {self.a_in: session_data.X["X"]}
+        return {self.a_in: session_data.X["dialogue_features"]}
 
     def predict_action_probabilities(
         self, tracker: "DialogueStateTracker", domain: "Domain"

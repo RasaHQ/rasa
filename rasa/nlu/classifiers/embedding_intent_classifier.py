@@ -336,7 +336,7 @@ class EmbeddingIntentClassifier(Component):
         """Prepare data for training and create a SessionData object"""
         X = []
         Y = []
-        labels = []
+        label_ids = []
 
         for e in training_data.intent_examples:
             if e.get(attribute):
@@ -350,16 +350,18 @@ class EmbeddingIntentClassifier(Component):
                     .squeeze()
                 )
                 # every example should have an intent
-                labels.append(label_id_dict[e.get(MESSAGE_INTENT_ATTRIBUTE)])
+                label_ids.append(label_id_dict[e.get(MESSAGE_INTENT_ATTRIBUTE)])
 
         X = np.array(X)
-        labels = np.array(labels)
+        label_ids = np.array(label_ids)
 
-        for label_id_idx in labels:
+        for label_id_idx in label_ids:
             Y.append(self._encoded_all_label_ids[label_id_idx])
         Y = np.array(Y)
 
-        return train_utils.SessionData({"X": X}, {"Y": Y}, {"labels": labels})
+        return train_utils.SessionData(
+            {"text_features": X}, {"intent_features": Y}, {"intent_ids": label_ids}
+        )
 
     # tf helpers:
     def _create_tf_embed_fnn(
@@ -434,10 +436,12 @@ class EmbeddingIntentClassifier(Component):
         self, session_data: "train_utils.SessionData"
     ) -> "tf.Tensor":
         self.a_in = tf.placeholder(
-            tf.float32, (None, session_data.X["X"].shape[-1]), name="a"
+            tf.float32, (None, session_data.X["text_features"].shape[-1]), name="a"
         )
         self.b_in = tf.placeholder(
-            tf.float32, (None, None, session_data.Y["Y"].shape[-1]), name="b"
+            tf.float32,
+            (None, None, session_data.Y["intent_features"].shape[-1]),
+            name="b",
         )
 
         self.message_embed = self._create_tf_embed_fnn(
@@ -469,7 +473,10 @@ class EmbeddingIntentClassifier(Component):
     def check_input_dimension_consistency(self, session_data):
 
         if self.share_hidden_layers:
-            if session_data.X["X"][0].shape[-1] != session_data.Y["Y"][0].shape[-1]:
+            if (
+                session_data.X["text_features"][0].shape[-1]
+                != session_data.Y["intent_features"][0].shape[-1]
+            ):
                 raise ValueError(
                     "If embeddings are shared "
                     "text features and label features "
@@ -512,7 +519,7 @@ class EmbeddingIntentClassifier(Component):
         return session_data
 
     def _check_enough_labels(self, session_data) -> bool:
-        return len(np.unique(session_data.labels["labels"])) >= 2
+        return len(np.unique(session_data.labels["intent_ids"])) >= 2
 
     def train(
         self,
@@ -541,7 +548,10 @@ class EmbeddingIntentClassifier(Component):
 
         if self.evaluate_on_num_examples:
             session_data, eval_session_data = train_utils.train_val_split(
-                session_data, self.evaluate_on_num_examples, self.random_seed
+                session_data,
+                self.evaluate_on_num_examples,
+                self.random_seed,
+                label_key="intent_ids",
             )
         else:
             eval_session_data = None

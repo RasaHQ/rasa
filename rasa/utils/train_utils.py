@@ -65,7 +65,44 @@ def train_val_split(
         zip(*np.unique(session_data.labels[label_key], return_counts=True, axis=0))
     )
 
+    check_train_test_sizes(evaluate_on_num_examples, label_counts, session_data)
+
+    counts = np.array([label_counts[label] for label in session_data.labels[label_key]])
+
+    multi_values = []
+    [multi_values.append(v[counts > 1]) for v in session_data.X.values()]
+    [multi_values.append(v[counts > 1]) for v in session_data.Y.values()]
+    [multi_values.append(v[counts > 1]) for v in session_data.labels.values()]
+
+    solo_values = []
+    [solo_values.append(v[counts == 1]) for v in session_data.X.values()]
+    [solo_values.append(v[counts == 1]) for v in session_data.Y.values()]
+    [solo_values.append(v[counts == 1]) for v in session_data.labels.values()]
+
+    output_values = train_test_split(
+        *multi_values,
+        test_size=evaluate_on_num_examples,
+        random_state=random_seed,
+        stratify=session_data.labels[label_key][counts > 1],
+    )
+
+    X_train, X_val, Y_train, Y_val, labels_train, labels_val = convert_train_test_split(
+        output_values, session_data, solo_values
+    )
+
+    return (
+        SessionData(X_train, Y_train, labels_train),
+        SessionData(X_val, Y_val, labels_val),
+    )
+
+
+def check_train_test_sizes(
+    evaluate_on_num_examples: int,
+    label_counts: Dict[Any, int],
+    session_data: SessionData,
+):
     num_examples = get_number_of_examples(session_data)
+
     if evaluate_on_num_examples >= num_examples - len(label_counts):
         raise ValueError(
             f"Validation set of {evaluate_on_num_examples} is too large. Remaining train set "
@@ -77,26 +114,11 @@ def train_val_split(
             "at least equal to number of classes {label_counts}."
         )
 
-    counts = np.array([label_counts[label] for label in session_data.labels[label_key]])
 
-    multi_values = []
-    [multi_values.append(v[counts > 1]) for k, v in session_data.X.items()]
-    [multi_values.append(v[counts > 1]) for k, v in session_data.Y.items()]
-    [multi_values.append(v[counts > 1]) for k, v in session_data.labels.items()]
-
-    solo_values = []
-    [solo_values.append(v[counts == 1]) for k, v in session_data.X.items()]
-    [solo_values.append(v[counts == 1]) for k, v in session_data.Y.items()]
-    [solo_values.append(v[counts == 1]) for k, v in session_data.labels.items()]
-
+def convert_train_test_split(
+    output_values: List[Any], session_data: SessionData, solo_values: List[Any]
+):
     keys = [k for d in session_data for k, v in d.items()]
-
-    output_values = train_test_split(
-        *multi_values,
-        test_size=evaluate_on_num_examples,
-        random_state=random_seed,
-        stratify=session_data.labels[label_key][counts > 1],
-    )
 
     X_train = {}
     Y_train = {}
@@ -132,10 +154,7 @@ def train_val_split(
     ):
         labels_val[keys[i]] = output_values[(i * 2) + 1]
 
-    return (
-        SessionData(X_train, Y_train, labels_train),
-        SessionData(X_val, Y_val, labels_val),
-    )
+    return X_train, X_val, Y_train, Y_val, labels_train, labels_val
 
 
 def combine_features(
@@ -291,7 +310,7 @@ def gen_batch(
 
     for batch_num in range(num_batches):
         start = batch_num * batch_size
-        end = (batch_num + 1) * batch_size
+        end = start + batch_size
 
         batch_data = [sparse_to_dense(v[start:end]) for v in session_data.X.values()]
         batch_data = batch_data + [
