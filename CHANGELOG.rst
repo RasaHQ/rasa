@@ -24,6 +24,7 @@ Removed
 Fixed
 -----
 - ``MultiProjectImporter`` now imports files in the order of the import statements
+- Fixed server hanging forever on leaving ``rasa shell`` before first message
 
 
 [1.4.2] - 2019-10-28
