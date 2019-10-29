@@ -15,6 +15,7 @@ Added
 
 Changed
 -------
+- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
 
 Removed
 -------
@@ -132,7 +133,6 @@ Changed
 
 Fixed
 -----
-- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
   when running ``rasa train core``
 - Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channels
@@ -174,9 +174,6 @@ Added
 
 Fixed
 -----
-- asyncio warnings are now only printed if the callback takes more than 100ms
-  (up from 1ms)
-- ``agent.load_model_from_server`` no longer affects logging
 - Added the ability to properly deal with spaCy ``Doc``-objects created on
   empty strings as discussed `here <https://github.com/RasaHQ/rasa/issues/4445>`_.
   Only training samples that actually bear content are sent to ``self.nlp.pipe``
