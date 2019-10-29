@@ -173,7 +173,7 @@ def unpack_model(
     # All files are in a subdirectory.
     with tarfile.open(model_file, mode="r:gz") as tar:
         tar.extractall(working_directory)
-    logger.debug("Extracted model to '{}'.".format(working_directory))
+    logger.debug(f"Extracted model to '{working_directory}'.")
 
     return TempDirectoryPath(working_directory)
 
@@ -342,7 +342,7 @@ def section_fingerprint_changed(
     """Check whether the fingerprint of a section has changed."""
     for k in section.relevant_keys:
         if fingerprint1.get(k) != fingerprint2.get(k):
-            logger.info("Data ({}) for {} section changed.".format(k, section.name))
+            logger.info(f"Data ({k}) for {section.name} section changed.")
             return True
     return False
 
@@ -362,7 +362,7 @@ def merge_model(source: Text, target: Text) -> bool:
         shutil.move(source, target)
         return True
     except Exception as e:
-        logging.debug("Could not merge model: {}".format(e))
+        logging.debug(f"Could not merge model: {e}")
         return False
 
 
