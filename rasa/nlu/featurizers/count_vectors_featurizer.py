@@ -567,7 +567,7 @@ class CountVectorsFeaturizer(Featurizer):
         #)
         # features shape (1, seq, dim)
         features = self._create_sequence(attribute, [message_text])
-        features = sequence_to_sentence_features(features)
+        # features = sequence_to_sentence_features(features)
 
         message.set(
             MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],

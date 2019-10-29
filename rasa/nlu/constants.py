@@ -30,6 +30,18 @@ MESSAGE_VECTOR_FEATURE_NAMES = {
     MESSAGE_ENTITIES_ATTRIBUTE: "ner_features",
 }
 
+MESSAGE_VECTOR_SPARSE_FEATURE_NAMES = {
+    MESSAGE_TEXT_ATTRIBUTE: "text_sparse_features",
+    MESSAGE_INTENT_ATTRIBUTE: "intent_sparse_features",
+    MESSAGE_RESPONSE_ATTRIBUTE: "response_sparse_features",
+}
+
+MESSAGE_VECTOR_DENSE_FEATURE_NAMES = {
+    MESSAGE_TEXT_ATTRIBUTE: "text_dense_features",
+    MESSAGE_INTENT_ATTRIBUTE: "intent_dense_features",
+    MESSAGE_RESPONSE_ATTRIBUTE: "response_dense_features",
+}
+
 MESSAGE_SPACY_FEATURES_NAMES = {
     MESSAGE_TEXT_ATTRIBUTE: "spacy_doc",
     MESSAGE_RESPONSE_ATTRIBUTE: "response_spacy_doc",
