@@ -15,7 +15,6 @@ from sklearn.utils import shuffle as sklearn_shuffle
 from typing import Optional, Any, List, Text, Dict, Callable
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
@@ -41,7 +40,7 @@ class SklearnPolicy(Policy):
         scoring: Optional[Text or List or Dict or Callable] = "accuracy",
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Create a new sklearn policy.
 
@@ -114,14 +113,14 @@ class SklearnPolicy(Policy):
             model, param_grid=param_grid, cv=self.cv, scoring="accuracy", verbose=1
         )
         search.fit(X, y)
-        print ("Best params:", search.best_params_)
+        print("Best params:", search.best_params_)
         return search.best_estimator_, search.best_score_
 
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
 
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
@@ -175,7 +174,7 @@ class SklearnPolicy(Policy):
             meta = {"priority": self.priority}
 
             meta_file = os.path.join(path, "sklearn_policy.json")
-            utils.dump_obj_as_json_to_file(meta_file, meta)
+            rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
             filename = os.path.join(path, "sklearn_model.pkl")
             with open(filename, "wb") as f:

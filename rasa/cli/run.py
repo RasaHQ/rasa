@@ -49,9 +49,6 @@ def run_actions(args: argparse.Namespace):
 
     args.actions = args.actions or DEFAULT_ACTIONS_PATH
 
-    path = args.actions.replace(".", os.sep) + ".py"
-    _ = get_validated_path(path, "action", DEFAULT_ACTIONS_PATH)
-
     sdk.main_from_args(args)
 
 

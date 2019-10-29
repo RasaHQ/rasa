@@ -2,6 +2,7 @@ language: en
 
 pipeline:
   - name: WhitespaceTokenizer
+    use_cls_token: False
   - name: CRFEntityExtractor
   - name: EntitySynonymMapper
   - name: CountVectorsFeaturizer

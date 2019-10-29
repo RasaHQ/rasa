@@ -1,22 +1,18 @@
 import re
 from typing import Any, Dict, List, Text
 
-from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
 
-class WhitespaceTokenizer(Tokenizer, Component):
+class WhitespaceTokenizer(Tokenizer):
 
     provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
@@ -25,8 +21,10 @@ class WhitespaceTokenizer(Tokenizer, Component):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # text will be tokenized with case sensitive as default
+        # Text will be tokenized with case sensitive as default
         "case_sensitive": True,
+        # add __CLS__ token to the end of the list of tokens
+        "use_cls_token": True,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -64,6 +62,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
         if not self.case_sensitive:
             text = text.lower()
+
         # remove 'not a word character' if
         if attribute != MESSAGE_INTENT_ATTRIBUTE:
             words = re.sub(
@@ -88,9 +87,13 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
         running_offset = 0
         tokens = []
+
         for word in words:
             word_offset = text.index(word, running_offset)
             word_len = len(word)
             running_offset = word_offset + word_len
             tokens.append(Token(word, word_offset))
+
+        self.add_cls_token(tokens, attribute)
+
         return tokens

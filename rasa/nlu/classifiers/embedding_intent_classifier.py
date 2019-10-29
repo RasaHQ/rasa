@@ -6,13 +6,14 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 import warnings
 
+from rasa.nlu.featurizers.featurzier import sequence_to_sentence_features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
 )
 
 import tensorflow as tf
@@ -50,7 +51,7 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -272,7 +273,12 @@ class EmbeddingIntentClassifier(Component):
 
         # Collect precomputed encodings
         encoded_id_labels = [
-            (label_idx, label_example.get(attribute_feature_name))
+            (
+                label_idx,
+                sequence_to_sentence_features(label_example.get(attribute_feature_name))
+                .toarray()
+                .squeeze(),
+            )
             for (label_idx, label_example) in label_examples
         ]
 
@@ -335,7 +341,15 @@ class EmbeddingIntentClassifier(Component):
 
         for e in training_data.intent_examples:
             if e.get(attribute):
-                X.append(e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]))
+                X.append(
+                    sequence_to_sentence_features(
+                        e.get(
+                            MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                        )
+                    )
+                    .toarray()
+                    .squeeze()
+                )
                 label_ids.append(label_id_dict[e.get(attribute)])
 
         X = np.array(X)
@@ -475,7 +489,7 @@ class EmbeddingIntentClassifier(Component):
             training_data,
             label_id_dict,
             attribute=MESSAGE_INTENT_ATTRIBUTE,
-            attribute_feature_name=MESSAGE_VECTOR_FEATURE_NAMES[
+            attribute_feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[
                 MESSAGE_INTENT_ATTRIBUTE
             ],
         )
@@ -506,7 +520,7 @@ class EmbeddingIntentClassifier(Component):
         self,
         training_data: "TrainingData",
         cfg: Optional["RasaNLUModelConfig"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Train the embedding label classifier on a data set."""
 
@@ -606,9 +620,16 @@ class EmbeddingIntentClassifier(Component):
         else:
             # get features (bag of words) for a message
             # noinspection PyPep8Naming
-            X = message.get(
-                MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-            ).reshape(1, -1)
+            X = (
+                sequence_to_sentence_features(
+                    message.get(
+                        MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                    )
+                )
+                .toarray()
+                .squeeze()
+                .reshape(1, -1)
+            )
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)
@@ -691,7 +712,7 @@ class EmbeddingIntentClassifier(Component):
         model_dir: Text = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["EmbeddingIntentClassifier"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "EmbeddingIntentClassifier":
 
         if model_dir and meta.get("file"):
@@ -703,8 +724,8 @@ class EmbeddingIntentClassifier(Component):
 
             graph = tf.Graph()
             with graph.as_default():
-                session = tf.Session(config=_tf_config)
-                saver = tf.train.import_meta_graph(checkpoint + ".meta")
+                session = tf.compat.v1.Session(config=_tf_config)
+                saver = tf.compat.v1.train.import_meta_graph(checkpoint + ".meta")
 
                 saver.restore(session, checkpoint)
 

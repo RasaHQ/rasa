@@ -109,9 +109,15 @@ def test_find_tracker_store(default_domain):
 
 
 class ExampleTrackerStore(RedisTrackerStore):
-    def __init__(self, domain, url, port, db, password, record_exp):
+    def __init__(self, domain, url, port, db, password, record_exp, event_broker=None):
         super(ExampleTrackerStore, self).__init__(
-            domain, host=url, port=port, db=db, password=password, record_exp=record_exp
+            domain,
+            event_broker=event_broker,
+            host=url,
+            port=port,
+            db=db,
+            password=password,
+            record_exp=record_exp,
         )
 
 
