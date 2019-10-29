@@ -263,7 +263,7 @@ def get_number_of_examples(session_data: SessionData):
     example_lengths = [v.shape[0] for v in session_data.X.values()]
 
     # check if number of examples is the same for all X
-    if not all(l == example_lengths[0] for l in example_lengths):
+    if not all(length == example_lengths[0] for length in example_lengths):
         raise ValueError(
             f"Number of examples differs for X ({session_data.X.keys()}). There should "
             f"be the same."
@@ -338,7 +338,7 @@ def _get_shape(session_data: SessionData) -> Tuple:
 
     def append_shape(v: Union[np.ndarray, scipy.sparse.spmatrix]):
         if v[0].ndim == 0:
-            shapes.append((v.shape[-1]))
+            shapes.append((None))
         elif v[0].ndim == 1:
             shapes.append((None, v.shape[-1]))
         else:
