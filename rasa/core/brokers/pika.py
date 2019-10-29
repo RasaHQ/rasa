@@ -210,21 +210,21 @@ class PikaProducer(EventChannel):
         )
 
     def _on_open_connection(self, connection: "SelectConnection") -> None:
-        logger.debug(f"Rabbit MQ connection to '{self.host}' was established.")
+        logger.debug(f"RabbitMQ connection to '{self.host}' was established.")
         connection.channel(on_open_callback=self._on_channel_open)
 
     def _on_open_connection_error(self, _, error: Text) -> None:
         logger.warning(
-            f"Connecting to '{self.host}' failed with error '{error}. Trying again."
+            f"Connecting to '{self.host}' failed with error '{error}'. Trying again."
         )
 
     def _on_channel_open(self, channel: "Channel") -> None:
-        logger.debug("Rabbit MQ channel was opened.")
+        logger.debug("RabbitMQ channel was opened.")
         channel.queue_declare(self.queue, durable=True)
 
         self.channel = channel
 
-        while len(self._unpublished_messages) > 0:
+        while self._unpublished_messages:
             # Send unpublished messages
             message = self._unpublished_messages.pop()
             self._publish(message)
@@ -273,16 +273,15 @@ class PikaProducer(EventChannel):
             self._run_pika_io_loop_in_thread()
         elif not self.channel:
             logger.warning(
-                "Rabbit MQ channel was not assigned yet. Adding message to "
+                "RabbitMQ channel has not been assigned. Adding message to "
                 "list of unpublished messages and trying to publish them "
                 "later."
             )
             self._unpublished_messages.append(body)
-
         else:
             self.channel.basic_publish("", self.queue, body)
 
             logger.debug(
-                "Published Pika events to queue '{}' on host "
-                "'{}':\n{}".format(self.queue, self.host, body)
+                f"Published Pika events to queue '{self.queue}' on host "
+                f"'{self.host}':\n{body}"
             )
