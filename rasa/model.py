@@ -345,7 +345,7 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
     rasa.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 
-def section_fingerprint_changed(
+def did_section_fingerprint_change(
     fingerprint1: Fingerprint, fingerprint2: Fingerprint, section: Section
 ) -> bool:
     """Check whether the fingerprint of a section has changed."""
@@ -400,13 +400,13 @@ def should_retrain(
         old_core, old_nlu = get_model_subdirectories(unpacked)
 
         retrain = FingerprintComparisonResult(
-            core=section_fingerprint_changed(
+            core=did_section_fingerprint_change(
                 last_fingerprint, new_fingerprint, SECTION_CORE
             ),
-            nlu=section_fingerprint_changed(
+            nlu=did_section_fingerprint_change(
                 last_fingerprint, new_fingerprint, SECTION_NLU
             ),
-            nlg=section_fingerprint_changed(
+            nlg=did_section_fingerprint_change(
                 last_fingerprint, new_fingerprint, SECTION_NLG
             ),
         )

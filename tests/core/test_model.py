@@ -41,7 +41,7 @@ from rasa.model import (
     get_model_subdirectories,
     model_fingerprint,
     Fingerprint,
-    section_fingerprint_changed,
+    did_section_fingerprint_change,
     should_retrain,
     FingerprintComparisonResult,
 )
@@ -157,7 +157,8 @@ def test_persist_and_load_fingerprint():
 def test_core_fingerprint_changed(fingerprint2, changed):
     fingerprint1 = _fingerprint()
     assert (
-        section_fingerprint_changed(fingerprint1, fingerprint2, SECTION_CORE) is changed
+        did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_CORE)
+        is changed
     )
 
 
@@ -176,7 +177,8 @@ def test_core_fingerprint_changed(fingerprint2, changed):
 def test_nlu_fingerprint_changed(fingerprint2, changed):
     fingerprint1 = _fingerprint()
     assert (
-        section_fingerprint_changed(fingerprint1, fingerprint2, SECTION_NLU) is changed
+        did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_NLU)
+        is changed
     )
 
 
