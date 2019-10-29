@@ -208,9 +208,7 @@ async def _do_training(
     kwargs: Optional[Dict] = None,
 ):
     if not fingerprint_comparison_result:
-        fingerprint_comparison_result = FingerprintComparisonResult(
-            nlu=True, core=True, nlg=True
-        )
+        fingerprint_comparison_result = FingerprintComparisonResult()
 
     if fingerprint_comparison_result.should_retrain_core():
         await _train_core_with_validated_data(
