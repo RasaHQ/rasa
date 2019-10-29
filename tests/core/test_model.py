@@ -347,7 +347,7 @@ def set_fingerprint(trained_model: Text, fingerprint: Fingerprint) -> Text:
             FingerprintComparisonResult(core=True, nlu=False, nlg=False),
             True,
             True,
-            False,
+            True,
             False,
         ),
         (
@@ -361,7 +361,7 @@ def set_fingerprint(trained_model: Text, fingerprint: Fingerprint) -> Text:
             FingerprintComparisonResult(core=True, nlu=True, nlg=False),
             True,
             True,
-            False,
+            True,
             True,
         ),
     ],

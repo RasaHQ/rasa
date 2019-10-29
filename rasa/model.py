@@ -104,7 +104,7 @@ class FingerprintComparisonResult:
     def should_retrain_nlg(self) -> bool:
         """Check if the templates have to be updated."""
 
-        return self.force_train or self.nlg
+        return self.should_retrain_core() or self.nlg
 
     def should_retrain_nlu(self) -> bool:
         """Check if the NLU model has to be updated."""
