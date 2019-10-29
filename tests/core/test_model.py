@@ -268,7 +268,7 @@ async def test_rasa_packaging(trained_model, project, use_fingerprint):
             "old": _fingerprint(stories=["others"]),
             "retrain_core": True,
             "retrain_nlu": False,
-            "retrain_nlg": False,
+            "retrain_nlg": True,
         },
         {
             "new": _fingerprint(nlu=["others"]),
@@ -282,14 +282,14 @@ async def test_rasa_packaging(trained_model, project, use_fingerprint):
             "old": _fingerprint(),
             "retrain_core": True,
             "retrain_nlu": True,
-            "retrain_nlg": False,
+            "retrain_nlg": True,
         },
         {
             "new": _fingerprint(config_core="others"),
             "old": _fingerprint(),
             "retrain_core": True,
             "retrain_nlu": False,
-            "retrain_nlg": False,
+            "retrain_nlg": True,
         },
         {
             "new": _fingerprint(),
@@ -319,11 +319,9 @@ def test_should_retrain(trained_model: Text, fingerprint: Fingerprint):
 
     retrain = should_retrain(fingerprint["new"], old_model, tempfile.mkdtemp())
 
-    assert retrain == FingerprintComparisonResult(
-        core=fingerprint["retrain_core"],
-        nlu=fingerprint["retrain_nlu"],
-        nlg=fingerprint["retrain_nlg"],
-    )
+    assert retrain.should_retrain_core() == fingerprint["retrain_core"]
+    assert retrain.should_retrain_nlg() == fingerprint["retrain_nlg"]
+    assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
 def set_fingerprint(trained_model: Text, fingerprint: Fingerprint) -> Text:
