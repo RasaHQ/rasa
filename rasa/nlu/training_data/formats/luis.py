@@ -18,9 +18,19 @@ class LuisReader(JsonTrainingDataReader):
 
         training_examples = []
         regex_features = []
-        # Simple check to ensure we support this luis data schema version
-        version = int(js["luis_schema_version"][0])
 
+        # Simple check to ensure we support this luis data schema
+        if not ("regex_features" in js
+        and "utterances" in js
+        and "text" in js["utterances"][0]
+        and "intent" in js["utterances"][0]
+        and "entities" in js["utterances"][0]):
+            raise Exception(
+                "Invalid LUIS data schema structure."
+                "Your file is not supported."
+            )
+
+        version = int(js["luis_schema_version"][0])
         if version > 5:
             warnings.warn(
                 "Your luis data schema version {} "
