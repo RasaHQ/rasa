@@ -2,8 +2,9 @@ import json
 import logging
 import typing
 import os
+from collections import deque
 from threading import Thread
-from typing import Dict, Optional, Text, Union, List, Callable
+from typing import Dict, Optional, Text, Union, Deque, Callable
 
 import time
 
@@ -215,7 +216,7 @@ class PikaProducer(EventChannel):
         self.channel: Optional["Channel"] = None
 
         # List to store unpublished messages which hopefully will be published later
-        self._unpublished_messages: List[Text] = []
+        self._unpublished_messages: Deque[Text] = deque()
         self._run_pika()
 
     def __del__(self) -> None:
@@ -259,8 +260,12 @@ class PikaProducer(EventChannel):
 
         while self._unpublished_messages:
             # Send unpublished messages
-            message = self._unpublished_messages.pop()
+            message = self._unpublished_messages.popleft()
             self._publish(message)
+            logger.debug(
+                f"Published message from queue of unpublished messages. "
+                f"Remaining unpublished messages: {len(self._unpublished_messages)}."
+            )
 
     def _run_pika_io_loop_in_thread(self) -> None:
         thread = Thread(target=self._run_pika_io_loop, daemon=True)
