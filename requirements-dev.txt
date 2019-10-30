@@ -18,7 +18,7 @@ fakeredis==1.0.3
 six>=1.12.0   # upstream - should be removed if fakeredis depends on at least 1.12.0
 
 # lint/format/types
-black==19.10b0; python_version>='3.6'
+black==19.10b0
 flake8==3.7.8
 pytype==2019.7.11
 
