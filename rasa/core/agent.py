@@ -831,20 +831,13 @@ class Agent(object):
             message_preprocessor=preprocessor,
         )
 
-    def on_tracker_store_error(self, error: Exception):
+    def on_tracker_store_error(self, error: Exception) -> None:
         logger.error(
             f"Error happened when trying to save conversation tracker to "
             f"'{self.tracker_store.__class__.__name__}'. Falling back to use "
-            f"{InMemoryTrackerStore.__class__.__name__}. Please "
+            f"the '{InMemoryTrackerStore.__name__}'. Please "
             f"investigate the following error: {error}."
         )
-
-        # Initialise fallback tracker store to keep Rasa functional
-        self.tracker_store = InMemoryTrackerStore(
-            self.domain, self.tracker_store.event_broker
-        )
-
-        return self.tracker_store
 
     @staticmethod
     def _create_domain(domain: Union[Domain, Text]) -> Domain:

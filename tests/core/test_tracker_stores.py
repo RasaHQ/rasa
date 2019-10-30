@@ -319,29 +319,26 @@ def test_fail_safe_tracker_store_with_save_error():
     fallback_tracker_store = Mock()
     fallback_tracker_store.save = Mock()
 
-    def error_callback(_):
-        return fallback_tracker_store
+    on_error_callback = Mock()
 
-    tracker_store = FailSafeTrackerStore(mocked_tracker_store, error_callback)
+    tracker_store = FailSafeTrackerStore(
+        mocked_tracker_store, on_error_callback, fallback_tracker_store
+    )
     tracker_store.save(None)
 
-    assert tracker_store.tracker_store == fallback_tracker_store
     fallback_tracker_store.save.assert_called_once()
+    on_error_callback.assert_called_once()
 
 
 def test_fail_safe_tracker_store_with_keys_error():
     mocked_tracker_store = Mock()
     mocked_tracker_store.keys = Mock(side_effect=Exception())
 
-    fallback_tracker_store = Mock()
+    on_error_callback = Mock()
 
-    def error_callback(_):
-        return fallback_tracker_store
-
-    tracker_store = FailSafeTrackerStore(mocked_tracker_store, error_callback)
+    tracker_store = FailSafeTrackerStore(mocked_tracker_store, on_error_callback)
     assert tracker_store.keys() == []
-
-    assert tracker_store.tracker_store == fallback_tracker_store
+    on_error_callback.assert_called_once()
 
 
 def test_fail_safe_tracker_store_with_retrieve_error():
@@ -349,11 +346,11 @@ def test_fail_safe_tracker_store_with_retrieve_error():
     mocked_tracker_store.retrieve = Mock(side_effect=Exception())
 
     fallback_tracker_store = Mock()
+    on_error_callback = Mock()
 
-    def error_callback(_):
-        return fallback_tracker_store
-
-    tracker_store = FailSafeTrackerStore(mocked_tracker_store, error_callback)
+    tracker_store = FailSafeTrackerStore(
+        mocked_tracker_store, on_error_callback, fallback_tracker_store
+    )
 
     assert tracker_store.retrieve("sender_id") is None
-    assert tracker_store.tracker_store == fallback_tracker_store
+    on_error_callback.assert_called_once()

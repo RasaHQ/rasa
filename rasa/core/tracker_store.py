@@ -783,39 +783,49 @@ class FailSafeTrackerStore(TrackerStore):
     def __init__(
         self,
         tracker_store: TrackerStore,
-        create_fallback_tracker_store: Callable[[Exception], TrackerStore],
+        on_tracker_store_error: Callable[[Exception], None],
+        fallback_tracker_store: Optional[TrackerStore] = None,
     ) -> None:
         """Create a `FailSafeTrackerStore`.
 
         Args:
             tracker_store: Primary tracker store.
-            create_fallback_tracker_store: Callback which creates a fallback
-                tracker store in case there is some problem with the primary tracker
-                store
+            on_tracker_store_error: Callback which is called when there is an error
+                in the primary tracker store.
         """
 
         super().__init__(tracker_store.domain, tracker_store.event_broker)
 
-        self.tracker_store = tracker_store
-        self.create_fallback_tracker_store = create_fallback_tracker_store
+        self._fallback_tracker_store: Optional[TrackerStore] = fallback_tracker_store
+        self._tracker_store = tracker_store
+        self.on_tracker_store_error = on_tracker_store_error
+
+    @property
+    def fallback_tracker_store(self) -> TrackerStore:
+        if not self._fallback_tracker_store:
+            self._fallback_tracker_store = InMemoryTrackerStore(
+                self._tracker_store.domain, self._tracker_store.event_broker
+            )
+
+        return self._fallback_tracker_store
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         try:
-            return self.tracker_store.retrieve(sender_id)
+            return self._tracker_store.retrieve(sender_id)
         except Exception as e:
-            self.tracker_store = self.create_fallback_tracker_store(e)
+            self.on_tracker_store_error(e)
             return None
 
     def keys(self) -> Iterable[Text]:
         try:
-            return self.tracker_store.keys()
+            return self._tracker_store.keys()
         except Exception as e:
-            self.tracker_store = self.create_fallback_tracker_store(e)
+            self.on_tracker_store_error(e)
             return []
 
     def save(self, tracker: DialogueStateTracker) -> None:
         try:
-            self.tracker_store.save(tracker)
+            self._tracker_store.save(tracker)
         except Exception as e:
-            self.tracker_store = self.create_fallback_tracker_store(e)
-            self.tracker_store.save(tracker)
+            self.on_tracker_store_error(e)
+            self.fallback_tracker_store.save(tracker)
