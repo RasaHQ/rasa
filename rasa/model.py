@@ -421,15 +421,15 @@ def should_retrain(
         )
 
         core_merge_failed = False
-        if not retrain.core:
+        if not retrain.should_retrain_core():
             target_path = os.path.join(train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
             core_merge_failed = not merge_model(old_core, target_path)
             retrain.core = core_merge_failed
 
-        if not retrain.nlg:
-            retrain.nlg = core_merge_failed
+        if not retrain.should_retrain_nlg() and core_merge_failed:
+            retrain.nlg = True
 
-        if not retrain.nlu:
+        if not retrain.should_retrain_nlu():
             target_path = os.path.join(train_path, "nlu")
             retrain.nlu = not merge_model(old_nlu, target_path)
 
