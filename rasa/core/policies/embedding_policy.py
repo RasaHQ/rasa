@@ -101,7 +101,7 @@ class EmbeddingPolicy(Policy):
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for hold out validation set
         "evaluate_on_num_examples": 0,  # large values may hurt performance
-        "var_layers": ["dial"]  # ["pre", "dial", "bot"]
+        "var_layers": []  # ["pre", "dial", "bot"]
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -264,11 +264,15 @@ class EmbeddingPolicy(Policy):
     ) -> "train_utils.SessionData":
         """Combine all tf session related data into a named tuple"""
 
+        # print(data_X.shape)
+        # print(data_X[0].shape)
+        # print(data_Y.shape)
+        # exit()
         if data_Y is not None:
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
-
+            # print(Y.shape)
             # idea taken from sklearn's stratify split
             if label_ids.ndim == 2:
                 # for multi-label y, map each distinct row to a string repr
@@ -366,12 +370,13 @@ class EmbeddingPolicy(Policy):
 
         # session data are int counts but we need a float tensors
         self.a_in, self.b_in = self._iterator.get_next()
-        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
-            # add time dimension if max history featurizer is used
-            self.b_in = self.b_in[:, tf.newaxis, :]
+
+        # if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
+        #     # add time dimension if max history featurizer is used
+        #     self.b_in = self.b_in[:, tf.newaxis, :]
 
         all_bot_raw = tf.constant(
-            self._encoded_all_label_ids, dtype=tf.float32, name="all_bot_raw"
+            self._encoded_all_label_ids.toarray(), dtype=tf.float32, name="all_bot_raw"
         )
 
         self.dial_embed, mask = self._create_tf_dial(self.a_in)
@@ -403,12 +408,12 @@ class EmbeddingPolicy(Policy):
         dialogue_len = None  # use dynamic time
         self.a_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, session_data.X.shape[-1]),
+            shape=(None, dialogue_len, session_data.X[0].shape[-1]),
             name="a",
         )
         self.b_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, None, session_data.Y.shape[-1]),
+            shape=(None, dialogue_len, None, session_data.Y[0].shape[-1]),
             name="b",
         )
 

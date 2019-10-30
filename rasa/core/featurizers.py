@@ -14,12 +14,15 @@ from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
 from rasa.utils.common import is_logging_disabled
-from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import CountVectorsFeaturizer
 from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
 )
+from rasa.nlu.featurizers.featurzier import sequence_to_sentence_features
+from scipy.sparse import hstack
+import scipy.sparse
 
 logger = logging.getLogger(__name__)
 
@@ -313,33 +316,40 @@ class CountVectorsSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer, Cou
         """Encode user input."""
 
         if state is None or None in state:
-            return np.ones(self.num_features, dtype=np.int32) * -1
+            # return np.ones(self.num_features, dtype=np.int32) * -1
+            raise
+
+        text_features = scipy.sparse.csr_matrix((1, len(self.user_vocab)))
+        slot_features = np.zeros(shape=(1, len(self.slot_labels)), dtype=np.float)
+        response_features = scipy.sparse.csr_matrix((1, len(self.bot_vocab)))
 
         # we are going to use floats and convert to int later if possible
-        used_features = np.zeros(self.num_features, dtype=np.float)
-        using_only_ints = True
+        # used_features = np.zeros(self.num_features, dtype=np.float)
+        # using_only_ints = True
         for state_name, prob in state.items():
-            using_only_ints = using_only_ints and utils.is_int(prob)
+            # using_only_ints = using_only_ints and utils.is_int(prob)
             if state_name.startswith("intent_"):
                 if PREV_PREFIX + ACTION_LISTEN_NAME in state:
                     # else we predict next action from bot action and memory
-                    text_features = self._get_featurized_attribute(
+                    text_features = sequence_to_sentence_features(self._get_featurized_attribute(
                         MESSAGE_TEXT_ATTRIBUTE, [state_name[len("intent_"):]]
-                    )
-                    used_features[:len(self.user_vocab)] = text_features
+                    )[0])
+                    # used_features[:len(self.user_vocab)] = text_features
 
             elif state_name in self.slot_labels:
-                offset = len(self.user_vocab)
+                # offset = len(self.user_vocab)
                 idx = self.slot_labels.index(state_name)
-                used_features[offset + idx] += prob
+                slot_features[idx] += prob
+                #used_features[offset + idx] += prob
 
             elif state_name.startswith(PREV_PREFIX):
                 action_name = state_name[len(PREV_PREFIX):]
-                response_features = self._get_featurized_attribute(
+                response_features = sequence_to_sentence_features(self._get_featurized_attribute(
                     MESSAGE_RESPONSE_ATTRIBUTE, [action_name]
-                )
-                offset = len(self.user_vocab) + len(self.slot_labels)
-                used_features[offset:] = response_features
+                )[0])
+                # offset = len(self.user_vocab) + len(self.slot_labels)
+
+                # used_features[offset:] = response_features
 
             else:
                 logger.warning(
@@ -347,22 +357,31 @@ class CountVectorsSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer, Cou
                     "feature map.".format(state_name)
                 )
 
-        if using_only_ints:
-            # this is an optimization - saves us a bit of memory
-            return used_features.astype(np.int32)
-        else:
-            return used_features
+        slot_features = scipy.sparse.csr_matrix(slot_features)
+
+        return hstack([text_features, slot_features, response_features])
+        # if using_only_ints:
+        #     # this is an optimization - saves us a bit of memory
+        #     return used_features.astype(np.int32)
+        # else:
+        #     return used_features
 
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows."""
 
-        encoded_all_actions = np.zeros(
-            (domain.num_actions, len(self.bot_vocab)), dtype=np.int32
-        )
+        # encoded_all_actions = np.zeros(
+        #     (domain.num_actions, len(self.bot_vocab)), dtype=np.int32
+        # )
+        encoded_all_actions = []
         for idx, name in enumerate(domain.action_names):
-            encoded_all_actions[idx] = self._get_featurized_attribute(
+            attr = self._get_featurized_attribute(
                 MESSAGE_RESPONSE_ATTRIBUTE, [name]
             )
+            enc = sequence_to_sentence_features(attr[0])
+            encoded_all_actions.append(enc)
+            # encoded_all_actions[idx] = enc
+
+        encoded_all_actions = scipy.sparse.vstack(encoded_all_actions)
         return encoded_all_actions
 
 
@@ -447,14 +466,14 @@ class TrackerFeaturizer(object):
                 tracker_states = self._pad_states(tracker_states)
 
             story_features = [
-                self.state_featurizer.encode(state) for state in tracker_states
+                self.state_featurizer.encode(state) for state in tracker_states if state is not None and None not in state
             ]
 
-            features.append(story_features)
+            features.append(scipy.sparse.vstack(story_features))
             true_lengths.append(dialogue_len)
 
         # noinspection PyPep8Naming
-        X = np.array(features)
+        X = np.array(features)   # ToDo: check: Creates numpy array of sparse matrices
 
         return X, true_lengths
 

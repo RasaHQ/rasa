@@ -3,6 +3,7 @@ import logging
 import typing
 from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
 import numpy as np
+from scipy.sparse import csr_matrix
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
@@ -14,6 +15,7 @@ from tensor2tensor.models.transformer import (
 from tensor2tensor.layers.common_attention import large_compatible_negative
 from rasa.utils.common import is_logging_disabled
 import tensorflow_probability as tfp
+import scipy
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
@@ -190,6 +192,25 @@ def balance_session_data(
     )
 
 
+def convert_sparse_to_dense(
+    data_sparse: Union[np.ndarray, List[csr_matrix]], dtype=np.int32, use_zero=False
+):
+    data_size = len(data_sparse)
+    max_seq_len = max([x.shape[0] for x in data_sparse])
+    feature_len = max([x.shape[-1] for x in data_sparse])
+
+    if use_zero:
+        data_dense = np.zeros([data_size, max_seq_len, feature_len], dtype=dtype)
+    else:
+        data_dense = np.ones([data_size, max_seq_len, feature_len], dtype=dtype) * -1
+
+    for i in range(data_size):
+        # d = scipy.sparse.vstack(data_sparse[i])
+        data_dense[i, max_seq_len-data_sparse[i].shape[0]:, :] = data_sparse[i].toarray()
+
+    return data_dense
+
+
 def gen_batch(
     session_data: "SessionData",
     batch_size: int,
@@ -209,8 +230,11 @@ def gen_batch(
     )
 
     for batch_num in range(num_batches):
-        batch_x = session_data.X[batch_num * batch_size : (batch_num + 1) * batch_size]
-        batch_y = session_data.Y[batch_num * batch_size : (batch_num + 1) * batch_size]
+        start = batch_num * batch_size
+        end = (batch_num + 1) * batch_size
+
+        batch_x = convert_sparse_to_dense(session_data.X[start:end])
+        batch_y = convert_sparse_to_dense(session_data.Y[start:end])
 
         yield batch_x, batch_y
 
