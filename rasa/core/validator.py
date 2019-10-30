@@ -199,3 +199,14 @@ class Validator:
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
         return intents_are_valid and stories_are_valid and there_is_no_duplication
+
+    def verify_domain_is_empty(self) -> bool:
+        """Checks if the domain is empty."""
+
+        return self.domain.is_empty()
+
+    def verify_domain(self) -> bool:
+        """ Runs the validations on domain."""
+
+        is_valid = not self.verify_domain_is_empty()
+        return is_valid
