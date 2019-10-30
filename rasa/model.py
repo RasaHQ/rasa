@@ -399,16 +399,16 @@ def should_retrain(
         to be retrained or not.
 
     """
-    retrain = FingerprintComparisonResult()
+    fingerprint_comparison = FingerprintComparisonResult()
 
     if old_model is None or not os.path.exists(old_model):
-        return retrain
+        return fingerprint_comparison
 
     with unpack_model(old_model) as unpacked:
         last_fingerprint = fingerprint_from_path(unpacked)
         old_core, old_nlu = get_model_subdirectories(unpacked)
 
-        retrain = FingerprintComparisonResult(
+        fingerprint_comparison = FingerprintComparisonResult(
             core=did_section_fingerprint_change(
                 last_fingerprint, new_fingerprint, SECTION_CORE
             ),
@@ -421,20 +421,20 @@ def should_retrain(
         )
 
         core_merge_failed = False
-        if not retrain.should_retrain_core():
+        if not fingerprint_comparison.should_retrain_core():
             target_path = os.path.join(train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
             core_merge_failed = not move_model(old_core, target_path)
-            retrain.core = core_merge_failed
+            fingerprint_comparison.core = core_merge_failed
 
-        if not retrain.should_retrain_nlg() and core_merge_failed:
+        if not fingerprint_comparison.should_retrain_nlg() and core_merge_failed:
             # If merging the Core model failed, we should also retrain NLG
-            retrain.nlg = True
+            fingerprint_comparison.nlg = True
 
-        if not retrain.should_retrain_nlu():
+        if not fingerprint_comparison.should_retrain_nlu():
             target_path = os.path.join(train_path, "nlu")
-            retrain.nlu = not move_model(old_nlu, target_path)
+            fingerprint_comparison.nlu = not move_model(old_nlu, target_path)
 
-        return retrain
+        return fingerprint_comparison
 
 
 def package_model(
