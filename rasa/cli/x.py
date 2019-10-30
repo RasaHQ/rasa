@@ -116,7 +116,9 @@ def _overwrite_endpoints_for_local_x(
     # the endpoint.yml file.
     custom_wait_time_pulls = endpoints.model.kwargs.get("wait_time_between_pulls")
     custom_url = endpoints.model.url
-    default_rasax_model_server_url = f"{rasa_x_url}/projects/default/models/tag/production"
+    default_rasax_model_server_url = (
+        f"{rasa_x_url}/projects/default/models/tag/production"
+    )
 
     if custom_url is not None and custom_url != default_rasax_model_server_url:
         logger.info(
