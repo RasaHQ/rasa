@@ -130,6 +130,8 @@ def convert_train_test_split(
     # output_values = x_train, x_val, y_train, y_val, z_train, z_val, etc.
     # order is kept, so first session_data.X values, then session_data.Y values, and
     # finally session_data.labels values
+
+    # train datasets have an even index
     for i in range(len(session_data.X)):
         X_train[keys[i]] = combine_features(output_values[i * 2], solo_values[i])
 
@@ -142,6 +144,7 @@ def convert_train_test_split(
     ):
         labels_train[keys[i]] = combine_features(output_values[i * 2], solo_values[i])
 
+    # val datasets have an odd index
     for i in range(len(session_data.X)):
         X_val[keys[i]] = output_values[(i * 2) + 1]
 
@@ -268,11 +271,23 @@ def balance_session_data(
             if min(num_data_cycles) > 0:
                 break
 
-    new_X = {k: np.concatenate(v) for k, v in new_X.items()}
-    new_Y = {k: np.concatenate(v) for k, v in new_Y.items()}
-    new_labels = {k: np.concatenate(v) for k, v in new_labels.items()}
+    return SessionData(
+        X=concatenate_data(new_X),
+        Y=concatenate_data(new_Y),
+        labels=concatenate_data(new_labels),
+    )
 
-    return SessionData(X=new_X, Y=new_Y, labels=new_labels)
+
+def concatenate_data(
+    data_dict: Dict[Text, Union[np.ndarray, List[scipy.sparse.spmatrix]]]
+) -> Dict[Text, Union[np.ndarray, List[scipy.sparse.spmatrix]]]:
+    new_dict = {}
+    for k, v in data_dict.items():
+        if isinstance(v[0], scipy.sparse.spmatrix):
+            new_dict[k] = scipy.sparse.vstack(v)
+        else:
+            new_dict[k] = np.concatenate(v)
+    return new_dict
 
 
 def get_number_of_examples(session_data: SessionData):
@@ -320,12 +335,17 @@ def gen_batch(
             sparse_to_dense(v[start:end]) for v in session_data.labels.values()
         ]
 
+        # len of batch_data is equal to the number of keys in session data
         yield tuple(batch_data)
 
 
 def sparse_to_dense(
     examples: Union[np.ndarray, List[scipy.sparse.csr_matrix]]
 ) -> np.ndarray:
+    # in case of BOW features it'll be either a 2D dense array or list of sparse
+    # matrices 1xN (because sparse vector doesn't exist)
+    # in case of sequence it'll be either a 3D dense array or a list of sparse
+    # matrices seq_lenxN
     if isinstance(examples[0], scipy.sparse.spmatrix):
         return np.stack([e.toarray() for e in examples])
     return examples

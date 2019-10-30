@@ -335,8 +335,9 @@ class EmbeddingPolicy(Policy):
 
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Bulid train graph using iterator."""
-
+        # iterator returns a_in, b_in, action_ids
         self.a_in, self.b_in, _ = self._iterator.get_next()
+
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
             # add time dimension if max history featurizer is used
             self.b_in = self.b_in[:, tf.newaxis, :]

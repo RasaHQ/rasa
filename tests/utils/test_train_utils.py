@@ -10,6 +10,7 @@ from rasa.utils.train_utils import (
     session_data_for_ids,
     get_number_of_examples,
     gen_batch,
+    balance_session_data,
 )
 
 
@@ -119,3 +120,14 @@ def test_gen_batch(session_data: SessionData):
 
     with pytest.raises(StopIteration):
         next(iterator)
+
+
+def test_balance_session_data(session_data: SessionData):
+    session_data.labels["labels"] = np.array([0, 0, 0, 1, 1])
+
+    balanced_session_data = balance_session_data(session_data, 2, False, "labels")
+
+    labels = balanced_session_data.labels["labels"]
+
+    assert 5 == len(labels)
+    assert np.all(np.array([0, 0, 1, 0, 1]) == labels)
