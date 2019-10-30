@@ -1,6 +1,6 @@
 import logging
 import tempfile
-from typing import Tuple
+from typing import Tuple, Text
 from unittest.mock import Mock
 
 import pytest
@@ -53,7 +53,7 @@ def test_dynamo_get_or_create():
     get_or_create_tracker_store(DynamoTrackerStore(domain))
 
 
-def test_restart_after_retrieval_from_tracker_store(default_domain):
+def test_restart_after_retrieval_from_tracker_store(default_domain: Domain):
     store = InMemoryTrackerStore(default_domain)
     tr = store.get_or_create_tracker("myuser")
     synth = [ActionExecuted("action_listen") for _ in range(4)]
@@ -70,7 +70,7 @@ def test_restart_after_retrieval_from_tracker_store(default_domain):
     assert latest_restart == latest_restart_after_loading
 
 
-def test_tracker_store_remembers_max_history(default_domain):
+def test_tracker_store_remembers_max_history(default_domain: Domain):
     store = InMemoryTrackerStore(default_domain)
     tr = store.get_or_create_tracker("myuser", max_event_history=42)
     tr.update(Restarted())
@@ -135,7 +135,7 @@ class ExampleTrackerStore(RedisTrackerStore):
         )
 
 
-def test_tracker_store_from_string(default_domain):
+def test_tracker_store_from_string(default_domain: Domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
 
@@ -144,7 +144,7 @@ def test_tracker_store_from_string(default_domain):
     assert isinstance(tracker_store, ExampleTrackerStore)
 
 
-def test_tracker_store_from_invalid_module(default_domain):
+def test_tracker_store_from_invalid_module(default_domain: Domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "a.module.which.cannot.be.found"
@@ -154,7 +154,7 @@ def test_tracker_store_from_invalid_module(default_domain):
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
-def test_tracker_store_from_invalid_string(default_domain):
+def test_tracker_store_from_invalid_string(default_domain: Domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "any string"
@@ -220,7 +220,7 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
         "postgresql://user:secret@localhost",
     ],
 )
-def test_get_db_url_with_fully_specified_url(full_url):
+def test_get_db_url_with_fully_specified_url(full_url: Text):
     assert SQLTrackerStore.get_db_url(host=full_url) == full_url
 
 
