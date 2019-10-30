@@ -358,7 +358,7 @@ The default mapping looks like:
           "8": lambda l: l[7],
           "9": lambda l: l[8],
           "10": lambda l: l[9],
-          "ANY": lambda l: random.choice(list),
+          "ANY": lambda l: random.choice(l),
           "LAST": lambda l: l[-1],
       }
 
@@ -526,7 +526,7 @@ You can customize your ``InMemoryKnowledgeBase`` by overwriting the following fu
           "8": lambda l: l[7],
           "9": lambda l: l[8],
           "10": lambda l: l[9],
-          "ANY": lambda l: random.choice(list),
+          "ANY": lambda l: random.choice(l),
           "LAST": lambda l: l[-1],
       }
 
