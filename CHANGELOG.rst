@@ -14,6 +14,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 - Added the KeywordIntentClassifier
+- Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
+  tracker store
 
 Changed
 -------
