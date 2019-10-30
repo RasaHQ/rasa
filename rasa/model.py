@@ -4,9 +4,8 @@ import os
 import shutil
 import tempfile
 import typing
-from collections import namedtuple
 from pathlib import Path
-from typing import Text, Tuple, Union, Optional, List, Dict, Any
+from typing import Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
 import rasa.utils.io
 from rasa.cli.utils import print_success, create_output_path
@@ -46,7 +45,13 @@ FINGERPRINT_NLU_DATA_KEY = "messages"
 FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
 
-Section = namedtuple("Section", ["name", "relevant_keys"])
+class Section(NamedTuple):
+    """Defines relevant fingerprint sections which are used to decide whether a model
+    should be retrained."""
+
+    name: Text
+    relevant_keys: List[Text]
+
 
 SECTION_CORE = Section(
     name="Core model",
