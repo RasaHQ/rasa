@@ -2,8 +2,9 @@ import logging
 import numpy as np
 import os
 import pickle
+import scipy.sparse
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import warnings
 
 from rasa.nlu.featurizers.featurzier import sequence_to_sentence_features
@@ -20,6 +21,8 @@ from rasa.nlu.constants import (
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from utils.train_utils import SessionData
+
 tf.contrib._warning = None
 
 logger = logging.getLogger(__name__)
@@ -251,7 +254,9 @@ class EmbeddingIntentClassifier(Component):
         }
 
     @staticmethod
-    def _find_example_for_label(label, examples, attribute):
+    def _find_example_for_label(
+        label: Text, examples: List["Message"], attribute: Text
+    ) -> Optional["Message"]:
         for ex in examples:
             if ex.get(attribute) == label:
                 return ex
@@ -333,7 +338,7 @@ class EmbeddingIntentClassifier(Component):
         training_data: "TrainingData",
         label_id_dict: Dict[Text, int],
         attribute: Text,
-    ) -> "train_utils.SessionData":
+    ) -> "SessionData":
         """Prepare data for training and create a SessionData object"""
         X_sparse = []
         X_dense = []
@@ -342,33 +347,12 @@ class EmbeddingIntentClassifier(Component):
 
         for e in training_data.intent_examples:
             if e.get(attribute):
-                if (
-                    e.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-                    is not None
-                ):
-                    X_sparse.append(
-                        sequence_to_sentence_features(
-                            e.get(
-                                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[
-                                    MESSAGE_TEXT_ATTRIBUTE
-                                ]
-                            )
-                        )
-                    )
+                x_sparse, x_dense = self._get_x_features(e)
 
-                if (
-                    e.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-                    is not None
-                ):
-                    X_dense.append(
-                        sequence_to_sentence_features(
-                            e.get(
-                                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[
-                                    MESSAGE_TEXT_ATTRIBUTE
-                                ]
-                            )
-                        )
-                    )
+                if x_sparse is not None:
+                    X_sparse.append(x_sparse)
+                if x_dense is not None:
+                    X_dense.append(x_dense)
 
                 label_ids.append(label_id_dict[e.get(MESSAGE_INTENT_ATTRIBUTE)])
 
@@ -380,15 +364,42 @@ class EmbeddingIntentClassifier(Component):
             Y.append(self._encoded_all_label_ids[label_id_idx])
         Y = np.array(Y)
 
-        X = {}
+        X_dict = {}
         if X_sparse.size > 0:
-            X["text_features_sparse"] = X_sparse
+            X_dict["text_features_sparse"] = X_sparse
         if X_dense.size > 0:
-            X["text_features_dense"] = X_dense
+            X_dict["text_features_dense"] = X_dense
 
         return train_utils.SessionData(
-            X, {"intent_features": Y}, {"intent_ids": label_ids}
+            X_dict, {"intent_features": Y}, {"intent_ids": label_ids}
         )
+
+    def _get_x_features(
+        self, message: "Message"
+    ) -> Tuple[
+        Optional[Union[np.ndarray, scipy.sparse.spmatrix]],
+        Optional[Union[np.ndarray, scipy.sparse.spmatrix]],
+    ]:
+        x_sparse = None
+        x_dense = None
+
+        if (
+            message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            is not None
+        ):
+            x_sparse = sequence_to_sentence_features(
+                message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            )
+
+        if (
+            message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            is not None
+        ):
+            x_dense = sequence_to_sentence_features(
+                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            )
+
+        return x_sparse, x_dense
 
     # tf helpers:
     def _create_tf_embed_fnn(
@@ -417,8 +428,8 @@ class EmbeddingIntentClassifier(Component):
         )
 
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        # batch = 1 or 2 a_in values, b_in, intent_ids
         batch = self._iterator.get_next()
-
         self.a_in, self.b_in = self.batch_to_input(batch)
 
         all_label_ids = tf.constant(
@@ -467,42 +478,44 @@ class EmbeddingIntentClassifier(Component):
         As we do not know what features (sparse and/or dense) were used, we need to
         check what features are provided and parse them accordingly.
         """
+        # batch contains 1 or 2 a_in values, b_in, label_ids
         b_in = batch[-2]
 
         if len(batch) == 3:
-            a_in = batch[0]
-            # Needed if a_in comes from a csr_matrix (e.g. sparse features)
-            if len(a_in.shape) == 3:
-                a_in = tf.squeeze(a_in, axis=1)
+            a_in = self._squeeze_sparse_features(batch[0])
+            return a_in, b_in
 
-        elif len(batch) == 4:
-            a_in_sparse = batch[0]
-            a_in_dense = batch[1]
+        if len(batch) == 4:
+            a_in_1 = self._squeeze_sparse_features(batch[0])
+            a_in_2 = self._squeeze_sparse_features(batch[1])
+            # Concatenate a_in features
+            a_in = tf.concat([a_in_1, a_in_2], axis=1)
 
-            # Needed as a_in_sparse comes from a csr_matrix
-            a_in_sparse = tf.squeeze(a_in_sparse, axis=1)
-            # Concatenate sparse and dense features
-            a_in = tf.concat([a_in_sparse, a_in_dense], axis=1)
-        else:
-            raise ValueError("Iterator return unexpected number of tensors.")
+            return a_in, b_in
 
-        return a_in, b_in
+        raise ValueError("Iterator return unexpected number of tensors.")
+
+    def _squeeze_sparse_features(self, a_in: tf.Tensor) -> tf.Tensor:
+        # we need to squeeze sparse features as the classifier cannot handle
+        # sequences
+        # as sparse features come from a scipy.sparse.csr_matrix they have a
+        # additional dimension
+        if len(a_in.shape) == 3:
+            a_in = tf.squeeze(a_in, axis=1)
+        return a_in
 
     def _build_tf_pred_graph(
         self, session_data: "train_utils.SessionData"
     ) -> "tf.Tensor":
-        n_features_1 = (
-            session_data.X["text_features_sparse"][0].shape[-1]
-            if "text_features_sparse" in session_data.X
-            else 0
+        num_features_sparse = self._get_num_of_features(
+            session_data, "text_features_sparse"
         )
-        n_features_2 = (
-            session_data.X["text_features_dense"][0].shape[-1]
-            if "text_features_dense" in session_data.X
-            else 0
+        num_features_dense = self._get_num_of_features(
+            session_data, "text_features_dense"
         )
+
         self.a_in = tf.placeholder(
-            tf.float32, (None, n_features_1 + n_features_2), name="a"
+            tf.float32, (None, num_features_sparse + num_features_dense), name="a"
         )
         self.b_in = tf.placeholder(
             tf.float32,
@@ -536,23 +549,31 @@ class EmbeddingIntentClassifier(Component):
 
         return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
 
-    def check_input_dimension_consistency(self, session_data):
+    def _get_num_of_features(self, session_data: "SessionData", x_key: Text) -> int:
+        return session_data.X[x_key][0].shape[-1] if x_key in session_data.X else 0
 
+    def check_input_dimension_consistency(self, session_data: "SessionData"):
         if self.share_hidden_layers:
-            dim = (
-                session_data.X["text_features_sparse"][0].shape[-1]
-                if "text_features_sparse" in session_data.X
-                else session_data.X["text_features_dense"][0].shape[-1]
+            num_features_sparse = self._get_num_of_features(
+                session_data, "text_features_sparse"
             )
-            if dim != session_data.Y["intent_features"][0].shape[-1]:
+            num_features_dense = self._get_num_of_features(
+                session_data, "text_features_dense"
+            )
+
+            if (
+                num_features_sparse + num_features_dense
+                != session_data.Y["intent_features"][0].shape[-1]
+            ):
                 raise ValueError(
                     "If embeddings are shared "
                     "text features and label features "
                     "must coincide. Check the output dimensions of previous components."
                 )
 
-    def preprocess_train_data(self, training_data):
-        """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
+    def preprocess_train_data(self, training_data: "TrainingData"):
+        """Performs sanity checks on training data, extracts encodings for labels and
+        prepares data for training"""
 
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
@@ -586,7 +607,7 @@ class EmbeddingIntentClassifier(Component):
 
         return session_data
 
-    def _check_enough_labels(self, session_data) -> bool:
+    def _check_enough_labels(self, session_data: "SessionData") -> bool:
         return len(np.unique(session_data.labels["intent_ids"])) >= 2
 
     def train(
@@ -686,7 +707,9 @@ class EmbeddingIntentClassifier(Component):
         # transform sim to python list for JSON serializing
         return label_ids, message_sim.tolist()
 
-    def predict_label(self, message: "Message"):
+    def predict_label(
+        self, message: "Message"
+    ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
 
         label = {"name": None, "confidence": 0.0}
         label_ranking = []
@@ -721,40 +744,22 @@ class EmbeddingIntentClassifier(Component):
         return label, label_ranking
 
     def _extract_features(self, message: "Message") -> np.ndarray:
-        X_sparse = None
-        X_dense = None
+        x_sparse, x_dense = self._get_x_features(message)
 
-        if (
-            message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-            is not None
-        ):
-            X_sparse = (
-                sequence_to_sentence_features(
-                    message.get(
-                        MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-                    )
-                )
-                .toarray()
-                .squeeze()
-                .reshape(1, -1)
-            )
+        if x_sparse is not None:
+            x_sparse = x_sparse.toarray().squeeze().reshape(1, -1)
 
-        if (
-            message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-            is not None
-        ):
-            X_dense = sequence_to_sentence_features(
-                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-            ).reshape(1, -1)
+        if x_dense is not None:
+            x_dense = x_dense.reshape(1, -1)
 
-        if X_sparse is not None and X_dense is not None:
-            return np.concatenate((X_sparse, X_dense), axis=1)
+        if x_sparse is not None and x_dense is not None:
+            return np.concatenate((x_sparse, x_dense), axis=-1)
 
-        if X_sparse is None and X_dense is not None:
-            return X_dense
+        if x_sparse is None and x_dense is not None:
+            return x_dense
 
-        if X_sparse is not None and X_dense is None:
-            return X_sparse
+        if x_sparse is not None and x_dense is None:
+            return x_sparse
 
         raise ValueError("No features found for X.")
 

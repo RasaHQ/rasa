@@ -324,10 +324,10 @@ def gen_batch(
 
 
 def sparse_to_dense(
-    examples: List[Union[np.ndarray, scipy.sparse.csr_matrix]]
-) -> List[np.ndarray]:
+    examples: Union[np.ndarray, List[scipy.sparse.csr_matrix]]
+) -> np.ndarray:
     if isinstance(examples[0], scipy.sparse.spmatrix):
-        return [e.toarray() for e in examples]
+        return np.stack([e.toarray() for e in examples])
     return examples
 
 
