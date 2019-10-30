@@ -340,15 +340,24 @@ def gen_batch(
 
 
 def sparse_to_dense(
-    examples: Union[np.ndarray, List[scipy.sparse.csr_matrix]]
-) -> np.ndarray:
-    # in case of BOW features it'll be either a 2D dense array or list of sparse
-    # matrices 1xN (because sparse vector doesn't exist)
-    # in case of sequence it'll be either a 3D dense array or a list of sparse
-    # matrices seq_lenxN
-    if isinstance(examples[0], scipy.sparse.spmatrix):
-        return np.stack([e.toarray() for e in examples])
-    return examples
+    data: Union[np.ndarray, List[scipy.sparse.spmatrix]], dtype=np.int32, use_zero=False
+):
+    if isinstance(data[0], scipy.sparse.spmatrix):
+        return np.stack([e.toarray() for e in data])
+
+    data_size = len(data)
+    max_seq_len = max([x.shape[0] for x in data])
+    feature_len = max([x.shape[-1] for x in data])
+
+    if use_zero:
+        data_dense = np.zeros([data_size, max_seq_len, feature_len], dtype=dtype)
+    else:
+        data_dense = np.ones([data_size, max_seq_len, feature_len], dtype=dtype) * -1
+
+    for i in range(data_size):
+        data_dense[i, : data[i].shape[0], :] = data[i]
+
+    return data_dense
 
 
 # noinspection PyPep8Naming
@@ -511,6 +520,7 @@ def create_t2t_hparams(
     pos_encoding: Text,
     max_seq_length: int,
     is_training: "tf.Tensor",
+    unidirectional_encoder: bool = True,
 ) -> "HParams":
     """Create parameters for t2t transformer."""
 
@@ -526,7 +536,7 @@ def create_t2t_hparams(
 
     hparams.max_length = max_seq_length
 
-    hparams.unidirectional_encoder = True
+    hparams.unidirectional_encoder = unidirectional_encoder
 
     hparams.self_attention_type = "dot_product_relative_v2"
     hparams.max_relative_position = 5

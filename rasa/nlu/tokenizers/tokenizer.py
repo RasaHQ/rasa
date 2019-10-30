@@ -48,6 +48,9 @@ class Tokenizer(Component):
     def add_cls_token(
         self, tokens: List[Token], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
     ) -> List[Token]:
+        if not tokens:
+            return tokens
+
         if (
             attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
             and self.use_cls_token
