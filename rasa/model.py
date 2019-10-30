@@ -427,7 +427,7 @@ def should_retrain(
             fingerprint_comparison.core = core_merge_failed
 
         if not fingerprint_comparison.should_retrain_nlg() and core_merge_failed:
-            # If merging the Core model failed, we should also retrain NLG
+            # If moving the Core model failed, we should also retrain NLG
             fingerprint_comparison.nlg = True
 
         if not fingerprint_comparison.should_retrain_nlu():
