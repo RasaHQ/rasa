@@ -353,7 +353,7 @@ class EmbeddingIntentClassifier(Component):
                 if x_dense is not None:
                     X_dense.append(x_dense)
 
-                label_ids.append(label_id_dict[e.get(MESSAGE_INTENT_ATTRIBUTE)])
+                label_ids.append(label_id_dict[e.get(attribute)])
 
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
