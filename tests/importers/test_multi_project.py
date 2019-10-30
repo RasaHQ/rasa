@@ -83,7 +83,7 @@ def test_load_from_none(input_dict: Dict, tmpdir_factory: TempdirFactory):
 
 
 def test_load_if_subproject_is_more_specific_than_parent(
-    tmpdir_factory: TempdirFactory
+    tmpdir_factory: TempdirFactory,
 ):
     root = tmpdir_factory.mktemp("Parent Bot")
     config_path = str(root / "config.yml")

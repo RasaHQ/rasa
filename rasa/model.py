@@ -197,7 +197,7 @@ def unpack_model(
 
 
 def get_model_subdirectories(
-    unpacked_model_path: Text
+    unpacked_model_path: Text,
 ) -> Tuple[Optional[Text], Optional[Text]]:
     """Return paths for Core and NLU model directories, if they exist.
     If neither directories exist, a `ModelNotFound` exception is raised.
