@@ -9,6 +9,7 @@ from rasa.utils.train_utils import (
     train_val_split,
     session_data_for_ids,
     get_number_of_examples,
+    gen_batch,
 )
 
 
@@ -67,6 +68,12 @@ def test_train_val_split(session_data: SessionData):
         assert v.shape[0] == 2
 
 
+@pytest.mark.parametrize("size", [0, 1, 5])
+def test_train_val_split_incorrect_size(session_data: SessionData, size):
+    with pytest.raises(ValueError):
+        train_val_split(session_data, size, 42, "labels")
+
+
 def test_session_data_for_ids(session_data: SessionData):
     filtered_session_data = session_data_for_ids(session_data, np.array([0, 1]))
 
@@ -93,3 +100,22 @@ def test_get_number_of_examples_raises_value_error(session_data: SessionData):
     session_data.X["dense"] = np.random.randint(5, size=(2, 10))
     with pytest.raises(ValueError):
         get_number_of_examples(session_data)
+
+
+def test_gen_batch(session_data: SessionData):
+    iterator = gen_batch(session_data, 2, "labels", shuffle=True)
+
+    batch = next(iterator)
+    assert len(batch) == 4
+    assert len(batch[0]) == 2
+
+    batch = next(iterator)
+    assert len(batch) == 4
+    assert len(batch[0]) == 2
+
+    batch = next(iterator)
+    assert len(batch) == 4
+    assert len(batch[0]) == 1
+
+    with pytest.raises(StopIteration):
+        next(iterator)

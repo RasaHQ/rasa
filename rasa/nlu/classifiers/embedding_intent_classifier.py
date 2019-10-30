@@ -11,6 +11,7 @@ from rasa.nlu.featurizers.featurzier import sequence_to_sentence_features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
+from rasa.utils.train_utils import SessionData
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
@@ -21,8 +22,6 @@ from rasa.nlu.constants import (
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
-from utils.train_utils import SessionData
-
 tf.contrib._warning = None
 
 logger = logging.getLogger(__name__)
@@ -370,9 +369,7 @@ class EmbeddingIntentClassifier(Component):
         if X_dense.size > 0:
             X_dict["text_features_dense"] = X_dense
 
-        return train_utils.SessionData(
-            X_dict, {"intent_features": Y}, {"intent_ids": label_ids}
-        )
+        return SessionData(X_dict, {"intent_features": Y}, {"intent_ids": label_ids})
 
     def _get_x_features(
         self, message: "Message"
@@ -496,17 +493,13 @@ class EmbeddingIntentClassifier(Component):
         raise ValueError("Iterator return unexpected number of tensors.")
 
     def _squeeze_sparse_features(self, a_in: tf.Tensor) -> tf.Tensor:
-        # we need to squeeze sparse features as the classifier cannot handle
-        # sequences
-        # as sparse features come from a scipy.sparse.csr_matrix they have a
+        # as sparse features come from a scipy.sparse.csr_matrix they have an
         # additional dimension
         if len(a_in.shape) == 3:
             a_in = tf.squeeze(a_in, axis=1)
         return a_in
 
-    def _build_tf_pred_graph(
-        self, session_data: "train_utils.SessionData"
-    ) -> "tf.Tensor":
+    def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
         num_features_sparse = self._get_num_of_features(
             session_data, "text_features_sparse"
         )
