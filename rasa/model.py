@@ -72,7 +72,7 @@ SECTION_NLU = Section(
         FINGERPRINT_RASA_VERSION_KEY,
     ],
 )
-SECTION_NLG = Section(name="NLG Templates", relevant_keys=[FINGERPRINT_NLG_KEY])
+SECTION_NLG = Section(name="NLG templates", relevant_keys=[FINGERPRINT_NLG_KEY])
 
 
 class FingerprintComparisonResult:
@@ -81,7 +81,7 @@ class FingerprintComparisonResult:
         nlu: bool = True,
         core: bool = True,
         nlg: bool = True,
-        force_trainining: bool = False,
+        force_training: bool = False,
     ):
         """Creates a `FingerprintComparisonResult` instance.
 
@@ -395,7 +395,7 @@ def should_retrain(
         train_path: Path to the directory in which the new model will be trained.
 
     Returns:
-        A ShouldRetrain object indicating whether Rasa Core and/or Rasa NLU needs
+        A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa NLU needs
         to be retrained or not.
 
     """
