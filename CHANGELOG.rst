@@ -13,6 +13,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Added data validator that checks if domain object returned is empty. If so, exit early from the command ``rasa data validate``
 - Added the KeywordIntentClassifier
 
 Changed
