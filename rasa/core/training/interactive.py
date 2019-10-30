@@ -684,7 +684,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
             validate=io_utils.file_type_validator(
-                [".md"],
+                [".md", ".json"],
                 "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
             ),
         ),
