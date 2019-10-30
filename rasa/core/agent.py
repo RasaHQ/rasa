@@ -25,7 +25,11 @@ from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa.core.tracker_store import (
+    InMemoryTrackerStore,
+    TrackerStore,
+    FailSafeTrackerStore,
+)
 from rasa.core.trackers import DialogueStateTracker
 from rasa.exceptions import ModelNotFound
 from rasa.importers.importer import TrainingDataImporter
@@ -827,6 +831,21 @@ class Agent(object):
             message_preprocessor=preprocessor,
         )
 
+    def on_tracker_store_error(self, error: Exception):
+        logger.error(
+            f"Error happened when trying to save conversation tracker to "
+            f"'{self.tracker_store.__class__.__name__}'. Falling back to use "
+            f"{InMemoryTrackerStore.__class__.__name__}. Please "
+            f"investigate the following error: {error}."
+        )
+
+        # Initialise fallback tracker store to keep Rasa functional
+        self.tracker_store = InMemoryTrackerStore(
+            self.domain, self.tracker_store.event_broker
+        )
+
+        return self.tracker_store
+
     @staticmethod
     def _create_domain(domain: Union[Domain, Text]) -> Domain:
 
@@ -845,15 +864,16 @@ class Agent(object):
                 "type '{}' with value '{}'".format(type(domain), domain)
             )
 
-    @staticmethod
     def create_tracker_store(
-        store: Optional[TrackerStore], domain: Domain
+        self, store: Optional[TrackerStore], domain: Domain
     ) -> TrackerStore:
         if store is not None:
             store.domain = domain
-            return store
+            tracker_store = store
         else:
-            return InMemoryTrackerStore(domain)
+            tracker_store = InMemoryTrackerStore(domain)
+
+        return FailSafeTrackerStore(tracker_store, self.on_tracker_store_error)
 
     @staticmethod
     def _create_lock_store(store: Optional[LockStore]) -> LockStore:
