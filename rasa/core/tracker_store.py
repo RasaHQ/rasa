@@ -774,3 +774,48 @@ class SQLTrackerStore(TrackerStore):
         )
 
         return itertools.islice(tracker.events, n_events, len(tracker.events))
+
+
+class FailSafeTrackerStore(TrackerStore):
+    """Wraps a tracker store so that we can fallback to a different tracker store in
+    case of errors."""
+
+    def __init__(
+        self,
+        tracker_store: TrackerStore,
+        create_fallback_tracker_store: Callable[[Exception], TrackerStore],
+    ) -> None:
+        """Create a `FailSafeTrackerStore`.
+
+        Args:
+            tracker_store: Primary tracker store.
+            create_fallback_tracker_store: Callback which creates a fallback
+                tracker store in case there is some problem with the primary tracker
+                store
+        """
+
+        super().__init__(tracker_store.domain, tracker_store.event_broker)
+
+        self.tracker_store = tracker_store
+        self.create_fallback_tracker_store = create_fallback_tracker_store
+
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        try:
+            return self.tracker_store.retrieve(sender_id)
+        except Exception as e:
+            self.tracker_store = self.create_fallback_tracker_store(e)
+            return None
+
+    def keys(self) -> Iterable[Text]:
+        try:
+            return self.tracker_store.keys()
+        except Exception as e:
+            self.tracker_store = self.create_fallback_tracker_store(e)
+            return []
+
+    def save(self, tracker: DialogueStateTracker) -> None:
+        try:
+            self.tracker_store.save(tracker)
+        except Exception as e:
+            self.tracker_store = self.create_fallback_tracker_store(e)
+            self.tracker_store.save(tracker)

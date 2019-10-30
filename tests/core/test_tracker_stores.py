@@ -1,6 +1,7 @@
 import logging
 import tempfile
 from typing import Tuple
+from unittest.mock import Mock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -15,6 +16,7 @@ from rasa.core.tracker_store import (
     RedisTrackerStore,
     SQLTrackerStore,
     DynamoTrackerStore,
+    FailSafeTrackerStore,
 )
 import rasa.core.tracker_store
 from rasa.core.trackers import DialogueStateTracker
@@ -284,3 +286,74 @@ def test_db_url_with_query_from_endpoint_config():
             itertools.permutations(("another=query", "driver=my-driver"))
         )
     )
+
+
+def test_fail_safe_tracker_store_if_no_errors():
+    mocked_tracker_store = Mock()
+
+    tracker_store = FailSafeTrackerStore(mocked_tracker_store, None)
+
+    # test save
+    mocked_tracker_store.save = Mock()
+    tracker_store.save(None)
+    mocked_tracker_store.save.assert_called_once()
+
+    # test retrieve
+    expected = [1]
+    mocked_tracker_store.retrieve = Mock(return_value=expected)
+    sender_id = "10"
+    assert tracker_store.retrieve(sender_id) == expected
+    mocked_tracker_store.retrieve.assert_called_once_with(sender_id)
+
+    # test keys
+    expected = ["sender 1", "sender 2"]
+    mocked_tracker_store.keys = Mock(return_value=expected)
+    assert tracker_store.keys() == expected
+    mocked_tracker_store.keys.assert_called_once()
+
+
+def test_fail_safe_tracker_store_with_save_error():
+    mocked_tracker_store = Mock()
+    mocked_tracker_store.save = Mock(side_effect=Exception())
+
+    fallback_tracker_store = Mock()
+    fallback_tracker_store.save = Mock()
+
+    def error_callback(_):
+        return fallback_tracker_store
+
+    tracker_store = FailSafeTrackerStore(mocked_tracker_store, error_callback)
+    tracker_store.save(None)
+
+    assert tracker_store.tracker_store == fallback_tracker_store
+    fallback_tracker_store.save.assert_called_once()
+
+
+def test_fail_safe_tracker_store_with_keys_error():
+    mocked_tracker_store = Mock()
+    mocked_tracker_store.keys = Mock(side_effect=Exception())
+
+    fallback_tracker_store = Mock()
+
+    def error_callback(_):
+        return fallback_tracker_store
+
+    tracker_store = FailSafeTrackerStore(mocked_tracker_store, error_callback)
+    assert tracker_store.keys() == []
+
+    assert tracker_store.tracker_store == fallback_tracker_store
+
+
+def test_fail_safe_tracker_store_with_retrieve_error():
+    mocked_tracker_store = Mock()
+    mocked_tracker_store.retrieve = Mock(side_effect=Exception())
+
+    fallback_tracker_store = Mock()
+
+    def error_callback(_):
+        return fallback_tracker_store
+
+    tracker_store = FailSafeTrackerStore(mocked_tracker_store, error_callback)
+
+    assert tracker_store.retrieve("sender_id") is None
+    assert tracker_store.tracker_store == fallback_tracker_store
