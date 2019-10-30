@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
 
 from rasa.core.channels.channel import UserMessage
@@ -94,7 +95,7 @@ def test_tracker_store_endpoint_config_loading():
     )
 
 
-def test_find_tracker_store(default_domain):
+def test_find_tracker_store(default_domain: Domain):
     store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
     tracker_store = RedisTrackerStore(
         domain=default_domain,
@@ -107,6 +108,17 @@ def test_find_tracker_store(default_domain):
 
     assert isinstance(
         tracker_store, type(TrackerStore.find_tracker_store(default_domain, store))
+    )
+
+
+def test_find_tracker_store(default_domain: Domain, monkeypatch: MonkeyPatch):
+    store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+    mock = Mock(side_effect=Exception("ignore this"))
+    monkeypatch.setattr(rasa.core.tracker_store, "RedisTrackerStore", mock)
+
+    assert isinstance(
+        InMemoryTrackerStore(domain),
+        type(TrackerStore.find_tracker_store(default_domain, store)),
     )
 
 

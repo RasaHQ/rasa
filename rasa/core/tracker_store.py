@@ -57,10 +57,10 @@ class TrackerStore(object):
                 )
             except Exception as e:
                 logger.error(
-                    f"Error when trying to connect to {store.type} "
+                    f"Error when trying to connect to '{store.type}' "
                     f"tracker store. Using "
-                    f"{InMemoryTrackerStore.__class__.__name__} instead. "
-                    f"The causing error was {e}."
+                    f"'{InMemoryTrackerStore.__name__}'' instead. "
+                    f"The causing error was: {e}."
                 )
 
         if not tracker_store:
