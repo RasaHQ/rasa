@@ -340,7 +340,7 @@ def set_fingerprint(trained_model: Text, fingerprint: Fingerprint) -> Text:
 @pytest.mark.parametrize(
     "comparison_result,retrain_all,retrain_core,retrain_nlg,retrain_nlu",
     [
-        (FingerprintComparisonResult(force_trainining=True), True, True, True, True),
+        (FingerprintComparisonResult(force_training=True), True, True, True, True),
         (
             FingerprintComparisonResult(core=True, nlu=False, nlg=False),
             True,
