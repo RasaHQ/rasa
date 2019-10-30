@@ -427,7 +427,7 @@ def should_retrain(
             retrain.core = core_merge_failed
 
         if not retrain.should_retrain_nlg() and core_merge_failed:
-            # If merging the Core model failed, we should also retrain NLG
+            # If moving the Core model failed, we should also retrain NLG
             retrain.nlg = True
 
         if not retrain.should_retrain_nlu():
