@@ -89,12 +89,12 @@ class FingerprintComparisonResult:
             nlu: `True` if the NLU model should be retrained.
             core: `True` if the Core model should be retrained.
             nlg: `True` if the templates in the domain should be updated.
-            force_trainining: `True` if a training of all parts is forced.
+            force_training: `True` if a training of all parts is forced.
         """
         self.nlu = nlu
         self.core = core
         self.nlg = nlg
-        self.force_training = force_trainining
+        self.force_training = force_training
 
     def is_training_required(self) -> bool:
         """Check if anything has to be retrained."""
