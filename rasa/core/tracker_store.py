@@ -5,7 +5,7 @@ import os
 import pickle
 import typing
 from datetime import datetime, timezone
-from typing import Iterator, Optional, Text, Iterable, Union, Dict
+from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
 
 import itertools
 from boto3.dynamodb.conditions import Key
@@ -48,9 +48,33 @@ class TrackerStore(object):
         event_broker: Optional[EventChannel] = None,
     ) -> "TrackerStore":
         """Returns the tracker_store type"""
-        if store is None or store.type is None:
-            tracker_store = InMemoryTrackerStore(domain, event_broker=event_broker)
-        elif store.type.lower() == "redis":
+
+        tracker_store = None
+        if store is not None and store.type is not None:
+            try:
+                tracker_store = TrackerStore._create_tracker_store(
+                    domain, store, event_broker
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error when trying to connect to {store.type} "
+                    f"tracker store. Using "
+                    f"{InMemoryTrackerStore.__class__.__name__} instead. "
+                    f"The causing error was {e}."
+                )
+
+        if not tracker_store:
+            tracker_store = InMemoryTrackerStore(domain, event_broker)
+
+        logger.debug("Connected to {}.".format(tracker_store.__class__.__name__))
+
+        return tracker_store
+
+    @staticmethod
+    def _create_tracker_store(
+        domain: Domain, store: EndpointConfig, event_broker: Optional[EventChannel]
+    ) -> "TrackerStore":
+        if store.type.lower() == "redis":
             tracker_store = RedisTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
@@ -71,7 +95,6 @@ class TrackerStore(object):
                 domain, store, event_broker
             )
 
-        logger.debug("Connected to {}.".format(tracker_store.__class__.__name__))
         return tracker_store
 
     @staticmethod
