@@ -22,6 +22,8 @@ Removed
 Fixed
 -----
 
+- Fixed rasa init showing traceback error when user do Keyboard Interrupt before choose the path 
+
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
 Regression: changes from ``1.2.12`` were missing from ``1.4.0``, readded them
