@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 # namedtuple for all tf session related data
+# TODO: use simple dict, no X, Y, lables
 class SessionData(NamedTuple):
     X: Dict[Text, np.ndarray]
     Y: Dict[Text, np.ndarray]
@@ -49,6 +50,10 @@ def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto
     else:
         return None
 
+
+# TODO: add method to converst scipy.sparse matrix to indices, values, shapes
+# TODO: add method to convert indices, vales, shapes to tf.SparseTensor
+# TODO: add wrapper around all denses layers to use https://medium.com/dailymotion/how-to-design-deep-learning-models-with-sparse-inputs-in-tensorflow-keras-fd5e754abec1
 
 # noinspection PyPep8Naming
 def train_val_split(
@@ -312,6 +317,9 @@ def gen_batch(
 ) -> Generator[Tuple, None, None]:
     """Generate batches."""
 
+    # TODO: should keep everything sequence
+    # https://github.com/tensorflow/tensorflow/issues/16689
+
     if shuffle:
         session_data = shuffle_session_data(session_data)
 
@@ -327,16 +335,62 @@ def gen_batch(
         start = batch_num * batch_size
         end = start + batch_size
 
-        batch_data = [sparse_to_dense(v[start:end]) for v in session_data.X.values()]
-        batch_data = batch_data + [
-            sparse_to_dense(v[start:end]) for v in session_data.Y.values()
-        ]
-        batch_data = batch_data + [
-            sparse_to_dense(v[start:end]) for v in session_data.labels.values()
-        ]
+        batch_data = []
+        for v in session_data.X.values():
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                batch_data.append(get_sparse_values(v[start:end]))
+            else:
+                batch_data.append(pad_data(v[start:end]))
+
+        for v in session_data.Y.values():
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                batch_data.append(get_sparse_values(v[start:end]))
+            else:
+                batch_data.append(pad_data(v[start:end]))
+
+        for v in session_data.labels.values():
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                batch_data.append(get_sparse_values(v[start:end]))
+            else:
+                batch_data.append(pad_data(v[start:end]))
 
         # len of batch_data is equal to the number of keys in session data
         yield tuple(batch_data)
+
+
+def get_sparse_values(data: np.ndarray) -> np.ndarray:
+    converted = []
+
+    # TODO padding
+
+    for d in data:
+        coo = d.tocoo()
+        indices = np.mat([coo.row, coo.col]).transpose()
+        converted.append((indices, coo.data, coo.shape))
+
+    return np.array(converted)
+
+
+def pad_data(data: np.ndarray) -> np.ndarray:
+    if data[0].ndim == 0:
+        return data
+
+    data_size = len(data)
+    feature_len = max([x.shape[-1] for x in data])
+
+    if data[0].ndim == 1:
+        data_padded = np.zeros([data_size, feature_len], dtype=data[0].dtype)
+        for i in range(data_size):
+            data_padded[i, : data[i].shape[0]] = data[i]
+    else:
+        max_seq_len = max([x.shape[0] for x in data])
+        data_padded = np.zeros(
+            [data_size, max_seq_len, feature_len], dtype=data[0].dtype
+        )
+        for i in range(data_size):
+            data_padded[i, : data[i].shape[0], :] = data[i]
+
+    return data_padded
 
 
 def sparse_to_dense(
@@ -362,6 +416,7 @@ def create_tf_dataset(
     """Create tf dataset."""
 
     # set batch and sequence length to None
+    # TODO: can we remove the shape?
     shapes, types = _get_shape_and_types(session_data)
 
     return tf.data.Dataset.from_generator(

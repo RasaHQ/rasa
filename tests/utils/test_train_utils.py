@@ -18,11 +18,48 @@ from rasa.utils.train_utils import (
 async def session_data() -> SessionData:
     return SessionData(
         X={
-            "dense": np.random.rand(5, 10),
-            "sparse": scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
+            "dense": np.array(
+                [
+                    np.random.rand(5, 14),
+                    np.random.rand(2, 14),
+                    np.random.rand(3, 14),
+                    np.random.rand(1, 14),
+                    np.random.rand(3, 14),
+                ]
+            ),
+            "sparse": np.array(
+                [
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
+                ]
+            ),
         },
-        Y={"Y": np.random.randint(2, size=(5, 10))},
-        labels={"labels": np.array([0, 1, 0, 0, 0])},
+        Y={
+            "Y": np.array(
+                [
+                    np.random.randint(2, size=(5, 10)),
+                    np.random.randint(2, size=(2, 10)),
+                    np.random.randint(2, size=(3, 10)),
+                    np.random.randint(2, size=(1, 10)),
+                    np.random.randint(2, size=(3, 10)),
+                ]
+            )
+        },
+        labels={
+            "intent_ids": np.array([0, 1, 0, 1, 1]),
+            "tag_ids": np.array(
+                [
+                    np.array([0, 1, 1, 0, 2]),
+                    np.array([2, 0]),
+                    np.array([0, 1, 1]),
+                    np.array([0, 1]),
+                    np.array([0, 0, 0]),
+                ]
+            ),
+        },
     )
 
 
@@ -42,12 +79,12 @@ def test_shuffle_session_data(session_data: SessionData):
 
 def test_split_session_data_by_label(session_data: SessionData):
     split_session_data = split_session_data_by_label(
-        session_data, "labels", np.array([0, 1])
+        session_data, "intent_ids", np.array([0, 1])
     )
 
     assert len(split_session_data) == 2
     for s in split_session_data:
-        assert len(set(s.labels["labels"])) == 1
+        assert len(set(s.labels["intent_ids"])) == 1
 
 
 def test_split_session_data_by_incorrect_label(session_data: SessionData):
@@ -59,7 +96,7 @@ def test_split_session_data_by_incorrect_label(session_data: SessionData):
 
 def test_train_val_split(session_data: SessionData):
     train_session_data, val_session_data = train_val_split(
-        session_data, 2, 42, "labels"
+        session_data, 2, 42, "intent_ids"
     )
 
     for v in train_session_data.X.values():
@@ -72,7 +109,7 @@ def test_train_val_split(session_data: SessionData):
 @pytest.mark.parametrize("size", [0, 1, 5])
 def test_train_val_split_incorrect_size(session_data: SessionData, size):
     with pytest.raises(ValueError):
-        train_val_split(session_data, size, 42, "labels")
+        train_val_split(session_data, size, 42, "intent_ids")
 
 
 def test_session_data_for_ids(session_data: SessionData):
@@ -104,18 +141,18 @@ def test_get_number_of_examples_raises_value_error(session_data: SessionData):
 
 
 def test_gen_batch(session_data: SessionData):
-    iterator = gen_batch(session_data, 2, "labels", shuffle=True)
+    iterator = gen_batch(session_data, 2, "intent_ids", shuffle=True)
 
     batch = next(iterator)
-    assert len(batch) == 4
+    assert len(batch) == 5
     assert len(batch[0]) == 2
 
     batch = next(iterator)
-    assert len(batch) == 4
+    assert len(batch) == 5
     assert len(batch[0]) == 2
 
     batch = next(iterator)
-    assert len(batch) == 4
+    assert len(batch) == 5
     assert len(batch[0]) == 1
 
     with pytest.raises(StopIteration):
@@ -123,11 +160,11 @@ def test_gen_batch(session_data: SessionData):
 
 
 def test_balance_session_data(session_data: SessionData):
-    session_data.labels["labels"] = np.array([0, 0, 0, 1, 1])
+    session_data.labels["intent_ids"] = np.array([0, 0, 0, 1, 1])
 
-    balanced_session_data = balance_session_data(session_data, 2, False, "labels")
+    balanced_session_data = balance_session_data(session_data, 2, False, "intent_ids")
 
-    labels = balanced_session_data.labels["labels"]
+    labels = balanced_session_data.labels["intent_ids"]
 
     assert 5 == len(labels)
     assert np.all(np.array([0, 0, 1, 0, 1]) == labels)

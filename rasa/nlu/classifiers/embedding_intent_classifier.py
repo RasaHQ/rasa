@@ -359,6 +359,8 @@ class EmbeddingIntentClassifier(Component):
         X_dense = np.array(X_dense)
         label_ids = np.array(label_ids)
 
+        # TODO: get Y directly from message (sparse and dense)
+        # all_encoded_labels should be sparse
         for label_id_idx in label_ids:
             Y.append(self._encoded_all_label_ids[label_id_idx])
         Y = np.array(Y)
@@ -369,6 +371,8 @@ class EmbeddingIntentClassifier(Component):
         if X_dense.size > 0:
             X_dict["text_features_dense"] = X_dense
 
+        # TODO: session data should be dict
+        # TODO: include mask inside session data
         return SessionData(X_dict, {"intent_features": Y}, {"intent_ids": label_ids})
 
     def _get_x_features(
@@ -384,16 +388,16 @@ class EmbeddingIntentClassifier(Component):
             message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
             is not None
         ):
-            x_sparse = sequence_to_sentence_features(
-                message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            x_sparse = message.get(
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
             )
 
         if (
             message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
             is not None
         ):
-            x_dense = sequence_to_sentence_features(
-                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+            x_dense = message.get(
+                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
             )
 
         return x_sparse, x_dense
@@ -427,8 +431,15 @@ class EmbeddingIntentClassifier(Component):
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
         # batch = 1 or 2 a_in values, b_in, intent_ids
         batch = self._iterator.get_next()
+
+        # TODO: convert seq to sentence (sum and mean)
+        # TODO: convert batch into session data (same keys, but with tensors)
+
         self.a_in, self.b_in = self.batch_to_input(batch)
 
+        # TODO _encoded_all_label_ids is sparse add dense layer to convert it to dense
+        # https://medium.com/dailymotion/how-to-design-deep-learning-models-with-sparse-inputs-in-tensorflow-keras-fd5e754abec1
+        # https: // github.com / tensorflow / tensorflow / issues / 9210  # issuecomment-497889961
         all_label_ids = tf.constant(
             self._encoded_all_label_ids, dtype=tf.float32, name="all_label_ids"
         )
@@ -516,6 +527,9 @@ class EmbeddingIntentClassifier(Component):
             name="b",
         )
 
+        # TODO check this idea:
+        self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
+
         self.message_embed = self._create_tf_embed_fnn(
             self.a_in,
             self.hidden_layer_sizes["a"],
@@ -573,6 +587,8 @@ class EmbeddingIntentClassifier(Component):
         )
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
+        # TODO: sparse + dense, maybe dict?
+        # TODO: can we use somehing else
         self._encoded_all_label_ids = self._create_encoded_label_ids(
             training_data,
             label_id_dict,
