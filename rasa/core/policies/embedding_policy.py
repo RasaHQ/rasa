@@ -593,26 +593,26 @@ class EmbeddingPolicy(Policy):
 
         tf_feed_dict = self.tf_feed_dict_for_prediction(tracker, domain)
 
-        # confidence = self.session.run(self.pred_confidence, feed_dict=tf_feed_dict)
-        xs = []
-        for _ in range(100):
-            xs.append(self.session.run(self.pred_confidence, feed_dict=tf_feed_dict))
-        xs = np.array(xs)
-        self.i_max = xs.argmax(axis=-1)[:, 0, -1]
-        # self.x_i_max = xs.max(axis=-1)[:, 0, -1]
-        # print(self.x_i_max)
-        # print(self.i_max)
-        unique, counts = np.unique(self.i_max, return_counts=True)
-        # print(unique, counts)
-        max_count_i = counts.argmax()
-        self.i_max_mean = unique[max_count_i]
-        self.i_max_err = counts[max_count_i] / np.sum(counts)
-        # exit()
-        self.mean = xs.mean(axis=0)[0, -1, :]
-        self.stds = xs.std(axis=0)[0, -1, :]
+        confidence = self.session.run(self.pred_confidence, feed_dict=tf_feed_dict)
+        # xs = []
+        # for _ in range(100):
+        #     xs.append(self.session.run(self.pred_confidence, feed_dict=tf_feed_dict))
+        # xs = np.array(xs)
+        # self.i_max = xs.argmax(axis=-1)[:, 0, -1]
+        # # self.x_i_max = xs.max(axis=-1)[:, 0, -1]
+        # # print(self.x_i_max)
+        # # print(self.i_max)
+        # unique, counts = np.unique(self.i_max, return_counts=True)
+        # # print(unique, counts)
+        # max_count_i = counts.argmax()
+        # self.i_max_mean = unique[max_count_i]
+        # self.i_max_err = counts[max_count_i] / np.sum(counts)
+        # # exit()
+        # self.mean = xs.mean(axis=0)[0, -1, :]
+        # self.stds = xs.std(axis=0)[0, -1, :]
 
-        # return confidence[0, -1, :].tolist()
-        return self.mean.tolist()
+        return confidence[0, -1, :].tolist()
+        # return self.mean.tolist()
 
     def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
