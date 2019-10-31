@@ -14,6 +14,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 - Added the KeywordIntentClassifier
+- Added additional warnings for when NLU configuration is missing for specific training data.
 
 Changed
 -------
