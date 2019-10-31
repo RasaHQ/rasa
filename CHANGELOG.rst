@@ -12,6 +12,9 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- ``PikaEventProducer`` adds the RabbitMQ ``App ID`` message property to published
+  messages with the value of the ``RASA_ENVIRONMENT`` environment variable. The
+  message property will not be assigned if this environment variable isn't set.
 
 Changed
 -------

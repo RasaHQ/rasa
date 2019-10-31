@@ -12,10 +12,11 @@ import rasa.core.brokers.utils as rasa_broker_utils
 from rasa.constants import ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
 from rasa.core.brokers.event_channel import EventChannel
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
     from pika.adapters.blocking_connection import BlockingChannel
-    from pika import SelectConnection, BlockingConnection
+    from pika import SelectConnection, BlockingConnection, BasicProperties
     from pika.channel import Channel
     from pika.connection import Parameters, Connection
 
@@ -235,6 +236,10 @@ class PikaProducer(EventChannel):
             close_pika_channel(self.channel)
             close_pika_connection(self.channel.connection)
 
+    @property
+    def rasa_environment(self) -> Optional[Text]:
+        return os.environ.get("RASA_ENVIRONMENT")
+
     @classmethod
     def from_endpoint_config(
         cls, broker_config: Optional["EndpointConfig"]
@@ -314,6 +319,22 @@ class PikaProducer(EventChannel):
             "'{}':\n{}".format(self.queue, self.host, body)
         )
 
+    @property
+    def _message_properties(self) -> "BasicProperties":
+        """Create RabbitMQ message properties.
+
+        Returns:
+            pika.spec.BasicProperties with the `RASA_ENVIRONMENT` environment
+            variable as the properties' app_id value. If this variable is unset, empty
+            pika.spec.BasicProperties.
+
+        """
+        from pika.spec import BasicProperties
+
+        kwargs = {"app_id": self.rasa_environment} if self.rasa_environment else {}
+
+        return BasicProperties(**kwargs)
+
     def _publish(self, body: Text) -> None:
         if self._pika_connection.is_closed:
             # Try to reset connection
@@ -327,7 +348,12 @@ class PikaProducer(EventChannel):
             )
             self._unpublished_messages.append(body)
         else:
-            self.channel.basic_publish("", self.queue, body)
+            self.channel.basic_publish(
+                "",
+                self.queue,
+                body.encode(DEFAULT_ENCODING),
+                properties=self._message_properties,
+            )
 
             logger.debug(
                 f"Published Pika events to queue '{self.queue}' on host "
