@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import datetime
 import json
 import logging
@@ -41,12 +39,12 @@ class BotFramework(OutputChannel):
         self.app_id = app_id
         self.app_password = app_password
         self.conversation = conversation
-        self.global_uri = "{}v3/".format(service_url)
+        self.global_uri = f"{service_url}v3/"
         self.bot = bot
 
     async def _get_headers(self):
         if BotFramework.token_expiration_date < datetime.datetime.now():
-            uri = "{}/{}".format(MICROSOFT_OAUTH2_URL, MICROSOFT_OAUTH2_PATH)
+            uri = f"{MICROSOFT_OAUTH2_URL}/{MICROSOFT_OAUTH2_PATH}"
             grant_type = "client_credentials"
             scope = "https://api.botframework.com/.default"
             payload = {
@@ -246,7 +244,7 @@ class BotFrameworkInput(InputChannel):
                 else:
                     logger.info("Not received message type")
             except Exception as e:
-                logger.error("Exception when trying to handle message.{0}".format(e))
+                logger.error(f"Exception when trying to handle message.{e}")
                 logger.debug(e, exc_info=True)
                 pass
 

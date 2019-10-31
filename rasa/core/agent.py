@@ -67,7 +67,7 @@ def _load_and_set_updated_model(
 ):
     """Load the persisted model into memory and set the model on the agent."""
 
-    logger.debug("Found new model with fingerprint {}. Loading...".format(fingerprint))
+    logger.debug(f"Found new model with fingerprint {fingerprint}. Loading...")
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
@@ -115,7 +115,7 @@ async def _update_model_from_server(
         model_directory, new_model_fingerprint = model_directory_and_fingerprint
         _load_and_set_updated_model(agent, model_directory, new_model_fingerprint)
     else:
-        logger.debug("No new model found at URL {}".format(model_server.url))
+        logger.debug(f"No new model found at URL {model_server.url}")
 
 
 async def _pull_model_and_fingerprint(
@@ -129,7 +129,7 @@ async def _pull_model_and_fingerprint(
 
     headers = {"If-None-Match": fingerprint}
 
-    logger.debug("Requesting model from server {}...".format(model_server.url))
+    logger.debug(f"Requesting model from server {model_server.url}...")
 
     async with model_server.session() as session:
         try:
@@ -267,11 +267,11 @@ async def load_agent(
             return None
 
     except Exception as e:
-        logger.error("Could not load model due to {}.".format(e))
+        logger.error(f"Could not load model due to {e}.")
         raise
 
 
-class Agent(object):
+class Agent:
     """The Agent class provides a convenient interface for the most important
      Rasa functionality.
 
@@ -356,7 +356,7 @@ class Agent(object):
             if not model_path:
                 raise ModelNotFound("No path specified.")
             elif not os.path.exists(model_path):
-                raise ModelNotFound("No file or directory at '{}'.".format(model_path))
+                raise ModelNotFound(f"No file or directory at '{model_path}'.")
             elif os.path.isfile(model_path):
                 model_path = get_model(model_path)
         except ModelNotFound:
@@ -682,7 +682,7 @@ class Agent(object):
                 "to `agent.train(data)`."
             )
 
-        logger.debug("Agent trainer got kwargs: {}".format(kwargs))
+        logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
         self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
         self._set_fingerprint()
@@ -897,7 +897,7 @@ class Agent(object):
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            logger.warning("Could not load local model in '{}'".format(model_path))
+            logger.warning(f"Could not load local model in '{model_path}'")
             return Agent()
 
         working_directory = tempfile.mkdtemp()

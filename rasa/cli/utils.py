@@ -36,9 +36,9 @@ def get_validated_path(
     """
     if current is None or current is not None and not os.path.exists(current):
         if default is not None and os.path.exists(default):
-            reason_str = "'{}' not found.".format(current)
+            reason_str = f"'{current}' not found."
             if current is None:
-                reason_str = "Parameter '{}' not set.".format(parameter)
+                reason_str = f"Parameter '{parameter}' not set."
             else:
                 logger.warning(
                     "'{}' does not exist. Using default value '{}' instead.".format(
@@ -46,9 +46,7 @@ def get_validated_path(
                     )
                 )
 
-            logger.debug(
-                "{} Using default location '{}' instead.".format(reason_str, default)
-            )
+            logger.debug(f"{reason_str} Using default location '{default}' instead.")
             current = default
         elif none_is_valid:
             current = None
@@ -83,7 +81,7 @@ def cancel_cause_not_found(
 
     default_clause = ""
     if default:
-        default_clause = "use the default location ('{}') or ".format(default)
+        default_clause = f"use the default location ('{default}') or "
     print_error(
         "The path '{}' does not exist. Please make sure to {}specify it"
         " with '--{}'.".format(current, default_clause, parameter)
@@ -133,8 +131,8 @@ def create_output_path(
         else:
             time_format = "%Y%m%d-%H%M%S"
             name = time.strftime(time_format)
-            name = "{}{}".format(prefix, name)
-        file_name = "{}.tar.gz".format(name)
+            name = f"{prefix}{name}"
+        file_name = f"{name}.tar.gz"
         return os.path.join(output_path, file_name)
 
 
@@ -199,7 +197,7 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-class bcolors(object):
+class bcolors:
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
     OKGREEN = "\033[92m"

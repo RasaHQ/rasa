@@ -31,7 +31,7 @@ class RegexFeaturizer(Featurizer):
 
     def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
 
-        super(RegexFeaturizer, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
         lookup_tables = lookup_tables or []
@@ -109,10 +109,8 @@ class RegexFeaturizer(Featurizer):
         else:
 
             try:
-                f = io.open(
-                    lookup_elements, "r", encoding=rasa.utils.io.DEFAULT_ENCODING
-                )
-            except IOError:
+                f = open(lookup_elements, "r", encoding=rasa.utils.io.DEFAULT_ENCODING)
+            except OSError:
                 raise ValueError(
                     "Could not load lookup table {}"
                     "Make sure you've provided the correct path".format(lookup_elements)
