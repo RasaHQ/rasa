@@ -417,6 +417,26 @@ training data. It predicts the next action with confidence ``1.0``
 if this exact conversation exists in the training data, otherwise it
 predicts ``None`` with confidence ``0.0``.
 
+Augmented Memoization Policy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The ``AugmentedMemoizationPolicy`` remembers examples from training
+stories for up to ``max_history`` turns. It has a forgetting mechanism
+that will forget a certain amount of steps in the conversation history
+and try to find a match in your stories with the reduced history. It
+predicts the next action with confidence ``1.0`` if a match is found,
+otherwise it predicts ``None`` with confidence ``0.0``.
+
+.. note::
+  
+  If it is needed to recall turns from training dialogues where some
+  slots might not be set during prediction time, add relevant stories
+  without such slots to training data, e.g. reminder stories. Since 
+  slots that are set some time in the past are preserved in all
+  future feature vectors until they are set to None, this policy has
+  a capability to recall the turns up to ``max_history`` from training
+  stories during prediction even if additional slots were filled in
+  the past for current dialogue.
+
 .. _fallback-policy:
 
 Fallback Policy
