@@ -90,9 +90,13 @@ def validate_required_components_from_data(
     #     print(f"The pipeline data is: {pipeline_data.__dict__}")
     response_selector_exists = False
     regex_config_exists = False
+    crfentity_config_exists = False
+    
     for component in pipeline:
         if 'RegexFeaturizer' in component.name:
             regex_config_exists = True
+        if 'CRFEntityExtractor' in component.name:
+            crfentity_config_exists = True
         # check if a response selector is part of NLU pipeline
         if MESSAGE_RESPONSE_ATTRIBUTE in component.provides:
             response_selector_exists = True
@@ -103,6 +107,12 @@ def validate_required_components_from_data(
             "Training data consists of regex examples but "
             "no RegexFeaturizer setup in config.yml"
         )
+
+    if data.lookup_tables and not crfentity_config_exists:
+        warnings.warn(
+            "Training data consists of lookup table values but "
+            "no CRFEntityExtractor configured in config.yml"
+            )
 
     if len(data.response_examples) and not response_selector_exists:
         warnings.warn(
