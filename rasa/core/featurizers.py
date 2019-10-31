@@ -366,6 +366,19 @@ class CountVectorsSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer, Cou
         # else:
         #     return used_features
 
+    @staticmethod
+    def action_as_one_hot(action: Text, domain: Domain) -> scipy.sparse.csr_matrix:
+        """Encode system action as one-hot vector."""
+
+        if action is None:
+            raise ValueError("ERROR: action_as_one_hot got action 'None'")
+            # return np.ones(domain.num_actions, dtype=int) * -1
+
+        # y = np.zeros(domain.num_actions, dtype=int)
+        # y[domain.index_for_action(action)] = 1
+        y = scipy.sparse.csr_matrix(([1], ([domain.index_for_action(action)], [0])), shape=(domain.num_actions, 1))
+        return y
+
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows."""
 
