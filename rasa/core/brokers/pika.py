@@ -139,16 +139,16 @@ def initialise_pika_channel(
     """Initialise a Pika channel with a durable queue.
 
     Args:
-        host: Pika host
-        queue: Pika queue to declare
-        username: username for authentication with Pika host
-        password: password for authentication with Pika host
-        port: port of the Pika host
-        connection_attempts: number of channel attempts before giving up
-        retry_delay_in_seconds: delay in seconds between channel attempts
+        host: Pika host.
+        queue: Pika queue to declare.
+        username: Username for authentication with Pika host.
+        password: Password for authentication with Pika host.
+        port: port of the Pika host.
+        connection_attempts: Number of channel attempts before giving up.
+        retry_delay_in_seconds: Delay in seconds between channel attempts.
 
     Returns:
-        Pika `BlockingChannel` with declared queue
+        Pika `BlockingChannel` with declared queue.
 
     """
 
@@ -206,6 +206,17 @@ class PikaProducer(EventChannel):
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
     ):
+        """RabbitMQ event producer.
+
+        Args:
+            host: Pika host.
+            username: Username for authentication with Pika host.
+            password: Password for authentication with Pika host.
+            port: port of the Pika host.
+            queue: Pika queue to declare.
+            loglevel: Logging level.
+
+        """
         logging.getLogger("pika").setLevel(loglevel)
 
         self.queue = queue
@@ -285,7 +296,6 @@ class PikaProducer(EventChannel):
         body = json.dumps(event)
 
         while retries:
-            # noinspection PyBroadException
             try:
                 self._publish(body)
                 return
