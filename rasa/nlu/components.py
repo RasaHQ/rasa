@@ -88,10 +88,16 @@ def validate_required_components_from_data(
 ):
 
     response_selector_exists = False
+    regex_config_exists = False
     for component in pipeline:
+        print(f"The component object is {component.provides}")
         # check if a response selector is part of NLU pipeline
         if MESSAGE_RESPONSE_ATTRIBUTE in component.provides:
             response_selector_exists = True
+
+        # check if there are regex features
+        if data.regex_features and not regex_config_exists:
+            print(f"The regex object is: {data.regex_features}")
 
     if len(data.response_examples) and not response_selector_exists:
         warnings.warn(
