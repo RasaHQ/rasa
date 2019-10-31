@@ -86,8 +86,7 @@ def validate_arguments(
 def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
 ):
-    # for pipeline_data in pipeline:
-    #     print(f"The pipeline data is: {pipeline_data.__dict__}")
+
     response_selector_exists = False
     regex_config_exists = False
     crfentity_config_exists = False
