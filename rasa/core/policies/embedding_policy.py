@@ -6,6 +6,7 @@ import pickle
 import warnings
 
 import numpy as np
+import scipy
 from typing import Any, List, Optional, Text, Dict, Tuple
 
 import rasa.utils.io
@@ -25,6 +26,8 @@ from rasa.utils import train_utils
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from rasa.utils.train_utils import convert_sparse_to_dense
+
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
@@ -244,7 +247,7 @@ class EmbeddingPolicy(Policy):
         if len(label_ids.shape) == 2:  # full dialogue featurizer is used
             return np.stack(
                 [
-                    np.stack(
+                    scipy.sparse.vstack(
                         [
                             self._encoded_all_label_ids[label_idx]
                             for label_idx in seq_label_ids
@@ -270,7 +273,8 @@ class EmbeddingPolicy(Policy):
         # exit()
         if data_Y is not None:
             # training time
-            label_ids = self._label_ids_for_Y(data_Y)
+            # label_ids = self._label_ids_for_Y(data_Y)
+            label_ids = data_Y
             Y = self._label_features_for_Y(label_ids)
             # print(Y.shape)
             # idea taken from sklearn's stratify split
@@ -573,7 +577,9 @@ class EmbeddingPolicy(Policy):
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
 
-        return {self.a_in: session_data.X}
+        X = convert_sparse_to_dense(session_data.X)
+
+        return {self.a_in: X}
 
     def predict_action_probabilities(
         self, tracker: "DialogueStateTracker", domain: "Domain"

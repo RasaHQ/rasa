@@ -376,7 +376,8 @@ class CountVectorsSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer, Cou
 
         # y = np.zeros(domain.num_actions, dtype=int)
         # y[domain.index_for_action(action)] = 1
-        y = scipy.sparse.csr_matrix(([1], ([domain.index_for_action(action)], [0])), shape=(domain.num_actions, 1))
+        # y = scipy.sparse.csr_matrix(([1], ([domain.index_for_action(action)], [0])), shape=(domain.num_actions, 1))
+        y = domain.index_for_action(action)
         return y
 
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
@@ -502,7 +503,7 @@ class TrackerFeaturizer(object):
                 tracker_actions = self._pad_states(tracker_actions)
 
             story_labels = [
-                self.state_featurizer.action_as_one_hot(action, domain)
+                self.state_featurizer.action_as_one_hot(action, domain)  # Now just returns index, not one-hot
                 for action in tracker_actions
             ]
 
