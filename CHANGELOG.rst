@@ -15,6 +15,7 @@ Added
 
 Changed
 -------
+- updated mattermost connector documentation to be more clear.
 
 Removed
 -------
