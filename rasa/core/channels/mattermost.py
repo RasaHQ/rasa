@@ -2,9 +2,10 @@ import logging
 from mattermostwrapper import MattermostAPI
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, Dict, Any, List, Callable, Awaitable
+from typing import Text, Dict, Any, List, Callable, Awaitable, Optional
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
+from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
 
@@ -13,15 +14,15 @@ class MattermostBot(MattermostAPI, OutputChannel):
     """A Mattermost communication channel"""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "mattermost"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> OutputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(credentials.get("webhook_url"))
+        return cls(credentials.get("webhook_url"))  # pytype: disable=attribute-error
 
     def __init__(
         self,
@@ -30,8 +31,8 @@ class MattermostBot(MattermostAPI, OutputChannel):
         user: Text,
         pw: Text,
         bot_channel: Text,
-        webhook_url: Text,
-    ):
+        webhook_url: Optional[Text],
+    ) -> None:
         self.url = url
         self.team = team
         self.user = user
@@ -75,7 +76,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
 
@@ -107,14 +108,15 @@ class MattermostInput(InputChannel):
     """Mattermost input channel implemenation."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "mattermost"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
+        # pytype: disable=attribute-error
         return cls(
             credentials.get("url"),
             credentials.get("team"),
@@ -122,6 +124,7 @@ class MattermostInput(InputChannel):
             credentials.get("pw"),
             credentials.get("webhook_url"),
         )
+        # pytype: enable=attribute-error
 
     def __init__(
         self, url: Text, team: Text, user: Text, pw: Text, webhook_url: Text
@@ -150,6 +153,7 @@ class MattermostInput(InputChannel):
         self,
         on_new_message: Callable[[UserMessage], Awaitable[None]],
         output: Dict[Text, Any],
+        metadata: Optional[Dict],
     ) -> None:
         # splitting to get rid of the @botmention
         # trigger we are using for this
@@ -169,7 +173,11 @@ class MattermostInput(InputChannel):
                 self.webhook_url,
             )
             user_msg = UserMessage(
-                text, out_channel, sender_id, input_channel=self.name()
+                text,
+                out_channel,
+                sender_id,
+                input_channel=self.name(),
+                metadata=metadata,
             )
             await on_new_message(user_msg)
         except Exception as e:
@@ -180,6 +188,7 @@ class MattermostInput(InputChannel):
         self,
         on_new_message: Callable[[UserMessage], Awaitable[None]],
         output: Dict[Text, Any],
+        metadata: Optional[Dict],
     ) -> None:
         # get the action, the buttons triggers
         action = output["context"]["action"]
@@ -197,34 +206,41 @@ class MattermostInput(InputChannel):
                 self.webhook_url,
             )
             context_action = UserMessage(
-                action, out_channel, sender_id, input_channel=self.name()
+                action,
+                out_channel,
+                sender_id,
+                input_channel=self.name(),
+                metadata=metadata,
             )
             await on_new_message(context_action)
         except Exception as e:
             logger.error("Exception when trying to handle message.{0}".format(e))
             logger.debug(e, exc_info=True)
 
-    def blueprint(self, on_new_message: Callable[[UserMessage], Awaitable[None]]):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[None]]
+    ) -> Blueprint:
         mattermost_webhook = Blueprint("mattermost_webhook", __name__)
 
         @mattermost_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @mattermost_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request: Request):
+        async def webhook(request: Request) -> HTTPResponse:
             output = request.json
 
             if not output:
                 return response.text("")
 
+            metadata = self.get_metadata(request)
             # handle normal message with trigger_word
             if "trigger_word" in output:
-                await self.message_with_trigger_word(on_new_message, output)
+                await self.message_with_trigger_word(on_new_message, output, metadata)
 
             # handle context actions from buttons
             elif "context" in output:
-                await self.action_from_button(on_new_message, output)
+                await self.action_from_button(on_new_message, output, metadata)
 
             return response.text("success")
 

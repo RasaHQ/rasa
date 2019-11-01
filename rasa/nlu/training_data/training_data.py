@@ -7,7 +7,7 @@ import warnings
 from collections import Counter
 from copy import deepcopy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 from rasa.nlu.utils import list_to_str
 import rasa.nlu.utils
@@ -15,10 +15,8 @@ import rasa.utils.common as rasa_utils
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.constants import (
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_RESPONSE_KEY_ATTRIBUTE,
-    RESPONSE_IDENTIFIER_DELIMITER,
 )
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"

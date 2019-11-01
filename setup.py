@@ -7,7 +7,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
 with open("rasa/version.py") as f:
-    exec (f.read())
+    exec(f.read())
 
 # Get the long description from the README file
 with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
@@ -30,7 +30,6 @@ install_requires = [
     "requests>=2.20",
     "boto3~=1.9",
     "matplotlib~=3.0",
-    "simplejson~=3.16",
     "attrs>=18",
     "jsonpickle~=1.1",
     "redis~=3.3.5",
@@ -48,7 +47,7 @@ install_requires = [
     "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
-    "networkx~=2.3",
+    "networkx~=2.3.0",
     "fbmessenger~=6.0",
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
@@ -68,11 +67,11 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.3.0",
+    "rasa-sdk~=1.4.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "sanic~=19.3.1",
-    "sanic-cors~=0.9.0",
+    "sanic~=19.6",
+    "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
     "aiohttp~=3.5",
     "questionary>=1.1.0",
@@ -139,8 +138,8 @@ setup(
     },
 )
 
-print ("\nWelcome to Rasa!")
-print (
+print("\nWelcome to Rasa!")
+print(
     "If you have any questions, please visit our documentation page: https://rasa.com/docs/"
 )
-print ("or join the community discussions on https://forum.rasa.com/")
+print("or join the community discussions on https://forum.rasa.com/")

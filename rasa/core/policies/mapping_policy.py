@@ -6,7 +6,6 @@ from typing import Any, List, Text, Optional
 
 import rasa.utils.io
 
-from rasa.core import utils
 from rasa.core.actions.action import (
     ACTION_BACK_NAME,
     ACTION_LISTEN_NAME,
@@ -70,7 +69,7 @@ class MappingPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
 
@@ -114,9 +113,9 @@ class MappingPolicy(Policy):
         elif tracker.latest_action_name == action and action is not None:
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.action_name == action
-            if latest_action.policy == type(
-                self
-            ).__name__ or latest_action.policy.endswith("_" + type(self).__name__):
+            if latest_action.policy and latest_action.policy.endswith(
+                type(self).__name__
+            ):
                 # this ensures that we only predict listen, if we predicted
                 # the mapped action
                 logger.debug(
@@ -152,7 +151,7 @@ class MappingPolicy(Policy):
         config_file = os.path.join(path, "mapping_policy.json")
         meta = {"priority": self.priority}
         rasa.utils.io.create_directory_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "MappingPolicy":

@@ -1,4 +1,5 @@
 import logging
+from contextlib import contextmanager
 from typing import Text, List
 
 import pytest
@@ -18,10 +19,10 @@ from rasa.model import get_model
 from rasa.train import train_async
 from rasa.utils.common import TempDirectoryPath
 from tests.core.conftest import (
-    DEFAULT_STORIES_FILE,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-    DEFAULT_STACK_CONFIG,
     DEFAULT_NLU_DATA,
+    DEFAULT_STACK_CONFIG,
+    DEFAULT_STORIES_FILE,
     END_TO_END_STORY_FILE,
     MOODBOT_MODEL_PATH,
 )
@@ -118,15 +119,26 @@ def default_config() -> List[Policy]:
     return config.load(DEFAULT_CONFIG_PATH)
 
 
+@pytest.fixture(scope="session")
+def trained_async(tmpdir_factory):
+    async def _train(*args, output_path=None, **kwargs):
+        if output_path is None:
+            output_path = str(tmpdir_factory.mktemp("models"))
+
+        return await train_async(*args, output_path=output_path, **kwargs)
+
+    return _train
+
+
 @pytest.fixture()
 async def trained_rasa_model(
+    trained_async,
     default_domain_path: Text,
     default_config: List[Policy],
     default_nlu_data: Text,
     default_stories_file: Text,
 ) -> Text:
-    clean_folder("models")
-    trained_stack_model_path = await train_async(
+    trained_stack_model_path = await trained_async(
         domain="data/test_domains/default.yml",
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_nlu_data, default_stories_file],
@@ -137,12 +149,13 @@ async def trained_rasa_model(
 
 @pytest.fixture()
 async def trained_core_model(
+    trained_async,
     default_domain_path: Text,
     default_config: List[Policy],
     default_nlu_data: Text,
     default_stories_file: Text,
 ) -> Text:
-    trained_core_model_path = await train_async(
+    trained_core_model_path = await trained_async(
         domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_stories_file],
@@ -153,12 +166,13 @@ async def trained_core_model(
 
 @pytest.fixture()
 async def trained_nlu_model(
+    trained_async,
     default_domain_path: Text,
     default_config: List[Policy],
     default_nlu_data: Text,
     default_stories_file: Text,
 ) -> Text:
-    trained_nlu_model_path = await train_async(
+    trained_nlu_model_path = await trained_async(
         domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_nlu_data],
@@ -202,10 +216,54 @@ async def rasa_server_without_api() -> Sanic:
     return app
 
 
-def clean_folder(folder: Text) -> None:
-    import os
+def get_test_client(server):
+    test_client = server.test_client
+    test_client.port = None
+    return test_client
 
-    if os.path.exists(folder):
-        import shutil
 
-        shutil.rmtree(folder)
+@contextmanager
+def assert_log_emitted(
+    _caplog: LogCaptureFixture, logger_name: Text, log_level: int, text: Text = None
+) -> None:
+    """Context manager testing whether a logging message has been emitted.
+
+    Provides a context in which an assertion is made about a logging message.
+    Raises an `AssertionError` if the log isn't emitted as expected.
+
+    Example usage:
+
+    ```
+    with assert_log_emitted(caplog, LOGGER_NAME, LOGGING_LEVEL, TEXT):
+        <method supposed to emit TEXT at level LOGGING_LEVEL>
+    ```
+
+    Args:
+        _caplog: `LogCaptureFixture` used to capture logs.
+        logger_name: Name of the logger being examined.
+        log_level: Log level to be tested.
+        text: Logging message to be tested (optional). If left blank, assertion is made
+            only about `log_level` and `logger_name`.
+
+    Yields:
+        `None`
+
+    """
+
+    yield
+
+    record_tuples = _caplog.record_tuples
+
+    if not any(
+        (
+            record[0] == logger_name
+            and record[1] == log_level
+            and (text in record[2] if text else True)
+        )
+        for record in record_tuples
+    ):
+        raise AssertionError(
+            f"Did not detect expected logging output.\nExpected output is (logger "
+            f"name, log level, text): ({logger_name}, {log_level}, {text})\n"
+            f"Instead found records:\n{record_tuples}"
+        )

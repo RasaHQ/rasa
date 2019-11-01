@@ -110,11 +110,9 @@ def unpack_model(
     if working_directory is None:
         working_directory = tempfile.mkdtemp()
 
-    tar = tarfile.open(model_file)
-
     # All files are in a subdirectory.
-    tar.extractall(working_directory)
-    tar.close()
+    with tarfile.open(model_file, mode="r:gz") as tar:
+        tar.extractall(working_directory)
     logger.debug("Extracted model to '{}'.".format(working_directory))
 
     return TempDirectoryPath(working_directory)
@@ -266,10 +264,9 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
         fingerprint: The fingerprint to be persisted.
 
     """
-    from rasa.core.utils import dump_obj_as_json_to_file
 
     path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
-    dump_obj_as_json_to_file(path, fingerprint)
+    rasa.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 
 def core_fingerprint_changed(

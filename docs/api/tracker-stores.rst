@@ -60,7 +60,7 @@ SQLTrackerStore
             rasa run -m models --endpoints endpoints.yml
 :Parameters:
     - ``domain`` (default: ``None``): Domain object associated with this tracker store
-    - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects. 
+    - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects.
     - ``host`` (default: ``None``): URL of your SQL server
     - ``port`` (default: ``None``): Port of your SQL server
     - ``db`` (default: ``rasa.db``): The path to the database to be used
@@ -91,6 +91,7 @@ RedisTrackerStore
                 port: <port of your redis instance, usually 6379>
                 db: <number of your database within redis, e.g. 0>
                 password: <password used for authentication>
+                use_ssl: <whether or not the communication is encrypted, default `false`>
 
     3. To start the Rasa Core server using your configured Redis instance,
        add the :code:`--endpoints` flag, e.g.:

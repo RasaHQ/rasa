@@ -52,8 +52,7 @@ def add_subparser(
 
 
 def interactive(args: argparse.Namespace):
-    args.fixed_model_name = None
-    args.store_uncompressed = False
+    _set_not_required_args(args)
 
     if args.model is None:
         check_training_data(args)
@@ -64,9 +63,13 @@ def interactive(args: argparse.Namespace):
     perform_interactive_learning(args, zipped_model)
 
 
-def interactive_core(args: argparse.Namespace):
+def _set_not_required_args(args: argparse.Namespace) -> None:
     args.fixed_model_name = None
     args.store_uncompressed = False
+
+
+def interactive_core(args: argparse.Namespace):
+    _set_not_required_args(args)
 
     if args.model is None:
         zipped_model = train.train_core(args)

@@ -62,7 +62,7 @@ author = "Rasa Technologies"
 #
 # The short X.Y version.
 __version__ = None
-exec (open("../rasa/version.py").read())
+exec(open("../rasa/version.py").read())
 version = ".".join(__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
 release = __version__
@@ -399,4 +399,4 @@ def setup(sphinx):
 
         sphinx.add_lexer("story", StoryLexer())
     except ImportError:
-        print ("No Story Lexer :( Sad times!")
+        print("No Story Lexer :( Sad times!")
