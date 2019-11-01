@@ -194,41 +194,30 @@ class Validator(object):
                             )
                             h = hash(str(sliced_states))
                             if h in rules and rules[h]['action'] != event.as_story_string():
-                                print(f"CONFLICT in between "
-                                      f"story '{tracker.sender_id}' with action '{event.as_story_string()}' "
-                                      f"and story '{rules[h]['tracker']}' with action '{rules[h]['action']}'.")
+                                # print(f"CONFLICT in between "
+                                #       f"story '{tracker.sender_id}' with action '{event.as_story_string()}' "
+                                #       f"and story '{rules[h]['tracker']}' with action '{rules[h]['action']}'.")
                                 if h not in conflicts:
-                                    conflicts[h] = {tracker.sender_id, rules[h]['tracker']}
+                                    conflicts[h] = {tracker.sender_id: tracker, rules[h]['tracker'].sender_id: rules[h]['tracker']}
                                 else:
-                                    conflicts[h] += {tracker.sender_id, rules[h]['tracker']}
+                                    conflicts[h] += {tracker.sender_id: tracker, rules[h]['tracker'].sender_id: rules[h]['tracker']}
                             else:
                                 rules[h] = {
-                                    "tracker": tracker.sender_id,
+                                    "tracker": tracker,
                                     "action": event.as_story_string()
                                 }
                         idx += 1
 
-        print(conflicts)
-
-        for state_hash, tracker_ids in conflicts.items():
+        for state_hash, tracker_dict in conflicts.items():
             print(f" -- CONFLICT -- ")
-            if len(tracker_ids) == 1:
-                tracker_id = tracker_ids.pop()
-                print(f"The tracker '{tracker_id}' is inconsistent with itself:")
-
-                # find the right tracker
-                tracker = None
-                for t in trackers:
-                    if t.sender_id == tracker_id:
-                        tracker = t
-                        break
-
-                assert tracker
+            if len(tracker_dict) == 1:
+                tracker = list(tracker_dict.values())[0]
+                print(f"The tracker '{tracker.sender_id}' is inconsistent with itself:")
 
                 description = ""
                 for story in self.story_graph.story_steps:
                     if story.block_name in tracker.sender_id.split(" > "):
-                        description += f"Story '{story.block_name}':\n"
+                        description += f"\nStory '{story.block_name}':\n"
                         states = tracker.past_states(self.domain)
                         states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
                         idx = 0
@@ -246,8 +235,33 @@ class Validator(object):
                             idx += 1
                             description += "\n"
                 print(description)
-            elif len(tracker_ids) == 2:
-                print(f"The trackers {tracker_ids} contain inconsistent states:")
+            elif len(tracker_dict) == 2:
+                print(f"The trackers {set(tracker_dict.keys())} contain inconsistent states:")
+                trackers = list(tracker_dict.values())
+                description = ""
+                for story in self.story_graph.story_steps:
+                    for tracker in trackers:
+                        if story.block_name in tracker.sender_id.split(" > "):
+                            description += f"\nStory '{story.block_name}':\n"
+                            states = tracker.past_states(self.domain)
+                            states = [dict(state) for state in
+                                      states]  # ToDo: Check against rasa/core/featurizers.py:318
+                            idx = 0
+                            for event in story.events:
+                                if isinstance(event, UserUttered):
+                                    description += f"* {event.as_story_string()}"
+                                elif isinstance(event, ActionExecuted):
+                                    description += f"  - {event.as_story_string()}"
+                                    sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                                        states[: idx + 1], max_history
+                                    )
+                                    h = hash(str(sliced_states))
+                                    if h == state_hash:
+                                        description += " <-- CONFLICT"
+                                idx += 1
+                                description += "\n"
+
+                print(description)
 
         return True
 
