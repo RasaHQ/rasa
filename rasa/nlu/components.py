@@ -87,24 +87,22 @@ def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
 ):
 
-    # check if there are regex features
     if data.regex_features and not any(
         [component.name == "RegexFeaturizer" for component in pipeline]
     ):
         warnings.warn(
-            "You have defined training data with Regex's, but "
-            "haven't setup RegexFeaturizer in your config. "
-            "Either add RegexFeaturizer to your config or "
-            "remove the regex training data"
+            "You have defined training data with regexes, but "
+            "your NLU pipeline does not include a RegexFeaturizer. "
+            "To featurize regexes, add a RegexFeaturizer to your pipeline."
         )
 
     if data.lookup_tables and not any(
         [component.name == "CRFEntityExtractor" for component in pipeline]
     ):
         warnings.warn(
-            "You have defined training data consisting of lookup tables but "
-            "haven't setup CRFEntityExtractor in your config. "
-            "Either add CRFEntityExtractor to your config or "
+            "You have defined training data consisting of lookup tables, but "
+            "your NLU pipeline does not include a CRFEntityExtractor. "
+            "Either add CRFEntityExtractor to your pipeline or "
             "remove the lookup table training data"
         )
 
@@ -112,18 +110,20 @@ def validate_required_components_from_data(
         [component.name == "EntitySynonymMapper" for component in pipeline]
     ):
         warnings.warn(
-            "You have defined training data consisting of synonyms but "
-            "haven't setup EntitySynonymMapper in your config. "
-            "Either add EntitySynonymMapper to your config or "
+            "You have defined training data consisting of synonyms, but "
+            "your NLU pipeline does not include a EntitySynonymMapper. "
+            "Either add EntitySynonymMapper to your pipeline or "
             "remove the synonym training data"
         )
 
-    if len(data.response_examples) and not any(
+    if data.response_examples and not any(
         [MESSAGE_RESPONSE_ATTRIBUTE in component.provides for component in pipeline]
     ):
         warnings.warn(
             "Training data consists examples for training a response selector but "
-            "no response selector component specified inside NLU pipeline"
+            "no response selector component specified inside NLU pipeline. "
+            "Either add ResponseSelector to your pipeline or "
+            "remove the response selector training data."
         )
 
 
