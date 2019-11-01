@@ -108,6 +108,16 @@ def validate_required_components_from_data(
             "remove the lookup table training data"
         )
 
+    if data.entity_synonyms and not any(
+        [component.name == "EntitySynonymMapper" for component in pipeline]
+    ):
+        warnings.warn(
+            "You have defined training data consisting of synonyms but "
+            "haven't setup EntitySynonymMapper in your config. "
+            "Either add EntitySynonymMapper to your config or "
+            "remove the synonym training data"
+        )
+
     if len(data.response_examples) and not any(
         [MESSAGE_RESPONSE_ATTRIBUTE in component.provides for component in pipeline]
     ):
