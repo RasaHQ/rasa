@@ -41,7 +41,7 @@ def test_policy_loading_simple(tmpdir):
 
 class ConstantPolicy(Policy):
     def __init__(self, priority: int = None, predict_index: int = None) -> None:
-        super(ConstantPolicy, self).__init__(priority=priority)
+        super().__init__(priority=priority)
         self.predict_index = predict_index
 
     @classmethod

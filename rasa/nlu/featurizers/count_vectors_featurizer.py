@@ -199,7 +199,7 @@ class CountVectorsFeaturizer(Featurizer):
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
 
-        super(CountVectorsFeaturizer, self).__init__(component_config)
+        super().__init__(component_config)
 
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()

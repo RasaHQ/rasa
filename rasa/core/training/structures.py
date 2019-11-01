@@ -39,7 +39,7 @@ FORM_PREFIX = "form: "
 STEP_COUNT = 1
 
 
-class StoryStringHelper(object):
+class StoryStringHelper:
     """A helper class to mark story steps that are inside a form with `form: `
     """
 
@@ -63,7 +63,7 @@ class StoryStringHelper(object):
         self.no_form_prefix_string = no_form_prefix_string
 
 
-class Checkpoint(object):
+class Checkpoint:
     def __init__(
         self, name: Optional[Text], conditions: Optional[Dict[Text, Any]] = None
     ) -> None:
@@ -73,7 +73,7 @@ class Checkpoint(object):
 
     def as_story_string(self):
         dumped_conds = json.dumps(self.conditions) if self.conditions else ""
-        return "{}{}".format(self.name, dumped_conds)
+        return f"{self.name}{dumped_conds}"
 
     def filter_trackers(self, trackers):
         """Filters out all trackers that do not satisfy the conditions."""
@@ -91,7 +91,7 @@ class Checkpoint(object):
         )
 
 
-class StoryStep(object):
+class StoryStep:
     """A StoryStep is a section of a story block between two checkpoints.
 
     NOTE: Checkpoints are not only limited to those manually written
@@ -179,7 +179,7 @@ class StoryStep(object):
         if flat:
             result = ""
         else:
-            result = "\n## {}\n".format(self.block_name)
+            result = f"\n## {self.block_name}\n"
             for s in self.start_checkpoints:
                 if s.name != STORY_START:
                     result += self._checkpoint_string(s)
@@ -280,7 +280,7 @@ class StoryStep(object):
                         self._store_bot_strings(s, FORM_PREFIX)
 
             else:
-                raise Exception("Unexpected element in story step: {}".format(s))
+                raise Exception(f"Unexpected element in story step: {s}")
 
         if (
             not self.end_checkpoints
@@ -350,7 +350,7 @@ class StoryStep(object):
         )
 
 
-class Story(object):
+class Story:
     def __init__(
         self, story_steps: List[StoryStep] = None, story_name: Optional[Text] = None
     ) -> None:
@@ -395,7 +395,7 @@ class Story(object):
                 name = self.story_name
             else:
                 name = "Generated Story {}".format(hash(story_content))
-            return "## {}\n{}".format(name, story_content)
+            return f"## {name}\n{story_content}"
         else:
             return story_content
 
@@ -407,7 +407,7 @@ class Story(object):
         io.write_text_file(self.as_story_string(flat, e2e), filename, append=True)
 
 
-class StoryGraph(object):
+class StoryGraph:
     """Graph of the story-steps pooled from all stories in the training data."""
 
     def __init__(

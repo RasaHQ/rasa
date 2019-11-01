@@ -213,14 +213,14 @@ class OutputChannel:
     ) -> None:
         """Sends an image. Default will just post the url as a string."""
 
-        await self.send_text_message(recipient_id, "Image: {}".format(image))
+        await self.send_text_message(recipient_id, f"Image: {image}")
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Text, **kwargs: Any
     ) -> None:
         """Sends an attachment. Default will just post as a string."""
 
-        await self.send_text_message(recipient_id, "Attachment: {}".format(attachment))
+        await self.send_text_message(recipient_id, f"Attachment: {attachment}")
 
     async def send_text_with_buttons(
         self,
@@ -368,7 +368,7 @@ class QueueOutputChannel(CollectingOutputChannel):
 
     # noinspection PyMissingConstructor
     def __init__(self, message_queue: Optional[Queue] = None) -> None:
-        super(QueueOutputChannel, self).__init__()
+        super().__init__()
         self.messages = Queue() if not message_queue else message_queue
 
     def latest_output(self):
