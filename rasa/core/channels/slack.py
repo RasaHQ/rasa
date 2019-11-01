@@ -292,7 +292,7 @@ class SlackInput(InputChannel):
         if retry_count and retry_reason in self.errors_ignore_retry:
             logger.warning(
                 f"Received retry #{retry_count} request from slack"
-                f" due to {retry_reason}"
+                f" due to {retry_reason}."
             )
 
             return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
