@@ -80,8 +80,9 @@ def slot_to_dict(string):
 
 class Node:
 
-    def __init__(self, name="root", parent=None, story=""):
+    def __init__(self, state="root", name="root", parent=None, story=""):
         self.count = 1
+        self.state = state
         self.name = name
         self.parent = parent
         self.children = []
@@ -94,20 +95,20 @@ class Node:
         :type child: Node
         :param child: Child node
         """
-        if self.get_child(child.name) is None:
+        if self.get_child(child.state) is None:
             self.children.append(child)
         else:
-            raise ValueError(f"A child with the name {child.name} already exists!")
+            raise ValueError(f"A child with the name {child.state} already exists!")
         pass
 
-    def get_child(self, name: str):
+    def get_child(self, state: str):
         """
         Get the child with the given name
-        :param name: Name of the sought child
+        :param state: Name of the sought child
         :return: Child node
         """
         for child in self.children:
-            if child.name == name:
+            if child.state == state:
                 return child
         return None
 
@@ -133,7 +134,7 @@ class Node:
 
         # Decide how to color the present node
         if coloring[0] == "r":  # "role"
-            color = {"S": "yellow", "U": "blue", "W": "green"}.get(self.name[0])
+            color = {"S": "yellow", "U": "blue", "W": "green"}.get(self.state[0])
         elif coloring[0] == "d":  # "depth"
             color = {1: "green", 2: "magenta", 3: "yellow", 4: "cyan", 5: "blue", 6: "grey"}.get(_depth, "grey")
         elif coloring[0] == "n":  # "none"
@@ -394,36 +395,36 @@ class Tree:
         self.pointer = self.root   # Pointer to the currently active node
         self.label = ""            # Label for active branch
 
-    def add_or_goto(self, name):
+    def add_or_goto(self, state, name):
         """
         If a branch with name `name` is a child of the currently active node, then move `self.pointer`
         to that branch and update visit counts and branch name lists. Otherwise, create a new child
         branch with this name and move the pointer to it.
-        :param name: Name of the (new) branch to go to
+        :param state: Name of the (new) branch to go to
         :return: True, iff a new branch was created
         """
         # Check if branch with name `name` exists
         for branch in self.pointer.children:
-            if branch.name == name:
+            if branch.state == state:
                 branch.count += 1              # Increase visit count
                 branch.labels += [self.label]  # Append new branch label
                 self.pointer = branch          # Move pointer to this branch
                 return False
 
         # Add a new branch
-        new_branch = Node(name, parent=self.pointer, story=self.label)
+        new_branch = Node(state, name, parent=self.pointer, story=self.label)
         self.pointer.add_child(new_branch)
         self.pointer = new_branch
         return True
 
-    def adding_creates_ambiguity(self, name: str):
+    def adding_creates_ambiguity(self, state: str):
         """
         Returns True iff adding a branch with this name would result in an ambiguity in this tree,
         i.e. another child node exists, which is as Wizard node.
-        :param name: Name of the branch (user/wizard action)
+        :param state: State of the branch (user/wizard action)
         :return: True iff ambiguous
         """
-        return name.startswith("W") and any(c.name.startswith("W") for c in self.pointer.children)
+        return state.startswith("W") and any(c.state.startswith("W") for c in self.pointer.children)
 
     def up(self):
         """

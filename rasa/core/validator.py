@@ -193,14 +193,20 @@ class Validator(object):
                             )
                             # print(sliced_states)
                             idx += 1
-                            tree.add_or_goto("W: " + str(sliced_states) + f" [{event.as_story_string()}]")
+                            tree.add_or_goto(
+                                "W: " + str(sliced_states) + f" [{event.as_story_string()}]",
+                                event.as_story_string()
+                            )
                         elif isinstance(event, UserUttered):
                             sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                                 states[: idx + 1], max_history
                             )
                             # print(sliced_states)
                             idx += 1
-                            tree.add_or_goto("U: " + str(sliced_states) + f" [{event.as_story_string()}]")
+                            tree.add_or_goto(
+                                "U: " + str(sliced_states) + f" [{event.as_story_string()}]",
+                                event.as_story_string()
+                            )
                             # tree.add_or_goto("U: " + event.as_story_string())
                         elif isinstance(event, SlotSet):
                             tree.add_or_goto("S: " + event.as_story_string())
