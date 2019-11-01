@@ -235,7 +235,7 @@ class Node:
             return
         if len(self.children) > 0:
             if len(self.children) > 1:
-                if any([child.name.startswith("W:") for child in self.children]):
+                if any([child.kind == "W" for child in self.children]):
                     if keep == "first":
                         del self.children[1:]
                     elif keep == "last":
@@ -252,6 +252,43 @@ class Node:
             for child in self.children:
                 child.prune(keep)
         self._is_pruned = True
+
+    def conflicts(self, keep: str, _depth=0, _leading_steps=[]):
+        """Return list of conflict points"""
+        if self._is_pruned:
+            return None
+
+        conflicts = []
+        if len(self.children) > 0:
+            if len(self.children) > 1:
+                if any([child.kind == "W" for child in self.children]):
+                    conflicts.append({
+                        "ambiguity": [{"stories": c.labels, "action": c.name} for c in self.children if c.kind == "W"],
+                        "conflict_step": _depth,
+                        "leading_steps": _leading_steps + [self.name],
+                    })
+                    if keep == "first":
+                        del self.children[1:]
+                    elif keep == "last":
+                        del self.children[:-1]
+                    elif keep == "most-visited":
+                        visit_counts = [len(c.labels) for c in self.children]
+                        keep_idx = visit_counts.index(max(visit_counts))
+                        # Delete all but the one at `keep_idx`
+                        del self.children[:keep_idx]
+                        if len(self.children) > 1:
+                            del self.children[1:]
+                    else:
+                        raise ValueError("Invalid prune keep criterion.")
+
+            for child in self.children:
+                child_conflicts = child.conflicts(keep, _depth+1, _leading_steps + [self.name])
+                if child_conflicts:
+                    conflicts += child_conflicts
+
+        self._is_pruned = True
+
+        return conflicts
 
     def remove(self, story) -> bool:
         """Remove the given story from this node and recursively from all
@@ -333,7 +370,7 @@ class Node:
         def callback_discover_node(node, depth, flags):
             statistics["num_nodes"] += 1
             if len(node.children) > 1:
-                if any([child.name.startswith("W:") for child in node.children]):
+                if any([child.kind == "W" for child in node.children]):
                     statistics["num_nodes_with_multiple_children"] += 1
                     statistics["ambiguity_depth"] = max(statistics["ambiguity_depth"], depth)
                     statistics["ambiguity_chain_length"] = max(statistics["ambiguity_chain_length"],
@@ -488,6 +525,10 @@ class Tree:
     @property
     def duplicates(self):
         return self.root.duplicates
+
+    @property
+    def conflicts(self):
+        return self.root.conflicts("most-visited")
 
     def stats(self) -> dict:
         """

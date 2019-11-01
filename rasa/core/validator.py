@@ -219,9 +219,21 @@ class Validator(object):
                         else:
                             logger.error("JJJ: event is neither action, nor a slot, nor a user utterance")
 
-        stats = tree.stats()
-        logger.info(tree.to_string(show_labels=True, only_ambiguous=True))
-        logger.info(stats)
+        conflicts = tree.conflicts
+        if conflicts:
+            output = "Ambiguous stories:\n"
+            for conflict in conflicts:
+                stories = []
+                for a in conflict["ambiguity"]:
+                    stories += a["stories"]
+                lead = conflict["leading_steps"][1:]
+                output += f"The stories {stories} all start with {lead}, but then \n"
+                for a in conflict["ambiguity"]:
+                    if len(a["stories"]) > 1:
+                        output += f"* stories {a['stories']} continue with {a['action']}\n"
+                    else:
+                        output += f"* story {a['stories']} continues with {a['action']}\n"
+            logger.warning(output)
 
         return True
 
