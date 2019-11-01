@@ -102,8 +102,7 @@ def validate_required_components_from_data(
         warnings.warn(
             "You have defined training data consisting of lookup tables, but "
             "your NLU pipeline does not include a CRFEntityExtractor. "
-            "Either add CRFEntityExtractor to your pipeline or "
-            "remove the lookup table training data"
+            "To featurize lookup tables, add a CRFEntityExtractor to your pipeline."
         )
 
     if data.entity_synonyms and not any(
@@ -120,8 +119,8 @@ def validate_required_components_from_data(
         [MESSAGE_RESPONSE_ATTRIBUTE in component.provides for component in pipeline]
     ):
         warnings.warn(
-            "Training data consists examples for training a response selector but "
-            "no response selector component specified inside NLU pipeline. "
+            "Training data includes examples for training a response selector, but "
+            "your NLU pipeline does not include a ResponseSelector component. "
             "Either add ResponseSelector to your pipeline or "
             "remove the response selector training data."
         )
