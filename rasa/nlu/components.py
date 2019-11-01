@@ -111,7 +111,7 @@ def validate_required_components_from_data(
         warnings.warn(
             "You have defined training data consisting of synonyms, but "
             "your NLU pipeline does not include an EntitySynonymMapper. "
-            "To featurize synonyms, add a EntitySynonymMapper to your pipeline."
+            "To map synonyms, add an EntitySynonymMapper to your pipeline."
         )
 
     if data.response_examples and not any(
