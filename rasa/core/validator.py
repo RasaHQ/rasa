@@ -176,7 +176,7 @@ class Validator(object):
         trackers = TrainingDataGenerator(
             self.story_graph,
             domain=self.domain,
-            remove_duplicates=False,
+            remove_duplicates=False,   # ToDo: Q&A: Why don't we deduplicate the graph here?
             augmentation_factor=0).generate()
         for story in self.story_graph.story_steps:
             for tracker in trackers:
@@ -186,25 +186,29 @@ class Validator(object):
                     states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
                     idx = 0
                     for event in story.events:
-                        print(event)
+                        # print(event)
                         if isinstance(event, ActionExecuted):
-                            # only actions which can be
-                            # predicted at a story's start
                             sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                                 states[: idx + 1], max_history
                             )
-                            print(sliced_states)
+                            # print(sliced_states)
                             idx += 1
-                            tree.add_or_goto("W: " + event.as_story_string())
+                            tree.add_or_goto("W: " + str(sliced_states) + f" [{event.as_story_string()}]")
                         elif isinstance(event, UserUttered):
-                            tree.add_or_goto("U: " + event.as_story_string())
+                            sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                                states[: idx + 1], max_history
+                            )
+                            # print(sliced_states)
+                            idx += 1
+                            tree.add_or_goto("U: " + str(sliced_states) + f" [{event.as_story_string()}]")
+                            # tree.add_or_goto("U: " + event.as_story_string())
                         elif isinstance(event, SlotSet):
                             tree.add_or_goto("S: " + event.as_story_string())
                         else:
                             logger.error("JJJ: event is neither action, nor a slot, nor a user utterance")
 
         stats = tree.stats()
-        logger.info(tree.to_string(show_labels=True, only_ambiguous=False))
+        logger.info(tree.to_string(show_labels=True, only_ambiguous=True))
         logger.info(stats)
 
         return True
