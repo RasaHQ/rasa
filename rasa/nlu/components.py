@@ -102,8 +102,10 @@ def validate_required_components_from_data(
         [component.name == "CRFEntityExtractor" for component in pipeline]
     ):
         warnings.warn(
-            "Training data consists of lookup table values but "
-            "no CRFEntityExtractor configured in config.yml"
+            "You have defined training data consisting of lookup tables but "
+            "haven't setup CRFEntityExtractor in your config. "
+            "Either add CRFEntityExtractor to your config or "
+            "remove the lookup table training data"
         )
 
     if len(data.response_examples) and not any(
