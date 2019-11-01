@@ -110,18 +110,17 @@ def validate_required_components_from_data(
     ):
         warnings.warn(
             "You have defined training data consisting of synonyms, but "
-            "your NLU pipeline does not include a EntitySynonymMapper. "
-            "Either add EntitySynonymMapper to your pipeline or "
-            "remove the synonym training data"
+            "your NLU pipeline does not include an EntitySynonymMapper. "
+            "To featurize synonyms, add a EntitySynonymMapper to your pipeline."
         )
 
     if data.response_examples and not any(
         [MESSAGE_RESPONSE_ATTRIBUTE in component.provides for component in pipeline]
     ):
         warnings.warn(
-            "Training data includes examples for training a response selector, but "
+            "Your training data includes examples for training a response selector, but "
             "your NLU pipeline does not include a ResponseSelector component. "
-            "Either add ResponseSelector to your pipeline or "
+            "Either add a ResponseSelector to your pipeline or "
             "remove the response selector training data."
         )
 
