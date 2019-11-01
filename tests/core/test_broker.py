@@ -1,8 +1,8 @@
 import json
+from unittest.mock import patch
 
 from _pytest.monkeypatch import MonkeyPatch
 
-from unittest.mock import patch
 import rasa.core.brokers.utils as broker_utils
 from rasa.core.brokers.file_producer import FileProducer
 from rasa.core.brokers.kafka import KafkaProducer
@@ -31,28 +31,20 @@ def test_pika_broker_from_config():
     assert actual.queue == "queue"
 
 
+# noinspection PyProtectedMember
 def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
-    rasa_environment = "some-test-environment"
+    # patch PikaProducer so it doesn't try to connect to RabbitMQ on init
+    with patch.object(PikaProducer, "_run_pika", lambda _: None):
+        pika_producer = PikaProducer("", "", "")
 
-    monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
-
-    # patch pika producer init
-    with patch.object(PikaProducer, "__init__", lambda: None):
-        pika_producer = PikaProducer()
-
-    # noinspection PyProtectedMember
-    assert pika_producer._message_properties.app_id == rasa_environment
-
-
-def test_pika_message_property_unset_app_id(monkeypatch: MonkeyPatch):
+    # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
-
-    # patch pika producer so it doesn't run `_run_pika()`
-    with patch.object(PikaProducer, "__init__", lambda: None):
-        pika_producer = PikaProducer()
-
-    # noinspection PyProtectedMember
     assert not pika_producer._message_properties.app_id
+
+    # setting it to some value results in that value as the App ID
+    rasa_environment = "some-test-environment"
+    monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
+    assert pika_producer._message_properties.app_id == rasa_environment
 
 
 def test_no_broker_in_config():
