@@ -270,11 +270,7 @@ class EmbeddingPolicy(Policy):
             label_ids = None
             Y = None
 
-        return train_utils.SessionData(
-            X={"dialogue_features": data_X},
-            Y={"bot_features": Y},
-            labels={"action_ids": label_ids},
-        )
+        return {"dialogue_features": data_X, "bot_features": Y, "action_ids": label_ids}
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
         """Create embedding bot vector."""

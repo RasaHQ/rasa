@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 
 
 # namedtuple for all tf session related data
-# TODO: use simple dict, no X, Y, lables
 SessionData = Dict[Text, np.ndarray]
 
 
@@ -48,9 +47,8 @@ def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto
         return None
 
 
-# TODO: add method to converst scipy.sparse matrix to indices, values, shapes
-# TODO: add method to convert indices, vales, shapes to tf.SparseTensor
 # TODO: add wrapper around all denses layers to use https://medium.com/dailymotion/how-to-design-deep-learning-models-with-sparse-inputs-in-tensorflow-keras-fd5e754abec1
+
 
 # noinspection PyPep8Naming
 def train_val_split(
@@ -218,12 +216,7 @@ def balance_session_data(
                 skipped[index] = False
 
             for k, v in label_data[index].items():
-                if v[0].ndim == 0:
-                    new_session_data[k].append(
-                        v[data_idx[index] : data_idx[index] + 1][0]
-                    )
-                else:
-                    new_session_data[k].append(v[data_idx[index] : data_idx[index] + 1])
+                new_session_data[k].append(v[data_idx[index] : data_idx[index] + 1][0])
 
             data_idx[index] += 1
             if data_idx[index] >= counts_label_ids[index]:
@@ -271,10 +264,6 @@ def gen_batch(
     shuffle: bool = False,
 ) -> Generator[Tuple, None, None]:
     """Generate batches."""
-
-    # TODO: should keep everything sequence
-    # https://github.com/tensorflow/tensorflow/issues/16689
-
     if shuffle:
         session_data = shuffle_session_data(session_data)
 
@@ -292,26 +281,45 @@ def gen_batch(
 
         batch_data = []
         for v in session_data.values():
-            if isinstance(v[0], scipy.sparse.spmatrix):
-                batch_data.append(get_sparse_values(v[start:end]))
+            _data = v[start:end]
+            if isinstance(_data[0], scipy.sparse.spmatrix):
+                batch_data = batch_data + scipy_matrix_to_values(_data)
             else:
-                batch_data.append(pad_data(v[start:end]))
+                batch_data.append(pad_data(_data))
 
         # len of batch_data is equal to the number of keys in session data
         yield tuple(batch_data)
 
 
-def get_sparse_values(data: np.ndarray) -> np.ndarray:
-    converted = []
+def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
+    seq_len = max([x.shape[0] for x in array_of_sparse])
+    coo = [x.tocoo() for x in array_of_sparse]
+    data = [v for x in array_of_sparse for v in x.data]
 
-    # TODO padding
+    if seq_len == 1:
+        indices = [
+            ids for i, x in enumerate(coo) for ids in zip([i] * len(x.row), x.col)
+        ]
+        shape = (len(array_of_sparse), array_of_sparse[0].shape[-1])
+    else:
+        indices = [
+            ids
+            for i, x in enumerate(coo)
+            for ids in zip([i] * len(x.row), x.row, x.col)
+        ]
+        shape = (len(array_of_sparse), seq_len, array_of_sparse[0].shape[-1])
 
-    for d in data:
-        coo = d.tocoo()
-        indices = np.mat([coo.row, coo.col]).transpose()
-        converted.append((indices, coo.data, coo.shape))
+    return [np.array(indices), np.array(data), shape]
 
-    return np.array(converted)
+
+def values_to_sparse_tensor(
+    indices: np.ndarray, data: np.ndarray, shape: np.ndarray
+) -> tf.SparseTensor:
+    # make sure indices and shape have the correct type
+    indices = tf.cast(indices, dtype=tf.int64)
+    shape = tf.cast(shape, dtype=tf.int64)
+
+    return tf.SparseTensor(indices, data, shape)
 
 
 def pad_data(data: np.ndarray) -> np.ndarray:
@@ -336,16 +344,21 @@ def pad_data(data: np.ndarray) -> np.ndarray:
     return data_padded
 
 
-def sparse_to_dense(
-    examples: Union[np.ndarray, List[scipy.sparse.csr_matrix]]
-) -> np.ndarray:
-    # in case of BOW features it'll be either a 2D dense array or list of sparse
-    # matrices 1xN (because sparse vector doesn't exist)
-    # in case of sequence it'll be either a 3D dense array or a list of sparse
-    # matrices seq_lenxN
-    if isinstance(examples[0], scipy.sparse.spmatrix):
-        return np.stack([e.toarray() for e in examples])
-    return examples
+def batch_to_session_data(batch: Tuple[np.ndarray], session_data: SessionData):
+    batch_data = {}
+    idx = 0
+
+    for k, v in session_data.items():
+        if isinstance(v[0], scipy.sparse.spmatrix):
+            batch_data[k] = values_to_sparse_tensor(
+                batch[idx], batch[idx + 1], batch[idx + 2]
+            )
+            idx += 3
+        else:
+            batch_data[k] = batch[idx]
+            idx += 1
+
+    return batch_data
 
 
 # noinspection PyPep8Naming
@@ -358,9 +371,8 @@ def create_tf_dataset(
 ) -> "tf.data.Dataset":
     """Create tf dataset."""
 
-    # set batch and sequence length to None
-    # TODO: can we remove the shape?
-    shapes, types = _get_shape_and_types(session_data)
+    shapes, types = _get_shapes_types(session_data)
+    # TODO shapes
 
     return tf.data.Dataset.from_generator(
         lambda batch_size_: gen_batch(
@@ -372,21 +384,38 @@ def create_tf_dataset(
     )
 
 
-def _get_shape_and_types(session_data: SessionData) -> Tuple[Tuple, Tuple]:
-    shapes = []
+def _get_shapes_types(session_data: SessionData) -> Tuple:
     types = []
+    shapes = []
 
     def append_shape(v: np.ndarray):
-        if v[0].ndim == 0:
+        if isinstance(v[0], scipy.sparse.spmatrix):
+            # scipy matrix is converted into indices, data, shape
+            shapes.append((None, None))
+            shapes.append((None))
+            shapes.append((None))
+        elif v[0].ndim == 0:
             shapes.append((None))
         elif v[0].ndim == 1:
             shapes.append((None, v[0].shape[-1]))
         else:
             shapes.append((None, None, v[0].shape[-1]))
 
+    def append_type(v: np.ndarray):
+        if isinstance(v[0], scipy.sparse.spmatrix):
+            # scipy matrix is converted into indices, data, shape
+            # as int64 is not supported in generator use int32 instead
+            types.append(tf.int32)
+            types.append(tf.float64)
+            types.append(tf.int32)
+        elif v.dtype == np.dtype(np.int64):
+            types.append(tf.int32)
+        else:
+            types.append(v.dtype)
+
     for v in session_data.values():
         append_shape(v)
-        types.append(v.dtype)
+        append_type(v)
 
     return tuple(shapes), tuple(types)
 
@@ -685,6 +714,65 @@ def sample_negatives(
         dial_bad_negs,
         bot_bad_negs,
     )
+
+
+def tf_matmul_sparse(inputs: tf.SparseTensor, kernel: tf.Tensor):
+    def map_function(x):
+        i, dense_slice = x[0], x[1]
+        sparse_slice = tf.sparse.reshape(
+            tf.sparse.slice(
+                inputs, [i, 0, 0], [1, inputs.dense_shape[1], inputs.dense_shape[2]]
+            ),
+            [inputs.dense_shape[1], inputs.dense_shape[2]],
+        )
+        mult_slice = tf.sparse.matmul(sparse_slice, dense_slice)
+        return mult_slice
+
+    elems = (tf.range(0, inputs.dense_shape[0], delta=1, dtype=tf.int64), kernel)
+    return tf.map_fn(map_function, elems, dtype=inputs.dtype, back_prop=True)
+
+
+def tf_dense_layer(
+    inputs: tf.Tensor,
+    units: int,
+    name: Text,
+    C2: int,
+    activation: Optional[Callable] = tf.nn.relu,
+    use_bias: bool = True,
+    kernel_initializer: Optional["tf.keras.initializers.Initializer"] = None,
+) -> tf.Tensor:
+
+    if isinstance(inputs, tf.SparseTensor):
+        # TODO add bias ?
+        if len(inputs.shape) == 3:
+            kernel = tf.get_variable(
+                "kernel",
+                shape=[inputs.shape[0], inputs.shape[-1], units],
+                dtype=inputs.dtype,
+            )
+            outputs = tf_matmul_sparse(inputs, kernel)
+        else:
+            kernel = tf.get_variable(
+                "kernel", shape=[inputs.shape[-1], units], dtype=inputs.dtype
+            )
+            outputs = tf.sparse.matmul(inputs, kernel)
+    else:
+        kernel_regularizer = tf.contrib.layers.l2_regularizer(C2)
+        outputs = tf.layers.dense(
+            inputs=inputs,
+            units=units,
+            activation=activation,
+            use_bias=use_bias,
+            kernel_initializer=kernel_initializer,
+            kernel_regularizer=kernel_regularizer,
+            name=name,
+            reuse=tf.AUTO_REUSE,
+        )
+
+    if activation is None:
+        return outputs
+
+    return activation(outputs)
 
 
 def tf_raw_sim(

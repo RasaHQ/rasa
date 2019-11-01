@@ -126,15 +126,15 @@ def test_gen_batch(session_data: SessionData):
     iterator = gen_batch(session_data, 2, "intent_ids", shuffle=True)
 
     batch = next(iterator)
-    assert len(batch) == 5
+    assert len(batch) == 7
     assert len(batch[0]) == 2
 
     batch = next(iterator)
-    assert len(batch) == 5
+    assert len(batch) == 7
     assert len(batch[0]) == 2
 
     batch = next(iterator)
-    assert len(batch) == 5
+    assert len(batch) == 7
     assert len(batch[0]) == 1
 
     with pytest.raises(StopIteration):
@@ -146,6 +146,7 @@ def test_gen_batch(session_data: SessionData):
     [([0, 0, 0, 1, 1], [0, 1, 0, 1, 0]), ([0, 0, 0, 0, 1], [0, 1, 0, 0, 1, 0])],
 )
 def test_balance_session_data(session_data: SessionData, intent_ids, expected_labels):
+    # TODO improve test
     session_data["intent_ids"] = np.array(intent_ids)
 
     balanced_session_data = balance_session_data(session_data, 2, False, "intent_ids")
