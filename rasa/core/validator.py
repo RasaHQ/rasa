@@ -190,7 +190,7 @@ class Validator(object):
                     sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                         states[: idx + 1], max_history
                     )
-                    h = hash(str(sliced_states))
+                    h = hash(str(sorted(list(sliced_states))))
                     if h in rules and rules[h]['action'] != event.as_story_string():
                         # print(f"CONFLICT in between "
                         #       f"story '{tracker.sender_id}' with action '{event.as_story_string()}' "
@@ -218,12 +218,13 @@ class Validator(object):
                 print(f"The tracker '{tracker.sender_id}' is inconsistent with itself:")
 
                 description = ""
+                idx = 0
                 for story in self.story_graph.story_steps:
                     if story.block_name in tracker.sender_id.split(" > "):
                         description += f" ~~ '{story.block_name}' ~~\n"
                         states = tracker.past_states(self.domain)
                         states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
-                        idx = 0
+
                         for event in story.events:
                             if isinstance(event, UserUttered):
                                 description += f"* {event.as_story_string()}"
@@ -232,7 +233,7 @@ class Validator(object):
                                 sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                                     states[: idx + 1], max_history
                                 )
-                                h = hash(str(sliced_states))
+                                h = hash(str(sorted(list(sliced_states))))
                                 if h == state_hash:
                                     description += " <-- CONFLICT"
                             idx += 1
@@ -245,6 +246,7 @@ class Validator(object):
                 for tracker in trackers:
                     print()
                     print(tracker.sender_id)
+                    idx = 0
                     for story in self.story_graph.story_steps:
                         if story.block_name in tracker.sender_id.split(" > "):
                             block_id = 0
@@ -257,7 +259,6 @@ class Validator(object):
                             states = tracker.past_states(self.domain)
                             states = [dict(state) for state in
                                       states]  # ToDo: Check against rasa/core/featurizers.py:318
-                            idx = 0
                             for event in story.events:
                                 if isinstance(event, UserUttered):
                                     description += f"* {event.as_story_string()}"
@@ -266,7 +267,7 @@ class Validator(object):
                                     sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                                         states[: idx + 1], max_history
                                     )
-                                    h = hash(str(sliced_states))
+                                    h = hash(str(sorted(list(sliced_states))))
                                     if h == state_hash:
                                         description += " <-- CONFLICT"
                                 idx += 1
