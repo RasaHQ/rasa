@@ -238,7 +238,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
             else:
                 logger.warning(
-                    f"Feature '{state_name}' could not be found in " "feature map."
+                    f"Feature '{state_name}' could not be found in feature map."
                 )
 
         if using_only_ints:

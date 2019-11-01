@@ -101,7 +101,7 @@ class MappingPolicy(Policy):
                     warnings.warn(
                         "MappingPolicy tried to predict unknown "
                         f"action '{action}'. Make sure all mapped actions are "
-                        "listed in the domain"
+                        "listed in the domain."
                     )
                 else:
                     prediction[idx] = 1

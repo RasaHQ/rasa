@@ -107,7 +107,7 @@ class MessageProcessor(object):
         tracker = self._get_tracker(sender_id)
         if not tracker:
             logger.warning(
-                "Failed to retrieve or create tracker for sender " f"'{sender_id}'."
+                f"Failed to retrieve or create tracker for sender '{sender_id}'."
             )
             return None
 
@@ -184,7 +184,7 @@ class MessageProcessor(object):
             self._save_tracker(tracker)
         else:
             logger.warning(
-                "Failed to retrieve or create tracker for sender " f"'{sender_id}'."
+                f"Failed to retrieve or create tracker for sender '{sender_id}'."
             )
         return tracker
 
@@ -250,7 +250,7 @@ class MessageProcessor(object):
 
         if not tracker:
             logger.warning(
-                "Failed to retrieve or create tracker for sender " f"'{sender_id}'."
+                f"Failed to retrieve or create tracker for sender '{sender_id}'."
             )
             return None
 
@@ -409,7 +409,7 @@ class MessageProcessor(object):
             # circuit breaker was tripped
             logger.warning(
                 "Circuit breaker tripped. Stopped predicting "
-                f"more actions for sender '{tracker.sender_id}'"
+                f"more actions for sender '{tracker.sender_id}'."
             )
             if self.on_circuit_break:
                 # call a registered callback

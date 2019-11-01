@@ -741,7 +741,7 @@ class EmbeddingIntentClassifier(Component):
 
         else:
             warnings.warn(
-                f"Failed to load nlu model. Maybe path {os.path.abspath(model_dir)} "
-                "doesn't exist"
+                f"Failed to load nlu model. Maybe path '{os.path.abspath(model_dir)}' "
+                "doesn't exist."
             )
             return cls(component_config=meta)

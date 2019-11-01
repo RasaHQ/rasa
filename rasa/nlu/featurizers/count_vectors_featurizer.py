@@ -466,7 +466,7 @@ class CountVectorsFeaturizer(Featurizer):
                     self.vectorizers[attribute].fit(attribute_texts[attribute])
                 except ValueError:
                     logger.warning(
-                        f"Unable to train CountVectorizer for message attribute"
+                        f"Unable to train CountVectorizer for message attribute "
                         "{attribute}. "
                         "Leaving an untrained CountVectorizer for it"
                     )

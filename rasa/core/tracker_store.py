@@ -570,7 +570,7 @@ class SQLTrackerStore(TrackerStore):
                 sqlalchemy.exc.IntegrityError,
             ) as error:
 
-                logger.error(error)
+                logger.warning(error)
                 sleep(5)
 
         logger.debug("Connection to SQL database '{}' successful.".format(db))

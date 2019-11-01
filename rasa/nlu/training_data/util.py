@@ -25,7 +25,7 @@ def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
         warnings.warn(
             f"Found inconsistent entity synonyms while {context_str}, "
             f"overwriting {text}->{entity_synonyms[text]} "
-            f"with {text}->{syn} during merge"
+            f"with {text}->{syn} during merge."
         )
 
 
