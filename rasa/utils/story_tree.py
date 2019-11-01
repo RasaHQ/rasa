@@ -80,8 +80,9 @@ def slot_to_dict(string):
 
 class Node:
 
-    def __init__(self, state="root", name="root", parent=None, story=""):
+    def __init__(self, kind="R", state="root", name="root", parent=None, story=""):
         self.count = 1
+        self.kind = kind
         self.state = state
         self.name = name
         self.parent = parent
@@ -134,7 +135,7 @@ class Node:
 
         # Decide how to color the present node
         if coloring[0] == "r":  # "role"
-            color = {"S": "yellow", "U": "blue", "W": "green"}.get(self.state[0])
+            color = {"S": "yellow", "U": "blue", "W": "green"}.get(self.kind)
         elif coloring[0] == "d":  # "depth"
             color = {1: "green", 2: "magenta", 3: "yellow", 4: "cyan", 5: "blue", 6: "grey"}.get(_depth, "grey")
         elif coloring[0] == "n":  # "none"
@@ -170,7 +171,7 @@ class Node:
         # Prepare _has_siblings for recursion step
         has_siblings = (len(self.children) > 1)
         if has_siblings and not include_users:
-            all_children_are_users = all(child.name.startswith("U:") or child.name.startswith("S:") for child in self.children)
+            all_children_are_users = all(child.kind == "U" or child.kind == "S" for child in self.children)
             has_siblings = not all_children_are_users
 
         # Recursion step into all child nodes
@@ -215,7 +216,7 @@ class Node:
             if include_users:
                 return True
             else:
-                all_children_are_users = all(child.name.startswith("U:") or child.name.startswith("S:") for child in self.children)
+                all_children_are_users = all(child.kind == "U" or child.kind == "S" for child in self.children)
                 if all_children_are_users:
                     return any(child.has_descendants_with_siblings(include_users) for child in self.children)
                 else:
@@ -395,12 +396,14 @@ class Tree:
         self.pointer = self.root   # Pointer to the currently active node
         self.label = ""            # Label for active branch
 
-    def add_or_goto(self, state, name):
+    def add_or_goto(self, kind, state, name):
         """
         If a branch with name `name` is a child of the currently active node, then move `self.pointer`
         to that branch and update visit counts and branch name lists. Otherwise, create a new child
         branch with this name and move the pointer to it.
-        :param state: Name of the (new) branch to go to
+        :param kind: U/S/W for user/slot/wizard
+        :param state: State string of the (new) branch to go to
+        :param name: Name of the (new) branch to go to
         :return: True, iff a new branch was created
         """
         # Check if branch with name `name` exists
@@ -412,7 +415,7 @@ class Tree:
                 return False
 
         # Add a new branch
-        new_branch = Node(state, name, parent=self.pointer, story=self.label)
+        new_branch = Node(kind, state, name, parent=self.pointer, story=self.label)
         self.pointer.add_child(new_branch)
         self.pointer = new_branch
         return True

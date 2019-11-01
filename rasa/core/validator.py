@@ -194,7 +194,8 @@ class Validator(object):
                             # print(sliced_states)
                             idx += 1
                             tree.add_or_goto(
-                                "W: " + str(sliced_states) + f" [{event.as_story_string()}]",
+                                "W",
+                                str(sliced_states) + f" [{event.as_story_string()}]",
                                 event.as_story_string()
                             )
                         elif isinstance(event, UserUttered):
@@ -204,12 +205,17 @@ class Validator(object):
                             # print(sliced_states)
                             idx += 1
                             tree.add_or_goto(
-                                "U: " + str(sliced_states) + f" [{event.as_story_string()}]",
+                                "U",
+                                str(sliced_states) + f" [{event.as_story_string()}]",
                                 event.as_story_string()
                             )
                             # tree.add_or_goto("U: " + event.as_story_string())
                         elif isinstance(event, SlotSet):
-                            tree.add_or_goto("S: " + event.as_story_string())
+                            tree.add_or_goto(
+                                "S",
+                                event.as_story_string(),
+                                event.as_story_string()
+                            )
                         else:
                             logger.error("JJJ: event is neither action, nor a slot, nor a user utterance")
 
