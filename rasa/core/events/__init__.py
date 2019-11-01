@@ -142,10 +142,10 @@ class Event(object):
 
         result = cls._from_story_string(parameters)
         if len(result) > 1:
-            warnings.warn(
-                "Event from parameters called with parameters "
-                "for multiple events. This is not supported, "
-                "only the first event will be returned. "
+            logger.warning(
+                f"Event from parameters called with parameters "
+                f"for multiple events. This is not supported, "
+                f"only the first event will be returned. "
                 f"Parameters: {parameters}"
             )
         return result[0] if result else None

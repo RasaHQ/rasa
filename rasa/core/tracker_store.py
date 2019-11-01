@@ -396,14 +396,14 @@ class MongoTrackerStore(TrackerStore):
 
     def __init__(
         self,
-        domain,
-        host="mongodb://localhost:27017",
-        db="rasa",
-        username=None,
-        password=None,
-        auth_source="admin",
-        collection="conversations",
-        event_broker=None,
+        domain: Domain,
+        host: Optional[Text]="mongodb://localhost:27017",
+        db: Optional[Text]="rasa",
+        username: Optional[Text]=None,
+        password: Optional[Text]=None,
+        auth_source: Optional[Text]="admin",
+        collection: Optional[Text]="conversations",
+        event_broker: Optional[EventChannel] =None,
     ):
         from pymongo.database import Database
         from pymongo import MongoClient
@@ -465,18 +465,9 @@ class MongoTrackerStore(TrackerStore):
             )
 
         if stored is not None:
-            if self.domain:
-                return DialogueStateTracker.from_dict(
-                    sender_id, stored.get("events"), self.domain.slots
-                )
-            else:
-                # should this be warnings.warn?
-                logger.warning(
-                    "Can't recreate tracker from mongo storage "
-                    "because no domain is set. Returning `None` "
-                    "instead."
-                )
-                return None
+            return DialogueStateTracker.from_dict(
+                sender_id, stored.get("events"), self.domain.slots
+            )
         else:
             return None
 

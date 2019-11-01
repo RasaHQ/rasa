@@ -162,10 +162,10 @@ class EmbeddingIntentClassifier(Component):
         for removed_param in removed_tokenization_params:
             if removed_param in config:
                 warnings.warn(
-                    "Intent tokenization has been moved to Tokenizer components. "
+                    f"Intent tokenization has been moved to Tokenizer components. "
                     f"Your config still mentions '{removed_param}'. Tokenization may fail if you specify the parameter here."
-                    "Please specify the parameter 'intent_tokenization_flag' and 'intent_split_symbol' in the "
-                    "tokenizer of your NLU pipeline"
+                    f"Please specify the parameter 'intent_tokenization_flag' and 'intent_split_symbol' in the "
+                    f"tokenizer of your NLU pipeline", DeprecationWarning
                 )
 
     # init helpers

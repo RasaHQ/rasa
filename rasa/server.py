@@ -1,4 +1,5 @@
 import logging
+import warnings
 import multiprocessing
 import os
 import tempfile
@@ -466,8 +467,8 @@ def create_app(
         events = [event for event in events if event]
 
         if not events:
-            logger.warning(
-                "Append event called, but could not extract a valid event. "
+            warnings.warn(
+                f"Append event called, but could not extract a valid event. "
                 f"Request JSON: {request.json}"
             )
             raise ErrorResponse(

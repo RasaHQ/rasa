@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 import re
 from typing import Any, Dict, List, Optional, Text, Union
@@ -304,7 +305,7 @@ class CountVectorsFeaturizer(Featurizer):
                 ):
                     return
 
-            logger.warning(
+            warnings.warn(
                 f"OOV_token='{self.OOV_token}' was given, but it is not present "
                 "in the training data. All unseen words "
                 "will be ignored during prediction."

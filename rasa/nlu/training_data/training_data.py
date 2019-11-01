@@ -240,8 +240,8 @@ class TrainingData(object):
     def as_markdown(self) -> Text:
 
         warnings.warn(
-            "Function as_markdown() is deprecated and will be removed "
-            "in future versions. Use nlu_as_markdown() and nlg_as_markdown() "
+            "Function 'as_markdown()' is deprecated and will be removed "
+            "in future versions. Use 'nlu_as_markdown()' and 'nlg_as_markdown()' "
             "instead.",
             DeprecationWarning,
         )
