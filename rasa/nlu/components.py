@@ -87,33 +87,28 @@ def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
 ):
 
-    response_selector_exists = False
-    regex_config_exists = False
-    crfentity_config_exists = False
-
-    for component in pipeline:
-        if "RegexFeaturizer" in component.name:
-            regex_config_exists = True
-        if "CRFEntityExtractor" in component.name:
-            crfentity_config_exists = True
-        # check if a response selector is part of NLU pipeline
-        if MESSAGE_RESPONSE_ATTRIBUTE in component.provides:
-            response_selector_exists = True
-
     # check if there are regex features
-    if data.regex_features and not regex_config_exists:
+    if data.regex_features and not any(
+        [component.name == "RegexFeaturizer" for component in pipeline]
+    ):
         warnings.warn(
-            "Training data consists of regex examples but "
-            "no RegexFeaturizer setup in config.yml"
+            "You have defined training data with Regex's, but "
+            "haven't setup RegexFeaturizer in your config. "
+            "Either add RegexFeaturizer to your config or "
+            "remove the regex training data"
         )
 
-    if data.lookup_tables and not crfentity_config_exists:
+    if data.lookup_tables and not any(
+        [component.name == "CRFEntityExtractor" for component in pipeline]
+    ):
         warnings.warn(
             "Training data consists of lookup table values but "
             "no CRFEntityExtractor configured in config.yml"
         )
 
-    if len(data.response_examples) and not response_selector_exists:
+    if len(data.response_examples) and not any(
+        [MESSAGE_RESPONSE_ATTRIBUTE in component.provides for component in pipeline]
+    ):
         warnings.warn(
             "Training data consists examples for training a response selector but "
             "no response selector component specified inside NLU pipeline"
