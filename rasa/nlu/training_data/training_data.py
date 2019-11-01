@@ -213,7 +213,7 @@ class TrainingData(object):
 
         warnings.warn(
             "Function 'as_json()' is deprecated and will be removed "
-            "in future versions. Use nlu_as_json() instead.",
+            "in future versions. Use 'nlu_as_json()' instead.",
             DeprecationWarning,
         )
 
