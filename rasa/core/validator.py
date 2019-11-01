@@ -212,7 +212,7 @@ class Validator(object):
         print()
 
         for state_hash, tracker_dict in conflicts.items():
-            print(f" -- CONFLICT -- ")
+            print(f" -- CONFLICT [{state_hash}] -- ")
             if len(tracker_dict) == 1:
                 tracker = list(tracker_dict.values())[0]
                 print(f"The tracker '{tracker.sender_id}' is inconsistent with itself:")
@@ -243,6 +243,7 @@ class Validator(object):
                 trackers = list(tracker_dict.values())
                 story_blocks = {}
                 for tracker in trackers:
+                    print()
                     print(tracker.sender_id)
                     for story in self.story_graph.story_steps:
                         if story.block_name in tracker.sender_id.split(" > "):
@@ -273,9 +274,9 @@ class Validator(object):
 
                             story_blocks[block_id] = description
 
-                for _, block in story_blocks.items():
-                    # print(i)
-                    print(block, end="")
+                    for _, block in story_blocks.items():
+                        # print(i)
+                        print(block, end="")
 
         return True
 
