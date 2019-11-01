@@ -168,7 +168,7 @@ class Validator(object):
     def verify_story_structure(self, ignore_warnings: bool = True) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
-        max_history = 2
+        max_history = 1
 
         # Generate the story tree
         from rasa.utils.story_tree import Tree
@@ -178,62 +178,76 @@ class Validator(object):
             domain=self.domain,
             remove_duplicates=False,   # ToDo: Q&A: Why don't we deduplicate the graph here?
             augmentation_factor=0).generate()
+        rules = {}
+        conflicts = {}
         for story in self.story_graph.story_steps:
             for tracker in trackers:
                 if story.block_name in tracker.sender_id.split(" > "):
-                    tree.reset(story=tracker.sender_id)
+
                     states = tracker.past_states(self.domain)
                     states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
                     idx = 0
                     for event in story.events:
-                        # print(event)
                         if isinstance(event, ActionExecuted):
                             sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                                 states[: idx + 1], max_history
                             )
-                            # print(sliced_states)
-                            idx += 1
-                            tree.add_or_goto(
-                                "W",
-                                str(sliced_states) + f" [{event.as_story_string()}]",
-                                event.as_story_string()
-                            )
-                        elif isinstance(event, UserUttered):
-                            sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
-                                states[: idx + 1], max_history
-                            )
-                            # print(sliced_states)
-                            idx += 1
-                            tree.add_or_goto(
-                                "U",
-                                str(sliced_states) + f" [{event.as_story_string()}]",
-                                event.as_story_string()
-                            )
-                            # tree.add_or_goto("U: " + event.as_story_string())
-                        elif isinstance(event, SlotSet):
-                            tree.add_or_goto(
-                                "S",
-                                event.as_story_string(),
-                                event.as_story_string()
-                            )
-                        else:
-                            logger.error("JJJ: event is neither action, nor a slot, nor a user utterance")
+                            h = hash(str(sliced_states))
+                            if h in rules and rules[h]['action'] != event.as_story_string():
+                                print(f"CONFLICT in between "
+                                      f"story '{tracker.sender_id}' with action '{event.as_story_string()}' "
+                                      f"and story '{rules[h]['tracker']}' with action '{rules[h]['action']}'.")
+                                if h not in conflicts:
+                                    conflicts[h] = {tracker.sender_id, rules[h]['tracker']}
+                                else:
+                                    conflicts[h] += {tracker.sender_id, rules[h]['tracker']}
+                            else:
+                                rules[h] = {
+                                    "tracker": tracker.sender_id,
+                                    "action": event.as_story_string()
+                                }
+                        idx += 1
 
-        conflicts = tree.conflicts
-        if conflicts:
-            output = "Ambiguous stories:\n"
-            for conflict in conflicts:
-                stories = []
-                for a in conflict["ambiguity"]:
-                    stories += a["stories"]
-                lead = conflict["leading_steps"][1:]
-                output += f"The stories {stories} all start with {lead}, but then \n"
-                for a in conflict["ambiguity"]:
-                    if len(a["stories"]) > 1:
-                        output += f"* stories {a['stories']} continue with {a['action']}\n"
-                    else:
-                        output += f"* story {a['stories']} continues with {a['action']}\n"
-            logger.warning(output)
+        print(conflicts)
+
+        for state_hash, tracker_ids in conflicts.items():
+            print(f" -- CONFLICT -- ")
+            if len(tracker_ids) == 1:
+                tracker_id = tracker_ids.pop()
+                print(f"The tracker '{tracker_id}' is inconsistent with itself:")
+
+                # find the right tracker
+                tracker = None
+                for t in trackers:
+                    if t.sender_id == tracker_id:
+                        tracker = t
+                        break
+
+                assert tracker
+
+                description = ""
+                for story in self.story_graph.story_steps:
+                    if story.block_name in tracker.sender_id.split(" > "):
+                        description += f"Story '{story.block_name}':\n"
+                        states = tracker.past_states(self.domain)
+                        states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
+                        idx = 0
+                        for event in story.events:
+                            if isinstance(event, UserUttered):
+                                description += f"* {event.as_story_string()}"
+                            elif isinstance(event, ActionExecuted):
+                                description += f"  - {event.as_story_string()}"
+                                sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                                    states[: idx + 1], max_history
+                                )
+                                h = hash(str(sliced_states))
+                                if h == state_hash:
+                                    description += " <-- CONFLICT"
+                            idx += 1
+                            description += "\n"
+                print(description)
+            elif len(tracker_ids) == 2:
+                print(f"The trackers {tracker_ids} contain inconsistent states:")
 
         return True
 
