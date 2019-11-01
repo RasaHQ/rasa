@@ -1,7 +1,6 @@
 from collections import defaultdict, deque
 
 import random
-import re
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
