@@ -151,6 +151,7 @@ def serve_application(
     log_file: Optional[Text] = None,
     ssl_certificate: Optional[Text] = None,
     ssl_keyfile: Optional[Text] = None,
+    ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
 ):
     from rasa import server
@@ -172,7 +173,9 @@ def serve_application(
         log_file=log_file,
     )
 
-    ssl_context = server.create_ssl_context(ssl_certificate, ssl_keyfile, ssl_password)
+    ssl_context = server.create_ssl_context(
+        ssl_certificate, ssl_keyfile, ssl_ca_file, ssl_password
+    )
     protocol = "https" if ssl_context else "http"
 
     logger.info(

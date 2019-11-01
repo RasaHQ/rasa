@@ -404,7 +404,7 @@ class CRFEntityExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["CRFEntityExtractor"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "CRFEntityExtractor":
         from sklearn.externals import joblib
 

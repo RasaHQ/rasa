@@ -163,7 +163,7 @@ class MessengerBot(OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
 
@@ -197,7 +197,7 @@ class MessengerBot(OutputChannel):
         recipient_id: Text,
         text: Text,
         quick_replies: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends quick replies to the output."""
 

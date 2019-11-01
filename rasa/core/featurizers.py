@@ -430,9 +430,9 @@ class TrackerFeaturizer(object):
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
         rasa.utils.io.create_directory_for_file(featurizer_file)
-        with open(featurizer_file, "w", encoding="utf-8") as f:
-            # noinspection PyTypeChecker
-            f.write(str(jsonpickle.encode(self)))
+
+        # noinspection PyTypeChecker
+        rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
 
     @staticmethod
     def load(path):

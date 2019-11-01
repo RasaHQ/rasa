@@ -1,6 +1,6 @@
 import logging
 import typing
-from typing import List, Optional, Dict, Text, Optional
+from typing import List, Dict, Text, Optional
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain

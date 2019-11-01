@@ -1,5 +1,5 @@
 import time
-
+import json
 import logging
 import warnings
 import os
@@ -101,10 +101,12 @@ class DucklingHTTPExtractor(EntityExtractor):
         return self.component_config.get("url")
 
     def _payload(self, text, reference_time):
+        dimensions = self.component_config["dimensions"]
         return {
             "text": text,
             "locale": self._locale(),
             "tz": self.component_config.get("timezone"),
+            "dims": json.dumps(dimensions),
             "reftime": reference_time,
         }
 
@@ -192,7 +194,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["DucklingHTTPExtractor"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "DucklingHTTPExtractor":
 
         language = model_metadata.get("language") if model_metadata else None

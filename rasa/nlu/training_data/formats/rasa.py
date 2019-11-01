@@ -91,7 +91,7 @@ class RasaWriter(TrainingDataWriter):
                     "entity_synonyms": formatted_synonyms,
                 }
             },
-            **kwargs
+            **kwargs,
         )
 
 

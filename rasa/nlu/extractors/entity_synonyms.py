@@ -62,7 +62,7 @@ class EntitySynonymMapper(EntityExtractor):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["EntitySynonymMapper"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "EntitySynonymMapper":
 
         file_name = meta.get("file")

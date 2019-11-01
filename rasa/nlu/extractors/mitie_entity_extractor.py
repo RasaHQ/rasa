@@ -135,7 +135,7 @@ class MitieEntityExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["MitieEntityExtractor"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "MitieEntityExtractor":
         import mitie
 

@@ -33,7 +33,7 @@ class MultiProjectImporter(TrainingDataImporter):
             self._domain_paths = []
         self._story_paths = []
         self._nlu_paths = []
-        self._imports = set()
+        self._imports = []
         self._additional_paths = training_data_paths or []
         self._project_directory = project_directory or os.path.dirname(config_file)
 
@@ -73,11 +73,17 @@ class MultiProjectImporter(TrainingDataImporter):
 
     def _init_from_dict(self, _dict: Dict[Text, Any], parent_directory: Text) -> None:
         imports = _dict.get("imports") or []
-        imports = {os.path.join(parent_directory, i) for i in imports}
+        imports = [os.path.join(parent_directory, i) for i in imports]
         # clean out relative paths
-        imports = {os.path.abspath(i) for i in imports}
-        import_candidates = [p for p in imports if not self._is_explicitly_imported(p)]
-        self._imports = self._imports.union(import_candidates)
+        imports = [os.path.abspath(i) for i in imports]
+
+        # remove duplication
+        import_candidates = []
+        for i in imports:
+            if i not in import_candidates and not self._is_explicitly_imported(i):
+                import_candidates.append(i)
+
+        self._imports.extend(import_candidates)
 
         # import config files from paths which have not been processed so far
         for p in import_candidates:
@@ -160,7 +166,7 @@ class MultiProjectImporter(TrainingDataImporter):
         return any([io_utils.is_subdirectory(path, i) for i in self._imports])
 
     def add_import(self, path: Text) -> None:
-        self._imports.add(path)
+        self._imports.append(path)
 
     async def get_domain(self) -> Domain:
         domains = [Domain.load(path) for path in self._domain_paths]

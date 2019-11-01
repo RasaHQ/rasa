@@ -68,14 +68,18 @@ class TrackerStore(object):
                 domain=domain, event_broker=event_broker, **store.kwargs
             )
         else:
-            tracker_store = TrackerStore.load_tracker_from_module_string(domain, store)
+            tracker_store = TrackerStore.load_tracker_from_module_string(
+                domain, store, event_broker
+            )
 
         logger.debug("Connected to {}.".format(tracker_store.__class__.__name__))
         return tracker_store
 
     @staticmethod
     def load_tracker_from_module_string(
-        domain: Domain, store: EndpointConfig
+        domain: Domain,
+        store: EndpointConfig,
+        event_broker: Optional[EventChannel] = None,
     ) -> "TrackerStore":
         """
         Initializes a custom tracker.
@@ -83,6 +87,7 @@ class TrackerStore(object):
         Args:
             domain: defines the universe in which the assistant operates
             store: the specific tracker store
+            event_broker: an event broker to publish events
 
         Returns:
             custom_tracker: a tracker store from a specified database
@@ -98,7 +103,9 @@ class TrackerStore(object):
             )
 
         if custom_tracker:
-            return custom_tracker(domain=domain, url=store.url, **store.kwargs)
+            return custom_tracker(
+                domain=domain, url=store.url, event_broker=event_broker, **store.kwargs
+            )
         else:
             return InMemoryTrackerStore(domain)
 
@@ -244,14 +251,17 @@ class RedisTrackerStore(TrackerStore):
         host="localhost",
         port=6379,
         db=0,
-        password=None,
-        event_broker=None,
-        record_exp=None,
+        password: Optional[Text] = None,
+        event_broker: Optional[EventChannel] = None,
+        record_exp: Optional[float] = None,
+        use_ssl: bool = False,
     ):
 
         import redis
 
-        self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
+        self.red = redis.StrictRedis(
+            host=host, port=port, db=db, password=password, ssl=use_ssl
+        )
         self.record_exp = record_exp
         super(RedisTrackerStore, self).__init__(domain, event_broker)
 

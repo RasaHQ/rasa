@@ -123,7 +123,7 @@ class JiebaTokenizer(Tokenizer, Component):
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional[Component] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "JiebaTokenizer":
 
         relative_dictionary_path = meta.get("dictionary_path")
