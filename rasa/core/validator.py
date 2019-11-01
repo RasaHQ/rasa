@@ -200,7 +200,7 @@ class Validator(object):
                                 if h not in conflicts:
                                     conflicts[h] = {tracker.sender_id: tracker, rules[h]['tracker'].sender_id: rules[h]['tracker']}
                                 else:
-                                    conflicts[h] += {tracker.sender_id: tracker, rules[h]['tracker'].sender_id: rules[h]['tracker']}
+                                    conflicts[h].update({tracker.sender_id: tracker, rules[h]['tracker'].sender_id: rules[h]['tracker']})
                             else:
                                 rules[h] = {
                                     "tracker": tracker,
