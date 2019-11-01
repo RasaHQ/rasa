@@ -110,7 +110,7 @@ def test_find_tracker_store(default_domain):
 
 class ExampleTrackerStore(RedisTrackerStore):
     def __init__(self, domain, url, port, db, password, record_exp, event_broker=None):
-        super(ExampleTrackerStore, self).__init__(
+        super().__init__(
             domain,
             event_broker=event_broker,
             host=url,
@@ -215,7 +215,7 @@ def test_get_db_url_with_port_in_host():
     dialect = "postgresql"
     db = "mydb"
 
-    expected = "{}://{}/{}".format(dialect, host, db)
+    expected = f"{dialect}://{host}/{db}"
 
     assert (
         str(SQLTrackerStore.get_db_url(dialect="postgresql", host=host, db=db))

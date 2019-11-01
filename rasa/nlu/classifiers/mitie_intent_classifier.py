@@ -22,7 +22,7 @@ class MitieIntentClassifier(Component):
     ) -> None:
         """Construct a new intent classifier using the MITIE framework."""
 
-        super(MitieIntentClassifier, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.clf = clf
 

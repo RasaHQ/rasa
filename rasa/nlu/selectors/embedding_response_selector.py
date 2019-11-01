@@ -121,7 +121,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
             )
 
     def _load_params(self) -> None:
-        super(ResponseSelector, self)._load_params()
+        super()._load_params()
         self._load_selector_params(self.component_config)
 
     @staticmethod
@@ -187,7 +187,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         )
 
         logger.debug(
-            "Adding following selector key to message property: {}".format(selector_key)
+            f"Adding following selector key to message property: {selector_key}"
         )
 
         prediction_dict = {"response": label, "ranking": label_ranking}

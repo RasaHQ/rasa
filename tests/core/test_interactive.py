@@ -22,7 +22,7 @@ def mock_endpoint():
 async def test_send_message(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
-    url = "{}/conversations/{}/messages".format(mock_endpoint.url, sender_id)
+    url = f"{mock_endpoint.url}/conversations/{sender_id}/messages"
     with aioresponses() as mocked:
         mocked.post(url, payload={})
 
@@ -40,7 +40,7 @@ async def test_send_message(mock_endpoint):
 async def test_request_prediction(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
-    url = "{}/conversations/{}/predict".format(mock_endpoint.url, sender_id)
+    url = f"{mock_endpoint.url}/conversations/{sender_id}/predict"
 
     with aioresponses() as mocked:
         mocked.post(url, payload={})
@@ -311,7 +311,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
 
     domain_path = tmpdir.join("interactive_domain_save.yml").strpath
 
-    url = "{}/domain".format(mock_endpoint.url)
+    url = f"{mock_endpoint.url}/domain"
     with aioresponses() as mocked:
         mocked.get(url, payload={})
 

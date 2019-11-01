@@ -136,7 +136,7 @@ def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
         with open(filename, encoding=encoding) as f:
             return f.read()
     except FileNotFoundError:
-        raise ValueError("File '{}' does not exist.".format(filename))
+        raise ValueError(f"File '{filename}' does not exist.")
 
 
 def read_json_file(filename: Text) -> Any:
@@ -393,4 +393,4 @@ def zip_folder(folder: Text) -> Text:
     zipped_path.close()
 
     # WARN: not thread-safe!
-    return shutil.make_archive(zipped_path.name, str("zip"), folder)
+    return shutil.make_archive(zipped_path.name, "zip", folder)
