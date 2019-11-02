@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
+from rasa.nlu.training_data.loading import MARKDOWN, RASA
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable
@@ -680,7 +681,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
             validate=io_utils.file_type_validator(
-                [".md"],
+                [".md", ".json"],
                 "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
             ),
         ),
@@ -831,12 +832,8 @@ async def _write_nlu_to_file(
 
     # need to guess the format of the file before opening it to avoid a read
     # in a write
-    if loading.guess_format(export_nlu_path) in {"md", "unk"}:
-        fformat = "md"
-    else:
-        fformat = "json"
-
-    if fformat == "md":
+    nlu_format = _get_nlu_target_format(export_nlu_path)
+    if nlu_format == MARKDOWN:
         stringified_training_data = nlu_data.nlu_as_markdown()
     else:
         stringified_training_data = nlu_data.nlu_as_json()
@@ -844,8 +841,20 @@ async def _write_nlu_to_file(
     io_utils.write_text_file(stringified_training_data, export_nlu_path)
 
 
+def _get_nlu_target_format(export_path: Text) -> Text:
+    guessed_format = loading.guess_format(export_path)
+
+    if guessed_format not in {MARKDOWN, RASA}:
+        if export_path.endswith(".json"):
+            guessed_format = RASA
+        else:
+            guessed_format = MARKDOWN
+
+    return guessed_format
+
+
 def _entities_from_messages(messages):
-    """Return all entities that occur in atleast one of the messages."""
+    """Return all entities that occur in at least one of the messages."""
     return list({e["entity"] for m in messages for e in m.data.get("entities", [])})
 
 
