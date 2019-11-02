@@ -18,7 +18,7 @@ Added
 
 Changed
 -------
-- updated mattermost connector documentation to be more clear.
+- Updated Mattermost connector documentation to be more clear.
 - Updated format strings to f-strings where appropriate.
 
 Removed
