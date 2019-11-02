@@ -1,4 +1,6 @@
 import json
+from typing import Text
+
 import pytest
 import uuid
 from aioresponses import aioresponses
@@ -6,6 +8,7 @@ from aioresponses import aioresponses
 import rasa.utils.io
 from rasa.core.events import BotUttered
 from rasa.core.training import interactive
+from rasa.nlu.training_data.loading import RASA, MARKDOWN
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.actions.action import default_actions
 from rasa.core.domain import Domain
@@ -343,3 +346,11 @@ async def test_filter_intents_before_save_nlu_file():
         msgs.append(Message("/" + choice(intents), greet))
 
     assert test_msgs == interactive._filter_messages(msgs)
+
+
+@pytest.mark.parametrize(
+    "path, expected_format",
+    [("bla.json", RASA), ("other.md", MARKDOWN), ("unknown", MARKDOWN)],
+)
+def test_get_nlu_target_format(path: Text, expected_format: Text):
+    assert interactive._get_nlu_target_format(path) == expected_format

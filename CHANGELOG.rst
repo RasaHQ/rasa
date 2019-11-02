@@ -23,6 +23,7 @@ Removed
 
 Fixed
 -----
+- Fixed exporting NLU training data in ``json`` format from ``rasa interactive``
 
 [1.4.3] - 2019-10-29
 ^^^^^^^^^^^^^^^^^^^^
