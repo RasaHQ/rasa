@@ -588,3 +588,10 @@ def test_markdown_not_existing_section():
         training_data.load_data(
             "data/test/markdown_single_sections/not_existing_section.md"
         )
+
+
+def test_section_value_with_delimiter():
+    td_section_with_delimiter = training_data.load_data(
+        "data/test/markdown_single_sections/section_with_delimiter.md"
+    )
+    assert td_section_with_delimiter.entity_synonyms == {"10:00 am": "10:00"}
