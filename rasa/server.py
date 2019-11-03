@@ -911,9 +911,6 @@ def create_app(
                 )
             response_data = emulator.normalise_response_json(parsed_data)
 
-            metadata = app.agent.interpreter.interpreter.model_metadata.metadata
-            response_data['model'] = metadata.get('trained_at')
-            
             return response.json(response_data)
 
         except Exception as e:
