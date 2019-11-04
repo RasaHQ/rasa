@@ -179,37 +179,38 @@ class Validator(object):
             remove_duplicates=False,   # ToDo: Q&A: Why don't we deduplicate the graph here?
             augmentation_factor=0).generate()
         rules = {}
-        conflicts = {}
         for tracker in trackers:
             print(tracker.sender_id)
             states = tracker.past_states(self.domain)
             states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
+
             idx = 0
             for event in tracker.events:
                 if isinstance(event, ActionExecuted):
                     sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                         states[: idx + 1], max_history
                     )
-                    h = hash(str(sorted(list(sliced_states))))
-                    if h in rules and rules[h]['action'] != event.as_story_string():
-                        # print(f"CONFLICT in between "
-                        #       f"story '{tracker.sender_id}' with action '{event.as_story_string()}' "
-                        #       f"and story '{rules[h]['tracker']}' with action '{rules[h]['action']}'.")
-                        if h not in conflicts:
-                            conflicts[h] = {tracker.sender_id: tracker, rules[h]['tracker'].sender_id: rules[h]['tracker']}
-                        else:
-                            conflicts[h].update({tracker.sender_id: tracker, rules[h]['tracker'].sender_id: rules[h]['tracker']})
+                    h = str(sorted(list(sliced_states)))
+                    if h in rules:
+                        known_actions = [info["action"] for info in rules[h]]
+                        if event.as_story_string() not in known_actions:
+                            # print(f"{h} >> {event.as_story_string()} and {known_actions}")
+                            rules[h] += [{
+                                "tracker": tracker,
+                                "action": event.as_story_string()
+                            }]
                     else:
-                        rules[h] = {
+                        # print(f"{h} >> {event.as_story_string()}")
+                        rules[h] = [{
                             "tracker": tracker,
                             "action": event.as_story_string()
-                        }
-                elif isinstance(event, UserUttered):
-                    pass
-                else:
-                    raise ValueError(f"Event has type {type(event)}")
-                idx += 1
+                        }]
+                    idx += 1
         print()
+        for state_hash, info in rules.items():
+            if len(info) > 1:
+                print(f"{state_hash}: {[i['action'] for i in info]}")
+        exit()
 
         for state_hash, tracker_dict in conflicts.items():
             print(f" -- CONFLICT [{state_hash}] -- ")
