@@ -88,12 +88,16 @@ def validate_required_components_from_data(
 ):
 
     if data.regex_features and not any(
-        [component.name == "RegexFeaturizer" for component in pipeline]
+        [
+            component.name == "RegexFeaturizer"
+            and component.name == "CRFEntityExtractor"
+            for component in pipeline
+        ]
     ):
         warnings.warn(
             "You have defined training data with regexes, but "
-            "your NLU pipeline does not include a RegexFeaturizer. "
-            "To featurize regexes, add a RegexFeaturizer to your pipeline."
+            "your NLU pipeline does not include a RegexFeaturizer or CRFEntityExtractor. "
+            "To featurize regexes, add a RegexFeaturizer or CRFEntityExtractor to your pipeline."
         )
 
     if data.lookup_tables and not any(
