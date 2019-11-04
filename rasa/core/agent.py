@@ -831,14 +831,6 @@ class Agent(object):
             message_preprocessor=preprocessor,
         )
 
-    def on_tracker_store_error(self, error: Exception) -> None:
-        logger.error(
-            f"Error happened when trying to save conversation tracker to "
-            f"'{self.tracker_store.__class__.__name__}'. Falling back to use "
-            f"the '{InMemoryTrackerStore.__name__}'. Please "
-            f"investigate the following error: {error}."
-        )
-
     @staticmethod
     def _create_domain(domain: Union[Domain, Text]) -> Domain:
 
@@ -857,8 +849,9 @@ class Agent(object):
                 "type '{}' with value '{}'".format(type(domain), domain)
             )
 
+    @staticmethod
     def create_tracker_store(
-        self, store: Optional[TrackerStore], domain: Domain
+        store: Optional[TrackerStore], domain: Domain
     ) -> TrackerStore:
         if store is not None:
             store.domain = domain
@@ -866,7 +859,7 @@ class Agent(object):
         else:
             tracker_store = InMemoryTrackerStore(domain)
 
-        return FailSafeTrackerStore(tracker_store, self.on_tracker_store_error)
+        return FailSafeTrackerStore(tracker_store)
 
     @staticmethod
     def _create_lock_store(store: Optional[LockStore]) -> LockStore:

@@ -783,7 +783,7 @@ class FailSafeTrackerStore(TrackerStore):
     def __init__(
         self,
         tracker_store: TrackerStore,
-        on_tracker_store_error: Callable[[Exception], None],
+        on_tracker_store_error: Optional[Callable[[Exception], None]] = None,
         fallback_tracker_store: Optional[TrackerStore] = None,
     ) -> None:
         """Create a `FailSafeTrackerStore`.
@@ -798,7 +798,7 @@ class FailSafeTrackerStore(TrackerStore):
 
         self._fallback_tracker_store: Optional[TrackerStore] = fallback_tracker_store
         self._tracker_store = tracker_store
-        self.on_tracker_store_error = on_tracker_store_error
+        self._on_tracker_store_error = on_tracker_store_error
 
     @property
     def fallback_tracker_store(self) -> TrackerStore:
@@ -808,6 +808,17 @@ class FailSafeTrackerStore(TrackerStore):
             )
 
         return self._fallback_tracker_store
+
+    def on_tracker_store_error(self, error: Exception) -> None:
+        if self._on_tracker_store_error:
+            self._on_tracker_store_error(error)
+        else:
+            logger.error(
+                f"Error happened when trying to save conversation tracker to "
+                f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
+                f"the '{InMemoryTrackerStore.__name__}'. Please "
+                f"investigate the following error: {error}."
+            )
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         try:
