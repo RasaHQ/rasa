@@ -290,6 +290,7 @@ class EmbeddingIntentClassifier(Component):
             )
 
         encoded_id_labels = defaultdict(dict)
+        # TODO we should use SparseTensorValue outside graphs
         for i, s in zip(label_examples, sparse_features):
             indices, data, shape = train_utils.scipy_matrix_to_values(np.array([s]))
             sparse_tensor = train_utils.values_to_sparse_tensor(
@@ -427,6 +428,18 @@ class EmbeddingIntentClassifier(Component):
             layer_name_suffix=embed_name,
         )
 
+    def _get_feature_dim_batch_size(self, session_data: SessionData) -> Tuple[int, int]:
+        if "text_features_sparse" in session_data:
+            return (
+                session_data["text_features_sparse"][0].shape[-1],
+                session_data["text_features_sparse"][0].shape[0],
+            )
+        if "text_features_dense" in session_data:
+            return (
+                session_data["text_features_dense"][0].shape[-1],
+                session_data["text_features_sparse"][0].shape[0],
+            )
+
     def _build_tf_train_graph(
         self, session_data: SessionData
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
@@ -435,12 +448,23 @@ class EmbeddingIntentClassifier(Component):
 
         batch = train_utils.batch_to_session_data(batch, session_data)
 
-        self.a_in = self.combine_sparse_dense_features(batch, "text_features_")
-        self.b_in = self.combine_sparse_dense_features(batch, "intent_features_")
+        feature_dim, batch_size = self._get_feature_dim_batch_size(session_data)
+
+        self.a_in = self.combine_sparse_dense_features(
+            batch, "text_features_", feature_dim=feature_dim, batch_size=batch_size
+        )
+        self.b_in = self.combine_sparse_dense_features(
+            batch, "intent_features_", feature_dim=feature_dim, batch_size=batch_size
+        )
 
         self._encoded_all_label_ids = tf.stack(
             [
-                self.combine_sparse_dense_features(v, "intent_features_")
+                self.combine_sparse_dense_features(
+                    v,
+                    "intent_features_",
+                    feature_dim=feature_dim,
+                    batch_size=batch_size,
+                )
                 for k, v in self._encoded_all_label_ids.items()
             ]
         )
@@ -486,7 +510,11 @@ class EmbeddingIntentClassifier(Component):
         )
 
     def combine_sparse_dense_features(
-        self, batch: Dict[Text, tf.Tensor], key_prefix: Text
+        self,
+        batch: Dict[Text, tf.Tensor],
+        key_prefix: Text,
+        feature_dim: int,
+        batch_size: int,
     ):
         key_sparse = f"{key_prefix}sparse"
         key_dense = f"{key_prefix}dense"
@@ -496,7 +524,12 @@ class EmbeddingIntentClassifier(Component):
         if key_dense in batch and key_sparse in batch:
             _sparse = tf.math.reduce_sum(
                 train_utils.tf_dense_layer(
-                    batch[key_sparse], batch[key_sparse].shape[-1], "a", self.C2
+                    batch[key_sparse],
+                    feature_dim,  # TODO define proper size
+                    "a",
+                    self.C2,
+                    feature_dim=feature_dim,
+                    batch_size=batch_size,
                 )
             )
             _dense = tf.math.reduce_mean(batch[key_dense], axis=1)
@@ -509,39 +542,13 @@ class EmbeddingIntentClassifier(Component):
         if key_sparse in batch:
             return tf.math.reduce_sum(
                 train_utils.tf_dense_layer(
-                    batch[key_sparse], batch[key_sparse].shape[-1], "a", self.C2
+                    batch[key_sparse],
+                    feature_dim,  # TODO define proper size
+                    "a",
+                    self.C2,
+                    feature_dim=feature_dim,
                 )
             )
-
-    def batch_to_input(self, batch: Tuple) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Convert batch input into correct tensors.
-
-        As we do not know what features (sparse and/or dense) were used, we need to
-        check what features are provided and parse them accordingly.
-        """
-        # batch contains 1 or 2 a_in values, b_in, label_ids
-        b_in = batch[-2]
-
-        if len(batch) == 3:
-            a_in = self._squeeze_sparse_features(batch[0])
-            return a_in, b_in
-
-        if len(batch) == 4:
-            a_in_1 = self._squeeze_sparse_features(batch[0])
-            a_in_2 = self._squeeze_sparse_features(batch[1])
-            # Concatenate a_in features
-            a_in = tf.concat([a_in_1, a_in_2], axis=1)
-
-            return a_in, b_in
-
-        raise ValueError("Iterator return unexpected number of tensors.")
-
-    def _squeeze_sparse_features(self, a_in: tf.Tensor) -> tf.Tensor:
-        # as sparse features come from a scipy.sparse.csr_matrix they have an
-        # additional dimension
-        if len(a_in.shape) == 3:
-            a_in = tf.squeeze(a_in, axis=1)
-        return a_in
 
     def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
         num_text_features = self._get_num_of_features(session_data, "text_features_")

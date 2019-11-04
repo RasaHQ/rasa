@@ -306,7 +306,7 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
         ]
         shape = (len(array_of_sparse), seq_len, array_of_sparse[0].shape[-1])
 
-    return [np.array(indices), np.array(data), shape]
+    return [np.array(indices).astype(np.int64), np.array(data), shape.astype(np.int64)]
 
 
 def values_to_sparse_tensor(
@@ -348,7 +348,7 @@ def batch_to_session_data(batch: Tuple[np.ndarray], session_data: SessionData):
     for k, v in session_data.items():
         if isinstance(v[0], scipy.sparse.spmatrix):
             batch_data[k] = values_to_sparse_tensor(
-                batch[idx], batch[idx + 1], tf.shape(batch[idx + 2])
+                batch[idx], batch[idx + 1], batch[idx + 2]
             )
             idx += 3
         else:
@@ -388,9 +388,9 @@ def _get_shapes_types(session_data: SessionData) -> Tuple:
     def append_shape(v: np.ndarray):
         if isinstance(v[0], scipy.sparse.spmatrix):
             # scipy matrix is converted into indices, data, shape
-            shapes.append((None, None))
-            shapes.append((None))
-            shapes.append((None))
+            shapes.append((len(v), v[0].ndim + 1))
+            shapes.append((len(v)))
+            shapes.append((v[0].ndim + 1))
         elif v[0].ndim == 0:
             shapes.append((None))
         elif v[0].ndim == 1:
@@ -402,11 +402,9 @@ def _get_shapes_types(session_data: SessionData) -> Tuple:
         if isinstance(v[0], scipy.sparse.spmatrix):
             # scipy matrix is converted into indices, data, shape
             # as int64 is not supported in generator use int32 instead
-            types.append(tf.int32)
+            types.append(tf.int64)
             types.append(tf.float64)
-            types.append(tf.int32)
-        elif v.dtype == np.dtype(np.int64):
-            types.append(tf.int32)
+            types.append(tf.int64)
         else:
             types.append(v.dtype)
 
@@ -435,9 +433,7 @@ def create_iterator_init_datasets(
     )
 
     iterator = tf.data.Iterator.from_structure(
-        train_dataset.output_types,
-        train_dataset.output_shapes,
-        output_classes=train_dataset.output_classes,
+        train_dataset.output_types, train_dataset.output_shapes
     )
 
     train_init_op = iterator.make_initializer(train_dataset)
@@ -733,26 +729,26 @@ def tf_dense_layer(
     activation: Optional[Callable] = tf.nn.relu,
     use_bias: bool = True,
     kernel_initializer: Optional["tf.keras.initializers.Initializer"] = None,
+    feature_dim: int = 0,
+    batch_size: int = 0,
 ) -> tf.Tensor:
 
     if isinstance(inputs, tf.SparseTensor):
+        # TODO kernel should just be 2D ?
         # TODO add bias ?
-        if len(inputs.dense_shape.shape) == 3:
+        # TODO make use of inputs.dense_shape somehow instead of feature_dim (subclass tf.SparseTensor and create additional shape property to be set in init by provided numpy shape)
+
+        if feature_dim < 0:
+            raise ValueError(f"Cannot create kernel of shape {feature_dim}x{units}.")
+
+        if len(inputs.shape) == 3:
             kernel = tf.get_variable(
-                "kernel",
-                shape=[
-                    inputs.dense_shape.shape[0],
-                    inputs.dense_shape.shape[-1],
-                    units,
-                ],
-                dtype=inputs.dtype,
+                "kernel", shape=[batch_size, feature_dim, units], dtype=inputs.dtype
             )
             outputs = tf_matmul_sparse(inputs, kernel)
         else:
             kernel = tf.get_variable(
-                "kernel",
-                shape=[inputs.dense_shape.shape[-1], units],
-                dtype=inputs.dtype,
+                "kernel", shape=[feature_dim, units], dtype=inputs.dtype
             )
             outputs = tf.sparse.matmul(inputs, kernel)
     else:
