@@ -325,7 +325,7 @@ class PikaProducer(EventChannel):
 
         Returns:
             pika.spec.BasicProperties with the `RASA_ENVIRONMENT` environment
-            variable as the properties' app_id value. If this variable is unset, empty
+            variable as the properties' `app_id` value. If this variable is unset, empty
             pika.spec.BasicProperties.
 
         """
