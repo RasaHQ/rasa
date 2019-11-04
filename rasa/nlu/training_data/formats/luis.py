@@ -30,8 +30,9 @@ class LuisReader(JsonTrainingDataReader):
                 "Invalid LUIS data schema structure." "Your file is not supported."
             )
 
+        luisSchemaVersionChecked = 4
         version = int(js["luis_schema_version"][0])
-        if version > 5:
+        if version > luisSchemaVersionChecked:
             logger.warning(
                 "Your luis data schema version {} "
                 "is higher than 5.x.x. "
