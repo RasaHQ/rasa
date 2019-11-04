@@ -180,7 +180,7 @@ class Validator(object):
             augmentation_factor=0).generate()
         rules = {}
         for tracker in trackers:
-            print(tracker.sender_id)
+            # print(tracker.sender_id)
             states = tracker.past_states(self.domain)
             states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
 
@@ -190,7 +190,7 @@ class Validator(object):
                     sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                         states[: idx + 1], max_history
                     )
-                    h = str(sorted(list(sliced_states)))
+                    h = hash(str(sorted(list(sliced_states))))
                     if h in rules:
                         known_actions = [info["action"] for info in rules[h]]
                         if event.as_story_string() not in known_actions:
@@ -207,59 +207,26 @@ class Validator(object):
                         }]
                     idx += 1
         print()
+        result = True
         for state_hash, info in rules.items():
             if len(info) > 1:
-                print(f"{state_hash}: {[i['action'] for i in info]}")
-        exit()
+                result = False
+                conflicting_trackers = {i['tracker'].sender_id: i['tracker'] for i in info}
+                # print(f"CONFLICT {state_hash}: Ambiguity of choice between actions {[i['action'] for i in info]} "
+                #       f"when learning from trackers {conflicting_tracker_names}.")
 
-        for state_hash, tracker_dict in conflicts.items():
-            print(f" -- CONFLICT [{state_hash}] -- ")
-            if len(tracker_dict) == 1:
-                tracker = list(tracker_dict.values())[0]
-                print(f"The tracker '{tracker.sender_id}' is inconsistent with itself:")
-
-                description = ""
-                idx = 0
-                for story in self.story_graph.story_steps:
-                    if story.block_name in tracker.sender_id.split(" > "):
-                        description += f" ~~ '{story.block_name}' ~~\n"
-                        states = tracker.past_states(self.domain)
-                        states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
-
-                        for event in story.events:
-                            if isinstance(event, UserUttered):
-                                description += f"* {event.as_story_string()}"
-                            elif isinstance(event, ActionExecuted):
-                                description += f"  - {event.as_story_string()}"
-                                sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
-                                    states[: idx + 1], max_history
-                                )
-                                h = hash(str(sorted(list(sliced_states))))
-                                if h == state_hash:
-                                    description += " <-- CONFLICT"
-                            idx += 1
-                            description += "\n"
-                print(description)
-            elif len(tracker_dict) == 2:
-                print(f"The trackers {set(tracker_dict.keys())} contain inconsistent states:")
-                trackers = list(tracker_dict.values())
-                story_blocks = {}
-                for tracker in trackers:
-                    print()
-                    print(tracker.sender_id)
+                if len(conflicting_trackers) == 1:
+                    tracker = list(conflicting_trackers.values())[0]
+                    print(f"The tracker '{tracker.sender_id}' is inconsistent with itself:")
+                    description = ""
                     idx = 0
                     for story in self.story_graph.story_steps:
                         if story.block_name in tracker.sender_id.split(" > "):
-                            block_id = 0
-                            for i, s in enumerate(tracker.sender_id.split(" > ")):
-                                if story.block_name == s:
-                                    block_id = i
-                                    break
-
-                            description = f"~~ '{story.block_name}' ~~\n"
+                            description += f" ~~ '{story.block_name}' ~~\n"
                             states = tracker.past_states(self.domain)
-                            states = [dict(state) for state in
-                                      states]  # ToDo: Check against rasa/core/featurizers.py:318
+                            # ToDo: Check against rasa/core/featurizers.py:318
+                            states = [dict(state) for state in states]
+
                             for event in story.events:
                                 if isinstance(event, UserUttered):
                                     description += f"* {event.as_story_string()}"
@@ -273,14 +240,47 @@ class Validator(object):
                                         description += " <-- CONFLICT"
                                 idx += 1
                                 description += "\n"
+                    print(description)
+                elif len(conflicting_trackers) == 2:
+                    print(f"The trackers '{list(conflicting_trackers.keys())}' are inconsistent:")
+                    story_blocks = {}
+                    for tracker in list(conflicting_trackers.values()):
+                        print()
+                        print(tracker.sender_id)
+                        idx = 0
+                        for story in self.story_graph.story_steps:
+                            if story.block_name in tracker.sender_id.split(" > "):
+                                block_id = 0
+                                for i, s in enumerate(tracker.sender_id.split(" > ")):
+                                    if story.block_name == s:
+                                        block_id = i
+                                        break
 
-                            story_blocks[block_id] = description
+                                description = f"~~ '{story.block_name}' ~~\n"
+                                states = tracker.past_states(self.domain)
+                                states = [dict(state) for state in
+                                          states]  # ToDo: Check against rasa/core/featurizers.py:318
+                                for event in story.events:
+                                    if isinstance(event, UserUttered):
+                                        description += f"* {event.as_story_string()}"
+                                    elif isinstance(event, ActionExecuted):
+                                        description += f"  - {event.as_story_string()}"
+                                        sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                                            states[: idx + 1], max_history
+                                        )
+                                        h = hash(str(sorted(list(sliced_states))))
+                                        if h == state_hash:
+                                            description += " <-- CONFLICT"
+                                    idx += 1
+                                    description += "\n"
 
-                    for _, block in story_blocks.items():
-                        # print(i)
-                        print(block, end="")
+                                story_blocks[block_id] = description
 
-        return True
+                        for _, block in story_blocks.items():
+                            # print(i)
+                            print(block, end="")
+
+        return result
 
     def verify_all(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
