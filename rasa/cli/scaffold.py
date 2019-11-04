@@ -183,7 +183,7 @@ def run(args: argparse.Namespace) -> None:
         .ask()
     )
 
-    if path is not None and not os.path.isdir(path):
+    if path and not os.path.isdir(path):
         _ask_create_path(path)
 
     if path is None or not os.path.isdir(path):
