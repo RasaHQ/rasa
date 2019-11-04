@@ -47,9 +47,6 @@ def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto
         return None
 
 
-# TODO: add wrapper around all denses layers to use https://medium.com/dailymotion/how-to-design-deep-learning-models-with-sparse-inputs-in-tensorflow-keras-fd5e754abec1
-
-
 # noinspection PyPep8Naming
 def train_val_split(
     session_data: "SessionData",
@@ -351,7 +348,7 @@ def batch_to_session_data(batch: Tuple[np.ndarray], session_data: SessionData):
     for k, v in session_data.items():
         if isinstance(v[0], scipy.sparse.spmatrix):
             batch_data[k] = values_to_sparse_tensor(
-                batch[idx], batch[idx + 1], batch[idx + 2]
+                batch[idx], batch[idx + 1], tf.shape(batch[idx + 2])
             )
             idx += 3
         else:
@@ -469,18 +466,16 @@ def create_tf_fnn(
 ) -> "tf.Tensor":
     """Create nn with hidden layers and name suffix."""
 
-    reg = tf.contrib.layers.l2_regularizer(C2)
     x = tf.nn.relu(x_in)
     for i, layer_size in enumerate(layer_sizes):
-        x = tf.layers.dense(
+        x = tf_dense_layer(
             inputs=x,
             units=layer_size,
             activation=activation,
             use_bias=use_bias,
             kernel_initializer=kernel_initializer,
-            kernel_regularizer=reg,
+            C2=C2,
             name="hidden_layer_{}_{}".format(layer_name_suffix, i),
-            reuse=tf.AUTO_REUSE,
         )
         x = tf.layers.dropout(x, rate=droprate, training=is_training)
     return x
@@ -511,14 +506,12 @@ def create_tf_embed(
 ) -> "tf.Tensor":
     """Create dense embedding layer with a name."""
 
-    reg = tf.contrib.layers.l2_regularizer(C2)
-    embed_x = tf.layers.dense(
+    embed_x = tf_dense_layer(
         inputs=x,
         units=embed_dim,
         activation=None,
-        kernel_regularizer=reg,
+        C2=C2,
         name="embed_layer_{}".format(layer_name_suffix),
-        reuse=tf.AUTO_REUSE,
     )
     # normalize embedding vectors for cosine similarity
     return tf_normalize_if_cosine(embed_x, similarity_type)
@@ -736,7 +729,7 @@ def tf_dense_layer(
     inputs: tf.Tensor,
     units: int,
     name: Text,
-    C2: int,
+    C2: float,
     activation: Optional[Callable] = tf.nn.relu,
     use_bias: bool = True,
     kernel_initializer: Optional["tf.keras.initializers.Initializer"] = None,
@@ -744,16 +737,22 @@ def tf_dense_layer(
 
     if isinstance(inputs, tf.SparseTensor):
         # TODO add bias ?
-        if len(inputs.shape) == 3:
+        if len(inputs.dense_shape.shape) == 3:
             kernel = tf.get_variable(
                 "kernel",
-                shape=[inputs.shape[0], inputs.shape[-1], units],
+                shape=[
+                    inputs.dense_shape.shape[0],
+                    inputs.dense_shape.shape[-1],
+                    units,
+                ],
                 dtype=inputs.dtype,
             )
             outputs = tf_matmul_sparse(inputs, kernel)
         else:
             kernel = tf.get_variable(
-                "kernel", shape=[inputs.shape[-1], units], dtype=inputs.dtype
+                "kernel",
+                shape=[inputs.dense_shape.shape[-1], units],
+                dtype=inputs.dtype,
             )
             outputs = tf.sparse.matmul(inputs, kernel)
     else:

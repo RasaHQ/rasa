@@ -292,7 +292,9 @@ class EmbeddingIntentClassifier(Component):
         encoded_id_labels = defaultdict(dict)
         for i, s in zip(label_examples, sparse_features):
             indices, data, shape = train_utils.scipy_matrix_to_values(np.array([s]))
-            sparse_tensor = train_utils.values_to_sparse_tensor(indices, data, shape)
+            sparse_tensor = train_utils.values_to_sparse_tensor(
+                indices, tf.constant(data, dtype=tf.float64), shape
+            )
             encoded_id_labels[i[0]]["intent_features_sparse"] = sparse_tensor
         for i, d in zip(label_examples, dense_features):
             encoded_id_labels[i[0]]["intent_features_dense"] = tf.constant(d)
@@ -432,8 +434,6 @@ class EmbeddingIntentClassifier(Component):
         batch = self._iterator.get_next()
 
         batch = train_utils.batch_to_session_data(batch, session_data)
-
-        # TODO shape missmatch
 
         self.a_in = self.combine_sparse_dense_features(batch, "text_features_")
         self.b_in = self.combine_sparse_dense_features(batch, "intent_features_")
@@ -654,7 +654,6 @@ class EmbeddingIntentClassifier(Component):
         **kwargs: Any,
     ) -> None:
         """Train the embedding label classifier on a data set."""
-
         logger.debug("Started training embedding classifier.")
 
         # set numpy random seed
