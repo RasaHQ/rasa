@@ -190,7 +190,7 @@ class Validator(object):
                     sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                         states[: idx + 1], max_history
                     )
-                    h = hash(str(sorted(list(sliced_states))))
+                    h = hash(str(list(sliced_states)))
                     if h in rules:
                         known_actions = [info["action"] for info in rules[h]]
                         if event.as_story_string() not in known_actions:
@@ -235,7 +235,7 @@ class Validator(object):
                                     sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                                         states[: idx + 1], max_history
                                     )
-                                    h = hash(str(sorted(list(sliced_states))))
+                                    h = hash(str(list(sliced_states)))
                                     if h == state_hash:
                                         description += " <-- CONFLICT"
                                 idx += 1
@@ -268,7 +268,7 @@ class Validator(object):
                                         sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                                             states[: idx + 1], max_history
                                         )
-                                        h = hash(str(sorted(list(sliced_states))))
+                                        h = hash(str(list(sliced_states)))
                                         if h == state_hash:
                                             description += " <-- CONFLICT"
                                     idx += 1
