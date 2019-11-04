@@ -168,7 +168,7 @@ class Validator(object):
     def verify_story_structure(self, ignore_warnings: bool = True) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
-        max_history = 1
+        max_history = 3
 
         # Generate the story tree
         from rasa.utils.story_tree import Tree
@@ -217,7 +217,7 @@ class Validator(object):
 
                 if len(conflicting_trackers) == 1:
                     tracker = list(conflicting_trackers.values())[0]
-                    print(f"The tracker '{tracker.sender_id}' is inconsistent with itself:")
+                    print(f"\nThe tracker '{tracker.sender_id}' is inconsistent with itself:")
                     description = ""
                     idx = 0
                     for story in self.story_graph.story_steps:
@@ -242,19 +242,23 @@ class Validator(object):
                                 description += "\n"
                     print(description)
                 elif len(conflicting_trackers) == 2:
-                    print(f"The trackers '{list(conflicting_trackers.keys())}' are inconsistent:")
+                    print(f"\nThe trackers '{list(conflicting_trackers.keys())}' are inconsistent:")
                     story_blocks = {}
                     for tracker in list(conflicting_trackers.values()):
                         print()
-                        print(tracker.sender_id)
+                        # print(tracker.sender_id)
                         idx = 0
                         for story in self.story_graph.story_steps:
                             if story.block_name in tracker.sender_id.split(" > "):
-                                block_id = 0
+                                block_id = -1
                                 for i, s in enumerate(tracker.sender_id.split(" > ")):
                                     if story.block_name == s:
+                                        if i in story_blocks:
+                                            print(f"DUPLICATE BLOCK {story}")  # ToDo: Resolve this OR-problem
                                         block_id = i
                                         break
+
+                                assert block_id >= 0
 
                                 description = f"~~ '{story.block_name}' ~~\n"
                                 states = tracker.past_states(self.domain)
@@ -262,20 +266,24 @@ class Validator(object):
                                           states]  # ToDo: Check against rasa/core/featurizers.py:318
                                 for event in story.events:
                                     if isinstance(event, UserUttered):
-                                        description += f"* {event.as_story_string()}"
+                                        description += f"* {event.as_story_string().rstrip()}"
                                     elif isinstance(event, ActionExecuted):
-                                        description += f"  - {event.as_story_string()}"
+                                        description += f"  - {event.as_story_string().rstrip()}"
                                         sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                                             states[: idx + 1], max_history
                                         )
                                         h = hash(str(list(sliced_states)))
                                         if h == state_hash:
                                             description += " <-- CONFLICT"
+                                    else:
+                                        # Slots and Forms
+                                        description += f"  - {event.as_story_string().rstrip()}"
                                     idx += 1
                                     description += "\n"
 
                                 story_blocks[block_id] = description
 
+                        print(tracker.sender_id)
                         for _, block in story_blocks.items():
                             # print(i)
                             print(block, end="")
