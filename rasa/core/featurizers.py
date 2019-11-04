@@ -339,7 +339,7 @@ class CountVectorsSingleStateFeaturizer(LabelTokenizerSingleStateFeaturizer, Cou
             elif state_name in self.slot_labels:
                 # offset = len(self.user_vocab)
                 idx = self.slot_labels.index(state_name)
-                slot_features[idx] += prob
+                slot_features[0][idx] += prob
                 #used_features[offset + idx] += prob
 
             elif state_name.startswith(PREV_PREFIX):
