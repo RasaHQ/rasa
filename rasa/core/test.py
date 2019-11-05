@@ -345,7 +345,11 @@ def _predict_tracker_actions(
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            action_executed_result, policy, confidence = _collect_action_executed_predictions(
+            (
+                action_executed_result,
+                policy,
+                confidence,
+            ) = _collect_action_executed_predictions(
                 processor, partial_tracker, event, fail_on_prediction_errors
             )
             tracker_eval_store.merge_store(action_executed_result)

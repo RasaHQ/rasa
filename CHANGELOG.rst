@@ -19,6 +19,7 @@ Added
 
 Changed
 -------
+- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
 
 Removed
 -------
@@ -229,7 +230,6 @@ Fixed
 Changed
 -------
 - Pin gast to == 0.2.2
-
 
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
