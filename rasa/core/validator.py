@@ -165,10 +165,8 @@ class Validator(object):
 
         return everything_is_alright
 
-    def verify_story_structure(self, ignore_warnings: bool = True) -> bool:
+    def verify_story_structure(self, ignore_warnings: bool = True, max_history: int = 5) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
-
-        max_history = 5
 
         # Generate the story tree
         from rasa.utils.story_tree import Tree
@@ -246,7 +244,4 @@ class Validator(object):
         logger.info("Validating utterances...")
         utterances_are_valid = self.verify_utterances_in_stories(ignore_warnings)
 
-        logger.info("Validating story-structure...")
-        stories_are_valid = self.verify_story_structure(ignore_warnings)
-
-        return intents_are_valid and utterances_are_valid and stories_are_valid
+        return intents_are_valid and utterances_are_valid

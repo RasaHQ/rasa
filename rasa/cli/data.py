@@ -73,6 +73,16 @@ def add_subparser(
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)
 
+    validate_subparsers = validate_parser.add_subparsers()
+    story_structure_parser = validate_subparsers.add_parser(
+        "stories",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Checks for inconsistencies in the story files.",
+    )
+    story_structure_parser.set_defaults(func=validate_stories)
+    arguments.set_validator_arguments(story_structure_parser)
+
 
 def split_nlu_data(args):
     from rasa.nlu.training_data.loading import load_data
@@ -104,4 +114,21 @@ def validate_files(args):
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
     everything_is_alright = validator.verify_all(not args.fail_on_warnings)
+    sys.exit(0) if everything_is_alright else sys.exit(1)
+
+
+def validate_stories(args):
+    """Validate all files needed for training a model.
+
+        Fails with a non-zero exit code if there are any errors in the data."""
+    from rasa.core.validator import Validator
+    from rasa.importers.rasa import RasaFileImporter
+
+    loop = asyncio.get_event_loop()
+    file_importer = RasaFileImporter(
+        domain_path=args.domain, training_data_paths=args.data
+    )
+
+    validator = loop.run_until_complete(Validator.from_importer(file_importer))
+    everything_is_alright = validator.verify_story_structure(not args.fail_on_warnings, max_history=5)
     sys.exit(0) if everything_is_alright else sys.exit(1)
