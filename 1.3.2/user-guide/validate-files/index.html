@@ -275,26 +275,33 @@ You can run it with the following command:</p>
 </div>
 <p>The script above runs all the validations on your files. Here is the list of options to
 the script:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data validate [-h] [-v] [-vv] [--quiet] [--fail-on-warnings]
-                          [-d DOMAIN] [--data DATA]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 583, in _build_master
+    ws.require(__requires__)
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 900, in require
+    needed = self.resolve(parse_requirements(requirements))
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 791, in resolve
+    raise VersionConflict(dist, req).with_context(dependent_req)
+pkg_resources.ContextualVersionConflict: (python-dateutil 2.8.1 (/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages), Requirement.parse(&#39;python-dateutil&lt;2.8.1,&gt;=2.1; python_version &gt;= &quot;2.7&quot;&#39;), {&#39;botocore&#39;})
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --fail-on-warnings    Fail validation on warnings and errors. If omitted
-                        only errors will result in a non zero exit code.
-                        (default: False)
-  -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
-  --data DATA           Path to the file or directory containing Rasa data.
-                        (default: data)
+During handling of the above exception, another exception occurred:
 
-Python Logging Options:
-  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
-                        None)
-  -vv, --debug          Print lots of debugging statements. Sets logging level
-                        to DEBUG. (default: None)
-  --quiet               Be quiet! Sets logging level to WARNING. (default:
-                        None)
+Traceback (most recent call last):
+  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 6, in &lt;module&gt;
+    from pkg_resources import load_entry_point
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 3251, in &lt;module&gt;
+    @_call_aside
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 3235, in _call_aside
+    f(*args, **kwargs)
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 3264, in _initialize_master_working_set
+    working_set = WorkingSet._build_master()
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 585, in _build_master
+    return cls._build_from_requirements(__requires__)
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 598, in _build_from_requirements
+    dists = ws.resolve(reqs, Environment())
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 791, in resolve
+    raise VersionConflict(dist, req).with_context(dependent_req)
+pkg_resources.ContextualVersionConflict: (python-dateutil 2.8.1 (/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages), Requirement.parse(&#39;python-dateutil&lt;2.8.1,&gt;=2.1; python_version &gt;= &quot;2.7&quot;&#39;), {&#39;botocore&#39;})
 </pre></div>
 </div>
 <p>You can also run these validations through the Python API by importing the <cite>Validator</cite> class,
