@@ -366,7 +366,7 @@ mappings are assigned by giving an intent the property ``triggers``, e.g.:
 
   intents:
    - ask_is_bot:
-       triggers: action_is_bot
+       { triggers: action_is_bot }
 
 An intent can only be mapped to at most one action. The bot will run
 the mapped action once it receives a message of the triggering intent. Afterwards,
