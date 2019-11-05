@@ -11,7 +11,7 @@ from rasa.constants import DEFAULT_DATA_PATH
 
 # noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+        subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
     import rasa.nlu.convert as convert
 
@@ -58,7 +58,7 @@ def add_subparser(
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Performs a split of your NLU data into training and test data "
-        "according to the specified percentages.",
+             "according to the specified percentages.",
     )
     nlu_split_parser.set_defaults(func=split_nlu_data)
 
@@ -70,6 +70,10 @@ def add_subparser(
         parents=parents,
         help="Validates domain and data files to check for possible mistakes.",
     )
+    validate_parser.add_argument("--stories", action="store_true", default=False,
+                                 help="Also validate that stories are consistent.")
+    validate_parser.add_argument("--max-history", type=int, default=5,
+                                 help="Assume this max_history setting for story structure validation.")
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)
 
@@ -116,6 +120,10 @@ def validate_files(args):
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
     everything_is_alright = validator.verify_all(not args.fail_on_warnings)
+    if args.stories:
+        everything_is_alright = everything_is_alright and \
+                                validator.verify_story_structure(not args.fail_on_warnings,
+                                                                 max_history=args.max_history)
     sys.exit(0) if everything_is_alright else sys.exit(1)
 
 
