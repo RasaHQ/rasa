@@ -30,7 +30,7 @@ class UserMessageGenerator(object):
 
     @staticmethod
     def _create_reverse_mapping(
-        data: "TrainingData"
+        data: "TrainingData",
     ) -> Dict[Dict[Text, Any], List["Message"]]:
         """Create a mapping from intent to messages
 
