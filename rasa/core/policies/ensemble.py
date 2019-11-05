@@ -120,7 +120,7 @@ class PolicyEnsemble(object):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if training_trackers:
             for policy in self.policies:
@@ -199,7 +199,7 @@ class PolicyEnsemble(object):
 
         self._add_package_version_info(metadata)
 
-        utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
         # if there are lots of stories, saving flattened stories takes a long
         # time, so this is turned off by default

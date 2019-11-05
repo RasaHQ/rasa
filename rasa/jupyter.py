@@ -4,7 +4,6 @@ import typing
 from typing import Any, Dict, Text, Optional
 from rasa.cli.utils import print_success, print_error
 from rasa.core.interpreter import NaturalLanguageInterpreter, RasaNLUInterpreter
-import rasa.model as model
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -47,7 +46,7 @@ def chat(
         )
         return
 
-    print ("Your bot is ready to talk! Type your messages here or send '/stop'.")
+    print("Your bot is ready to talk! Type your messages here or send '/stop'.")
     loop = asyncio.get_event_loop()
     while True:
         message = input()

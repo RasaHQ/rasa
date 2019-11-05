@@ -5,6 +5,7 @@ from typing import Dict, Optional, Text, Union
 
 import time
 
+import rasa.core.brokers.utils as rasa_broker_utils
 from rasa.core.brokers.event_channel import EventChannel
 from rasa.utils.endpoints import EndpointConfig
 
@@ -18,6 +19,7 @@ def initialise_pika_connection(
     host: Text,
     username: Text,
     password: Text,
+    port: Union[Text, int] = 5672,
     connection_attempts: int = 20,
     retry_delay_in_seconds: Union[int, float] = 5,
 ) -> "BlockingConnection":
@@ -27,11 +29,13 @@ def initialise_pika_connection(
         host: Pika host
         username: username for authentication with Pika host
         password: password for authentication with Pika host
+        port: port of the Pika host
         connection_attempts: number of channel attempts before giving up
         retry_delay_in_seconds: delay in seconds between channel attempts
 
     Returns:
         Pika `BlockingConnection` with provided parameters
+
     """
 
     import pika
@@ -47,12 +51,14 @@ def initialise_pika_connection(
         # host seems to be just the host, so we use our parameters
         parameters = pika.ConnectionParameters(
             host,
+            port=port,
             credentials=pika.PlainCredentials(username, password),
             connection_attempts=connection_attempts,
             # Wait between retries since
             # it can take some time until
             # RabbitMQ comes up.
             retry_delay=retry_delay_in_seconds,
+            ssl_options=rasa_broker_utils.create_rabbitmq_ssl_options(host),
         )
     return pika.BlockingConnection(parameters)
 
@@ -62,6 +68,7 @@ def initialise_pika_channel(
     queue: Text,
     username: Text,
     password: Text,
+    port: Union[Text, int] = 5672,
     connection_attempts: int = 20,
     retry_delay_in_seconds: Union[int, float] = 5,
 ) -> "BlockingChannel":
@@ -72,15 +79,17 @@ def initialise_pika_channel(
         queue: Pika queue to declare
         username: username for authentication with Pika host
         password: password for authentication with Pika host
+        port: port of the Pika host
         connection_attempts: number of channel attempts before giving up
         retry_delay_in_seconds: delay in seconds between channel attempts
 
     Returns:
         Pika `BlockingChannel` with declared queue
+
     """
 
     connection = initialise_pika_connection(
-        host, username, password, connection_attempts, retry_delay_in_seconds
+        host, username, password, port, connection_attempts, retry_delay_in_seconds
     )
 
     return _declare_pika_channel_with_queue(connection, queue)
@@ -127,6 +136,7 @@ class PikaProducer(EventChannel):
         host: Text,
         username: Text,
         password: Text,
+        port: Union[int, Text] = 5672,
         queue: Text = "rasa_core_events",
         loglevel: Union[Text, int] = logging.WARNING,
     ):
@@ -136,6 +146,7 @@ class PikaProducer(EventChannel):
         self.host = host
         self.username = username
         self.password = password
+        self.port = port
         self.channel = None  # delay opening channel until first event
 
     def __del__(self) -> None:
@@ -153,6 +164,7 @@ class PikaProducer(EventChannel):
             self.queue,
             self.username,
             self.password,
+            self.port,
             connection_attempts,
             retry_delay_in_seconds,
         )

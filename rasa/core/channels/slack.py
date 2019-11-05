@@ -3,8 +3,9 @@ import logging
 import re
 from sanic import Blueprint, response
 from sanic.request import Request
+from sanic.response import HTTPResponse
 from slackclient import SlackClient
-from typing import Text, Optional, List, Dict, Any
+from typing import Text, Optional, List, Dict, Any, Callable, Awaitable
 
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
@@ -16,7 +17,7 @@ class SlackBot(SlackClient, OutputChannel):
     """A Slack communication channel"""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "slack"
 
     def __init__(self, token: Text, slack_channel: Optional[Text] = None) -> None:
@@ -25,7 +26,7 @@ class SlackBot(SlackClient, OutputChannel):
         super(SlackBot, self).__init__(token)
 
     @staticmethod
-    def _get_text_from_slack_buttons(buttons):
+    def _get_text_from_slack_buttons(buttons: List[Dict]) -> Text:
         return "".join([b.get("title", "") for b in buttons])
 
     async def send_text_message(
@@ -63,7 +64,7 @@ class SlackBot(SlackClient, OutputChannel):
             channel=recipient,
             as_user=True,
             attachments=[attachment],
-            **kwargs
+            **kwargs,
         )
 
     async def send_text_with_buttons(
@@ -71,7 +72,7 @@ class SlackBot(SlackClient, OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         recipient = self.slack_channel or recipient_id
 
@@ -113,13 +114,15 @@ class SlackInput(InputChannel):
     """Slack input channel implementation. Based on the HTTPInputChannel."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "slack"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
+
+        # pytype: disable=attribute-error
         return cls(
             credentials.get("slack_token"),
             credentials.get("slack_channel"),
@@ -127,6 +130,7 @@ class SlackInput(InputChannel):
             credentials.get("slack_retry_number_header", "x-slack-retry-num"),
             credentials.get("errors_ignore_retry", None),
         )
+        # pytype: enable=attribute-error
 
     def __init__(
         self,
@@ -166,20 +170,21 @@ class SlackInput(InputChannel):
         self.retry_num_header = slack_retry_number_header
 
     @staticmethod
-    def _is_user_message(slack_event):
+    def _is_user_message(slack_event: Dict) -> bool:
         return (
             slack_event.get("event")
             and (
-                slack_event.get("event").get("type") == "message"
-                or slack_event.get("event").get("type") == "app_mention"
+                slack_event.get("event", {}).get("type") == "message"
+                or slack_event.get("event", {}).get("type") == "app_mention"
             )
-            and slack_event.get("event").get("text")
-            and not slack_event.get("event").get("bot_id")
+            and slack_event.get("event", {}).get("text")
+            and not slack_event.get("event", {}).get("bot_id")
         )
 
     @staticmethod
-    def _sanitize_user_message(text, uids_to_remove):
+    def _sanitize_user_message(text, uids_to_remove) -> Text:
         """Remove superfluous/wrong/problematic tokens from a message.
+
         Probably a good starting point for pre-formatting of user-provided text
         to make NLU's life easier in case they go funky to the power of extreme
 
@@ -221,7 +226,7 @@ class SlackInput(InputChannel):
         return text.strip()
 
     @staticmethod
-    def _is_interactive_message(payload):
+    def _is_interactive_message(payload: Dict) -> bool:
         """Check wheter the input is a supported interactive input type."""
 
         supported = [
@@ -249,7 +254,7 @@ class SlackInput(InputChannel):
         return False
 
     @staticmethod
-    def _get_interactive_repsonse(action):
+    def _get_interactive_response(action: Dict) -> Optional[Text]:
         """Parse the payload for the response value."""
 
         if action["type"] == "button":
@@ -271,7 +276,14 @@ class SlackInput(InputChannel):
         elif action["type"] == "datepicker":
             return action.get("selected_date")
 
-    async def process_message(self, request: Request, on_new_message, text, sender_id):
+    async def process_message(
+        self,
+        request: Request,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        text,
+        sender_id: Optional[Text],
+        metadata: Optional[Dict],
+    ) -> Any:
         """Slack retries to post messages up to 3 times based on
         failure conditions defined here:
         https://api.slack.com/events-api#failure_conditions
@@ -289,7 +301,11 @@ class SlackInput(InputChannel):
         try:
             out_channel = self.get_output_channel()
             user_msg = UserMessage(
-                text, out_channel, sender_id, input_channel=self.name()
+                text,
+                out_channel,
+                sender_id,
+                input_channel=self.name(),
+                metadata=metadata,
             )
 
             await on_new_message(user_msg)
@@ -299,25 +315,28 @@ class SlackInput(InputChannel):
 
         return response.text("")
 
-    def blueprint(self, on_new_message):
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
         slack_webhook = Blueprint("slack_webhook", __name__)
 
         @slack_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
-        async def webhook(request: Request):
+        async def webhook(request: Request) -> HTTPResponse:
             if request.form:
                 output = request.form
                 payload = json.loads(output["payload"][0])
 
                 if self._is_interactive_message(payload):
                     sender_id = payload["user"]["id"]
-                    text = self._get_interactive_repsonse(payload["actions"][0])
+                    text = self._get_interactive_response(payload["actions"][0])
                     if text is not None:
+                        metadata = self.get_metadata(request)
                         return await self.process_message(
-                            request, on_new_message, text=text, sender_id=sender_id
+                            request, on_new_message, text, sender_id, metadata
                         )
                     elif payload["actions"][0]["type"] == "button":
                         # link buttons don't have "value", don't send their clicks to bot
@@ -332,13 +351,15 @@ class SlackInput(InputChannel):
                     return response.json(output.get("challenge"))
 
                 elif self._is_user_message(output):
+                    metadata = self.get_metadata(request)
                     return await self.process_message(
                         request,
                         on_new_message,
-                        text=self._sanitize_user_message(
+                        self._sanitize_user_message(
                             output["event"]["text"], output["authed_users"]
                         ),
-                        sender_id=output.get("event").get("user"),
+                        output.get("event").get("user"),
+                        metadata,
                     )
 
             return response.text("Bot message delivered")
