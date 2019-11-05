@@ -24,6 +24,7 @@ Removed
 Fixed
 -----
 - Fixed exporting NLU training data in ``json`` format from ``rasa interactive``
+- Fixed numpy deprecation warnings showing in ``rasa`` installed with ``pip``
 
 [1.4.3] - 2019-10-29
 ^^^^^^^^^^^^^^^^^^^^
