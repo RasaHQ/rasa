@@ -80,6 +80,8 @@ def add_subparser(
         parents=parents,
         help="Checks for inconsistencies in the story files.",
     )
+    story_structure_parser.add_argument("--max-history", type=int, default=5,
+                                        help="Assume this max_history setting for validation.")
     story_structure_parser.set_defaults(func=validate_stories)
     arguments.set_validator_arguments(story_structure_parser)
 
@@ -130,5 +132,5 @@ def validate_stories(args):
     )
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
-    everything_is_alright = validator.verify_story_structure(not args.fail_on_warnings, max_history=5)
+    everything_is_alright = validator.verify_story_structure(not args.fail_on_warnings, max_history=args.max_history)
     sys.exit(0) if everything_is_alright else sys.exit(1)
