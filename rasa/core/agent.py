@@ -13,7 +13,12 @@ from sanic import Sanic
 import rasa
 import rasa.utils.io
 import rasa.core.utils
-from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL, ENV_SANIC_BACKLOG
+from rasa.constants import (
+    DEFAULT_DOMAIN_PATH,
+    LEGACY_DOCS_BASE_URL,
+    ENV_SANIC_BACKLOG,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
 from rasa.core import constants, jobs, training
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -766,8 +771,8 @@ class Agent(object):
         if not self.is_core_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
 
-        if not model_path.endswith("core"):
-            model_path = os.path.join(model_path, "core")
+        if not model_path.endswith(DEFAULT_CORE_SUBDIRECTORY_NAME):
+            model_path = os.path.join(model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
 
         self._clear_model_directory(model_path)
 

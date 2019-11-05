@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import typing
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
 import rasa.core.constants
@@ -663,7 +664,7 @@ class Domain(object):
             "forms": self.form_names,
         }
 
-    def persist(self, filename: Text) -> None:
+    def persist(self, filename: Union[Text, Path]) -> None:
         """Write domain to a file."""
 
         domain_data = self.as_dict()

@@ -133,7 +133,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
     @staticmethod
     def extract_intent_and_entities(
-        user_input: Text
+        user_input: Text,
     ) -> Tuple[Optional[Text], float, List[Dict[Text, Any]]]:
         """Parse the user input using regexes to extract intent & entities."""
 

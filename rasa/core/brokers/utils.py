@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def from_endpoint_config(
-    broker_config: Optional[EndpointConfig]
+    broker_config: Optional[EndpointConfig],
 ) -> Optional["EventChannel"]:
     """Instantiate an event channel based on its configuration."""
 
@@ -42,7 +42,7 @@ def from_endpoint_config(
 
 
 def load_event_channel_from_module_string(
-    broker_config: EndpointConfig
+    broker_config: EndpointConfig,
 ) -> Optional["EventChannel"]:
     """Instantiate an event channel based on its class name."""
 
@@ -58,7 +58,7 @@ def load_event_channel_from_module_string(
 
 
 def create_rabbitmq_ssl_options(
-    rabbitmq_host: Optional[Text] = None
+    rabbitmq_host: Optional[Text] = None,
 ) -> Optional["pika.SSLOptions"]:
     """Create RabbitMQ SSL options.
 
