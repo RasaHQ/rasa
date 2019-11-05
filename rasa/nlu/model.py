@@ -381,6 +381,10 @@ class Interpreter(object):
 
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
+
         if self.model_metadata:
-            output.update({"metadata": {"model": self.model_metadata.get("trained_at")}})
+            output.update(
+                {"metadata": {"model": self.model_metadata.get("trained_at")}}
+            )
+
         return output
