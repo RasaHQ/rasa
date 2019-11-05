@@ -562,20 +562,21 @@ class AllSlotsReset(Event):
 
 # noinspection PyProtectedMember
 class ReminderScheduled(Event):
-    """ Allows asynchronous scheduling of action execution.
+    """ Allows asynchronous scheduling of intent or action execution.
 
-    As a side effect the message processor will schedule an action to be run
-    at the trigger date."""
+    As a side effect the message processor will schedule an intent or
+    action to be run at the trigger date."""
 
     type_name = "reminder"
 
     def __init__(
         self,
-        action_name,
+        future_event,
         trigger_date_time,
         name=None,
         kill_on_user_message=True,
         timestamp=None,
+        event_is_action=False,
     ):
         """Creates the reminder
 
@@ -589,8 +590,8 @@ class ReminderScheduled(Event):
                  trigger date will abort the reminder
             timestamp: creation date of the event
         """
-
-        self.action_name = action_name
+        self.future_event = future_event
+        self.event_is_action = event_is_action
         self.trigger_date_time = trigger_date_time
         self.kill_on_user_message = kill_on_user_message
         self.name = name if name is not None else str(uuid.uuid1())
@@ -599,7 +600,8 @@ class ReminderScheduled(Event):
     def __hash__(self):
         return hash(
             (
-                self.action_name,
+                self.future_event,
+                self.event_is_action,
                 self.trigger_date_time.isoformat(),
                 self.kill_on_user_message,
                 self.name,
@@ -615,13 +617,14 @@ class ReminderScheduled(Event):
     def __str__(self):
         return (
             "ReminderScheduled("
-            "action: {}, trigger_date: {}, name: {}"
-            ")".format(self.action_name, self.trigger_date_time, self.name)
+            "future_event: {}, event_is_action: {}, trigger_date: {}, name: {}"
+            ")".format(self.future_event, self.event_is_action, self.trigger_date_time, self.name)
         )
 
     def _data_obj(self):
         return {
-            "action": self.action_name,
+            "future_event": self.future_event,
+            "event_is_action": self.event_is_action,
             "date_time": self.trigger_date_time.isoformat(),
             "name": self.name,
             "kill_on_user_msg": self.kill_on_user_message,
@@ -640,13 +643,21 @@ class ReminderScheduled(Event):
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
 
         trigger_date_time = parser.parse(parameters.get("date_time"))
+        if parameters.get("action"):
+            event_is_action = True
+            future_event = parameters.get("action")
+        else:
+            event_is_action = False
+            future_event = parameters.get("intent")
+
         return [
             ReminderScheduled(
-                parameters.get("action"),
+                future_event,
                 trigger_date_time,
-                parameters.get("name", None),
-                parameters.get("kill_on_user_msg", True),
-                parameters.get("timestamp"),
+                name=parameters.get("name", None),
+                kill_on_user_message=parameters.get("kill_on_user_msg", True),
+                timestamp=parameters.get("timestamp"),
+                event_is_action=event_is_action,
             )
         ]
 
@@ -657,32 +668,42 @@ class ReminderCancelled(Event):
 
     type_name = "cancel_reminder"
 
-    def __init__(self, action_name, timestamp=None):
+    def __init__(self, event_name, event_is_action=False, timestamp=None):
         """
         Args:
-            action_name: name of the scheduled action to be cancelled
+            event_name: name of the scheduled intent or action to be cancelled
+            event_is_action: True if event is action; False if event is intent
         """
 
-        self.action_name = action_name
+        self.event_name = event_name
+        self.event_is_action = event_is_action
         super(ReminderCancelled, self).__init__(timestamp)
 
     def __hash__(self):
-        return hash(self.action_name)
+        return hash(self.event_name)
 
     def __eq__(self, other):
         return isinstance(other, ReminderCancelled)
 
     def __str__(self):
-        return "ReminderCancelled(action: {})".format(self.action_name)
+        return "ReminderCancelled(event: {}, event_is_action: {})".format(self.event_name, self.event_is_action)
 
     def as_story_string(self):
-        props = json.dumps({"action": self.action_name})
+        props = json.dumps({"event": self.event_name, "event_is_action": self.event_is_action})
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+        if parameters.get("action"):
+            event_is_action = True
+            event = parameters.get("action")
+        else:
+            event_is_action = False
+            event = parameters.get("intent")
         return [
-            ReminderCancelled(parameters.get("action"), parameters.get("timestamp"))
+            ReminderCancelled(event,
+                              event_is_action=event_is_action,
+                              timestamp=parameters.get("timestamp"))
         ]
 
 

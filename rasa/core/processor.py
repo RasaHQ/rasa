@@ -248,6 +248,7 @@ class MessageProcessor(object):
         """Handle a reminder that is triggered asynchronously."""
 
         tracker = self._get_tracker(sender_id)
+        print("REMINDER")
 
         if not tracker:
             logger.warning(
@@ -264,20 +265,25 @@ class MessageProcessor(object):
             logger.debug(
                 "Canceled reminder because it is outdated. "
                 "(event: {} id: {})".format(
-                    reminder_event.action_name, reminder_event.name
+                    reminder_event.future_event, reminder_event.name
                 )
             )
         else:
-            # necessary for proper featurization, otherwise the previous
-            # unrelated message would influence featurization
-            tracker.update(UserUttered.empty())
-            action = self._get_action(reminder_event.action_name)
-            should_continue = await self._run_action(
-                action, tracker, output_channel, nlg
-            )
-            if should_continue:
-                user_msg = UserMessage(None, output_channel, sender_id)
-                await self._predict_and_execute_next_action(user_msg, tracker)
+            if reminder_event.event_is_action:
+                # necessary for proper featurization, otherwise the previous
+                # unrelated message would influence featurization
+                tracker.update(UserUttered.empty())
+                action = self._get_action(reminder_event.future_event)
+                should_continue = await self._run_action(
+                    action, tracker, output_channel, nlg
+                )
+                if should_continue:
+                    user_msg = UserMessage(None, output_channel, sender_id)
+                    await self._predict_and_execute_next_action(user_msg, tracker)
+            else:
+                # intent = UserMessage("/" + reminder_event.event_name, output_channel, sender_id)
+                tracker.update(UserUttered(intent=reminder_event.future_event))
+                # await self._predict_and_execute_next_action(intent, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
 
@@ -453,6 +459,8 @@ class MessageProcessor(object):
             if not isinstance(e, ReminderScheduled):
                 continue
 
+            print("SCHEDULING REMINDER\n")
+
             (await jobs.scheduler()).add_job(
                 self.handle_reminder,
                 "date",
@@ -461,7 +469,7 @@ class MessageProcessor(object):
                 id=e.name,
                 replace_existing=True,
                 name=(
-                    str(e.action_name)
+                    str(e.future_event)
                     + ACTION_NAME_SENDER_ID_CONNECTOR_STR
                     + tracker.sender_id
                 ),
@@ -477,7 +485,7 @@ class MessageProcessor(object):
         for e in events:
             if isinstance(e, ReminderCancelled):
                 name_to_check = (
-                    str(e.action_name)
+                    str(e.future_event)
                     + ACTION_NAME_SENDER_ID_CONNECTOR_STR
                     + tracker.sender_id
                 )
