@@ -168,6 +168,8 @@ class Validator(object):
     def verify_story_structure(self, ignore_warnings: bool = True, max_history: int = 5) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
+        print(f"Assuming max_history = {max_history}")
+
         # Generate the story tree
         from rasa.utils.story_tree import Tree
         tree = Tree()
@@ -232,6 +234,9 @@ class Validator(object):
                 print(f"CONFLICT after {last_event_string}: ")
                 for i in info:
                     print(f"  '{i['action']}' predicted in '{i['tracker'].sender_id}'")
+
+        if result:
+            print("No conflicts found.")
 
         return result
 
