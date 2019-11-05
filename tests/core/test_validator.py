@@ -89,13 +89,13 @@ async def test_verify_logging_message_for_repetition_in_intents(caplog):
     )
 
 
-async def test_verify_domain(caplog):
+async def test_verify_domain_validity(caplog):
     domain_path = "data/test_domains/duplicate_intents.yml"
     full_path = os.path.abspath(domain_path)
 
     importer = RasaFileImporter(domain_path=domain_path)
     validator = await Validator.from_importer(importer)
-    validator.verify_domain()
+    validator.verify_domain_validity()
 
     log_object = caplog.records[-1]
     message = log_object.message
