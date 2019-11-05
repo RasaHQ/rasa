@@ -1,7 +1,8 @@
 import logging
-import asyncio
-from typing import List, Set, Text
-from rasa.core.domain import Domain
+from typing import Set, Text
+
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.domain import Domain, PREV_PREFIX
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
@@ -9,7 +10,6 @@ from rasa.core.training.structures import StoryGraph
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
-from rasa.core.training.dsl import SlotSet
 from rasa.core.constants import UTTER_PREFIX
 
 logger = logging.getLogger(__name__)
@@ -168,7 +168,7 @@ class Validator(object):
     def verify_story_structure(self, ignore_warnings: bool = True) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
-        max_history = 3
+        max_history = 5
 
         # Generate the story tree
         from rasa.utils.story_tree import Tree
@@ -211,82 +211,29 @@ class Validator(object):
         for state_hash, info in rules.items():
             if len(info) > 1:
                 result = False
-                conflicting_trackers = {i['tracker'].sender_id: i['tracker'] for i in info}
-                # print(f"CONFLICT {state_hash}: Ambiguity of choice between actions {[i['action'] for i in info]} "
-                #       f"when learning from trackers {conflicting_tracker_names}.")
-
-                if len(conflicting_trackers) == 1:
-                    tracker = list(conflicting_trackers.values())[0]
-                    print(f"\nThe tracker '{tracker.sender_id}' is inconsistent with itself:")
-                    description = ""
-                    idx = 0
-                    for story in self.story_graph.story_steps:
-                        if story.block_name in tracker.sender_id.split(" > "):
-                            description += f" ~~ '{story.block_name}' ~~\n"
-                            states = tracker.past_states(self.domain)
-                            # ToDo: Check against rasa/core/featurizers.py:318
-                            states = [dict(state) for state in states]
-
-                            for event in story.events:
-                                if isinstance(event, UserUttered):
-                                    description += f"* {event.as_story_string()}"
-                                elif isinstance(event, ActionExecuted):
-                                    description += f"  - {event.as_story_string()}"
-                                    sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
-                                        states[: idx + 1], max_history
-                                    )
-                                    h = hash(str(list(sliced_states)))
-                                    if h == state_hash:
-                                        description += " <-- CONFLICT"
-                                idx += 1
-                                description += "\n"
-                    print(description)
-                elif len(conflicting_trackers) == 2:
-                    print(f"\nThe trackers '{list(conflicting_trackers.keys())}' are inconsistent:")
-                    story_blocks = {}
-                    for tracker in list(conflicting_trackers.values()):
-                        print()
-                        # print(tracker.sender_id)
-                        idx = 0
-                        for story in self.story_graph.story_steps:
-                            if story.block_name in tracker.sender_id.split(" > "):
-                                block_id = -1
-                                for i, s in enumerate(tracker.sender_id.split(" > ")):
-                                    if story.block_name == s:
-                                        if i in story_blocks:
-                                            print(f"DUPLICATE BLOCK {story}")  # ToDo: Resolve this OR-problem
-                                        block_id = i
-                                        break
-
-                                assert block_id >= 0
-
-                                description = f"~~ '{story.block_name}' ~~\n"
-                                states = tracker.past_states(self.domain)
-                                states = [dict(state) for state in
-                                          states]  # ToDo: Check against rasa/core/featurizers.py:318
-                                for event in story.events:
-                                    if isinstance(event, UserUttered):
-                                        description += f"* {event.as_story_string().rstrip()}"
-                                    elif isinstance(event, ActionExecuted):
-                                        description += f"  - {event.as_story_string().rstrip()}"
-                                        sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
-                                            states[: idx + 1], max_history
-                                        )
-                                        h = hash(str(list(sliced_states)))
-                                        if h == state_hash:
-                                            description += " <-- CONFLICT"
-                                    else:
-                                        # Slots and Forms
-                                        description += f"  - {event.as_story_string().rstrip()}"
-                                    idx += 1
-                                    description += "\n"
-
-                                story_blocks[block_id] = description
-
-                        print(tracker.sender_id)
-                        for _, block in story_blocks.items():
-                            # print(i)
-                            print(block, end="")
+                tracker = info[0]["tracker"]
+                states = tracker.past_states(self.domain)
+                states = [dict(state) for state in states]
+                last_event_string = None
+                idx = 0
+                for event in tracker.events:
+                    if isinstance(event, ActionExecuted):
+                        sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                            states[: idx + 1], max_history
+                        )
+                        h = hash(str(list(sliced_states)))
+                        if h == state_hash:
+                            for k, v in sliced_states[-1].items():
+                                if k.startswith(PREV_PREFIX):
+                                    if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
+                                        last_event_string = f"action '{k[len(PREV_PREFIX):]}'"
+                                elif k.startswith("intent_") and not last_event_string:
+                                    last_event_string = f"intent '{k[len('intent_'):]}'"
+                            break
+                        idx += 1
+                print(f"CONFLICT after {last_event_string}: ")
+                for i in info:
+                    print(f"  '{i['action']}' predicted in '{i['tracker'].sender_id}'")
 
         return result
 
