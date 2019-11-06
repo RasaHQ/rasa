@@ -76,7 +76,7 @@ class MitieNLP(Component):
 
     @staticmethod
     def ensure_proper_language_model(
-        extractor: Optional["mitie.total_word_feature_extractor"]
+        extractor: Optional["mitie.total_word_feature_extractor"],
     ) -> None:
 
         if extractor is None:

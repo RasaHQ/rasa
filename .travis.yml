@@ -59,6 +59,7 @@ jobs:
   - stage: test
     name: "Test Docs"
     install:
+    - pip install -r requirements.txt
     - pip install -r requirements-docs.txt
     - pip install -e .[sql]
     - pip list
