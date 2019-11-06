@@ -86,10 +86,20 @@ def validate_arguments(
 def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
 ):
+    # Check for entity examples but no CRFEntityExtractor
+    if data.entity_examples and not any(
+        [component.name == "CRFEntityExtractor" for component in pipeline]
+    ):
+        warnings.warn(
+            "You have defined training data consisting of entity examples, but "
+            "your NLU pipeline does not include a CRFEntityExtractor. "
+            "To extract entity examples, add a CRFEntityExtractor to your pipeline."
+        )
 
     # Check for Regex data but RegexFeaturizer not enabled
-    if data.regex_features and not any(
-        [component.name == "RegexFeaturizer" for component in pipeline]
+    if (
+        data.regex_features
+        and not any([component.name == "RegexFeaturizer" for component in pipeline])
     ):
         warnings.warn(
             "You have defined training data with regexes, but "
@@ -97,15 +107,17 @@ def validate_required_components_from_data(
             "To featurize regexes for entity extraction, you need to have RegexFeaturizer in your pipeline."
         )
 
+    # Check for lookup tables but no RegexFeaturizer
     if data.lookup_tables and not any(
-        [component.name == "CRFEntityExtractor" for component in pipeline]
+        [component.name == "RegexFeaturizer" for component in pipeline]
     ):
         warnings.warn(
             "You have defined training data consisting of lookup tables, but "
-            "your NLU pipeline does not include a CRFEntityExtractor. "
-            "To featurize lookup tables, add a CRFEntityExtractor to your pipeline."
+            "your NLU pipeline does not include a RegexFeaturizer. "
+            "To featurize lookup tables, add a RegexFeaturizer to your pipeline."
         )
 
+    # Check for synonyms but no EntitySynonymMapper
     if data.entity_synonyms and not any(
         [component.name == "EntitySynonymMapper" for component in pipeline]
     ):
@@ -115,6 +127,7 @@ def validate_required_components_from_data(
             "To map synonyms, add an EntitySynonymMapper to your pipeline."
         )
 
+    # Check for response selector but no component for it
     if data.response_examples and not any(
         [MESSAGE_RESPONSE_ATTRIBUTE in component.provides for component in pipeline]
     ):

@@ -15,9 +15,12 @@ Added
 -----
 - Added the KeywordIntentClassifier
 - Added additional warnings for when NLU configuration is missing for specific training data.
+- Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
+  tracker store
 
 Changed
 -------
+- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
 
 Removed
 -------
@@ -228,7 +231,6 @@ Fixed
 Changed
 -------
 - Pin gast to == 0.2.2
-
 
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
