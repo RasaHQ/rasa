@@ -97,9 +97,8 @@ def validate_required_components_from_data(
         )
 
     # Check for Regex data but RegexFeaturizer not enabled
-    if (
-        data.regex_features
-        and not any([component.name == "RegexFeaturizer" for component in pipeline])
+    if data.regex_features and not any(
+        [component.name == "RegexFeaturizer" for component in pipeline]
     ):
         warnings.warn(
             "You have defined training data with regexes, but "
