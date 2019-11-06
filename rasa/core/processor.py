@@ -197,7 +197,7 @@ class MessageProcessor(object):
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action."""
 
-        action_confidences, policy = self._get_next_action_probabilities(tracker)
+        action_confidences, policy, x = self._get_next_action_probabilities(tracker)
 
         max_confidence_index = int(np.argmax(action_confidences))
         action = self.domain.action_for_index(
@@ -208,7 +208,7 @@ class MessageProcessor(object):
                 action.name(), action_confidences[max_confidence_index]
             )
         )
-        return action, policy, action_confidences[max_confidence_index]
+        return action, policy, action_confidences[max_confidence_index], x[max_confidence_index]
 
     @staticmethod
     def _is_reminder(e: Event, name: Text) -> bool:

@@ -275,6 +275,12 @@ def _emulate_form_rejection(processor, partial_tracker):
                     partial_tracker.active_form["rejected"] = False
 
 
+good_conf = []
+good_freq = []
+bad_conf = []
+bad_freq = []
+
+
 def _collect_action_executed_predictions(
     processor, partial_tracker, event, fail_on_prediction_errors
 ):
@@ -284,7 +290,8 @@ def _collect_action_executed_predictions(
 
     gold = event.action_name
 
-    action, policy, confidence = processor.predict_next_action(partial_tracker)
+    action, policy, confidence, x = processor.predict_next_action(partial_tracker)
+
     predicted = action.name()
 
     if policy and predicted != gold and FormPolicy.__name__ in policy:
@@ -300,9 +307,11 @@ def _collect_action_executed_predictions(
     )
 
     if action_executed_eval_store.has_prediction_target_mismatch():
+        bad_conf.append(x)
+        bad_freq.append(confidence)
         partial_tracker.update(
             WronglyPredictedAction(
-                gold, predicted, event.policy, event.confidence, event.timestamp
+                gold, predicted + "_{:.3f}_{:.3f}".format(x, confidence), event.policy, event.confidence, event.timestamp
             )
         )
         if fail_on_prediction_errors:
@@ -320,6 +329,8 @@ def _collect_action_executed_predictions(
                 )
             raise ValueError(error_msg)
     else:
+        good_conf.append(x)
+        good_freq.append(confidence)
         partial_tracker.update(event)
 
     return action_executed_eval_store, policy, confidence
@@ -418,6 +429,23 @@ def collect_story_predictions(
             correct_dialogues.append(1)
 
     logger.info("Finished collecting predictions.")
+    import numpy as np
+    print(np.min(good_conf), np.mean(good_conf), np.max(good_conf))
+    print(np.min(good_freq), np.mean(good_freq), np.max(good_freq))
+    print(np.min(bad_conf), np.mean(bad_conf), np.max(bad_conf))
+    print(np.min(bad_freq), np.mean(bad_freq), np.max(bad_freq))
+
+    import pickle
+
+    with open("good_conf.data", "wb") as f:
+        pickle.dump(good_conf, f)
+    with open("good_freq.data", "wb") as f:
+        pickle.dump(good_freq, f)
+    with open("bad_conf.data", "wb") as f:
+        pickle.dump(bad_conf, f)
+    with open("bad_freq.data", "wb") as f:
+        pickle.dump(bad_freq, f)
+
     with warnings.catch_warnings():
         from sklearn.exceptions import UndefinedMetricWarning
 

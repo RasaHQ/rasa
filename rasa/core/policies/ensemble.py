@@ -383,7 +383,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         best_policy_priority = -1
 
         for i, p in enumerate(self.policies):
-            probabilities = p.predict_action_probabilities(tracker, domain)
+            probabilities, x = p.predict_action_probabilities(tracker, domain)
 
             if len(tracker.events) > 0 and isinstance(
                 tracker.events[-1], ActionExecutionRejected
@@ -435,7 +435,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 )
 
         logger.debug("Predicted next action using {}".format(best_policy_name))
-        return result, best_policy_name
+        return result, best_policy_name, x
 
 
 class InvalidPolicyConfig(Exception):

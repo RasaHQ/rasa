@@ -582,11 +582,25 @@ class EmbeddingPolicy(Policy):
         for _ in range(100):
             xs.append(self.session.run(self.pred_confidence, feed_dict=tf_feed_dict))
         xs = np.array(xs)
+
+        max_mask = (xs.max(axis=-1, keepdims=True) == xs).astype(xs.dtype)
+
+        # print(max_mask.sum(axis=0))
+        mas_xs = xs * max_mask
+        self.max_xs = mas_xs.sum(axis=0) / (max_mask.sum(axis=0) + 1e-8)
+        self.freq_xs = max_mask.sum(axis=0) / max_mask.shape[0]
+        # print(self.freq_xs)
+        # print(self.max_xs)
+        # print(np.round(xs.mean(axis=0), 3))
+        # print(np.round(xs[0], 3))
+        # print(np.round(max_xs, 3))
+
         self.i_max = xs.argmax(axis=-1)[:, 0, -1]
         # self.x_i_max = xs.max(axis=-1)[:, 0, -1]
         # print(self.x_i_max)
         # print(self.i_max)
         unique, counts = np.unique(self.i_max, return_counts=True)
+        # print(counts)
         # print(unique, counts)
         max_count_i = counts.argmax()
         self.i_max_mean = unique[max_count_i]
@@ -594,9 +608,16 @@ class EmbeddingPolicy(Policy):
         # exit()
         self.mean = xs.mean(axis=0)[0, -1, :]
         self.stds = xs.std(axis=0)[0, -1, :]
+        # exit()
 
         # return confidence[0, -1, :].tolist()
-        return self.mean.tolist()
+        f1 = 2 * self.freq_xs * self.max_xs / (self.freq_xs + self.max_xs + 1e-8)
+
+        return f1[0, -1, :].tolist(), xs.mean(axis=0)[0, -1, :].tolist()
+        # return f1[0, -1, :].tolist(), self.max_xs[0, -1, :].tolist()
+        # return self.freq_xs[0, -1, :].tolist(), self.max_xs[0, -1, :].tolist()
+        # return max_xs[0, -1, :].tolist()
+        # return self.mean.tolist()
 
     def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
