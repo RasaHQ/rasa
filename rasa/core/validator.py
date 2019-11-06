@@ -188,6 +188,17 @@ class Validator:
 
         return everything_is_alright
 
+    def verify_story_names(self, ignore_warnings: bool = True):
+        """Verify that story names are unique."""
+        names = set()
+        for step in self.story_graph.story_steps:
+            if step.block_name in names:
+                logger.warning("Found duplicate story names")
+                return ignore_warnings
+            names.add(step.block_name)
+        logger.info("All story names are unique")
+        return True
+
     def verify_story_structure(self, ignore_warnings: bool = True, max_history: int = 5) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
@@ -273,7 +284,9 @@ class Validator:
         there_is_no_duplication = self.verify_example_repetition_in_intents(
             ignore_warnings
         )
+        all_story_names_unique = self.verify_story_names(ignore_warnings)
 
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
-        return intents_are_valid and stories_are_valid and there_is_no_duplication
+        return (intents_are_valid and stories_are_valid and
+                there_is_no_duplication and all_story_names_unique)
