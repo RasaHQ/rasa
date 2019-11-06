@@ -89,6 +89,15 @@ def add_subparser(
     story_structure_parser.set_defaults(func=validate_stories)
     arguments.set_validator_arguments(story_structure_parser)
 
+    split_parser = data_subparsers.add_parser(
+        "clean",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="[Experimental] Ensures that story names are unique.",
+    )
+    split_parser.set_defaults(func=deduplicate_story_names)
+    arguments.set_validator_arguments(split_parser)
+
 
 def split_nlu_data(args):
     from rasa.nlu.training_data.loading import load_data
@@ -145,3 +154,42 @@ def validate_stories(args):
             validator.verify_story_structure(not args.fail_on_warnings, max_history=args.max_history)
     )
     sys.exit(0) if everything_is_alright else sys.exit(1)
+
+
+def deduplicate_story_names(args):
+    """Changes story names so as to make them unique.
+       --EXPERIMENTAL-- """
+
+    from rasa.importers.rasa import RasaFileImporter
+
+    loop = asyncio.get_event_loop()
+    file_importer = RasaFileImporter(
+        domain_path=args.domain, training_data_paths=args.data
+    )
+
+    story_file_names, _ = data.get_core_nlu_files(args.data)
+    names = set()
+    for file_name in story_file_names:
+        if file_name.endswith(".new"):
+            continue
+        with open(file_name, "r") as in_file:
+            with open(file_name + ".new", "w+") as out_file:
+                for line in in_file:
+                    if line.startswith("## "):
+                        new_name = line[3:].rstrip()
+                        if new_name in names:
+                            first = new_name
+                            k = 1
+                            while new_name in names:
+                                new_name = first + f" ({k})"
+                                k += 1
+                            print(f"- replacing {first} with {new_name}")
+                        names.add(new_name)
+                        out_file.write(f"## {new_name}\n")
+                    else:
+                        out_file.write(line.rstrip() + "\n")
+
+    # story_files, _ = data.get_core_nlu_files(args.data)
+    # story_steps = loop.run_until_complete(file_importer.get_story_steps())
+    # for step in story_steps:
+    #     print(step.block_name)
