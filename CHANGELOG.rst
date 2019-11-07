@@ -20,6 +20,7 @@ Changed
 -------
 - Updated Mattermost connector documentation to be more clear.
 - Updated format strings to f-strings where appropriate.
+- Updated tensorflow requirement to ``1.15.0``
 
 Removed
 -------
@@ -27,6 +28,7 @@ Removed
 Fixed
 -----
 - Fixed exporting NLU training data in ``json`` format from ``rasa interactive``
+- Fixed numpy deprecation warnings
 
 [1.4.3] - 2019-10-29
 ^^^^^^^^^^^^^^^^^^^^
