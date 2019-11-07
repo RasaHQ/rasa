@@ -420,13 +420,13 @@ class MongoTrackerStore(TrackerStore):
     def __init__(
         self,
         domain: Domain,
-        host: Optional[Text]="mongodb://localhost:27017",
-        db: Optional[Text]="rasa",
-        username: Optional[Text]=None,
-        password: Optional[Text]=None,
-        auth_source: Optional[Text]="admin",
-        collection: Optional[Text]="conversations",
-        event_broker: Optional[EventChannel] =None,
+        host: Optional[Text] = "mongodb://localhost:27017",
+        db: Optional[Text] = "rasa",
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
+        auth_source: Optional[Text] = "admin",
+        collection: Optional[Text] = "conversations",
+        event_broker: Optional[EventChannel] = None,
     ):
         from pymongo.database import Database
         from pymongo import MongoClient

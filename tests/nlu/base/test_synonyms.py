@@ -21,6 +21,7 @@ def test_loading_no_warning():
     syn = EntitySynonymMapper(synonyms=None)
     syn.persist("test", "test")
     meta = Metadata({"test": 1}, "test")
-    with pytest.warns(None) as warn:
+    with pytest.warns(UserWarning) as record:
         syn.load(meta.for_component(0), "test", meta)
-    assert len(warn) == 0
+    assert len(record) == 1
+    assert  "Failed to load synonyms file from" in record[0].message.args[0] 
