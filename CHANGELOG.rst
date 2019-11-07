@@ -14,10 +14,13 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 - Added the KeywordIntentClassifier
+- Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
+  tracker store
 
 Changed
 -------
 - Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
+- Upgraded ``jsonschema`` version
 
 Removed
 -------

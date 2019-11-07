@@ -5,7 +5,7 @@ import os
 import pickle
 import typing
 from datetime import datetime, timezone
-from typing import Iterator, Optional, Text, Iterable, Union, Dict
+from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
 
 import itertools
 from boto3.dynamodb.conditions import Key
@@ -48,9 +48,33 @@ class TrackerStore(object):
         event_broker: Optional[EventChannel] = None,
     ) -> "TrackerStore":
         """Returns the tracker_store type"""
-        if store is None or store.type is None:
-            tracker_store = InMemoryTrackerStore(domain, event_broker=event_broker)
-        elif store.type.lower() == "redis":
+
+        tracker_store = None
+        if store is not None and store.type is not None:
+            try:
+                tracker_store = TrackerStore._create_tracker_store(
+                    domain, store, event_broker
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error when trying to connect to '{store.type}' "
+                    f"tracker store. Using "
+                    f"'{InMemoryTrackerStore.__name__}'' instead. "
+                    f"The causing error was: {e}."
+                )
+
+        if not tracker_store:
+            tracker_store = InMemoryTrackerStore(domain, event_broker)
+
+        logger.debug("Connected to {}.".format(tracker_store.__class__.__name__))
+
+        return tracker_store
+
+    @staticmethod
+    def _create_tracker_store(
+        domain: Domain, store: EndpointConfig, event_broker: Optional[EventChannel]
+    ) -> "TrackerStore":
+        if store.type.lower() == "redis":
             tracker_store = RedisTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
@@ -71,7 +95,6 @@ class TrackerStore(object):
                 domain, store, event_broker
             )
 
-        logger.debug("Connected to {}.".format(tracker_store.__class__.__name__))
         return tracker_store
 
     @staticmethod
@@ -751,3 +774,69 @@ class SQLTrackerStore(TrackerStore):
         )
 
         return itertools.islice(tracker.events, n_events, len(tracker.events))
+
+
+class FailSafeTrackerStore(TrackerStore):
+    """Wraps a tracker store so that we can fallback to a different tracker store in
+    case of errors."""
+
+    def __init__(
+        self,
+        tracker_store: TrackerStore,
+        on_tracker_store_error: Optional[Callable[[Exception], None]] = None,
+        fallback_tracker_store: Optional[TrackerStore] = None,
+    ) -> None:
+        """Create a `FailSafeTrackerStore`.
+
+        Args:
+            tracker_store: Primary tracker store.
+            on_tracker_store_error: Callback which is called when there is an error
+                in the primary tracker store.
+        """
+
+        super().__init__(tracker_store.domain, tracker_store.event_broker)
+
+        self._fallback_tracker_store: Optional[TrackerStore] = fallback_tracker_store
+        self._tracker_store = tracker_store
+        self._on_tracker_store_error = on_tracker_store_error
+
+    @property
+    def fallback_tracker_store(self) -> TrackerStore:
+        if not self._fallback_tracker_store:
+            self._fallback_tracker_store = InMemoryTrackerStore(
+                self._tracker_store.domain, self._tracker_store.event_broker
+            )
+
+        return self._fallback_tracker_store
+
+    def on_tracker_store_error(self, error: Exception) -> None:
+        if self._on_tracker_store_error:
+            self._on_tracker_store_error(error)
+        else:
+            logger.error(
+                f"Error happened when trying to save conversation tracker to "
+                f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
+                f"the '{InMemoryTrackerStore.__name__}'. Please "
+                f"investigate the following error: {error}."
+            )
+
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        try:
+            return self._tracker_store.retrieve(sender_id)
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            return None
+
+    def keys(self) -> Iterable[Text]:
+        try:
+            return self._tracker_store.keys()
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            return []
+
+    def save(self, tracker: DialogueStateTracker) -> None:
+        try:
+            self._tracker_store.save(tracker)
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            self.fallback_tracker_store.save(tracker)
