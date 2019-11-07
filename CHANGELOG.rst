@@ -26,6 +26,7 @@ Fixed
 -----
 - ``MultiProjectImporter`` now imports files in the order of the import statements
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
+- fixed bug where facebooks generic template was not rendered when buttons were None 
 
 
 [1.4.2] - 2019-10-28
