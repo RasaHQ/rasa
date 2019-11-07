@@ -643,12 +643,8 @@ class ReminderScheduled(Event):
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
 
         trigger_date_time = parser.parse(parameters.get("date_time"))
-        if parameters.get("action"):
-            event_is_action = True
-            future_event = parameters.get("action")
-        else:
-            event_is_action = False
-            future_event = parameters.get("intent")
+        future_event = parameters.get("future_event")
+        event_is_action = parameters.get("event_is_action")
 
         return [
             ReminderScheduled(
