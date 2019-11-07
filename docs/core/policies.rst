@@ -419,6 +419,7 @@ predicts ``None`` with confidence ``0.0``.
 
 Augmented Memoization Policy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 The ``AugmentedMemoizationPolicy`` remembers examples from training
 stories for up to ``max_history`` turns. It has a forgetting mechanism
 that will forget a certain amount of steps in the conversation history
