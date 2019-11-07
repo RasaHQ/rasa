@@ -201,6 +201,6 @@ class Validator:
         return intents_are_valid and stories_are_valid and there_is_no_duplication
 
     def verify_domain_validity(self) -> bool:
-        """ Runs the validations on domain."""
+        """Checks whether the domain returned by the importer is empty, indicating an invalid domain."""
 
         return not self.domain.is_empty()

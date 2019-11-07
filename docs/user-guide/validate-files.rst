@@ -41,9 +41,7 @@ actions.
 
 **verify_all():** Runs all verifications above.
 
-**verify_domain_is_empty():** Check if domain returned by the importer is empty.
-
-**verify_domain():** Check if domain is valid.
+**verify_domain_validity():** Check if domain is valid.
 
 To use these functions it is necessary to create a `Validator` object and initialize the logger. See the following code:
 
