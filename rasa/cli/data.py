@@ -13,8 +13,6 @@ from rasa.constants import DEFAULT_DATA_PATH
 def add_subparser(
         subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
-    import rasa.nlu.convert as convert
-
     data_parser = subparsers.add_parser(
         "data",
         conflict_handler="resolve",
@@ -25,6 +23,16 @@ def add_subparser(
     data_parser.set_defaults(func=lambda _: data_parser.print_help(None))
 
     data_subparsers = data_parser.add_subparsers()
+
+    _add_data_convert_parsers(data_subparsers, parents)
+    _add_data_split_parsers(data_subparsers, parents)
+    _add_data_validate_parsers(data_subparsers, parents)
+
+
+def _add_data_convert_parsers(
+        data_subparsers, parents: List[argparse.ArgumentParser]
+):
+    import rasa.nlu.convert as convert
     convert_parser = data_subparsers.add_parser(
         "convert",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -44,6 +52,10 @@ def add_subparser(
 
     arguments.set_convert_arguments(convert_nlu_parser)
 
+
+def _add_data_split_parsers(
+        data_subparsers, parents: List[argparse.ArgumentParser]
+):
     split_parser = data_subparsers.add_parser(
         "split",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -64,6 +76,10 @@ def add_subparser(
 
     arguments.set_split_arguments(nlu_split_parser)
 
+
+def _add_data_validate_parsers(
+        data_subparsers, parents: List[argparse.ArgumentParser]
+):
     validate_parser = data_subparsers.add_parser(
         "validate",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
