@@ -172,22 +172,23 @@ def deduplicate_story_names(args):
     for file_name in story_file_names:
         if file_name.endswith(".new"):
             continue
-        with open(file_name, "r") as in_file:
-            with open(file_name + ".new", "w+") as out_file:
-                for line in in_file:
-                    if line.startswith("## "):
-                        new_name = line[3:].rstrip()
-                        if new_name in names:
-                            first = new_name
-                            k = 1
-                            while new_name in names:
-                                new_name = first + f" ({k})"
-                                k += 1
-                            print(f"- replacing {first} with {new_name}")
-                        names.add(new_name)
-                        out_file.write(f"## {new_name}\n")
-                    else:
-                        out_file.write(line.rstrip() + "\n")
+        with open(file_name, "r") as in_file, \
+                open(file_name + ".new", "w+") as out_file:
+            for line in in_file:
+                line = line.rstrip()
+                if line.startswith("## "):
+                    new_name = line[3:]
+                    if new_name in names:
+                        first = new_name
+                        k = 1
+                        while new_name in names:
+                            new_name = first + f" ({k})"
+                            k += 1
+                        print(f"- replacing {first} with {new_name}")
+                    names.add(new_name)
+                    out_file.write(f"## {new_name}\n")
+                else:
+                    out_file.write(line + "\n")
 
     # story_files, _ = data.get_core_nlu_files(args.data)
     # story_steps = loop.run_until_complete(file_importer.get_story_steps())
