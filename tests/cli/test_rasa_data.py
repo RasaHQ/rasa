@@ -3,7 +3,7 @@ import pytest
 from collections import namedtuple
 from typing import Callable
 from _pytest.pytester import RunResult
-from rasa.cli.data import validate_files
+from rasa.cli import data
 
 
 def test_data_split_nlu(run_in_default_project: Callable[..., RunResult]):
@@ -71,7 +71,7 @@ def test_data_validate_help(run: Callable[..., RunResult]):
 def test_validate_files_exit_early():
     with pytest.raises(SystemExit) as pytest_e:
         args = {"domain": "data/test_domains/duplicate_intents.yml", "data": None}
-        validate_files(namedtuple("Args", args.keys())(*args.values()))
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
     assert pytest_e.type == SystemExit
     assert pytest_e.value.code == 1

@@ -1,5 +1,4 @@
 import pytest
-import os
 from rasa.core.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
 from tests.core.conftest import (
@@ -89,9 +88,8 @@ async def test_verify_logging_message_for_repetition_in_intents(caplog):
     )
 
 
-async def test_verify_domain_validity(caplog):
+async def test_early_exit_on_invalid_domain(caplog):
     domain_path = "data/test_domains/duplicate_intents.yml"
-    full_path = os.path.abspath(domain_path)
 
     importer = RasaFileImporter(domain_path=domain_path)
     validator = await Validator.from_importer(importer)
@@ -103,12 +101,9 @@ async def test_verify_domain_validity(caplog):
 
     assert "WARNING" == level
     assert (
-        "Loading domain from '{}' failed. Using empty domain. "
+        f"Loading domain from '{domain_path}' failed. Using empty domain. "
         "Error: 'Intents are not unique! Found two intents with name "
-        "'default'. Either rename or remove one of them.'".format(
-            domain_path, full_path
-        )
-        == message
+        "'default'. Either rename or remove one of them.'" == message
     )
 
 
