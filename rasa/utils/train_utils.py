@@ -306,7 +306,7 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
         ]
         shape = (len(array_of_sparse), seq_len, array_of_sparse[0].shape[-1])
 
-    return [np.array(indices).astype(np.int64), np.array(data), shape.astype(np.int64)]
+    return [np.array(indices).astype(np.int64), np.array(data),  np.array(shape).astype(np.int64)]
 
 
 def values_to_sparse_tensor(
