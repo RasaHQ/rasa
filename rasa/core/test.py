@@ -591,7 +591,6 @@ async def compare_models_in_dir(
     model_dir: Text, stories_file: Text, output: Text
 ) -> None:
     """Evaluates multiple trained models in a directory on a test set."""
-    from rasa.core import utils
     import rasa.utils.io as io_utils
 
     number_correct = defaultdict(list)
@@ -619,7 +618,6 @@ async def compare_models_in_dir(
 
 async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
     """Evaluates provided trained models on a test set."""
-    from rasa.core import utils
 
     number_correct = defaultdict(list)
 
