@@ -1,6 +1,10 @@
 import argparse
 
-from rasa.cli.arguments.default_arguments import add_model_param, add_data_param
+from rasa.cli.arguments.default_arguments import (
+    add_model_param,
+    add_data_param,
+    add_config_param,
+)
 from rasa.cli.arguments.run import add_server_arguments
 from rasa.constants import DEFAULT_DATA_PATH, DEFAULT_RASA_X_PORT
 
@@ -9,6 +13,7 @@ def set_x_arguments(parser: argparse.ArgumentParser):
     add_model_param(parser, add_positional_arg=False)
 
     add_data_param(parser, default=DEFAULT_DATA_PATH, data_type="stories and Rasa NLU ")
+    add_config_param(parser)
 
     parser.add_argument(
         "--no-prompt",

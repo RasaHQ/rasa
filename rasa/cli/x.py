@@ -220,8 +220,9 @@ def _configure_logging(args: argparse.Namespace):
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
 
 
-def is_rasa_project_setup(project_path: Text):
-    mandatory_files = [DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH]
+def is_rasa_project_setup(args: argparse.Namespace, project_path: Text):
+    config_path = _get_config_path(args)
+    mandatory_files = [config_path, DEFAULT_DOMAIN_PATH]
 
     for f in mandatory_files:
         if not os.path.exists(os.path.join(project_path, f)):
@@ -249,7 +250,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
             )
         )
 
-    if not is_rasa_project_setup(project_path):
+    if not is_rasa_project_setup(args, project_path):
         cli_utils.print_error_and_exit(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
@@ -344,6 +345,14 @@ def run_in_production(args: argparse.Namespace):
     endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
 
     _rasa_service(args, endpoints, None, credentials_path)
+
+
+def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
+    config_path = cli_utils.get_validated_path(
+        args.config, "config", DEFAULT_CONFIG_PATH
+    )
+
+    return config_path
 
 
 def _get_credentials_and_endpoints_paths(
