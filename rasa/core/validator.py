@@ -204,9 +204,6 @@ class Validator:
 
         print(f"Assuming max_history = {max_history}")
 
-        # Generate the story tree
-        from rasa.utils.story_tree import Tree
-        tree = Tree()
         trackers = TrainingDataGenerator(
             self.story_graph,
             domain=self.domain,
