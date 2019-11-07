@@ -6,7 +6,7 @@ import os
 import pickle
 import scipy.sparse
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import warnings
 
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -133,6 +133,7 @@ class EmbeddingIntentClassifier(Component):
 
         self._load_params()
 
+        self.dense_dim = 512  # TODO make configurable /extract form dense features
         # transform numbers to labels
         self.inverted_label_dict = inverted_label_dict
         # encode all label_ids with numbers
@@ -176,13 +177,13 @@ class EmbeddingIntentClassifier(Component):
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layer_sizes = {
-            "a": config["hidden_layers_sizes_a"],
-            "b": config["hidden_layers_sizes_b"],
+            "text": config["hidden_layers_sizes_a"],
+            "intent": config["hidden_layers_sizes_b"],
         }
         self.share_hidden_layers = config["share_hidden_layers"]
         if (
             self.share_hidden_layers
-            and self.hidden_layer_sizes["a"] != self.hidden_layer_sizes["b"]
+            and self.hidden_layer_sizes["text"] != self.hidden_layer_sizes["intent"]
         ):
             raise ValueError(
                 "If hidden layer weights are shared,"
@@ -290,7 +291,9 @@ class EmbeddingIntentClassifier(Component):
             )
 
         encoded_id_labels = defaultdict(dict)
+        # TODO redesign it, we shouldn't use any tf here, conversion to tf should be inside build tf graph
         # TODO we should use SparseTensorValue outside graphs
+        # TODO why can't we keep using csr_matrices here?
         for i, s in zip(label_examples, sparse_features):
             indices, data, shape = train_utils.scipy_matrix_to_values(np.array([s]))
             sparse_tensor = train_utils.values_to_sparse_tensor(
@@ -428,18 +431,6 @@ class EmbeddingIntentClassifier(Component):
             layer_name_suffix=embed_name,
         )
 
-    def _get_feature_dim_batch_size(self, session_data: SessionData) -> Tuple[int, int]:
-        if "text_features_sparse" in session_data:
-            return (
-                session_data["text_features_sparse"][0].shape[-1],
-                session_data["text_features_sparse"][0].shape[0],
-            )
-        if "text_features_dense" in session_data:
-            return (
-                session_data["text_features_dense"][0].shape[-1],
-                session_data["text_features_sparse"][0].shape[0],
-            )
-
     def _build_tf_train_graph(
         self, session_data: SessionData
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
@@ -448,49 +439,44 @@ class EmbeddingIntentClassifier(Component):
 
         batch = train_utils.batch_to_session_data(batch, session_data)
 
-        feature_dim, batch_size = self._get_feature_dim_batch_size(session_data)
-
-        self.a_in = self.combine_sparse_dense_features(
-            batch, "text_features_", feature_dim=feature_dim, batch_size=batch_size
+        a = self.combine_sparse_dense_features(
+            batch, "text"
         )
-        self.b_in = self.combine_sparse_dense_features(
-            batch, "intent_features_", feature_dim=feature_dim, batch_size=batch_size
+        b = self.combine_sparse_dense_features(
+            batch, "intent"
         )
-
-        self._encoded_all_label_ids = tf.stack(
+        print(b.shape)
+        all_label_ids = tf.stack(
             [
-                self.combine_sparse_dense_features(
-                    v,
-                    "intent_features_",
-                    feature_dim=feature_dim,
-                    batch_size=batch_size,
-                )
+                self.combine_sparse_dense_features(v, "intent")
                 for k, v in self._encoded_all_label_ids.items()
-            ]
+            ],
+            name="all_label_ids"
         )
-
-        all_label_ids = tf.constant(
-            self._encoded_all_label_ids, dtype=tf.float32, name="all_label_ids"
-        )
+        print(all_label_ids.shape)
+        exit()
+        # all_label_ids = tf.constant(
+        #     self._encoded_all_label_ids, dtype=tf.float32, name="all_label_ids"
+        # )
 
         self.message_embed = self._create_tf_embed_fnn(
-            self.a_in,
-            self.hidden_layer_sizes["a"],
-            fnn_name="a_b" if self.share_hidden_layers else "a",
-            embed_name="a",
+            a,
+            self.hidden_layer_sizes["text"],
+            fnn_name="text_intent" if self.share_hidden_layers else "text",
+            embed_name="text",
         )
 
         self.label_embed = self._create_tf_embed_fnn(
-            self.b_in,
-            self.hidden_layer_sizes["b"],
-            fnn_name="a_b" if self.share_hidden_layers else "b",
-            embed_name="b",
+            b,
+            self.hidden_layer_sizes["intent"],
+            fnn_name="text_intent" if self.share_hidden_layers else "intent",
+            embed_name="intent",
         )
         self.all_labels_embed = self._create_tf_embed_fnn(
             all_label_ids,
-            self.hidden_layer_sizes["b"],
-            fnn_name="a_b" if self.share_hidden_layers else "b",
-            embed_name="b",
+            self.hidden_layer_sizes["intent"],
+            fnn_name="text_intent" if self.share_hidden_layers else "intent",
+            embed_name="intent",
         )
 
         return train_utils.calculate_loss_acc(
@@ -511,44 +497,32 @@ class EmbeddingIntentClassifier(Component):
 
     def combine_sparse_dense_features(
         self,
-        batch: Dict[Text, tf.Tensor],
+        batch: Dict[Text, Union[tf.Tensor, tf.SparseTensor]],
         key_prefix: Text,
-        feature_dim: int,
-        batch_size: int,
     ):
-        key_sparse = f"{key_prefix}sparse"
-        key_dense = f"{key_prefix}dense"
+        key_sparse = f"{key_prefix}_features_sparse"
+        key_dense = f"{key_prefix}_features_dense"
 
-        # apply mean/sum to convert sequence to sentence features
-
-        if key_dense in batch and key_sparse in batch:
-            _sparse = tf.math.reduce_sum(
-                train_utils.tf_dense_layer(
-                    batch[key_sparse],
-                    feature_dim,  # TODO define proper size
-                    "a",
-                    self.C2,
-                    feature_dim=feature_dim,
-                    batch_size=batch_size,
-                )
-            )
-            _dense = tf.math.reduce_mean(batch[key_dense], axis=1)
-
-            return tf.concat([_sparse, _dense])
+        all_dense = []
 
         if key_dense in batch:
-            return tf.math.reduce_mean(batch[key_dense], axis=1)
+            dense_dim = batch[key_dense].shape[-1]
+            all_dense.append(batch[key_dense])
 
         if key_sparse in batch:
-            return tf.math.reduce_sum(
-                train_utils.tf_dense_layer(
+            all_dense.append(
+                train_utils.tf_dense_layer_for_sparse(
                     batch[key_sparse],
-                    feature_dim,  # TODO define proper size
-                    "a",
+                    self.dense_dim,
+                    key_prefix,
                     self.C2,
-                    feature_dim=feature_dim,
                 )
             )
+
+        output = tf.concat(all_dense, axis=-1)
+        # apply mean to convert sequence to sentence features
+        output = tf.reduce_mean(output, axis=1)
+        return output
 
     def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
         num_text_features = self._get_num_of_features(session_data, "text_features_")
@@ -557,10 +531,10 @@ class EmbeddingIntentClassifier(Component):
         )
 
         self.a_in = tf.placeholder(
-            tf.float32, (None, None, num_text_features), name="a"
+            tf.float32, (None, None, num_text_features), name="text"
         )
         self.b_in = tf.placeholder(
-            tf.float32, (None, None, num_intent_features), name="b"
+            tf.float32, (None, None, num_intent_features), name="intent"
         )
 
         # TODO check this idea:
@@ -568,9 +542,9 @@ class EmbeddingIntentClassifier(Component):
 
         self.message_embed = self._create_tf_embed_fnn(
             self.a_in,
-            self.hidden_layer_sizes["a"],
-            fnn_name="a_b" if self.share_hidden_layers else "a",
-            embed_name="a",
+            self.hidden_layer_sizes["text"],
+            fnn_name="text_intent" if self.share_hidden_layers else "text",
+            embed_name="text",
         )
 
         self.sim_all = train_utils.tf_raw_sim(
@@ -581,9 +555,9 @@ class EmbeddingIntentClassifier(Component):
 
         self.label_embed = self._create_tf_embed_fnn(
             self.b_in,
-            self.hidden_layer_sizes["b"],
-            fnn_name="a_b" if self.share_hidden_layers else "b",
-            embed_name="b",
+            self.hidden_layer_sizes["intent"],
+            fnn_name="text_intent" if self.share_hidden_layers else "intent",
+            embed_name="intent",
         )
 
         self.sim = train_utils.tf_raw_sim(
@@ -666,30 +640,33 @@ class EmbeddingIntentClassifier(Component):
         # set numpy random seed
         np.random.seed(self.random_seed)
 
-        session_data = self.preprocess_train_data(training_data)
-
-        possible_to_train = self._check_enough_labels(session_data)
-
-        if not possible_to_train:
-            logger.error(
-                "Can not train a classifier. "
-                "Need at least 2 different classes. "
-                "Skipping training of classifier."
-            )
-            return
-
-        if self.evaluate_on_num_examples:
-            session_data, eval_session_data = train_utils.train_val_split(
-                session_data,
-                self.evaluate_on_num_examples,
-                self.random_seed,
-                label_key="intent_ids",
-            )
-        else:
-            eval_session_data = None
-
         self.graph = tf.Graph()
         with self.graph.as_default():
+            # TODO we use SparseTensor - in ecoded_all... do we need it?
+            session_data = self.preprocess_train_data(training_data)
+
+            possible_to_train = self._check_enough_labels(session_data)
+
+            if not possible_to_train:
+                logger.error(
+                    "Can not train a classifier. "
+                    "Need at least 2 different classes. "
+                    "Skipping training of classifier."
+                )
+                return
+
+            if self.evaluate_on_num_examples:
+                session_data, eval_session_data = train_utils.train_val_split(
+                    session_data,
+                    self.evaluate_on_num_examples,
+                    self.random_seed,
+                    label_key="intent_ids",
+                )
+            else:
+                eval_session_data = None
+
+        # self.graph = tf.Graph()
+        # with self.graph.as_default():
             # set random seed
             tf.set_random_seed(self.random_seed)
 

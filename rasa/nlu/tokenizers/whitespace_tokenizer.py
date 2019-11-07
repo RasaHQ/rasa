@@ -63,8 +63,8 @@ class WhitespaceTokenizer(Tokenizer):
         if not self.case_sensitive:
             text = text.lower()
 
-        # remove 'not a word character' if
         if attribute != MESSAGE_INTENT_ATTRIBUTE:
+            # remove 'not a word character' if
             words = re.sub(
                 # there is a space or an end of a string after it
                 r"[^\w#@&]+(?=\s|$)|"
@@ -78,6 +78,9 @@ class WhitespaceTokenizer(Tokenizer):
                 " ",
                 text,
             ).split()
+            # if we removed everything like smiles `:)`, use the whole text as 1 token
+            if not words:
+                words = [text]
         else:
             words = (
                 text.split(self.intent_split_symbol)

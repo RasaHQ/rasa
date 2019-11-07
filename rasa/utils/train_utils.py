@@ -83,7 +83,7 @@ def train_val_split(
         output_values, session_data, solo_values
     )
 
-    return (session_data_train, session_data_val)
+    return session_data_train, session_data_val
 
 
 def check_train_test_sizes(
@@ -309,12 +309,13 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
     return [np.array(indices).astype(np.int64), np.array(data),  np.array(shape).astype(np.int64)]
 
 
+# TODO types, could be tf.Tensor or Tuple for shape
 def values_to_sparse_tensor(
     indices: np.ndarray, data: np.ndarray, shape: np.ndarray
 ) -> tf.SparseTensor:
     # make sure indices and shape have the correct type
-    indices = tf.cast(indices, dtype=tf.int64)
-    shape = tf.cast(shape, dtype=tf.int64)
+    # indices = tf.cast(indices, dtype=tf.int64)
+    # shape = tf.cast(shape, dtype=tf.int64)
 
     return tf.SparseTensor(indices, data, shape)
 
@@ -341,14 +342,15 @@ def pad_data(data: np.ndarray) -> np.ndarray:
     return data_padded
 
 
-def batch_to_session_data(batch: Tuple[np.ndarray], session_data: SessionData):
+def batch_to_session_data(batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], session_data: SessionData):
     batch_data = {}
     idx = 0
 
     for k, v in session_data.items():
         if isinstance(v[0], scipy.sparse.spmatrix):
+            # explicitly substitute last dimension in shape with known static value
             batch_data[k] = values_to_sparse_tensor(
-                batch[idx], batch[idx + 1], batch[idx + 2]
+                batch[idx], batch[idx + 1], [batch[idx + 2][0], batch[idx + 2][1], v[0].shape[-1]]
             )
             idx += 3
         else:
@@ -462,16 +464,18 @@ def create_tf_fnn(
 ) -> "tf.Tensor":
     """Create nn with hidden layers and name suffix."""
 
+    reg = tf.contrib.layers.l2_regularizer(C2)
     x = tf.nn.relu(x_in)
     for i, layer_size in enumerate(layer_sizes):
-        x = tf_dense_layer(
+        x = tf.layers.dense(
             inputs=x,
             units=layer_size,
             activation=activation,
             use_bias=use_bias,
             kernel_initializer=kernel_initializer,
-            C2=C2,
+            kernel_regularizer=reg,
             name="hidden_layer_{}_{}".format(layer_name_suffix, i),
+            reuse=tf.AUTO_REUSE,
         )
         x = tf.layers.dropout(x, rate=droprate, training=is_training)
     return x
@@ -502,12 +506,14 @@ def create_tf_embed(
 ) -> "tf.Tensor":
     """Create dense embedding layer with a name."""
 
-    embed_x = tf_dense_layer(
+    reg = tf.contrib.layers.l2_regularizer(C2)
+    embed_x = tf.layers.dense(
         inputs=x,
         units=embed_dim,
         activation=None,
-        C2=C2,
+        kernel_regularizer=reg,
         name="embed_layer_{}".format(layer_name_suffix),
+        reuse=tf.AUTO_REUSE,
     )
     # normalize embedding vectors for cosine similarity
     return tf_normalize_if_cosine(embed_x, similarity_type)
@@ -705,64 +711,37 @@ def sample_negatives(
     )
 
 
-def tf_matmul_sparse(inputs: tf.SparseTensor, kernel: tf.Tensor):
-    def map_function(x):
-        i, dense_slice = x[0], x[1]
-        sparse_slice = tf.sparse.reshape(
-            tf.sparse.slice(
-                inputs, [i, 0, 0], [1, inputs.dense_shape[1], inputs.dense_shape[2]]
-            ),
-            [inputs.dense_shape[1], inputs.dense_shape[2]],
-        )
-        mult_slice = tf.sparse.matmul(sparse_slice, dense_slice)
-        return mult_slice
-
-    elems = (tf.range(0, inputs.dense_shape[0], delta=1, dtype=tf.int64), kernel)
-    return tf.map_fn(map_function, elems, dtype=inputs.dtype, back_prop=True)
-
-
-def tf_dense_layer(
-    inputs: tf.Tensor,
+def tf_dense_layer_for_sparse(
+    inputs: tf.SparseTensor,
     units: int,
     name: Text,
     C2: float,
     activation: Optional[Callable] = tf.nn.relu,
     use_bias: bool = True,
-    kernel_initializer: Optional["tf.keras.initializers.Initializer"] = None,
-    feature_dim: int = 0,
-    batch_size: int = 0,
 ) -> tf.Tensor:
+    """Idea from
+    https://medium.com/dailymotion/how-to-design-deep-learning-models-with-sparse-inputs-in-tensorflow-keras-fd5e754abec1
+    """
 
-    if isinstance(inputs, tf.SparseTensor):
-        # TODO kernel should just be 2D ?
-        # TODO add bias ?
-        # TODO make use of inputs.dense_shape somehow instead of feature_dim (subclass tf.SparseTensor and create additional shape property to be set in init by provided numpy shape)
+    if not isinstance(inputs, tf.SparseTensor):
+        raise
 
-        if feature_dim < 0:
-            raise ValueError(f"Cannot create kernel of shape {feature_dim}x{units}.")
+    with tf.variable_scope("dense_layer_for_sparse_" + name, reuse=tf.AUTO_REUSE):
+        kernel_regularizer = tf.contrib.layers.l2_regularizer(C2)
+        kernel = tf.get_variable(
+            "kernel", shape=[inputs.shape[-1], units], dtype=inputs.dtype, regularizer=kernel_regularizer
+        )
+        bias = tf.get_variable("bias", shape=[units, ], dtype=inputs.dtype)
+
+        # outputs will be 2D
+        outputs = tf.sparse.matmul(tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), kernel)
 
         if len(inputs.shape) == 3:
-            kernel = tf.get_variable(
-                "kernel", shape=[batch_size, feature_dim, units], dtype=inputs.dtype
-            )
-            outputs = tf_matmul_sparse(inputs, kernel)
-        else:
-            kernel = tf.get_variable(
-                "kernel", shape=[feature_dim, units], dtype=inputs.dtype
-            )
-            outputs = tf.sparse.matmul(inputs, kernel)
-    else:
-        kernel_regularizer = tf.contrib.layers.l2_regularizer(C2)
-        outputs = tf.layers.dense(
-            inputs=inputs,
-            units=units,
-            activation=activation,
-            use_bias=use_bias,
-            kernel_initializer=kernel_initializer,
-            kernel_regularizer=kernel_regularizer,
-            name=name,
-            reuse=tf.AUTO_REUSE,
-        )
+            # reshape back
+            outputs = tf.reshape(outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1))
+
+        if use_bias:
+            outputs = tf.nn.bias_add(outputs, bias)
 
     if activation is None:
         return outputs
