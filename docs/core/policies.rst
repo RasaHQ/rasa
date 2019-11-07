@@ -421,22 +421,19 @@ Augmented Memoization Policy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``AugmentedMemoizationPolicy`` remembers examples from training
-stories for up to ``max_history`` turns. It has a forgetting mechanism
-that will forget a certain amount of steps in the conversation history
-and try to find a match in your stories with the reduced history. It
-predicts the next action with confidence ``1.0`` if a match is found,
-otherwise it predicts ``None`` with confidence ``0.0``.
+stories for up to ``max_history`` turns, just like the ``MemoizationPolicy``.
+Additionally, it has a forgetting mechanism that will forget a certain amount
+of steps in the conversation history and try to find a match in your stories
+with the reduced history. It predicts the next action with confidence ``1.0``
+if a match is found, otherwise it predicts ``None`` with confidence ``0.0``.
 
 .. note::
-  
-  If it is needed to recall turns from training dialogues where some
-  slots might not be set during prediction time, add relevant stories
-  without such slots to training data, e.g. reminder stories. Since 
-  slots that are set some time in the past are preserved in all
-  future feature vectors until they are set to None, this policy has
-  a capability to recall the turns up to ``max_history`` from training
-  stories during prediction even if additional slots were filled in
-  the past for current dialogue.
+
+  If you have dialogues where some slots that are set during
+  prediction time might not be set in training stories (e.g. in training
+  stories starting with a reminder not all previous slots are set),
+  make sure to add the relevant stories without slots to your training
+  data as well.
 
 .. _fallback-policy:
 
