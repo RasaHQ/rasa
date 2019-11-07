@@ -957,8 +957,8 @@ and you need to be in a Rasa project.<div class="admonition note">
 any other port.</p>
 </div>
 <p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code>:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
-              [--production] [--rasa-x-port RASA_X_PORT]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [-c CONFIG]
+              [--no-prompt] [--production] [--rasa-x-port RASA_X_PORT]
               [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
@@ -976,6 +976,9 @@ optional arguments:
                         directory. (default: models)
   --data DATA           Path to the file or directory containing stories and
                         Rasa NLU data. (default: data)
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
   --no-prompt           Automatic yes or default options to prompts and
                         oppressed warnings. (default: False)
   --production          Run Rasa X in a production environment. (default:
