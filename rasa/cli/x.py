@@ -347,7 +347,7 @@ def run_in_production(args: argparse.Namespace):
 
 
 def _get_credentials_and_endpoints_paths(
-    args: argparse.Namespace
+    args: argparse.Namespace,
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
