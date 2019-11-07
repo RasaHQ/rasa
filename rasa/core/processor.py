@@ -578,7 +578,7 @@ class MessageProcessor(object):
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
         return self.tracker_store.get_or_create_tracker(sender_id)
 
-    def _save_tracker(self, tracker):
+    def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
 
     def _prob_array_for_action(
