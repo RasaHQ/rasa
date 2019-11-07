@@ -202,7 +202,8 @@ class Validator:
     def verify_story_structure(self, ignore_warnings: bool = True, max_history: int = 5) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
-        print(f"Assuming max_history = {max_history}")
+        logger.info("Story structure validation...")
+        logger.info(f"Assuming max_history = {max_history}")
 
         trackers = TrainingDataGenerator(
             self.story_graph,
@@ -211,7 +212,6 @@ class Validator:
             augmentation_factor=0).generate()
         rules = {}
         for tracker in trackers:
-            # print(tracker.sender_id)
             states = tracker.past_states(self.domain)
             states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
 
@@ -237,7 +237,6 @@ class Validator:
                             "action": event.as_story_string()
                         }]
                     idx += 1
-        print()
         result = True
         for state_hash, info in rules.items():
             if len(info) > 1:
@@ -262,12 +261,13 @@ class Validator:
                                     last_event_string = f"intent '{k[len('intent_'):]}'"
                             break
                         idx += 1
-                print(f"CONFLICT after {last_event_string}: ")
+                conflict_string = f"CONFLICT after {last_event_string}:\n"
                 for i in info:
-                    print(f"  '{i['action']}' predicted in '{i['tracker'].sender_id}'")
+                    conflict_string += f"  '{i['action']}' predicted in '{i['tracker'].sender_id}'\n"
+                logger.warning(conflict_string)
 
         if result:
-            print("No conflicts found.")
+            logger.info("No story structure conflicts found.")
 
         return result
 
