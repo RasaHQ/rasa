@@ -291,9 +291,7 @@ class EmbeddingIntentClassifier(Component):
             )
 
         encoded_id_labels = defaultdict(dict)
-        # TODO redesign it, we shouldn't use any tf here, conversion to tf should be inside build tf graph
-        # TODO we should use SparseTensorValue outside graphs
-        # TODO why can't we keep using csr_matrices here?
+        # TODO this should contain the same thing as batch for intents from interator
         for i, s in zip(label_examples, sparse_features):
             indices, data, shape = train_utils.scipy_matrix_to_values(np.array([s]))
             sparse_tensor = train_utils.values_to_sparse_tensor(
