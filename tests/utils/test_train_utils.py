@@ -76,7 +76,7 @@ def test_split_session_data_by_label(session_data: SessionData):
 
     assert len(split_session_data) == 2
     for s in split_session_data:
-        assert len(set(s["intent_ids"])) == 1
+        assert len(set(s["intent_ids"][0])) == 1
 
 
 def test_split_session_data_by_incorrect_label(session_data: SessionData):
@@ -109,13 +109,18 @@ def test_train_val_split_incorrect_size(session_data: SessionData, size):
 def test_session_data_for_ids(session_data: SessionData):
     filtered_session_data = session_data_for_ids(session_data, np.array([0, 1]))
 
-    for v in filtered_session_data.values():
-        assert v.shape[0] == 2
+    for values in filtered_session_data.values():
+        for v in values:
+            assert v.shape[0] == 2
 
     k = list(session_data.keys())[0]
 
-    assert np.all(np.array(filtered_session_data[k][0]) == np.array(session_data[k][0]))
-    assert np.all(np.array(filtered_session_data[k][1]) == np.array(session_data[k][1]))
+    assert np.all(
+        np.array(filtered_session_data[k][0][0]) == np.array(session_data[k][0][0])
+    )
+    assert np.all(
+        np.array(filtered_session_data[k][0][1]) == np.array(session_data[k][0][1])
+    )
 
 
 def test_get_number_of_examples(session_data: SessionData):
@@ -131,7 +136,9 @@ def test_get_number_of_examples_raises_value_error(session_data: SessionData):
 
 
 def test_gen_batch(session_data: SessionData):
-    iterator = gen_batch(session_data, 2, "intent_ids", shuffle=True)
+    iterator = gen_batch(
+        session_data, 2, "intent_ids", shuffle=True, batch_strategy="balanced"
+    )
 
     batch = next(iterator)
     assert len(batch) == 7
@@ -155,11 +162,11 @@ def test_gen_batch(session_data: SessionData):
 )
 def test_balance_session_data(session_data: SessionData, intent_ids, expected_labels):
     # TODO improve test
-    session_data["intent_ids"] = np.array(intent_ids)
+    session_data["intent_ids"] = [np.array(intent_ids)]
 
     balanced_session_data = balance_session_data(session_data, 2, False, "intent_ids")
 
-    labels = balanced_session_data["intent_ids"]
+    labels = balanced_session_data["intent_ids"][0]
 
     assert len(expected_labels) == len(labels)
     assert np.all(expected_labels == labels)

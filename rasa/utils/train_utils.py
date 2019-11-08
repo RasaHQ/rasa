@@ -224,8 +224,13 @@ def balance_session_data(
             else:
                 skipped[index] = False
 
-            for k, v in label_data[index].items():
-                new_session_data[k].append(v[data_idx[index] : data_idx[index] + 1][0])
+            for k, values in label_data[index].items():
+                for i, v in enumerate(values):
+                    if len(new_session_data[k]) < i + 1:
+                        new_session_data[k].append([])
+                    new_session_data[k][i].append(
+                        v[data_idx[index] : data_idx[index] + 1][0]
+                    )
 
             data_idx[index] += 1
             if data_idx[index] >= counts_label_ids[index]:
@@ -235,7 +240,9 @@ def balance_session_data(
             if min(num_data_cycles) > 0:
                 break
 
-    new_session_data = {k: np.array(v) for k, v in new_session_data.items()}
+    new_session_data = {
+        k: [np.array(v) for v in values] for k, values in new_session_data.items()
+    }
 
     return new_session_data
 
