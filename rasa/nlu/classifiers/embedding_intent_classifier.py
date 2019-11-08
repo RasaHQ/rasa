@@ -291,15 +291,11 @@ class EmbeddingIntentClassifier(Component):
             )
 
         encoded_id_labels = defaultdict(dict)
-        # TODO this should contain the same thing as batch for intents from interator
+
         for i, s in zip(label_examples, sparse_features):
-            indices, data, shape = train_utils.scipy_matrix_to_values(np.array([s]))
-            sparse_tensor = train_utils.values_to_sparse_tensor(
-                indices, tf.constant(data, dtype=tf.float64), shape
-            )
-            encoded_id_labels[i[0]]["intent_features_sparse"] = sparse_tensor
+            encoded_id_labels[i[0]]["intent_features_sparse"] = sparse_features
         for i, d in zip(label_examples, dense_features):
-            encoded_id_labels[i[0]]["intent_features_dense"] = tf.constant(d)
+            encoded_id_labels[i[0]]["intent_features_dense"] = dense_features
 
         # Sort the dict based on label_idx
         encoded_id_labels = OrderedDict(sorted(encoded_id_labels.items()))
@@ -327,7 +323,7 @@ class EmbeddingIntentClassifier(Component):
         self, labels_example: List[Tuple[int, "Message"]]
     ) -> np.ndarray:
         """Compute one-hot representation for the labels"""
-
+        # TODO
         return np.eye(len(labels_example))
 
     def _create_encoded_label_ids(
@@ -358,6 +354,21 @@ class EmbeddingIntentClassifier(Component):
             encoded_id_labels = self._compute_default_label_features(labels_example)
 
         return encoded_id_labels
+
+    def labels_to_tensors(self, labels_dict: Dict[Text, Union[np.ndarray]]):
+        converted_dict = {}
+
+        for k, v in labels_dict.items():
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                indices, values, shape = train_utils.scipy_matrix_to_values(v)
+                converted_dict[k] = tf.cast(
+                    train_utils.values_to_sparse_tensor(indices, values, shape),
+                    tf.float64,
+                )
+            else:
+                converted_dict[k] = tf.cast(tf.constant(v), tf.float64)
+
+        return self.combine_sparse_dense_features(converted_dict, "intent")
 
     # noinspection PyPep8Naming
     def _create_session_data(
@@ -437,25 +448,13 @@ class EmbeddingIntentClassifier(Component):
 
         batch = train_utils.batch_to_session_data(batch, session_data)
 
-        a = self.combine_sparse_dense_features(
-            batch, "text"
-        )
-        b = self.combine_sparse_dense_features(
-            batch, "intent"
-        )
-        print(b.shape)
+        a = self.combine_sparse_dense_features(batch, "text")
+        b = self.combine_sparse_dense_features(batch, "intent")
+
         all_label_ids = tf.stack(
-            [
-                self.combine_sparse_dense_features(v, "intent")
-                for k, v in self._encoded_all_label_ids.items()
-            ],
-            name="all_label_ids"
+            [self.labels_to_tensors(v) for v in self._encoded_all_label_ids.values()],
+            name="all_label_ids",
         )
-        print(all_label_ids.shape)
-        exit()
-        # all_label_ids = tf.constant(
-        #     self._encoded_all_label_ids, dtype=tf.float32, name="all_label_ids"
-        # )
 
         self.message_embed = self._create_tf_embed_fnn(
             a,
@@ -463,24 +462,24 @@ class EmbeddingIntentClassifier(Component):
             fnn_name="text_intent" if self.share_hidden_layers else "text",
             embed_name="text",
         )
-
         self.label_embed = self._create_tf_embed_fnn(
             b,
             self.hidden_layer_sizes["intent"],
             fnn_name="text_intent" if self.share_hidden_layers else "intent",
             embed_name="intent",
         )
+
         self.all_labels_embed = self._create_tf_embed_fnn(
             all_label_ids,
             self.hidden_layer_sizes["intent"],
             fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="intent",
+            embed_name="all_intents",
         )
 
         return train_utils.calculate_loss_acc(
             self.message_embed,
             self.label_embed,
-            self.b_in,
+            b,
             self.all_labels_embed,
             all_label_ids,
             self.num_neg,
@@ -494,26 +493,20 @@ class EmbeddingIntentClassifier(Component):
         )
 
     def combine_sparse_dense_features(
-        self,
-        batch: Dict[Text, Union[tf.Tensor, tf.SparseTensor]],
-        key_prefix: Text,
-    ):
+        self, batch: Dict[Text, Union[tf.Tensor, tf.SparseTensor]], key_prefix: Text
+    ) -> tf.Tensor:
         key_sparse = f"{key_prefix}_features_sparse"
         key_dense = f"{key_prefix}_features_dense"
 
         all_dense = []
 
         if key_dense in batch:
-            dense_dim = batch[key_dense].shape[-1]
             all_dense.append(batch[key_dense])
 
         if key_sparse in batch:
             all_dense.append(
                 train_utils.tf_dense_layer_for_sparse(
-                    batch[key_sparse],
-                    self.dense_dim,
-                    key_prefix,
-                    self.C2,
+                    batch[key_sparse], self.dense_dim, key_prefix, self.C2
                 )
             )
 
@@ -664,8 +657,8 @@ class EmbeddingIntentClassifier(Component):
             else:
                 eval_session_data = None
 
-        # self.graph = tf.Graph()
-        # with self.graph.as_default():
+            # self.graph = tf.Graph()
+            # with self.graph.as_default():
             # set random seed
             tf.set_random_seed(self.random_seed)
 
