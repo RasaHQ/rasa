@@ -517,6 +517,8 @@ class EmbeddingIntentClassifier(Component):
 
         session_data = self.preprocess_train_data(training_data)
 
+        print(session_data.Y.shape)
+        exit()
         possible_to_train = self._check_enough_labels(session_data)
 
         if not possible_to_train:
