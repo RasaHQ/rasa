@@ -44,7 +44,7 @@ class FileProducer(EventChannel):
         query_logger.propagate = False
         query_logger.addHandler(handler)
 
-        logger.info("Logging events to '{}'.".format(logger_file))
+        logger.info(f"Logging events to '{logger_file}'.")
 
         return query_logger
 

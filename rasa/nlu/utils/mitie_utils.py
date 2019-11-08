@@ -25,7 +25,7 @@ class MitieNLP(Component):
     ) -> None:
         """Construct a new language model from the MITIE framework."""
 
-        super(MitieNLP, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.extractor = extractor
 
