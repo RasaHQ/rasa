@@ -455,9 +455,7 @@ class EmbeddingIntentClassifier(Component):
     def _build_tf_train_graph(
         self, session_data: SessionData
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        # batch = 1 or 2 a_in values, b_in, intent_ids
         batch = self._iterator.get_next()
-
         batch = train_utils.batch_to_session_data(batch, session_data)
 
         a = self.combine_sparse_dense_features(batch["text_features"], "text")
