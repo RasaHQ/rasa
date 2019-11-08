@@ -31,7 +31,7 @@ Fixed
 -----
 - ``MultiProjectImporter`` now imports files in the order of the import statements
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
-
+- Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
 
 [1.4.2] - 2019-10-28
 ^^^^^^^^^^^^^^^^^^^^
