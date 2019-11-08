@@ -320,8 +320,16 @@ class EmbeddingIntentClassifier(Component):
         """Compute one-hot representation for the labels"""
 
         # TODO check:
-        # features should be sequences
-        return [np.expand_dims(np.eye(len(labels_example)), axis=1)]
+        return [
+            np.array(
+                [
+                    scipy.sparse.csr_matrix(
+                        ([1], ([0], [idx])), shape=(1, len(labels_example))
+                    )
+                    for idx in range(len(labels_example))
+                ]
+            )
+        ]
 
     def _create_encoded_label_ids(
         self,
