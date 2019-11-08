@@ -193,3 +193,8 @@ class Validator:
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
         return intents_are_valid and stories_are_valid and there_is_no_duplication
+
+    def verify_domain_validity(self) -> bool:
+        """Checks whether the domain returned by the importer is empty, indicating an invalid domain."""
+
+        return not self.domain.is_empty()

@@ -12,7 +12,12 @@ from sanic import Sanic
 import rasa
 import rasa.utils.io
 import rasa.core.utils
-from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL, ENV_SANIC_BACKLOG
+from rasa.constants import (
+    DEFAULT_DOMAIN_PATH,
+    LEGACY_DOCS_BASE_URL,
+    ENV_SANIC_BACKLOG,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
 from rasa.core import constants, jobs, training
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -25,7 +30,11 @@ from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa.core.tracker_store import (
+    InMemoryTrackerStore,
+    TrackerStore,
+    FailSafeTrackerStore,
+)
 from rasa.core.trackers import DialogueStateTracker
 from rasa.exceptions import ModelNotFound
 from rasa.importers.importer import TrainingDataImporter
@@ -764,8 +773,8 @@ class Agent:
         if not self.is_core_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
 
-        if not model_path.endswith("core"):
-            model_path = os.path.join(model_path, "core")
+        if not model_path.endswith(DEFAULT_CORE_SUBDIRECTORY_NAME):
+            model_path = os.path.join(model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
 
         self._clear_model_directory(model_path)
 
@@ -851,9 +860,11 @@ class Agent:
     ) -> TrackerStore:
         if store is not None:
             store.domain = domain
-            return store
+            tracker_store = store
         else:
-            return InMemoryTrackerStore(domain)
+            tracker_store = InMemoryTrackerStore(domain)
+
+        return FailSafeTrackerStore(tracker_store)
 
     @staticmethod
     def _create_lock_store(store: Optional[LockStore]) -> LockStore:
