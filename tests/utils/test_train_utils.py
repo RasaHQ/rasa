@@ -17,43 +17,49 @@ from rasa.utils.train_utils import (
 @pytest.fixture
 async def session_data() -> SessionData:
     return {
-        "dense": np.array(
-            [
-                np.random.rand(5, 14),
-                np.random.rand(2, 14),
-                np.random.rand(3, 14),
-                np.random.rand(1, 14),
-                np.random.rand(3, 14),
-            ]
-        ),
-        "sparse": np.array(
-            [
-                scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
-                scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
-                scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-                scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
-                scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-            ]
-        ),
-        "Y": np.array(
-            [
-                np.random.randint(2, size=(5, 10)),
-                np.random.randint(2, size=(2, 10)),
-                np.random.randint(2, size=(3, 10)),
-                np.random.randint(2, size=(1, 10)),
-                np.random.randint(2, size=(3, 10)),
-            ]
-        ),
-        "intent_ids": np.array([0, 1, 0, 1, 1]),
-        "tag_ids": np.array(
-            [
-                np.array([0, 1, 1, 0, 2]),
-                np.array([2, 0]),
-                np.array([0, 1, 1]),
-                np.array([0, 1]),
-                np.array([0, 0, 0]),
-            ]
-        ),
+        "text_features": [
+            np.array(
+                [
+                    np.random.rand(5, 14),
+                    np.random.rand(2, 14),
+                    np.random.rand(3, 14),
+                    np.random.rand(1, 14),
+                    np.random.rand(3, 14),
+                ]
+            ),
+            np.array(
+                [
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
+                ]
+            ),
+        ],
+        "intent_features": [
+            np.array(
+                [
+                    np.random.randint(2, size=(5, 10)),
+                    np.random.randint(2, size=(2, 10)),
+                    np.random.randint(2, size=(3, 10)),
+                    np.random.randint(2, size=(1, 10)),
+                    np.random.randint(2, size=(3, 10)),
+                ]
+            )
+        ],
+        "intent_ids": [np.array([0, 1, 0, 1, 1])],
+        "tag_ids": [
+            np.array(
+                [
+                    np.array([0, 1, 1, 0, 2]),
+                    np.array([2, 0]),
+                    np.array([0, 1, 1]),
+                    np.array([0, 1]),
+                    np.array([0, 0, 0]),
+                ]
+            )
+        ],
     }
 
 
@@ -85,11 +91,13 @@ def test_train_val_split(session_data: SessionData):
         session_data, 2, 42, "intent_ids"
     )
 
-    for v in train_session_data.values():
-        assert v.shape[0] == 3
+    for values in train_session_data.values():
+        for v in values:
+            assert v.shape[0] == 3
 
-    for v in val_session_data.values():
-        assert v.shape[0] == 2
+    for values in val_session_data.values():
+        for v in values:
+            assert v.shape[0] == 2
 
 
 @pytest.mark.parametrize("size", [0, 1, 5])

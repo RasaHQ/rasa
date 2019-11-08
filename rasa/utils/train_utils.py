@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 # namedtuple for all tf session related data
-SessionData = Dict[Text, np.ndarray]
+SessionData = Dict[Text, List[np.ndarray]]
 
 
 def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
@@ -55,28 +55,36 @@ def train_val_split(
     label_key: Text,
 ) -> Tuple["SessionData", "SessionData"]:
     """Create random hold out validation set using stratified split."""
-    if label_key not in session_data:
+    if label_key not in session_data or len(session_data[label_key]) > 1:
         raise ValueError(f"Key '{label_key}' not in SessionData.")
 
     label_counts = dict(
-        zip(*np.unique(session_data[label_key], return_counts=True, axis=0))
+        zip(*np.unique(session_data[label_key][0], return_counts=True, axis=0))
     )
 
     check_train_test_sizes(evaluate_on_num_examples, label_counts, session_data)
 
-    counts = np.array([label_counts[label] for label in session_data[label_key]])
+    counts = np.array([label_counts[label] for label in session_data[label_key][0]])
 
     multi_values = []
-    [multi_values.append(v[counts > 1]) for v in session_data.values()]
+    [
+        multi_values.append(v[counts > 1])
+        for values in session_data.values()
+        for v in values
+    ]
 
     solo_values = []
-    [solo_values.append(v[counts == 1]) for v in session_data.values()]
+    [
+        solo_values.append(v[counts == 1])
+        for values in session_data.values()
+        for v in values
+    ]
 
     output_values = train_test_split(
         *multi_values,
         test_size=evaluate_on_num_examples,
         random_state=random_seed,
-        stratify=session_data[label_key][counts > 1],
+        stratify=session_data[label_key][0][counts > 1],
     )
 
     session_data_train, session_data_val = convert_train_test_split(
@@ -108,10 +116,10 @@ def check_train_test_sizes(
 def convert_train_test_split(
     output_values: List[Any], session_data: SessionData, solo_values: List[Any]
 ):
-    keys = [k for k, v in session_data.items()]
+    keys = [k for k in session_data.keys()]
 
-    session_data_train = {}
-    session_data_val = {}
+    session_data_train = defaultdict(list)
+    session_data_val = defaultdict(list)
 
     # output_values = x_train, x_val, y_train, y_val, z_train, z_val, etc.
     # order is kept, so first session_data.X values, then session_data.Y values, and
@@ -119,13 +127,13 @@ def convert_train_test_split(
 
     # train datasets have an even index
     for i in range(len(session_data)):
-        session_data_train[keys[i]] = combine_features(
-            output_values[i * 2], solo_values[i]
+        session_data_train[keys[i]].append(
+            combine_features(output_values[i * 2], solo_values[i])
         )
 
     # val datasets have an odd index
     for i in range(len(session_data)):
-        session_data_val[keys[i]] = output_values[(i * 2) + 1]
+        session_data_val[keys[i]].append(output_values[(i * 2) + 1])
 
     return session_data_train, session_data_val
 
@@ -155,19 +163,23 @@ def shuffle_session_data(session_data: "SessionData") -> "SessionData":
 
 def session_data_for_ids(session_data: SessionData, ids: np.ndarray):
     """Filter session data by ids."""
-    return {k: v[ids] for k, v in session_data.items()}
+    new_session_data = defaultdict(list)
+    for k, values in session_data.items():
+        for v in values:
+            new_session_data[k].append(v[ids])
+    return new_session_data
 
 
 def split_session_data_by_label(
     session_data: "SessionData", label_key: Text, unique_label_ids: "np.ndarray"
 ) -> List["SessionData"]:
     """Reorganize session data into a list of session data with the same labels."""
-    if label_key not in session_data:
+    if label_key not in session_data or len(session_data[label_key]) > 1:
         raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
 
     label_data = []
     for label_id in unique_label_ids:
-        ids = session_data[label_key] == label_id
+        ids = session_data[label_key][0] == label_id
         label_data.append(session_data_for_ids(session_data, ids))
     return label_data
 
@@ -182,11 +194,11 @@ def balance_session_data(
     by repeating them. Mimics stratified batching, but also takes into account
     that more populated classes should appear more often.
     """
-    if label_key not in session_data:
+    if label_key not in session_data or len(session_data[label_key]) > 1:
         raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
 
     unique_label_ids, counts_label_ids = np.unique(
-        session_data[label_key], return_counts=True, axis=0
+        session_data[label_key][0], return_counts=True, axis=0
     )
     num_label_ids = len(unique_label_ids)
 
@@ -241,7 +253,7 @@ def concatenate_data(
 
 
 def get_number_of_examples(session_data: SessionData):
-    example_lengths = [v.shape[0] for v in session_data.values()]
+    example_lengths = [v.shape[0] for values in session_data.values() for v in values]
 
     # check if number of examples is the same for all X
     if not all(length == example_lengths[0] for length in example_lengths):
@@ -277,12 +289,13 @@ def gen_batch(
         end = start + batch_size
 
         batch_data = []
-        for v in session_data.values():
-            _data = v[start:end]
-            if isinstance(_data[0], scipy.sparse.spmatrix):
-                batch_data = batch_data + scipy_matrix_to_values(_data)
-            else:
-                batch_data.append(pad_data(_data))
+        for values in session_data.values():
+            for v in values:
+                _data = v[start:end]
+                if isinstance(_data[0], scipy.sparse.spmatrix):
+                    batch_data = batch_data + scipy_matrix_to_values(_data)
+                else:
+                    batch_data.append(pad_data(_data))
 
         # len of batch_data is equal to the number of keys in session data
         yield tuple(batch_data)
@@ -359,21 +372,24 @@ def batch_to_session_data(
     shape before, this methods converts them into sparse tensors. Dense data is
     kept.
     """
-    batch_data = {}
+    batch_data = defaultdict(list)
     idx = 0
 
-    for k, v in session_data.items():
-        if isinstance(v[0], scipy.sparse.spmatrix):
-            # explicitly substitute last dimension in shape with known static value
-            batch_data[k] = values_to_sparse_tensor(
-                batch[idx],
-                batch[idx + 1],
-                [batch[idx + 2][0], batch[idx + 2][1], v[0].shape[-1]],
-            )
-            idx += 3
-        else:
-            batch_data[k] = batch[idx]
-            idx += 1
+    for k, values in session_data.items():
+        for v in values:
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                # explicitly substitute last dimension in shape with known static value
+                batch_data[k].append(
+                    values_to_sparse_tensor(
+                        batch[idx],
+                        batch[idx + 1],
+                        [batch[idx + 2][0], batch[idx + 2][1], v[0].shape[-1]],
+                    )
+                )
+                idx += 3
+            else:
+                batch_data[k].append(batch[idx])
+                idx += 1
 
     return batch_data
 
@@ -426,9 +442,10 @@ def _get_shapes_types(session_data: SessionData) -> Tuple:
         else:
             types.append(v.dtype)
 
-    for v in session_data.values():
-        append_shape(v)
-        append_type(v)
+    for values in session_data.values():
+        for v in values:
+            append_shape(v)
+            append_type(v)
 
     return tuple(shapes), tuple(types)
 
