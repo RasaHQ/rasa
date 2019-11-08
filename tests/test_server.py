@@ -745,6 +745,7 @@ def test_load_model(rasa_app: SanicTestClient, trained_core_model):
     assert response.status == 204
 
     _, response = rasa_app.get("/status")
+    assert os.path.isfile(response.json["model_file"])
 
     assert response.status == 200
     assert "fingerprint" in response.json
