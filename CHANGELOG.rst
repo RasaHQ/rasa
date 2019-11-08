@@ -15,6 +15,7 @@ Added
 -----
 - Added data validator that checks if domain object returned is empty. If so, exit early from the command ``rasa data validate``
 - Added the KeywordIntentClassifier
+- Added documentation for ``AugmentedMemoizationPolicy``
 - Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
   tracker store
 
