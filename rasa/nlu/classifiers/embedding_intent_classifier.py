@@ -293,9 +293,9 @@ class EmbeddingIntentClassifier(Component):
         encoded_id_labels = defaultdict(list)
 
         for i, s in zip(label_examples, sparse_features):
-            encoded_id_labels[i[0]].append(sparse_features)
+            encoded_id_labels[i[0]].append(s)
         for i, d in zip(label_examples, dense_features):
-            encoded_id_labels[i[0]].append(dense_features)
+            encoded_id_labels[i[0]].append(d)
 
         # Sort the dict based on label_idx
         encoded_id_labels = OrderedDict(sorted(encoded_id_labels.items()))
@@ -359,8 +359,10 @@ class EmbeddingIntentClassifier(Component):
         label_features = []
 
         for f in features:
-            if isinstance(f[0], scipy.sparse.spmatrix):
-                indices, values, shape = train_utils.scipy_matrix_to_values(f)
+            if isinstance(f, scipy.sparse.spmatrix):
+                indices, values, shape = train_utils.scipy_matrix_to_values(
+                    np.array([f])
+                )
                 label_features.append(
                     tf.cast(
                         train_utils.values_to_sparse_tensor(indices, values, shape),
@@ -457,9 +459,14 @@ class EmbeddingIntentClassifier(Component):
         a = self.combine_sparse_dense_features(batch["text_features"], "text")
         b = self.combine_sparse_dense_features(batch["intent_features"], "intent")
 
-        all_label_ids = tf.stack(
-            [self.labels_to_tensors(v) for v in self._encoded_all_label_ids.values()],
-            name="all_label_ids",
+        all_label_ids = tf.squeeze(
+            tf.stack(
+                [
+                    self.labels_to_tensors(v)
+                    for v in self._encoded_all_label_ids.values()
+                ],
+                name="all_label_ids",
+            )
         )
 
         self.message_embed = self._create_tf_embed_fnn(
