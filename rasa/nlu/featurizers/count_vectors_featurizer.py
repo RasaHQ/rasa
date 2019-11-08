@@ -187,7 +187,9 @@ class CountVectorsFeaturizer(Featurizer):
         """Create a list of attributes that should be featurized."""
 
         # intents should be featurized only by word level count vectorizer
-        return MESSAGE_ATTRIBUTES if analyzer == "word" else SPACY_FEATURIZABLE_ATTRIBUTES
+        return (
+            MESSAGE_ATTRIBUTES if analyzer == "word" else SPACY_FEATURIZABLE_ATTRIBUTES
+        )
 
     def __init__(
         self,
