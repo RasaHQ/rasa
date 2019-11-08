@@ -262,7 +262,7 @@ class DialogueStateTracker(object):
         )
 
     def generate_all_prior_trackers(
-        self
+        self,
     ) -> Generator["DialogueStateTracker", None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
