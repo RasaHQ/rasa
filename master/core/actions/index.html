@@ -362,7 +362,9 @@ E.g. it is recommended to run Rasa in a docker container and
 create a separate container for your action server. In this
 separate container, you only need to install <code class="docutils literal notranslate"><span class="pre">rasa-sdk</span></code>.</p>
 </div>
-<p>The file that contains your custom actions should be called <code class="docutils literal notranslate"><span class="pre">actions.py</span></code>.</p>
+<p>The file that contains your custom actions should be called <code class="docutils literal notranslate"><span class="pre">actions.py</span></code>.
+Alternatively, you can use a package directory called <code class="docutils literal notranslate"><span class="pre">actions</span></code> or else
+manually specify an actions module or package with the <code class="docutils literal notranslate"><span class="pre">--actions</span></code> flag.</p>
 <p>If you have <code class="docutils literal notranslate"><span class="pre">rasa</span></code> installed, run this command to start your action server:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run actions
 </pre></div>

@@ -283,9 +283,9 @@ with <code class="docutils literal notranslate"><span class="pre">&#64;yourbotna
 that is said.</li>
 <li>Make sure <strong>trigger when</strong> is set to value
 <strong>first word matches a trigger word exactly</strong>.</li>
-<li>The callback url needs to be your ngrok url where you
+<li>The callback url needs to be either your localhost address for Rasa, or your ngrok url where you
 have your webhook running in Core or your public address, e.g.
-<code class="docutils literal notranslate"><span class="pre">http://test.example.com/webhooks/mattermost/webhook</span></code>.</li>
+<code class="docutils literal notranslate"><span class="pre">http://test.example.com/webhooks/mattermost/webhook</span></code> or <code class="docutils literal notranslate"><span class="pre">http://localhost:5005/webhooks/mattermost/webhook</span></code>.</li>
 </ol>
 </div></blockquote>
 <p>For more detailed steps, visit the
@@ -302,7 +302,7 @@ run script, e.g. using:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">mattermost</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://chat.example.com/api/v4&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">team</span><span class="p p-Indicator">:</span> <span class="s">&quot;community&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">user</span><span class="p p-Indicator">:</span> <span class="s">&quot;user@user.com&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">user</span><span class="p p-Indicator">:</span> <span class="s">&quot;user@user.com&quot;</span> <span class="c1">#  actual username of your bot user, not displayname</span>
   <span class="l l-Scalar l-Scalar-Plain">pw</span><span class="p p-Indicator">:</span> <span class="s">&quot;password&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">webhook_url</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://server.example.com/webhooks/mattermost/webhook&quot;</span>
 </pre></div>
