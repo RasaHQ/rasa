@@ -265,10 +265,10 @@ class EmbeddingIntentClassifier(Component):
 
     @staticmethod
     def _check_labels_features_exist(
-        labels_example: List[Tuple[int, "Message"]], attribute: Text
+        labels_example: List["Message"], attribute: Text
     ) -> bool:
         """Check if all labels have features set"""
-        for (label_idx, label_example) in labels_example:
+        for label_example in labels_example:
             if label_example.get(
                 MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]
             ) is None and label_example.get(
@@ -277,38 +277,14 @@ class EmbeddingIntentClassifier(Component):
                 return False
         return True
 
-    def _extract_labels_precomputed_features(
-        self, label_examples: List[Tuple[int, "Message"]]
-    ) -> Dict[int, Dict[Text, Any]]:
-
-        # Collect precomputed encodings
-        sparse_features = []
-        dense_features = []
-
-        for i, e in label_examples:
-            self._extract_and_add_features(
-                e, MESSAGE_INTENT_ATTRIBUTE, sparse_features, dense_features
-            )
-
-        encoded_id_labels = defaultdict(list)
-
-        for i, s in zip(label_examples, sparse_features):
-            encoded_id_labels[i[0]].append(s)
-        for i, d in zip(label_examples, dense_features):
-            encoded_id_labels[i[0]].append(d)
-
-        # Sort the dict based on label_idx
-        encoded_id_labels = OrderedDict(sorted(encoded_id_labels.items()))
-
-        return encoded_id_labels
-
+    @staticmethod
     def _extract_and_add_features(
-        self,
         message: "Message",
         attribute: Text,
         sparse_features: List[scipy.sparse.spmatrix],
         dense_features: List[np.ndarray],
     ):
+        # we mutate sparse_features and dense_features
         if message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]) is not None:
             sparse_features.append(
                 message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute])
@@ -319,31 +295,59 @@ class EmbeddingIntentClassifier(Component):
                 message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
             )
 
+    def _extract_labels_precomputed_features(
+        self, label_examples: List["Message"]
+    ) -> List[np.ndarray]:
+
+        # Collect precomputed encodings
+        sparse_features = []
+        dense_features = []
+
+        for e in label_examples:
+            self._extract_and_add_features(
+                e, MESSAGE_INTENT_ATTRIBUTE, sparse_features, dense_features
+            )
+
+        sparse_features = np.array(sparse_features)
+        dense_features = np.array(dense_features)
+
+        return [sparse_features, dense_features]
+
+    @staticmethod
     def _compute_default_label_features(
-        self, labels_example: List[Tuple[int, "Message"]]
-    ) -> np.ndarray:
+        labels_example: List[Tuple[int, "Message"]]
+    ) -> List[np.ndarray]:
         """Compute one-hot representation for the labels"""
-        # TODO
-        return np.eye(len(labels_example))
+
+        # TODO check:
+        # features should be sequences
+        return [np.expand_dims(np.eye(len(labels_example)), axis=1)]
 
     def _create_encoded_label_ids(
         self,
         training_data: "TrainingData",
         label_id_dict: Dict[Text, int],
         attribute: Text,
-    ) -> np.ndarray:
-        """Create matrix with label_ids encoded in rows as bag of words. If the features are already computed, fetch
-        them from the message object else compute a one hot encoding for the label as the feature vector
-        Find a training example for each label and get the encoded features from the corresponding Message object"""
+    ) -> List[np.ndarray]:
+        """Create matrix with label_ids encoded in rows as bag of words.
 
-        labels_example = []
+        Find a training example for each label and get the encoded features
+        from the corresponding Message object.
+        If the features are already computed, fetch them from the message object
+        else compute a one hot encoding for the label as the feature vector.
+        """
 
         # Collect one example for each label
+        labels_idx_example = []
         for label_name, idx in label_id_dict.items():
             label_example = self._find_example_for_label(
                 label_name, training_data.intent_examples, attribute
             )
-            labels_example.append((idx, label_example))
+            labels_idx_example.append((idx, label_example))
+
+        # Sort the list of tuples based on label_idx
+        labels_idx_example = sorted(labels_idx_example, key=lambda x: x[0])
+        labels_example = [example for (_, example) in labels_idx_example]
 
         # Collect features, precomputed if they exist, else compute on the fly
         if self._check_labels_features_exist(labels_example, attribute):
@@ -459,6 +463,7 @@ class EmbeddingIntentClassifier(Component):
         a = self.combine_sparse_dense_features(batch["text_features"], "text")
         b = self.combine_sparse_dense_features(batch["intent_features"], "intent")
 
+        # TODO change below: (currantly it'll raise aan error)
         all_label_ids = tf.squeeze(
             tf.stack(
                 [
