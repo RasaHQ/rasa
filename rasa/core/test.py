@@ -346,7 +346,11 @@ def _predict_tracker_actions(
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            action_executed_result, policy, confidence = _collect_action_executed_predictions(
+            (
+                action_executed_result,
+                policy,
+                confidence,
+            ) = _collect_action_executed_predictions(
                 processor, partial_tracker, event, fail_on_prediction_errors
             )
             tracker_eval_store.merge_store(action_executed_result)
@@ -588,7 +592,6 @@ async def compare_models_in_dir(
     model_dir: Text, stories_file: Text, output: Text
 ) -> None:
     """Evaluates multiple trained models in a directory on a test set."""
-    from rasa.core import utils
     import rasa.utils.io as io_utils
 
     number_correct = defaultdict(list)
@@ -616,7 +619,6 @@ async def compare_models_in_dir(
 
 async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
     """Evaluates provided trained models on a test set."""
-    from rasa.core import utils
 
     number_correct = defaultdict(list)
 

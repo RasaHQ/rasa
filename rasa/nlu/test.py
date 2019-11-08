@@ -197,7 +197,7 @@ def get_unique_labels(
 
 
 def remove_empty_intent_examples(
-    intent_results: List[IntentEvaluationResult]
+    intent_results: List[IntentEvaluationResult],
 ) -> List[IntentEvaluationResult]:
     """Remove those examples without an intent."""
 
@@ -215,7 +215,7 @@ def remove_empty_intent_examples(
 
 
 def remove_empty_response_examples(
-    response_results: List[ResponseSelectionEvaluationResult]
+    response_results: List[ResponseSelectionEvaluationResult],
 ) -> List[ResponseSelectionEvaluationResult]:
     """Remove those examples without a response."""
 
