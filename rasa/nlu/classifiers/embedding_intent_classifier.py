@@ -519,6 +519,7 @@ class EmbeddingIntentClassifier(Component):
 
         output = tf.concat(all_dense, axis=-1)
         # apply mean to convert sequence to sentence features
+        # TODO we cannot use reduce_mean, we should use reduce_sum / real_length
         output = tf.reduce_mean(output, axis=1)
         return output
 
