@@ -280,14 +280,11 @@ class MessageProcessor(object):
                     user_msg = UserMessage(None, output_channel, sender_id)
                     await self._predict_and_execute_next_action(user_msg, tracker)
             else:
+                # ToDo: We should introduce a new Event, ExternalEvent
                 intent = reminder_event.future_event
-                tracker.update(UserUttered(text="", intent=intent))
-                user_msg = UserMessage("/" + intent, output_channel, sender_id)
-                await self.handle_message(user_msg)
-                # tracker.update(UserUttered("/" + reminder_event.future_event))
-                # intent = UserMessage("/" + reminder_event.event_name, output_channel, sender_id)
-                # tracker.update(UserUttered(intent=reminder_event.future_event))
-                # await self._predict_and_execute_next_action(intent, tracker)
+                tracker.update(UserUttered(text="", intent={"name": intent}))
+                user_msg = UserMessage("", None, sender_id)
+                await self._predict_and_execute_next_action(user_msg, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
 
