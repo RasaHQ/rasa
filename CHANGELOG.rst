@@ -13,10 +13,16 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Added data validator that checks if domain object returned is empty. If so, exit early from the command ``rasa data validate``
 - Added the KeywordIntentClassifier
+- Added documentation for ``AugmentedMemoizationPolicy``
+- Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
+  tracker store
 
 Changed
 -------
+- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
+- Upgraded ``jsonschema`` version
 
 Removed
 -------
@@ -26,7 +32,16 @@ Fixed
 -----
 - ``MultiProjectImporter`` now imports files in the order of the import statements
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
+- Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
+- ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
 
+[1.4.3] - 2019-10-29
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed ``Connection reset by peer`` errors and bot response delays when using the
+  RabbitMQ event broker.
 
 [1.4.2] - 2019-10-28
 ^^^^^^^^^^^^^^^^^^^^
@@ -40,6 +55,8 @@ Fixed
 - Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
   interactive learning
 - Pinned `networkx~=2.3.0` to fix visualization in `rasa interactive` and Rasa X
+- Fixed ``No model found`` error when using ``rasa run actions`` with "actions"
+  as a directory.
 
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^
@@ -228,7 +245,6 @@ Fixed
 Changed
 -------
 - Pin gast to == 0.2.2
-
 
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^

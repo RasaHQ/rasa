@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import os
 import random
@@ -24,7 +22,7 @@ DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 logger = logging.getLogger(__name__)
 
 
-class TrainingData(object):
+class TrainingData:
     """Holds loaded intent and entity training data."""
 
     # Validation will ensure and warn if these lower limits are not met
@@ -136,23 +134,21 @@ class TrainingData(object):
     @rasa_utils.lazy_property
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
-        return set([ex.get("intent") for ex in self.training_examples]) - {None}
+        return {ex.get("intent") for ex in self.training_examples} - {None}
 
     @rasa_utils.lazy_property
     def responses(self) -> Set[Text]:
         """Returns the set of responses in the training data."""
-        return set([ex.get("response") for ex in self.training_examples]) - {None}
+        return {ex.get("response") for ex in self.training_examples} - {None}
 
     @rasa_utils.lazy_property
     def retrieval_intents(self) -> Set[Text]:
         """Returns the total number of response types in the training data"""
-        return set(
-            [
-                ex.get("intent")
-                for ex in self.training_examples
-                if ex.get("response") is not None
-            ]
-        )
+        return {
+            ex.get("intent")
+            for ex in self.training_examples
+            if ex.get("response") is not None
+        }
 
     @rasa_utils.lazy_property
     def examples_per_intent(self) -> Dict[Text, int]:

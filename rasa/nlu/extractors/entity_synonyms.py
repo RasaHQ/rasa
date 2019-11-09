@@ -21,7 +21,7 @@ class EntitySynonymMapper(EntityExtractor):
         synonyms: Optional[Dict[Text, Any]] = None,
     ) -> None:
 
-        super(EntitySynonymMapper, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.synonyms = synonyms if synonyms else {}
 
@@ -75,9 +75,7 @@ class EntitySynonymMapper(EntityExtractor):
             synonyms = rasa.utils.io.read_json_file(entity_synonyms_file)
         else:
             synonyms = None
-            warnings.warn(
-                "Failed to load synonyms file from '{}'".format(entity_synonyms_file)
-            )
+            warnings.warn(f"Failed to load synonyms file from '{entity_synonyms_file}'")
         return cls(meta, synonyms)
 
     def replace_synonyms(self, entities):

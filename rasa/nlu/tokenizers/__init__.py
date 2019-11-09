@@ -1,8 +1,8 @@
-class Tokenizer(object):
+class Tokenizer:
     pass
 
 
-class Token(object):
+class Token:
     def __init__(self, text, offset, data=None):
         self.offset = offset
         self.text = text
