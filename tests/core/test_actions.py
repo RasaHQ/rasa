@@ -413,7 +413,11 @@ async def test_action_utter_template(
         default_channel, default_nlg, default_tracker, default_domain
     )
 
-    assert events == [BotUttered("this is a default channel")]
+    assert events == [
+        BotUttered(
+            "this is a default channel", metadata={"template_name": "utter_channel"}
+        )
+    ]
 
 
 async def test_action_utter_template_unknown_template(
@@ -442,6 +446,7 @@ async def test_action_utter_template_with_buttons(
                     {"payload": "button2", "title": "button2"},
                 ]
             },
+            metadata={"template_name": "utter_buttons"},
         )
     ]
 
@@ -470,7 +475,10 @@ async def test_action_utter_template_channel_specific(
     )
 
     assert events == [
-        BotUttered("you're talking to me on slack!", metadata={"channel": "slack"})
+        BotUttered(
+            "you're talking to me on slack!",
+            metadata={"channel": "slack", "template_name": "utter_channel"},
+        )
     ]
 
 
@@ -482,7 +490,7 @@ async def test_action_back(
     )
 
     assert events == [
-        BotUttered("backing up..."),
+        BotUttered("backing up...", metadata={"template_name": "utter_back"}),
         UserUtteranceReverted(),
         UserUtteranceReverted(),
     ]
@@ -495,7 +503,13 @@ async def test_action_restart(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert events == [BotUttered("congrats, you've restarted me!"), Restarted()]
+    assert events == [
+        BotUttered(
+            "congrats, you've restarted me!",
+            metadata={"template_name": "utter_restart"},
+        ),
+        Restarted(),
+    ]
 
 
 async def test_action_session_start_without_slots(
@@ -588,7 +602,10 @@ async def test_action_default_fallback(
     )
 
     assert events == [
-        BotUttered("sorry, I didn't get that, can you rephrase it?"),
+        BotUttered(
+            "sorry, I didn't get that, can you rephrase it?",
+            metadata={"template_name": "utter_default"},
+        ),
         UserUtteranceReverted(),
     ]
 
@@ -620,4 +637,8 @@ async def test_action_default_ask_rephrase(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert events == [BotUttered("can you rephrase that?")]
+    assert events == [
+        BotUttered(
+            "can you rephrase that?", metadata={"template_name": "utter_ask_rephrase"}
+        )
+    ]
