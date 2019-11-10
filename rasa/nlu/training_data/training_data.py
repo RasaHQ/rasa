@@ -2,20 +2,21 @@ import logging
 import os
 import random
 import warnings
+from _collections import OrderedDict
 from collections import Counter
 from copy import deepcopy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
-from rasa.nlu.utils import list_to_str
 import rasa.nlu.utils
 import rasa.utils.common as rasa_utils
-from rasa.nlu.training_data.message import Message
-from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_RESPONSE_KEY_ATTRIBUTE,
 )
+from rasa.nlu.training_data.message import Message
+from rasa.nlu.training_data.util import check_duplicate_synonym
+from rasa.nlu.utils import list_to_str
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -115,7 +116,7 @@ class TrainingData:
             if ex.get("response"):
                 ex.set("response", ex.get("response").strip())
 
-        examples = list(set(examples))
+        examples = list(OrderedDict.fromkeys(examples))
 
         return examples
 
