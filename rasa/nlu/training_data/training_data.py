@@ -2,8 +2,7 @@ import logging
 import os
 import random
 import warnings
-from _collections import OrderedDict
-from collections import Counter
+from collections import Counter, OrderedDict
 from copy import deepcopy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
