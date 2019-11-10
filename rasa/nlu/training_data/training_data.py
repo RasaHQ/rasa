@@ -106,7 +106,7 @@ class TrainingData:
     def sanitize_examples(examples: List[Message]) -> List[Message]:
         """Makes sure the training data is clean.
 
-        removes trailing whitespaces from intent annotations and drops duplicate examples."""
+        Remove trailing whitespaces from intent and response annotations and drop duplicate examples."""
 
         for ex in examples:
             if ex.get("intent"):
