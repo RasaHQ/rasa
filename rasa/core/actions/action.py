@@ -266,6 +266,7 @@ class ActionUtterTemplate(Action):
                     "".format(self.template_name)
                 )
             return []
+        message['template_name'] = self.template_name
 
         return [create_bot_utterance(message)]
 
