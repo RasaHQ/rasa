@@ -171,6 +171,7 @@ async def test_reminder_scheduled(
             "image": None,
             "custom": None,
         },
+        metadata={"template_name": "utter_greet"}
     )
     assert t.events[-1] == ActionExecuted("action_listen")
 
