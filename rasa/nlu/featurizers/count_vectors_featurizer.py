@@ -153,16 +153,6 @@ class CountVectorsFeaturizer(Featurizer):
         except (AttributeError, TypeError):
             return None
 
-    def _collect_vectorizer_vocabularies(self):
-        """Get vocabulary for all attributes"""
-
-        attribute_vocabularies = {}
-        for attribute in MESSAGE_ATTRIBUTES:
-            attribute_vocabularies[attribute] = self._get_attribute_vocabulary(
-                attribute
-            )
-        return attribute_vocabularies
-
     def _get_attribute_vocabulary_tokens(self, attribute: Text) -> Optional[List[Text]]:
         """Get all keys of vocabulary of an attribute"""
 
@@ -192,6 +182,15 @@ class CountVectorsFeaturizer(Featurizer):
                     "contain single letters only."
                 )
 
+    @staticmethod
+    def _attributes(analyzer):
+        """Create a list of attributes that should be featurized."""
+
+        # intents should be featurized only by word level count vectorizer
+        return (
+            MESSAGE_ATTRIBUTES if analyzer == "word" else SPACY_FEATURIZABLE_ATTRIBUTES
+        )
+
     def __init__(
         self,
         component_config: Dict[Text, Any] = None,
@@ -199,7 +198,7 @@ class CountVectorsFeaturizer(Featurizer):
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
 
-        super(CountVectorsFeaturizer, self).__init__(component_config)
+        super().__init__(component_config)
 
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()
@@ -209,6 +208,9 @@ class CountVectorsFeaturizer(Featurizer):
 
         # warn that some of config parameters might be ignored
         self._check_analyzer()
+
+        # set which attributes to featurize
+        self._attributes = self._attributes(self.analyzer)
 
         # declare class instance for CountVectorizer
         self.vectorizers = vectorizers
@@ -335,7 +337,7 @@ class CountVectorsFeaturizer(Featurizer):
         """Get processed text for all attributes of examples in training data"""
 
         processed_attribute_texts = {}
-        for attribute in MESSAGE_ATTRIBUTES:
+        for attribute in self._attributes:
             attribute_texts = [
                 self._get_message_text_by_attribute(example, attribute)
                 for example in training_data.intent_examples
@@ -344,82 +346,10 @@ class CountVectorsFeaturizer(Featurizer):
             processed_attribute_texts[attribute] = attribute_texts
         return processed_attribute_texts
 
-    @staticmethod
-    def create_shared_vocab_vectorizers(
-        token_pattern,
-        strip_accents,
-        lowercase,
-        stop_words,
-        ngram_range,
-        max_df,
-        min_df,
-        max_features,
-        analyzer,
-        vocabulary=None,
-    ) -> Dict[Text, "CountVectorizer"]:
-        """Create vectorizers for all attributes with shared vocabulary"""
-
-        shared_vectorizer = CountVectorizer(
-            token_pattern=token_pattern,
-            strip_accents=strip_accents,
-            lowercase=lowercase,
-            stop_words=stop_words,
-            ngram_range=ngram_range,
-            max_df=max_df,
-            min_df=min_df,
-            max_features=max_features,
-            analyzer=analyzer,
-            vocabulary=vocabulary,
-        )
-
-        attribute_vectorizers = {}
-
-        for attribute in MESSAGE_ATTRIBUTES:
-            attribute_vectorizers[attribute] = shared_vectorizer
-
-        return attribute_vectorizers
-
-    @staticmethod
-    def create_independent_vocab_vectorizers(
-        token_pattern,
-        strip_accents,
-        lowercase,
-        stop_words,
-        ngram_range,
-        max_df,
-        min_df,
-        max_features,
-        analyzer,
-        vocabulary=None,
-    ) -> Dict[Text, "CountVectorizer"]:
-        """Create vectorizers for all attributes with independent vocabulary"""
-
-        attribute_vectorizers = {}
-
-        for attribute in MESSAGE_ATTRIBUTES:
-
-            attribute_vocabulary = vocabulary[attribute] if vocabulary else None
-
-            attribute_vectorizer = CountVectorizer(
-                token_pattern=token_pattern,
-                strip_accents=strip_accents,
-                lowercase=lowercase,
-                stop_words=stop_words,
-                ngram_range=ngram_range,
-                max_df=max_df,
-                min_df=min_df,
-                max_features=max_features,
-                analyzer=analyzer,
-                vocabulary=attribute_vocabulary,
-            )
-            attribute_vectorizers[attribute] = attribute_vectorizer
-
-        return attribute_vectorizers
-
     def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]):
         """Construct the vectorizers and train them with a shared vocab"""
 
-        self.vectorizers = self.create_shared_vocab_vectorizers(
+        self.vectorizers = self._create_shared_vocab_vectorizers(
             self.token_pattern,
             self.strip_accents,
             self.lowercase,
@@ -432,7 +362,7 @@ class CountVectorsFeaturizer(Featurizer):
         )
 
         combined_cleaned_texts = []
-        for attribute in MESSAGE_ATTRIBUTES:
+        for attribute in self._attributes:
             combined_cleaned_texts += attribute_texts[attribute]
 
         try:
@@ -449,7 +379,7 @@ class CountVectorsFeaturizer(Featurizer):
     def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
         """Construct the vectorizers and train them with an independent vocab"""
 
-        self.vectorizers = self.create_independent_vocab_vectorizers(
+        self.vectorizers = self._create_independent_vocab_vectorizers(
             self.token_pattern,
             self.strip_accents,
             self.lowercase,
@@ -461,7 +391,7 @@ class CountVectorsFeaturizer(Featurizer):
             self.analyzer,
         )
 
-        for attribute in MESSAGE_ATTRIBUTES:
+        for attribute in self._attributes:
             if self._attribute_texts_is_non_empty(attribute_texts[attribute]):
                 try:
                     self.vectorizers[attribute].fit(attribute_texts[attribute])
@@ -516,7 +446,7 @@ class CountVectorsFeaturizer(Featurizer):
             self._train_with_independent_vocab(processed_attribute_texts)
 
         # transform for all attributes
-        for attribute in MESSAGE_ATTRIBUTES:
+        for attribute in self._attributes:
 
             attribute_features = self._get_featurized_attribute(
                 attribute, processed_attribute_texts[attribute]
@@ -556,6 +486,16 @@ class CountVectorsFeaturizer(Featurizer):
                 ),
             )
 
+    def _collect_vectorizer_vocabularies(self):
+        """Get vocabulary for all attributes"""
+
+        attribute_vocabularies = {}
+        for attribute in self._attributes:
+            attribute_vocabularies[attribute] = self._get_attribute_vocabulary(
+                attribute
+            )
+        return attribute_vocabularies
+
     @staticmethod
     def _is_any_model_trained(attribute_vocabularies) -> bool:
         """Check if any model got trained"""
@@ -587,6 +527,80 @@ class CountVectorsFeaturizer(Featurizer):
         return {"file": file_name}
 
     @classmethod
+    def _create_shared_vocab_vectorizers(
+        cls,
+        token_pattern,
+        strip_accents,
+        lowercase,
+        stop_words,
+        ngram_range,
+        max_df,
+        min_df,
+        max_features,
+        analyzer,
+        vocabulary=None,
+    ) -> Dict[Text, "CountVectorizer"]:
+        """Create vectorizers for all attributes with shared vocabulary"""
+
+        shared_vectorizer = CountVectorizer(
+            token_pattern=token_pattern,
+            strip_accents=strip_accents,
+            lowercase=lowercase,
+            stop_words=stop_words,
+            ngram_range=ngram_range,
+            max_df=max_df,
+            min_df=min_df,
+            max_features=max_features,
+            analyzer=analyzer,
+            vocabulary=vocabulary,
+        )
+
+        attribute_vectorizers = {}
+
+        for attribute in cls._attributes(analyzer):
+            attribute_vectorizers[attribute] = shared_vectorizer
+
+        return attribute_vectorizers
+
+    @classmethod
+    def _create_independent_vocab_vectorizers(
+        cls,
+        token_pattern,
+        strip_accents,
+        lowercase,
+        stop_words,
+        ngram_range,
+        max_df,
+        min_df,
+        max_features,
+        analyzer,
+        vocabulary=None,
+    ) -> Dict[Text, "CountVectorizer"]:
+        """Create vectorizers for all attributes with independent vocabulary"""
+
+        attribute_vectorizers = {}
+
+        for attribute in cls._attributes(analyzer):
+
+            attribute_vocabulary = vocabulary[attribute] if vocabulary else None
+
+            attribute_vectorizer = CountVectorizer(
+                token_pattern=token_pattern,
+                strip_accents=strip_accents,
+                lowercase=lowercase,
+                stop_words=stop_words,
+                ngram_range=ngram_range,
+                max_df=max_df,
+                min_df=min_df,
+                max_features=max_features,
+                analyzer=analyzer,
+                vocabulary=attribute_vocabulary,
+            )
+            attribute_vectorizers[attribute] = attribute_vectorizer
+
+        return attribute_vectorizers
+
+    @classmethod
     def load(
         cls,
         meta: Dict[Text, Any],
@@ -605,7 +619,7 @@ class CountVectorsFeaturizer(Featurizer):
             share_vocabulary = meta["use_shared_vocab"]
 
             if share_vocabulary:
-                vectorizers = cls.create_shared_vocab_vectorizers(
+                vectorizers = cls._create_shared_vocab_vectorizers(
                     token_pattern=meta["token_pattern"],
                     strip_accents=meta["strip_accents"],
                     lowercase=meta["lowercase"],
@@ -618,7 +632,7 @@ class CountVectorsFeaturizer(Featurizer):
                     vocabulary=vocabulary,
                 )
             else:
-                vectorizers = cls.create_independent_vocab_vectorizers(
+                vectorizers = cls._create_independent_vocab_vectorizers(
                     token_pattern=meta["token_pattern"],
                     strip_accents=meta["strip_accents"],
                     lowercase=meta["lowercase"],

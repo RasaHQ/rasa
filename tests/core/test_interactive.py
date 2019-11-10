@@ -1,4 +1,6 @@
 import json
+from typing import Text
+
 import pytest
 import uuid
 from aioresponses import aioresponses
@@ -6,6 +8,7 @@ from aioresponses import aioresponses
 import rasa.utils.io
 from rasa.core.events import BotUttered
 from rasa.core.training import interactive
+from rasa.nlu.training_data.loading import RASA, MARKDOWN
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.actions.action import default_actions
 from rasa.core.domain import Domain
@@ -22,7 +25,7 @@ def mock_endpoint():
 async def test_send_message(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
-    url = "{}/conversations/{}/messages".format(mock_endpoint.url, sender_id)
+    url = f"{mock_endpoint.url}/conversations/{sender_id}/messages"
     with aioresponses() as mocked:
         mocked.post(url, payload={})
 
@@ -40,7 +43,7 @@ async def test_send_message(mock_endpoint):
 async def test_request_prediction(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
-    url = "{}/conversations/{}/predict".format(mock_endpoint.url, sender_id)
+    url = f"{mock_endpoint.url}/conversations/{sender_id}/predict"
 
     with aioresponses() as mocked:
         mocked.post(url, payload={})
@@ -311,7 +314,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
 
     domain_path = tmpdir.join("interactive_domain_save.yml").strpath
 
-    url = "{}/domain".format(mock_endpoint.url)
+    url = f"{mock_endpoint.url}/domain"
     with aioresponses() as mocked:
         mocked.get(url, payload={})
 
@@ -343,3 +346,11 @@ async def test_filter_intents_before_save_nlu_file():
         msgs.append(Message("/" + choice(intents), greet))
 
     assert test_msgs == interactive._filter_messages(msgs)
+
+
+@pytest.mark.parametrize(
+    "path, expected_format",
+    [("bla.json", RASA), ("other.md", MARKDOWN), ("unknown", MARKDOWN)],
+)
+def test_get_nlu_target_format(path: Text, expected_format: Text):
+    assert interactive._get_nlu_target_format(path) == expected_format

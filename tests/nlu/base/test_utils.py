@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import io
 import os
 import pickle
@@ -26,7 +25,7 @@ def fake_model_dir(empty_model_dir):
 
     fake_obj = {"Fake", "model"}
     fake_obj_path = os.path.join(empty_model_dir, "component.pkl")
-    with io.open(fake_obj_path, "wb") as f:
+    with open(fake_obj_path, "wb") as f:
         pickle.dump(fake_obj, f)
     return empty_model_dir  # not empty anymore ;)
 

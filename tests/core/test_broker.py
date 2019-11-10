@@ -1,4 +1,7 @@
 import json
+from unittest.mock import patch
+
+from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.core.brokers.utils as broker_utils
 from rasa.core.brokers.file_producer import FileProducer
@@ -26,6 +29,22 @@ def test_pika_broker_from_config():
     assert actual.host == "localhost"
     assert actual.username == "username"
     assert actual.queue == "queue"
+
+
+# noinspection PyProtectedMember
+def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
+    # patch PikaProducer so it doesn't try to connect to RabbitMQ on init
+    with patch.object(PikaProducer, "_run_pika", lambda _: None):
+        pika_producer = PikaProducer("", "", "")
+
+    # unset RASA_ENVIRONMENT env var results in empty App ID
+    monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
+    assert not pika_producer._message_properties.app_id
+
+    # setting it to some value results in that value as the App ID
+    rasa_environment = "some-test-environment"
+    monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
+    assert pika_producer._message_properties.app_id == rasa_environment
 
 
 def test_no_broker_in_config():

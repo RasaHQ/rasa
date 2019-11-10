@@ -69,7 +69,7 @@ async def trained_moodbot_path() -> Text:
 
 @pytest.fixture(scope="session")
 async def unpacked_trained_moodbot_path(
-    trained_moodbot_path: Text
+    trained_moodbot_path: Text,
 ) -> TempDirectoryPath:
     return get_model(trained_moodbot_path)
 
