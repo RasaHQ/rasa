@@ -92,7 +92,7 @@ class WebexTeamsInput(InputChannel):
             )
             await on_new_message(user_msg)
         except Exception as e:
-            logger.error("Exception when trying to handle message.{0}".format(e))
+            logger.error(f"Exception when trying to handle message.{e}")
             logger.error(str(e), exc_info=True)
 
     def blueprint(

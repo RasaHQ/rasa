@@ -124,7 +124,7 @@ def test_nlu(args: argparse.Namespace) -> None:
                 config_files.append(file)
             except validation_utils.InvalidYamlFileError:
                 logger.debug(
-                    "Ignoring file '{}' as it is not a valid config file.".format(file)
+                    f"Ignoring file '{file}' as it is not a valid config file."
                 )
                 continue
 

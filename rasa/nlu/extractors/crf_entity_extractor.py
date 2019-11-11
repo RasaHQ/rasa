@@ -88,7 +88,7 @@ class CRFEntityExtractor(EntityExtractor):
         ent_tagger: Optional["CRF"] = None,
     ) -> None:
 
-        super(CRFEntityExtractor, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.ent_tagger = ent_tagger
 

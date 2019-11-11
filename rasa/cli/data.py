@@ -86,8 +86,8 @@ def split_nlu_data(args):
 
     train, test = nlu_data.train_test_split(args.training_fraction)
 
-    train.persist(args.out, filename="training_data.{}".format(fformat))
-    test.persist(args.out, filename="test_data.{}".format(fformat))
+    train.persist(args.out, filename=f"training_data.{fformat}")
+    test.persist(args.out, filename=f"test_data.{fformat}")
 
 
 def validate_files(args):
