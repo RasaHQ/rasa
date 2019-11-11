@@ -277,7 +277,7 @@ class Validator:
         logger.info("Validating intents...")
         intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
 
-        logger.info("Validating there is no duplications...")
+        logger.info("Validating uniqueness of intents and stories...")
         there_is_no_duplication = self.verify_example_repetition_in_intents(
             ignore_warnings
         )
