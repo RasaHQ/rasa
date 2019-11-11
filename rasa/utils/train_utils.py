@@ -1223,11 +1223,22 @@ def persist_tensor(name: Text, tensor: "tf.Tensor", graph: "tf.Graph") -> None:
 
     if tensor is not None:
         graph.clear_collection(name)
-        graph.add_to_collection(name, tensor)
+        if isinstance(tensor, tuple) or isinstance(tensor, list):
+            for t in tensor:
+                graph.add_to_collection(name, t)
+        else:
+            graph.add_to_collection(name, tensor)
 
 
 def load_tensor(name: Text) -> Optional["tf.Tensor"]:
     """Load tensor or set it to None"""
 
     tensor_list = tf.get_collection(name)
-    return tensor_list[0] if tensor_list else None
+
+    if tensor_list is None:
+        return tensor_list
+
+    if len(tensor_list) == 1:
+        return tensor_list[0]
+
+    return tensor_list

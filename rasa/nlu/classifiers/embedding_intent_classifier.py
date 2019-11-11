@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict, OrderedDict
 
 import numpy as np
 import os
@@ -124,6 +123,7 @@ class EmbeddingIntentClassifier(Component):
         similarity: Optional["tf.Tensor"] = None,
         label_embed: Optional["tf.Tensor"] = None,
         all_labels_embed: Optional["tf.Tensor"] = None,
+        shapes: Optional[Tuple] = None,
     ) -> None:
         """Declare instant variables with default values"""
 
@@ -153,6 +153,8 @@ class EmbeddingIntentClassifier(Component):
         self._iterator = None
         self._train_op = None
         self._is_training = None
+
+        self.shapes = shapes
 
     # config migration warning
     def _check_old_config_variables(self, config: Dict[Text, Any]) -> None:
@@ -535,13 +537,12 @@ class EmbeddingIntentClassifier(Component):
         return output
 
     def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
-        shapes, types = train_utils.get_shapes_types(session_data)
+        self.shapes, types = train_utils.get_shapes_types(session_data)
 
         batch_placeholder = []
-        for s, t in zip(shapes, types):
+        for s, t in zip(self.shapes, types):
             batch_placeholder.append(tf.placeholder(t, s))
-
-        self.batch = tf.tuple(batch_placeholder)
+        self.batch = tuple(batch_placeholder)
 
         batch = train_utils.batch_to_session_data(self.batch, session_data)
 
@@ -722,10 +723,12 @@ class EmbeddingIntentClassifier(Component):
 
     # process helpers
     # noinspection PyPep8Naming
-    def _calculate_message_sim(self, X: np.ndarray) -> Tuple[np.ndarray, List[float]]:
+    def _calculate_message_sim(self, X: Tuple) -> Tuple[np.ndarray, List[float]]:
         """Calculate message similarities"""
-
-        message_sim = self.session.run(self.pred_confidence, feed_dict={self.batch: X})
+        message_sim = self.session.run(
+            self.pred_confidence,
+            feed_dict={_x: _x_in for _x, _x_in in zip(self.batch, X)},
+        )
 
         message_sim = message_sim.flatten()  # sim is a matrix
 
@@ -750,13 +753,28 @@ class EmbeddingIntentClassifier(Component):
 
         else:
             session_data = self._create_session_data([message])
-            X = train_utils.prepare_batch(0, 1, session_data)
+            batch = train_utils.prepare_batch(0, 1, session_data)
+
+            X = []
+            if len(batch) != len(self.shapes):
+                i = 0
+                for s in self.shapes:
+                    if i >= len(batch) or batch[i] is None:
+                        if isinstance(s, tuple):
+                            s = tuple([x if x is not None else 1 for x in s])
+                        elif s is None:
+                            s = 1
+                        X.append(np.zeros(s))
+                    else:
+                        X.append(batch[i])
+                    i += 1
+            X = tuple(X)
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)
 
             # if X contains all zeros do not predict some label
-            if X.any() and label_ids.size > 0:
+            if label_ids.size > 0:
                 label = {
                     "name": self.inverted_label_dict[label_ids[0]],
                     "confidence": message_sim[0],
@@ -822,6 +840,9 @@ class EmbeddingIntentClassifier(Component):
         with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
             pickle.dump(self._tf_config, f)
 
+        with open(os.path.join(model_dir, file_name + ".shapes.pkl"), "wb") as f:
+            pickle.dump(self.shapes, f)
+
         return {"file": file_name}
 
     @classmethod
@@ -862,6 +883,9 @@ class EmbeddingIntentClassifier(Component):
             ) as f:
                 inv_label_dict = pickle.load(f)
 
+            with open(os.path.join(model_dir, file_name + ".shapes.pkl"), "rb") as f:
+                shapes = pickle.load(f)
+
             return cls(
                 component_config=meta,
                 inverted_label_dict=inv_label_dict,
@@ -873,6 +897,7 @@ class EmbeddingIntentClassifier(Component):
                 similarity=sim,
                 label_embed=label_embed,
                 all_labels_embed=all_labels_embed,
+                shapes=shapes,
             )
 
         else:
