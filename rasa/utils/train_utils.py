@@ -11,8 +11,8 @@ from typing import (
     Union,
     Generator,
     Callable,
+    ValuesView,
     Any,
-    NamedTuple,
 )
 import numpy as np
 from tqdm import tqdm
@@ -295,10 +295,10 @@ def gen_batch(
         start = batch_num * batch_size
         end = start + batch_size
 
-        yield prepare_batch(start, end, session_data)
+        yield prepare_batch(session_data, start, end)
 
 
-def prepare_batch(start: int, end: int, session_data: SessionData):
+def prepare_batch(session_data: SessionData, start: Optional[int] = None, end: Optional[int] = None):
     batch_data = []
 
     for values in session_data.values():
@@ -308,7 +308,15 @@ def prepare_batch(start: int, end: int, session_data: SessionData):
             continue
 
         for v in values:
-            _data = v[start:end]
+            if start is not None and end is not None:
+                _data = v[start:end]
+            elif start is not None:
+                _data = v[start:]
+            elif end is not None:
+                _data = v[:end]
+            else:
+                _data = v[:]
+
             if isinstance(_data[0], scipy.sparse.spmatrix):
                 batch_data = batch_data + scipy_matrix_to_values(_data)
             else:
@@ -330,7 +338,7 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
 
     return [
         np.array(indices).astype(np.int64),
-        np.array(data),
+        np.array(data).astype(np.float64),
         np.array(shape).astype(np.int64),
     ]
 
@@ -340,8 +348,8 @@ def values_to_sparse_tensor(
     indices: np.ndarray, data: np.ndarray, shape: np.ndarray
 ) -> tf.SparseTensor:
     # make sure indices and shape have the correct type
-    # indices = tf.cast(indices, dtype=tf.int64)
-    # shape = tf.cast(shape, dtype=tf.int64)
+    indices = tf.cast(indices, dtype=tf.int64)
+    shape = tf.cast(shape, dtype=tf.int64)
 
     return tf.SparseTensor(indices, data, shape)
 
@@ -369,7 +377,7 @@ def pad_data(data: np.ndarray) -> np.ndarray:
         for i in range(data_size):
             data_padded[i, : data[i].shape[0], :] = data[i]
 
-    return data_padded
+    return data_padded.astype(np.float64)
 
 
 def batch_to_session_data(

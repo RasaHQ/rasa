@@ -140,7 +140,7 @@ class EmbeddingIntentClassifier(Component):
         # tf related instances
         self.session = session
         self.graph = graph
-        self.batch = batch_placeholder
+        self.batch_in = batch_placeholder
         self.sim_all = similarity_all
         self.pred_confidence = pred_confidence
         self.sim = similarity
@@ -186,8 +186,8 @@ class EmbeddingIntentClassifier(Component):
                 "hidden_layer_sizes for a and b must coincide"
             )
 
-        self.batch_size = config["batch_size"]
-        self.batch_strategy = config["batch_strategy"]
+        self.batch_in_size = config["batch_size"]
+        self.batch_in_strategy = config["batch_strategy"]
 
         self.epochs = config["epochs"]
 
@@ -293,7 +293,7 @@ class EmbeddingIntentClassifier(Component):
 
     def _extract_labels_precomputed_features(
         self, label_examples: List["Message"]
-    ) -> List[np.ndarray]:
+    ) -> "SessionData":
 
         # Collect precomputed encodings
         sparse_features = []
@@ -307,7 +307,10 @@ class EmbeddingIntentClassifier(Component):
         sparse_features = np.array(sparse_features)
         dense_features = np.array(dense_features)
 
-        return [sparse_features, dense_features]
+        data = {}
+        self._add_to_session_data(data, "intent_features", [sparse_features, dense_features])
+
+        return data
 
     @staticmethod
     def _compute_default_label_features(
@@ -459,22 +462,19 @@ class EmbeddingIntentClassifier(Component):
     def _build_tf_train_graph(
         self, session_data: SessionData
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        self.batch = self._iterator.get_next()
-        batch = train_utils.batch_to_session_data(self.batch, session_data)
 
-        a = self.combine_sparse_dense_features(batch["text_features"], "text")
-        b = self.combine_sparse_dense_features(batch["intent_features"], "intent")
+        # get in tensors from generator
+        self.batch_in = self._iterator.get_next()
+        # convert encoded all labels into the batch format
+        all_label_ids_batch = train_utils.prepare_batch(self._encoded_all_label_ids)
 
-        all_label_ids = tf.squeeze(
-            tf.stack(
-                [
-                    self.labels_to_tensors(v)
-                    for values in self._encoded_all_label_ids
-                    for v in values
-                ],
-                name="all_label_ids",
-            )
-        )
+        # convert batch format into sparse and dense tensors
+        batch_in = train_utils.batch_to_session_data(self.batch_in, session_data)
+        all_label_ids_batch = train_utils.batch_to_session_data(all_label_ids_batch, self._encoded_all_label_ids)
+
+        a = self.combine_sparse_dense_features(batch_in["text_features"], "text")
+        b = self.combine_sparse_dense_features(batch_in["intent_features"], "intent")
+        all_label_ids = self.combine_sparse_dense_features(all_label_ids_batch["intent_features"], "intent")
 
         message_embed = self._create_tf_embed_fnn(
             a,
@@ -541,12 +541,12 @@ class EmbeddingIntentClassifier(Component):
         for s, t in zip(shapes, types):
             batch_placeholder.append(tf.placeholder(t, s))
 
-        self.batch = tf.tuple(batch_placeholder)
+        self.batch_in = tf.tuple(batch_placeholder)
 
-        batch = train_utils.batch_to_session_data(self.batch, session_data)
+        batch_in = train_utils.batch_to_session_data(self.batch_in, session_data)
 
-        a = self.combine_sparse_dense_features(batch["text_features"], "text")
-        b = self.combine_sparse_dense_features(batch["intent_features"], "intent")
+        a = self.combine_sparse_dense_features(batch_in["text_features"], "text")
+        b = self.combine_sparse_dense_features(batch_in["intent_features"], "intent")
 
         # TODO check this idea:
         # self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
@@ -689,7 +689,7 @@ class EmbeddingIntentClassifier(Component):
                 session_data,
                 eval_session_data,
                 batch_size_in,
-                self.batch_strategy,
+                self.batch_in_strategy,
                 label_key="intent_ids",
             )
 
@@ -712,7 +712,7 @@ class EmbeddingIntentClassifier(Component):
                 self.session,
                 self._is_training,
                 self.epochs,
-                self.batch_size,
+                self.batch_in_size,
                 self.evaluate_on_num_examples,
                 self.evaluate_every_num_epochs,
             )
@@ -725,7 +725,7 @@ class EmbeddingIntentClassifier(Component):
     def _calculate_message_sim(self, X: np.ndarray) -> Tuple[np.ndarray, List[float]]:
         """Calculate message similarities"""
 
-        message_sim = self.session.run(self.pred_confidence, feed_dict={self.batch: X})
+        message_sim = self.session.run(self.pred_confidence, feed_dict={self.batch_in: X})
 
         message_sim = message_sim.flatten()  # sim is a matrix
 
@@ -750,7 +750,7 @@ class EmbeddingIntentClassifier(Component):
 
         else:
             session_data = self._create_session_data([message])
-            X = train_utils.prepare_batch(0, 1, session_data)
+            X = train_utils.prepare_batch(session_data)
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)
@@ -798,7 +798,7 @@ class EmbeddingIntentClassifier(Component):
             if e.errno != errno.EEXIST:
                 raise
         with self.graph.as_default():
-            train_utils.persist_tensor("batch_placeholder", self.batch, self.graph)
+            train_utils.persist_tensor("batch_placeholder", self.batch_in, self.graph)
 
             train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
             train_utils.persist_tensor(
@@ -848,7 +848,7 @@ class EmbeddingIntentClassifier(Component):
 
                 saver.restore(session, checkpoint)
 
-                batch = train_utils.load_tensor("batch_placeholder")
+                batch_in = train_utils.load_tensor("batch_placeholder")
 
                 sim_all = train_utils.load_tensor("similarity_all")
                 pred_confidence = train_utils.load_tensor("pred_confidence")
@@ -867,7 +867,7 @@ class EmbeddingIntentClassifier(Component):
                 inverted_label_dict=inv_label_dict,
                 session=session,
                 graph=graph,
-                batch_placeholder=batch,
+                batch_placeholder=batch_in,
                 similarity_all=sim_all,
                 pred_confidence=pred_confidence,
                 similarity=sim,
