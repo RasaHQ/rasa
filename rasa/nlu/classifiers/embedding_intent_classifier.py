@@ -430,6 +430,7 @@ class EmbeddingIntentClassifier(Component):
         session_data = {}
         self._add_to_session_data(session_data, "masks", [masks])
         self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
+        # TODO there might be no features for Y, in this case need to create sparse 1-hot encoding like we do for encoded_all_labels
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
         self._add_to_session_data(session_data, "intent_ids", [label_ids])
 
@@ -493,7 +494,9 @@ class EmbeddingIntentClassifier(Component):
         all_label_ids = self.combine_sparse_dense_features(
             all_label_ids_batch["intent_features"], "intent"
         )
-
+        print(session_data["intent_ids"])
+        print(batch_in["intent_ids"])
+        exit()
         message_embed = self._create_tf_embed_fnn(
             a,
             self.hidden_layer_sizes["text"],
