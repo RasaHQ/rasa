@@ -51,6 +51,7 @@ class Tokenizer(Component):
         if (
             attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
             and self.use_cls_token
+            and tokens
         ):
             # +1 to have a space between the last token and the __cls__ token
             idx = tokens[-1].offset + len(tokens[-1].text) + 1
