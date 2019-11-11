@@ -295,17 +295,27 @@ def gen_batch(
         start = batch_num * batch_size
         end = start + batch_size
 
-        batch_data = []
-        for values in session_data.values():
-            for v in values:
-                _data = v[start:end]
-                if isinstance(_data[0], scipy.sparse.spmatrix):
-                    batch_data = batch_data + scipy_matrix_to_values(_data)
-                else:
-                    batch_data.append(pad_data(_data))
+        yield prepare_batch(start, end, session_data)
 
-        # len of batch_data is equal to the number of keys in session data
-        yield tuple(batch_data)
+
+def prepare_batch(start: int, end: int, session_data: SessionData):
+    batch_data = []
+
+    for values in session_data.values():
+        # add None for not present values during processing
+        if not values:
+            batch_data.append(None)
+            continue
+
+        for v in values:
+            _data = v[start:end]
+            if isinstance(_data[0], scipy.sparse.spmatrix):
+                batch_data = batch_data + scipy_matrix_to_values(_data)
+            else:
+                batch_data.append(pad_data(_data))
+
+    # len of batch_data is equal to the number of keys in session data
+    return tuple(batch_data)
 
 
 def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
@@ -403,7 +413,7 @@ def create_tf_dataset(
 ) -> "tf.data.Dataset":
     """Create tf dataset."""
 
-    shapes, types = _get_shapes_types(session_data)
+    shapes, types = get_shapes_types(session_data)
 
     return tf.data.Dataset.from_generator(
         lambda batch_size_: gen_batch(
@@ -415,7 +425,7 @@ def create_tf_dataset(
     )
 
 
-def _get_shapes_types(session_data: SessionData) -> Tuple:
+def get_shapes_types(session_data: SessionData) -> Tuple:
     types = []
     shapes = []
 
