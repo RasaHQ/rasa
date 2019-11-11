@@ -422,8 +422,8 @@ def _get_shapes_types(session_data: SessionData) -> Tuple:
     def append_shape(v: np.ndarray):
         if isinstance(v[0], scipy.sparse.spmatrix):
             # scipy matrix is converted into indices, data, shape
-            shapes.append((len(v), v[0].ndim + 1))
-            shapes.append((len(v)))
+            shapes.append((None, v[0].ndim + 1))
+            shapes.append((None))
             shapes.append((v[0].ndim + 1))
         elif v[0].ndim == 0:
             shapes.append((None))

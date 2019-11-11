@@ -474,7 +474,8 @@ class EmbeddingIntentClassifier(Component):
             tf.stack(
                 [
                     self.labels_to_tensors(v)
-                    for v in self._encoded_all_label_ids.values()
+                    for values in self._encoded_all_label_ids
+                    for v in values
                 ],
                 name="all_label_ids",
             )
