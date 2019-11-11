@@ -31,7 +31,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TrackerStore(object):
+class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
 
     def __init__(
@@ -234,7 +234,7 @@ class InMemoryTrackerStore(TrackerStore):
         self, domain: Domain, event_broker: Optional[EventChannel] = None
     ) -> None:
         self.store = {}
-        super(InMemoryTrackerStore, self).__init__(domain, event_broker)
+        super().__init__(domain, event_broker)
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Updates and saves the current conversation state"""
@@ -252,10 +252,10 @@ class InMemoryTrackerStore(TrackerStore):
             DialogueStateTracker
         """
         if sender_id in self.store:
-            logger.debug("Recreating tracker for id '{}'".format(sender_id))
+            logger.debug(f"Recreating tracker for id '{sender_id}'")
             return self.deserialise_tracker(sender_id, self.store[sender_id])
         else:
-            logger.debug("Creating a new tracker for id '{}'.".format(sender_id))
+            logger.debug(f"Creating a new tracker for id '{sender_id}'.")
             return None
 
     def keys(self) -> Iterable[Text]:
@@ -284,7 +284,7 @@ class RedisTrackerStore(TrackerStore):
             host=host, port=port, db=db, password=password, ssl=use_ssl
         )
         self.record_exp = record_exp
-        super(RedisTrackerStore, self).__init__(domain, event_broker)
+        super().__init__(domain, event_broker)
 
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
@@ -440,7 +440,7 @@ class MongoTrackerStore(TrackerStore):
 
         self.db = Database(self.client, db)
         self.collection = collection
-        super(MongoTrackerStore, self).__init__(domain, event_broker)
+        super().__init__(domain, event_broker)
 
         self._ensure_indices()
 
@@ -581,7 +581,7 @@ class SQLTrackerStore(TrackerStore):
                     # Several Rasa services started in parallel may attempt to
                     # create tables at the same time. That is okay so long as
                     # the first services finishes the table creation.
-                    logger.error("Could not create tables: {}".format(e))
+                    logger.error(f"Could not create tables: {e}")
 
                 self.sessionmaker = sessionmaker(bind=self.engine)
                 break
@@ -593,9 +593,9 @@ class SQLTrackerStore(TrackerStore):
                 logger.warning(e)
                 sleep(5)
 
-        logger.debug("Connection to SQL database '{}' successful.".format(db))
+        logger.debug(f"Connection to SQL database '{db}' successful.")
 
-        super(SQLTrackerStore, self).__init__(domain, event_broker)
+        super().__init__(domain, event_broker)
 
     @staticmethod
     def get_db_url(
@@ -672,15 +672,13 @@ class SQLTrackerStore(TrackerStore):
 
         cursor = conn.connection.cursor()
         cursor.execute("COMMIT")
-        cursor.execute(
-            ("SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{}'".format(db))
-        )
+        cursor.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{db}'")
         exists = cursor.fetchone()
         if not exists:
             try:
-                cursor.execute("CREATE DATABASE {}".format(db))
+                cursor.execute(f"CREATE DATABASE {db}")
             except psycopg2.IntegrityError as e:
-                logger.error("Could not create database '{}': {}".format(db, e))
+                logger.error(f"Could not create database '{db}': {e}")
 
         cursor.close()
         conn.close()
@@ -714,7 +712,7 @@ class SQLTrackerStore(TrackerStore):
             events = [json.loads(event.data) for event in result]
 
             if self.domain and len(events) > 0:
-                logger.debug("Recreating tracker from sender id '{}'".format(sender_id))
+                logger.debug(f"Recreating tracker from sender id '{sender_id}'")
                 return DialogueStateTracker.from_dict(
                     sender_id, events, self.domain.slots
                 )

@@ -71,7 +71,7 @@ class NLGMarkdownReader(TrainingDataReader):
                         "".format(line_num, line)
                     )
             except Exception as e:
-                msg = "Error in line {}: {}".format(line_num, e)
+                msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)  # pytype: disable=wrong-arg-types
                 raise ValueError(msg)
 
@@ -96,8 +96,8 @@ class NLGMarkdownWriter(TrainingDataWriter):
         md = ""
         for intent, utterances in training_data.nlg_stories.items():
             md += "## \n"
-            md += "* {}\n".format(intent)
+            md += f"* {intent}\n"
             for utterance in utterances:
-                md += "- {}\n".format(utterance)
+                md += f"- {utterance}\n"
             md += "\n"
         return md

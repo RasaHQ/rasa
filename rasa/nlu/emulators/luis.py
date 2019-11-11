@@ -6,7 +6,7 @@ from rasa.nlu.emulators.no_emulator import NoEmulator
 class LUISEmulator(NoEmulator):
     def __init__(self) -> None:
 
-        super(LUISEmulator, self).__init__()
+        super().__init__()
         self.name = "luis"
 
     def _top_intent(self, data):
