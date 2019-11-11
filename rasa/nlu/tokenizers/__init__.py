@@ -21,10 +21,18 @@ class Token:
 
     def __eq__(self, other):
         if not isinstance(other, Token):
-            raise NotImplementedError
-        return self.text == other.text
+            return NotImplemented
+        return (self.offset, self.end, self.text) == (
+            other.offset,
+            other.end,
+            other.text,
+        )
 
     def __lt__(self, other):
         if not isinstance(other, Token):
-            raise NotImplementedError
-        return self.text < other.text
+            return NotImplemented
+        return (self.offset, self.end, self.text) < (
+            other.offset,
+            other.end,
+            other.text,
+        )

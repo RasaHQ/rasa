@@ -16,10 +16,9 @@ def test_tokens_comparison():
     assert x == x
     assert y < x
 
-    with pytest.raises(NotImplementedError):
-        assert x == 1
+    assert x != 1
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(TypeError):
         assert y < "a"
 
 
