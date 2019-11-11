@@ -115,9 +115,7 @@ class TrainingData:
             if ex.get("response"):
                 ex.set("response", ex.get("response").strip())
 
-        examples = list(OrderedDict.fromkeys(examples))
-
-        return examples
+        return list(OrderedDict.fromkeys(examples))
 
     @rasa_utils.lazy_property
     def intent_examples(self) -> List[Message]:
