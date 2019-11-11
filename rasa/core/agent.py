@@ -291,6 +291,7 @@ class Agent:
         model_directory: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
+        path_to_model_archive: Optional[Text] = None,
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -315,6 +316,7 @@ class Agent:
         self.model_directory = model_directory
         self.model_server = model_server
         self.remote_storage = remote_storage
+        self.path_to_model_archive = path_to_model_archive
 
     def update_model(
         self,
@@ -350,6 +352,7 @@ class Agent:
         action_endpoint: Optional[EndpointConfig] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
+        path_to_model_archive: Optional[Text] = None,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         try:
@@ -394,6 +397,7 @@ class Agent:
             model_directory=model_path,
             model_server=model_server,
             remote_storage=remote_storage,
+            path_to_model_archive=path_to_model_archive,
         )
 
     def is_core_ready(self):
@@ -912,6 +916,7 @@ class Agent:
             action_endpoint=action_endpoint,
             model_server=model_server,
             remote_storage=remote_storage,
+            path_to_model_archive=model_archive,
         )
 
     @staticmethod
