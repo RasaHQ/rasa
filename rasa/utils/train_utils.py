@@ -343,13 +343,10 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
     ]
 
 
-# TODO types, could be tf.Tensor or Tuple for shape
+# TODO types, could be tf.Tensor or Tuple for shape - still relevant?
 def values_to_sparse_tensor(
     indices: np.ndarray, data: np.ndarray, shape: np.ndarray
 ) -> tf.SparseTensor:
-    # make sure indices and shape have the correct type
-    indices = tf.cast(indices, dtype=tf.int64)
-    shape = tf.cast(shape, dtype=tf.int64)
 
     return tf.SparseTensor(indices, data, shape)
 
@@ -1231,11 +1228,22 @@ def persist_tensor(name: Text, tensor: "tf.Tensor", graph: "tf.Graph") -> None:
 
     if tensor is not None:
         graph.clear_collection(name)
-        graph.add_to_collection(name, tensor)
+        if isinstance(tensor, tuple) or isinstance(tensor, list):
+            for t in tensor:
+                graph.add_to_collection(name, t)
+        else:
+            graph.add_to_collection(name, tensor)
 
 
 def load_tensor(name: Text) -> Optional["tf.Tensor"]:
     """Load tensor or set it to None"""
 
     tensor_list = tf.get_collection(name)
-    return tensor_list[0] if tensor_list else None
+
+    if tensor_list is None:
+        return tensor_list
+
+    if len(tensor_list) == 1:
+        return tensor_list[0]
+
+    return tensor_list
