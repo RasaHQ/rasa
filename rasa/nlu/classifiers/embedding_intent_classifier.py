@@ -752,23 +752,10 @@ class EmbeddingIntentClassifier(Component):
             )
 
         else:
+            # create session data from message and convert it into a batch of 1
             session_data = self._create_session_data([message])
             batch = train_utils.prepare_batch(0, 1, session_data)
-
-            X = []
-            if len(batch) != len(self.shapes):
-                i = 0
-                for s in self.shapes:
-                    if i >= len(batch) or batch[i] is None:
-                        if isinstance(s, tuple):
-                            s = tuple([x if x is not None else 1 for x in s])
-                        elif s is None:
-                            s = 1
-                        X.append(np.zeros(s))
-                    else:
-                        X.append(batch[i])
-                    i += 1
-            X = tuple(X)
+            X = self._add_missing_placeholder_tensors(batch)
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)
@@ -787,6 +774,26 @@ class EmbeddingIntentClassifier(Component):
                     for label_idx, score in ranking
                 ]
         return label, label_ranking
+
+    def _add_missing_placeholder_tensors(self, batch):
+        if self.shapes is not None and len(batch) == len(self.shapes):
+            return batch
+
+        X = []
+        for i, shape in enumerate(self.shapes):
+            # if features are not present add dummy tensor
+            if i >= len(batch) or batch[i] is None:
+                # shape may contain None, replace None by 1
+                if isinstance(shape, tuple):
+                    shape = tuple([x if x is not None else 1 for x in shape])
+                elif shape is None:
+                    shape = 1
+                # add dummy tensor of shape
+                X.append(np.zeros(shape))
+            else:
+                X.append(batch[i])
+            i += 1
+        return tuple(X)
 
     def process(self, message: "Message", **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""

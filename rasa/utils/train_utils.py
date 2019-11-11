@@ -335,14 +335,10 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
     ]
 
 
-# TODO types, could be tf.Tensor or Tuple for shape
+# TODO types, could be tf.Tensor or Tuple for shape - still relevant?
 def values_to_sparse_tensor(
     indices: np.ndarray, data: np.ndarray, shape: np.ndarray
 ) -> tf.SparseTensor:
-    # make sure indices and shape have the correct type
-    # indices = tf.cast(indices, dtype=tf.int64)
-    # shape = tf.cast(shape, dtype=tf.int64)
-
     return tf.SparseTensor(indices, data, shape)
 
 
