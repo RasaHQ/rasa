@@ -200,6 +200,18 @@ class Validator:
         logger.info("All story names are unique")
         return True
 
+    @staticmethod
+    def _last_event_string(sliced_states):
+        last_event_string = None
+        for k, v in sliced_states[-1].items():
+            if k.startswith(PREV_PREFIX):
+                if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
+                    last_event_string = f"action '{k[len(PREV_PREFIX):]}'"
+            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not last_event_string:
+                last_event_string = f"intent '{k[len(MESSAGE_INTENT_ATTRIBUTE + '_'):]}'"
+
+        return last_event_string
+
     def verify_story_structure(self, ignore_warnings: bool = True, max_history: int = 5) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
@@ -224,53 +236,57 @@ class Validator:
                     )
                     h = hash(str(list(sliced_states)))
                     if h in rules:
-                        known_actions = [info["action"] for info in rules[h]]
-                        if event.as_story_string() not in known_actions:
-                            # print(f"{h} >> {event.as_story_string()} and {known_actions}")
-                            rules[h] += [{
-                                "tracker": tracker,
-                                "action": event.as_story_string()
-                            }]
+                        if event.as_story_string() not in rules[h]:
+                            rules[h] += [event.as_story_string()]
                     else:
-                        # print(f"{h} >> {event.as_story_string()}")
-                        rules[h] = [{
-                            "tracker": tracker,
-                            "action": event.as_story_string()
-                        }]
+                        rules[h] = [event.as_story_string()]
                     idx += 1
-        result = True
-        for state_hash, info in rules.items():
-            if len(info) > 1:
-                result = False
-                tracker = info[0]["tracker"]
-                states = tracker.past_states(self.domain)
-                states = [dict(state) for state in states]
-                last_event_string = None
-                idx = 0
-                for event in tracker.events:
-                    if isinstance(event, ActionExecuted):
-                        sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
-                            states[: idx + 1], max_history
-                        )
-                        h = hash(str(list(sliced_states)))
-                        if h == state_hash:
-                            for k, v in sliced_states[-1].items():
-                                if k.startswith(PREV_PREFIX):
-                                    if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
-                                        last_event_string = f"action '{k[len(PREV_PREFIX):]}'"
-                                elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not last_event_string:
-                                    last_event_string = f"intent '{k[len(MESSAGE_INTENT_ATTRIBUTE + '_'):]}'"
-                            break
-                        idx += 1
-                conflict_string = f"CONFLICT after {last_event_string}:\n"
-                for i in info:
-                    conflict_string += f"  '{i['action']}' predicted in '{i['tracker'].sender_id}'\n"
-                logger.warning(conflict_string)
 
-        if result:
+        # Keep only conflicting rules
+        rules = {state: actions for (state, actions) in rules.items() if len(actions) > 1}
+
+        conflicts = {}
+
+        for tracker in trackers:
+            states = tracker.past_states(self.domain)
+            states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
+
+            idx = 0
+            for event in tracker.events:
+                if isinstance(event, ActionExecuted):
+                    sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                        states[: idx + 1], max_history
+                    )
+                    h = hash(str(list(sliced_states)))
+                    if h in rules:
+                        # Get the last event
+                        last_event_string = self._last_event_string(sliced_states)
+
+                        # Fill `conflicts` dict
+                        # {hash: {last_event: {action_1: [stories...], action_2: [stories...], ...}, ...}, ...}
+                        if h not in conflicts:
+                            conflicts[h] = {last_event_string: {event.as_story_string(): [tracker.sender_id]}}
+                        else:
+                            if last_event_string not in conflicts[h]:
+                                conflicts[h][last_event_string] = {event.as_story_string(): [tracker.sender_id]}
+                            else:
+                                if event.as_story_string() not in conflicts[h][last_event_string]:
+                                    conflicts[h][last_event_string][event.as_story_string()] = [tracker.sender_id]
+                                else:
+                                    conflicts[h][last_event_string][event.as_story_string()].append(tracker.sender_id)
+                    idx += 1
+
+        if len(conflicts) == 0:
             logger.info("No story structure conflicts found.")
+        else:
+            for conflict in list(conflicts.values()):
+                for state, actions_and_stories in conflict.items():
+                    conflict_string = f"CONFLICT after {state}:\n"
+                    for action, stories in actions_and_stories.items():
+                        conflict_string += f"  {action} predicted in {stories}\n"
+                    logger.warning(conflict_string)
 
-        return result
+        return len(conflicts) > 0
 
     def verify_all(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
